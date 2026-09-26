@@ -90,9 +90,7 @@
       "label e7SettingsUi8: fewer than two words": 2,
       "label phoneServerStop: fewer than two words": 1,
       "label termuxProcsStop: fewer than two words": 1,
-      "label termuxRestartConfirm: fewer than two words": 2,
-      "title e7SettingsUi16: Arabic does not end with \"؟\"": 1,
-      "title e7SettingsUi16: English does not end with \"?\"": 1
+      "label termuxRestartConfirm: fewer than two words": 2
     },
     "lib/ui/widgets/team_phone_section.dart": {
       "label teamUiPhoneRemoveConfirm: a bare OK/Yes/Continue/Confirm/Delete": 1
@@ -108,6 +106,14 @@
     "a2aCardVersion": {
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
+    },
+    "a2aSupportedConnection": {
+      "ar version \"A2A 1.0\"": 1,
+      "en version \"A2A 1.0\"": 1
+    },
+    "a2aUnsupported": {
+      "ar version \"A2A 1.0\"": 1,
+      "en version \"A2A 1.0\"": 1
     },
     "aboutBuildVersion": {
       "ar version \"{version}\"": 1,
@@ -126,31 +132,40 @@
       "en version \"{version}\"": 1
     },
     "builtinServerRunning": {
-      "ar loopback \"127.0.0.1\"": 1,
-      "en loopback \"127.0.0.1\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "en address \"127.0.0.1\"": 1
+    },
+    "builtinServerUbuntuHint": {
+      "ar version \"Base 24.04\"": 1,
+      "en version \"Base 24.04\"": 1
     },
     "chatAttachmentOfficeHeader": {
       "en engine word \"formulas\"": 1
     },
     "codexAddressHint": {
-      "ar loopback \"127.0.0.1\"": 1,
+      "ar address \"127.0.0.1\"": 1,
       "ar port \":4500\"": 1,
-      "en loopback \"127.0.0.1\"": 1,
+      "en address \"127.0.0.1\"": 1,
       "en port \":4500\"": 1
     },
     "connectionHelpGuideTip": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1,
+      "en address \"localhost\"": 1
     },
     "connectionHelpLoopback": {
-      "ar loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1
+    },
+    "connectionHelpRemoteHttp": {
+      "ar address \"100.64.0.0\"": 1,
+      "en address \"100.64.0.0/10\"": 1
     },
     "connectionHelpTunnelSteps": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"127.0.0.1\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "ar address \"localhost\"": 1,
+      "en address \"127.0.0.1\"": 1
     },
     "connectionHelpTunnelTitle": {
-      "ar loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1
     },
     "discoverTerminalAliases": {
       "en engine word \"pty\"": 1
@@ -200,20 +215,24 @@
       "en version \"{version}\"": 1
     },
     "e7SetupIncludeScheme": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "ar address \"localhost\"": 1,
+      "en address \"127.0.0.1\"": 1,
+      "en address \"localhost\"": 1
     },
     "e7SetupInstalledVersion": {
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
     },
     "e7SetupLocalHttp": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "ar address \"localhost\"": 1,
+      "en address \"127.0.0.1\"": 1,
+      "en address \"localhost\"": 1
     },
     "e7SetupPairingPhoneHint": {
-      "ar loopback \"127.0.0.1\"": 1,
-      "en loopback \"127.0.0.1\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "en address \"127.0.0.1\"": 1
     },
     "e7SetupProbeV1": {
       "ar version \"{version}\"": 1,
@@ -225,7 +244,9 @@
     },
     "e7SetupReplaceDetail": {
       "ar version \"{installedVersion}\"": 1,
-      "en version \"{installedVersion}\"": 1
+      "ar version \"{targetVersion}\"": 1,
+      "en version \"{installedVersion}\"": 1,
+      "en version \"{targetVersion}\"": 1
     },
     "e7SetupRuntimeInstallDetail": {
       "ar version \"{version}\"": 1,
@@ -248,18 +269,18 @@
       "en version \"{version}\"": 1
     },
     "e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1,
+      "en address \"localhost\"": 1
     },
     "e7SharedTheChrootSharesTheNetworkStackSo": {
-      "ar loopback \"127.0.0.1\"": 1,
+      "ar address \"127.0.0.1\"": 1,
       "ar port \":4096\"": 1,
-      "en loopback \"127.0.0.1\"": 1,
+      "en address \"127.0.0.1\"": 1,
       "en port \":4096\"": 1
     },
     "handoffCommandUnavailable": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1,
+      "en address \"localhost\"": 1
     },
     "localAgentFailedPortInUse": {
       "en port \"Port 6767\"": 1
@@ -268,24 +289,30 @@
       "en path \"/root/projects/my-app.\"": 1
     },
     "localAgentReadyBody": {
-      "ar loopback \"127.0.0.1\"": 1,
-      "en loopback \"127.0.0.1\"": 1
+      "ar address \"127.0.0.1\"": 1,
+      "en address \"127.0.0.1\"": 1
     },
     "managedHealthVersion": {
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
     },
     "paseoAddressHint": {
+      "ar address \"100.64.0.1\"": 1,
       "ar port \":6767\"": 1,
+      "en address \"100.64.0.1\"": 1,
       "en port \":6767\"": 1
     },
     "phoneServerCardVersion": {
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
     },
+    "quotaSetupGuide": {
+      "ar path \"tool/quota/README.md\"": 1,
+      "en path \"tool/quota/README.md\"": 1
+    },
     "servicesUrlHint": {
-      "ar loopback \"localhost\"": 1,
-      "en loopback \"localhost\"": 1
+      "ar address \"localhost\"": 1,
+      "en address \"localhost\"": 1
     },
     "setupInstallVersionStart": {
       "ar version \"{version}\"": 1,
@@ -293,7 +320,9 @@
     },
     "setupReplaceDescription": {
       "ar version \"{installedVersion}\"": 1,
-      "en version \"{installedVersion}\"": 1
+      "ar version \"{targetVersion}\"": 1,
+      "en version \"{installedVersion}\"": 1,
+      "en version \"{targetVersion}\"": 1
     },
     "setupRuntimeInstallDetail": {
       "ar version \"{version}\"": 1,
@@ -318,21 +347,27 @@
       "ar engine word \"bead\"": 1,
       "en engine word \"bead\"": 1
     },
+    "teamUiHostGuideDocs": {
+      "ar path \"docs/ai-team-host.md\"": 1,
+      "en path \"docs/ai-team-host.md\"": 1
+    },
     "teamUiHostGuideStep2": {
       "ar engine word \"rig\"": 1,
-      "en engine word \"city\"": 1
+      "en engine word \"city\"": 1,
+      "en engine word \"rig\"": 1
     },
     "teamUiHostGuideStep3": {
+      "ar address \"127.0.0.1\"": 1,
       "ar engine word \"city\"": 1,
-      "ar loopback \"127.0.0.1\"": 1,
       "ar port \":8372\"": 1,
+      "en address \"127.0.0.1\"": 1,
       "en engine word \"city\"": 1,
-      "en loopback \"127.0.0.1\"": 1,
       "en port \":8372\"": 1
     },
     "teamUiHostGuideStep4": {
       "ar port \":8372\"": 1,
       "en engine word \"city\"": 1,
+      "en port \":8372\"": 1,
       "en port \"port 8372\"": 1
     },
     "teamUiLabelCity": {
@@ -407,13 +442,13 @@
     "teamUiVerdictFound": {
       "ar engine word \"city\"": 1,
       "ar version \"{version}\"": 1,
-      "en engine word \"city\"": 1,
+      "en engine word \"city\"": 2,
       "en version \"{version}\"": 1
     },
     "teamUiVerdictFoundControls": {
       "ar engine word \"city\"": 1,
       "ar version \"{version}\"": 1,
-      "en engine word \"city\"": 1,
+      "en engine word \"city\"": 2,
       "en version \"{version}\"": 1
     },
     "teamUiWorkTerm": {
@@ -498,6 +533,9 @@
     "builtinServerTitle": {
       "product name OpenCode": 1
     },
+    "chatUiAskOpenCode": {
+      "product name OpenCode": 1
+    },
     "chatUiFILE": {
       "uppercase": 1
     },
@@ -508,6 +546,9 @@
       "product name OpenCode": 1
     },
     "chatUiOpenCodeSession": {
+      "product name OpenCode": 1
+    },
+    "chatUiWriteYourOpenCodePrompt": {
       "product name OpenCode": 1
     },
     "codexExperimentalLabel": {
@@ -591,6 +632,9 @@
     "e7LocaleUiStartFailed": {
       "product name OpenCode": 1
     },
+    "e7LocaleUiStarting": {
+      "product name OpenCode": 1
+    },
     "e7ProjectAttentionProfileSource": {
       "noun sentence attention": 1
     },
@@ -620,6 +664,9 @@
     },
     "e7SettingsRestartBody": {
       "noun sentence host": 1
+    },
+    "e7SettingsUi41": {
+      "product name OpenCode": 1
     },
     "e7SettingsUi46": {
       "noun sentence host": 1

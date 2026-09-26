@@ -406,8 +406,12 @@ List<String> _wordsOf(String variant) => variant
     .where((t) => RegExp('[\\p{L}\\p{N}$_slot]', unicode: true).hasMatch(t))
     .toList();
 
+/// A G28 label: at most four words and no sentence punctuation. A trailing
+/// `…` ("Ask {agent}…", a button that opens more) or `:` (a field's label)
+/// does not make a sentence, so it is stripped first. The older glossary
+/// tests keep their own stricter [_isShortActionLabel].
 bool _isLabelVariant(String variant) {
-  final trimmed = variant.trim();
+  final trimmed = variant.trim().replaceFirst(RegExp(r'[…:]+$'), '').trim();
   if (trimmed.isEmpty) return false;
   if (_sentencePunctuation.hasMatch(trimmed)) return false;
   return _wordsOf(trimmed).length <= _maxLabelWords;
@@ -510,9 +514,10 @@ String _blankComments(String src) {
   return out.toString();
 }
 
-/// The top-level, comma-separated pieces between [open] and its closer.
-List<String> _topLevelArgs(String s, int open, int close) {
-  final pieces = <String>[];
+/// The start and end offsets of the top-level, comma-separated pieces
+/// between [open] and its closer.
+List<(int, int)> _topLevelArgRanges(String s, int open, int close) {
+  final pieces = <(int, int)>[];
   var startOfPiece = open + 1;
   var i = open + 1;
   while (i < close) {
@@ -526,13 +531,100 @@ List<String> _topLevelArgs(String s, int open, int close) {
       continue;
     }
     if (c == ',') {
-      pieces.add(s.substring(startOfPiece, i));
+      pieces.add((startOfPiece, i));
       startOfPiece = i + 1;
     }
     i++;
   }
-  pieces.add(s.substring(startOfPiece, close));
-  return pieces.where((p) => p.trim().isNotEmpty).toList();
+  pieces.add((startOfPiece, close));
+  return pieces
+      .where((p) => s.substring(p.$1, p.$2).trim().isNotEmpty)
+      .toList();
+}
+
+/// The top-level, comma-separated pieces between [open] and its closer.
+List<String> _topLevelArgs(String s, int open, int close) => [
+  for (final (start, end) in _topLevelArgRanges(s, open, close))
+    s.substring(start, end),
+];
+
+/// [s] with every string literal and every bracketed group replaced by
+/// spaces: only what sits at the top level of the expression is left.
+String _topLevelOnly(String s) {
+  final out = StringBuffer();
+  var i = 0;
+  while (i < s.length) {
+    final end = _startsString(s, i)
+        ? _endOfString(s, i)
+        : _closers.containsKey(s[i])
+        ? _matchClose(s, i) + 1
+        : null;
+    if (end != null) {
+      out.write(' ' * (end - i));
+      i = end;
+      continue;
+    }
+    out.write(s[i]);
+    i++;
+  }
+  return out.toString();
+}
+
+/// The branches an expression can show: both sides of a top-level `?:`
+/// (not its condition) and every side of a top-level `??`, recursively,
+/// with parentheses around the whole expression removed.
+List<String> _branchesOf(String expression) {
+  var s = expression.trim();
+  while (s.startsWith('(') && _matchClose(s, 0) == s.length - 1) {
+    s = s.substring(1, s.length - 1).trim();
+  }
+  final top = _topLevelOnly(s);
+  // Operator positions: a conditional `?` (not `??`, `?.` or `?[`), a `:`,
+  // and a `??`.
+  int? question;
+  final nullish = <int>[];
+  for (var i = 0; i < top.length; i++) {
+    if (top[i] != '?') continue;
+    final next = i + 1 < top.length ? top[i + 1] : '';
+    if (next == '?') {
+      nullish.add(i);
+      i++;
+    } else if (next != '.' && next != '[') {
+      question = i;
+      break;
+    }
+  }
+  if (question != null) {
+    // The `:` that closes this conditional, past any nested ones.
+    var nested = 0;
+    for (var i = question + 1; i < top.length; i++) {
+      final c = top[i];
+      final next = i + 1 < top.length ? top[i + 1] : '';
+      if (c == '?' && next == '?') {
+        i++;
+      } else if (c == '?' && next != '.' && next != '[') {
+        nested++;
+      } else if (c == ':') {
+        if (nested == 0) {
+          return [
+            ..._branchesOf(s.substring(question + 1, i)),
+            ..._branchesOf(s.substring(i + 1)),
+          ];
+        }
+        nested--;
+      }
+    }
+    return [s];
+  }
+  if (nullish.isEmpty) return [s];
+  final pieces = <String>[];
+  var start = 0;
+  for (final at in nullish) {
+    pieces.add(s.substring(start, at));
+    start = at + 2;
+  }
+  pieces.add(s.substring(start));
+  return [for (final piece in pieces) ..._branchesOf(piece)];
 }
 
 final _namedArg = RegExp(r'^\s*([A-Za-z_]\w*)\s*:(?!:)');
@@ -713,10 +805,17 @@ List<_ConfirmSite> _confirmSites() {
   return null;
 }
 
-/// The ARB keys an expression reads (`l10n.someKey`, `copy.someKey(x)`).
+/// The ARB keys an expression shows as its words: in each branch of a
+/// top-level `?:` or `??`, the key read at the top level (`l10n.someKey`,
+/// `copy.someKey(x)`, `lookupAppLocalizations(…).someKey`). A key inside
+/// that key's argument list is a placeholder value ("this server" in
+/// `l10n.disconnectTitle(name ?? l10n.thisServer)`), not the title or label.
 List<String> _arbKeysIn(String expression, Map<String, String> english) => [
-  for (final m in RegExp(r'\.([a-z][A-Za-z0-9]*)\b').allMatches(expression))
-    if (english.containsKey(m.group(1))) m.group(1)!,
+  for (final branch in _branchesOf(expression))
+    for (final m in RegExp(
+      r'\.([a-z][A-Za-z0-9]*)\b',
+    ).allMatches(_topLevelOnly(branch)))
+      if (english.containsKey(m.group(1))) m.group(1)!,
 ];
 
 /// Words a confirm label may never be on its own (COPY-8, COPY-9).
@@ -786,27 +885,109 @@ final _stringLiteral = RegExp(
   r'|"(?:[^"\\\n]|\\.)*"',
 );
 
-final _fixtureBlock = RegExp(r'(?<![\w$])(testWidgets|test|CensusShot)\s*\(');
+/// Arguments that are never rendered: a test's or group's description, a
+/// census shot's page name, state tag and reviewer note, and a gallery
+/// shot's golden name.
+const _unrenderedSlots = <String, List<_Slot>>{
+  'test': [(name: null, index: 0)],
+  'testWidgets': [(name: null, index: 0)],
+  'group': [(name: null, index: 0)],
+  'CensusShot': [
+    (name: null, index: 0),
+    (name: 'state', index: null),
+    (name: 'note', index: null),
+  ],
+  'kitGalleryShot': [(name: 'name', index: null)],
+};
 
-/// The text of every golden and census fixture: each string literal on its
-/// own, and each test or census shot as one text of all its literals.
-Map<String, String> _fixtureTexts() {
+/// Calls none of whose arguments are rendered: widget keys and golden file
+/// names.
+final _unrenderedCalls = RegExp(
+  r'(?<![\w$])(?:Key|ValueKey|ObjectKey|GlobalKey|matchesGoldenFile)\s*'
+  r'(?:<[^>()]*>)?\s*\(',
+);
+
+/// A literal that is a file name ('goldens/x.png', "$name.png").
+final _fileNameLiteral = RegExp(
+  r"""^['"][\w./${}-]+\.(?:png|jpe?g|svg|dart|json|txt|md|arb|ttf|otf)['"]$""",
+);
+
+/// [src] (comments already blanked) with every literal that is never
+/// rendered replaced by spaces, so offsets stay put.
+String _renderedOnly(String src) {
+  final blank = <(int, int)>[];
+  final calls = RegExp(
+    '(?<![\\w\$])(${_unrenderedSlots.keys.join('|')})\\s*\\(',
+  );
+  for (final call in calls.allMatches(src)) {
+    final open = call.end - 1;
+    final ranges = _topLevelArgRanges(src, open, _matchClose(src, open));
+    for (final slot in _unrenderedSlots[call.group(1)]!) {
+      var position = 0;
+      for (final (start, end) in ranges) {
+        final named = _namedArg.firstMatch(src.substring(start, end));
+        final hit = named == null
+            ? position++ == slot.index
+            : named.group(1) == slot.name;
+        if (hit) blank.add((start, end));
+      }
+    }
+  }
+  for (final call in _unrenderedCalls.allMatches(src)) {
+    final open = call.end - 1;
+    blank.add((open, _matchClose(src, open) + 1));
+  }
+  for (final literal in _stringLiteral.allMatches(src)) {
+    if (_fileNameLiteral.hasMatch(literal.group(0)!)) {
+      blank.add((literal.start, literal.end));
+    }
+  }
+  final chars = src.split('');
+  for (final (start, end) in blank) {
+    for (var i = start; i < end; i++) {
+      if (chars[i] != '\n') chars[i] = ' ';
+    }
+  }
+  return chars.join();
+}
+
+/// One shown scene: a census shot or a kit gallery shot, or a test that
+/// holds neither.
+final _sceneCall = RegExp(r'(?<![\w$])(CensusShot|kitGalleryShot)\s*\(');
+final _testCall = RegExp(r'(?<![\w$.])(testWidgets|test)\s*\(');
+
+/// The text of every golden and census fixture, without the literals that
+/// are never rendered (descriptions, names, state tags, notes, keys and file
+/// names): each string literal on its own, and each scene as one text of
+/// all its literals.
+///
+/// This is a static proxy for the rendered text G11 asks for (a PROC-20
+/// contract problem in the QA record): text built at runtime, or kept in a
+/// helper outside the scene's call, is not joined.
+Map<String, String> _fixtureTexts() => {
+  for (final root in ['test/goldens', 'tool/capture/census'])
+    if (Directory(root).existsSync())
+      for (final file in Directory(root).listSync(recursive: true))
+        if (file is File && file.path.endsWith('.dart'))
+          ..._sceneTexts(file.path, file.readAsStringSync()),
+};
+
+/// The rendered-text proxy of one fixture source file [source] at [path].
+Map<String, String> _sceneTexts(String path, String source) {
   final texts = <String, String>{};
-  for (final root in ['test/goldens', 'tool/capture/census']) {
-    final dir = Directory(root);
-    if (!dir.existsSync()) continue;
-    for (final file in dir.listSync(recursive: true)) {
-      if (file is! File || !file.path.endsWith('.dart')) continue;
-      final src = _blankComments(file.readAsStringSync());
-      for (final literal in _stringLiteral.allMatches(src)) {
-        texts['${file.path} literal at ${literal.start}'] = literal.group(0)!;
-      }
-      for (final block in _fixtureBlock.allMatches(src)) {
-        final open = block.end - 1;
-        final body = src.substring(open, _matchClose(src, open) + 1);
-        texts['${file.path} ${block.group(1)} at ${block.start}'] =
-            _stringLiteral.allMatches(body).map((m) => m.group(0)).join(' | ');
-      }
+  final src = _renderedOnly(_blankComments(source));
+  for (final literal in _stringLiteral.allMatches(src)) {
+    texts['$path literal at ${literal.start}'] = literal.group(0)!;
+  }
+  for (final pattern in [_sceneCall, _testCall]) {
+    for (final block in pattern.allMatches(src)) {
+      final open = block.end - 1;
+      final body = src.substring(open, _matchClose(src, open) + 1);
+      if (pattern == _testCall && _sceneCall.hasMatch(body)) continue;
+      texts['$path ${block.group(1)} at ${block.start}'] = _stringLiteral
+          .allMatches(body)
+          .map((m) => m.group(0))
+          .join(' | ');
     }
   }
   return texts;
@@ -822,11 +1003,27 @@ final _technicalPatterns = <String, RegExp>{
     r'wisps?|mayor|gastown|PTY|SSE)\b',
     caseSensitive: false,
   ),
-  'loopback': RegExp(r'127\.0\.0\.1|\blocalhost\b|0\.0\.0\.0'),
+  // Any IPv4 address or CIDR range (127.0.0.1, 0.0.0.0, 100.64.0.0/10),
+  // and localhost.
+  'address': RegExp(
+    r'(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?(?![\w.])|\blocalhost\b',
+  ),
   'port': RegExp(r':\d{4,5}\b|\bport \d{2,5}\b', caseSensitive: false),
-  'path': RegExp(r'''(?:^|[\s("'`])(?:~|\.{1,2})?/[\w.-]+/[\w./-]*|~/'''),
+  // Absolute and home paths of two or more segments, and a relative path
+  // that ends in a file name (docs/ai-team-host.md).
+  'path': RegExp(
+    r'''(?:^|[\s("'`])(?:~|\.{1,2})?/[\w.-]+/[\w./-]*|~/'''
+    r'''|(?<![\w/:.-])[\w.-]+/[\w./-]*\.[A-Za-z]{1,5}\b''',
+  ),
+  // x.y.z anywhere; x.y after "v", "version" or a name ("A2A 1.0",
+  // "Ubuntu Base 24.04") unless a unit follows ("Free 1.5 GB"); and a
+  // {version} placeholder.
   'version': RegExp(
-    r'(?<![\d.])v?\d+\.\d+\.\d+\b(?!\.\d)|\{\w*[vV]ersion\w*\}',
+    r'(?<![\d.])v?\d+\.\d+\.\d+\b(?!\.\d)'
+    r'|(?:\bv|\b[Vv]ersion\s+|\b[A-Z][\w-]*\s)\d+\.\d+(?![.\d])'
+    r'(?!\s*(?:%|[KMGT]i?B\b|(?:mins?|minutes?|secs?|seconds?|hours?|days?|'
+    r'weeks?|times)\b))'
+    r'|\{\w*[vV]ersion\w*\}',
   ),
   'status code': RegExp(
     r'\b(?:HTTP|status|code|error)\s*[1-5]\d{2}\b',
@@ -834,15 +1031,15 @@ final _technicalPatterns = <String, RegExp>{
   ),
 };
 
-/// The COPY-11 patterns in [value]. "Gas City" is a product name (COPY-12),
+/// Every COPY-11 hit in [value], one entry per match, so a second hit of
+/// the same kind raises the count. "Gas City" is a product name (COPY-12),
 /// so its "City" is not the engine word.
 List<String> _technicalIn(String value) {
   final text = value.replaceAll(RegExp(r'Gas City', caseSensitive: false), '');
   return [
     for (final MapEntry(key: name, value: pattern)
         in _technicalPatterns.entries)
-      if (pattern.firstMatch(text) case final m?)
-        '$name "${m.group(0)!.trim()}"',
+      for (final m in pattern.allMatches(text)) '$name "${m.group(0)!.trim()}"',
   ];
 }
 
@@ -1039,11 +1236,13 @@ List<String> _g28Problems(String key, String value) {
       problems.add('noun $kind ${noun.toLowerCase()}');
     }
   }
-  // COPY-6: session and chat in sentences (labels are absolute above).
+  // COPY-6: session and chat outside the labels the absolute test above
+  // checks. That test uses [_isShortActionLabel], so a label ending in "…"
+  // ("New session…") is counted here rather than slipping between the two.
   if (!_allowedNounKeys.contains(key)) {
     for (final MapEntry(key: noun, value: pattern)
         in _conversationNouns.entries) {
-      if (variants.any((v) => !_isLabelVariant(v) && pattern.hasMatch(v))) {
+      if (variants.any((v) => !_isShortActionLabel(v) && pattern.hasMatch(v))) {
         problems.add('noun sentence $noun');
       }
     }
@@ -1183,8 +1382,7 @@ void _copyGates() {
     final now = _sortedGates({gate: current[gate]!});
     if (jsonEncode(now) != jsonEncode(base)) {
       const encoder = JsonEncoder.withIndent('  ');
-      // ignore: avoid_print
-      print(
+      stdout.writeln(
         '--- ui_glossary baseline for "$gate" shrank: commit this section '
         'in $_baselinePath (or run with UI_GLOSSARY_WRITE=1) ---\n'
         '${encoder.convert(now)}\n--- end baseline ---',
@@ -1251,6 +1449,58 @@ void f() {
         ),
         ['label aLabel: fewer than two words'],
       );
+      // Only the outermost key is the title or label: a key passed as a
+      // placeholder argument is a value, not the words being checked.
+      final placeholders = {
+        'aTitle': 'Remove {name}?',
+        'thisServer': 'this server',
+        'deleteThing': 'Delete {thing}',
+        'conversation': 'Conversation',
+        'other': 'Stop it?',
+      };
+      expect(_arbKeysIn('l10n.deleteThing(l10n.conversation)', placeholders), [
+        'deleteThing',
+      ]);
+      expect(
+        _arbKeysIn(
+          'l10n.aTitle(controller.profile?.name ?? l10n.thisServer)',
+          placeholders,
+        ),
+        ['aTitle'],
+      );
+      expect(
+        _arbKeysIn(
+          'running ? lookupAppLocalizations(Localizations.localeOf(c)).other '
+          ': (a ? l10n.aTitle : name ?? copy.deleteThing(l10n.conversation))',
+          placeholders,
+        ),
+        ['other', 'aTitle', 'deleteThing'],
+      );
+      expect(_arbKeysIn("'\${l10n.aTitle} now'", placeholders), isEmpty);
+      expect(
+        _confirmProblems(
+          (
+            file: 'f',
+            role: 'label',
+            expression: 'l10n.deleteThing(l10n.conversation)',
+          ),
+          placeholders,
+          const {},
+        ),
+        isEmpty,
+      );
+      expect(
+        _confirmProblems(
+          (
+            file: 'f',
+            role: 'title',
+            expression: 'l10n.aTitle(p?.name ?? l10n.thisServer)',
+          ),
+          placeholders,
+          const {},
+        ),
+        isEmpty,
+      );
       expect(
         _confirmProblems(
           (file: 'f', role: 'label', expression: "'Delete'"),
@@ -1279,6 +1529,42 @@ void f() {
       ));
       expect(_contradictionIn('Working · 3 of 5 done'), isNull);
       expect(_contradictionIn('Stopped'), isNull);
+    });
+
+    test('the contradiction scan skips text that is never rendered', () {
+      const src = r'''
+testWidgets('KitTaskMark working → stopped', (tester) async {
+  await kitGalleryShot(
+    tester,
+    name: 'kit_task_mark_working_stopped',
+    open: (c) => KitTaskMark(key: const ValueKey('working-stopped')),
+  );
+  await kitGalleryShot(tester, name: 'b', open: (c) => Text('Working'));
+  await kitGalleryShot(tester, name: 'c', open: (c) => Text('Stopped'));
+  await expectLater(f, matchesGoldenFile('goldens/working_stopped.png'));
+});
+group('working and stopped', () {});
+final a = CensusShot('agent-working', state: 'stopped', (kit) async {});
+final b = CensusShot('agent', note: 'working, then stopped', (kit) async {});
+''';
+      final quiet = _sceneTexts('f', src).entries
+          .where((e) => _contradictionIn(e.value) != null)
+          .map((e) => '${e.key}: ${e.value}');
+      expect(quiet, isEmpty);
+      const shown = r'''
+final c = CensusShot('agent', (kit) async {
+  kit.show(Text('Working'), Text('stopped'));
+});
+testWidgets('plain', (tester) async {
+  await tester.pumpWidget(Column(children: [Text('Paused'), Text('Idle')]));
+});
+''';
+      expect(
+        _sceneTexts('f', shown).entries
+            .where((e) => _contradictionIn(e.value) != null)
+            .map((e) => e.key.split(' ')[1]),
+        ['CensusShot', 'testWidgets'],
+      );
     });
 
     test('no text says two contradicting states at once (COPY-17)', () {
@@ -1320,9 +1606,29 @@ void f() {
       expect(_technicalIn('Batch · convoy'), ['engine word "convoy"']);
       expect(_technicalIn('Gas City on this phone'), isEmpty);
       expect(_technicalIn('Open 127.0.0.1:4096'), [
-        'loopback "127.0.0.1"',
+        'address "127.0.0.1"',
         'port ":4096"',
       ]);
+      expect(_technicalIn('Blocks 100.64.0.0/10 and 10.0.0.1'), [
+        'address "100.64.0.0/10"',
+        'address "10.0.0.1"',
+      ]);
+      expect(_technicalIn('Read docs/ai-team-host.md first'), [
+        'path "docs/ai-team-host.md"',
+      ]);
+      expect(_technicalIn('Send and/or save'), isEmpty);
+      expect(_technicalIn('A2A 1.0 · JSON-RPC'), ['version "A2A 1.0"']);
+      expect(_technicalIn('Ubuntu Base 24.04'), ['version "Base 24.04"']);
+      expect(_technicalIn('Needs version 2.1 or v3.0'), [
+        'version "version 2.1"',
+        'version "v3.0"',
+      ]);
+      expect(_technicalIn('Gas City 1.4.1, then 1.4.1 again'), [
+        'version "1.4.1"',
+        'version "1.4.1"',
+      ]);
+      expect(_technicalIn('Takes 2.5 minutes'), isEmpty);
+      expect(_technicalIn('Free 1.5 GB'), isEmpty);
       expect(_technicalIn('Saved in ~/.config/opencode'), [
         'path "~/.config/opencode"',
       ]);
@@ -1371,6 +1677,14 @@ void f() {
         'noun sentence chats',
       ]);
       expect(_g28Problems('xAsk', 'Ask Codex'), ['product name Codex']);
+      expect(_g28Problems('xAsk', 'Ask Codex…'), ['product name Codex']);
+      expect(_g28Problems('xReload', 'Reload…'), ['verb Reload']);
+      expect(_g28Problems('xField', 'OpenCode server:'), [
+        'product name OpenCode',
+      ]);
+      expect(_g28Problems('xNew', 'New session…'), ['noun sentence session']);
+      expect(_isLabelVariant('Starting OpenCode…'), isTrue);
+      expect(_isLabelVariant('Saved. Open it…'), isFalse);
       expect(_g28Problems('xOk', 'OK'), ['bare OK']);
       expect(_g28Problems('xHeader', 'RECENT'), ['uppercase']);
       expect(_g28Problems('xHint', 'Turn on expert mode.'), ['mode']);
