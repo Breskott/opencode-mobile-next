@@ -30,6 +30,8 @@ import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One recorded control call.
@@ -876,9 +878,12 @@ void main() {
         expect(text, contains('inside the host boundaries'));
         expect(text, isNot(contains('Project:')));
 
-        // The home shows the pending card with the planner's output a tap
-        // away.
+        // The task's conversation opens (P0.3); back on the home, the
+        // pending card has the planner's output a tap away.
         expect(key('team-start-run-sheet'), findsNothing);
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
         expect(find.text('Planning the steps…'), findsOneWidget);
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
@@ -1024,10 +1029,13 @@ void main() {
         expect(gateway.calls[1].target, 'fx-new-1');
         expect(gateway.calls[1].arg, 'ocproof/gastown.polecat');
 
-        // The sheet closed; the home says the task went out.
+        // The sheet closed on the task's own conversation (P0.3).
         expect(key('team-start-run-sheet'), findsNothing);
-        expect(find.text('Planning the steps…'), findsNothing);
-        expect(find.text('Task sent to an agent · Confirmed'), findsOneWidget);
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        expect(
+          tester.widget<Text>(key('team-conversation-title')).data,
+          'Add a docstring to add() in calc.py',
+        );
         final record = controller.latestMutation(
           kind: MutationKind.createWork,
         )!;
@@ -1131,6 +1139,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
       await tester.tap(key('team-start-run-send'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TeamConversationScreen), findsOneWidget);
+      await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.text('Planning the steps…'), findsOneWidget);
 

@@ -21187,6 +21187,28 @@
   "@teamChatTaskDetails": {
     "description": "Team conversation overflow menu: opens the task detail page"
   },
+  "teamChatStopTask": "Stop task",
+  "@teamChatStopTask": {
+    "description": "Team conversation overflow menu entry (destructive, only while the task runs) and its confirm button; also the control name on the stop receipt ('Stop task · Confirmed')"
+  },
+  "teamChatStopConfirmTitle": "Stop this task?",
+  "@teamChatStopConfirmTitle": {
+    "description": "Title of the confirm sheet before stopping a team task from its conversation"
+  },
+  "teamChatStopConfirmBody": "“{task}” stops on the team's computer. Its workers still running stop now; work already finished stays. This cannot be undone from the phone.",
+  "@teamChatStopConfirmBody": {
+    "description": "Body of the Stop task confirm sheet: names the task and says what happens to its running workers",
+    "placeholders": {
+      "task": {
+        "type": "String",
+        "example": "Add a dark mode toggle"
+      }
+    }
+  },
+  "teamChatStopKeepRunning": "Keep running",
+  "@teamChatStopKeepRunning": {
+    "description": "Cancel button of the Stop task confirm sheet: the task keeps running"
+  },
   "teamChatLoading": "Loading the task",
   "@teamChatLoading": {
     "description": "Team conversation loading bar label"

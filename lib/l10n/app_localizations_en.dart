@@ -19073,6 +19073,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamChatTaskDetails => 'Task details';
 
   @override
+  String get teamChatStopTask => 'Stop task';
+
+  @override
+  String get teamChatStopConfirmTitle => 'Stop this task?';
+
+  @override
+  String teamChatStopConfirmBody(String task) {
+    return '“$task” stops on the team\'s computer. Its workers still running stop now; work already finished stays. This cannot be undone from the phone.';
+  }
+
+  @override
+  String get teamChatStopKeepRunning => 'Keep running';
+
+  @override
   String get teamChatLoading => 'Loading the task';
 
   @override

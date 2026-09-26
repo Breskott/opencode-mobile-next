@@ -292,9 +292,9 @@
           "key": "team-home-run-<run.id>",
           "line": 935,
           "action": "navigate",
-          "target": "team-run",
-          "targetWidget": "RunScreen",
-          "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> Navigator.push(MaterialPageRoute(RunScreen(controller, runId: run.id))) (line 102).",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversationScreen",
+          "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> TeamConversation.open(context, controller, runId: run.id) (P0.3). Opened from a conversation, the row for that same task pops back to it instead of stacking a second copy.",
           "gates": [],
           "destructive": false
         },
@@ -492,13 +492,8 @@
       "purpose": "Run detail with Overview / Work / Agents / Timeline tabs, run technical details and the cancel/close control.",
       "reachedFrom": [
         {
-          "page": "team-home-runs-tab",
-          "element": "team-home-runs-row"
-        },
-        {
-          "page": "system",
-          "element": null,
-          "trigger": "team deep link / notification tap with TeamLinkKind.run: _pushTeamDestination (lib/main.dart:877-903) pushes RunScreen at line 900 when `_controller.orchestration != null` (else plain ActivityScreen)"
+          "page": "team-conversation",
+          "element": "team-conversation-menu-details"
         }
       ],
       "gates": [
@@ -2690,6 +2685,21 @@
         {
           "page": "workspace",
           "element": "workspace-new-session"
+        },
+        {
+          "page": "team-home-runs-tab",
+          "element": "team-home-runs-row"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "team deep link / notification tap with TeamLinkKind.run: _pushTeamDestination (lib/main.dart) pushes TeamConversation.route(team, runId: link.id) when `_controller.orchestration != null` (else plain ActivityScreen)"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_TeamHomeScreenState._startRun",
+          "file": "lib/ui/screens/team/team_home_screen.dart"
         }
       ],
       "gates": [],
@@ -2703,7 +2713,7 @@
           "action": "navigate",
           "target": "team-home",
           "targetWidget": "TeamHomeScreen",
-          "effect": "_openTeamPage(): pushes TeamHomeScreen(controller: team).",
+          "effect": "_openTeamPage(): pushes TeamHomeScreen(controller: team, onOpenRun: ...); its row for this same task pops back to this conversation, another task opens its own conversation (P0.3).",
           "gates": [],
           "destructive": false
         },
@@ -2715,7 +2725,7 @@
           "line": 290,
           "action": "other",
           "target": null,
-          "effect": "PopupMenuButton opener; onSelected fires for any item (there is one).",
+          "effect": "KitRowMenu opener: Task details always, Stop task while the task runs and the host takes cancelRun.",
           "gates": [
             "run != null"
           ],
@@ -2725,16 +2735,33 @@
           "id": "team-conversation-menu-details",
           "type": "menu-item",
           "label": "Task details",
-          "key": null,
+          "key": "team-conversation-details",
           "line": 292,
           "action": "navigate",
           "target": "team-run",
           "targetWidget": "RunScreen",
-          "effect": "Selecting 'Task details' -> onSelected -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
+          "effect": "Selecting 'Task details' -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
           "gates": [
             "run != null"
           ],
           "destructive": false
+        },
+        {
+          "id": "team-conversation-menu-stop",
+          "type": "menu-item",
+          "label": "Stop task",
+          "key": "team-conversation-stop",
+          "line": 349,
+          "action": "open-sheet",
+          "target": "team-conversation-stop-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_stop(run): opens the confirm sheet 'Stop this task?' (P0.4); the receipt 'Stop task · Sent / Confirmed / Refused' then shows in the conversation (key team-conversation-stop-receipt).",
+          "gates": [
+            "run != null",
+            "team.capabilities.controlCancelRun",
+            "run.state not completed/cancelled/failed"
+          ],
+          "destructive": true
         },
         {
           "id": "team-conversation-lead-earlier",
@@ -2849,6 +2876,56 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-conversation-stop-confirm-sheet",
+      "title": "Stop this task?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/team_conversation_view.dart",
+      "widget": "_stop",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 218,
+      "purpose": "Confirmation before stopping a team task from its conversation (P0.4): names the task and says its running workers stop and finished work stays.",
+      "reachedFrom": [
+        {
+          "page": "team-conversation",
+          "element": "team-conversation-menu-stop"
+        }
+      ],
+      "gates": [
+        "team.capabilities.controlCancelRun && the task is still running"
+      ],
+      "elements": [
+        {
+          "id": "team-conversation-stop-confirm-sheet-confirm",
+          "type": "button",
+          "label": "Stop task",
+          "key": "team-conversation-stop-confirm-action",
+          "line": 69,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops true; _stop then calls team.cancelRun(run.id); the receipt shows in the conversation.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "team-conversation-stop-confirm-sheet-keep",
+          "type": "button",
+          "label": "Keep running",
+          "key": null,
+          "line": 87,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context, false); nothing is sent.",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "sheetKey": "team-conversation-stop-confirm"
     }
   ],
   "notPages": [
@@ -2880,7 +2957,6 @@
   "notes": [
     "Area visibility: the whole AI Team area hangs off `ConnectionController.orchestration` (lib/state/connection.dart:712). `_syncOrchestration` (connection.dart:746-770) builds the OrchestrationController only when the connected `ServerProfile.orchestration` config is non-null and `!isIsolated`. Entry points: TeamCard in WorkspaceScreen (workspace_screen.dart:619-625 -> _openTeamHome:854), team deep links/notifications (lib/main.dart:877-903), ActivityScreen gate / blocked-agent tiles (activity_screen.dart:861, 926) and the gate sheet (gate_sheet.dart:79, 88).",
     "Two different classes are both named TeamReceiptChip: lib/ui/widgets/team_receipt.dart:101 (gate rows, `onOpen`) and lib/ui/widgets/team_controls.dart:51 (control receipts, `onRetry`). team_home_screen.dart and activity_screen.dart import the former; run_screen.dart, agent_screen.dart and team_cycle_strip.dart the latter.",
-    "TeamHomeScreen.onOpenRun / onOpenAgent (team_home_screen.dart:58-61) can override row navigation, but the only production constructor (workspace_screen.dart:856) passes neither, so rows push RunScreen / AgentScreen.",
     "team_cycle_strip.dart:345 shows a control TeamReceiptChip without onRetry (no button) while `receipt != null && !receipt.isSettled`; not interactive.",
     "run_screen.dart _NeedsYouCard (1129) and agent_screen.dart _NeedsYou (key team-agent-gate, agent_screen.dart:325) are read-only: they say where to answer and have no tap target.",
     "ProductErrorState 'Try again' / 'Report a bug' and ProductEmptyState's action button live in lib/ui/widgets/product_states.dart (area a-shell); recorded on the team pages with `file` set. openBugReport's target page is not resolved here.",
@@ -2889,6 +2965,7 @@
     "A TeamLinkKind.gate deep link goes to ActivityScreen(initialTeamGateId) (lib/main.dart:881-888), not to a team screen.",
     "team-agents (team_agents_screen.dart) added for the aiteam-redesign-2026-09-24 merge; its RefreshIndicator (team_agents_screen.dart:177, onRefresh -> _refresh()) is left out of elements: unlike team-home/team-run/team-agent it has no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of a stale/failed state. Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row.",
     "team-home, team-run and team-agent's error/loading states are recorded elsewhere in this file with `file: lib/ui/widgets/product_states.dart` (ProductErrorState/ProductEmptyState); their code now goes through team_states.dart's teamScreenState instead (see its docstring: \"they now come from here\"). Left as recorded (not this task's scope); team-agents, added after that refactor, is recorded against team_states.dart directly.",
-    "team-board (team_board_screen.dart), added with the board (docs/design/team-board-2026-09-26.md): its KitRefresh.onRefresh -> _refresh() on every column (team_board_screen.dart:640) and on the empty state (line 519) is left out of elements for the same reason as team-agents: no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of the not-answering state (which has 'Try again', team-board-retry). Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row."
+    "team-board (team_board_screen.dart), added with the board (docs/design/team-board-2026-09-26.md): its KitRefresh.onRefresh -> _refresh() on every column (team_board_screen.dart:640) and on the empty state (line 519) is left out of elements for the same reason as team-agents: no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of the not-answering state (which has 'Try again', team-board-retry). Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row.",
+    "TeamHomeScreen.onOpenRun falls back to TeamConversation.open (P0.3, 2026-09-26); only the conversation's own team-page door passes it (to pop back to the same task). onOpenAgent is still never passed."
   ]
 }

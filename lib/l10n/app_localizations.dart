@@ -30809,6 +30809,30 @@ abstract class AppLocalizations {
   /// **'Task details'**
   String get teamChatTaskDetails;
 
+  /// Team conversation overflow menu entry (destructive, only while the task runs) and its confirm button; also the control name on the stop receipt ('Stop task · Confirmed')
+  ///
+  /// In en, this message translates to:
+  /// **'Stop task'**
+  String get teamChatStopTask;
+
+  /// Title of the confirm sheet before stopping a team task from its conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this task?'**
+  String get teamChatStopConfirmTitle;
+
+  /// Body of the Stop task confirm sheet: names the task and says what happens to its running workers
+  ///
+  /// In en, this message translates to:
+  /// **'“{task}” stops on the team\'s computer. Its workers still running stop now; work already finished stays. This cannot be undone from the phone.'**
+  String teamChatStopConfirmBody(String task);
+
+  /// Cancel button of the Stop task confirm sheet: the task keeps running
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get teamChatStopKeepRunning;
+
   /// Team conversation loading bar label
   ///
   /// In en, this message translates to:

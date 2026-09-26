@@ -60,6 +60,10 @@ class TeamChatGateway
   List<OrchestrationGate>? gatesOverride;
   final messages = <(String, String)>[];
 
+  /// The host's answer to a cancel, when a test scripts one (a refusal).
+  Future<MutationReceipt> Function(String runId, String requestId)?
+  cancelRunAnswer;
+
   /// The in-app team: Gas City on this phone.
   @override
   OrchestrationHostIdentity? get host => OrchestrationHostIdentity(
@@ -137,7 +141,9 @@ class TeamChatGateway
   Future<MutationReceipt> cancelRun(
     String runId, {
     required String requestId,
-  }) => inner.cancelRun(runId, requestId: requestId);
+  }) =>
+      cancelRunAnswer?.call(runId, requestId) ??
+      inner.cancelRun(runId, requestId: requestId);
   @override
   Future<MutationReceipt> assign(
     String workId, {

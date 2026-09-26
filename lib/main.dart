@@ -51,7 +51,8 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/servers_screen.dart';
 import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
-import 'ui/screens/team/run_screen.dart';
+import 'ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversation;
 import 'ui/screens/termux_setup_screen.dart';
 import 'ui/screens/builtin_server_screen.dart';
 import 'ui/screens/phone_setup/phone_setup_routes.dart'
@@ -866,7 +867,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// An AI Team link (TEAM-203) names a saved server and a gate or run and
   /// nothing else: the notification tap and the `opencode-mobile://team`
   /// link both land here. Known, active server: Activity opens with the
-  /// exact Gate sheet (or the run screen). Another saved server: switch
+  /// exact Gate sheet (or the task's conversation). Another saved server: switch
   /// first, as the session link does. Unknown server: the same honest
   /// banner. Opening never answers anything.
   void _scheduleTeamLinkRoute() {
@@ -939,7 +940,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   }
 
   /// Activity with the gate's sheet opening on top (it waits for the
-  /// plugin's first snapshot), or the run screen for a completed run. A
+  /// plugin's first snapshot), or the task's conversation for a run. A
   /// profile without the plugin gets the plain Activity list.
   void _pushTeamDestination(NavigatorState navigator, TeamLink link) {
     final team = _controller.orchestration;
@@ -962,11 +963,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
           );
           return;
         }
-        navigator.push(
-          MaterialPageRoute<void>(
-            builder: (_) => RunScreen(controller: team, runId: link.id),
-          ),
-        );
+        // The task's one page: its conversation, as every other door to a
+        // task opens (docs/design/team-conversation-2026-09-26.md).
+        navigator.push(TeamConversation.route(team, runId: link.id));
     }
   }
 

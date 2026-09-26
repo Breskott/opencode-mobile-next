@@ -178,13 +178,61 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     return openTeamAgentConversation(context, agent, team: _team);
   }
 
-  void _openTeamPage() => unawaited(
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => TeamHomeScreen(controller: _team),
+  /// The team's home, over this conversation. Its row for this same task
+  /// comes back here rather than stacking a second copy of the page;
+  /// another task opens its own conversation.
+  void _openTeamPage() {
+    final here = ModalRoute.of(context);
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TeamHomeScreen(
+            controller: _team,
+            now: widget.now,
+            onOpenRun: (run) {
+              if (!mounted) return;
+              if (run.id == _runId && here != null) {
+                Navigator.of(context).popUntil((route) => route == here);
+                return;
+              }
+              unawaited(TeamConversation.open(context, _team, runId: run.id));
+            },
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  /// A task the host can still stop: not finished, failed or cancelled,
+  /// on a host whose team takes the cancel control.
+  bool _canStop(OrchestrationRun run) =>
+      _team.capabilities.controlCancelRun &&
+      switch (run.state) {
+        RunState.completed || RunState.cancelled || RunState.failed => false,
+        _ => true,
+      };
+
+  /// Stop task: the confirm sheet names the task and what happens to its
+  /// running workers; backing out sends nothing. The receipt shows in the
+  /// conversation (Sent, then Confirmed or the host's refusal).
+  Future<void> _stop(OrchestrationRun run) async {
+    final l10n = _chatL10n(context);
+    final ok = await showConfirmSheet(
+      context,
+      title: l10n.teamChatStopConfirmTitle,
+      message: l10n.teamChatStopConfirmBody(
+        run.title.trim().isEmpty ? l10n.teamChatUntitled : run.title.trim(),
+      ),
+      confirmLabel: l10n.teamChatStopTask,
+      cancelLabel: l10n.teamChatStopKeepRunning,
+      icon: AppIconography.warning,
+      destructive: true,
+      sheetKey: const ValueKey('team-conversation-stop-confirm'),
+      confirmKey: const ValueKey('team-conversation-stop-confirm-action'),
+    );
+    if (!ok || !mounted) return;
+    await _team.cancelRun(run.id);
+  }
 
   void _openDetails(String runId) => unawaited(
     Navigator.of(context).push(
@@ -287,14 +335,22 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               onPressed: _openTeamPage,
             ),
             if (run != null)
-              PopupMenuButton<String>(
+              KitRowMenu(
                 key: const ValueKey('team-conversation-menu'),
-                onSelected: (_) => _openDetails(run.id),
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'details',
-                    child: Text(l10n.teamChatTaskDetails),
+                items: [
+                  KitMenuItem(
+                    key: const ValueKey('team-conversation-details'),
+                    label: l10n.teamChatTaskDetails,
+                    onSelected: () => _openDetails(run.id),
                   ),
+                  // Only while the task runs and this host can stop it.
+                  if (_canStop(run))
+                    KitMenuItem(
+                      key: const ValueKey('team-conversation-stop'),
+                      label: l10n.teamChatStopTask,
+                      destructive: true,
+                      onSelected: () => unawaited(_stop(run)),
+                    ),
                 ],
               ),
           ],
@@ -402,6 +458,24 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                             now: widget.now,
                           ),
                         ),
+                      ),
+                    ),
+                  if (run == null
+                          ? null
+                          : _team.latestMutation(
+                              kind: MutationKind.cancelRun,
+                              targetId: run.id,
+                            )
+                      case final stop?)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: TeamReceiptChip(
+                        key: const ValueKey('team-conversation-stop-receipt'),
+                        record: stop,
+                        control: l10n.teamChatStopTask,
+                        onRetry: () async {
+                          await _team.retryMutation(stop.key);
+                        },
                       ),
                     ),
                   if (run != null)

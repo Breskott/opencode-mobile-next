@@ -22,6 +22,8 @@ import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/start_run_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -199,6 +201,10 @@ void main() {
     );
     await tester.pump();
     await tester.tap(_key('team-start-run-send'));
+    await _settle(tester);
+    // The task's conversation opens (P0.3); its card waits on the home.
+    expect(find.byType(TeamConversationScreen), findsOneWidget);
+    await tester.pageBack();
     await _settle(tester);
     expect(find.text('Planning the steps…'), findsOneWidget);
     final planning = _drawings(tester, find.byType(TeamPlanningCard));
