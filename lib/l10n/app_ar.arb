@@ -4444,6 +4444,8 @@
   "localAgentNotNow": "ليس الآن",
   "localAgentNeedsUbuntuBody": "يعمل Claude Code داخل Ubuntu الذي يعدّه هذا التطبيق. أكمل إعداد «على هذا الهاتف» أولًا ثم عد إلى هنا.",
   "localAgentOpenSetup": "فتح إعداد الهاتف",
+  "localAgentNeedsTermuxBody": "يحتاج Claude Code إلى Termux حاليًا؛ لينكس المدمج في التطبيق لا يشغّله بعد. أعدّ Termux لاستخدامه هنا.",
+  "localAgentSetUpWithTermux": "الإعداد عبر Termux",
   "localAgentStepNode": "Node.js",
   "localAgentStepPaseo": "خدمة Paseo",
   "localAgentStepClaude": "Claude Code",

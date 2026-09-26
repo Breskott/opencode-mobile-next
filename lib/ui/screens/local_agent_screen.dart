@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +33,12 @@ class LocalAgentScreen extends ConsumerWidget {
           key: const ValueKey('local-agent-block'),
           connection: ref.read(connProvider),
           onConnected: onConnected,
+          // Claude Code only runs through the Termux-hosted Ubuntu today
+          // (P1.6 adds the in-app Claude Code component): this is the only
+          // door that actually unblocks it, whether nothing is set up yet
+          // or the in-app Linux already is.
+          onOpenPhoneSetup: () =>
+              unawaited(Navigator.of(context).pushNamed('/termux-setup')),
         ),
       ),
     );

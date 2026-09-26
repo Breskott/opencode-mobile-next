@@ -17722,6 +17722,14 @@
   "@localAgentOpenSetup": {
     "description": "Claude Code block: opens the On this phone wizard when Ubuntu is missing."
   },
+  "localAgentNeedsTermuxBody": "Claude Code needs Termux for now; the in-app Linux does not run it yet. Set up Termux to use it here.",
+  "@localAgentNeedsTermuxBody": {
+    "description": "Claude Code block: shown when the in-app Linux is already installed but Termux, which Claude Code needs, is not."
+  },
+  "localAgentSetUpWithTermux": "Set up with Termux",
+  "@localAgentSetUpWithTermux": {
+    "description": "Claude Code block: opens the Termux setup wizard when only the in-app Linux exists."
+  },
   "localAgentStepNode": "Node.js",
   "@localAgentStepNode": {
     "description": "Claude Code block, step list: installing the pinned Node.js."

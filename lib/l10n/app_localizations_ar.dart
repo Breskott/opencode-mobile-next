@@ -16841,6 +16841,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get localAgentOpenSetup => 'فتح إعداد الهاتف';
 
   @override
+  String get localAgentNeedsTermuxBody =>
+      'يحتاج Claude Code إلى Termux حاليًا؛ لينكس المدمج في التطبيق لا يشغّله بعد. أعدّ Termux لاستخدامه هنا.';
+
+  @override
+  String get localAgentSetUpWithTermux => 'الإعداد عبر Termux';
+
+  @override
   String get localAgentStepNode => 'Node.js';
 
   @override

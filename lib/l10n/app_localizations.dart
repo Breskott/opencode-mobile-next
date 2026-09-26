@@ -26813,6 +26813,18 @@ abstract class AppLocalizations {
   /// **'Open phone setup'**
   String get localAgentOpenSetup;
 
+  /// Claude Code block: shown when the in-app Linux is already installed but Termux, which Claude Code needs, is not.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code needs Termux for now; the in-app Linux does not run it yet. Set up Termux to use it here.'**
+  String get localAgentNeedsTermuxBody;
+
+  /// Claude Code block: opens the Termux setup wizard when only the in-app Linux exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up with Termux'**
+  String get localAgentSetUpWithTermux;
+
   /// Claude Code block, step list: installing the pinned Node.js.
   ///
   /// In en, this message translates to:
