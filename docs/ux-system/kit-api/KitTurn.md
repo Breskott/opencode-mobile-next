@@ -1,5 +1,7 @@
 # KitTurn — frozen API (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Group: chat. Unit `kit-KitTurn` (wave 1, tier 1f, the last chat part; after kit-KitMessage, kit-KitWorkLine, kit-KitToolRow and kit-KitRequestCard-v2, C25, plus the edges in README.md). In wave 2c `lib/ui/kit/chat/kit_turn.dart` joins chain link chat-1 (C03, C38). Spec: kit-v2.md §9.2 (chat parts), §5; STANDARDS STATE-16 (the frozen turn model; Appendix A #49), KIT-41, STATE-15, AUTO-15, AUTO-17; team-conversation-2026-09-26 (a team task is a conversation: the task is the prompt, the lead is the reply). Rules: STATE-16, KIT-41, STATE-5, AUTO-15, KIT-23, KIT-28, LOOK-26, LOOK-27.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # KitLogPanel — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitLogPanel` (wave 1, tier 1c, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_log_panel.dart` (new), `test/kit/kit_log_panel_test.dart`, `test/goldens/kit/kit_log_panel_golden_test.dart`. Acceptance: "mono LTR, folded (does not compose KitCodeBlock)". Spec: kit-v2.md §1.11, §4.4, §8.2 (`KitLogPanel` row), G9 ("KitLogPanel: follows unless scrolled up; no polling off screen"), G12; C25. Rules: KIT-31, KIT-32, LOOK-4, LOOK-5, LOOK-16, COPY-11, SEC-2, SEC-4, PERF-4, A11Y-3, MOT-5, MOT-7.
 
 ## Purpose

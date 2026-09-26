@@ -1,5 +1,7 @@
 # KitMenu: API freeze (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitMenu` (wave 1, tier 1a, kit-part). Spec: cut review C07 (a new part; K2 has no section for it), kit-v2.md §4.2 (destructive last), §8.2 (KitRow row), §8.3 (right-click and long-press open the same menu), visual language §1 and §5 (no per-row ⋮). Rules: KIT-2, KIT-8, KIT-11, KIT-23, KIT-28, LAY-9, LAY-10, LAY-11, LOOK-5, LOOK-19, LOOK-20, MOT-2, A11Y-5, and Appendix A #82.
 
 ## Purpose

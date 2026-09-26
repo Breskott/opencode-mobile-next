@@ -1,5 +1,7 @@
 # KitDetailsFold and KitTechnicalValue — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitDetailsFold` (wave 1, tier 1b, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_details_fold.dart` (new), `lib/ui/kit/kit_technical_value.dart` and `lib/ui/kit/kit_confirm_sheet.dart` (C23), plus `test/kit/kit_details_fold_test.dart` and `test/goldens/kit/kit_details_fold_golden_test.dart`. Spec: kit-v2.md §1.8, §4.3, §4.10; C23, C25. Rules: KIT-32, KIT-33, COPY-11, COPY-30, SEC-2, SEC-4, LOOK-16, LAY-8, A11Y-2, A11Y-8, MOT-5, TEST-5, KIT-43.
 
 ## Purpose

@@ -1,5 +1,7 @@
 # KitMarkdown — frozen API (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Group: chat. Unit `kit-KitMarkdown` (wave 1, tier 1c; after kit-KitCodeBlock, C25, plus kit-KitText-v2, README.md). In wave 2c the file `lib/ui/kit/chat/kit_markdown.dart` joins the write set of chain link chat-1 (C03 as corrected, C38). Spec: kit-v2.md §9.2 (chat parts), §5 (chat transcript group), cut review C24 with its verdict correction (the kit takes a block builder and a highlighter, so it imports neither `agent_blocks.dart` nor `transcript_highlight.dart`), C42 correction (```` ```choices``` ```` is AgentChoicesBlock in shared-shell-1, not a kit concern). Rules: KIT-41, STATE-16, SEC-1, KIT-32, LOOK-16, COPY-2, COPY-30, PERF-2, KIT-43, R12.
 
 ## Purpose

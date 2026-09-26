@@ -1,5 +1,7 @@
 # KitStateView v2 — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitStateView-v2` (wave 1, tier 1c, kind `kit-change`, model opus). Spec: kit-v2.md §2.2, §4.9, design standard §3, with cut review C24 (correction: `product_states.dart` stays in shared-system-1), C25 (dependencies) and C26 (error defaults, `since`/`onSlow`, report within 2 taps). Rules: STATE-1, STATE-2, STATE-3, STATE-5, STATE-12, STATE-13, STATE-20, LOOK-23, KIT-12, KIT-38, KIT-43, SEC-2, SEC-11.
 
 ## Purpose

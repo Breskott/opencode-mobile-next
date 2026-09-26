@@ -1,5 +1,7 @@
 # KitUndo — frozen API (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Group: screen. Unit `kit-KitUndo` (wave 1, tier 1a leaf; C25). Spec: kit-v2.md §1.17, §4.1, §4.8, §8.2; STANDARDS KIT-11, KIT-34, DATA-11, MOT-1, MOT-11. STANDARDS wins where it differs from K2.
 
 ## Purpose

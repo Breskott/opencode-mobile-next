@@ -1,5 +1,7 @@
 # KitTerminalView — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Unit: `kit-KitTerminalView` (wave 1, tier 1a, kind `kit-part`, model opus; provisional per R22). Spec: kit-v2.md §5 (one-off surfaces) and §9.2 (Surfaces), with cut review C23 (`terminal_key_bar.dart` joins this unit) and C24 (`lib/ui/widgets/terminal_view.dart` joins this unit; `shared-terminal-1` is removed). Programme: P9.9 (finish line: the part exists with its galleries; non-goal: no new behaviour in the terminal). Rules: KIT-1, KIT-3, KIT-9, KIT-22, KIT-23, KIT-32, KIT-43, LOOK-1, LOOK-5, LOOK-6, LOOK-16, LAY-8, LAY-9, LAY-10, MOT-11, COPY-30, SEC-2, SEC-4, A11Y-1, A11Y-2, A11Y-8.
 
 ## Purpose

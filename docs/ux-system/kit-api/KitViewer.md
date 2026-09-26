@@ -1,5 +1,7 @@
 # KitViewer — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Unit: `kit-KitViewer` (wave 1, tier 1d, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_viewer.dart` (new), `test/kit/kit_viewer_test.dart`, `test/goldens/kit/kit_viewer_golden_test.dart`. Spec: kit-v2.md §1.14, §8.2 (`KitViewer` row), §4.6, §4.10; map proposals for file-preview-sheet (Rethink: one viewer for every entry point), files-file-viewer-sheet (merges into it), markdown-code-reader (edge-to-edge code, line numbers, wrap on by default), embedded-file-preview-body, about, voice-notices; C13, C25, C36. Rules: SEC-1, SEC-2, KIT-11, KIT-15, KIT-23, KIT-28, KIT-32, LAY-4, LOOK-35, COPY-30, STATE-1, STATE-11, PERF-2, PERF-4, A11Y-2, A11Y-8.
 
 ## Purpose

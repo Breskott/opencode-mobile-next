@@ -1,5 +1,7 @@
 # KitQr — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitQr` (wave 1, tier 1a, kind `kit-part`, model sonnet). Spec: kit-v2.md §5 (handoff: "the handoff QR") and §9.2 (Surfaces), with cut review C36 (`session_handoff_sheets.dart`, `_QrPainter` at `:292` → kit-KitQr as the file→part edge for its wave-2 unit). Rules: LOOK-1, LOOK-21, LOOK-35, KIT-9, KIT-12, KIT-32, STATE-2, STATE-8, A11Y-1, A11Y-8, SEC-2, SEC-5, TEST-11.
 
 ## Purpose

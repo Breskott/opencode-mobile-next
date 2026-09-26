@@ -1,5 +1,7 @@
 # KitIconButton v2: API freeze (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** `.copy` takes `redact` (default true) and passes it to `KitCopy.copy`, so code-block and message callers can copy verbatim.
+
 Unit: `kit-KitIconButton-v2` (wave 1, tier 1a, kit-change). Spec: kit-v2.md §1.10, §8.2 (KitIconButton row), §8.3, §4.8. Cut review: C04 and its verdict correction. Rules: KIT-22, KIT-23, KIT-39, KIT-43, LAY-9, LAY-11, STATE-7, STATE-8, A11Y-1, LOOK-5, LOOK-6, LOOK-33, R23, and Appendix A #18, #19, #82.
 
 ## Purpose

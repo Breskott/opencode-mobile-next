@@ -1,5 +1,7 @@
 # KitField — API freeze (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitField` (wave 1, tier 1b, kind `kit-part`). Spec: kit-v2.md §1.4, §4.9, §4.10, §8; STANDARDS KIT-20, KIT-21, KIT-40, KIT-43, SEC-3, SEC-12, DATA-1, DATA-2, STATE-5, STATE-8; cut review C12, C23, C25. Where kit-v2.md and STANDARDS.md differ, STANDARDS wins (its §0.2).
 
 ## Purpose

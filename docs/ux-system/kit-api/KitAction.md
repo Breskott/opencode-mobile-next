@@ -1,5 +1,7 @@
 # KitAction, KitActionBlock and KitActionStack v2: API freeze (wave 0, 2026-09-26)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** `.copy` takes `redact` (default true) and passes it to `KitCopy.copy`, so code-block and message callers can copy verbatim.
+
 Unit: `kit-KitAction-v2` (wave 1, tier 1a, kit-change). Write set: `lib/ui/kit/kit_buttons.dart` and `lib/ui/kit/kit_action_stack.dart`.
 
 - **Spec:** kit-v2.md §2.7, §4.2, §4.9, §8.2 and §8.3; design-standard.md §2; visual language §5 (buttons; the PC row with keyboard hints).

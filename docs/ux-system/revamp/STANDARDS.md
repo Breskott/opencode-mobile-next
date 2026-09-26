@@ -559,6 +559,7 @@ Contrast, target size, colour-alone and glass fallbacks are in LOOK-8, LAY-9, ST
 | SEC-10 | A shell-run dialog says it skips approval rules; a public share shows "Stop sharing" beside its URL and names the upload host. | PV security | `test/release_blockers_test.dart` (partial) |
 | SEC-11 | "Report a problem" is at most two taps from any error, shows a preview of exactly what will be sent and where, offers Copy and Share first, and needs no GitHub account. | PV help-feedback; TIA §1.2 | reviewer |
 | SEC-12 | Secrets are obscured only through the kit: no `obscureText` outside `lib/ui/kit/`. | K2 §4.10 | missing: G29 |
+| SEC-13 | Copy goes through `KitCopy.copy`. It redacts (`redact: true`, the default) for technical values, logs, diagnostics, notices' Copy details and report previews. It copies verbatim (`redact: false`) for code blocks, diffs, markdown and message text, which are the person's own content that masking would corrupt. A part chooses one and says which in its spec. | Coordinator decision 2026-09-27, after two Codex audits of KitRedact (docs/qa: codex audits) | `test/kit/kit_copy_test.dart` |
 
 ---
 

@@ -1,5 +1,7 @@
 # KitDiffView — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Unit: `kit-KitDiffView` (wave 1, tier 1d, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_diff_view.dart` (new), `lib/ui/widgets/diff_view.dart` (becomes a wrapper, C24; slice-P3.7a deletes it, C45), `test/kit/kit_diff_view_test.dart`, `test/goldens/kit/kit_diff_view_golden_test.dart`; its `tests` list: `test/diff_view_test.dart`, `test/reader_preferences_test.dart`, `test/demo_isolation_test.dart`. Spec: kit-v2.md §1.15, §8.2 ("diffs side by side from expanded"), map proposals for review-workspace (Fix: one KitDiffView with a sticky file header, one "Change 1 of N" navigator across files, hanging indents, `@@` as line ranges) and diff-view (a read-only mode of the one component); C15, C24, C25, C33, C36, C45. Rules: STATE-9, STATE-11, KIT-32, LAY-8, LOOK-6, COPY-30, A11Y-2, PERF-2, MOT-5, TEST-5, KIT-43, R11, R12.
 
 ## Purpose

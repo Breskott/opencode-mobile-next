@@ -1,5 +1,7 @@
 # KitNotice v2 (with KitReportHook) — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitNotice-v2` (wave 1, tier 1a, kind `kit-change`). Spec: kit-v2.md §2.4, design standard §3; retitled by cut review C26 ("cost line; absorbs NudgeCard, _Notice, _FileStatusNotice, first-run tips; turn-on notice"; also defines `KitReportHook`), with file moves from C23. Rules: KIT-37, STATE-3, STATE-20, SEC-2, SEC-11, LOOK-4, LOOK-5, LOOK-24, KIT-43, COPY-7.
 
 ## Purpose

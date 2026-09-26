@@ -1,5 +1,7 @@
 # KitCodeBlock — API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+
 Unit: `kit-KitCodeBlock` (wave 1, tier 1b, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_code_block.dart` (new), `lib/ui/widgets/code_highlight.dart` (moves into the kit, C24), `test/kit/kit_code_block_test.dart`, `test/goldens/kit/kit_code_block_golden_test.dart`. Spec: kit-v2.md §1.9, §4.10, §8.2 (`KitCodeBlock` row); VL §5 ("code blocks have a file header with `+n −n` and a copy button"), §3 (code roles); C24, C25. Rules: KIT-23, KIT-32, LOOK-16, LOOK-26, COPY-11, COPY-30, SEC-2, SEC-4, PERF-2, MOT-5, LAY-8, A11Y-8.
 
 ## Purpose

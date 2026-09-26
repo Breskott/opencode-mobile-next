@@ -1,5 +1,7 @@
 # KitSince: API freeze (wave 0)
 
+> **Copy (SEC-13, coordinator 2026-09-27):** copies of technical values, logs and details use `KitCopy.copy(context, text)` (redacted). A part that also copies the person's own content passes `redact: false` for that content.
+
 Unit: `kit-KitSince` (kind `kit-part`, tier 1a; cut review C12, which absorbs slice-P7.6's "tests use a fake clock"). Spec for `revamp.workflow.js`. These units depend on it (C25): kit-KitStateView-v2, kit-KitStatusLine-v2, kit-KitReceipt, kit-KitField, kit-KitChecklist and kit-KitRequestCard-v2.
 
 ## Purpose
