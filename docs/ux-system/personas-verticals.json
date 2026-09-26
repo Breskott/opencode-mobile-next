@@ -1,0 +1,1310 @@
+{
+ "generated": "2026-09-26",
+ "sources": [
+  "docs/ux-system/map/all.json (356 pages)",
+  "docs/ux-system/taxonomy.md",
+  "docs/ux-system/owner-verdicts-2026-09-26.json",
+  "docs/design/principles.md",
+  "docs/design/design-standard.md",
+  "docs/qa/issue-87-status-2026-09-24.md",
+  "docs/qa/design-regressions-2026-09-24.md",
+  "docs/qa/issue-87-proof-2026-09-25/README.md",
+  "docs/qa/force-stop-2026-09-26/README.md",
+  "docs/qa/thermal-guard-2026-09-26/README.md",
+  "docs/qa/team-hot-2026-09-26/README.md"
+ ],
+ "countMethod": "issues.checked = pages whose map record tags the vertical; issues.count = tagged values that are not 'ok…' and not a positive note (heuristic over free text). For proposed verticals, counts come from statesMissing/actionsMissing/infoMissing keyword matches, and for discoverability from whenMissing values (285 hidden, 82 explains, 18 offers-enable, 13 disabled).",
+ "personas": [
+  {
+   "id": "phone-only",
+   "context": "An Android phone with no computer. The phone is both the client and the server: built-in Ubuntu (proot) or Termux. Evidence: the owner's RedMagic/Nubia NX721J (Android 15, arm64, 16 GB) and the issue #87 reporter. The OEM battery manager force-stops the app (exit-info reason=10 subreason=21 at 2026-09-25 20:19 and 2026-09-26 00:06). Heat is a constraint, and so are storage and memory (opencode acp ~563 MB, serve ~410 MB). Used on the move, in bursts, often with one hand.",
+   "goals": [
+    "reach a working agent without a computer",
+    "keep the phone's server and team alive, and know when Android or heat stopped them",
+    "build a real project on the phone",
+    "add Claude Code or the AI Team next to OpenCode without breaking what works"
+   ],
+   "topJobs": [
+    "install: phone-setup-start → phone-setup-progress → phone-setup-ready",
+    "recover: a stopped, force-stopped or heat-paused phone server (root-connecting, home-shell app-exit and thermal lines)",
+    "converse against the phone's own server (chat)",
+    "inspect local files, the terminal and processes (files, terminal, termux-processes)",
+    "turn on the AI Team on the phone (team-phone-onboarding-*, embedded-team-phone-section)",
+    "manage space and cost (termux-storage, privacy-settings)"
+   ],
+   "needs": {
+    "defaults": "The phone's server comes first everywhere and starts on tap. It restarts after a force stop, the team pauses for heat, and setup resumes after a kill or when the network returns. Effects drop to Calm or solid under battery saver or heat.",
+    "density": "Medium. One row for the phone's server with its state in words (Running · Stopped · Paused for heat · Closed by Android).",
+    "disclosure": "Cost comes before commitment: MB to download, RAM per worker, battery, and a time estimate ('about 6 minutes the first time'). Logs are folded and appear on failure.",
+    "automation": "One resumable setup engine (v2) for built-in, Termux, Claude Code, AI Team and the voice model. Recovery after a force stop is automatic, and the heat guard is on by default."
+   },
+   "pains": [
+    {
+     "page": "root-connecting",
+     "issue": "offers Try again for a stopped phone server instead of Start or Restart"
+    },
+    {
+     "page": "chat",
+     "issue": "a server killed by Android or paused for heat looks like generic offline"
+    },
+    {
+     "page": "termux-setup-failed",
+     "issue": "contradicts itself three times; owner: 'Unify all installation into v2'"
+    },
+    {
+     "page": "local-agent-page",
+     "issue": "names Termux while installing into the app's Ubuntu; needs-ubuntu is a dead end"
+    },
+    {
+     "page": "builtin-server-setup",
+     "issue": "four manual steps where v2 takes one tap; a second, different setup flow"
+    },
+    {
+     "page": "team-home",
+     "issue": "an idle team is called 'Paused', and 'Waiting for a worker' has no next step (regression row 20, real phone)"
+    },
+    {
+     "page": "team-agent-output",
+     "issue": "'Connecting to the session…' forever for a worker that never started (row 22)"
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "issue": "memory and battery cost unstated (~550 MB RSS per worker measured)"
+    },
+    {
+     "page": "privacy-settings",
+     "issue": "the Ubuntu image and voice models, the biggest items on the phone, are not listed"
+    },
+    {
+     "page": "#87",
+     "issue": "AI Team download failed on the Termux path; the 20 s waits were the phone's server out of memory"
+    }
+   ],
+   "great": [
+    "One tap from 'On this phone' to a first reply, with a real estimate, surviving kill and reboot.",
+    "The phone's server is one row everywhere, says in words why it is not running, and restarts itself.",
+    "Every install says what it costs (download, disk, RAM, battery) before it starts; Settings shows what fills the phone.",
+    "Claude Code and the AI Team are added through the same setup, never a second wizard.",
+    "After Android kills the app, the next open says so in one line and brings the server and team back."
+   ]
+  },
+  {
+   "id": "remote-lead",
+   "context": "Has a computer running OpenCode 1/2, Codex or Paseo, reached over Tailscale. Uses the phone away from the desk to steer and approve. Attention comes in seconds from the lock screen and notifications, on a flaky mobile network, with one hand.",
+   "goals": [
+    "know at a glance what needs them, on every server",
+    "approve or answer in one tap",
+    "check what changed before it lands",
+    "send short follow-ups without losing or duplicating them"
+   ],
+   "topJobs": [
+    "observe: Work tab, Inbox (activity), running now",
+    "approve: embedded-permission-attention-card, permission-sheet, question-sheet, gate-sheet",
+    "review: files-changes-sheet, review-workspace, run-result",
+    "converse: queue or steer while a run works (embedded-composer, pending sends)",
+    "connect and reconnect: servers, root-connecting, tailscale-setup, server-switcher-sheet"
+   ],
+   "needs": {
+    "defaults": "Open where something waits. The notification preset is 'Tell me when the agent needs me'. Auto-approval is offered after repeated identical asks. The model chip shows the model actually answering.",
+    "density": "Summary first: project · server · Working 2 min / Needs you / Done in the header; work folded under one line; the answer before the work.",
+    "disclosure": "The command and its scope in plain words on the request card. Diffs and output one tap away.",
+    "automation": "Reconnect with backoff and a visible countdown. Reconcile queued sends against the server transcript. Answer a request on another server without switching."
+   },
+   "pains": [
+    {
+     "page": "chat",
+     "issue": "'Running tools' spinner while blocked on approval; 'Choose model' while a model answers (chat--needs-you.png)"
+    },
+    {
+     "page": "embedded-permission-attention-card",
+     "issue": "two taps and a sheet per approval; auto-approval buried in the session menu"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "issue": "'Delivery unconfirmed' has no next step; owner: merge queued messages into one bubble"
+    },
+    {
+     "page": "servers",
+     "issue": "unreachable servers look identical to reachable ones"
+    },
+    {
+     "page": "home-shell",
+     "issue": "live marks stay green while reconnecting"
+    },
+    {
+     "page": "system",
+     "issue": "a notification for a request already answered lands on an empty Inbox with no explanation"
+    },
+    {
+     "page": "profile-monitor-switch-server-dialog",
+     "issue": "must switch servers to answer"
+    },
+    {
+     "page": "embedded-product-states",
+     "issue": "offers 'Report a bug' for a network timeout instead of 'Switch server'"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "issue": "the 30 s limit is too short for a task brief (owner: 'Why only 30 seconds')"
+    }
+   ],
+   "great": [
+    "One 'Needs you' list across every server, answerable from the notification in one tap.",
+    "Every conversation header says the project, the server and the run state with elapsed time.",
+    "Coming back shows 'finished while you were away' and what changed.",
+    "Network drops are narrated ('trying again in 10 s'); nothing typed is lost or sent twice.",
+    "The third identical approval offers 'Always allow this' on the card itself."
+   ]
+  },
+  {
+   "id": "team-delegator",
+   "context": "Hands bigger jobs to the AI Team (Gas City on the phone or a computer) and checks back from time to time. Tolerates minutes but needs to know what to expect. Evidence: the owner's car-sharing task, 'it's all about automated dev', and 'Why 4 minutes? Everything should be hot and in seconds.'",
+   "goals": [
+    "say the job once, in their own words",
+    "know what the team is doing now, what comes next, and when",
+    "be asked only for the decisions they reserved",
+    "get merged work, with a way back"
+   ],
+   "topJobs": [
+    "delegate: start-run-sheet, Solo · Team in the composer",
+    "observe: team-home Now line, team-conversation, team-board",
+    "approve: gate-sheet, embedded-team-merge-section",
+    "review merged work: team-merge-changes-sheet, review-workspace"
+   ],
+   "needs": {
+    "defaults": "The project is the open project. Supervision is remembered per server. Merge happens by itself when checks pass under Balanced or Autonomous.",
+    "density": "One conversation per task, with a Now line. Agents are status, not a control centre.",
+    "disclosure": "Engine words (convoy, polecat, city, bead, refinery) and ids only under Details.",
+    "automation": "The dispatcher reroutes work, wakes a stalled pool, restarts crashed workers, holds a worker at a provider limit and pauses for heat, then reports what it did."
+   },
+   "pains": [
+    {
+     "page": "team-agent",
+     "issue": "'Working · Session 0 min' while the host reports stopped (row 21); six manual levers"
+    },
+    {
+     "page": "team-home",
+     "issue": "'Paused' for an idle team; the same job lands in two places (RunScreen vs conversation)"
+    },
+    {
+     "page": "team-agent-reassign-sheet",
+     "issue": "manual routing; owner: 'Why manual it's all about automated dev right'"
+    },
+    {
+     "page": "embedded-team-merge-section",
+     "issue": "merge is always manual, even on Autonomous; dead buttons after merge"
+    },
+    {
+     "page": "start-run-sheet",
+     "issue": "the objective is lost on swipe (critical); engine planner id; supervision asked every time"
+    },
+    {
+     "page": "embedded-team-planning-card",
+     "issue": "31 min 'still planning' with no expectation"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "issue": "the AI Team shown twice with two states (row 18)"
+    },
+    {
+     "page": "team-hot",
+     "issue": "first output took ~6 min: three worker starts cut off before one succeeded; nothing on screen said why"
+    }
+   ],
+   "great": [
+    "'Give the team a task' always lands in that task's conversation, which says 'Starting a worker, about 30 s' and then shows real output.",
+    "A Now line says what is happening, since when, and what happens next.",
+    "The person is asked only at the gates their supervision level reserves; everything else heals itself and is reported afterwards.",
+    "Under permissive supervision, merges happen when checks pass, with Reopen or Undo.",
+    "Each task shows its cost: tokens, plus memory and battery on a phone."
+   ]
+  },
+  {
+   "id": "tinkerer",
+   "context": "A power user with several servers (laptop, phone, Claude Code), MCP, commands, worktrees, terminals and logs. Also uses a tablet, DeX or a hardware keyboard. Pays close attention and tolerates density.",
+   "goals": [
+    "exact truth and full control",
+    "copy any value, log or error",
+    "diagnose failures and file good bug reports",
+    "configure providers, MCP, plugins and shells"
+   ],
+   "topJobs": [
+    "configure: settings, mcp-setup, integrations, model-picker-sheet, coding-settings-shell-sheet",
+    "inspect: builtin-server-log-sheet, terminal, termux-processes, app-diagnostics, server-capabilities",
+    "switch servers and projects: server-switcher-sheet, workspace, worktrees, isolated-task-sheet",
+    "run commands and shortcuts: command-launcher-sheet, command-palette-dialog, global-shortcuts"
+   ],
+   "needs": {
+    "defaults": "The same defaults as everyone; no expert mode. Open Details folds stay open.",
+    "density": "Dense views are allowed inside Details and on tool pages (processes, logs, team-run tabs).",
+    "disclosure": "Raw ids, PIDs, addresses, versions and stacks in mono under Details, each one tap to copy.",
+    "automation": "Wants automation too, with an audit trail and an override. Manual levers stay in overflow menus."
+   },
+   "pains": [
+    {
+     "page": "termux-processes",
+     "issue": "stop controls are unlabelled colour squares; 'CPU 108%' unexplained; owner: 'make proper tool'"
+    },
+    {
+     "page": "app-diagnostics",
+     "issue": "the log is memory-only, so crash context is lost; Send does not say where it goes"
+    },
+    {
+     "page": "chat-prompt-error-details-dialog",
+     "issue": "error details cannot be copied for a report"
+    },
+    {
+     "page": "mcp-setup",
+     "issue": "bearer tokens shown in clear; no discard guard"
+    },
+    {
+     "page": "builtin-server-log-sheet",
+     "issue": "one of five hand-built log views"
+    },
+    {
+     "page": "settings",
+     "issue": "raw TextField search; gated rows vanish silently"
+    },
+    {
+     "page": "server-capabilities",
+     "issue": "says a feature is off, with no path to enable it"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "issue": "no Claude or Codex commands; slash syntax as the primary label"
+    }
+   ],
+   "great": [
+    "Every technical value is one tap to copy under Details, with one log viewer everywhere.",
+    "Diagnostics survive a crash or force stop and export in one tap.",
+    "Search finds any setting by any name; the command palette reaches everything.",
+    "Manual levers are in overflow and show what automation already did.",
+    "Server capabilities say exactly why a feature is off and how to turn it on."
+   ]
+  },
+  {
+   "id": "newcomer",
+   "context": "On first run or in the demo. Does not know OpenCode, Paseo, MCP, proot or worktrees, and judges the app in minutes. May be an Arabic reader.",
+   "goals": [
+    "see it work before committing",
+    "reach a first reply",
+    "understand cost and safety"
+   ],
+   "topJobs": [
+    "learn: servers-welcome, demo, guide",
+    "install: phone setup v2",
+    "connect: pair with a code (profile-editor, pairing-scanner)",
+    "sign in a provider: integrations, model-picker-sheet",
+    "first conversation: chat empty state and starters"
+   ],
+   "needs": {
+    "defaults": "One question ('Where does your agent run?'), then one button. A sensible model is preselected, and the first project is created ('my-app').",
+    "density": "Lowest: one thing per screen.",
+    "disclosure": "No engine words above Details (ui_glossary_test). Unknown terms are explained in place with a tooltip, not a page.",
+    "automation": "Create the project, pick the model and voice pack, detect the server kind after pairing, and go straight into the first conversation."
+   },
+   "pains": [
+    {
+     "page": "settings",
+     "issue": "33 rows in engine words (MCP, Gas City); owner asks for an assistant"
+    },
+    {
+     "page": "agent-choice",
+     "issue": "OpenCode vs Paseo plumbing instead of what each runs"
+    },
+    {
+     "page": "bootstrap-gate",
+     "issue": "raw 'Secure storage is locked'"
+    },
+    {
+     "page": "embedded-product-states",
+     "issue": "a raw 'Cannot reach http://…: timed out' is the only text"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "issue": "'Whisper INT8', MiB"
+    },
+    {
+     "page": "model-picker-sheet",
+     "issue": "no path from 'no models' to signing in"
+    },
+    {
+     "page": "embedded-info-label",
+     "issue": "a ~24 dp target opening a page; owner: 'Wtf is this page? … show tool tip?'"
+    },
+    {
+     "page": "session-link-server-missing-banner",
+     "issue": "two unexplained trips; owner: 'Screen sucks'"
+    },
+    {
+     "page": "language-sheet",
+     "issue": "Arabic offered while most strings are still English"
+    }
+   ],
+   "great": [
+    "From install to first reply: one question, one button, a real estimate, and no word they have to look up.",
+    "The demo shows a full loop (prompt → reply → proposed edit) before any setup.",
+    "Every error says what happened and the one next step, never an address.",
+    "Unknown words are explained in place.",
+    "Nothing optional looks required, and nothing required looks optional."
+   ]
+  },
+  {
+   "id": "large-text",
+   "context": "Cross-cutting: system font at 130–200 %.",
+   "goals": [
+    "read every screen without clipping"
+   ],
+   "topJobs": [
+    "all"
+   ],
+   "needs": {
+    "defaults": "Theme type roles only; supporting lines wrap rather than truncate",
+    "density": "Rows grow in height; nothing is cut to a few letters",
+    "disclosure": "Walls of text fold behind Details",
+    "automation": "n/a"
+   },
+   "pains": [
+    {
+     "page": "notifications-settings",
+     "issue": "explanation truncated at 100 % text (critical)"
+    },
+    {
+     "page": "integrations-mcp-oauth-code-dialog",
+     "issue": "instruction truncated at default size (critical)"
+    },
+    {
+     "page": "files-file-viewer-sheet",
+     "issue": "code cut at the edge; worse at 200 %"
+    },
+    {
+     "page": "connection-help",
+     "issue": "walls of text at 200 %"
+    },
+    {
+     "page": "embedded-team-receipt-chip",
+     "issue": "truncates titles to a few letters"
+    },
+    {
+     "page": "run-result",
+     "issue": "the run label is cut from the front"
+    }
+   ],
+   "great": [
+    "Every migrated screen has a 200 % golden",
+    "No text clipped",
+    "Code scrolls sideways with a hint",
+    "Titles wrap only where they are the person's own words",
+    "Dialogs become sheets when their text would not fit"
+   ]
+  },
+  {
+   "id": "screen-reader",
+   "context": "Cross-cutting: TalkBack.",
+   "goals": [
+    "reach and understand every control and state"
+   ],
+   "topJobs": [
+    "all"
+   ],
+   "needs": {
+    "defaults": "Every control labelled; one live region per status change",
+    "density": "Reading order matches layout",
+    "disclosure": "Decorative drawings excluded",
+    "automation": "Glass becomes solid under accessible navigation (already)"
+   },
+   "pains": [
+    {
+     "page": "profile-monitor",
+     "issue": "state shown by colour only"
+    },
+    {
+     "page": "termux-processes",
+     "issue": "unlabelled stop squares"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "issue": "icon-only actions"
+    },
+    {
+     "page": "about-privacy-tab",
+     "issue": "broken lines read aloud"
+    },
+    {
+     "page": "home-shell",
+     "issue": "server state shown by dot colour only"
+    },
+    {
+     "page": "activity",
+     "issue": "running state shown by a spinner only"
+    }
+   ],
+   "great": [
+    "Every state is a word plus a mark",
+    "Icon buttons carry labels by construction",
+    "Status is announced once",
+    "Request cards read as question → choices",
+    "A TalkBack walk is part of every release record"
+   ]
+  },
+  {
+   "id": "arabic-rtl",
+   "context": "Cross-cutting: Arabic, right to left. app_ar.arb exists, but most strings are hardcoded (docs/localization-todo.md).",
+   "goals": [
+    "use the app in Arabic without broken layout"
+   ],
+   "topJobs": [
+    "all"
+   ],
+   "needs": {
+    "defaults": "Language follows the system; Arabic marked 'partly translated' until coverage is real",
+    "density": "Mirrored layouts",
+    "disclosure": "Paths, code and ids isolated LTR",
+    "automation": "n/a"
+   },
+   "pains": [
+    {
+     "page": "language-sheet",
+     "issue": "Arabic offered while most strings are hardcoded English"
+    },
+    {
+     "page": "review-workspace",
+     "issue": "13 non-directional paddings"
+    },
+    {
+     "page": "files",
+     "issue": "5 non-directional paddings"
+    },
+    {
+     "page": "chat",
+     "issue": "hardcoded strings; code and ids need LTR isolation"
+    },
+    {
+     "page": "force-stop / thermal-guard records",
+     "issue": "Arabic copy never viewed on screen"
+    },
+    {
+     "page": "l10n_coverage_test",
+     "issue": "fails on lib/ui/widgets/team_now.dart (force-stop README, run 3)"
+    }
+   ],
+   "great": [
+    "l10n_coverage is green with no allowlist growth",
+    "RTL goldens for each migrated screen",
+    "Technical values isolated by the kit",
+    "The language sheet tells the truth about coverage",
+    "The shortcut key column mirrors"
+   ]
+  },
+  {
+   "id": "one-hand",
+   "context": "Cross-cutting: phone held in one hand, thumb only (principle 6).",
+   "goals": [
+    "main action within thumb reach; no mis-taps"
+   ],
+   "topJobs": [
+    "approve",
+    "send",
+    "confirm"
+   ],
+   "needs": {
+    "defaults": "Primary pinned at the bottom or in the lower half",
+    "density": "48 dp targets with 8 dp gaps",
+    "disclosure": "Gestures always have a visible alternative",
+    "automation": "Fewer taps through defaults"
+   },
+   "pains": [
+    {
+     "page": "chat",
+     "issue": "Stop and Send 8 dp apart"
+    },
+    {
+     "page": "prompt-editor",
+     "issue": "primary out of thumb reach"
+    },
+    {
+     "page": "embedded-transcript-find-bar",
+     "issue": "at the top, far from the thumb"
+    },
+    {
+     "page": "embedded-prompt-error-banner",
+     "issue": "far from the thumb and the failed prompt"
+    },
+    {
+     "page": "start-run-sheet",
+     "issue": "Send was off screen at the end of the form (row 6, fixed)"
+    }
+   ],
+   "great": [
+    "Primary pinned at the bottom",
+    "Destructive actions never next to frequent ones",
+    "Swipe has a menu twin",
+    "Sheets instead of top dialogs",
+    "Approval in one tap"
+   ]
+  },
+  {
+   "id": "slow-network",
+   "context": "Cross-cutting: slow, flaky or metered mobile data; Tailscale over cellular.",
+   "goals": [
+    "work without surprises on data and time"
+   ],
+   "topJobs": [
+    "connect",
+    "install",
+    "observe"
+   ],
+   "needs": {
+    "defaults": "Ask before downloads over 50 MB on mobile data; resume downloads",
+    "density": "Last-known values shown with their age",
+    "disclosure": "Size and time before any download",
+    "automation": "Backoff and retry; bounded paging; Wi-Fi-only background checks as an option"
+   },
+   "pains": [
+    {
+     "page": "voice-model-setup-sheet",
+     "issue": "a 150–360 MB download with no Wi-Fi note"
+    },
+    {
+     "page": "embedded-session-inventory-footer",
+     "issue": "auto-paging must stay bounded on metered networks"
+    },
+    {
+     "page": "usage-hub",
+     "issue": "no last-known result offline"
+    },
+    {
+     "page": "provider-quota",
+     "issue": "background reads on the live service"
+    },
+    {
+     "page": "#87",
+     "issue": "setup behaviour on slow or metered networks not proven"
+    }
+   ],
+   "great": [
+    "Every download states its size and resumes",
+    "Offline shows the last-known value with its age",
+    "Retries are narrated",
+    "Nothing large on mobile data without consent",
+    "Queued prompts survive and reconcile"
+   ]
+  }
+ ],
+ "multiPersonaRules": [
+  "No modes to choose: no simple/expert switch and no persona picker. One app serves everyone through progressive disclosure: summary → Details fold → technical page.",
+  "Write the defaults for the newcomer and keep everything reachable for the tinkerer. Primary surfaces use the person's words only; engine words, ids, paths and addresses live under Details, in mono, copyable (ui_glossary_test).",
+  "Context chooses, not the person. Actions follow what the server is and what it can do (ServerCapabilities, never the flavour enum): a phone server gets Restart and cost lines; a remote server gets network help and a server switch.",
+  "Automation is the default and manual controls are the fallback. Automatic actions are announced afterwards in one line with Undo where possible; manual levers sit in row menus or overflow.",
+  "Remember choices instead of re-asking: supervision, project, model, new-conversation mode and delivery (Queue) per server.",
+  "Ask for consent once, in the flow, at the moment it matters (battery exemption, auto-approve, auto-merge, background checks, large downloads on mobile data). Never make the person hunt for it in Settings.",
+  "Where tinkerer detail lives: (a) the Details fold at the bottom of a KitStateView or sheet; (b) the row's KitRowMenu; (c) technical pages reached from Settings › Diagnostics or a server's details, never inside a primary flow; (d) keyboard shortcuts and the command palette. Tool pages (processes, logs, team-run tabs) may be dense.",
+  "A missing capability explains itself instead of vanishing. Today 285 whenMissing gates are 'hidden', against 18 that offer to enable. Where a person could enable a feature, show one row: 'Not on this server · why · Turn it on'.",
+  "One job, one landing place. The same job started from anywhere ends on the same page (Give the team a task vs Solo · Team; Add server vs Connect OpenCode 2).",
+  "Density follows the page's role: glance pages (Work, Inbox, Team home) get one line per item; work pages (chat, review) put content first; tool pages may be dense.",
+  "The cross-cutting needs (200 % text, TalkBack, Arabic RTL, one hand, slow network) are enforced by tests and goldens, not left to review, and apply to every persona."
+ ],
+ "verticals": [
+  {
+   "id": "a11y",
+   "standard": "Touch targets ≥48×48 dp with ≥8 dp between them. Contrast ≥4.5:1 (3:1 for large text and icons). State never shown by colour alone. Reflows at 200 % text without clipping. Every control labelled. A status change is announced once (principles P6, P9; checks X1, U1–U3, P-a, P-b).",
+   "issues": {
+    "checked": 97,
+    "count": 82,
+    "worst": [
+     {
+      "page": "embedded-info-label",
+      "issue": "~24 dp touch target (critical X1) that opens a whole page; owner: 'show tool tip?'",
+      "evidence": "lib/ui/widgets/info_label.dart:110; docs/qa/screen-census/k-session-misc/embedded-info-label.png"
+     },
+     {
+      "page": "integrations-mcp-oauth-code-dialog",
+      "issue": "instruction truncated at default text size (critical)",
+      "evidence": "lib/ui/screens/library/integration_tiles.dart:206"
+     },
+     {
+      "page": "notifications-settings",
+      "issue": "explanation truncated at 100 % text (critical)",
+      "evidence": "lib/ui/screens/settings/notifications_settings_screen.dart:378-387"
+     },
+     {
+      "page": "termux-processes",
+      "issue": "stop controls are unlabelled colour squares",
+      "evidence": "lib/ui/screens/termux_processes_screen.dart:113"
+     },
+     {
+      "page": "chat",
+      "issue": "Stop and Send 8 dp apart in one row; profile-monitor, home-shell, projects and worktrees show state or 'current' by colour only",
+      "evidence": "lib/ui/screens/chat_screen.dart; docs/qa/screen-census/b1-chat-screen/chat--working.png"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Kit: KitIconButton with a 48 dp minimum hit area and a required semantic label; KitStatusMark always pairs a word with a mark (no colour-only state).",
+    "Replace embedded-info-label with a KitTooltip term (tap and long-press show it in place).",
+    "Gate: accessibilityGuidelines (androidTapTarget, labeledTapTarget, textContrast) run on every golden in test/accessibility_guidelines_test.dart.",
+    "Gate: text-scale goldens at 1.0 and 2.0 for every screen in design_standard_test's migrated list (extend test/text_scale_overflow_test.dart and app_text_scale_test.dart).",
+    "Release record: one TalkBack walk of the five top journeys in docs/qa/<release>/README.md."
+   ]
+  },
+  {
+   "id": "rtl-l10n",
+   "standard": "Every user-facing string is in app_en.arb/app_ar.arb (l10n_coverage_test green, allowlist only shrinks). No non-directional EdgeInsets/Alignment in lib/ui. Paths, code, ids and URLs isolated LTR. Arabic is offered with an honest coverage note until complete.",
+   "issues": {
+    "checked": 60,
+    "count": 49,
+    "worst": [
+     {
+      "page": "language-sheet",
+      "issue": "Arabic offered while most strings are hardcoded English",
+      "evidence": "lib/ui/widgets/language_picker.dart:22; docs/qa/screen-census/j1-settings-more/language-sheet.png"
+     },
+     {
+      "page": "chat",
+      "issue": "many strings still hardcoded; code and ids need LTR isolation",
+      "evidence": "lib/ui/screens/chat_screen.dart (8189-line library)"
+     },
+     {
+      "page": "review-workspace",
+      "issue": "13 non-directional paddings; Split unusable at phone width",
+      "evidence": "lib/ui/screens/review_workspace.dart"
+     },
+     {
+      "page": "permission-sheet",
+      "issue": "raw tool ids as copy",
+      "evidence": "lib/ui/screens/chat/permission_sheet.dart:94"
+     },
+     {
+      "page": "shorebird-update-notice",
+      "issue": "hard-coded English (also desktop-release-notice, embedded-desktop-file-drop-target)",
+      "evidence": "lib/update/shorebird_update_notice.dart:130"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Kit: KitTechnicalValue and KitCodeBlock apply Directionality.ltr and bidi isolation, so screens never do it by hand.",
+    "Gate: fix the failing l10n_coverage_test (lib/ui/widgets/team_now.dart), then ratchet it: no new hardcoded strings.",
+    "Gate: a design_standard_test rule banning EdgeInsets.only(left/right) and Alignment.centerLeft/Right in lib/ui (use Directional).",
+    "Goldens: an ar/RTL variant at 1.3× text for each migrated screen.",
+    "language-sheet shows 'Arabic · partly translated (N %)' computed from arb coverage."
+   ]
+  },
+  {
+   "id": "perf",
+   "standard": "From #87 (1.0.44+50 baseline, emulator-5556, same fixture). Cold start to a usable Work tab ≤3.4 s. Open project ≤1.6 s. Settings ≤0.2 s. The app's share of send → first token ≤0.5 s. Flutter-layer TimeStats while streaming and scrolling no worse than baseline (p90 40/36 ms, 76.8 %/76.6 % of intervals >17 ms on the software GPU); on a real arm64 phone, p90 ≤17 ms. No layout animation on scrolling lists. Paging bounded.",
+   "issues": {
+    "checked": 23,
+    "count": 11,
+    "worst": [
+     {
+      "page": "chat",
+      "issue": "8189-line single library; AnimatedSize and literal durations on the scrolling list",
+      "evidence": "lib/ui/screens/chat_screen.dart"
+     },
+     {
+      "page": "embedded-message-view",
+      "issue": "AnimatedSize layout animation on a scrolling list",
+      "evidence": "lib/ui/screens/chat/message_view.dart:1346"
+     },
+     {
+      "page": "embedded-tool-card",
+      "issue": "uncapped output on a scrolling list",
+      "evidence": "lib/ui/widgets/tool_card.dart:1454"
+     },
+     {
+      "page": "home-shell",
+      "issue": "the glass dock must keep its frame budget, and gfxinfo cannot measure Flutter (0 frames)",
+      "evidence": "docs/qa/issue-87-proof-2026-09-25/README.md (Method: Frames)"
+     },
+     {
+      "page": "embedded-session-inventory-footer",
+      "issue": "auto-paging must stay bounded on metered networks",
+      "evidence": "lib/ui/widgets/session_inventory_footer.dart:44"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Gate: tool/qa/issue87/measure.sh plus timestats.py on the same emulator for every candidate, stored in docs/qa; the candidate is compared against baseline.csv. This replaces gfxinfo in design-standard §10 and the liquid-glass gate (gfxinfo counts no Flutter frames).",
+    "Budgets in OCTRACE marks (app.first_frame, app.first_connected, prompt.first_token), surfaced in Settings › App diagnostics › Performance (the owner's phone report path).",
+    "Gate: a lint banning AnimatedSize and literal Duration in list item widgets (KitMotion only).",
+    "Kit: KitCodeBlock/tool output capped at N lines, with 'Open full output' in a viewer.",
+    "A real arm64 phone run before claiming #87 item 2 or 4 (not yet done)."
+   ]
+  },
+  {
+   "id": "battery-heat",
+   "standard": "The app states what it runs on the phone and what that costs before it starts (MB, RAM per worker, battery), and nothing runs unannounced. The heat guard pauses the phone's team at SEVERE or headroom ≥0.95 and resumes after 2 cool minutes (built, on by default). Effects drop to Calm/solid under battery saver or heat. Background polling states its interval and budget.",
+   "issues": {
+    "checked": 24,
+    "count": 20,
+    "worst": [
+     {
+      "page": "appearance-settings",
+      "issue": "effects do not react to battery saver or heat",
+      "evidence": "lib/ui/screens/settings/personal_settings_screens.dart:212"
+     },
+     {
+      "page": "team-phone-onboarding-offer",
+      "issue": "memory cost unstated; each opencode acp worker measured at ~563 MB RSS on the owner's phone (same gap on team-intro)",
+      "evidence": "lib/ui/widgets/team_phone_onboarding.dart:707; docs/qa/team-hot-2026-09-26/README.md"
+     },
+     {
+      "page": "team-plugin-sheet",
+      "issue": "thermal pause not shown",
+      "evidence": "lib/ui/screens/settings/plugins_screen.dart:474"
+     },
+     {
+      "page": "terminal",
+      "issue": "local shells keep running unannounced (also running-work-sheet)",
+      "evidence": "lib/ui/screens/terminal_screen.dart:219"
+     },
+     {
+      "page": "notifications-settings",
+      "issue": "the daily background budget is not shown; profile-monitor polling cost unstated",
+      "evidence": "lib/ui/screens/settings/notifications_settings_screen.dart:511"
+     }
+    ]
+   },
+   "mechanisms": [
+    "App-wide DeviceBudget service (thermal status, battery saver, free storage, RAM) that feeds KitEffects automatically and gates heavy jobs.",
+    "Kit: KitCostLine ('about 550 MB memory per worker · uses battery while it works'), required on every install or turn-on screen.",
+    "One 'Running on this phone' surface (merge running-work-sheet and termux-processes) listing everything alive, what it costs, and a safe stop.",
+    "Tests: the ThermalPolicy tests (exist); add a widget test that Effects follow battery saver; a device recipe with `cmd thermalservice override-status` in docs/qa."
+   ]
+  },
+  {
+   "id": "reliability",
+   "standard": "Survives Android: force stop, low-memory kill, the 6 h dataSync cap per 24 h, reboot, locked keystore. Recovery is automatic and explained once (the app_exit_recovery pattern). Every long job is resumable on the v2 engine. Offline shows the last-known value with its age. Nothing is deleted silently.",
+   "issues": {
+    "checked": 68,
+    "count": 47,
+    "worst": [
+     {
+      "page": "keep-running",
+      "issue": "the 6 h dataSync cap is not shown; profile-monitor and provider-quota can be stopped silently",
+      "evidence": "lib/ui/screens/keep_running_screen.dart:58-62"
+     },
+     {
+      "page": "app-diagnostics",
+      "issue": "memory-only log loses crash context",
+      "evidence": "lib/diagnostics/app_diagnostics.dart:45-49"
+     },
+     {
+      "page": "terminal",
+      "issue": "server PTYs vanish on server restart without notice",
+      "evidence": "lib/ui/screens/terminal_screen.dart:526"
+     },
+     {
+      "page": "termux-setup",
+      "issue": "Android may kill Termux; no resume (the v2 engine resumes, Termux does not)",
+      "evidence": "lib/ui/screens/termux_setup_screen.dart:1649"
+     },
+     {
+      "page": "servers-remove-server-sheet",
+      "issue": "queued prompts deleted silently; bootstrap-gate has no way out if storage stays locked",
+      "evidence": "lib/ui/screens/servers_screen.dart:570; lib/main.dart:200"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Service: LifecycleReport (force stop, low memory, crash, update) → one KitNotice and an automatic restart (built on fix/force-stop-resilience; not device-proven).",
+    "Every long job on the resumable v2 engine: phone setup, Termux, Claude Code, AI Team turn-on, voice model download.",
+    "Background budget tracker: 'Background checks resume at 14:10' when the dataSync cap is hit.",
+    "Last-known cache with age for usage, quota and server lists.",
+    "Device recipes in docs/qa: force-stop, reboot, airplane mode and a low-memory kill per release."
+   ]
+  },
+  {
+   "id": "security-privacy",
+   "standard": "AGENTS.md invariants: every non-app URL goes through openExternalLink; per-profile keys are oc.<what>.<profileId>; provider credentials never appear in logs, diagnostics, notifications or test output. Secrets are never displayed or prefilled. Risky switches state their scope and are reversible where they are shown. Remote scripts are pinned by hash.",
+   "issues": {
+    "checked": 74,
+    "count": 20,
+    "worst": [
+     {
+      "page": "mcp-setup",
+      "issue": "bearer tokens shown in clear (critical); saved header values must never be prefilled",
+      "evidence": "lib/ui/screens/mcp_setup_screen.dart:411"
+     },
+     {
+      "page": "host-management",
+      "issue": "pipes an unpinned personal-repo master script into bash",
+      "evidence": "lib/ui/screens/host_management_screen.dart:24"
+     },
+     {
+      "page": "session-approvals-sheet",
+      "issue": "server-wide auto-approve is the riskiest switch in chat, with no scope or expiry",
+      "evidence": "lib/ui/screens/chat/approvals_sheet.dart:62"
+     },
+     {
+      "page": "chat-run-shell-dialog",
+      "issue": "does not say it skips approval rules",
+      "evidence": "lib/ui/screens/chat_screen.dart:5018"
+     },
+     {
+      "page": "workspace-session-details-sheet",
+      "issue": "public URL shown without 'Stop sharing' beside it; chat-share-confirm-sheet does not name the public upload host",
+      "evidence": "lib/ui/screens/workspace_screen.dart:1443; lib/ui/screens/chat_screen.dart:3777"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Kit: KitSecretField (obscured, never prefilled, never echoed, excluded from diagnostics and the report service).",
+    "Kit: KitRiskSwitch: a scope line, 'until I turn it off / for this conversation / 1 hour', and a visible indicator while on.",
+    "Gate: a redaction test that feeds fake API keys through diagnostics, bug report, notifications and logs and asserts they are absent.",
+    "Gate: a lint that allows launchUrl only in lib/ui/widgets/external_link.dart.",
+    "Remote scripts pinned by SHA-256, like the AI Team asset pins."
+   ]
+  },
+  {
+   "id": "honest-state",
+   "standard": "Words never contradict the screen or the host. State comes from the source of truth (host or server), never inferred. Any wait over 8 s says so and offers a way out. A job over 30 s sets an expectation and shows stages. A disabled button never stands in for progress. A missing capability explains itself (principle 3; standard §3–4).",
+   "issues": {
+    "checked": 188,
+    "count": 153,
+    "worst": [
+     {
+      "page": "team-agent",
+      "issue": "'Working · Session 0 min' while the host reports running:false, state:stopped; engine names in the header (regression row 21, real phone)",
+      "evidence": "lib/ui/screens/team/agent_screen.dart:371; docs/qa/design-regressions-2026-09-24/phone-11-agent-working-but-stopped.jpg"
+     },
+     {
+      "page": "team-agent-output",
+      "issue": "'Connecting to the session…' and 'Nothing yet' forever for a worker that never started (row 22)",
+      "evidence": "lib/ui/screens/team/agent_output_screen.dart:183; docs/qa/design-regressions-2026-09-24/phone-12-live-output-connecting.jpg"
+     },
+     {
+      "page": "team-home",
+      "issue": "'On this phone · Paused' for an idle team; 'Waiting for a worker' with no next check (row 20); the AI Team turn-on takes 8–9 min with no expectation and a disabled button (row 19)",
+      "evidence": "lib/ui/screens/team/team_home_screen.dart:270; docs/qa/design-regressions-2026-09-24/phone-10-team-paused-waiting.jpg"
+     },
+     {
+      "page": "chat",
+      "issue": "'Running tools' spinner while blocked on approval; 'Choose model' while a model answers",
+      "evidence": "docs/qa/screen-census/b1-chat-screen/chat--needs-you.png"
+     },
+     {
+      "page": "termux-setup-failed",
+      "issue": "contradicts itself three times; servers make unreachable look like reachable; home-shell keeps live marks green while reconnecting",
+      "evidence": "lib/ui/screens/termux_setup_screen.dart:2065; lib/ui/screens/servers_screen.dart:640"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Kit: KitStateView and KitStatusLine take a `since` and escalate by themselves after 8 s (the timer lives in the kit, not in each screen).",
+    "One status source per entity (ServerStatus, AgentStatus from the host API), mapped to words in one place; a lint forbids hand-built status strings in screens.",
+    "Kit: KitProgressView requires stages and an estimate for jobs over 30 s; design_standard_test bans a disabled FilledButton with a spinner child.",
+    "Kit: KitCapabilityRow ('Not on this server · why · Turn it on') for gates that are hidden today.",
+    "Gate: extend ui_glossary_test with contradiction pairs (Working + stopped, Paused + idle, Connected + reconnecting) checked on the golden fixtures."
+   ]
+  },
+  {
+   "id": "automation-first",
+   "standard": "The app does by default whatever it can decide safely (197 elements mapped couldBeAutomatic: yes). Manual controls are the fallback, in overflow. Every automatic action is reported afterwards, with Undo where the server allows it. The person is interrupted only under the Needs-you contract.",
+   "issues": {
+    "checked": 89,
+    "count": 70,
+    "worst": [
+     {
+      "page": "team-agent",
+      "issue": "six manual levers (Nudge, Pause, Restart, Reassign…) for what the dispatcher should do; owner: 'Why manual it's all about automated dev right'",
+      "evidence": "lib/ui/screens/team/agent_screen.dart:741"
+     },
+     {
+      "page": "embedded-team-merge-section",
+      "issue": "merge always manual, even on Autonomous supervision",
+      "evidence": "lib/ui/screens/team/merge_section.dart:165"
+     },
+     {
+      "page": "embedded-permission-attention-card",
+      "issue": "two taps and a sheet per approval; auto-approval buried in the menu",
+      "evidence": "lib/ui/screens/chat/attention_card.dart:11"
+     },
+     {
+      "page": "builtin-server-setup",
+      "issue": "four manual steps where v2 takes one tap",
+      "evidence": "lib/ui/screens/builtin_server_screen.dart:160"
+     },
+     {
+      "page": "settings",
+      "issue": "every setting is manual; owner asks for an agent that acts as the configuration and MCP assistant (also mcp-setup)",
+      "evidence": "lib/ui/screens/settings_screen.dart:286-471"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Service: an AutomationPolicy per server (supervision, auto-approve rules, auto-merge, auto-restart, idle stops), with one page 'What runs by itself'.",
+    "Kit: KitAutoLine ('Restarted the phone's server at 10:42 · Undo'), also written to the activity log ('While you were away').",
+    "An agent assistant for configuration and MCP as the fallback when search finds nothing (the owner's ask).",
+    "Gate: each automatic behaviour ships with a test that fails when the automation is reverted (house rule)."
+   ]
+  },
+  {
+   "id": "help-feedback",
+   "standard": "From any error, 'Report a problem' is at most 2 taps away. It attaches persisted, redacted diagnostics (last errors, OCTRACE, exit reasons, thermal events, versions), shows a preview before sending, and needs no GitHub knowledge. Every raw error is copyable. Network errors offer a fix, not a report.",
+   "issues": {
+    "checked": 18,
+    "count": 16,
+    "worst": [
+     {
+      "page": "app-diagnostics",
+      "issue": "owner: 'a first grade page that users willingly use to raise bugs … accessible when errors happen across app'; the log is memory-only",
+      "evidence": "lib/ui/screens/app_diagnostics_screen.dart:47; lib/diagnostics/app_diagnostics.dart:45-49"
+     },
+     {
+      "page": "about",
+      "issue": "the bug report carries only version and platform",
+      "evidence": "lib/feedback/bug_report.dart:64-76"
+     },
+     {
+      "page": "chat-prompt-error-details-dialog",
+      "issue": "no copy for bug reports (also chat-message-error-details-dialog, embedded-prompt-error-banner)",
+      "evidence": "lib/ui/screens/chat/chat_states.dart:112"
+     },
+     {
+      "page": "phone-setup-progress",
+      "issue": "no report path from a failed job (also team-phone-onboarding-failed, builtin-server-log-sheet)",
+      "evidence": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart:158"
+     },
+     {
+      "page": "embedded-product-states",
+      "issue": "offers Report for a network timeout",
+      "evidence": "lib/ui/widgets/product_states.dart:151"
+     }
+    ]
+   },
+   "mechanisms": [
+    "App-wide ReportProblem service: a persisted, bounded, redacted ring buffer (errors, OCTRACE, android.exit, thermal) that survives crash and force stop.",
+    "Kit: the KitStateView error variant gets 'Copy details' and 'Report a problem' automatically, with an error classifier choosing Report or Fix (network → Retry/Switch server).",
+    "Report sheet: a preview of exactly what is sent and where, with share or send.",
+    "Gate: the redaction fixture (shared with security-privacy) and a test that every error-tone KitStateView exposes Copy."
+   ]
+  },
+  {
+   "id": "notifications",
+   "standard": "Every Needs-you event reaches the person while the app is closed, within Android's background budget. A tap lands on the exact request, even on another server, or explains that it was already answered. There is a permission-denied state, a test notification and one preset. Status notifications (heat, restart) go on the quiet channel.",
+   "issues": {
+    "checked": 17,
+    "count": 10,
+    "worst": [
+     {
+      "page": "notifications-settings",
+      "issue": "no permission-denied state and no test notification; five independent switches",
+      "evidence": "lib/ui/screens/settings/notifications_settings_screen.dart:125-339"
+     },
+     {
+      "page": "external-task",
+      "issue": "no alert on input-required",
+      "evidence": "lib/ui/screens/external_agents_screen.dart:741"
+     },
+     {
+      "page": "embedded-local-agent-server-entry",
+      "issue": "no alert when the daemon dies in the background",
+      "evidence": "lib/ui/widgets/local_agent_server_entry.dart:221"
+     },
+     {
+      "page": "system",
+      "issue": "an already-answered request lands on an empty Inbox with no explanation",
+      "evidence": "lib/main.dart:751"
+     },
+     {
+      "page": "termux-setup-installing",
+      "issue": "no progress notification for a long install",
+      "evidence": "lib/ui/screens/termux_setup_screen.dart:1686"
+     }
+    ]
+   },
+   "mechanisms": [
+    "A NotificationRouter as the single sender for Needs-you contract events: deduplicated, per server, cancelled when answered anywhere.",
+    "Preset 'Tell me when the agent needs me', with the five switches under Details.",
+    "Gate: a landing-contract test (tap → the request, or 'Already answered at 10:42')."
+   ]
+  },
+  {
+   "id": "upgrade-migration",
+   "standard": "An update never loses data or asks for a reinstall. Existing installs (Termux, legacy builtin-server-setup) are detected and adopted by the v2 check scripts. One-time migrations run silently and leave no permanent screens. A server update is offered where a capability needs one. A code push is applied predictably and announced once.",
+   "issues": {
+    "checked": 19,
+    "count": 16,
+    "worst": [
+     {
+      "page": "legacy-drafts",
+      "issue": "a migration left as a permanent screen; owner: 'Do we even need this?'",
+      "evidence": "lib/ui/screens/legacy_drafts_screen.dart"
+     },
+     {
+      "page": "builtin-server-setup",
+      "issue": "people who installed here must land on the v2 manage card with Ubuntu intact",
+      "evidence": "lib/ui/screens/builtin_server_screen.dart:160"
+     },
+     {
+      "page": "server-settings",
+      "issue": "the managed update routes to the old wizard",
+      "evidence": "lib/ui/screens/settings/server_settings_screen.dart:159"
+     },
+     {
+      "page": "server-capabilities",
+      "issue": "'update the server' not offered",
+      "evidence": "lib/ui/screens/server_capabilities_screen.dart:247-353"
+     },
+     {
+      "page": "shorebird-update-notice",
+      "issue": "'Got it' does not apply it; about has no update check",
+      "evidence": "lib/update/shorebird_update_notice.dart:153"
+     }
+    ]
+   },
+   "mechanisms": [
+    "A MigrationRunner of versioned one-shot steps, each tested from an old-prefs fixture (for example, legacy drafts → Saved prompts, then remove the screen).",
+    "v2 engine check scripts that treat installed components as done (Termux, builtin, Claude Code via `claude.sh status`).",
+    "One UpdateService line for the app, code push and server."
+   ]
+  },
+  {
+   "id": "consistency-kit",
+   "standard": "Every screen is built from lib/ui/kit (the design_standard_test migrated list only grows): one confirm, one sheet frame, one log view, one row anatomy, at most one primary. Destructive actions are always error-coloured and confirmed. Motion comes only from KitMotion.",
+   "issues": {
+    "checked": 277,
+    "count": 248,
+    "worst": [
+     {
+      "page": "confirm-sheet",
+      "issue": "the reference shape, yet at least eight AlertDialog confirmations bypass it; KitConfirmSheet is proposed on 78 elements",
+      "evidence": "lib/ui/widgets/confirm_sheet.dart:23"
+     },
+     {
+      "page": "chat",
+      "issue": "mostly hand-built; kit only for request cards, skeleton and status line",
+      "evidence": "lib/ui/screens/chat_screen.dart"
+     },
+     {
+      "page": "termux-setup",
+      "issue": "four Scaffolds in one 3265-line file",
+      "evidence": "lib/ui/screens/termux_setup_screen.dart"
+     },
+     {
+      "page": "staged-revert",
+      "issue": "destructive in green (also profile-editor-discard-sheet, provider-quota-clear-dialog, usage-budget-clear-dialog)",
+      "evidence": "lib/ui/screens/staged_revert_screen.dart:316"
+     },
+     {
+      "page": "home-shell",
+      "issue": "three notice-line implementations stack; embedded-product-states is why the app has two error styles",
+      "evidence": "lib/ui/screens/home_screen.dart:301; lib/ui/widgets/product_states.dart:90"
+     }
+    ]
+   },
+   "mechanisms": [
+    "New kit parts, ranked by the kitGap counts in the map: KitConfirmSheet (78), KitSheet (33), KitSegmented (15), KitLogPanel (13), KitChoiceRow (11), KitSearchField (10), KitCommandBlock (8), KitInputDialog (7), KitDetailsFold (7), KitDiscardGuard (3).",
+    "Gate: design_standard_test bans AlertDialog, ListTile, ExpansionTile, SwitchListTile and raw progress in migrated screens; team_design_standard_test likewise.",
+    "Goldens in dark and light for every migrated screen."
+   ]
+  },
+  {
+   "id": "data-safety",
+   "proposed": true,
+   "standard": "Never lose typed work (check X2, principle 10). Nothing typed, dictated, queued or attached is lost on back, swipe-down, crash, force stop or a lost server. Sheets with input keep a draft instead of asking. Queued prompts are never deleted silently.",
+   "issues": {
+    "checked": 24,
+    "count": 24,
+    "worst": [
+     {
+      "page": "start-run-sheet",
+      "issue": "the team objective is lost on swipe (critical); owner: 'Give the user recovery options?'",
+      "evidence": "lib/ui/screens/team/start_run_sheet.dart:92"
+     },
+     {
+      "page": "review-comment-sheet",
+      "issue": "a typed comment is lost on swipe (critical)",
+      "evidence": "lib/ui/screens/review_workspace.dart:575"
+     },
+     {
+      "page": "team-agent-message-sheet",
+      "issue": "a typed message is discarded on swipe (critical); team-board-add-sheet, gate-sheet and the team-conversation composer too",
+      "evidence": "lib/ui/screens/team/agent_screen.dart:788"
+     },
+     {
+      "page": "context-capsule",
+      "issue": "unapplied edits lost on back (critical); development-services-editor-sheet likewise",
+      "evidence": "lib/ui/screens/context_capsule_screen.dart:211; lib/ui/screens/development_services_screen.dart:472"
+     },
+     {
+      "page": "voice-composer-sheet",
+      "issue": "an unsent transcript is discarded; form-sheet answers are lost on back; servers-remove-server-sheet deletes queued prompts silently",
+      "evidence": "lib/ui/widgets/form_renderer.dart:95; lib/ui/screens/servers_screen.dart:570"
+     }
+    ]
+   },
+   "mechanisms": [
+    "Kit: KitDiscardGuard wraps any sheet with input and keeps the draft silently (restores on reopen) instead of a confirm.",
+    "Service: DraftStore keyed oc.draft.<target>.<profileId> (swept by ProfileStore.profileScopedPreferenceKeys).",
+    "Gate: a harness test that opens every input sheet, types, swipes it down, reopens it and asserts the text is kept."
+   ]
+  },
+  {
+   "id": "cost-awareness",
+   "proposed": true,
+   "standard": "Before and after work, the person can see what it costs in money or tokens (per turn and per team task) and how close they are to a quota or budget. A default alert fires at 80 %. Device cost is covered under battery-heat.",
+   "issues": {
+    "checked": 19,
+    "count": 19,
+    "worst": [
+     {
+      "page": "usage",
+      "issue": "five type sizes; '30 days' vs 'Sep 2-6'",
+      "evidence": "lib/ui/screens/usage_screen.dart:129"
+     },
+     {
+      "page": "team-agent",
+      "issue": "team-wide cost shown as the agent's",
+      "evidence": "lib/ui/screens/team/agent_screen.dart:407"
+     },
+     {
+      "page": "model-picker-sheet",
+      "issue": "nothing says which model is cheap or fast",
+      "evidence": "lib/ui/widgets/pickers.dart:531-551"
+     },
+     {
+      "page": "usage-hub",
+      "issue": "no last-known result offline",
+      "evidence": "lib/ui/screens/usage_hub_screen.dart:78-99"
+     },
+     {
+      "page": "managed-workspaces-create-dialog",
+      "issue": "no time or cost expectation before creating a cloud sandbox",
+      "evidence": "lib/ui/screens/managed_workspaces_screen.dart:584"
+     }
+    ]
+   },
+   "mechanisms": [
+    "A CostService per turn, task and provider, feeding KitCostLine and the conversation header.",
+    "Default budget alert at 80 %, with the threshold suggested from last month.",
+    "Model rows carry a plain price tier."
+   ]
+  },
+  {
+   "id": "multi-server",
+   "proposed": true,
+   "standard": "A person with several servers (laptop, phone, Claude Code) sees what needs them on all of them, answers without switching, and every item names its server.",
+   "issues": {
+    "checked": 356,
+    "count": 5,
+    "worst": [
+     {
+      "page": "server-switcher-sheet",
+      "issue": "other servers' state is missing",
+      "evidence": "lib/ui/widgets/server_switcher_sheet.dart:96"
+     },
+     {
+      "page": "profile-monitor-switch-server-dialog",
+      "issue": "must switch servers to answer a request",
+      "evidence": "lib/ui/screens/profile_monitor_screen.dart:26"
+     },
+     {
+      "page": "activity",
+      "issue": "does not say which server a request comes from",
+      "evidence": "lib/ui/screens/activity_screen.dart:590"
+     },
+     {
+      "page": "servers",
+      "issue": "reachability is not shown",
+      "evidence": "lib/ui/screens/servers_screen.dart:640"
+     },
+     {
+      "page": "session-link-server-missing-banner",
+      "issue": "a link that names a server cannot add it and resume",
+      "evidence": "lib/main.dart:823"
+     }
+    ]
+   },
+   "mechanisms": [
+    "A gateway per profile, so a request is answered in place.",
+    "One Needs-you inbox across servers, oldest first.",
+    "Kit: a server chip on rows, cards and notifications."
+   ]
+  },
+  {
+   "id": "discoverability",
+   "proposed": true,
+   "standard": "'Don't have X, want X': a feature that needs a missing capability says why it is off and offers the enable flow. It never silently vanishes.",
+   "issues": {
+    "checked": 398,
+    "count": 285,
+    "worst": [
+     {
+      "page": "settings",
+      "issue": "gated rows vanish silently",
+      "evidence": "lib/ui/screens/settings_screen.dart:548"
+     },
+     {
+      "page": "session-menu-sheet",
+      "issue": "silently shrinks on Codex/Paseo (also command-launcher-sheet, prompt-tools-sheet)",
+      "evidence": "lib/ui/screens/chat/attention_card.dart:399"
+     },
+     {
+      "page": "model-picker-sheet",
+      "issue": "no path from 'no models' to signing in",
+      "evidence": "lib/ui/widgets/pickers.dart:58-125"
+     },
+     {
+      "page": "server-capabilities",
+      "issue": "no path to enable",
+      "evidence": "lib/ui/screens/server_capabilities_screen.dart:247-353"
+     },
+     {
+      "page": "team-intro",
+      "issue": "sends the person to Settings instead of installing through v2",
+      "evidence": "lib/ui/screens/team/team_intro_screen.dart:392"
+     }
+    ]
+   },
+   "mechanisms": [
+    "A capability-explainer registry: capability id → reason and enable flow (offers-enable:<flow>).",
+    "Kit: KitCapabilityRow.",
+    "Gate: a map audit asserting that whenMissing 'hidden' is used only where no enable flow exists."
+   ]
+  }
+ ],
+ "automation": {
+  "auto": [
+   "Connection: reconnect with backoff and a visible countdown ('trying again in 10 s'); re-probe health on connectivity change; retry share or link intake once the connection returns.",
+   "Queued prompts: reconcile each send with the server transcript after reconnect (delivered or not) without asking; auto-retry a provider-overloaded failure with backoff and say so.",
+   "Phone server: start on tap when stopped; restart after an Android force stop or crash (built, not device-proven); resume setup after a kill, reboot or network return; re-check Termux, Tailscale and sign-in on app resume; poll health after a restart until the new version answers.",
+   "Heat: pause the phone's AI Team at SEVERE and resume after 2 cool minutes (built, on by default); drop Effects to Calm or solid under battery saver or heat.",
+   "Defaults instead of questions: open the only or last-used project; create 'my-app' on first run; show the server's default model by name; choose the voice pack from total RAM and the read-aloud voice from the locale; Queue rather than Steer; open the review scope that has changes; Split only at ≥600 dp; generate names and titles from the first prompt; skip a picker with one option (shell, provider, project).",
+   "Detection: the server kind after pairing (OpenCode 1/2, Paseo); a team host on the paired computer; existing installs via v2 check scripts.",
+   "Data safety: keep drafts per target instead of asking; attach a recovered photo to its own draft; restore a saved prompt at once with Undo.",
+   "Live views: follow logs and output while at the bottom; poll while open; page near the end (bounded); pages follow the controller with no refresh buttons (team-run, team-agents, embedded-team-cycle-strip).",
+   "Team housekeeping: the dispatcher routes ready work to free workers; wake a stalled pool or nudge after its window, then say so; restart a crashed worker; recycle at the context threshold; hold a worker at a provider limit until reset; retry an unconfirmed answer once; re-sling a transiently failed step once; fall back to a direct task when the planner is off.",
+   "App updates: download the code push silently, apply it at the next cold start, say so once."
+  ],
+  "consentOnce": [
+   "Keep running: the battery-optimisation exemption and the maker's auto-start/lock screen, asked in flow when the phone's server first starts (keep-running guidance exists).",
+   "Notifications permission with the preset 'Tell me when the agent needs me'.",
+   "Auto-approval: after 3 identical asks, offer 'Always allow this' (for this conversation or server) on the request card itself.",
+   "Supervision level for the AI Team, remembered per server. Under Balanced or Autonomous it is the consent to auto-approve and auto-merge when checks pass; under High, merges stay manual.",
+   "Housekeeping with side effects: restart dev services on crash, stop leftover helpers after 10 min idle, clean regenerable caches when space is low, update Termux or OpenCode when idle (never mid-reply).",
+   "Background monitoring of other servers and provider quota (battery and data cost stated; Wi-Fi-only option).",
+   "Large downloads on mobile data (>50 MB: voice models, Ubuntu, AI Team), asked once per network type.",
+   "The agent assistant running commands on the server to set up MCP, configuration or the AI Team (the first time, with what it will run).",
+   "Including diagnostics in a problem report (a preview is shown every time).",
+   "Keeping a warm AI Team worker (~550 MB RAM, one process), after the device experiment proves it idles quietly."
+  ],
+  "manual": [
+   "Anything irreversible or outward-facing: delete a project, the Ubuntu install, a server's data or a conversation; apply a revert or staged revert; reset or remove a worktree; public share links; remove credentials; switch organisation.",
+   "Decisions the agent asks for outside saved rules: permissions, questions, forms, supervision gates, merges under High supervision.",
+   "Choosing what to build: the task objective, the prompt, starting a team task.",
+   "Signing in: OAuth, API keys, device codes. Credentials are never automated or echoed.",
+   "Running an ad-hoc shell command, or stopping a running command or process.",
+   "Tinkerer levers, kept in overflow as fallbacks with what automation already did shown beside them: nudge, reassign, restart, stop, per-agent pause, manual refresh, manual address entry."
+  ],
+  "needsYouContract": [
+   "Interrupt only for (1) a decision only the person can make: a permission outside their saved rules, a question or form, a gate their supervision reserves, a merge under High supervision.",
+   "(2) Work that cannot continue without them: credentials expired or rejected, a provider limit or budget reached with no fallback, storage full blocking work, or a step still failing after automatic retries (say what was tried).",
+   "(3) A first-time consent from the consent-once list, at the moment it becomes relevant, never before.",
+   "Every Needs-you item says why, what happens if it is ignored ('the team waits; nothing is lost'), and can be answered in one tap from the notification. It is deduplicated, oldest first, names its server, and disappears everywhere once answered elsewhere.",
+   "Never a Needs-you: reconnecting, restarts, heat pauses, updates, finished work, progress. These go on quiet status lines (KitStatusLine/KitNotice) and, if backgrounded, the quiet status channel. They are collected in 'While you were away'.",
+   "'Done' notifications are opt-in per task type (default on for team tasks and long runs) and are not interruptions."
+  ]
+ }
+}

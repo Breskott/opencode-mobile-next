@@ -1,0 +1,2599 @@
+{
+ "meta": {
+  "date": "2026-09-26",
+  "hosts": {
+   "builtin": "built-in Ubuntu inside the app on this phone",
+   "termux": "Termux on this phone",
+   "oc1Computer": "OpenCode 1 on a computer",
+   "oc2Computer": "OpenCode 2 on a computer",
+   "codex": "Codex app-server on a computer",
+   "paseo": "Paseo daemon (Claude Code, Pi) — on a computer, or on the phone via Termux",
+   "demo": "offline demo"
+  },
+  "statusValues": [
+   "supported",
+   "partly",
+   "not",
+   "n/a"
+  ],
+  "sources": [
+   "docs/ux-system/map/all.json",
+   "docs/ux-system/taxonomy.md",
+   "docs/ux-system/owner-verdicts-2026-09-26.json",
+   "docs/design/phone-setup-v2-2026-09-24.md",
+   "code at file:line in evidence"
+  ],
+  "note": "Rows starting 'flag:' are ServerCapabilities flags shown for completeness; they are not taxonomy ids."
+ },
+ "matrix": [
+  {
+   "capability": "server.any",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "'This phone' profile at 127.0.0.1:4097, made by setup's last step",
+     "evidence": "lib/builtin/setup/setup_finish.dart:38-47; lib/builtin/builtin_linux.dart:124"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "Termux-managed server at 127.0.0.1:4096",
+     "evidence": "lib/termux/bridge.dart:54-55"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "address + password, or found on the network",
+     "evidence": "lib/ui/screens/servers_screen.dart:3000-3020"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "pairing QR/code from `opencode2 pair`, or address",
+     "evidence": "lib/platform/platform_capabilities.dart:118-126"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "experimental; token command or USB (adb reverse)",
+     "evidence": "lib/ui/screens/servers_screen.dart:3026-3031; lib/l10n/app_en.arb:17641"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "experimental; Paseo daemon on a private network",
+     "evidence": "lib/ui/screens/servers_screen.dart:3022-3025; lib/l10n/app_en.arb:17633"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "scripted offline server; every action outside the script answers 'unavailable in the offline demo'",
+     "evidence": "lib/demo/demo_gateway.dart:94-95"
+    }
+   }
+  },
+  {
+   "capability": "server.oc1",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "default runtime of setup v2 (`runtime=opencode1`)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "default managed runtime",
+     "evidence": "lib/termux/opencode_ubuntu_setup.dart:37-39"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "the same computer can run OpenCode 1 beside it as a second saved server; the app does not install it there",
+     "evidence": "lib/l10n/app_en.arb:17969"
+    },
+    "codex": {
+     "status": "not",
+     "note": "different product; add an OpenCode server as another profile",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "Paseo drives Claude Code/Pi/Codex, not OpenCode",
+     "evidence": "lib/paseo/gateway.dart:19-73 (header l.1-7)"
+    },
+    "demo": {
+     "status": "not",
+     "note": "demo gateway is its own narrowed set",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "server.oc2",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "'Switch to OpenCode 2' re-runs the opencode component with runtime=opencode2; both stay installed side by side (/opt/oc2)",
+     "evidence": "lib/ui/widgets/phone_server_card.dart:183-196; lib/termux/opencode_ubuntu_setup.dart:54-64"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "switch-runtime sheet on the Termux page",
+     "evidence": "lib/ui/screens/termux_setup_screen.dart (termux-setup-switch-runtime-sheet)"
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "install OpenCode 2 on the computer yourself, then pair it as a second server",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "server.codex",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "not",
+     "note": "no Codex component in the phone installer; Codex app-server runs on a computer",
+     "evidence": "lib/builtin/setup/components.dart:25-129"
+    },
+    "termux": {
+     "status": "not",
+     "note": "no Codex path in the Termux manager",
+     "evidence": "lib/termux/local_agent_runtime.dart:1-24 (Claude Code only)"
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "same computer can also run `codex app-server`; add it as a Codex server",
+     "evidence": "lib/ui/screens/servers_screen.dart:3026-3031"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "as above",
+     "evidence": "lib/ui/screens/servers_screen.dart:3026-3031"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "experimental, pinned app-server 0.153.4",
+     "evidence": "lib/codex/gateway.dart:1"
+    },
+    "paseo": {
+     "status": "partly",
+     "note": "the Paseo daemon can drive Codex as one of its runtimes (model picker's provider)",
+     "evidence": "lib/paseo/gateway.dart:3-7"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "server.paseo",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "not",
+     "note": "Claude Code/Paseo installs only through the Termux bridge (`claude.sh`)",
+     "evidence": "lib/termux/local_agent_runtime.dart:1-6,258-277"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "'Claude Code on this phone' installs Node, Paseo 0.9.1 and Claude Code into Termux's Ubuntu",
+     "evidence": "lib/termux/local_agent_runtime.dart:12; lib/termux/bridge.dart:3184-3190"
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "install the Paseo daemon on the same computer, then add it ('They run side by side')",
+     "evidence": "lib/l10n/app_en.arb:17969"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "as above",
+     "evidence": "lib/l10n/app_en.arb:17969"
+    },
+    "codex": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "phone.builtin",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/builtin/builtin_linux.dart:140"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "both can live on one phone (ports 4096 vs 4097; teams 8372 vs 8472); projects do not move between them",
+     "evidence": "lib/builtin/team/builtin_team.dart:52-54; lib/termux/bridge.dart:54"
+    },
+    "oc1Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "oc2Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "codex": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "paseo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    }
+   }
+  },
+  {
+   "capability": "phone.termux",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "Termux is an 'Other ways' choice on the setup screen; both hosts can coexist",
+     "evidence": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart:313-316"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "needs the F-Droid/GitHub Termux build and allow-external-apps",
+     "evidence": "lib/l10n/app_en.arb:10546,10778; lib/termux/bridge.dart:444-445"
+    },
+    "oc1Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "oc2Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "codex": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "paseo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    }
+   }
+  },
+  {
+   "capability": "phone.any",
+   "kind": "proposed (map proposals: local-agent-page)",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/builtin/builtin_linux.dart:140"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/platform/platform_capabilities.dart:59"
+    },
+    "oc1Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "oc2Computer": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "codex": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "paseo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "About this phone, not the connected server: present or not whichever server is open. Android only (desktop build: no).",
+     "evidence": "lib/platform/platform_capabilities.dart:59; lib/builtin/builtin_linux.dart:140"
+    }
+   }
+  },
+  {
+   "capability": "model.auth",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "provider sign-in in Settings › Providers (OpenCode on the phone)",
+     "evidence": "lib/ui/screens/library/integrations_screen.dart"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "same as builtin",
+     "evidence": "lib/ui/screens/library/integrations_screen.dart"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "provider auth + config fallback",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "integrationCredentials + integrationCommandAuth",
+     "evidence": "lib/api2/gateway_mappers.dart:44-45"
+    },
+    "codex": {
+     "status": "partly",
+     "note": "one ChatGPT/Codex account through the Codex account page (agentAccount); no provider list",
+     "evidence": "lib/codex/gateway.dart:15; lib/ui/screens/agent_account_screen.dart"
+    },
+    "paseo": {
+     "status": "partly",
+     "note": "the app cannot sign in: serverCatalog/integrationCredentials false; sign in inside the agent CLI on its host (on the phone: `claude` in a Termux terminal)",
+     "evidence": "lib/paseo/gateway.dart:19-73; lib/l10n/app_en.arb:17753"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "scripted replies need no model",
+     "evidence": "lib/demo/demo_gateway.dart"
+    }
+   }
+  },
+  {
+   "capability": "team.on",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "'aiteam' component, then 'Turn on AI Team for {project}' in Settings › Plugins; agents always run `exec opencode` (OpenCode 1 binary), even on a phone switched to OpenCode 2",
+     "evidence": "lib/builtin/setup/components.dart:97-115; lib/ui/widgets/builtin_team_section.dart:6-16; lib/builtin/team/builtin_team.dart:207"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "64-bit phone and a build that carries the team manifest; otherwise the Work entry is hidden",
+     "evidence": "lib/termux/team_runtime.dart:509-535; lib/ui/widgets/team_discover.dart:152-190"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "Gas City on the computer, found or entered by address",
+     "evidence": "lib/ui/screens/team/team_intro_screen.dart:251-268"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "same: the team is its own Gas City host attached to the profile",
+     "evidence": "lib/ui/widgets/team_discover.dart:57-66"
+    },
+    "codex": {
+     "status": "partly",
+     "note": "door shown (any non-phone profile counts as 'computer'); opening a worker's conversation goes through this server, which has no files/diff/projects — unproven",
+     "evidence": "lib/ui/widgets/team_discover.dart:63-67; lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "partly",
+     "note": "as Codex",
+     "evidence": "lib/ui/widgets/team_discover.dart:63-67; lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "no team in the demo",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "team.phone",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "loopback supervisor on 8472, lean tuning for the 32-process limit",
+     "evidence": "lib/builtin/team/builtin_team.dart:50-54,119-160"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "arm64 (or x86_64 emulator) and a manifest; port 8372",
+     "evidence": "lib/termux/team_runtime.dart:509-535"
+    },
+    "oc1Computer": {
+     "status": "not",
+     "note": "a phone team attaches only to this phone's own server",
+     "evidence": "lib/ui/widgets/builtin_team_section.dart:148-150; lib/ui/screens/settings/plugins_screen.dart:49-52"
+    },
+    "oc2Computer": {
+     "status": "not",
+     "note": "same",
+     "evidence": "lib/ui/widgets/builtin_team_section.dart:148-150"
+    },
+    "codex": {
+     "status": "not",
+     "note": "same",
+     "evidence": ""
+    },
+    "paseo": {
+     "status": "not",
+     "note": "same",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "team.control",
+   "kind": "proposed (map proposals: team-board et al.)",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "loopback supervisor honours X-GC-Request: create a task, give it to an agent",
+     "evidence": "lib/builtin/team/builtin_team.dart:84-94"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "loopback supervisor on the phone",
+     "evidence": "lib/termux/team_runtime.dart"
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "writes only through a host front; without it the board is read-only and gates say 'Answer this on the host'",
+     "evidence": "docs/ux-system/map/all.json#team-board,gate-sheet"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "as above",
+     "evidence": ""
+    },
+    "codex": {
+     "status": "partly",
+     "note": "as above",
+     "evidence": ""
+    },
+    "paseo": {
+     "status": "partly",
+     "note": "as above",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "claude.local",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "not",
+     "note": "Claude Code on the phone runs only through the Termux bridge; the page is a dead end on an in-app phone",
+     "evidence": "lib/termux/local_agent_runtime.dart:258-277; lib/ui/widgets/local_agent_onboarding.dart:779-800"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "~60 MB download, ~1 GB installed, needs 2 GB free; sign-in in a Termux terminal",
+     "evidence": "lib/l10n/app_en.arb:17701,17753"
+    },
+    "oc1Computer": {
+     "status": "n/a",
+     "note": "Claude Code on a computer is a Paseo server (server.paseo)",
+     "evidence": ""
+    },
+    "oc2Computer": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    },
+    "codex": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    },
+    "paseo": {
+     "status": "n/a",
+     "note": "this IS Claude Code (on a computer, or on the phone via Termux)",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "voice.model",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    },
+    "demo": {
+     "status": "supported",
+     "note": "on-device dictation; independent of the server. Packs: Compact ~104 MB (1 GB RAM), Balanced ~160 MB (1.5 GB RAM), High accuracy ~375 MB (3.4 GB RAM); 30 s per recording",
+     "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_manager.dart:162-168; lib/voice/audio.dart:11"
+    }
+   }
+  },
+  {
+   "capability": "mcp.any",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the runtime: OpenCode 1 = saved config + OAuth; OpenCode 2 = runtime add/remove only. Local (command) servers run inside the phone's Linux and need Node or Python there",
+     "evidence": "lib/ui/screens/mcp_setup_screen.dart:43-70; lib/builtin/setup/components.dart:57-81"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "same as builtin, inside Termux's Ubuntu",
+     "evidence": "lib/ui/screens/mcp_setup_screen.dart:43-70"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "mcpConfigWrites + mcpOAuth (defaults)",
+     "evidence": "lib/domain/server_gateway.dart:943-944"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "runtime adds/removals only; not saved to config, no OAuth",
+     "evidence": "lib/api2/gateway_mappers.dart:40-43"
+    },
+    "codex": {
+     "status": "not",
+     "note": "every MCP flag false; configure MCP in Codex's own config on the computer",
+     "evidence": "lib/codex/gateway.dart:38-41"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "every MCP flag false; the agent's own config on its host",
+     "evidence": "lib/paseo/gateway.dart:42-46"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "project.open",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "create a folder under /root/projects or pick one in the in-app browser",
+     "evidence": "lib/builtin/builtin_server.dart:308; lib/termux/opencode_ubuntu_setup.dart:36"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "create or browse via the Termux bridge",
+     "evidence": "lib/ui/screens/project_folder_actions.dart"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "choose an existing folder by path; no create on remote servers",
+     "evidence": "docs/ux-system/map/all.json#project-folder-new-dialog"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "as OpenCode 1",
+     "evidence": ""
+    },
+    "codex": {
+     "status": "partly",
+     "note": "one fixed directory per saved server; projectManagement false",
+     "evidence": "lib/ui/screens/servers_screen.dart:930; lib/codex/gateway.dart:21"
+    },
+    "paseo": {
+     "status": "partly",
+     "note": "read-only 'Project context'",
+     "evidence": "lib/paseo/gateway.dart:25 (projectManagement false); docs/ux-system/map/all.json#projects"
+    },
+    "demo": {
+     "status": "not",
+     "note": "demo setLocation throws",
+     "evidence": "lib/demo/demo_gateway.dart:60-63"
+    }
+   }
+  },
+  {
+   "capability": "project.git",
+   "kind": "proposed (map proposals: workspace-folder-chooser)",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "Git is a required component; the team adds a phone-side origin when a project has none",
+     "evidence": "lib/builtin/setup/components.dart:45-56; lib/builtin/team/builtin_team.dart:20-22,57-60"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "Git installed by the managed setup",
+     "evidence": "lib/termux/opencode_ubuntu_setup.dart:32"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "gitInit, worktree create/reset",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "gitInit, worktreeCreate, worktreeReset false",
+     "evidence": "lib/api2/gateway_mappers.dart:61-68"
+    },
+    "codex": {
+     "status": "not",
+     "note": "gitInit false; only what the agent does itself",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "same",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "perm.notifications",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "Android permission; same on every host. Background watching of a computer uses the dataSync service (Android 15+: 6 h per 24 h)",
+     "evidence": "lib/platform/platform_capabilities.dart:82-86; android/app/src/main/AndroidManifest.xml:117-120"
+    }
+   }
+  },
+  {
+   "capability": "perm.battery",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "matters most here: the phone is the server. In-app server and setup run as specialUse foreground services (no 6 h cap)",
+     "evidence": "android/app/src/main/AndroidManifest.xml:101-116"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "Termux must also be exempted; Android may stop it in the background",
+     "evidence": "lib/l10n/app_en.arb:20854"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "only for background watching (dataSync, 6 h/24 h on Android 15+)",
+     "evidence": "lib/l10n/app_en.arb:4512,4524"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "same",
+     "evidence": ""
+    },
+    "codex": {
+     "status": "supported",
+     "note": "same",
+     "evidence": ""
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "same",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "perm.camera",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "photos in prompts only; no pairing needed (loopback)",
+     "evidence": "lib/platform/platform_capabilities.dart:78"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "same",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "photos; no QR pairing (address + password)",
+     "evidence": "lib/ui/screens/servers_screen.dart:3000-3020"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "QR pairing + photos",
+     "evidence": "lib/platform/platform_capabilities.dart:118-126"
+    },
+    "codex": {
+     "status": "not",
+     "note": "promptAttachments false: text only",
+     "evidence": "lib/codex/gateway.dart:16"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "promptAttachments false: text only",
+     "evidence": "lib/paseo/gateway.dart:20"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "perm.mic",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "voice input is on the phone, whatever the server",
+     "evidence": "lib/platform/platform_capabilities.dart:68,77"
+    }
+   }
+  },
+  {
+   "capability": "network.tailscale",
+   "kind": "taxonomy",
+   "hosts": {
+    "builtin": {
+     "status": "n/a",
+     "note": "loopback 127.0.0.1: no network needed to reach it",
+     "evidence": "lib/builtin/builtin_linux.dart:124"
+    },
+    "termux": {
+     "status": "n/a",
+     "note": "loopback",
+     "evidence": "lib/termux/bridge.dart:54"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "optional at home, needed away from it; the app hands off to the Tailscale app and cannot check the tunnel",
+     "evidence": "lib/ui/screens/tailscale_setup_screen.dart:1-13"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "same",
+     "evidence": ""
+    },
+    "codex": {
+     "status": "partly",
+     "note": "token on the network, or USB with adb reverse",
+     "evidence": "lib/ui/screens/servers_screen.dart:3026-3031"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "daemon started on the private network (Tailscale)",
+     "evidence": "lib/ui/screens/servers_screen.dart:3022-3025"
+    },
+    "demo": {
+     "status": "n/a",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "quota.collector",
+   "kind": "proposed (map proposals: provider-quota)",
+   "hosts": {
+    "builtin": {
+     "status": "not",
+     "note": "nothing in the phone installer provides it",
+     "evidence": "lib/builtin/setup/components.dart:25-129"
+    },
+    "termux": {
+     "status": "not",
+     "note": "same",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "partly",
+     "note": "'a separately installed, explicitly trusted deployment extension' at the server's origin; the app has no install path or guide",
+     "evidence": "lib/quota/provider_quota_client.dart:1-3"
+    },
+    "oc2Computer": {
+     "status": "partly",
+     "note": "same",
+     "evidence": "lib/quota/provider_quota_client.dart:1-3"
+    },
+    "codex": {
+     "status": "not",
+     "note": "Codex has its own usage on the Codex account page",
+     "evidence": "lib/ui/screens/agent_account_screen.dart"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "unproven",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "agent.a2a",
+   "kind": "proposed (map proposals: external-agents)",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "codex": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "paseo": {
+     "status": "supported",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "app-side A2A client (lib/a2a); needs only the agent card's URL to be reachable, independent of the connected server",
+     "evidence": "lib/a2a; lib/ui/screens/external_agents_screen.dart:41,139"
+    }
+   }
+  },
+  {
+   "capability": "flag:fileBrowsing+terminal",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Files, Terminal and the Project tab",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "codex": {
+     "status": "not",
+     "note": "Project tab, Files and Terminal disappear",
+     "evidence": "lib/codex/gateway.dart:19-20; lib/ui/screens/home_screen.dart:120-132"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "same",
+     "evidence": "lib/paseo/gateway.dart:23-24"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "flags on; actions unavailable",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:sessionDiff",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Review changes",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:23"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:27"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:serverCatalog",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Providers, MCP, commands, skills, tools in Settings",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:32; lib/ui/screens/chat_screen.dart:5070"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:36"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:usageStatistics",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Usage › Spent",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "only on OpenCode 2",
+     "evidence": "lib/ui/screens/usage_hub_screen.dart:44"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "only on OpenCode 2",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/ui/screens/usage_hub_screen.dart:44"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "UsageStatisticsGateway is OpenCode 2 only",
+     "evidence": "lib/ui/screens/usage_hub_screen.dart:44"
+    },
+    "codex": {
+     "status": "partly",
+     "note": "Codex account usage instead",
+     "evidence": "lib/codex/gateway.dart:15"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "flag:stagedRevert+sessionNotes",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Staged revert, notes for the agent, forms, inbox",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "OpenCode 2 runtime only",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "OpenCode 2 runtime only",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "not",
+     "note": "OpenCode 1 has plain revert and question dialogs instead",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:70-71"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:worktreeCreate+sessionShare+managedWorkspaces",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Isolated task, share, cloud environments",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "OpenCode 1 runtime only",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "OpenCode 1 runtime only",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:35-50,67"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:developmentServices",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Development services (start/stop/logs)",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "OpenCode 2 runtime only",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "OpenCode 2 runtime only",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "not",
+     "note": "save-only paragraph",
+     "evidence": "lib/ui/screens/development_services_screen.dart:316"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:35"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "flag:remoteUpgrade",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Update the server from the app",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "not through the server: 'Update OpenCode' re-runs the setup component",
+     "evidence": "lib/ui/widgets/phone_server_card.dart:196-208"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "Termux update sheet",
+     "evidence": ""
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "not",
+     "note": "'Upgrade from the machine running the server'",
+     "evidence": "lib/ui/screens/settings/server_settings_screen.dart:283"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:14-69"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:19-73"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  },
+  {
+   "capability": "flag:promptAttachments",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): Photos and files in prompts",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api/opencode_api.dart:40 (ServerCapabilities.allV1, server_gateway.dart:977)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72"
+    },
+    "codex": {
+     "status": "not",
+     "note": "text only",
+     "evidence": "lib/codex/gateway.dart:16"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "text only",
+     "evidence": "lib/paseo/gateway.dart:20"
+    },
+    "demo": {
+     "status": "supported",
+     "note": "",
+     "evidence": ""
+    }
+   }
+  }
+ ],
+ "enableFlows": [
+  {
+   "capability": "server.any",
+   "discover": [
+    "First run: servers-welcome offers 'On this phone' and 'On my computer' (servers_screen.dart:711,1002,1051)",
+    "Launcher shortcut with no server lands on the same welcome"
+   ],
+   "expect": {
+    "time": "phone: ~4 min first time; computer: 1-2 min once the server runs",
+    "size": "phone: ~200 MB default set",
+    "storage": "phone: ~1.1 GB after setup (phone_server_card example)",
+    "battery": "phone: the phone is the server — warm during installs and runs",
+    "processes": "OpenCode server + proot: a few of the 32",
+    "network": "phone: download once, then works offline except for the model provider; computer: same Wi-Fi or Tailscale",
+    "cost": "free app; model provider costs are the person's"
+   },
+   "steps": [
+    "Phone: Set up → progress checklist → Name your first project → conversation (setup v2 screens A-C)",
+    "Computer: install OpenCode 2, run `opencode2 pair`, scan the QR (or type the address)"
+   ],
+   "limitations": [
+    "Desktop build: no 'On this phone' (platform_capabilities.dart:59) and the welcome does not say why (servers-welcome statesMissing)",
+    "No network on first run is not a named state"
+   ],
+   "failure": [
+    "Phone: setup failure shows the failed row + Continue setup (resumes)",
+    "Computer: profile-editor failed state; check >8 s has no Cancel (profile-editor statesMissing)"
+   ],
+   "undo": "Forget the server (Servers row menu); on the phone, Remove from this phone (deletes everything, see phone.builtin)",
+   "todayBehaviour": [
+    {
+     "page": "root-connecting",
+     "whenMissing": "explains (is the missing-server state)",
+     "evidence": "lib/main.dart:1636-1659"
+    },
+    {
+     "page": "servers-welcome",
+     "whenMissing": "offers-enable",
+     "evidence": "lib/ui/screens/servers_screen.dart:711"
+    }
+   ],
+   "target": "Keep. Add an honest desktop line and an offline first-run state; the computer path ends in the same 'ready → first project' moment as the phone."
+  },
+  {
+   "capability": "phone.builtin",
+   "discover": [
+    "servers-welcome 'On this phone'",
+    "Servers › 'Set up on this phone' (servers_screen.dart:245)",
+    "Settings › On this phone",
+    "Search (search_index.dart:324)",
+    "Target: Terminal's 'This phone' source, Claude Code page, AI Team intro on a phone — each offers the same Set up"
+   ],
+   "expect": {
+    "time": "about 4 min on a mid-range phone (component estimates 15+60+40+20+100+15 s, rescaled by measured pace)",
+    "size": "~208 MB with Python (30+45+25+58+50 MB); ~183 MB without",
+    "storage": "~1.1 GB installed; target: pre-check free space before starting",
+    "battery": "installs are CPU-heavy under proot; runs as a specialUse foreground service ('Setting up OpenCode on this phone · 42%')",
+    "processes": "OpenCode server + proot supervisor (not measured separately; AI Team is the heavy consumer)",
+    "network": "Wi-Fi recommended; resumes after loss (HTTP Range)",
+    "cost": "none"
+   },
+   "steps": [
+    "Set up (one tap; Customize to drop Python)",
+    "Leave the app if you like — notification mirrors progress",
+    "Ready → name a project → conversation"
+   ],
+   "limitations": [
+    "64-bit ARM or x86_64 only: Ubuntu defaults to arm64 on any other ABI and Node/OpenCode exit 64 mid-setup (BuiltinLinux.kt:751-760; components.dart:210; opencode_ubuntu_setup.dart:47-51) — must be said before download",
+    "No free-space pre-check: 'no space' is classified only after failure (setup_engine.dart:1035,1067)",
+    "The phone is the server: it must stay on and cool; heat pauses the team (thermal_guard.dart)"
+   ],
+   "failure": [
+    "Failed row names the stage + reason; 'No internet connection — Continue when you're back online'; Continue setup resumes via check scripts",
+    "App killed → job becomes interrupted → 'Continue setup' on the start screen and notification"
+   ],
+   "undo": "This phone card › Remove from this phone: 'deletes OpenCode, its tools and every project on this phone' (app_en.arb:19025). No per-tool removal today although removeScript exists (setup_contract.dart:50; components.dart:67,114 — never called).",
+   "todayBehaviour": [
+    {
+     "page": "phone-setup-start",
+     "whenMissing": "offers-enable (the working path)",
+     "evidence": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart:125-163"
+    },
+    {
+     "page": "terminal",
+     "whenMissing": "hidden: source silently defaults to the server when Linux is absent; no offer",
+     "evidence": "lib/ui/screens/terminal_screen.dart:135-146"
+    },
+    {
+     "page": "builtin-server-setup",
+     "whenMissing": "older four-step screen still reachable from root-connecting and the Termux page",
+     "evidence": "lib/main.dart:1636; lib/ui/screens/builtin_server_screen.dart:160"
+    }
+   ],
+   "target": "One installer: setup v2. Pre-flight (ABI, free space, RAM) on screen A before the button; retire builtin-server-setup; Remove offers 'keep my projects' (export/zip) before deleting."
+  },
+  {
+   "capability": "phone.termux",
+   "discover": [
+    "phone-setup-start › Other ways › 'Use Termux instead' (advanced)",
+    "Termux page from Servers/Settings/root-connecting (12 entries, termux-setup record)"
+   ],
+   "expect": {
+    "time": "Get Termux from F-Droid + allow + setup: 5-10 min, several app switches",
+    "size": "Termux app + Ubuntu + OpenCode (similar ~200 MB+)",
+    "storage": "inside Termux's own storage; shown in Storage on this phone",
+    "battery": "Termux must be kept alive and battery-exempted; Android may stop it",
+    "processes": "Termux's processes, not this app's",
+    "network": "download once",
+    "cost": "none"
+   },
+   "steps": [
+    "Target: the same v2 checklist, with person-steps as rows that wait: 'Get Termux (F-Droid)' → 'Allow this app to run commands' → then the same components installed through the bridge"
+   ],
+   "limitations": [
+    "Play Store Termux is too old (app_en.arb:10778)",
+    "Termux only on Android",
+    "Not needed for anything the in-app host does except Claude Code today"
+   ],
+   "failure": [
+    "termux-setup-failed (to be unified with v2 failure/continue)"
+   ],
+   "undo": "Termux page: remove managed OpenCode; uninstall Termux in Android",
+   "todayBehaviour": [
+    {
+     "page": "termux-setup",
+     "whenMissing": "offers-enable (own 3-step wizard, owner: 'Align with v2')",
+     "evidence": "lib/ui/screens/termux_setup_screen.dart:1649-1706"
+    },
+    {
+     "page": "termux-processes / termux-storage",
+     "whenMissing": "hidden for in-app phones: no process or storage view there",
+     "evidence": "docs/ux-system/map/all.json#termux-processes"
+    }
+   ],
+   "target": "Termux becomes a host choice inside setup v2 (component graph unchanged, host = termux), not a separate wizard. Default stays in-app."
+  },
+  {
+   "capability": "server.oc2",
+   "discover": [
+    "This phone card ⋯ › Switch to OpenCode 2 (phone_server_card.dart:645)",
+    "Termux page switch sheet",
+    "Computer: Add server auto-detects 1 or 2 (app_en.arb:2987)",
+    "Target: where an OC2-only feature is missing (Spent, notes, staged revert), one line 'Available on OpenCode 2' with the switch"
+   ],
+   "expect": {
+    "time": "phone: ~2 min (re-runs one component)",
+    "size": "~50 MB",
+    "storage": "both runtimes stay installed side by side",
+    "battery": "short",
+    "processes": "unchanged",
+    "network": "download once",
+    "cost": "none"
+   },
+   "steps": [
+    "Switch → progress screen with only the opencode component → server restarts on the other runtime and reconnects (setup_finish.dart)"
+   ],
+   "limitations": [
+    "OC2 loses: session share, worktree create/reset, Git init, LSP/formatter status, message delete, todos (gateway_mappers.dart:35-67)",
+    "OC1 loses: forms, inbox, staged revert, notes, Spent, development services",
+    "AI Team agents on the phone keep running the OpenCode 1 binary (builtin_team.dart:207)",
+    "Conversations do not move between runtimes (separate profiles per flavor, setup_finish.dart:38-47)"
+   ],
+   "failure": [
+    "same as setup v2 (Continue setup)"
+   ],
+   "undo": "Switch back (both installed)",
+   "todayBehaviour": [
+    {
+     "page": "server-settings",
+     "whenMissing": "explains 'Upgrade from the machine running the server' when remoteUpgrade false",
+     "evidence": "lib/ui/screens/settings/server_settings_screen.dart:283"
+    },
+    {
+     "page": "usage",
+     "whenMissing": "hidden: Spent tab only on OC2, no word why",
+     "evidence": "lib/ui/screens/usage_hub_screen.dart:44"
+    }
+   ],
+   "target": "Switch lives on This phone card; each OC-generation-only feature says once where it would be which generation offers it."
+  },
+  {
+   "capability": "server.paseo",
+   "discover": [
+    "agent-choice 'Claude Code or Pi' (agent_choice_screen.dart:59-64)",
+    "Server switcher 'Add'",
+    "Target: This phone card › Add tools › Claude Code (mix both)"
+   ],
+   "expect": {
+    "time": "computer: install Paseo daemon + agents; phone: see claude.local",
+    "size": "computer-side",
+    "storage": "computer-side",
+    "battery": "n/a",
+    "processes": "n/a",
+    "network": "private network / Tailscale",
+    "cost": "Claude subscription or API key for Claude Code; Pi/Codex accounts as applicable"
+   },
+   "steps": [
+    "Computer: `paseo` start on the private network (servers_screen.dart:3022-3025) → add server → one connection drives every agent installed there"
+   ],
+   "limitations": [
+    "Text only; no files, terminal, review, MCP, providers, projects, queue, fork (paseo/gateway.dart:19-73)",
+    "The app cannot sign the agent in"
+   ],
+   "failure": [
+    "profile-editor failed state; daemon quirks (Paseo list-before-requests)"
+   ],
+   "undo": "Forget the server",
+   "todayBehaviour": [
+    {
+     "page": "server-switcher-sheet",
+     "whenMissing": "hidden: daemon row only when found on the phone",
+     "evidence": "lib/ui/widgets/server_switcher_sheet.dart"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "whenMissing": "hidden: no server commands; nothing says the agent's own commands are unavailable",
+     "evidence": "lib/ui/screens/chat/command_launcher.dart"
+    }
+   ],
+   "target": "Keep as a computer choice; state its limits as one 'What works here' line when the server is added and where a feature would be."
+  },
+  {
+   "capability": "claude.local",
+   "discover": [
+    "Termux page › 'Claude Code · Optional' row (termux_setup_screen.dart:2365-2376)",
+    "Search 'Claude Code' on any Android phone (search_index.dart:979-990)",
+    "Target: setup v2 Customize/Add tools row 'Claude Code (needs a Claude sign-in)'"
+   ],
+   "expect": {
+    "time": "10-20 min (npm under proot; native build)",
+    "size": "~60 MB download plus packages",
+    "storage": "~1 GB installed; needs 2 GB free (app_en.arb:17701)",
+    "battery": "heavy during install; the daemon runs while in use",
+    "processes": "Paseo daemon + Node + one Claude Code process per conversation — counts toward the 32 limit together with OpenCode and any team",
+    "network": "download once; Claude needs internet always",
+    "cost": "Claude Pro/Max subscription or Anthropic API key — the person's own"
+   },
+   "steps": [
+    "Today (Termux only): Set up → sign in: Termux opens, approve in the browser, paste code (app_en.arb:17753) → 'Claude Code on this phone' appears as a second server",
+    "Target: component 'claude' (dependsOn node) in the same engine for the in-app host; sign-in as a person-step row that waits; ends by adding the second profile beside 'This phone'"
+   ],
+   "limitations": [
+    "In-app phone: impossible today (Termux bridge only)",
+    "Text only (Paseo gateway)",
+    "Sign-in never passes through the app (by design)"
+   ],
+   "failure": [
+    "needs_ubuntu, no_space, download, checksum, native_build, npm, unsupported_arch, pins (local_agent_runtime.dart:12); start timeout 120 s"
+   ],
+   "undo": "Remove: deletes Node, Paseo and Claude Code (~1 GB); projects and Claude sign-in stay unless 'forget sign-in' (local_agent_runtime.dart:340; app_en.arb:17953)",
+   "todayBehaviour": [
+    {
+     "page": "local-agent-page",
+     "whenMissing": "DEAD END: 'Finish the On this phone setup first' with only Refresh; onOpenPhoneSetup is never passed by any caller; an in-app phone can never proceed",
+     "evidence": "lib/ui/widgets/local_agent_onboarding.dart:779-800,202"
+    },
+    {
+     "page": "embedded-local-agent-onboarding-block",
+     "whenMissing": "hidden off Termux",
+     "evidence": "lib/ui/widgets/local_agent_onboarding.dart:260"
+    },
+    {
+     "page": "embedded-local-agent-server-entry",
+     "whenMissing": "hidden until installed",
+     "evidence": "lib/ui/widgets/local_agent_server_entry.dart:222-228"
+    }
+   ],
+   "target": "Owner verdict: 'inline with installation v2 … users who started with OpenCode and now want to mix both'. Claude Code is an Add-tools component on either host; after install the server switcher shows This phone · OpenCode and This phone · Claude Code side by side."
+  },
+  {
+   "capability": "model.auth",
+   "discover": [
+    "Today: only after a failed reply (auth error card › Open providers, message_view.dart:1764-1993)",
+    "Target: the composer's model chip says 'Sign in to a model' before the first send when no provider is connected; setup v2 Ready screen has one 'Connect a model' row"
+   ],
+   "expect": {
+    "time": "1-2 min",
+    "size": "none",
+    "storage": "credential on the server",
+    "battery": "none",
+    "processes": "none",
+    "network": "browser OAuth or API key",
+    "cost": "provider account; subscriptions or pay-per-token — say 'billed by {provider}'"
+   },
+   "steps": [
+    "Providers → pick → OAuth (browser via openExternalLink) or key",
+    "Codex: Codex account page",
+    "Paseo: sign in in the agent CLI on the host"
+   ],
+   "limitations": [
+    "Paseo/Codex: not from the provider list",
+    "Credentials never echoed (AGENTS.md security invariants)"
+   ],
+   "failure": [
+    "OAuth code dialog, pending/uncertain auth recovery sheets"
+   ],
+   "undo": "Disconnect provider (integrations-disconnect-provider-sheet)",
+   "todayBehaviour": [
+    {
+     "page": "chat",
+     "whenMissing": "explains only after a failed reply",
+     "evidence": "lib/ui/screens/chat/message_view.dart:1993"
+    },
+    {
+     "page": "catalog",
+     "whenMissing": "explains signed-in-only, offers nothing",
+     "evidence": "lib/ui/screens/library/catalog_screen.dart"
+    },
+    {
+     "page": "model-picker-sheet",
+     "whenMissing": "no offer to sign in",
+     "evidence": "lib/ui/widgets/pickers.dart"
+    }
+   ],
+   "target": "Moment of need = composer before first send. Never a separate settings hunt."
+  },
+  {
+   "capability": "team.on",
+   "discover": [
+    "Work tab TeamDiscoverEntry (folds to one quiet row once seen, team_discover.dart:152-190)",
+    "Settings › AI Team, search, New conversation 'Team'",
+    "Discovery card '{server} also runs an AI team. Turn it on?'"
+   ],
+   "expect": {
+    "time": "phone: ~2.5 min install (estimate 150 s) + turn on per project (stages shown)",
+    "size": "~115 MB on arm64 (Gas City 26 MB, Beads 46 MB, Dolt 41 MB + 3 MB)",
+    "storage": "plus the team's store per project",
+    "battery": "the heaviest thing the phone can run; thermal guard pauses at SEVERE and stops at CRITICAL, resumes after 2 min cool",
+    "processes": "lean tuning keeps it under 32; measured peak 37 before tuning (builtin_team.dart:152-160); one worker per project",
+    "network": "downloads once; models always",
+    "cost": "every agent spends model tokens"
+   },
+   "steps": [
+    "In-app: Settings › Plugins › 'Run an AI team on this phone' › Add (opens Add tools with AI Team on → progress) → 'Turn on AI Team for {project}'",
+    "Termux: team onboarding steps (to merge into v2)",
+    "Computer: run Gas City (host guide) → the app finds it or you enter its address"
+   ],
+   "limitations": [
+    "Termux: 64-bit + manifest only",
+    "Phone team serves only the phone's own server",
+    "Computer team without a host front is read-only from the phone (team.control)",
+    "Phone team agents run OpenCode 1 even on an OC2 phone"
+   ],
+   "failure": [
+    "team-phone-onboarding-failed/killed; builtin job stages show the failing stage; heat pause"
+   ],
+   "undo": "In-app: Stop only — no turn-off or remove (builtin_team.dart:639-787 has start/stop, no removal; aiteam removeScript never run). Termux: team-phone-remove-sheet.",
+   "todayBehaviour": [
+    {
+     "page": "workspace",
+     "whenMissing": "offers-enable (TeamDiscoverEntry)",
+     "evidence": "lib/ui/screens/workspace_screen.dart:954-957"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "whenMissing": "'Off' twice with only 'Add manually'",
+     "evidence": "lib/ui/screens/settings/plugins_screen.dart:502-509"
+    },
+    {
+     "page": "embedded-team-discover (Termux, unsupported)",
+     "whenMissing": "hidden silently on Work",
+     "evidence": "lib/ui/widgets/team_discover.dart:176-190"
+    }
+   ],
+   "target": "Owner: 'Align with v2'. AI Team is a v2 component on either phone host; 'turn on for this project' is the one per-project step, offered on the project, with a Turn off and Remove."
+  },
+  {
+   "capability": "team.control",
+   "discover": [
+    "Board/gate/conversation say read-only and 'Answer this on the host'"
+   ],
+   "expect": {
+    "time": "computer-side setup",
+    "size": "n/a",
+    "storage": "n/a",
+    "battery": "n/a",
+    "processes": "n/a",
+    "network": "host front reachable (Tailscale)",
+    "cost": "none"
+   },
+   "steps": [
+    "Computer: run the Gas City host front (team-host-guide-sheet), re-probe from the phone"
+   ],
+   "limitations": [
+    "Phone hosts always have control (loopback)"
+   ],
+   "failure": [
+    "read-only notes"
+   ],
+   "undo": "n/a",
+   "todayBehaviour": [
+    {
+     "page": "team-board",
+     "whenMissing": "explains read-only, no ⋯ or +",
+     "evidence": "lib/ui/screens/team/team_board_screen.dart"
+    },
+    {
+     "page": "embedded-team-merge-section",
+     "whenMissing": "hidden: no merge gateway → section absent",
+     "evidence": "lib/ui/screens/team/merge_section.dart"
+    }
+   ],
+   "target": "One line on the team home: 'You can watch this team. To steer it from the phone, run the host front on {computer}' + guide."
+  },
+  {
+   "capability": "voice.model",
+   "discover": [
+    "First mic tap opens setup (voice_ui.dart:19, 843)",
+    "Settings › Voice"
+   ],
+   "expect": {
+    "time": "1-5 min download",
+    "size": "Compact ~104 MB / Balanced ~160 MB / High accuracy ~375 MB",
+    "storage": "same, in app files",
+    "battery": "short bursts while transcribing",
+    "processes": "none (in-app)",
+    "network": "download once, resumes (Range); Wi-Fi advised for High accuracy",
+    "cost": "none; fully on device"
+   },
+   "steps": [
+    "Pick a pack (dimmed when RAM is below its need) → download → dictate"
+   ],
+   "limitations": [
+    "30 s per recording (audio.dart:11; owner: 'needs rework')",
+    "Android only",
+    "RAM gate: 1 / 1.5 / 3.4 GB (model_manifest.dart:70,98,126)"
+   ],
+   "failure": [
+    "checksum/length errors; metered network, storage full and app killed mid-download are unnamed states (voice-model-setup-sheet statesMissing)"
+   ],
+   "undo": "Delete pack (voice-model-setup-sheet-delete-dialog)",
+   "todayBehaviour": [
+    {
+     "page": "voice-composer-sheet",
+     "whenMissing": "offers-enable",
+     "evidence": "lib/voice/voice_ui.dart:19-33"
+    },
+    {
+     "page": "embedded-voice-conversation-controls",
+     "whenMissing": "offers-enable (Listen opens setup first)",
+     "evidence": "lib/ui/screens/chat/voice_conversation.dart"
+    }
+   ],
+   "target": "Keep point-of-need; run the download through the same progress view (host = app) so it resumes and shows in the notification like other components."
+  },
+  {
+   "capability": "mcp.any",
+   "discover": [
+    "Settings › MCP (integrations)",
+    "Target: when an agent says it lacks a tool, and in the composer '+' as 'Add a tool (MCP)'"
+   ],
+   "expect": {
+    "time": "remote: 1 min; local: install time of its package",
+    "size": "remote: none; local: npm/pip package inside the host's Linux",
+    "storage": "local: package size",
+    "battery": "local servers run as extra processes",
+    "processes": "each local MCP server is 1+ process on the host — on the phone it counts toward 32",
+    "network": "remote MCP needs its URL reachable from the server, not the phone",
+    "cost": "provider-specific"
+   },
+   "steps": [
+    "Technical: Add MCP server form (remote URL + headers, or local command + env)",
+    "Agent-driven (owner): 'I want X' → an agent installs and configures it; or connect an OSS MCP registry and toggle servers (KitAskAgent proposal)"
+   ],
+   "limitations": [
+    "OC2: runtime only, lost on restart, no OAuth",
+    "Codex/Paseo: not from the app",
+    "Phone: local MCP needs Node/Python components"
+   ],
+   "failure": [
+    "name taken, unreachable URL, OAuth needed after save — unnamed today (mcp-setup statesMissing)"
+   ],
+   "undo": "Remove (OC2 runtime removal; OC1 config edit)",
+   "todayBehaviour": [
+    {
+     "page": "mcp-setup",
+     "whenMissing": "disabled/detached unless mcpConfigWrites or mcpRuntimeAdds",
+     "evidence": "lib/ui/screens/mcp_setup_screen.dart:43-70"
+    },
+    {
+     "page": "integrations",
+     "whenMissing": "hidden on Codex/Paseo; OC2 explains an internal limitation",
+     "evidence": "lib/ui/screens/library/integrations_screen.dart:474-475,693,949"
+    }
+   ],
+   "target": "Two doors, one list: technical form and 'Ask the agent'; a provider/registry list shown as toggles. On phone hosts a local MCP server is an Add-tools component (dependsOn node|python)."
+  },
+  {
+   "capability": "project.open",
+   "discover": [
+    "Work tab replaced by the folder chooser (workspace_screen.dart:621)",
+    "Setup v2 Ready: Name your first project"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "none",
+    "storage": "phone: projects live in /root/projects inside the app's Linux",
+    "battery": "none",
+    "processes": "none",
+    "network": "none",
+    "cost": "none"
+   },
+   "steps": [
+    "Phone: create or browse",
+    "Computer: type a path (no create)"
+   ],
+   "limitations": [
+    "Codex: one directory per saved server",
+    "Paseo: read-only context"
+   ],
+   "failure": [
+    "error keeps the happy title (statesMissing)"
+   ],
+   "undo": "Switch project; phone Remove deletes all projects",
+   "todayBehaviour": [
+    {
+     "page": "project-hub",
+     "whenMissing": "'No project selected' with no chooser",
+     "evidence": "lib/ui/screens/project_hub_screen.dart:301"
+    },
+    {
+     "page": "manage-project / worktrees",
+     "whenMissing": "disabled rows",
+     "evidence": "docs/ux-system/map/all.json#manage-project"
+    }
+   ],
+   "target": "Every 'no project' state carries the chooser button."
+  },
+  {
+   "capability": "project.git",
+   "discover": [
+    "Target: Isolated task / worktrees / team turn-on offer 'Make this a Git project' when the folder is not one"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "Git ships with essentials on the phone",
+    "storage": "n/a",
+    "battery": "n/a",
+    "processes": "n/a",
+    "network": "push needs a remote (phone team makes a local origin)",
+    "cost": "none"
+   },
+   "steps": [
+    "OC1: Initialize Git (project-health)",
+    "Phone: team turn-on adds an origin"
+   ],
+   "limitations": [
+    "OC2/Codex/Paseo: no Git init from the app"
+   ],
+   "failure": [
+    "project-health-git-init-dialog"
+   ],
+   "undo": "n/a",
+   "todayBehaviour": [
+    {
+     "page": "project-health-git-init-dialog",
+     "whenMissing": "explains unavailable on OC2",
+     "evidence": "lib/ui/screens/project_health_screen.dart"
+    }
+   ],
+   "target": "Offer at the Git-needing action, not in Project health."
+  },
+  {
+   "capability": "perm.notifications",
+   "discover": [
+    "Inbox empty state 'Background updates' (activity_screen.dart)",
+    "Chat leave nudge (only when already allowed)"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "none",
+    "storage": "none",
+    "battery": "background watching of a computer uses dataSync: 6 h / 24 h on Android 15+",
+    "processes": "none",
+    "network": "live connection",
+    "cost": "none"
+   },
+   "steps": [
+    "System permission prompt from Notifications settings"
+   ],
+   "limitations": [
+    "A denied permission is not detected (notifications-settings whenMissing)",
+    "6 h daily cap for computer watching"
+   ],
+   "failure": [
+    "cap reached: the app turns the switch off and says so (app_en.arb:4524)"
+   ],
+   "undo": "Android settings",
+   "todayBehaviour": [
+    {
+     "page": "profile-monitor",
+     "whenMissing": "not mentioned; rules live elsewhere",
+     "evidence": "lib/ui/screens/profile_monitor_screen.dart:146"
+    },
+    {
+     "page": "notifications-settings",
+     "whenMissing": "hidden sections; denial not detected",
+     "evidence": "lib/ui/screens/settings/notifications_settings_screen.dart"
+    }
+   ],
+   "target": "Ask at the first run that is left running ('Tell me when it's done?'), once."
+  },
+  {
+   "capability": "perm.battery",
+   "discover": [
+    "Keep running page (settings, app exit notice, builtin setup)",
+    "Team phone tips sheet (manual steps)"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "none",
+    "storage": "none",
+    "battery": "lets Android keep the phone's server/team alive; costs battery while agents work",
+    "processes": "none",
+    "network": "none",
+    "cost": "none"
+   },
+   "steps": [
+    "Keep running step row opens the Android battery setting"
+   ],
+   "limitations": [
+    "Exemption does not lift the 6 h dataSync cap (AGENTS.md)"
+   ],
+   "failure": [
+    "n/a"
+   ],
+   "undo": "Android settings",
+   "todayBehaviour": [
+    {
+     "page": "keep-running",
+     "whenMissing": "offers-enable",
+     "evidence": "lib/ui/screens/keep_running_screen.dart:151-167"
+    },
+    {
+     "page": "profile-monitor",
+     "whenMissing": "not mentioned",
+     "evidence": "lib/ui/screens/profile_monitor_screen.dart"
+    }
+   ],
+   "target": "A person-step row at the end of phone setup ('Let it keep running'), and again only when Android actually stopped something."
+  },
+  {
+   "capability": "perm.camera",
+   "discover": [
+    "Pairing scanner; photo in prompt"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "none",
+    "storage": "none",
+    "battery": "none",
+    "processes": "none",
+    "network": "none",
+    "cost": "none"
+   },
+   "steps": [
+    "System prompt; denied → Open app settings or Paste code"
+   ],
+   "limitations": [
+    "Codex/Paseo are text only"
+   ],
+   "failure": [
+    "pairing-scanner denied/blocked states"
+   ],
+   "undo": "Android settings",
+   "todayBehaviour": [
+    {
+     "page": "pairing-scanner",
+     "whenMissing": "explains + Paste it instead",
+     "evidence": "lib/ui/screens/pairing_scanner_screen.dart"
+    },
+    {
+     "page": "chat-pending-photo-sheet",
+     "whenMissing": "system prompt only",
+     "evidence": "lib/ui/screens/chat_screen.dart"
+    }
+   ],
+   "target": "Keep; on text-only servers the photo button says why instead of vanishing."
+  },
+  {
+   "capability": "perm.mic",
+   "discover": [
+    "Voice button"
+   ],
+   "expect": {
+    "time": "seconds",
+    "size": "none",
+    "storage": "none",
+    "battery": "none",
+    "processes": "none",
+    "network": "none",
+    "cost": "none"
+   },
+   "steps": [
+    "System prompt; blocked → Open app settings"
+   ],
+   "limitations": [
+    "Android only"
+   ],
+   "failure": [
+    "'Microphone access is blocked'"
+   ],
+   "undo": "Android settings",
+   "todayBehaviour": [
+    {
+     "page": "voice-composer-sheet",
+     "whenMissing": "explains + Open app settings",
+     "evidence": "lib/voice/voice_ui.dart"
+    }
+   ],
+   "target": "Keep."
+  },
+  {
+   "capability": "network.tailscale",
+   "discover": [
+    "Profile editor 'Not on the same network?'",
+    "Team host sheet (http refused outside loopback/tailnet)"
+   ],
+   "expect": {
+    "time": "5 min incl. computer side",
+    "size": "Tailscale app",
+    "storage": "small",
+    "battery": "VPN: small constant cost",
+    "processes": "none in this app",
+    "network": "Tailscale account",
+    "cost": "free personal plan (Tailscale's terms)"
+   },
+   "steps": [
+    "Install Tailscale on phone (Play Store via openExternalLink) and computer, sign in both, enter the 100.x / MagicDNS address"
+   ],
+   "limitations": [
+    "The app cannot check the tunnel (tailscale_setup_screen.dart:12)",
+    "Not needed for phone hosts"
+   ],
+   "failure": [
+    "returning from Tailscale does not auto re-check (statesMissing)"
+   ],
+   "undo": "Tailscale app",
+   "todayBehaviour": [
+    {
+     "page": "tailscale-setup",
+     "whenMissing": "offers-enable",
+     "evidence": "lib/ui/screens/tailscale_setup_screen.dart:122,192"
+    }
+   ],
+   "target": "Offer when a saved computer stops answering away from home (the moment of need), not only in the editor."
+  },
+  {
+   "capability": "quota.collector",
+   "discover": [
+    "Usage › Remaining (only with a profile)"
+   ],
+   "expect": {
+    "time": "unknown",
+    "size": "server-side extension",
+    "storage": "n/a",
+    "battery": "n/a",
+    "processes": "n/a",
+    "network": "server origin",
+    "cost": "n/a"
+   },
+   "steps": [
+    "No path in the app: the collector is 'separately installed' at the server's origin (provider_quota_client.dart:1-3)"
+   ],
+   "limitations": [
+    "Cannot be enabled from the phone; phone hosts have no component for it"
+   ],
+   "failure": [
+    "n/a"
+   ],
+   "undo": "n/a",
+   "todayBehaviour": [
+    {
+     "page": "provider-quota",
+     "whenMissing": "page offers enrolment consent but no way to get the collector",
+     "evidence": "lib/ui/screens/provider_quota_screen.dart:97-110"
+    }
+   ],
+   "target": "Either a setup-v2 component (phone) + a computer guide, or hide the tab and say 'needs the quota collector on {server}' with the guide. Owner: 'feature itself needs a lot of work'."
+  },
+  {
+   "capability": "agent.a2a",
+   "discover": [
+    "Servers › More setup options › External agents; Settings › External agents"
+   ],
+   "expect": {
+    "time": "1 min",
+    "size": "none",
+    "storage": "card saved on the phone",
+    "battery": "none",
+    "processes": "none",
+    "network": "the agent card URL",
+    "cost": "the agent's own"
+   },
+   "steps": [
+    "Add → inspect card → save; credential if required"
+   ],
+   "limitations": [
+    "Unsupported cards not explained (add-agent statesMissing)"
+   ],
+   "failure": [
+    "inspect failed"
+   ],
+   "undo": "Remove agent",
+   "todayBehaviour": [
+    {
+     "page": "external-agents",
+     "whenMissing": "explains",
+     "evidence": "lib/ui/screens/external_agents_screen.dart:41,139"
+    }
+   ],
+   "target": "Merge into Integrations (map proposal)."
+  },
+  {
+   "capability": "server.codex",
+   "discover": [
+    "agent-choice 'Codex'"
+   ],
+   "expect": {
+    "time": "computer-side",
+    "size": "n/a",
+    "storage": "n/a",
+    "battery": "n/a",
+    "processes": "n/a",
+    "network": "token over the network, or USB adb reverse",
+    "cost": "ChatGPT/Codex account"
+   },
+   "steps": [
+    "Run the token command on the computer, add the server, sign in on the Codex account page"
+   ],
+   "limitations": [
+    "Text only; no files, terminal, review, MCP, providers, projects, queue (codex/gateway.dart:14-69)",
+    "No phone host"
+   ],
+   "failure": [
+    "agent-account: sign-in failed / limit reached unnamed"
+   ],
+   "undo": "Forget server",
+   "todayBehaviour": [
+    {
+     "page": "agent-account",
+     "whenMissing": "hidden without agentAccount",
+     "evidence": "lib/ui/screens/agent_account_screen.dart:106"
+    }
+   ],
+   "target": "Same 'What works here' line as Paseo."
+  }
+ ],
+ "setupModel": {
+  "components": [
+   {
+    "id": "linux",
+    "title": "Linux base (Ubuntu Base 24.04.5)",
+    "dependsOn": [],
+    "hosts": [
+     "builtin"
+    ],
+    "size": "~30 MB download",
+    "time": "15 s est.",
+    "status": "exists",
+    "evidence": "lib/builtin/setup/components.dart:33-44"
+   },
+   {
+    "id": "termux",
+    "title": "Termux app + permission (person-steps)",
+    "dependsOn": [],
+    "hosts": [
+     "termux"
+    ],
+    "size": "Termux APK",
+    "time": "person-paced",
+    "status": "target: rows that wait (KitActionStep proposal)",
+    "evidence": "docs/ux-system/map/all.json#termux-setup-get-termux"
+   },
+   {
+    "id": "essentials",
+    "title": "Git, SSH and certificates",
+    "dependsOn": [
+     "linux|termux"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "~45 MB",
+    "time": "60 s",
+    "status": "exists (builtin)",
+    "evidence": "lib/builtin/setup/components.dart:45-56"
+   },
+   {
+    "id": "python",
+    "title": "Python",
+    "dependsOn": [
+     "essentials"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "~25 MB",
+    "time": "40 s",
+    "status": "exists, default on; removeScript unused",
+    "evidence": "lib/builtin/setup/components.dart:57-68"
+   },
+   {
+    "id": "node",
+    "title": "Node.js (pinned v24.21.0)",
+    "dependsOn": [
+     "essentials"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "~58 MB",
+    "time": "20 s",
+    "status": "exists",
+    "evidence": "lib/builtin/setup/components.dart:69-81; lib/termux/bridge.dart:3184"
+   },
+   {
+    "id": "opencode",
+    "title": "OpenCode (param runtime=opencode1|opencode2, version)",
+    "dependsOn": [
+     "node"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "~50 MB each; both can be installed",
+    "time": "100 s",
+    "status": "exists",
+    "evidence": "lib/builtin/setup/components.dart:82-93"
+   },
+   {
+    "id": "start",
+    "title": "Start + connect (job step)",
+    "dependsOn": [
+     "opencode"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "0",
+    "time": "15 s",
+    "status": "exists",
+    "evidence": "lib/builtin/setup/components.dart:116-127; lib/builtin/setup/setup_finish.dart"
+   },
+   {
+    "id": "aiteam",
+    "title": "AI Team (Gas City, Beads, Dolt)",
+    "dependsOn": [
+     "essentials",
+     "opencode"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "~115 MB (arm64)",
+    "time": "150 s",
+    "status": "exists (builtin); Termux has its own onboarding",
+    "evidence": "lib/builtin/setup/components.dart:97-115; lib/builtin/setup/aiteam_scripts.dart:62-132"
+   },
+   {
+    "id": "claude",
+    "title": "Claude Code + Paseo daemon",
+    "dependsOn": [
+     "node"
+    ],
+    "hosts": [
+     "termux (today)",
+     "builtin (target)"
+    ],
+    "size": "~60 MB + packages; ~1 GB installed; 2 GB free",
+    "time": "10-20 min under proot (not measured in registry)",
+    "status": "target component; today claude.sh via Termux",
+    "evidence": "lib/termux/local_agent_runtime.dart:1-24; lib/l10n/app_en.arb:17701"
+   },
+   {
+    "id": "signin.claude",
+    "title": "Sign in to Claude (person-step)",
+    "dependsOn": [
+     "claude"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "0",
+    "time": "person-paced",
+    "status": "target: row that waits; today a Termux terminal",
+    "evidence": "lib/l10n/app_en.arb:17753"
+   },
+   {
+    "id": "signin.model",
+    "title": "Connect a model provider (person-step)",
+    "dependsOn": [
+     "start"
+    ],
+    "hosts": [
+     "builtin",
+     "termux",
+     "computer"
+    ],
+    "size": "0",
+    "time": "1-2 min",
+    "status": "target: last checklist row on Ready",
+    "evidence": "docs/ux-system/map/all.json#chat (model.auth)"
+   },
+   {
+    "id": "mcp:<name>",
+    "title": "A local MCP server package",
+    "dependsOn": [
+     "node|python"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "package",
+    "time": "package",
+    "status": "target",
+    "evidence": "lib/ui/screens/mcp_setup_screen.dart:110-125"
+   },
+   {
+    "id": "voice:<pack>",
+    "title": "Voice model pack",
+    "dependsOn": [],
+    "hosts": [
+     "app"
+    ],
+    "size": "104 / 160 / 375 MB",
+    "time": "1-5 min",
+    "status": "exists outside the engine (own downloader with Range resume)",
+    "evidence": "lib/voice/model_manifest.dart:63-145; lib/voice/model_download.dart:546"
+   },
+   {
+    "id": "battery",
+    "title": "Let it keep running (person-step)",
+    "dependsOn": [
+     "start"
+    ],
+    "hosts": [
+     "builtin",
+     "termux"
+    ],
+    "size": "0",
+    "time": "seconds",
+    "status": "target row; page exists",
+    "evidence": "lib/ui/screens/keep_running_screen.dart:151-167"
+   },
+   {
+    "id": "computer:pair",
+    "title": "Pair a computer (OpenCode 2: `opencode2 pair` QR)",
+    "dependsOn": [],
+    "hosts": [
+     "computer"
+    ],
+    "size": "n/a",
+    "time": "1-2 min",
+    "status": "exists",
+    "evidence": "lib/platform/platform_capabilities.dart:118-126"
+   },
+   {
+    "id": "computer:tailscale",
+    "title": "Reach it away from home",
+    "dependsOn": [
+     "computer:pair"
+    ],
+    "hosts": [
+     "computer",
+     "phone app"
+    ],
+    "size": "Tailscale app",
+    "time": "5 min",
+    "status": "exists (handoff only)",
+    "evidence": "lib/ui/screens/tailscale_setup_screen.dart:1-13"
+   },
+   {
+    "id": "computer:gascity",
+    "title": "AI Team on a computer (+ host front for control)",
+    "dependsOn": [
+     "computer:pair"
+    ],
+    "hosts": [
+     "computer"
+    ],
+    "size": "computer-side",
+    "time": "guide",
+    "status": "exists (guide sheet)",
+    "evidence": "lib/ui/widgets/team_host_form.dart:434"
+   },
+   {
+    "id": "computer:paseo",
+    "title": "Paseo daemon (Claude Code, Pi, Codex)",
+    "dependsOn": [],
+    "hosts": [
+     "computer"
+    ],
+    "size": "computer-side",
+    "time": "guide",
+    "status": "exists (commands in editor)",
+    "evidence": "lib/ui/screens/servers_screen.dart:3022-3025"
+   },
+   {
+    "id": "computer:codex",
+    "title": "Codex app-server",
+    "dependsOn": [],
+    "hosts": [
+     "computer"
+    ],
+    "size": "computer-side",
+    "time": "guide",
+    "status": "exists",
+    "evidence": "lib/ui/screens/servers_screen.dart:3026-3031"
+   },
+   {
+    "id": "computer:quota-collector",
+    "title": "Provider quota collector extension",
+    "dependsOn": [
+     "computer:pair"
+    ],
+    "hosts": [
+     "computer"
+    ],
+    "size": "unknown",
+    "time": "unknown",
+    "status": "no path anywhere",
+    "evidence": "lib/quota/provider_quota_client.dart:1-3"
+   }
+  ],
+  "flows": [
+   {
+    "id": "first-setup",
+    "steps": [
+     "Screen A: pre-flight (64-bit? free space ≥ selection+margin? RAM for later tools) shown before the button",
+     "Set up → linux, essentials, python, node, opencode(oc1), start",
+     "Ready: name a project → conversation; checklist tail offers 'Connect a model' and 'Let it keep running' as person rows"
+    ],
+    "today": "exists minus pre-flight and person rows"
+   },
+   {
+    "id": "add-tools",
+    "steps": [
+     "This phone ⋯ › Add tools → Customize sheet in add mode (Python, AI Team, Claude Code, MCP packages) with size/time totals → progress screen with only the new components"
+    ],
+    "today": "exists for Python and AI Team (phone_server_card.dart:209)"
+   },
+   {
+    "id": "mix-both",
+    "steps": [
+     "Add tools › Claude Code (needs a Claude sign-in) → claude component → sign-in row waits → a second profile 'This phone · Claude Code' is saved beside 'This phone · OpenCode'",
+     "Server switcher lists both; each conversation belongs to one agent; the process budget line warns when OpenCode + team + Claude together approach 32"
+    ],
+    "today": "only on Termux; in-app phones hit a dead end"
+   },
+   {
+    "id": "switch-runtime",
+    "steps": [
+     "This phone ⋯ › Switch to OpenCode 2 → opencode(runtime=opencode2) → restart + connect; both runtimes stay; conversations stay with their runtime's profile"
+    ],
+    "today": "exists"
+   },
+   {
+    "id": "update",
+    "steps": [
+     "This phone ⋯ › Update OpenCode → opencode(version=new) → restart"
+    ],
+    "today": "exists"
+   },
+   {
+    "id": "switch-host",
+    "steps": [
+     "Termux → in-app: run setup v2 (both coexist on different ports); target adds 'Bring my projects from Termux' (copy /root/projects through the bridge) before offering to remove the Termux server",
+     "In-app → Termux: Other ways › Use Termux instead"
+    ],
+    "today": "no project migration exists; hosts coexist"
+   },
+   {
+    "id": "remove",
+    "steps": [
+     "Per component: Remove (runs removeScript; blocked while a dependent is installed)",
+     "Whole host: Remove from this phone → first 'Keep my projects?' (export/zip) → uninstall; saved profiles for it are forgotten"
+    ],
+    "today": "whole-host only; deletes every project (app_en.arb:19025); removeScript never called"
+   },
+   {
+    "id": "resume",
+    "steps": [
+     "Any interruption → job interrupted → Continue setup on screen A hero, progress screen and notification; check scripts skip done components"
+    ],
+    "today": "exists"
+   },
+   {
+    "id": "computer-side",
+    "steps": [
+     "On my computer → pick agent (OpenCode / Claude Code or Pi / Codex) → the editor shows the exact command (pair / paseo / codex token) → connect → optional Tailscale → optional Gas City + host front → optional second agent on the same computer ('They run side by side')"
+    ],
+    "today": "exists; no 'finished' moment; team and Tailscale offered in separate places"
+   }
+  ]
+ },
+ "rules": [
+  "Offer at the moment of need, in the place the missing feature would be (Terminal's 'This phone' source, the composer before the first send, the Claude Code search result, the Work tab team door) — Settings lists state, it is never the only path.",
+  "One offer per screen: a capability is offered by exactly one row or notice on a screen; the same screen never shows it twice (fixes team-plugin-sheet 'Off' twice).",
+  "No dead ends: any 'finish X first' carries the button that does X (fixes local_agent_onboarding.dart:779-800).",
+  "Nothing vanishes silently: when the host cannot do something, the entry stays as one muted line saying which host can ('Files aren't available on Codex — open them on the computer'); the Server capabilities page lists the rest.",
+  "State the cost before the tap, from the component registry: download size, installed size, time, 'needs a Claude subscription', battery/heat, and 'uses N of the phone's background process budget' for long-running components.",
+  "Pre-flight before downloading: CPU (64-bit), free space, RAM; an unsupported phone is told before, never after a failed install.",
+  "Every install goes through setup v2's progress view (resume, notification, Continue setup); no second installer UI (Termux wizard, team onboarding steps, Claude Code panel, builtin-server-setup all merge in).",
+  "Never nag: 'Not now' folds an offer to one quiet row (TeamDiscoverMemory pattern) per capability per server; re-offer only when the context changes (new server, the person taps the feature).",
+  "Automation-first: where configuration is involved (MCP, providers, settings), offer 'Ask the agent to do it' beside the technical form.",
+  "Every install has an undo that says what data survives (projects, sign-ins) before anything is deleted."
+ ]
+}
