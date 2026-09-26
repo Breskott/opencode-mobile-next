@@ -1,6 +1,7 @@
 // Gallery (gate G4) for KitProgress v2, docs/ux-system/kit-api/KitProgress.md
 // "Galleries required": the six declared states at 412×915, the default
-// (staged) state at the other LAY-4 sizes, and at 2.0 text and in Arabic.
+// (staged) state at 360×800, 915×412, 800×1280, 1280×800 and 1600×1000,
+// and at 2.0 text and in Arabic.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_progress_golden_test.dart
@@ -8,7 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/kit/kit_layout.dart';
+import 'package:opencode_mobile/ui/kit/kit_progress.dart';
 
 import 'kit_gallery.dart';
 
@@ -18,6 +20,17 @@ Widget _host(KitProgress progress) => ConstrainedBox(
   constraints: const BoxConstraints(maxWidth: KitLayout.stateMaxWidth),
   child: KitProgressView(progress: progress),
 );
+
+/// KitProgress.md "Galleries required": the default (staged) state at
+/// these sizes besides 412×915. Listed here rather than read from
+/// `kitGallerySizes`, which has no 915×412 (the landscape phone).
+const _defaultSizes = <Size>[
+  Size(360, 800),
+  Size(915, 412),
+  Size(800, 1280),
+  Size(1280, 800),
+  Size(1600, 1000),
+];
 
 const _stagedEn = KitProgress.staged(
   step: 3,
@@ -82,9 +95,8 @@ void main() {
       });
     }
 
-    // Default (staged) at the other LAY-4 sizes.
-    for (final size in kitGallerySizes) {
-      if (size == const Size(412, 915)) continue;
+    // Default (staged) at the other LAY-4 sizes, the landscape phone included.
+    for (final size in _defaultSizes) {
       testWidgets('staged · ${kitGallerySize(size)} · $mode', (tester) async {
         await kitGalleryPart(
           tester,
