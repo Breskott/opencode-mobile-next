@@ -20,6 +20,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_technical_details.dart';
@@ -561,7 +562,9 @@ void main() {
         await tester.tap(find.text('details'));
         await tester.pumpAndSettle();
         final line = find.byKey(const ValueKey('team-host-disclaimer'));
-        return line.evaluate().isEmpty ? null : tester.widget<Text>(line).data;
+        return line.evaluate().isEmpty
+            ? null
+            : tester.widget<KitText>(line).text;
       }
 
       for (final entry in expected.entries) {

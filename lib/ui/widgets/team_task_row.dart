@@ -1,7 +1,7 @@
 /// A team task in the Work tab's own lists (docs/design/team-conversation-
-/// 2026-09-26.md: a team task is a conversation): its task mark with a small
-/// team badge, the title, and "Team · Working · 2 of 5 steps done" or
-/// "Team · Waiting for a worker · the team checks every minute". It opens
+/// 2026-09-26.md: a team task is a conversation): its task mark, the
+/// title, and "Team · Working · 2 of 5 steps done" or "Team · Waiting for
+/// a worker · the team checks every minute". It opens
 /// the task's team conversation. It replaces the separate AI Team card on
 /// the Work tab.
 library;
@@ -11,8 +11,9 @@ import 'package:flutter/material.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
-import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_task_mark.dart';
+import '../kit/kit_text.dart';
 import 'team_now.dart';
 import 'team_vocabulary.dart';
 
@@ -44,7 +45,6 @@ class TeamTaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
     final snapshot = team.snapshot;
     final needsYou = teamGatedRuns(snapshot).contains(run.id);
     final line = teamTaskLine(
@@ -61,59 +61,35 @@ class TeamTaskRow extends StatelessWidget {
       // task's own page says how long.
       showWaitAge: false,
     );
-    // A transparent ink surface of its own, like the TeamCard it replaces,
-    // so the row splashes wherever the list is placed.
-    return Material(
-      type: MaterialType.transparency,
-      child: Semantics(
-        button: true,
-        child: KitRow(
-          key: ValueKey('team-work-task-${run.id}'),
-          leading: SizedBox.square(
-            dimension: 32,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
-                // The team mark: this row is the team's, not one agent's.
-                PositionedDirectional(
-                  end: -2,
-                  bottom: -2,
-                  child: Container(
-                    key: ValueKey('team-work-task-mark-${run.id}'),
-                    padding: const EdgeInsets.all(1.5),
-                    decoration: BoxDecoration(
-                      color: theme.scaffoldBackgroundColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      AppIconography.agent,
-                      size: 13,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          title: run.title,
-          titleMaxLines: 2,
-          supporting: TextSpan(
-            children: [
-              TextSpan(
-                text: l10n.teamTaskMark,
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              TextSpan(text: '$teamUsageSeparator$line'),
-            ],
-          ),
-          supportingMaxLines: 2,
-          supportingKey: ValueKey('team-work-task-line-${run.id}'),
-          onTap: onOpen,
+    // The Work list's own row: the task's mark leads, and the "Team" word
+    // in `text1` opens the line, so the row reads as the team's, not one
+    // agent's. The list's scaffold is the ink surface.
+    return Semantics(
+      button: true,
+      child: KitRow(
+        key: ValueKey('team-work-task-${run.id}'),
+        leading: KeyedSubtree(
+          key: ValueKey('team-work-task-mark-${run.id}'),
+          child: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
         ),
+        title: run.title,
+        titleMaxLines: 2,
+        supporting: TextSpan(
+          children: [
+            TextSpan(
+              text: l10n.teamTaskMark,
+              style: KitText.styleOf(
+                context,
+                KitTextRole.secondary,
+                tone: KitTextTone.primary,
+              ),
+            ),
+            TextSpan(text: '$teamUsageSeparator$line'),
+          ],
+        ),
+        supportingMaxLines: 2,
+        supportingKey: ValueKey('team-work-task-line-${run.id}'),
+        onTap: onOpen,
       ),
     );
   }
