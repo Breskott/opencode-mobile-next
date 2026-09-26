@@ -9,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
+import '../ui/kit/kit_redact.dart';
 import 'draft_attachments.dart';
+import 'saved_prompt_safety.dart';
 
 enum PromptPhotoFailure { storage, pending, tooLarge, unsupported, unavailable }
 
@@ -139,6 +141,28 @@ class PromptPhotoStore extends ChangeNotifier {
 
   Future<void> _save(PendingPromptPhoto photo) async {
     try {
+      String? identity(String? value) =>
+          value == null ? null : savedPromptIdentity(value);
+      final ref = photo.ref;
+      photo = PendingPromptPhoto(
+        id: savedPromptIdentity(photo.id),
+        profileID: savedPromptIdentity(photo.profileID),
+        sessionID: savedPromptIdentity(photo.sessionID),
+        directory: identity(photo.directory),
+        workspace: identity(photo.workspace),
+        path: identity(photo.path),
+        name: photo.name == null ? null : KitRedact.text(photo.name!),
+        failed: photo.failed,
+        ref: ref == null
+            ? null
+            : DraftAttachmentRef(
+                filename: KitRedact.text(ref.filename),
+                mime: KitRedact.text(ref.mime),
+                blob: identity(ref.blob),
+                url: identity(ref.url),
+                bytes: ref.bytes,
+              ),
+      );
       if (!await prefs.setString(key, jsonEncode(photo.toJson()))) {
         throw const PromptPhotoException(PromptPhotoFailure.storage);
       }
