@@ -1,0 +1,19 @@
+Base: codex/p65 at d97420b8
+SDK: /home/eslam/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5
+
+Attempted:
+  $SDK/bin/dart format --language-version=3.10 lib/state/lifecycle_report.dart test/lifecycle_report_test.dart
+  $SDK/bin/flutter test --concurrency=1 test/lifecycle_report_test.dart
+  $SDK/bin/flutter analyze
+Each exited 1 before the requested operation:
+  bin/internal/update_engine_version.sh: line 71: bin/cache/engine.stamp.tmp.<pid>: Read-only file system
+  bin/internal/update_engine_version.sh: line 78: bin/cache/engine.realm: Read-only file system
+No tests executed; no analyzer result was produced.
+
+Formatter fallback (same pinned SDK, no copy or SDK mutation):
+  $SDK/bin/cache/dart-sdk/bin/dart --suppress-analytics format --language-version=3.10 lib/state/lifecycle_report.dart test/lifecycle_report_test.dart
+Exit 0. Formatted 2 files (1 changed) in 0.01 seconds.
+Warning for both files: package:flutter_lints/flutter.yaml could not be resolved.
+An earlier direct Dart attempt formatted the files but exited 1 because telemetry
+could not update /home/eslam/.dart-tool/dart-flutter-telemetry-session.json.
+--suppress-analytics allowed the final formatter operation to exit successfully.
