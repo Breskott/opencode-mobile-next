@@ -32129,6 +32129,54 @@ abstract class AppLocalizations {
   /// **'{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}'**
   String kitSinceAge(int minutes);
 
+  /// Kit receipt: a write the phone is sending right now (a mark and this word, in place)
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get kitReceiptSending;
+
+  /// Kit receipt: the write left the phone and the server has not echoed it yet. Never 'Done'
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get kitReceiptSent;
+
+  /// Kit receipt: the server echoed the write; a caller's label for the act (for example 'Allowed once') replaces this word
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitReceiptConfirmed;
+
+  /// Kit receipt: no echo from the server in time, or the echo was lost; offered with Try again
+  ///
+  /// In en, this message translates to:
+  /// **'Not confirmed yet'**
+  String get kitReceiptNotConfirmed;
+
+  /// Kit receipt: the server refused the write and gave no reason
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get kitReceiptRefused;
+
+  /// Kit receipt: the server refused the write, with its reason in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted: {reason}'**
+  String kitReceiptRefusedReason(String reason);
+
+  /// Kit receipt: someone answered this on another device first
+  ///
+  /// In en, this message translates to:
+  /// **'Answered on {where}'**
+  String kitReceiptAnsweredElsewhere(String where);
+
+  /// Kit receipt: when the latest change happened, after the receipt's word: 'Sent at 10:42'
+  ///
+  /// In en, this message translates to:
+  /// **'at {time}'**
+  String kitReceiptAt(String time);
+
   /// Kit status mark: the default word for the waiting state, in semantics and beside the mark
   ///
   /// In en, this message translates to:

@@ -22408,6 +22408,56 @@
       }
     }
   },
+  "kitReceiptSending": "Sending…",
+  "@kitReceiptSending": {
+    "description": "Kit receipt: a write the phone is sending right now (a mark and this word, in place)"
+  },
+  "kitReceiptSent": "Sent",
+  "@kitReceiptSent": {
+    "description": "Kit receipt: the write left the phone and the server has not echoed it yet. Never 'Done'"
+  },
+  "kitReceiptConfirmed": "Done",
+  "@kitReceiptConfirmed": {
+    "description": "Kit receipt: the server echoed the write; a caller's label for the act (for example 'Allowed once') replaces this word"
+  },
+  "kitReceiptNotConfirmed": "Not confirmed yet",
+  "@kitReceiptNotConfirmed": {
+    "description": "Kit receipt: no echo from the server in time, or the echo was lost; offered with Try again"
+  },
+  "kitReceiptRefused": "Not accepted",
+  "@kitReceiptRefused": {
+    "description": "Kit receipt: the server refused the write and gave no reason"
+  },
+  "kitReceiptRefusedReason": "Not accepted: {reason}",
+  "@kitReceiptRefusedReason": {
+    "description": "Kit receipt: the server refused the write, with its reason in plain words",
+    "placeholders": {
+      "reason": {
+        "type": "String",
+        "example": "the run already finished"
+      }
+    }
+  },
+  "kitReceiptAnsweredElsewhere": "Answered on {where}",
+  "@kitReceiptAnsweredElsewhere": {
+    "description": "Kit receipt: someone answered this on another device first",
+    "placeholders": {
+      "where": {
+        "type": "String",
+        "example": "the laptop"
+      }
+    }
+  },
+  "kitReceiptAt": "at {time}",
+  "@kitReceiptAt": {
+    "description": "Kit receipt: when the latest change happened, after the receipt's word: 'Sent at 10:42'",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:42"
+      }
+    }
+  },
   "kitMarkWaiting": "Waiting",
   "@kitMarkWaiting": {
     "description": "Kit status mark: the default word for the waiting state, in semantics and beside the mark"

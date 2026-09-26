@@ -20274,6 +20274,36 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get kitReceiptSending => 'Sending…';
+
+  @override
+  String get kitReceiptSent => 'Sent';
+
+  @override
+  String get kitReceiptConfirmed => 'Done';
+
+  @override
+  String get kitReceiptNotConfirmed => 'Not confirmed yet';
+
+  @override
+  String get kitReceiptRefused => 'Not accepted';
+
+  @override
+  String kitReceiptRefusedReason(String reason) {
+    return 'Not accepted: $reason';
+  }
+
+  @override
+  String kitReceiptAnsweredElsewhere(String where) {
+    return 'Answered on $where';
+  }
+
+  @override
+  String kitReceiptAt(String time) {
+    return 'at $time';
+  }
+
+  @override
   String get kitMarkWaiting => 'بانتظار';
 
   @override
