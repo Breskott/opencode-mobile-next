@@ -223,16 +223,22 @@ void main() {
         findsOneWidget,
       );
       // The graph is smaller than the viewport: shown at 1x, centred.
-      // 368x368: KitWorkGraph.md's 48dp node floor (LAY-9) makes chips
-      // taller than the retired 44dp default, so the canvas is taller too
-      // (368, not 352); KitZoom's own canvas fit has no extra margin
-      // (KitImage.md), unlike the retired WorkGraph._fit's 12dp one.
+      // 368x408: chips are 58 tall, not the retired 44 — KitWorkGraph.md's
+      // 48dp node floor (LAY-9), and since the fixture has a stuck item,
+      // every chip holds a second line for a stuck item's state word
+      // (rowTitle 22 + secondary 20 + space2 8 + 8), so a blocked item
+      // never reads as the waiting mark it borrows (this unit's QA record).
+      // KitZoom's own canvas fit has no extra margin (KitImage.md), unlike
+      // the retired WorkGraph._fit's 12dp one.
       final fitted = transform.value.clone();
       expect(fitted.storage[0], closeTo(1, 1e-9));
       expect(fitted.getTranslation().x, closeTo((800 - 368) / 2, 1e-9));
-      expect(fitted.getTranslation().y, closeTo((600 - 368) / 2, 1e-9));
+      expect(fitted.getTranslation().y, closeTo((600 - 408) / 2, 1e-9));
 
-      final layout = WorkGraphLayout.compute(_six, nodeSize: const Size(156, 48));
+      final layout = WorkGraphLayout.compute(
+        _six,
+        nodeSize: const Size(156, 58),
+      );
       final origin = tester.getTopLeft(find.byType(WorkGraph));
       Offset onScreen(String id) =>
           origin +
