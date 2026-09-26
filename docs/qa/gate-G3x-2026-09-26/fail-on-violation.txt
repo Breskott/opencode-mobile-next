@@ -1,0 +1,47 @@
+00:00 +0: loading test/design_standard_test.dart
+00:00 +0: G3x: migrated screens hold every forbidden pattern at zero (or below their baseline)
+00:00 +0 -1: G3x: migrated screens hold every forbidden pattern at zero (or below their baseline) [E]
+  Expected: empty
+    Actual: [
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G7 EdgeInsets.only(left|right:) x1 (migrated on or after 2026-09-26, so it must be zero; LAY-8)',
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G7 TextAlign.left|right x1 (migrated on or after 2026-09-26, so it must be zero; LAY-8)',
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G17 .colorScheme. x1 (migrated on or after 2026-09-26, so it must be zero; LOOK-2)',
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G21 fontSize: x1 (migrated on or after 2026-09-26, so it must be zero; LOOK-12, LOOK-13)',
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G21 TextStyle( x1 (migrated on or after 2026-09-26, so it must be zero; LOOK-12)',
+              'lib/ui/widgets/g3x_throwaway_violation.dart: G21 EdgeInsets(<n>) x1 (migrated on or after 2026-09-26, so it must be zero; LAY-6, LAY-7, KIT-9)',
+              'lib/ui/widgets/team_card.dart: G17 .textTheme. rose from 3 to 4 (the baseline only shrinks; LOOK-2)'
+            ]
+  use lib/ui/kit/ (design standard §8)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/design_standard_test.dart 501:5                main.<fn>
+  
+00:00 +0 -1: G3x: migrated classes in mixed files use the kit
+00:00 +1 -1: G3x: the baseline only shrinks and names only migrated entries
+00:00 +2 -1: G3x: a screen migrated on or after 2026-09-26 has an _ar_dark golden
+00:00 +2 -2: G3x: a screen migrated on or after 2026-09-26 has an _ar_dark golden [E]
+  Expected: empty
+    Actual: ['lib/ui/widgets/g3x_throwaway_violation.dart: none of work_loaded_ar_dark.png']
+  TEST-10: the loaded state in Arabic
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/design_standard_test.dart 570:5                main.<fn>
+  
+00:00 +2 -2: raw parts a migrated screen gave up do not come back
+00:00 +3 -2: every allowlist entry names a migrated file and gives a reason
+00:00 +4 -2: each migrated screen has dark and light goldens at 412x915
+00:00 +5 -2: scenes take their time only from KitIllustration (§10)
+00:00 +6 -2: the kit is the one place raw progress and filled buttons live
+00:00 +7 -2: G3x counters on fixture strings (proves the patterns) every G1, G2, G7, G17 and G21 pattern is forbidden
+00:00 +8 -2: G3x counters on fixture strings (proves the patterns) a screen that breaks one rule of each gate fails each
+00:00 +9 -2: G3x counters on fixture strings (proves the patterns) scopes: the kit and the theme files are judged by their own rules
+00:00 +10 -2: G3x counters on fixture strings (proves the patterns) directional and themed forms pass
+00:00 +11 -2: G3x counters on fixture strings (proves the patterns) bidi literals count outside the kit, as characters or escapes
+00:00 +12 -2: G3x counters on fixture strings (proves the patterns) an argument list is read to its closing parenthesis
+00:00 +13 -2: Some tests failed.
+
+Failing tests:
+  test/design_standard_test.dart: G3x: a screen migrated on or after 2026-09-26 has an _ar_dark golden
+  test/design_standard_test.dart: G3x: migrated screens hold every forbidden pattern at zero (or below their baseline)
