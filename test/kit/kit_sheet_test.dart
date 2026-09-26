@@ -4,9 +4,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/widgets/request_routes.dart';
 
 import 'kit_harness.dart';
 
@@ -36,6 +38,95 @@ void main() {
     await tester.tap(find.text('Use English'));
     await tester.pumpAndSettle();
     expect(result, 'en');
+  });
+
+  group('the header icon tile (§5 Sheets)', () {
+    testWidgets(
+      'with icon, the tile sits above the title, at the start, and is '
+      'excluded from semantics',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        unawaited(
+          showKitSheet<void>(
+            context,
+            title: 'Language',
+            icon: AppIconography.globe,
+            body: (_) => const Text('English'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final tile = find.byKey(const ValueKey('kit-sheet-icon'));
+        expect(tile, findsOneWidget);
+        final glyph = find.descendant(
+          of: tile,
+          matching: find.byIcon(AppIconography.globe),
+        );
+        expect(glyph, findsOneWidget);
+        expect(
+          find.ancestor(of: glyph, matching: find.byType(ExcludeSemantics)),
+          findsOneWidget,
+        );
+        final tileRect = tester.getRect(tile);
+        final titleRect = tester.getRect(find.text('Language'));
+        expect(tileRect.bottom, lessThanOrEqualTo(titleRect.top));
+        expect(tileRect.left, moreOrLessEquals(titleRect.left, epsilon: 1));
+      },
+    );
+
+    testWidgets('without icon, no tile is drawn', (tester) async {
+      final context = await pumpKitHost(tester);
+      unawaited(
+        showKitSheet<void>(
+          context,
+          title: 'Language',
+          body: (_) => const Text('English'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('kit-sheet-icon')), findsNothing);
+    });
+
+    testWidgets(
+      'tone: attention paints the glyph in attention, neutral in text1',
+      (tester) async {
+        final context = await pumpKitHost(tester, light: true);
+        final roles = ThemeRoles.resolve(AppTheme.light());
+        Icon glyphOf(Finder tile) => tester.widget<Icon>(
+          find.descendant(of: tile, matching: find.byType(Icon)),
+        );
+
+        unawaited(
+          showKitSheet<void>(
+            context,
+            title: 'Language',
+            icon: AppIconography.globe,
+            body: (_) => const Text('English'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          glyphOf(find.byKey(const ValueKey('kit-sheet-icon'))).color,
+          roles.text1,
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        unawaited(
+          showKitSheet<void>(
+            context,
+            title: 'Approve run',
+            icon: AppIconography.globe,
+            tone: KitSheetTone.attention,
+            body: (_) => const Text('Run it?'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          glyphOf(find.byKey(const ValueKey('kit-sheet-icon'))).color,
+          roles.attention,
+        );
+      },
+    );
   });
 
   testWidgets('close and back dismiss a sheet with nothing to lose', (
@@ -159,6 +250,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byTooltip('Close'), findsNothing);
+    expect(find.byType(KitIconButton), findsNothing);
     await tester.binding.handlePopRoute();
     await tester.tapAt(const Offset(200, 40));
     await tester.pumpAndSettle();
@@ -190,6 +282,7 @@ void main() {
       (const Size(360, 800), KitSheetHeight.content, 'bottom'),
       (const Size(800, 1280), KitSheetHeight.content, 'bottom'),
       (const Size(1280, 800), KitSheetHeight.content, 'panel'),
+      (const Size(1600, 1000), KitSheetHeight.content, 'panel'),
       (const Size(1600, 1000), KitSheetHeight.full, 'side'),
       (const Size(915, 412), KitSheetHeight.content, 'bottom'),
     ]) {
@@ -288,9 +381,144 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byType(KitIconButton), findsOneWidget);
     final close = tester.getSize(find.byTooltip('Close'));
     expect(close.width, greaterThanOrEqualTo(48));
     expect(close.height, greaterThanOrEqualTo(48));
     expect(find.byIcon(AppIconography.close), findsOneWidget);
+  });
+
+  testWidgets('the grabber exposes the "Dismiss" action when dismissible', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final context = await pumpKitHost(tester);
+    unawaited(
+      showKitSheet<void>(
+        context,
+        title: 'Language',
+        body: (_) => const Text('English'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Sibling declarative Semantics with no boundary of their own merge
+    // into one node here (the grabber and the header), so only the action
+    // itself (not the whole flag/label set) is checked.
+    final node = tester.getSemantics(
+      find.byKey(const ValueKey('kit-sheet-handle')),
+    );
+    expect(node.getSemanticsData().hasAction(SemanticsAction.dismiss), isTrue);
+    handle.dispose();
+  });
+
+  testWidgets('pinned actions stay visible with the keyboard open (KIT-17)', (
+    tester,
+  ) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final context = await pumpKitHost(tester);
+    unawaited(
+      showKitSheet<void>(
+        context,
+        title: 'Language',
+        // The body scrolls inside the frame's own scroll view; it is
+        // never its own ListView (KitSheet's contract).
+        body: (_) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(20, (i) => Text('Row $i')),
+        ),
+        primary: KitAction(label: 'Use English', onPressed: () {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final windowHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final primaryRect = tester.getRect(find.text('Use English'));
+    expect(primaryRect.bottom, lessThanOrEqualTo(windowHeight));
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
+  group('stacked actions (§5 Sheets)', () {
+    testWidgets('actions stack full width on a phone (§8.2)', (tester) async {
+      final context = await pumpKitHost(tester, size: const Size(412, 915));
+      unawaited(
+        showKitSheet<void>(
+          context,
+          title: 'Language',
+          body: (_) => const Text('English'),
+          primary: KitAction(label: 'Use English', onPressed: () {}),
+          secondary: KitAction(label: 'Keep current', onPressed: () {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+      Rect buttonRect(String label) => tester.getRect(
+        find.ancestor(of: find.text(label), matching: find.byType(KitButton)),
+      );
+      final primary = buttonRect('Use English');
+      final secondary = buttonRect('Keep current');
+      // Stacked: the secondary sits under the primary, both full width.
+      expect(secondary.top, greaterThanOrEqualTo(primary.bottom));
+      expect(primary.left, moreOrLessEquals(secondary.left, epsilon: 1));
+      expect(primary.width, moreOrLessEquals(secondary.width, epsilon: 1));
+      // The row-on-PC half of this acceptance needs kit-KitAction-v2's
+      // window-class rule (today's KitActionBlock rows only at
+      // maxWidth >= 600, which the 560 dp panel never reaches). NOT proven
+      // until it merges (README.md decision D4).
+    });
+  });
+
+  group('routes: closes itself when its request is answered elsewhere', () {
+    testWidgets(
+      'flipping isPending to false while open removes the route after '
+      'one frame, and the future completes with null',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        var pending = true;
+        final changes = ChangeNotifier();
+        addTearDown(changes.dispose);
+        final routes = RequestRoutes(
+          changes: changes,
+          isPending: () => pending,
+        );
+        String? result = 'unset';
+        unawaited(
+          showKitSheet<String>(
+            context,
+            title: 'Approve',
+            body: (_) => const Text('Run the build?'),
+            routes: routes,
+          ).then((v) => result = v),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Approve'), findsOneWidget);
+        pending = false;
+        changes.notifyListeners();
+        await tester.pump();
+        await tester.pumpAndSettle();
+        expect(find.text('Approve'), findsNothing);
+        expect(result, isNull);
+      },
+    );
+
+    testWidgets('a non-pending routes at call time pushes no route', (
+      tester,
+    ) async {
+      final routes = RouteCounter();
+      final context = await pumpKitHost(tester, routes: routes);
+      final before = routes.pushes;
+      final requestRoutes = RequestRoutes(isPending: () => false);
+      final result = await showKitSheet<String>(
+        context,
+        title: 'Approve',
+        body: (_) => const Text('Run the build?'),
+        routes: requestRoutes,
+      );
+      expect(result, isNull);
+      expect(find.text('Approve'), findsNothing);
+      expect(routes.pushes, before);
+    });
   });
 }
