@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.system.Os
 import android.system.OsConstants
+import android.system.ErrnoException
 import android.util.Log
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -36,6 +37,24 @@ class BuiltinLinux(private val context: Context) {
 
     val home = File(context.filesDir, "linux")
     val rootfs = File(home, "ubuntu")
+    private val projectStorage = BuiltinProjectStorage(
+        context.filesDir, File(context.cacheDir, "ubuntu-base.tar.gz"),
+    ) { file ->
+        try {
+            val stat = Os.lstat(file.absolutePath)
+            val kind = when {
+                OsConstants.S_ISLNK(stat.st_mode) -> BuiltinProjectStorage.Kind.LINK
+                OsConstants.S_ISDIR(stat.st_mode) -> BuiltinProjectStorage.Kind.DIRECTORY
+                OsConstants.S_ISREG(stat.st_mode) -> BuiltinProjectStorage.Kind.FILE
+                else -> BuiltinProjectStorage.Kind.OTHER
+            }
+            BuiltinProjectStorage.Entry(kind, stat.st_size)
+        } catch (error: ErrnoException) {
+            if (error.errno == OsConstants.ENOENT) null else throw error
+        }
+    }
+    private val processes = mutableListOf<Process>()
+    private var installingRuntime = false
     private val ready = File(home, "ubuntu.ready")
     private val nativeDir = context.applicationInfo.nativeLibraryDir
 
@@ -67,23 +86,33 @@ class BuiltinLinux(private val context: Context) {
      * while unpacking starts again from the unpack, not the download.
      */
     fun install(image: Image = imageForDevice(), progress: InstallProgress) {
-        if (installed) return
-        home.mkdirs()
-        val archive = File(context.cacheDir, "ubuntu-base.tar.gz")
-        progress.stage(InstallStage.DOWNLOAD)
-        progress.log("Downloading ${image.url}")
-        download(image, archive, progress)
-        progress.stage(InstallStage.UNPACK)
-        progress.log("Unpacking Ubuntu Base $VERSION")
-        rootfs.deleteRecursively()
-        rootfs.mkdirs()
-        unpack(archive, rootfs, progress)
-        configure()
-        ready.writeText(image.sha256)
-        phase = "ready"
-        message = null
-        archive.delete()
-        progress.log("Ubuntu Base $VERSION is installed")
+        synchronized(this) {
+            check(!installingRuntime) { "A runtime installation is already running" }
+            projectStorage.prepare()
+            if (installed) return
+            installingRuntime = true
+        }
+        try {
+            home.mkdirs()
+            val archive = File(context.cacheDir, "ubuntu-base.tar.gz")
+            progress.stage(InstallStage.DOWNLOAD)
+            progress.log("Downloading ${image.url}")
+            download(image, archive, progress)
+            progress.stage(InstallStage.UNPACK)
+            progress.log("Unpacking Ubuntu Base $VERSION")
+            projectStorage.resetRootfs()
+            rootfs.mkdirs()
+            unpack(archive, rootfs, progress)
+            configure()
+            projectStorage.prepare()
+            ready.writeText(image.sha256)
+            phase = "ready"
+            message = null
+            archive.delete()
+            progress.log("Ubuntu Base $VERSION is installed")
+        } finally {
+            synchronized(this) { installingRuntime = false }
+        }
     }
 
     /** Runs [script] with /bin/sh inside Ubuntu as root (faked by proot). */
@@ -115,7 +144,10 @@ class BuiltinLinux(private val context: Context) {
      * back when [log] is null. proot is given --kill-on-exit, so stopping it
      * stops everything the script started.
      */
+    @Synchronized
     fun start(script: String, log: File?): Process {
+        check(installed) { "Ubuntu is not installed in the app yet" }
+        processes.removeAll { !it.isAlive }
         return ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script)))
             .redirectErrorStream(true)
             .apply {
@@ -125,7 +157,7 @@ class BuiltinLinux(private val context: Context) {
                     redirectOutput(ProcessBuilder.Redirect.appendTo(log))
                 }
             }
-            .start()
+            .start().also { processes.add(it) }
     }
 
     /** proot's own path: the program a terminal session (LocalTerminal.kt) starts. */
@@ -136,28 +168,34 @@ class BuiltinLinux(private val context: Context) {
      * a clean environment. [start] and the local terminal (LocalTerminal.kt)
      * both use it, so a shell sees exactly what the app's scripts see.
      */
-    fun prootCommand(program: List<String>): List<String> = listOf(
-        prootPath,
-        "--root-id",
-        "--kill-on-exit",
-        // Android does not let apps make hard links; dpkg and git do.
-        "--link2symlink",
-        "-L",
-        "--sysvipc",
-        "--rootfs=${rootfs.absolutePath}",
-        "--bind=/dev",
-        "--bind=/proc",
-        "--bind=/sys",
-        "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
-    ) + fakeProcBinds + listOf(
-        "--cwd=/root",
-        "/usr/bin/env", "-i",
-        "HOME=/root",
-        "LANG=C.UTF-8",
-        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "TERM=xterm-256color",
-        "TMPDIR=/tmp",
-    ) + program
+    @Synchronized
+    fun prootCommand(program: List<String>): List<String> {
+        check(!installingRuntime) { "Runtime installation is still running" }
+        projectStorage.prepare()
+        return listOf(
+            prootPath,
+            "--root-id",
+            "--kill-on-exit",
+            // Android does not let apps make hard links; dpkg and git do.
+            "--link2symlink",
+            "-L",
+            "--sysvipc",
+            "--rootfs=${rootfs.absolutePath}",
+            "--bind=/dev",
+            "--bind=/proc",
+            "--bind=/sys",
+            "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
+            "--bind=${projectStorage.projects.absolutePath}:/root/projects",
+        ) + fakeProcBinds + listOf(
+            "--cwd=/root",
+            "/usr/bin/env", "-i",
+            "HOME=/root",
+            "LANG=C.UTF-8",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "TERM=xterm-256color",
+            "TMPDIR=/tmp",
+        ) + program
+    }
 
     /**
      * Stand-ins for the /proc files Android keeps from apps (stat, loadavg,
@@ -167,9 +205,9 @@ class BuiltinLinux(private val context: Context) {
      * use and load read as idle; only files the app cannot read are
      * replaced.
      */
-    private val fakeProcBinds: List<String> by lazy {
+    private val fakeProcBinds: List<String> get() {
         val dir = File(home, "proc")
-        FAKE_PROC.mapNotNull { (name, content) ->
+        return FAKE_PROC.mapNotNull { (name, content) ->
             val readable = try {
                 File("/proc/$name").inputStream().use { it.read() }
                 true
@@ -362,20 +400,45 @@ class BuiltinLinux(private val context: Context) {
         }.start()
     }
 
-    fun uninstall() {
+    @Synchronized
+    fun uninstall(alsoDeleteProjects: Boolean = false, confirmationName: String? = null) {
+        require(!alsoDeleteProjects || confirmationName == "OpenCode") {
+            "Project deletion needs the typed app name"
+        }
+        check(!installingRuntime && phase != "installing" && !SetupRunner.get(context).running) {
+            "Finish or cancel setup before removing the runtime"
+        }
         // Every service first (OpenCode, AI Team with its store and agents):
         // deleting files under a running program leaves it spinning on
         // nothing.
         stopAllServices()
-        ready.delete()
-        rootfs.deleteRecursively()
-        serverLog.delete()
-        home.listFiles()?.filter { it.name.endsWith(".log") }?.forEach { it.delete() }
-        // A finished setup job would otherwise still read as "done".
-        File(home, "setup.json").delete()
-        File(home, "setup.log").delete()
+        LocalTerminal.get(context).let { terminals ->
+            terminals.list().forEach {
+                it.stop()
+                check(!it.running) { "A terminal is still stopping" }
+                terminals.remove(it.id)
+            }
+        }
+        processes.filter { it.isAlive }.forEach { stopTree(it) }
+        check(processes.none { it.isAlive }) { "A runtime process is still stopping" }
+        processes.clear()
+        // Migration must succeed before any runtime data is removed.
+        projectStorage.removeRuntime(alsoDeleteProjects)
+        measured = null
         phase = "idle"
         message = null
+    }
+
+    /** Fresh, no-follow logical sizes for the two removal choices. */
+    @Synchronized
+    fun projectStorage(): Map<String, Long> {
+        check(!installingRuntime) { "Wait for runtime installation to finish" }
+        val sizes = projectStorage.measure()
+        return mapOf(
+            "runtimeBytes" to sizes.runtimeBytes,
+            "projectsBytes" to sizes.projectsBytes,
+            "measuredAtMilliseconds" to System.currentTimeMillis(),
+        )
     }
 
     /** Disk used by Ubuntu and what is installed in it, measured at most once a minute. */

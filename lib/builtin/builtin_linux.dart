@@ -103,6 +103,46 @@ class BuiltinLinuxException implements Exception {
   String toString() => message;
 }
 
+/// Fresh logical file sizes, not the cached status estimate or filesystem
+/// allocation. Values can change while programs write; refresh after removal.
+class BuiltinProjectStorage {
+  const BuiltinProjectStorage({
+    required this.runtimeBytes,
+    required this.projectsBytes,
+    required this.measuredAtMilliseconds,
+  });
+
+  factory BuiltinProjectStorage.fromMap(Map<Object?, Object?> map) {
+    int read(String key) {
+      final value = map[key];
+      if (value is! int || value < 0) {
+        throw const BuiltinLinuxException(
+          'Project storage could not be measured.',
+          code: 'storage_unavailable',
+        );
+      }
+      return value;
+    }
+
+    return BuiltinProjectStorage(
+      runtimeBytes: read('runtimeBytes'),
+      projectsBytes: read('projectsBytes'),
+      measuredAtMilliseconds: read('measuredAtMilliseconds'),
+    );
+  }
+
+  /// Ubuntu, tools, runtime settings/logs and any downloaded Ubuntu archive.
+  final int runtimeBytes;
+
+  /// Files beneath /root/projects, including hidden files and repositories.
+  /// Symlinks are not followed; data elsewhere in Ubuntu is not preserved.
+  final int projectsBytes;
+  final int measuredAtMilliseconds;
+
+  int get keepProjectsFreedBytes => runtimeBytes;
+  int get deleteEverythingFreedBytes => runtimeBytes + projectsBytes;
+}
+
 /// Ubuntu shipped inside the app, with no Termux (GitHub issue #87).
 ///
 /// The Android side (BuiltinLinux.kt) owns the download, proot and the
@@ -210,8 +250,67 @@ class BuiltinLinux {
       }) ??
       '';
 
-  /// Stops the server and deletes Ubuntu with everything inside it.
-  Future<void> uninstall() => _invoke<void>('uninstall');
+  /// Stops the runtime and removes Ubuntu/tools, preserving /root/projects.
+  /// Existing callers get the safe default. Use [remove] for explicit deletion.
+  Future<void> uninstall() => remove();
+
+  /// Literal app name the destructive confirmation asks the person to type.
+  static const deletionConfirmationName = 'OpenCode';
+
+  /// Measures both removal choices afresh. Throws on unknown/inaccessible
+  /// storage rather than presenting zero bytes. No paths or contents returned.
+  Future<BuiltinProjectStorage> projectStorage() async {
+    final raw = await _invokeProjectStorage<Object?>('projectStorage');
+    if (raw is! Map<Object?, Object?>) {
+      throw const BuiltinLinuxException(
+        'Project storage could not be measured.',
+        code: 'storage_unavailable',
+      );
+    }
+    return BuiltinProjectStorage.fromMap(raw);
+  }
+
+  /// Remove the runtime, keeping projects by default, including on reinstall.
+  /// Only the explicit destructive choice with the exact typed app name can
+  /// remove projects. Native code repeats the check and rejects active setup.
+  /// Migration/deletion failure throws: refresh storage, never assume success.
+  Future<void> remove({
+    bool alsoDeleteProjects = false,
+    String? confirmationName,
+  }) async {
+    if (alsoDeleteProjects && confirmationName != deletionConfirmationName) {
+      throw const BuiltinLinuxException(
+        'Type the app name to delete projects.',
+        code: 'confirmation_required',
+      );
+    }
+    // A distinct method fails closed on an older APK whose uninstall ignores
+    // preservation arguments. Never fall back to that destructive method.
+    await _invokeProjectStorage<void>('removeRuntime', {
+      'alsoDeleteProjects': alsoDeleteProjects,
+      if (alsoDeleteProjects) 'confirmationName': deletionConfirmationName,
+    });
+  }
+
+  // Keep native filesystem paths/errors and user-entered text out of messages
+  // and diagnostics. This flow persists no Dart state or diagnostic payload.
+  Future<T?> _invokeProjectStorage<T>(String method, [Object? args]) async {
+    try {
+      return await _invoke<T>(method, args);
+    } on BuiltinLinuxException catch (error) {
+      final code = switch (error.code) {
+        'unsupported_platform' || 'missing_plugin' => error.code,
+        _ =>
+          method == 'projectStorage' ? 'storage_unavailable' : 'removal_failed',
+      };
+      throw BuiltinLinuxException(
+        method == 'projectStorage'
+            ? 'Project storage could not be measured.'
+            : 'The runtime could not be removed.',
+        code: code,
+      );
+    }
+  }
 
   /// Starts a phone setup job in native code (SetupRunner.kt) and returns at
   /// once; [setupStatus] follows it. The shapes are the engine's

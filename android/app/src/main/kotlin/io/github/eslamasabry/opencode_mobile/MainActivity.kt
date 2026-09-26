@@ -373,7 +373,7 @@ class MainActivity : FlutterActivity() {
             }.start()
         }
         when (call.method) {
-            "status" -> result.success(
+            "status" -> inBackground {
                 mapOf(
                     "installed" to linux.installed,
                     "phase" to linux.phase,
@@ -383,11 +383,11 @@ class MainActivity : FlutterActivity() {
                     "services" to linux.runningServices(),
                     "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
                     "bytesUsed" to linux.bytesUsed(),
-                ),
-            )
-            "installUbuntu" -> {
+                )
+            }
+            "installUbuntu" -> inBackground {
                 linux.installInBackground()
-                result.success(null)
+                null
             }
             "run" -> {
                 val script = call.argument<String>("script")
@@ -453,10 +453,14 @@ class MainActivity : FlutterActivity() {
                 val tail = call.argument<Int>("tailBytes") ?: 16_384
                 inBackground { linux.serviceLogTail(name, tail) }
             }
-            "uninstall" -> inBackground {
-                linux.uninstall()
+            "uninstall", "removeRuntime" -> inBackground {
+                linux.uninstall(
+                    alsoDeleteProjects = call.argument<Boolean>("alsoDeleteProjects") == true,
+                    confirmationName = call.argument<String>("confirmationName"),
+                )
                 null
             }
+            "projectStorage" -> inBackground { linux.projectStorage() }
             // The phone setup job (SetupRunner.kt). The runner is made off
             // the main thread: its first use reads setup.json.
             "startSetup" -> {

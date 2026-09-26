@@ -95,43 +95,45 @@ class SetupRunner private constructor(private val context: Context) {
     }
 
     fun start(jobId: String, specs: List<Spec>, params: JSONObject?, texts: Texts) {
-        synchronized(lock) {
-            if (worker?.isAlive == true) {
-                if (job?.jobId == jobId) return
-                error("A setup job is already running")
+        synchronized(linux) {
+            synchronized(lock) {
+                if (worker?.isAlive == true) {
+                    if (job?.jobId == jobId) return
+                    error("A setup job is already running")
+                }
+                val now = System.currentTimeMillis()
+                val state = SetupJobState(
+                    jobId = jobId,
+                    state = "running",
+                    components = specs.map { spec ->
+                        SetupComponentStatus(
+                            id = spec.id,
+                            state = if (spec.skipped) "skipped" else "pending",
+                            weight = spec.weight,
+                            version = spec.version,
+                            data = spec.data,
+                        )
+                    },
+                    startedAt = now,
+                )
+                job = state
+                this.params = params
+                this.texts = texts
+                cancelled = false
+                stepResult = null
+                tail.clear()
+                log?.close()
+                log = try {
+                    FileWriter(logFile, false)
+                } catch (_: Exception) {
+                    null
+                }
+                writeNow()
+                lastNotifiedText = progressText(state.overall())
+                lastNotified = System.currentTimeMillis()
+                SetupService.start(context, texts.channel, texts.title, lastNotifiedText)
+                worker = Thread({ runJob(specs) }, "oc-setup").apply { start() }
             }
-            val now = System.currentTimeMillis()
-            val state = SetupJobState(
-                jobId = jobId,
-                state = "running",
-                components = specs.map { spec ->
-                    SetupComponentStatus(
-                        id = spec.id,
-                        state = if (spec.skipped) "skipped" else "pending",
-                        weight = spec.weight,
-                        version = spec.version,
-                        data = spec.data,
-                    )
-                },
-                startedAt = now,
-            )
-            job = state
-            this.params = params
-            this.texts = texts
-            cancelled = false
-            stepResult = null
-            tail.clear()
-            log?.close()
-            log = try {
-                FileWriter(logFile, false)
-            } catch (_: Exception) {
-                null
-            }
-            writeNow()
-            lastNotifiedText = progressText(state.overall())
-            lastNotified = System.currentTimeMillis()
-            SetupService.start(context, texts.channel, texts.title, lastNotifiedText)
-            worker = Thread({ runJob(specs) }, "oc-setup").apply { start() }
         }
     }
 
