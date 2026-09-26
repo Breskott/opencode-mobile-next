@@ -32285,101 +32285,23 @@ abstract class AppLocalizations {
   /// **'Undoing'**
   String get kitUndoWorking;
 
-  /// KitWorkLine: a segment of the work summary chip: files read (the first segment is capitalised by the code)
+  /// KitTerm: the semantics hint on a term that explains itself, read after its name
   ///
   /// In en, this message translates to:
-  /// **'read {count, plural, =1{1 file} other{{count} files}}'**
-  String kitWorkRead(int count);
+  /// **'Explanation available'**
+  String get kitTermHint;
 
-  /// KitWorkLine: a segment of the work summary chip: searches (glob, grep)
+  /// KitTerm: the semantics tap hint that replaces "Activate" on a term
   ///
   /// In en, this message translates to:
-  /// **'searched {count, plural, =1{once} other{{count} times}}'**
-  String kitWorkSearched(int count);
+  /// **'Show explanation'**
+  String get kitTermShow;
 
-  /// KitWorkLine: a segment of the work summary chip: folders listed
+  /// KitTerm: the open bubble's spoken label and dismiss action
   ///
   /// In en, this message translates to:
-  /// **'listed {count, plural, =1{1 folder} other{{count} folders}}'**
-  String kitWorkListed(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: files edited or written
-  ///
-  /// In en, this message translates to:
-  /// **'edited {count, plural, =1{1 file} other{{count} files}}'**
-  String kitWorkEdited(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: commands run
-  ///
-  /// In en, this message translates to:
-  /// **'ran {count, plural, =1{1 command} other{{count} commands}}'**
-  String kitWorkRan(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: web pages fetched or searched
-  ///
-  /// In en, this message translates to:
-  /// **'fetched {count, plural, =1{1 page} other{{count} pages}}'**
-  String kitWorkFetched(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: sub-agents started
-  ///
-  /// In en, this message translates to:
-  /// **'delegated {count, plural, =1{1 task} other{{count} tasks}}'**
-  String kitWorkDelegated(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: other tool calls
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 other step} other{{count} other steps}}'**
-  String kitWorkOther(int count);
-
-  /// KitWorkLine: a segment of the work summary chip: calls the server never ran
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 not run} other{{count} not run}}'**
-  String kitWorkNotRun(int count);
-
-  /// KitWorkLine: the work summary chip's words when no tool call was counted: model steps
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
-  String kitWorkSteps(int count);
-
-  /// KitWorkLine: the separator between the work summary chip's segments (leading and trailing space included)
-  ///
-  /// In en, this message translates to:
-  /// **' · '**
-  String get kitWorkSeparator;
-
-  /// KitWorkLine: the work chip's words while a request in this turn waits for the person
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for you'**
-  String get kitWorkWaitingForYou;
-
-  /// KitWorkLine: appended to the work chip's summary when the person stopped the turn
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped'**
-  String get kitWorkStopped;
-
-  /// KitWorkLine: the word beside the failed mark when the turn's work ended on a failure; also starts the chip's spoken label
-  ///
-  /// In en, this message translates to:
-  /// **'Didn\'t finish'**
-  String get kitWorkDidntFinish;
-
-  /// KitWorkLine: starts the work chip's spoken label while a step is running
-  ///
-  /// In en, this message translates to:
-  /// **'Working'**
-  String get kitWorkWorking;
-
-  /// KitWorkLine: the button above an opened work line's newest steps that reveals the older ones in place
-  ///
-  /// In en, this message translates to:
-  /// **'Show {count, plural, =1{1 earlier step} other{{count} earlier steps}}'**
-  String kitWorkEarlierSteps(int count);
+  /// **'Close explanation'**
+  String get kitTermClose;
 }
 
 class _AppLocalizationsDelegate
