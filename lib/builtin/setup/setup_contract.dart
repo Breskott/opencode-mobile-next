@@ -22,6 +22,7 @@ class SetupComponent {
     this.estimatedSeconds = 60,
     this.downloadBytes,
     this.removeScript,
+    this.presenceScript,
     this.why,
     this.native = false,
     this.jobStep = false,
@@ -48,6 +49,12 @@ class SetupComponent {
   /// Idempotent. Reports with `::oc stage|bytes|percent|version` lines.
   final String installScript;
   final String? removeScript;
+
+  /// Removal inventory, independent of pinned-version/health checks: exit 0
+  /// means present (including a partial install), 1 absent, anything else
+  /// unknown. Output is discarded. Null means presence cannot be verified.
+  /// Native components use the native installed status instead.
+  final String? presenceScript;
 
   /// Installed by native code rather than a script (the Linux base itself).
   final bool native;

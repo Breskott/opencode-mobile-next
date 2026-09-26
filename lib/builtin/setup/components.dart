@@ -52,6 +52,9 @@ List<SetupComponent> setupComponents(
       estimatedSeconds: 60,
       downloadBytes: 45 * _mb,
       checkScript: SetupScripts.essentialsCheck,
+      presenceScript:
+          'command -v git >/dev/null 2>&1 || '
+          'command -v curl >/dev/null 2>&1 || command -v ssh >/dev/null 2>&1',
       installScript: SetupScripts.essentialsInstall,
     ),
     SetupComponent(
@@ -65,6 +68,7 @@ List<SetupComponent> setupComponents(
       checkScript: SetupScripts.pythonCheck,
       installScript: SetupScripts.pythonInstall,
       removeScript: SetupScripts.pythonRemove,
+      presenceScript: SetupScripts.pythonPresence,
     ),
     SetupComponent(
       id: SetupComponentIds.node,
@@ -77,6 +81,9 @@ List<SetupComponent> setupComponents(
       estimatedSeconds: 20,
       downloadBytes: 58 * _mb,
       checkScript: SetupScripts.nodeCheck,
+      presenceScript:
+          '[ -e /opt/node ] || [ -L /opt/node ] || '
+          'command -v node >/dev/null 2>&1',
       installScript: SetupScripts.nodeInstall,
     ),
     SetupComponent(
@@ -89,6 +96,11 @@ List<SetupComponent> setupComponents(
       estimatedSeconds: 100,
       downloadBytes: 50 * _mb,
       checkScript: SetupScripts.openCodeCheck(runtime, version: version),
+      presenceScript:
+          'command -v opencode >/dev/null 2>&1 || '
+          'command -v opencode2 >/dev/null 2>&1 || '
+          '[ -e /usr/local/lib/node_modules/opencode-ai ] || '
+          '[ -e /usr/local/lib/node_modules/opencode ]',
       installScript: SetupScripts.openCodeInstall(runtime, version: version),
     ),
     // Several agents sharing the work on one project. Opt-in and install
@@ -112,6 +124,13 @@ List<SetupComponent> setupComponents(
         preparing: l10n.aiteamComponentStagePreparing,
       ),
       removeScript: AiTeamScripts.removeScript,
+      presenceScript:
+          '[ -e /opt/aiteam ] || [ -L /opt/aiteam ] || '
+          '[ -e /root/aiteam ] || [ -e /root/.gc ] || '
+          '[ -e /var/cache/oc-setup/aiteam ] || '
+          '[ -L /usr/local/bin/gc ] || [ -e /usr/local/bin/gc ] || '
+          '[ -L /usr/local/bin/bd ] || [ -e /usr/local/bin/bd ] || '
+          '[ -L /usr/local/bin/dolt ] || [ -e /usr/local/bin/dolt ]',
     ),
     SetupComponent(
       id: SetupComponentIds.start,
@@ -180,6 +199,14 @@ oc_version "\$(python3 --version | cut -d ' ' -f 2)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get remove -y python3-venv python3-pip
 apt-get autoremove -y
+''';
+
+  // Python itself belongs to Ubuntu and survives pythonRemove. Inventory
+  // describes the removable pip/venv component, including partial installs.
+  static const pythonPresence = r'''set -eu
+[ -r /var/lib/dpkg/status ] || exit 2
+packages=$(dpkg-query -W -f='${Package} ${Status}\n') || exit 2
+printf '%s\n' "$packages" | grep -Eq '^python3-(pip|venv) install ok installed$'
 ''';
 
   static String get _nodeVersion =>
