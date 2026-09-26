@@ -10,8 +10,10 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/setup_terminal.dart';
+import 'keep_running_screen.dart';
 
 /// "Run OpenCode inside the app — no Termux" (experimental, GitHub issue #87).
 ///
@@ -706,6 +708,20 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
               ),
               if (ubuntuReady) ...[
                 const Divider(height: 32),
+                // The server lives in this app's process: what to allow so
+                // Android leaves it running.
+                KitRow(
+                  key: const Key('builtin-server-keep-running'),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  leading: KitRow.icon(context, AppIconography.batteryCharging),
+                  title: l10n.keepRunningTitle,
+                  titleMaxLines: 2,
+                  supporting: TextSpan(text: l10n.keepRunningRowSubtitle),
+                  supportingMaxLines: 2,
+                  trailing: const KitChevron(),
+                  onTap: () => openKeepRunningScreen(context),
+                ),
+                const SizedBox(height: 8),
                 // Measured in the background: nothing until a real figure.
                 if ((status?.bytesUsed ?? 0) > 0)
                   Text(

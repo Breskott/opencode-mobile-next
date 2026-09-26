@@ -21825,5 +21825,185 @@
   "teamBoardCardHint": "long press for moves",
   "@teamBoardCardHint": {
     "description": "Board: screen reader hint on a card that has moves"
+  },
+  "appExitForceStopped": "Android closed OpenCode Mobile {time}",
+  "@appExitForceStopped": {
+    "description": "After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitLowMemory": "Android closed OpenCode Mobile {time} to free memory",
+  "@appExitLowMemory": {
+    "description": "After a low-memory kill: first half of the notice",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitCrashed": "OpenCode Mobile stopped unexpectedly {time}",
+  "@appExitCrashed": {
+    "description": "After a crash or not-responding: first half of the notice",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitKilled": "Android stopped OpenCode Mobile {time}",
+  "@appExitKilled": {
+    "description": "After another system kill: first half of the notice",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerStopped": "{what}. Your phone's OpenCode stopped with it; it's starting again.",
+  "@appExitServerStopped": {
+    "description": "The notice when only the phone's OpenCode server was running; what is one of the appExit first halves",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerAndTeamStopped": "{what}. Your phone's OpenCode and the AI Team stopped with it; they're starting again.",
+  "@appExitServerAndTeamStopped": {
+    "description": "The notice when the phone's OpenCode and the AI Team were running",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitAtTime": "at {time}",
+  "@appExitAtTime": {
+    "description": "Time of the exit today, e.g. 'at 00:06'",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitOnDay": "on {day} at {time}",
+  "@appExitOnDay": {
+    "description": "Time of an exit on an earlier day",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitKeepRunning": "Keep it running",
+  "@appExitKeepRunning": {
+    "description": "Notice action: opens the keep-running guidance"
+  },
+  "keepRunningTitle": "Keep running in the background",
+  "@keepRunningTitle": {
+    "description": "Settings row and screen title: what to allow so Android does not close the app"
+  },
+  "keepRunningRowSubtitle": "What to allow so your phone doesn't close the app",
+  "@keepRunningRowSubtitle": {
+    "description": "Settings row subtitle"
+  },
+  "keepRunningIntro": "Your phone's OpenCode and the AI Team run inside this app, so they stop when Android closes it. On this {maker}, allow these:",
+  "@keepRunningIntro": {
+    "description": "Keep running screen intro; maker is the phone's manufacturer name",
+    "placeholders": {
+      "maker": {
+        "type": "String"
+      }
+    }
+  },
+  "keepRunningSwipeWarning": "This phone closes an app you swipe away from Recent apps, even while it works. Lock it there instead of swiping it away.",
+  "@keepRunningSwipeWarning": {
+    "description": "Keep running: warning on phones that force-stop on swipe"
+  },
+  "keepRunningBatteryTitle": "Don't optimize battery",
+  "@keepRunningBatteryTitle": {
+    "description": "Step: battery optimization exemption"
+  },
+  "keepRunningBatteryDetail": "Lets the app keep running while you use other apps.",
+  "@keepRunningBatteryDetail": {
+    "description": "Step detail: battery exemption not yet allowed"
+  },
+  "keepRunningBatteryDone": "Allowed",
+  "@keepRunningBatteryDone": {
+    "description": "Step detail: battery exemption already allowed"
+  },
+  "keepRunningLockTitle": "Lock it in Recent apps",
+  "@keepRunningLockTitle": {
+    "description": "Step: lock the app in recents"
+  },
+  "keepRunningLockNubia": "Open Recent apps and pull OpenCode Mobile's card down until the lock shows.",
+  "@keepRunningLockNubia": {
+    "description": "Lock step on Nubia/RedMagic"
+  },
+  "keepRunningLockSamsung": "Open Recent apps, tap OpenCode Mobile's icon above its card and choose Keep open.",
+  "@keepRunningLockSamsung": {
+    "description": "Lock step on Samsung"
+  },
+  "keepRunningLockOther": "Open Recent apps, long-press OpenCode Mobile's card and tap the lock.",
+  "@keepRunningLockOther": {
+    "description": "Lock step on other makers"
+  },
+  "keepRunningAutostartTitle": "Allow auto-start",
+  "@keepRunningAutostartTitle": {
+    "description": "Step: vendor autostart"
+  },
+  "keepRunningAutostartDetail": "Turn it on for OpenCode Mobile so the phone doesn't stop it in the background.",
+  "@keepRunningAutostartDetail": {
+    "description": "Autostart step detail"
+  },
+  "keepRunningAutostartHuawei": "Under App launch, set OpenCode Mobile to Manage manually and turn on all three switches.",
+  "@keepRunningAutostartHuawei": {
+    "description": "Autostart step on Huawei/Honor"
+  },
+  "keepRunningBackgroundTitle": "Allow background activity",
+  "@keepRunningBackgroundTitle": {
+    "description": "Step: vendor background activity setting in app info"
+  },
+  "keepRunningBackgroundXiaomi": "In App info › Battery saver, choose No restrictions.",
+  "@keepRunningBackgroundXiaomi": {
+    "description": "Background step on Xiaomi"
+  },
+  "keepRunningBackgroundOppo": "In App info › Battery usage, allow background activity.",
+  "@keepRunningBackgroundOppo": {
+    "description": "Background step on Oppo/OnePlus/Realme"
+  },
+  "keepRunningBackgroundVivo": "In App info › Battery, allow high background power use.",
+  "@keepRunningBackgroundVivo": {
+    "description": "Background step on Vivo"
+  },
+  "keepRunningBackgroundSamsung": "In App info › Battery, choose Unrestricted, and keep the app out of Sleeping apps.",
+  "@keepRunningBackgroundSamsung": {
+    "description": "Background step on Samsung"
+  },
+  "keepRunningBackgroundOther": "In App info › Battery, choose Unrestricted or allow background running.",
+  "@keepRunningBackgroundOther": {
+    "description": "Background step on Nubia and other makers"
+  },
+  "keepRunningOpen": "Open",
+  "@keepRunningOpen": {
+    "description": "Button on a step that opens its settings screen"
+  },
+  "keepRunningOpenFailed": "This phone has no such screen. Open Settings › Apps › OpenCode Mobile instead.",
+  "@keepRunningOpenFailed": {
+    "description": "Snackbar when a settings screen could not be opened"
+  },
+  "keepRunningFootnote": "If Android still closes the app, it starts your phone's OpenCode again the next time you open it.",
+  "@keepRunningFootnote": {
+    "description": "Keep running screen: what happens when it is closed anyway"
+  },
+  "keepRunningThisPhone": "phone",
+  "@keepRunningThisPhone": {
+    "description": "Maker fallback when the phone does not name its manufacturer"
   }
 }

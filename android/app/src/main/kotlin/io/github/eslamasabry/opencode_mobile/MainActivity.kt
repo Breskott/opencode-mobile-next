@@ -158,6 +158,10 @@ class MainActivity : FlutterActivity() {
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BUILTIN_LINUX_CHANNEL_NAME)
             .setMethodCallHandler { call, result -> handleBuiltinLinux(call, result) }
+        // Why the previous process ended, and keep-alive settings (oc/lifecycle).
+        AppLifecycle.register(this, flutterEngine.dartExecutor.binaryMessenger) {
+            requestBatteryOptimizationExemption()
+        }
         LocalTerminal.get(applicationContext).register(flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VOICE_CHANNEL_NAME)
             .setMethodCallHandler { call, result ->

@@ -125,6 +125,9 @@ class BuiltinLinux {
   static const serverUrl = 'http://127.0.0.1:$serverPort';
   static const serverUsername = 'opencode';
 
+  /// The OpenCode server's name among the services (BuiltinLinux.kt SERVER).
+  static const serverServiceName = 'server';
+
   /// The Ubuntu working directory the server starts in. Same rule as the
   /// Termux runner: never the home folder, which OpenCode would scan whole.
   static const projectsDir = '/root/projects';

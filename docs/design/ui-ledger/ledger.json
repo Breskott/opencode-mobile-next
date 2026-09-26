@@ -38749,6 +38749,86 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "keep-running",
+   "title": "Keep running in the background",
+   "kind": "screen",
+   "area": "settings",
+   "file": "lib/ui/screens/keep_running_screen.dart",
+   "widget": "KeepRunningScreen",
+   "presentedBy": [],
+   "line": 60,
+   "purpose": "What to allow on this phone so Android leaves the app, and the OpenCode and AI Team inside it, running: the battery exemption, and per maker (Build.MANUFACTURER) lock in Recent apps, auto-start and background activity, each opened with a guarded intent where one exists.",
+   "reachedFrom": [
+    {
+     "page": "settings",
+     "element": "settings-keep-running"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "builtin-server-keep-running"
+    },
+    {
+     "page": "home-shell",
+     "element": "app-exit-keep-running"
+    }
+   ],
+   "gates": [
+    "platformCapabilities.supportsBackgroundService (Android)"
+   ],
+   "elements": [
+    {
+     "id": "keep-running-battery",
+     "type": "list-tile",
+     "label": "Don't optimize battery / Allowed",
+     "key": "keep-running-battery",
+     "file": "lib/ui/screens/keep_running_screen.dart",
+     "line": 190,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "oc/lifecycle openKeepAliveSetting(battery): the existing ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS request; inert with a check once allowed.",
+     "gates": [
+      "!batteryOptimizationIgnored for onTap"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "keep-running-autostart",
+     "type": "list-tile",
+     "label": "Allow auto-start",
+     "key": "keep-running-autostart",
+     "file": "lib/ui/screens/keep_running_screen.dart",
+     "line": 190,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "oc/lifecycle openKeepAliveSetting(autostart): the maker's auto-start screen, else App info; snackbar when nothing opens.",
+     "gates": [
+      "maker is Nubia, Xiaomi, Oppo, Vivo or Huawei"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "keep-running-background",
+     "type": "list-tile",
+     "label": "Allow background activity",
+     "key": "keep-running-background",
+     "file": "lib/ui/screens/keep_running_screen.dart",
+     "line": 190,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "oc/lifecycle openKeepAliveSetting(appDetails): this app's App info page.",
+     "gates": [],
+     "destructive": false
+    }
+   ],
+   "nonInteractive": [
+    "keep-running-lockInRecents (steps done by hand in Recent apps)",
+    "keep-running-swipe notice on makers that force-stop on swipe"
+   ]
   }
  ],
  "navigation": {

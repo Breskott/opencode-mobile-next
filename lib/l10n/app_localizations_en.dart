@@ -19510,4 +19510,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamBoardCardHint => 'long press for moves';
+
+  @override
+  String appExitForceStopped(String time) {
+    return 'Android closed OpenCode Mobile $time';
+  }
+
+  @override
+  String appExitLowMemory(String time) {
+    return 'Android closed OpenCode Mobile $time to free memory';
+  }
+
+  @override
+  String appExitCrashed(String time) {
+    return 'OpenCode Mobile stopped unexpectedly $time';
+  }
+
+  @override
+  String appExitKilled(String time) {
+    return 'Android stopped OpenCode Mobile $time';
+  }
+
+  @override
+  String appExitServerStopped(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it; it\'s starting again.';
+  }
+
+  @override
+  String appExitServerAndTeamStopped(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it; they\'re starting again.';
+  }
+
+  @override
+  String appExitAtTime(String time) {
+    return 'at $time';
+  }
+
+  @override
+  String appExitOnDay(String day, String time) {
+    return 'on $day at $time';
+  }
+
+  @override
+  String get appExitKeepRunning => 'Keep it running';
+
+  @override
+  String get keepRunningTitle => 'Keep running in the background';
+
+  @override
+  String get keepRunningRowSubtitle =>
+      'What to allow so your phone doesn\'t close the app';
+
+  @override
+  String keepRunningIntro(String maker) {
+    return 'Your phone\'s OpenCode and the AI Team run inside this app, so they stop when Android closes it. On this $maker, allow these:';
+  }
+
+  @override
+  String get keepRunningSwipeWarning =>
+      'This phone closes an app you swipe away from Recent apps, even while it works. Lock it there instead of swiping it away.';
+
+  @override
+  String get keepRunningBatteryTitle => 'Don\'t optimize battery';
+
+  @override
+  String get keepRunningBatteryDetail =>
+      'Lets the app keep running while you use other apps.';
+
+  @override
+  String get keepRunningBatteryDone => 'Allowed';
+
+  @override
+  String get keepRunningLockTitle => 'Lock it in Recent apps';
+
+  @override
+  String get keepRunningLockNubia =>
+      'Open Recent apps and pull OpenCode Mobile\'s card down until the lock shows.';
+
+  @override
+  String get keepRunningLockSamsung =>
+      'Open Recent apps, tap OpenCode Mobile\'s icon above its card and choose Keep open.';
+
+  @override
+  String get keepRunningLockOther =>
+      'Open Recent apps, long-press OpenCode Mobile\'s card and tap the lock.';
+
+  @override
+  String get keepRunningAutostartTitle => 'Allow auto-start';
+
+  @override
+  String get keepRunningAutostartDetail =>
+      'Turn it on for OpenCode Mobile so the phone doesn\'t stop it in the background.';
+
+  @override
+  String get keepRunningAutostartHuawei =>
+      'Under App launch, set OpenCode Mobile to Manage manually and turn on all three switches.';
+
+  @override
+  String get keepRunningBackgroundTitle => 'Allow background activity';
+
+  @override
+  String get keepRunningBackgroundXiaomi =>
+      'In App info › Battery saver, choose No restrictions.';
+
+  @override
+  String get keepRunningBackgroundOppo =>
+      'In App info › Battery usage, allow background activity.';
+
+  @override
+  String get keepRunningBackgroundVivo =>
+      'In App info › Battery, allow high background power use.';
+
+  @override
+  String get keepRunningBackgroundSamsung =>
+      'In App info › Battery, choose Unrestricted, and keep the app out of Sleeping apps.';
+
+  @override
+  String get keepRunningBackgroundOther =>
+      'In App info › Battery, choose Unrestricted or allow background running.';
+
+  @override
+  String get keepRunningOpen => 'Open';
+
+  @override
+  String get keepRunningOpenFailed =>
+      'This phone has no such screen. Open Settings › Apps › OpenCode Mobile instead.';
+
+  @override
+  String get keepRunningFootnote =>
+      'If Android still closes the app, it starts your phone\'s OpenCode again the next time you open it.';
+
+  @override
+  String get keepRunningThisPhone => 'phone';
 }
