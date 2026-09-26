@@ -32284,6 +32284,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undoing'**
   String get kitUndoWorking;
+
+  /// KitJumpPill: the bottom pill's label when the host gives no new-item count
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to latest'**
+  String get kitJumpLatest;
+
+  /// KitJumpPill: the bottom pill's label with a new-item count the host supplies
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
+  String kitJumpNewLatest(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -20366,4 +20366,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitUndoWorking => 'جارٍ التراجع';
+
+  @override
+  String get kitJumpLatest => 'Jump to latest';
+
+  @override
+  String kitJumpNewLatest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new · Jump to latest',
+      one: '1 new · Jump to latest',
+    );
+    return '$_temp0';
+  }
 }
