@@ -23,7 +23,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitPageRoute`, base `b67e3276` (tip of `feat/phone-setup-v2` at branch time), code head: see commit after this record (this README is written before the commit that includes it, per the branch's own worktree constraints; the commit hash is reported in the build record returned alongside this file).
+- Branch `revamp/kit-KitPageRoute`, base `b67e3276` (tip of `feat/phone-setup-v2` at branch time), code head `f68e26fd`.
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
