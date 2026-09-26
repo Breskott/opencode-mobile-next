@@ -536,8 +536,17 @@ class KitChoiceRow<T> extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                if (current) kitCurrentSpan(context, l10n.kitChoiceCurrent),
-                TextSpan(text: supporting),
+                if (current)
+                  supporting.isEmpty
+                      ? TextSpan(
+                          text: l10n.kitChoiceCurrent,
+                          style: TextStyle(
+                            color: roles.accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : kitCurrentSpan(context, l10n.kitChoiceCurrent),
+                if (supporting.isNotEmpty) TextSpan(text: supporting),
               ],
             ),
             style: secondary.copyWith(color: roles.text2),
@@ -762,32 +771,38 @@ class KitPickerRow<T> extends StatelessWidget {
           picks ? tokens.space1 : tokens.gutter,
           tokens.space2,
         ),
-        child: Row(
-          children: [
-            if (leading case final leading?) ...[
-              leading,
-              SizedBox(width: tokens.space3),
-            ],
-            Expanded(child: words),
-            if (!stacked && value.isNotEmpty)
-              Flexible(
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(start: tokens.space3),
-                  child: Text(
-                    KitBidi.auto(value),
-                    textAlign: TextAlign.end,
-                    style: tokens.rowValue.copyWith(color: roles.text3),
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
+            children: [
+              if (leading case final leading?) ...[
+                leading,
+                SizedBox(width: tokens.space3),
+              ],
+              Expanded(child: words),
+              if (!stacked && value.isNotEmpty)
+                ConstrainedBox(
+                  // The value takes at most half the row; the title the rest.
+                  constraints: BoxConstraints(
+                    maxWidth: (constraints.maxWidth / 2).floorToDouble(),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(start: tokens.space3),
+                    child: Text(
+                      KitBidi.auto(value),
+                      textAlign: TextAlign.end,
+                      style: tokens.rowValue.copyWith(color: roles.text3),
+                    ),
                   ),
                 ),
-              ),
-            if (picks)
-              Icon(
-                key: const ValueKey('kit-picker-chevron'),
-                AppIconography.chevronRight,
-                size: tokens.smallIconSize,
-                color: roles.text3,
-              ),
-          ],
+              if (picks)
+                Icon(
+                  key: const ValueKey('kit-picker-chevron'),
+                  AppIconography.chevronRight,
+                  size: tokens.smallIconSize,
+                  color: roles.text3,
+                ),
+            ],
+          ),
         ),
       ),
     );
