@@ -1,19 +1,47 @@
+$ python3 tool/ux/check_kit_map.py --self-test
 ok - today's shape passes
 ok - replaces names a missing element
 ok - replaces names a missing page
 ok - malformed replaces entry
 ok - nested replaces key is checked too
-ok - kit none grows
+ok - kit value 'custom' is refused
+ok - kit value '' is refused
+ok - kit value 'None' is refused
+ok - kit value 'KitRow+custom+KitNotice' is refused
+ok - kit value 'Material' is refused
+ok - kit value 'KitRow+' is refused
+ok - element without a kit key is refused
+ok - Product*, SectionLabel and Kit+custom are accepted
+ok - a new kit none element fails
+ok - one fix does not pay for one new kit none element
 ok - kit none shrinks: passes and prints the new baseline
+ok - deleting a kit none element from a keep/fix page fails
+ok - an element may leave with its merge-into page
+ok - an element may leave when its page is gone
 ok - hidden on a capability with an enable flow
+ok - '<noun> hidden' (hidden not first) is caught
+ok - 'n/a; X hidden on Codex' is caught mid-value
+ok - 'hides', 'vanishes' and 'drops' count as hiding
 ok - hidden on a (proposed) capability with an enable flow
 ok - hidden where the flow says no path in the app is allowed
 ok - explains on a capability with an enable flow is allowed
 ok - 'hiddenly' is not the word hidden
+ok - a list value is an absolute error
+ok - an object value is an absolute error
+ok - a leading token outside the vocabulary fails
+ok - offers-enable:<id> is in the vocabulary
 ok - unknown capability
+ok - a new disabled pair fails
+ok - 'rows dim' mid-value counts as a dead row
+ok - baselined dead row fixed: passes and says so
 ok - baselined hidden pair fixed: passes and says so
 ok - --update-baseline writes a shrunk baseline
 ok - --update-baseline refuses growth
 ok - missing baseline is an input error
-G13 self-test: 17 of 17 passed
+ok - an old-shape baseline (no sets) fails
+ok - --base: unchanged baseline passes
+ok - --base: no baseline at the merge base is a note
+ok - --base: a baseline raised in the violating commit fails
+ok - --base: an unknown ref is an input error
+G13 self-test: 44 of 44 passed
 exit=0

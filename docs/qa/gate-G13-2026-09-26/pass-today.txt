@@ -1,3 +1,5 @@
-G13 kit map: 721 replaces entries checked; kit none 809 (baseline 809); hidden with an enable flow 230 (baseline 230)
+$ python3 tool/ux/check_kit_map.py --base feat/phone-setup-v2
+G13 kit map: 721 replaces entries checked; kit none 809 (baseline 809); hidden with an enable flow 235 (baseline 235); dead rows 15 (baseline 15); off vocabulary 3 (baseline 3); base 9220f07038
+  base: no baseline at the merge base 9220f07038; nothing to compare
 G13 PASSED
 exit=0
