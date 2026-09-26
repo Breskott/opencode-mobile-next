@@ -17302,6 +17302,26 @@
   "@notifyQuotaAlertsDetail": {
     "description": "Subtitle of the Quota thresholds toggle."
   },
+  "notifyBlockedTitle": "Notifications are off for this app",
+  "@notifyBlockedTitle": {
+    "description": "Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted)."
+  },
+  "notifyBlockedMessage": "Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.",
+  "@notifyBlockedMessage": {
+    "description": "Notifications screen: body of the blocked-notifications notice."
+  },
+  "notifyOpenAndroidSettings": "Open Android settings",
+  "@notifyOpenAndroidSettings": {
+    "description": "Action on the blocked-notifications notice: opens this app's Android notification settings."
+  },
+  "notifySendTest": "Send a test notification",
+  "@notifySendTest": {
+    "description": "Row on the Notifications screen: posts one real notification to prove whether Android is letting this app notify."
+  },
+  "notifySendTestDetail": "Confirms whether Android is actually delivering this app's notifications right now.",
+  "@notifySendTestDetail": {
+    "description": "Subtitle of the Send a test notification row."
+  },
   "notifyQuietDetail": "No notifications during these local times, for every server and for quota alerts. Checks continue.",
   "@notifyQuietDetail": {
     "description": "Subtitle of the single Quiet hours toggle on the Notifications screen."

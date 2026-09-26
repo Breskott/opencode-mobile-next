@@ -15979,6 +15979,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
 
   @override
+  String get notifyBlockedTitle => 'Notifications are off for this app';
+
+  @override
+  String get notifyBlockedMessage =>
+      'Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.';
+
+  @override
+  String get notifyOpenAndroidSettings => 'Open Android settings';
+
+  @override
+  String get notifySendTest => 'Send a test notification';
+
+  @override
+  String get notifySendTestDetail =>
+      'Confirms whether Android is actually delivering this app\'s notifications right now.';
+
+  @override
   String get notifyQuietDetail =>
       'No notifications during these local times, for every server and for quota alerts. Checks continue.';
 

@@ -217,6 +217,22 @@ class MainActivity : FlutterActivity() {
                         requestBatteryOptimizationExemption()
                         result.success(backgroundStatus())
                     }
+                    // P0.6: lets the Notifications page send a blocked person
+                    // straight to this app's notification settings, not just
+                    // the general app-info page the other channels open.
+                    "openAppSettings" -> {
+                        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        } else {
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:$packageName")
+                            )
+                        }
+                        startActivity(intent)
+                        result.success(null)
+                    }
                     "monitorNetworkPolicy" -> {
                         val connectivity = getSystemService(ConnectivityManager::class.java)
                         val capabilities = connectivity.getNetworkCapabilities(connectivity.activeNetwork)

@@ -25781,6 +25781,36 @@ abstract class AppLocalizations {
   /// **'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.'**
   String get notifyQuotaAlertsDetail;
 
+  /// Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off for this app'**
+  String get notifyBlockedTitle;
+
+  /// Notifications screen: body of the blocked-notifications notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.'**
+  String get notifyBlockedMessage;
+
+  /// Action on the blocked-notifications notice: opens this app's Android notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Android settings'**
+  String get notifyOpenAndroidSettings;
+
+  /// Row on the Notifications screen: posts one real notification to prove whether Android is letting this app notify.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a test notification'**
+  String get notifySendTest;
+
+  /// Subtitle of the Send a test notification row.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirms whether Android is actually delivering this app\'s notifications right now.'**
+  String get notifySendTestDetail;
+
   /// Subtitle of the single Quiet hours toggle on the Notifications screen.
   ///
   /// In en, this message translates to:
