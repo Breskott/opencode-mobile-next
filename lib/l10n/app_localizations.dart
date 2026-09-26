@@ -32285,6 +32285,492 @@ abstract class AppLocalizations {
   /// **'Undoing'**
   String get kitUndoWorking;
 
+  /// KitTerm: the semantics hint on a term that explains itself, read after its name
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation available'**
+  String get kitTermHint;
+
+  /// KitTerm: the semantics tap hint that replaces "Activate" on a term
+  ///
+  /// In en, this message translates to:
+  /// **'Show explanation'**
+  String get kitTermShow;
+
+  /// KitTerm: the open bubble's spoken label and dismiss action
+  ///
+  /// In en, this message translates to:
+  /// **'Close explanation'**
+  String get kitTermClose;
+
+  /// KitField secret kind: the reveal button while the value is masked; the field's label follows it in the tooltip and semantic name (see kitFieldShowNamed)
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get kitFieldShow;
+
+  /// KitField secret kind: tooltip and semantic name of the reveal button while masked, e.g. 'Show API key'
+  ///
+  /// In en, this message translates to:
+  /// **'Show {label}'**
+  String kitFieldShowNamed(String label);
+
+  /// KitField secret kind: the reveal button while the value is shown (see kitFieldHideNamed)
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get kitFieldHide;
+
+  /// KitField secret kind: tooltip and semantic name of the reveal button while the value is shown, e.g. 'Hide API key'
+  ///
+  /// In en, this message translates to:
+  /// **'Hide {label}'**
+  String kitFieldHideNamed(String label);
+
+  /// KitField secret kind: the button that pastes the clipboard into the secret field (reads the clipboard once, on tap)
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get kitFieldPaste;
+
+  /// KitField secret kind: shown instead of the value when one is stored already, before 'Replace'
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get kitFieldSaved;
+
+  /// KitField secret kind: the action next to 'Saved' that clears the way to type a new value
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get kitFieldReplace;
+
+  /// KitField: the helper line while the field's value is being checked (never a spinner in the field)
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get kitFieldChecking;
+
+  /// KitField: the helper line once a check has run for 8 seconds; ways out are offered under it
+  ///
+  /// In en, this message translates to:
+  /// **'Still checking after {seconds} s'**
+  String kitFieldStillChecking(int seconds);
+
+  /// KitField: the character counter shown from 80 % of the field's limit, e.g. '90 of 100'
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 of {max}} other{{count} of {max}}}'**
+  String kitFieldCount(int count, int max);
+
+  /// KitField: the counter once the field holds its full limit; typing more changes nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached'**
+  String get kitFieldLimitReached;
+
+  /// KitField: spoken before a field's error message, e.g. 'Error: Enter a port number'
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get kitFieldErrorLabel;
+
+  /// Kit tappable: the custom accessibility action that opens the tappable's menu, distinct from each menu item's own action (KIT-28)
+  ///
+  /// In en, this message translates to:
+  /// **'Show actions'**
+  String get kitTappableShowActions;
+
+  /// KitWorkLine: a segment of the work summary chip: files read (the first segment is capitalised by the code)
+  ///
+  /// In en, this message translates to:
+  /// **'read {count, plural, =1{1 file} other{{count} files}}'**
+  String kitWorkRead(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: searches (glob, grep)
+  ///
+  /// In en, this message translates to:
+  /// **'searched {count, plural, =1{once} other{{count} times}}'**
+  String kitWorkSearched(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: folders listed
+  ///
+  /// In en, this message translates to:
+  /// **'listed {count, plural, =1{1 folder} other{{count} folders}}'**
+  String kitWorkListed(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: files edited or written
+  ///
+  /// In en, this message translates to:
+  /// **'edited {count, plural, =1{1 file} other{{count} files}}'**
+  String kitWorkEdited(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: commands run
+  ///
+  /// In en, this message translates to:
+  /// **'ran {count, plural, =1{1 command} other{{count} commands}}'**
+  String kitWorkRan(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: web pages fetched or searched
+  ///
+  /// In en, this message translates to:
+  /// **'fetched {count, plural, =1{1 page} other{{count} pages}}'**
+  String kitWorkFetched(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: sub-agents started
+  ///
+  /// In en, this message translates to:
+  /// **'delegated {count, plural, =1{1 task} other{{count} tasks}}'**
+  String kitWorkDelegated(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: other tool calls
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 other step} other{{count} other steps}}'**
+  String kitWorkOther(int count);
+
+  /// KitWorkLine: a segment of the work summary chip: calls the server never ran
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 not run} other{{count} not run}}'**
+  String kitWorkNotRun(int count);
+
+  /// KitWorkLine: the work summary chip's words when no tool call was counted: model steps
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
+  String kitWorkSteps(int count);
+
+  /// KitWorkLine: the separator between the work summary chip's segments (leading and trailing space included)
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get kitWorkSeparator;
+
+  /// KitWorkLine: the work chip's words while a request in this turn waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get kitWorkWaitingForYou;
+
+  /// KitWorkLine: appended to the work chip's summary when the person stopped the turn
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get kitWorkStopped;
+
+  /// KitWorkLine: the word beside the failed mark when the turn's work ended on a failure; also starts the chip's spoken label
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t finish'**
+  String get kitWorkDidntFinish;
+
+  /// KitWorkLine: starts the work chip's spoken label while a step is running
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get kitWorkWorking;
+
+  /// KitWorkLine: the button above an opened work line's newest steps that reveals the older ones in place
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =1{1 earlier step} other{{count} earlier steps}}'**
+  String kitWorkEarlierSteps(int count);
+
+  /// Kit receipt: a write the phone is sending right now (a mark and this word, in place)
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get kitReceiptSending;
+
+  /// Kit receipt: the write left the phone and the server has not echoed it yet. Never 'Done'
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get kitReceiptSent;
+
+  /// Kit receipt: the server echoed the write; a caller's label for the act (for example 'Allowed once') replaces this word
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitReceiptConfirmed;
+
+  /// Kit receipt: no echo from the server in time, or the echo was lost; offered with Try again
+  ///
+  /// In en, this message translates to:
+  /// **'Not confirmed yet'**
+  String get kitReceiptNotConfirmed;
+
+  /// Kit receipt: the server refused the write and gave no reason
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get kitReceiptRefused;
+
+  /// Kit receipt: the server refused the write, with its reason in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted: {reason}'**
+  String kitReceiptRefusedReason(String reason);
+
+  /// Kit receipt: someone answered this on another device first
+  ///
+  /// In en, this message translates to:
+  /// **'Answered on {where}'**
+  String kitReceiptAnsweredElsewhere(String where);
+
+  /// Kit receipt: someone answered this on another device first, and the app does not know which device
+  ///
+  /// In en, this message translates to:
+  /// **'Answered on another device'**
+  String get kitReceiptAnsweredElsewhereUnknown;
+
+  /// Kit receipt, automatic line: the automatic act the server refused, then its reason ('Restarted the phone's server: the server is busy'); the error mark beside it says it was refused
+  ///
+  /// In en, this message translates to:
+  /// **'{act}: {reason}'**
+  String kitReceiptActRefusedReason(String act, String reason);
+
+  /// Kit receipt: when the latest change happened, after the receipt's word: 'Sent at 10:42'
+  ///
+  /// In en, this message translates to:
+  /// **'at {time}'**
+  String kitReceiptAt(String time);
+
+  /// KitDetailsFold: the screen-reader hint on the open Details row, saying a tap folds it away
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get kitDetailsHide;
+
+  /// KitDetailsFold: the text action under the details that copies every value and the raw text
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all'**
+  String get kitCopyAll;
+
+  /// KitDetailsFold: the tooltip and label of one value's copy button, e.g. 'Copy address'
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {label}'**
+  String kitCopyValue(String label);
+
+  /// KitDetailsFold: the action that unfolds the rest of a long raw error in place
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{Show all {count} lines}}'**
+  String kitDetailsShowAll(int count);
+
+  /// KitDetailsFold: how a screen reader reads one technical value, e.g. 'Address: 100.64.0.3, port 4096'
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {value}'**
+  String kitDetailsValueSpoken(String label, String value);
+
+  /// KitProgressRow: the loading-state semantics word for the skeleton bar, before the amount is known
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get kitProgressRowLoading;
+
+  /// KitProgressRow: the measured amount's semantics value, before the caller's own value label
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} percent'**
+  String kitProgressRowPercent(int percent);
+
+  /// KitProgressRow: appended word at 80–99 % of a measured amount (automatic tone only)
+  ///
+  /// In en, this message translates to:
+  /// **'Near limit'**
+  String get kitProgressRowNearLimit;
+
+  /// KitProgressRow: appended word at 100 % of a measured amount (automatic tone only)
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached'**
+  String get kitProgressRowAtLimit;
+
+  /// KitProgressRow: the row's last-known-data age, with the time already formatted for the locale
+  ///
+  /// In en, this message translates to:
+  /// **'as of {time}'**
+  String kitProgressRowAsOf(String time);
+
+  /// KitProgressRow.segments: the folded legend entry for every segment past the first 4
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get kitProgressRowOther;
+
+  /// Kit composer chips: the model chip's words when no model is picked and the server's default model is not known by name
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get kitModelServerDefault;
+
+  /// Kit composer chips: the model chip's words when no model provider is signed in; tapping opens the provider sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a model'**
+  String get kitModelSignIn;
+
+  /// Kit composer chips: the model chip's words when models exist but none is picked and there is no server default
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get kitModelChoose;
+
+  /// Kit composer chips: screen-reader hint on the model chip (what tapping it does)
+  ///
+  /// In en, this message translates to:
+  /// **'Change model'**
+  String get kitModelChange;
+
+  /// Kit composer chips: the name of the model chip's menu (next model, previous model, favourites)
+  ///
+  /// In en, this message translates to:
+  /// **'Model shortcuts'**
+  String get kitModelActions;
+
+  /// Kit composer chips: after the model's name, how full the conversation's context is, from 70 %; {percent} is a locale-formatted whole number
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String kitModelContext(String percent);
+
+  /// Kit composer chips: after the model's name when the conversation's context is 95 % full or more
+  ///
+  /// In en, this message translates to:
+  /// **'Context almost full'**
+  String get kitModelContextFull;
+
+  /// Kit composer chips: screen-reader words for the context meter after the model's name; {percent} is a locale-formatted whole number
+  ///
+  /// In en, this message translates to:
+  /// **'Context {percent} % full'**
+  String kitModelContextLabel(String percent);
+
+  /// Kit composer chips: screen-reader label of an attachment chip that opens a preview; {label} is the file name or reference
+  ///
+  /// In en, this message translates to:
+  /// **'Preview {label}'**
+  String kitAttachmentOpen(String label);
+
+  /// Kit composer chips: screen-reader words for an image attachment that cannot be opened (a sent prompt's read-only chip); {label} is the file name
+  ///
+  /// In en, this message translates to:
+  /// **'Image, {label}'**
+  String kitAttachmentImage(String label);
+
+  /// Kit composer chips: screen-reader words for a file attachment that cannot be opened; {label} is the file name
+  ///
+  /// In en, this message translates to:
+  /// **'File, {label}'**
+  String kitAttachmentFile(String label);
+
+  /// Kit composer chips: screen-reader words for a folder reference that cannot be opened; {label} is the folder path
+  ///
+  /// In en, this message translates to:
+  /// **'Folder, {label}'**
+  String kitAttachmentFolder(String label);
+
+  /// Kit composer chips: screen-reader words for a code reference that cannot be opened; {label} is the reference
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, {label}'**
+  String kitAttachmentReference(String label);
+
+  /// Kit composer chips: under the inline command or agent suggestions when there are more than five
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get kitSuggestionsShowAll;
+
+  /// Kit composer chips: screen-reader name of the inline command or agent suggestions list
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get kitSuggestionsLabel;
+
+  /// KitNeedsYou.reasonWord: only the person can decide (a permission, a question or form, a gate, a merge)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your decision'**
+  String get kitNeedsYouReasonDecision;
+
+  /// KitNeedsYou.reasonWord: work cannot continue (credentials rejected, a limit, storage full, a step still failing)
+  ///
+  /// In en, this message translates to:
+  /// **'Stuck: needs you'**
+  String get kitNeedsYouReasonBlocked;
+
+  /// KitNeedsYou.reasonWord: a first-time consent at the moment it becomes relevant
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your OK'**
+  String get kitNeedsYouReasonConsent;
+
+  /// KitNeedsYou.span: the start of a row's supporting line, in the attention tone
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Needs you · } other{{count} need you · }}'**
+  String kitNeedsYouSpan(int count);
+
+  /// KitNeedsYou.badge: appended to the host's own semantics label so the count is read once, never by the badge itself
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{, 1 need you} other{, {count} need you}}'**
+  String kitNeedsYouBadgeSuffix(int count);
+
+  /// KitNeedsYou.row: composed with KitSince.ageLabel, mid-sentence ("waiting 4 min")
+  ///
+  /// In en, this message translates to:
+  /// **'waiting {age}'**
+  String kitNeedsYouWaiting(String age);
+
+  /// KitNeedsYou.row: the row's age for a screen reader, unabbreviated and mid-sentence ("waiting 4 minutes"); the visible line uses kitNeedsYouWaiting
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =0{waiting less than a minute} =1{waiting 1 minute} other{waiting {minutes} minutes}}'**
+  String kitNeedsYouWaitingSpoken(int minutes);
+
+  /// KitNeedsYou.row: the agent and the server it ran on, when both are given
+  ///
+  /// In en, this message translates to:
+  /// **'{who} on {server}'**
+  String kitNeedsYouWhoOnServer(String who, String server);
+
+  /// KitWorkGraph: the viewer's accessibility label, and (in layers) KitZoom's zoom-level announcement subject
+  ///
+  /// In en, this message translates to:
+  /// **'Work graph'**
+  String get kitWorkGraph;
+
+  /// KitWorkGraph: the inline empty state's title when the caller gives no emptyText
+  ///
+  /// In en, this message translates to:
+  /// **'No work items yet'**
+  String get kitWorkGraphEmpty;
+
+  /// KitWorkGraph: one node's accessibility label, the item's title and its state word
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, {state}'**
+  String kitWorkGraphNode(String title, String state);
+
+  /// KitWorkGraph: a row's supporting line and a node's accessibility hint, naming the one item it needs
+  ///
+  /// In en, this message translates to:
+  /// **'needs {title}'**
+  String kitWorkGraphNeeds(String title);
+
+  /// KitWorkGraph: a row's supporting line and a node's accessibility hint when it needs more than one item, naming the first and counting the rest
+  ///
+  /// In en, this message translates to:
+  /// **'needs {title} and {count, plural, =1{1} other{{count}}} more'**
+  String kitWorkGraphNeedsMore(String title, int count);
+
   /// KitJumpPill: the bottom pill's label when the host gives no new-item count
   ///
   /// In en, this message translates to:
