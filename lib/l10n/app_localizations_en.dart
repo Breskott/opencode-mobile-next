@@ -19873,33 +19873,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get kitWorkGraph => 'Work graph';
-
-  @override
-  String get kitWorkGraphEmpty => 'No work items yet';
-
-  @override
-  String kitWorkGraphNode(String title, String state) {
-    return '$title, $state';
-  }
-
-  @override
-  String kitWorkGraphNeeds(String title) {
-    return 'needs $title';
-  }
-
-  @override
-  String kitWorkGraphNeedsMore(String title, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count',
-      one: '1',
-    );
-    return 'needs $title and $_temp0 more';
-  }
-
-  @override
   String get kitMenu => 'Menu';
 
   @override
@@ -19963,32 +19936,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get kitProgressRowLoading => 'Loading';
-
-  @override
-  String kitProgressRowPercent(int percent) {
-    final intl.NumberFormat percentNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String percentString = percentNumberFormat.format(percent);
-
-    return '$percentString percent';
-  }
-
-  @override
-  String get kitProgressRowNearLimit => 'Near limit';
-
-  @override
-  String get kitProgressRowAtLimit => 'Limit reached';
-
-  @override
-  String kitProgressRowAsOf(String time) {
-    return 'as of $time';
-  }
-
-  @override
-  String get kitProgressRowOther => 'Other';
 
   @override
   String get kitQrTooLong =>
@@ -20137,4 +20084,442 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitTermClose => 'Close explanation';
+
+  @override
+  String get kitFieldShow => 'Show';
+
+  @override
+  String kitFieldShowNamed(String label) {
+    return 'Show $label';
+  }
+
+  @override
+  String get kitFieldHide => 'Hide';
+
+  @override
+  String kitFieldHideNamed(String label) {
+    return 'Hide $label';
+  }
+
+  @override
+  String get kitFieldPaste => 'Paste';
+
+  @override
+  String get kitFieldSaved => 'Saved';
+
+  @override
+  String get kitFieldReplace => 'Replace';
+
+  @override
+  String get kitFieldChecking => 'Checking…';
+
+  @override
+  String kitFieldStillChecking(int seconds) {
+    return 'Still checking after $seconds s';
+  }
+
+  @override
+  String kitFieldCount(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString of $maxString',
+      one: '1 of $maxString',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitFieldLimitReached => 'Limit reached';
+
+  @override
+  String get kitFieldErrorLabel => 'Error';
+
+  @override
+  String get kitTappableShowActions => 'Show actions';
+
+  @override
+  String kitWorkRead(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return 'read $_temp0';
+  }
+
+  @override
+  String kitWorkSearched(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count times',
+      one: 'once',
+    );
+    return 'searched $_temp0';
+  }
+
+  @override
+  String kitWorkListed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count folders',
+      one: '1 folder',
+    );
+    return 'listed $_temp0';
+  }
+
+  @override
+  String kitWorkEdited(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return 'edited $_temp0';
+  }
+
+  @override
+  String kitWorkRan(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count commands',
+      one: '1 command',
+    );
+    return 'ran $_temp0';
+  }
+
+  @override
+  String kitWorkFetched(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pages',
+      one: '1 page',
+    );
+    return 'fetched $_temp0';
+  }
+
+  @override
+  String kitWorkDelegated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+    );
+    return 'delegated $_temp0';
+  }
+
+  @override
+  String kitWorkOther(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count other steps',
+      one: '1 other step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitWorkNotRun(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count not run',
+      one: '1 not run',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitWorkSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '1 step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitWorkSeparator => ' · ';
+
+  @override
+  String get kitWorkWaitingForYou => 'Waiting for you';
+
+  @override
+  String get kitWorkStopped => 'Stopped';
+
+  @override
+  String get kitWorkDidntFinish => 'Didn\'t finish';
+
+  @override
+  String get kitWorkWorking => 'Working';
+
+  @override
+  String kitWorkEarlierSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier steps',
+      one: '1 earlier step',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
+  String get kitReceiptSending => 'Sending…';
+
+  @override
+  String get kitReceiptSent => 'Sent';
+
+  @override
+  String get kitReceiptConfirmed => 'Done';
+
+  @override
+  String get kitReceiptNotConfirmed => 'Not confirmed yet';
+
+  @override
+  String get kitReceiptRefused => 'Not accepted';
+
+  @override
+  String kitReceiptRefusedReason(String reason) {
+    return 'Not accepted: $reason';
+  }
+
+  @override
+  String kitReceiptAnsweredElsewhere(String where) {
+    return 'Answered on $where';
+  }
+
+  @override
+  String get kitReceiptAnsweredElsewhereUnknown => 'Answered on another device';
+
+  @override
+  String kitReceiptActRefusedReason(String act, String reason) {
+    return '$act: $reason';
+  }
+
+  @override
+  String kitReceiptAt(String time) {
+    return 'at $time';
+  }
+
+  @override
+  String get kitDetailsHide => 'Hide details';
+
+  @override
+  String get kitCopyAll => 'Copy all';
+
+  @override
+  String kitCopyValue(String label) {
+    return 'Copy $label';
+  }
+
+  @override
+  String kitDetailsShowAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show all $count lines',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitDetailsValueSpoken(String label, String value) {
+    return '$label: $value';
+  }
+
+  @override
+  String get kitProgressRowLoading => 'Loading';
+
+  @override
+  String kitProgressRowPercent(int percent) {
+    final intl.NumberFormat percentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String percentString = percentNumberFormat.format(percent);
+
+    return '$percentString percent';
+  }
+
+  @override
+  String get kitProgressRowNearLimit => 'Near limit';
+
+  @override
+  String get kitProgressRowAtLimit => 'Limit reached';
+
+  @override
+  String kitProgressRowAsOf(String time) {
+    return 'as of $time';
+  }
+
+  @override
+  String get kitProgressRowOther => 'Other';
+
+  @override
+  String get kitModelServerDefault => 'Server default';
+
+  @override
+  String get kitModelSignIn => 'Sign in to a model';
+
+  @override
+  String get kitModelChoose => 'Choose a model';
+
+  @override
+  String get kitModelChange => 'Change model';
+
+  @override
+  String get kitModelActions => 'Model shortcuts';
+
+  @override
+  String kitModelContext(String percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get kitModelContextFull => 'Context almost full';
+
+  @override
+  String kitModelContextLabel(String percent) {
+    return 'Context $percent % full';
+  }
+
+  @override
+  String kitAttachmentOpen(String label) {
+    return 'Preview $label';
+  }
+
+  @override
+  String kitAttachmentImage(String label) {
+    return 'Image, $label';
+  }
+
+  @override
+  String kitAttachmentFile(String label) {
+    return 'File, $label';
+  }
+
+  @override
+  String kitAttachmentFolder(String label) {
+    return 'Folder, $label';
+  }
+
+  @override
+  String kitAttachmentReference(String label) {
+    return 'Reference, $label';
+  }
+
+  @override
+  String get kitSuggestionsShowAll => 'Show all';
+
+  @override
+  String get kitSuggestionsLabel => 'Suggestions';
+
+  @override
+  String get kitNeedsYouReasonDecision => 'Needs your decision';
+
+  @override
+  String get kitNeedsYouReasonBlocked => 'Stuck: needs you';
+
+  @override
+  String get kitNeedsYouReasonConsent => 'Needs your OK';
+
+  @override
+  String kitNeedsYouSpan(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString need you · ',
+      one: 'Needs you · ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitNeedsYouBadgeSuffix(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: ', $countString need you',
+      one: ', 1 need you',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitNeedsYouWaiting(String age) {
+    return 'waiting $age';
+  }
+
+  @override
+  String kitNeedsYouWaitingSpoken(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'waiting $minutesString minutes',
+      one: 'waiting 1 minute',
+      zero: 'waiting less than a minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitNeedsYouWhoOnServer(String who, String server) {
+    return '$who on $server';
+  }
+
+  @override
+  String get kitWorkGraph => 'Work graph';
+
+  @override
+  String get kitWorkGraphEmpty => 'No work items yet';
+
+  @override
+  String kitWorkGraphNode(String title, String state) {
+    return '$title, $state';
+  }
+
+  @override
+  String kitWorkGraphNeeds(String title) {
+    return 'needs $title';
+  }
+
+  @override
+  String kitWorkGraphNeedsMore(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count',
+      one: '1',
+    );
+    return 'needs $title and $_temp0 more';
+  }
 }
