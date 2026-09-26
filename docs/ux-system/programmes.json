@@ -1704,7 +1704,7 @@
     "the kit parts the earlier programmes need are built inside those programmes; P9 migrates the rest, so avoid building a part twice by checking lib/ui/kit first",
     "golden churn: regenerate only with the pinned Flutter 3.47.1"
    ],
-   "effortTotal": "XL (1S + 5M + 1S + 2L + 1M + 1S later slices; about 28 agent-days)"
+   "effortTotal": "XL (2S + 6M + 2L; about 27 agent-days)"
   },
   {
    "id": "P10",
