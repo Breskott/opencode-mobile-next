@@ -336,7 +336,7 @@ async function buildReviewFix(u) {
     `${describe(u)}\n\nStart: you are in a fresh git worktree. Run "git switch -c revamp/${u.id} ${BASE}". Everything this unit ` +
       `builds on (${depsOf(u).join(', ') || 'nothing'}) is already integrated on ${BASE}; never merge another revamp branch (R02). ` +
       `Then "$F pub get". Work, check, commit.\n${RULES}\nReturn the build record; worktree = your absolute working directory.`,
-    { label: `build ${u.id}`, phase: 'Build', schema: BUILD_SCHEMA, isolation: 'worktree', model: u.model === 'sonnet' ? 'sonnet' : undefined },
+    { label: `build ${u.id}`, phase: 'Build', schema: BUILD_SCHEMA, isolation: 'worktree', model: undefined },
   )
   if (!built) return null
   const review = await agent(
