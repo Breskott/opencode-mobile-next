@@ -22374,6 +22374,41 @@
       }
     }
   },
+  "kitProgressRowLoading": "Loading",
+  "@kitProgressRowLoading": {
+    "description": "KitProgressRow: the loading-state semantics word for the skeleton bar, before the amount is known"
+  },
+  "kitProgressRowPercent": "{percent} percent",
+  "@kitProgressRowPercent": {
+    "description": "KitProgressRow: the measured amount's semantics value, before the caller's own value label",
+    "placeholders": {
+      "percent": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressRowNearLimit": "Near limit",
+  "@kitProgressRowNearLimit": {
+    "description": "KitProgressRow: appended word at 80–99 % of a measured amount (automatic tone only)"
+  },
+  "kitProgressRowAtLimit": "Limit reached",
+  "@kitProgressRowAtLimit": {
+    "description": "KitProgressRow: appended word at 100 % of a measured amount (automatic tone only)"
+  },
+  "kitProgressRowAsOf": "as of {time}",
+  "@kitProgressRowAsOf": {
+    "description": "KitProgressRow: the row's last-known-data age, with the time already formatted for the locale",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "kitProgressRowOther": "Other",
+  "@kitProgressRowOther": {
+    "description": "KitProgressRow.segments: the folded legend entry for every segment past the first 4"
+  },
   "kitQrTooLong": "This is too long for a QR code. Copy the link instead.",
   "@kitQrTooLong": {
     "description": "Kit QR code: shown in place of the code when the data does not fit a QR code at any size"
