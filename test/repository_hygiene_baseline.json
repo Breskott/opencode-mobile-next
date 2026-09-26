@@ -1,0 +1,29 @@
+{
+  "_comment": "G25 ratchet (STANDARDS TEST-12): golden-failure artefacts committed before the gate existed. The list may only shrink: untrack a file (git rm --cached) and delete its line. test/repository_hygiene_test.dart prints the smaller list when it shrinks.",
+  "TEST-12": [
+    "test/goldens/failures/team_agent_controls_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_controls_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_controls_dark_masterImage.png",
+    "test/goldens/failures/team_agent_controls_dark_testImage.png",
+    "test/goldens/failures/team_agent_controls_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_controls_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_controls_light_masterImage.png",
+    "test/goldens/failures/team_agent_controls_light_testImage.png",
+    "test/goldens/failures/team_agent_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_dark_masterImage.png",
+    "test/goldens/failures/team_agent_dark_testImage.png",
+    "test/goldens/failures/team_agent_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_light_masterImage.png",
+    "test/goldens/failures/team_agent_light_testImage.png",
+    "test/goldens/failures/team_agent_output_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_output_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_output_dark_masterImage.png",
+    "test/goldens/failures/team_agent_output_dark_testImage.png",
+    "test/goldens/failures/team_agent_output_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_output_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_output_light_masterImage.png",
+    "test/goldens/failures/team_agent_output_light_testImage.png"
+  ]
+}

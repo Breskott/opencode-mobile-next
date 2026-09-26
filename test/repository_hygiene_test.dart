@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// Guards the public boundary of the repository itself: what a first-time
 /// reader meets at the root, and what third-party material the tree carries.
 void main() {
+  _g25();
+
   test('the internal engineering log is out of the public tree', () {
     // The append-only working log carried machine paths, device names, and
     // release claims that were stale the week they were written. It is gone
@@ -200,5 +203,243 @@ void main() {
           'the notice inventory lists a package that is no longer '
           'resolved in pubspec.lock',
     );
+  });
+}
+
+// ---------------------------------------------------------------------------
+// G25 (docs/ux-system/revamp/STANDARDS.md §18): repository hygiene rules made
+// mechanical. Rules: PROC-1, MOT-10, SEC-6, SEC-7, TEST-12, TEST-18.
+//
+// Absolute except TEST-12, which is a ratchet: golden-failure artefacts that
+// were committed before the gate existed are listed in
+// test/repository_hygiene_baseline.json. The list may only shrink; any tracked
+// `failures/` path not on it fails, and when entries are no longer tracked the
+// test prints the smaller list to commit.
+// ---------------------------------------------------------------------------
+
+/// The pinned Shorebird Flutter framework revision (AGENTS.md, PROC-1).
+const _pinnedRevisionPrefix = '91f8bd75';
+
+const _baselinePath = 'test/repository_hygiene_baseline.json';
+
+/// A Dart `import`/`export` directive of the banned package. Built from
+/// pieces so this file never matches itself.
+final _animateDirective = RegExp(
+  '^\\s*(import|export)\\s+[\'"]package:${'flutter'}_animate/',
+  multiLine: true,
+);
+
+final _failuresPath = RegExp(r'(^|/)failures/');
+
+List<String> _trackedFiles() {
+  final result = Process.runSync('git', const [
+    'ls-files',
+    '-z',
+  ], stdoutEncoding: utf8);
+  if (result.exitCode != 0) {
+    fail('G25: `git ls-files` failed (${result.exitCode}): ${result.stderr}');
+  }
+  final files = (result.stdout as String)
+      .split('\u0000')
+      .where((path) => path.isNotEmpty)
+      .toList();
+  // An empty listing would make every absolute check pass vacuously.
+  expect(files.length, greaterThan(100), reason: 'G25: git ls-files is empty');
+  return files;
+}
+
+/// The root of the Flutter SDK running this test: FLUTTER_ROOT (exported by
+/// the `flutter` launcher script), else the SDK that owns flutter_tester.
+Directory _runningFlutterRoot() {
+  final env = Platform.environment['FLUTTER_ROOT'];
+  if (env != null && env.isNotEmpty) return Directory(env);
+  var dir = File(Platform.resolvedExecutable).parent;
+  while (dir.parent.path != dir.path) {
+    if (File('${dir.path}/bin/cache/flutter.version.json').existsSync()) {
+      return dir;
+    }
+    dir = dir.parent;
+  }
+  fail(
+    'G25: cannot locate the running Flutter SDK (no FLUTTER_ROOT, and '
+    '${Platform.resolvedExecutable} is not inside a Flutter checkout)',
+  );
+}
+
+void _g25() {
+  group('G25 repository hygiene', () {
+    test('MOT-10: flutter_animate is never a dependency or an import', () {
+      for (final path in const ['pubspec.yaml', 'pubspec.lock']) {
+        expect(
+          File(path).readAsStringSync().contains('flutter_animate'),
+          isFalse,
+          reason:
+              '$path names flutter_animate; it is banned (pending timers '
+              'fail widget tests) — use the framework animation APIs',
+        );
+      }
+      final offenders = <String>[];
+      for (final root in const ['lib', 'test']) {
+        for (final entity in Directory(root).listSync(recursive: true)) {
+          if (entity is! File || !entity.path.endsWith('.dart')) continue;
+          if (_animateDirective.hasMatch(entity.readAsStringSync())) {
+            offenders.add(entity.path);
+          }
+        }
+      }
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'these files import flutter_animate (MOT-10): $offenders',
+      );
+    });
+
+    test('SEC-6, SEC-7: no skill packs, keystores or signing secrets '
+        'and no screen recordings in docs/qa are tracked', () {
+      final banned = <String, RegExp>{
+        'SEC-7 .claude/skills/ is never committed': RegExp(
+          r'^\.claude/skills/',
+        ),
+        'SEC-6 no keystore (*.jks)': RegExp(r'\.jks$', caseSensitive: false),
+        'SEC-6 no keystore (*.keystore)': RegExp(
+          r'\.keystore$',
+          caseSensitive: false,
+        ),
+        'SEC-6 no android/key.properties': RegExp(r'^android/key\.properties$'),
+        'no video files under docs/qa/': RegExp(
+          r'^docs/qa/.*\.(mp4|webm|mov)$',
+          caseSensitive: false,
+        ),
+      };
+      final files = _trackedFiles();
+      final problems = <String>[
+        for (final rule in banned.entries)
+          for (final path in files)
+            if (rule.value.hasMatch(path)) '${rule.key}: $path is tracked',
+      ];
+      expect(problems, isEmpty, reason: problems.join('\n'));
+
+      // The ignore rules that keep a local signing setup out of `git add`.
+      final androidIgnore = File(
+        'android/.gitignore',
+      ).readAsLinesSync().map((line) => line.trim()).toSet();
+      for (final rule in const [
+        'key.properties',
+        '**/*.jks',
+        '**/*.keystore',
+      ]) {
+        expect(
+          androidIgnore,
+          contains(rule),
+          reason: 'android/.gitignore no longer ignores $rule (SEC-6)',
+        );
+      }
+    });
+
+    test('TEST-12: golden-failure artefacts are never committed (ratchet)', () {
+      final baseline =
+          (jsonDecode(File(_baselinePath).readAsStringSync())
+                  as Map<String, dynamic>)['TEST-12']
+              as List<dynamic>;
+      final allowed = baseline.cast<String>().toSet();
+      final tracked = _trackedFiles().where(_failuresPath.hasMatch).toSet();
+
+      final added = tracked.difference(allowed).toList()..sort();
+      expect(
+        added,
+        isEmpty,
+        reason:
+            'TEST-12: golden-failure artefacts are committed. Untrack them '
+            '(they are test output, not evidence):\n${added.join('\n')}',
+      );
+
+      final gone = allowed.difference(tracked);
+      if (gone.isNotEmpty) {
+        final smaller = tracked.toList()..sort();
+        stdout.writeln(
+          '--- G25 TEST-12 baseline shrank by ${gone.length}; commit this '
+          'list as "TEST-12" in $_baselinePath ---\n'
+          '${const JsonEncoder.withIndent('  ').convert(smaller)}\n'
+          '--- end baseline ---',
+        );
+      }
+    });
+
+    test('the pubspec version is name+build with a positive build number', () {
+      final version = RegExp(
+        r'^version:\s*(\S+)\s*$',
+        multiLine: true,
+      ).firstMatch(File('pubspec.yaml').readAsStringSync())?.group(1);
+      expect(version, isNotNull, reason: 'pubspec.yaml has no version line');
+      expect(
+        RegExp(r'^\d+\.\d+\.\d+\+[1-9]\d*$').hasMatch(version!),
+        isTrue,
+        reason: 'pubspec version "$version" is not X.Y.Z+N with N ≥ 1',
+      );
+    });
+
+    test('PROC-1: the Android build targets compileSdk 37 and Java 17', () {
+      final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+      final compileSdk = RegExp(
+        r'^\s*compileSdk\s*=\s*(\S+)\s*$',
+        multiLine: true,
+      ).allMatches(gradle).map((m) => m.group(1)).toList();
+      expect(
+        compileSdk,
+        ['37'],
+        reason: 'android/app/build.gradle.kts must set compileSdk = 37 once',
+      );
+      for (final line in const [
+        'sourceCompatibility = JavaVersion.VERSION_17',
+        'targetCompatibility = JavaVersion.VERSION_17',
+        'jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17',
+      ]) {
+        expect(
+          gradle,
+          contains(line),
+          reason: 'android/app/build.gradle.kts lost "$line" (Java 17)',
+        );
+      }
+    });
+
+    test('PROC-1, TEST-18: the running Flutter is the pinned revision and '
+        'the widget-name ratchet was generated from it', () {
+      final root = _runningFlutterRoot();
+      final versionFile = File('${root.path}/bin/cache/flutter.version.json');
+      expect(
+        versionFile.existsSync(),
+        isTrue,
+        reason: 'G25: ${versionFile.path} is missing',
+      );
+      final running =
+          (jsonDecode(versionFile.readAsStringSync())
+                  as Map<String, dynamic>)['frameworkRevision']
+              as String?;
+      expect(
+        running,
+        startsWith(_pinnedRevisionPrefix),
+        reason:
+            'PROC-1: tests run on Flutter revision $running from '
+            '${root.path}; use the pinned Shorebird Flutter 3.47.1 '
+            '($_pinnedRevisionPrefix…)',
+      );
+
+      final widgets =
+          (jsonDecode(
+                    File(
+                      'test/kit_ratchet_flutter_widgets.json',
+                    ).readAsStringSync(),
+                  )
+                  as Map<String, dynamic>)['flutterRevision']
+              as String?;
+      expect(
+        widgets,
+        running,
+        reason:
+            'TEST-18: test/kit_ratchet_flutter_widgets.json was generated '
+            'from Flutter $widgets but tests run on $running; regenerate it '
+            'with `dart run tool/kit/flutter_widget_names.dart`',
+      );
+    });
   });
 }
