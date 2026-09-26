@@ -3,12 +3,13 @@
 ## 1. Scope
 
 - Unit: `kit-KitQr` (wave 1, tier 1a, kit-part). Finish line: `KitQr` exists in its own file under `lib/ui/kit/`, has its frozen API, every declared state, its galleries, its contract tests and its structural asserts. Non-goal: no call site outside the kit changes (`session_handoff_sheets.dart` is not touched; its wave-2 unit adopts the part).
-- Files changed: `lib/ui/kit/kit_qr.dart` (new), `test/kit/kit_qr_test.dart` (new), `test/goldens/kit/kit_qr_golden_test.dart` (new, 8 PNGs), `lib/l10n/app_en.arb` (+`kitQrTooLong`), `lib/l10n/app_localizations*.dart` (regenerated — see Contract problems).
+- Files changed: `lib/ui/kit/kit_qr.dart` (new), `test/kit/kit_qr_test.dart` (new), `test/goldens/kit/kit_qr_golden_test.dart` (new, 8 PNGs), `lib/l10n/app_en.arb` (+`kitQrTooLong`). The generated `lib/l10n/app_localizations*.dart` are not on the branch (see contract problem 2).
 - Pages (map ids): none. `kit-KitQr` is a kit-part unit with no assigned map pages; `docs/ux-system/kit-v2.md` §5/§9.2 lists KitQr as a one-off surface, not a screen.
 - Specs followed: `docs/ux-system/kit-api/KitQr.md` (frozen API, states, tokens, adaptive, a11y, RTL, motion, data safety); STANDARDS.md rules LOOK-1, LOOK-21, LOOK-35, KIT-9, KIT-12, KIT-32, STATE-2, STATE-8, A11Y-1, A11Y-8, SEC-2, SEC-5, TEST-11 (named by the spec header), plus TEST-9/TEST-15/TEST-20 (galleries and contract tests) and the §1 definition-of-done checklist; `docs/ux-system/kit-v2.md` §5 ("the handoff QR"), §8.2 (adaptive), §8.4 (gallery sizes), §9.1/§9.2 (kit-only allowlist and Surfaces).
 - Contract problems (PROC-20):
   1. **Arabic/gallery-size scope changed after the spec froze.** `docs/ux-system/kit-api/KitQr.md` (wave 0) asks for Arabic copy in `app_ar.arb`, an RTL-mirroring concern, and a 22-shot gallery (5 LAY-4 sizes, plus 2.0-text and Arabic variants). Commit `97975859` on `feat/phone-setup-v2` (2026-09-27, after this unit's branch point `b67e3276`) adds to STANDARDS.md: "**Owner decision 2026-09-27: Arabic is dropped from the revamp.** Builders do not render Arabic or RTL galleries, do not add Arabic translations for new copy (new ARB keys go only in `app_en.arb`)... Galleries: phone 412x915 and one wide size (1280x800) only, light and dark." R15 ("owner decisions dated later win") makes this later, dated decision win over the wave-0 frozen spec. Applied: `kitQrTooLong` is English-only (no `app_ar.arb` entry; Arabic falls back to the English string, confirmed in `lib/l10n/app_localizations_ar.dart`); the gallery is 2 states × {412×915, 1280×800} × {dark, light} = 8 PNGs, no Arabic or 2.0-text shots. Kept: the frozen spec's Tests-required item 6 (the painted module pattern is identical under `TextDirection.rtl` and `.ltr`) as a plain behaviour test, not a gallery — it proves a real scanning-correctness property (a mirrored QR code does not scan), carries no Arabic copy, and is not a "gallery" or "RTL review" the decision suspends. Reported per PROC-20 rather than silently deviating from either document; the coordinator should confirm this reading covers wave-1 kit-part units the same as it plainly covers screen units.
-  2. **Generated `app_localizations*.dart` vs. G27 ("units never commit them").** STANDARDS §18.2 G27 says the integrator runs `flutter gen-l10n` and commits the generated Dart files after merging a wave's ARB changes, to avoid many units colliding on the same generated file. But §1's definition of done requires `flutter analyze`/`flutter test` clean on the whole worktree, and `kit_qr.dart`/`kit_qr_test.dart` call `AppLocalizations.kitQrTooLong`, which does not exist until `flutter gen-l10n` runs. Reverting the generated files (tested) breaks `flutter analyze` on this branch. Resolved in favour of a working, self-testable branch: `flutter gen-l10n` was run and its three output files are committed in `code head` below. The diff is additive-only (one new getter, in the same alphabetical position gen-l10n always places it), so it should merge or regenerate cleanly at integration; the coordinator's post-merge `flutter gen-l10n` pass is unaffected either way.
+  2. **Generated l10n left uncommitted per PROC-13; integrator regenerates.** `flutter gen-l10n` is run locally so `kit_qr.dart` and its tests compile and the checks below run, but its output (`lib/l10n/app_localizations.dart`, `_en.dart`, `_ar.dart`) is not committed (PROC-13, G27, conflict row 79). An earlier commit on this branch (`10314e0d`) did commit it; review fix commit `c5fdd2b7` restores the three files to the branch base `b67e3276`, so the branch diff under `lib/l10n/` is only the `kitQrTooLong` entry in `app_en.arb`. On a fresh checkout of this branch, `flutter analyze` needs `flutter gen-l10n` first; the integrator regenerates and commits the output after the merge.
+  3. **"Short windows" asks for two things that cannot both hold at very small widths.** The spec (Adaptive, "Short windows") says: "the part still draws at the width it has, and each module stays at least 2 physical px". When `maxWidth × dpr < 2 × (moduleCount + 8)`, a 2-physical-px module makes the card wider than its box. The first build clamped to 1 px, a third value, which still overflowed below `maxWidth × dpr < moduleCount + 8` (DPR 1, 33 modules, 30 dp gave a 33 dp side, painted past the box). Applied now: the side never exceeds `min(maxWidth, qrMaxSize)`. Modules are the largest whole number of physical px that fits, which is at least 2 whenever two fit. When fewer than one fits, the code draws at the width it has with fractional modules. The 2-px floor is therefore not met in windows narrower than `2 × (moduleCount + 8) / dpr` dp. Proposed spec text: "**Short windows:** the host's sheet scrolls, and the code never shrinks below `min(maxWidth, 160)`. The side never exceeds `maxWidth`. Modules are whole physical px whenever at least one fits; a module under 2 physical px may not scan, so the host gives the code at least `2 × (moduleCount + 8) / dpr` dp where it can and always keeps the copy-link path." Test 9 asserts the rule applied.
 - New kit parts (KIT-3): `KitQr` (`lib/ui/kit/kit_qr.dart`).
 - Map items (EVID-11): n/a — no map pages assigned to this unit.
 - States per page (STATE-20): n/a — not a page. `KitQr`'s own declared states (KIT-12 doc comment: "States: default, error (too long)"): `default` → `test/kit/kit_qr_test.dart` tests 1–3, 6 and `test/goldens/kit/kit_qr_golden_test.dart` (`kit_qr_default_*`); `too long` → tests 4, 5, 7 and `kit_qr_too_long_*` goldens.
@@ -16,7 +17,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitQr`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4` (`feat/phone-setup-v2` at branch time), code head `10314e0dddfd57e86cc870c47d106f9065eeb85b`.
+- Branch `revamp/kit-KitQr`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4` (`feat/phone-setup-v2` at branch time), code head `c5fdd2b7` (review fixes on top of `10314e0d`).
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
@@ -28,7 +29,8 @@ None: tests, goldens and renders only. Device proof is coordinator work at the w
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
 | 1 | New code, no prior fix to prove failing-first (TEST-2: "New code that fixes nothing needs no failing-first run") | n/a | n/a | n/a |
-| 2 | `test/kit/kit_qr_test.dart` | passes | 12 passed (`run-behaviour-tests.txt`) | PASS |
+| 1a | Review fix: test 9 (`--plain-name "9. short windows"`) against `kit_qr.dart` from `10314e0d` (the 1-px clamp) | fails | failed at the pattern check at the narrowest width: the old side (33 dp) was painted in a 30 dp box | FAIL (as expected) |
+| 2 | `test/kit/kit_qr_test.dart` | passes | 13 passed (`run-behaviour-tests.txt`) | PASS |
 | 3 | `test/goldens/kit/kit_qr_golden_test.dart` (against the committed PNGs, no `--update-goldens`) | passes | 8 passed (`run-galleries.txt`) | PASS |
 | 4 | `test/kit_ratchet_test.dart`, `test/l10n_coverage_test.dart`, `test/ui_glossary_test.dart`, `test/design_standard_test.dart` | pass | 70 passed, 0 failed (`run-shared-gates.txt`) | PASS |
 | 5 | `flutter analyze lib test` (whole worktree) | no errors, no new issues | "No issues found!" (`run-analyze.txt`) | PASS |
@@ -50,7 +52,8 @@ None: tests, goldens and renders only. Device proof is coordinator work at the w
   | SEC-2 / A11Y-1 (one image node, data never in semantics) | `test/kit/kit_qr_test.dart` "5. semantics..." | `run-behaviour-tests.txt` |
   | RTL (module pattern never mirrored) | `test/kit/kit_qr_test.dart` "6. direction..." | `run-behaviour-tests.txt` |
   | KIT-37 (empty asserted away) | `test/kit/kit_qr_test.dart` "7. empty..." | `run-behaviour-tests.txt` |
-  | A11Y-8 / LAY-4 (no overflow at 320/412dp, 1.0/1.3/2.0 text, LTR/RTL, both states) | `test/kit/kit_qr_test.dart` "8. overflow..." | `run-behaviour-tests.txt` |
+  | Adaptive "Short windows" (side ≤ width it has at DPR 1; whole px when one fits, ≥ 2 px when two fit; contract problem 3) | `test/kit/kit_qr_test.dart` "9. short windows..." | `run-behaviour-tests.txt` |
+| A11Y-8 / LAY-4 (no overflow at 320/412dp, 1.0/1.3/2.0 text, LTR/RTL, both states) | `test/kit/kit_qr_test.dart` "8. overflow..." | `run-behaviour-tests.txt` |
   | MOT-7 / G8x (settles after one pump, system and Effects Off) | `test/kit/kit_qr_test.dart` "KitQr (MOT-7) ..." (via `kitMotionStillTests`) | `run-behaviour-tests.txt` |
   | TEST-9 / G4 (galleries at DPR 3, declared states, both themes, reduced sizes per the 2026-09-27 decision) | `test/goldens/kit/kit_qr_golden_test.dart` | `run-galleries.txt` |
   | G16/G21 (kit-only ratchet: `kit_qr.dart` adds zero new hits) | `test/kit_ratchet_test.dart` | `run-shared-gates.txt` |
@@ -77,7 +80,8 @@ $F analyze lib test
 - Not exported from `lib/ui/kit/kit.dart` (integrator's job, R06) — so the shared `test/kit/kit_manifest_test.dart` and `test/kit_motion_test.dart` manifests do not see `KitQr` yet, and its `kitMotionStillTests` registration in `test/kit/kit_qr_test.dart` is not yet cross-checked by `test/kit_motion_baseline.json`.
 - `session_handoff_sheets.dart` still has its own `SessionLinkQr`/`_QrPainter` (unchanged, out of this unit's write set); the wave-2 unit that owns that file adopts `KitQr` and removes them.
 - No approved visual-language canvas render exists for KitQr to diff the goldens against (EVID-12: none available).
-- Contract problems 1 and 2 above are unresolved pending coordinator confirmation; this record states the reading applied.
+- Contract problems 1 and 3 above are unresolved pending coordinator confirmation; this record states the reading applied. Problem 2 is settled by PROC-13.
+- In windows narrower than `2 × (moduleCount + 8) / dpr` dp the modules fall below 2 physical px; whether such a code scans is not proven.
 
 ## State
 
@@ -86,6 +90,6 @@ $F analyze lib test
 | Implemented | Yes | `revamp/kit-KitQr` |
 | Enabled | No: not exported from `kit.dart`, not adopted by any screen yet (by design, R14/R13) | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `10314e0dddfd57e86cc870c47d106f9065eeb85b` |
+| Committed | Yes | code head `c5fdd2b7` |
 | Deployed | No | |
 | Released | No | |
