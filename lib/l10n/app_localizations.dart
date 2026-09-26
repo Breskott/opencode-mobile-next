@@ -31042,6 +31042,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The task and its workers, in the chat'**
   String get teamOpenTaskConversationHint;
+
+  /// AI Team board: top bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get teamBoardTitle;
+
+  /// AI Team page: top bar action that opens the board
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get teamBoardOpenTooltip;
+
+  /// AI Team page: row that opens the board
+  ///
+  /// In en, this message translates to:
+  /// **'View board'**
+  String get teamBoardViewRow;
+
+  /// AI Team page: the board row's supporting line
+  ///
+  /// In en, this message translates to:
+  /// **'Every task by where it stands'**
+  String get teamBoardViewRowSupporting;
+
+  /// Board column: tasks nobody has been given yet
+  ///
+  /// In en, this message translates to:
+  /// **'Backlog'**
+  String get teamBoardColumnBacklog;
+
+  /// Board column: tasks given to the team, waiting for a worker
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get teamBoardColumnReady;
+
+  /// Board column: tasks a worker is on
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get teamBoardColumnWorking;
+
+  /// Board column: finished work waiting for its check and merge
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get teamBoardColumnReview;
+
+  /// Board column: merged, done or cancelled in the last 7 days
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get teamBoardColumnDone;
+
+  /// Board: screen reader label of a column tab
+  ///
+  /// In en, this message translates to:
+  /// **'{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}'**
+  String teamBoardColumnSemantics(String column, int count);
+
+  /// Board: added to a column tab's label when a card in it needs the person
+  ///
+  /// In en, this message translates to:
+  /// **'something here needs you'**
+  String get teamBoardColumnNeedsYouSemantics;
+
+  /// Board: empty Backlog column title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting'**
+  String get teamBoardEmptyBacklogTitle;
+
+  /// Board: empty Backlog column body
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks you add but haven\'t started wait here.'**
+  String get teamBoardEmptyBacklogBody;
+
+  /// Board: empty Ready column title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing queued'**
+  String get teamBoardEmptyReadyTitle;
+
+  /// Board: empty Ready column body
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks given to the team wait here for a worker.'**
+  String get teamBoardEmptyReadyBody;
+
+  /// Board: empty Working column title
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is working'**
+  String get teamBoardEmptyWorkingTitle;
+
+  /// Board: empty Working column body
+  ///
+  /// In en, this message translates to:
+  /// **'A task moves here when a worker picks it up.'**
+  String get teamBoardEmptyWorkingBody;
+
+  /// Board: empty Review column title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to review'**
+  String get teamBoardEmptyReviewTitle;
+
+  /// Board: empty Review column body
+  ///
+  /// In en, this message translates to:
+  /// **'Finished work waits here for its check and merge.'**
+  String get teamBoardEmptyReviewBody;
+
+  /// Board: empty Done column title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing finished this week'**
+  String get teamBoardEmptyDoneTitle;
+
+  /// Board: empty Done column body
+  ///
+  /// In en, this message translates to:
+  /// **'Merged, done and cancelled tasks from the last 7 days show here.'**
+  String get teamBoardEmptyDoneBody;
+
+  /// Board: nothing in any column
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get teamBoardEmptyTitle;
+
+  /// Board: nothing in any column, body
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks you give the team show up here, by where they stand.'**
+  String get teamBoardEmptyBody;
+
+  /// Board: priority 0
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get teamBoardPriorityUrgent;
+
+  /// Board: priority 1
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get teamBoardPriorityHigh;
+
+  /// Board: priority 2 (the default)
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get teamBoardPriorityNormal;
+
+  /// Board: priority 3
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get teamBoardPriorityLow;
+
+  /// Board: priority 4
+  ///
+  /// In en, this message translates to:
+  /// **'Someday'**
+  String get teamBoardPrioritySomeday;
+
+  /// Board: card type
+  ///
+  /// In en, this message translates to:
+  /// **'Bug'**
+  String get teamBoardTypeBug;
+
+  /// Board: card type
+  ///
+  /// In en, this message translates to:
+  /// **'Feature'**
+  String get teamBoardTypeFeature;
+
+  /// Board: card type: a large task with child tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Epic'**
+  String get teamBoardTypeEpic;
+
+  /// Board: card type
+  ///
+  /// In en, this message translates to:
+  /// **'Chore'**
+  String get teamBoardTypeChore;
+
+  /// Board: an epic card's progress
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String teamBoardEpicProgress(int done, int total);
+
+  /// Board: card flag, a question waits on the person
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get teamBoardFlagNeedsYou;
+
+  /// Board: card flag, the task waits on something
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get teamBoardFlagBlocked;
+
+  /// Board: card flag naming the task it waits on
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by {title}'**
+  String teamBoardFlagBlockedBy(String title);
+
+  /// Board: card flag naming the first of several tasks it waits on
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by {title} + {count} more'**
+  String teamBoardFlagBlockedByMore(String title, int count);
+
+  /// Board: card flag, the worker stopped with an error
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped with an error'**
+  String get teamBoardFlagFailed;
+
+  /// Board: card flag naming its epic
+  ///
+  /// In en, this message translates to:
+  /// **'In {epic}'**
+  String teamBoardFlagInEpic(String epic);
+
+  /// Board: card flag while the host confirms the person's move
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to {column}…'**
+  String teamBoardFlagMoving(String column);
+
+  /// Board: a cancelled task in Done
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get teamBoardFlagCancelled;
+
+  /// Board: a card changed less than a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get teamBoardAgeJustNow;
+
+  /// Board: minutes since a card last changed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String teamBoardAgeMinutes(int count);
+
+  /// Board: hours since a card last changed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h ago'**
+  String teamBoardAgeHours(int count);
+
+  /// Board: days since a card last changed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} d ago'**
+  String teamBoardAgeDays(int count);
+
+  /// Board: a card's overflow button
+  ///
+  /// In en, this message translates to:
+  /// **'Move or change'**
+  String get teamBoardMoveMenuTooltip;
+
+  /// Board: the move sheet's line under the task title
+  ///
+  /// In en, this message translates to:
+  /// **'In {column}'**
+  String teamBoardMoveSheetWhere(String column);
+
+  /// Board move: Backlog to Ready
+  ///
+  /// In en, this message translates to:
+  /// **'Start now'**
+  String get teamBoardMoveStartNow;
+
+  /// Board move: Start now, supporting line
+  ///
+  /// In en, this message translates to:
+  /// **'Give it to the team\'s workers'**
+  String get teamBoardMoveStartNowHint;
+
+  /// Board move: Ready to Backlog
+  ///
+  /// In en, this message translates to:
+  /// **'Move back to Backlog'**
+  String get teamBoardMoveBackToBacklog;
+
+  /// Board move: Move back to Backlog, supporting line
+  ///
+  /// In en, this message translates to:
+  /// **'The team won\'t pick it up until you start it'**
+  String get teamBoardMoveBackToBacklogHint;
+
+  /// Board move: change priority
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get teamBoardMovePriority;
+
+  /// Board move: close as cancelled (destructive, confirmed)
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel task'**
+  String get teamBoardMoveCancel;
+
+  /// Board move: Cancel task, supporting line
+  ///
+  /// In en, this message translates to:
+  /// **'Moves it to Done as cancelled'**
+  String get teamBoardMoveCancelHint;
+
+  /// Board move: a cancelled task back to Backlog
+  ///
+  /// In en, this message translates to:
+  /// **'Put back in Backlog'**
+  String get teamBoardMoveReopen;
+
+  /// Board move: Put back in Backlog, supporting line
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody works on it until you start it'**
+  String get teamBoardMoveReopenHint;
+
+  /// Board: open the task's team conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get teamBoardOpenConversation;
+
+  /// Board: open a task that has no conversation yet
+  ///
+  /// In en, this message translates to:
+  /// **'Open details'**
+  String get teamBoardOpenDetails;
+
+  /// Board: the move sheet of a task only the team moves
+  ///
+  /// In en, this message translates to:
+  /// **'The team moves this task. Open its conversation to message the team or stop it.'**
+  String get teamBoardTeamMoves;
+
+  /// Board: the move sheet on a read-only host
+  ///
+  /// In en, this message translates to:
+  /// **'This host doesn\'t let the app change tasks, so the board is read-only here.'**
+  String get teamBoardReadOnlyNote;
+
+  /// Board: the one status line on a read-only host
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only here · this host doesn\'t let the app change tasks'**
+  String get teamBoardStatusReadOnly;
+
+  /// Board: confirm before cancelling a task
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel “{title}”?'**
+  String teamBoardCancelTitle(String title);
+
+  /// Board: confirm cancel, body
+  ///
+  /// In en, this message translates to:
+  /// **'The team won\'t work on it. It moves to Done as cancelled, and you can put it back in the Backlog later.'**
+  String get teamBoardCancelBody;
+
+  /// Board: confirm cancel, the safe answer
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get teamBoardCancelKeep;
+
+  /// Board: a move the host refused
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change “{title}”'**
+  String teamBoardMoveFailedTitle(String title);
+
+  /// Board: a move the host refused, body
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s host said no, so it stays where it was.'**
+  String get teamBoardMoveFailedBody;
+
+  /// Board: the priority sheet's title
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get teamBoardPriorityTitle;
+
+  /// Board: top bar action that adds a task to the backlog
+  ///
+  /// In en, this message translates to:
+  /// **'Add to backlog'**
+  String get teamBoardAddTooltip;
+
+  /// Board: add-to-backlog field hint
+  ///
+  /// In en, this message translates to:
+  /// **'What should the team do?'**
+  String get teamBoardAddHint;
+
+  /// Board: add-to-backlog primary button
+  ///
+  /// In en, this message translates to:
+  /// **'Add to backlog'**
+  String get teamBoardAddButton;
+
+  /// Board: add-to-backlog sheet, what happens next
+  ///
+  /// In en, this message translates to:
+  /// **'It waits in the Backlog until you start it.'**
+  String get teamBoardAddNote;
+
+  /// Board: add-to-backlog refused
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add it. The team\'s host said no.'**
+  String get teamBoardAddFailed;
+
+  /// Board: the project switcher under the title
+  ///
+  /// In en, this message translates to:
+  /// **'Choose project'**
+  String get teamBoardProjectTooltip;
+
+  /// Board: screen reader hint on a card that has moves
+  ///
+  /// In en, this message translates to:
+  /// **'long press for moves'**
+  String get teamBoardCardHint;
 }
 
 class _AppLocalizationsDelegate

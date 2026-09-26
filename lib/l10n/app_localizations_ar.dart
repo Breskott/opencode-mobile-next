@@ -19513,4 +19513,270 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamOpenTaskConversationHint => 'المهمة وعمالها، في المحادثة';
+
+  @override
+  String get teamBoardTitle => 'اللوحة';
+
+  @override
+  String get teamBoardOpenTooltip => 'اللوحة';
+
+  @override
+  String get teamBoardViewRow => 'عرض اللوحة';
+
+  @override
+  String get teamBoardViewRowSupporting => 'كل مهمة حسب مرحلتها';
+
+  @override
+  String get teamBoardColumnBacklog => 'قائمة الانتظار';
+
+  @override
+  String get teamBoardColumnReady => 'جاهزة';
+
+  @override
+  String get teamBoardColumnWorking => 'قيد العمل';
+
+  @override
+  String get teamBoardColumnReview => 'المراجعة';
+
+  @override
+  String get teamBoardColumnDone => 'منجزة';
+
+  @override
+  String teamBoardColumnSemantics(String column, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مهمة',
+      many: '$count مهمة',
+      few: '$count مهام',
+      two: 'مهمتان',
+      one: 'مهمة واحدة',
+      zero: 'لا مهام',
+    );
+    return '$column، $_temp0';
+  }
+
+  @override
+  String get teamBoardColumnNeedsYouSemantics => 'هناك ما يحتاج إليك هنا';
+
+  @override
+  String get teamBoardEmptyBacklogTitle => 'لا شيء بالانتظار';
+
+  @override
+  String get teamBoardEmptyBacklogBody =>
+      'المهام التي تضيفها ولم تبدأها تنتظر هنا.';
+
+  @override
+  String get teamBoardEmptyReadyTitle => 'لا شيء في الدور';
+
+  @override
+  String get teamBoardEmptyReadyBody =>
+      'المهام التي أُعطيت للفريق تنتظر هنا عاملًا.';
+
+  @override
+  String get teamBoardEmptyWorkingTitle => 'لا أحد يعمل الآن';
+
+  @override
+  String get teamBoardEmptyWorkingBody =>
+      'تنتقل المهمة إلى هنا عندما يتولاها عامل.';
+
+  @override
+  String get teamBoardEmptyReviewTitle => 'لا شيء للمراجعة';
+
+  @override
+  String get teamBoardEmptyReviewBody => 'العمل المكتمل ينتظر هنا فحصه ودمجه.';
+
+  @override
+  String get teamBoardEmptyDoneTitle => 'لم يكتمل شيء هذا الأسبوع';
+
+  @override
+  String get teamBoardEmptyDoneBody =>
+      'تظهر هنا المهام المدمجة والمنجزة والملغاة في آخر 7 أيام.';
+
+  @override
+  String get teamBoardEmptyTitle => 'لا مهام بعد';
+
+  @override
+  String get teamBoardEmptyBody =>
+      'تظهر هنا المهام التي تعطيها للفريق، حسب مرحلتها.';
+
+  @override
+  String get teamBoardPriorityUrgent => 'عاجلة';
+
+  @override
+  String get teamBoardPriorityHigh => 'عالية';
+
+  @override
+  String get teamBoardPriorityNormal => 'عادية';
+
+  @override
+  String get teamBoardPriorityLow => 'منخفضة';
+
+  @override
+  String get teamBoardPrioritySomeday => 'يومًا ما';
+
+  @override
+  String get teamBoardTypeBug => 'خلل';
+
+  @override
+  String get teamBoardTypeFeature => 'ميزة';
+
+  @override
+  String get teamBoardTypeEpic => 'مهمة كبرى';
+
+  @override
+  String get teamBoardTypeChore => 'مهمة روتينية';
+
+  @override
+  String teamBoardEpicProgress(int done, int total) {
+    return 'اكتمل $done من $total';
+  }
+
+  @override
+  String get teamBoardFlagNeedsYou => 'يحتاج إليك';
+
+  @override
+  String get teamBoardFlagBlocked => 'متوقفة';
+
+  @override
+  String teamBoardFlagBlockedBy(String title) {
+    return 'متوقفة حتى تنتهي «$title»';
+  }
+
+  @override
+  String teamBoardFlagBlockedByMore(String title, int count) {
+    return 'متوقفة حتى تنتهي «$title» و$count غيرها';
+  }
+
+  @override
+  String get teamBoardFlagFailed => 'توقفت بسبب خطأ';
+
+  @override
+  String teamBoardFlagInEpic(String epic) {
+    return 'ضمن «$epic»';
+  }
+
+  @override
+  String teamBoardFlagMoving(String column) {
+    return 'جارٍ النقل إلى $column…';
+  }
+
+  @override
+  String get teamBoardFlagCancelled => 'ملغاة';
+
+  @override
+  String get teamBoardAgeJustNow => 'الآن';
+
+  @override
+  String teamBoardAgeMinutes(int count) {
+    return 'قبل $count د';
+  }
+
+  @override
+  String teamBoardAgeHours(int count) {
+    return 'قبل $count س';
+  }
+
+  @override
+  String teamBoardAgeDays(int count) {
+    return 'قبل $count ي';
+  }
+
+  @override
+  String get teamBoardMoveMenuTooltip => 'نقل أو تغيير';
+
+  @override
+  String teamBoardMoveSheetWhere(String column) {
+    return 'في $column';
+  }
+
+  @override
+  String get teamBoardMoveStartNow => 'ابدأ الآن';
+
+  @override
+  String get teamBoardMoveStartNowHint => 'أعطها لعمّال الفريق';
+
+  @override
+  String get teamBoardMoveBackToBacklog => 'أعدها إلى قائمة الانتظار';
+
+  @override
+  String get teamBoardMoveBackToBacklogHint => 'لن يتولاها الفريق حتى تبدأها';
+
+  @override
+  String get teamBoardMovePriority => 'الأولوية';
+
+  @override
+  String get teamBoardMoveCancel => 'ألغِ المهمة';
+
+  @override
+  String get teamBoardMoveCancelHint => 'تنقلها إلى المنجزة كمهمة ملغاة';
+
+  @override
+  String get teamBoardMoveReopen => 'أعدها إلى قائمة الانتظار';
+
+  @override
+  String get teamBoardMoveReopenHint => 'لن يعمل عليها أحد حتى تبدأها';
+
+  @override
+  String get teamBoardOpenConversation => 'افتح المحادثة';
+
+  @override
+  String get teamBoardOpenDetails => 'افتح التفاصيل';
+
+  @override
+  String get teamBoardTeamMoves =>
+      'الفريق هو من ينقل هذه المهمة. افتح محادثتها لمراسلة الفريق أو إيقافه.';
+
+  @override
+  String get teamBoardReadOnlyNote =>
+      'هذا المضيف لا يسمح للتطبيق بتغيير المهام، لذا اللوحة للقراءة فقط هنا.';
+
+  @override
+  String get teamBoardStatusReadOnly =>
+      'للقراءة فقط هنا · هذا المضيف لا يسمح للتطبيق بتغيير المهام';
+
+  @override
+  String teamBoardCancelTitle(String title) {
+    return 'إلغاء «$title»؟';
+  }
+
+  @override
+  String get teamBoardCancelBody =>
+      'لن يعمل الفريق عليها. ستنتقل إلى المنجزة كمهمة ملغاة، ويمكنك إعادتها إلى قائمة الانتظار لاحقًا.';
+
+  @override
+  String get teamBoardCancelKeep => 'أبقِها';
+
+  @override
+  String teamBoardMoveFailedTitle(String title) {
+    return 'تعذّر تغيير «$title»';
+  }
+
+  @override
+  String get teamBoardMoveFailedBody =>
+      'رفض مضيف الفريق الطلب، لذا بقيت في مكانها.';
+
+  @override
+  String get teamBoardPriorityTitle => 'الأولوية';
+
+  @override
+  String get teamBoardAddTooltip => 'أضف إلى قائمة الانتظار';
+
+  @override
+  String get teamBoardAddHint => 'ماذا ينبغي أن يفعل الفريق؟';
+
+  @override
+  String get teamBoardAddButton => 'أضف إلى قائمة الانتظار';
+
+  @override
+  String get teamBoardAddNote => 'تنتظر في قائمة الانتظار حتى تبدأها.';
+
+  @override
+  String get teamBoardAddFailed => 'تعذّرت الإضافة. رفض مضيف الفريق الطلب.';
+
+  @override
+  String get teamBoardProjectTooltip => 'اختر المشروع';
+
+  @override
+  String get teamBoardCardHint => 'اضغط مطولًا للنقل';
 }

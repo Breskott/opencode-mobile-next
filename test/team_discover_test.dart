@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart';
 import 'package:opencode_mobile/builtin/setup/components.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
@@ -25,7 +26,6 @@ import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -375,7 +375,9 @@ void main() {
       expect(_key('team-work-door'), findsOneWidget);
       await tester.tap(_key('team-work-task-oc-xru'));
       await _settle(tester);
-      expect(find.byType(RunScreen), findsOneWidget);
+      // A team task opens as its conversation
+      // (docs/design/team-conversation-2026-09-26.md).
+      expect(find.byType(TeamConversationScreen), findsOneWidget);
       await tester.pageBack();
       await _settle(tester);
       await tester.tap(_key('workspace-new-mode-team'));

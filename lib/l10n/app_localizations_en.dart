@@ -19244,4 +19244,270 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamOpenTaskConversationHint =>
       'The task and its workers, in the chat';
+
+  @override
+  String get teamBoardTitle => 'Board';
+
+  @override
+  String get teamBoardOpenTooltip => 'Board';
+
+  @override
+  String get teamBoardViewRow => 'View board';
+
+  @override
+  String get teamBoardViewRowSupporting => 'Every task by where it stands';
+
+  @override
+  String get teamBoardColumnBacklog => 'Backlog';
+
+  @override
+  String get teamBoardColumnReady => 'Ready';
+
+  @override
+  String get teamBoardColumnWorking => 'Working';
+
+  @override
+  String get teamBoardColumnReview => 'Review';
+
+  @override
+  String get teamBoardColumnDone => 'Done';
+
+  @override
+  String teamBoardColumnSemantics(String column, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+      zero: 'no tasks',
+    );
+    return '$column, $_temp0';
+  }
+
+  @override
+  String get teamBoardColumnNeedsYouSemantics => 'something here needs you';
+
+  @override
+  String get teamBoardEmptyBacklogTitle => 'Nothing waiting';
+
+  @override
+  String get teamBoardEmptyBacklogBody =>
+      'Tasks you add but haven\'t started wait here.';
+
+  @override
+  String get teamBoardEmptyReadyTitle => 'Nothing queued';
+
+  @override
+  String get teamBoardEmptyReadyBody =>
+      'Tasks given to the team wait here for a worker.';
+
+  @override
+  String get teamBoardEmptyWorkingTitle => 'Nobody is working';
+
+  @override
+  String get teamBoardEmptyWorkingBody =>
+      'A task moves here when a worker picks it up.';
+
+  @override
+  String get teamBoardEmptyReviewTitle => 'Nothing to review';
+
+  @override
+  String get teamBoardEmptyReviewBody =>
+      'Finished work waits here for its check and merge.';
+
+  @override
+  String get teamBoardEmptyDoneTitle => 'Nothing finished this week';
+
+  @override
+  String get teamBoardEmptyDoneBody =>
+      'Merged, done and cancelled tasks from the last 7 days show here.';
+
+  @override
+  String get teamBoardEmptyTitle => 'No tasks yet';
+
+  @override
+  String get teamBoardEmptyBody =>
+      'Tasks you give the team show up here, by where they stand.';
+
+  @override
+  String get teamBoardPriorityUrgent => 'Urgent';
+
+  @override
+  String get teamBoardPriorityHigh => 'High';
+
+  @override
+  String get teamBoardPriorityNormal => 'Normal';
+
+  @override
+  String get teamBoardPriorityLow => 'Low';
+
+  @override
+  String get teamBoardPrioritySomeday => 'Someday';
+
+  @override
+  String get teamBoardTypeBug => 'Bug';
+
+  @override
+  String get teamBoardTypeFeature => 'Feature';
+
+  @override
+  String get teamBoardTypeEpic => 'Epic';
+
+  @override
+  String get teamBoardTypeChore => 'Chore';
+
+  @override
+  String teamBoardEpicProgress(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get teamBoardFlagNeedsYou => 'Needs you';
+
+  @override
+  String get teamBoardFlagBlocked => 'Blocked';
+
+  @override
+  String teamBoardFlagBlockedBy(String title) {
+    return 'Blocked by $title';
+  }
+
+  @override
+  String teamBoardFlagBlockedByMore(String title, int count) {
+    return 'Blocked by $title + $count more';
+  }
+
+  @override
+  String get teamBoardFlagFailed => 'Stopped with an error';
+
+  @override
+  String teamBoardFlagInEpic(String epic) {
+    return 'In $epic';
+  }
+
+  @override
+  String teamBoardFlagMoving(String column) {
+    return 'Moving to $column…';
+  }
+
+  @override
+  String get teamBoardFlagCancelled => 'Cancelled';
+
+  @override
+  String get teamBoardAgeJustNow => 'just now';
+
+  @override
+  String teamBoardAgeMinutes(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String teamBoardAgeHours(int count) {
+    return '$count h ago';
+  }
+
+  @override
+  String teamBoardAgeDays(int count) {
+    return '$count d ago';
+  }
+
+  @override
+  String get teamBoardMoveMenuTooltip => 'Move or change';
+
+  @override
+  String teamBoardMoveSheetWhere(String column) {
+    return 'In $column';
+  }
+
+  @override
+  String get teamBoardMoveStartNow => 'Start now';
+
+  @override
+  String get teamBoardMoveStartNowHint => 'Give it to the team\'s workers';
+
+  @override
+  String get teamBoardMoveBackToBacklog => 'Move back to Backlog';
+
+  @override
+  String get teamBoardMoveBackToBacklogHint =>
+      'The team won\'t pick it up until you start it';
+
+  @override
+  String get teamBoardMovePriority => 'Priority';
+
+  @override
+  String get teamBoardMoveCancel => 'Cancel task';
+
+  @override
+  String get teamBoardMoveCancelHint => 'Moves it to Done as cancelled';
+
+  @override
+  String get teamBoardMoveReopen => 'Put back in Backlog';
+
+  @override
+  String get teamBoardMoveReopenHint => 'Nobody works on it until you start it';
+
+  @override
+  String get teamBoardOpenConversation => 'Open conversation';
+
+  @override
+  String get teamBoardOpenDetails => 'Open details';
+
+  @override
+  String get teamBoardTeamMoves =>
+      'The team moves this task. Open its conversation to message the team or stop it.';
+
+  @override
+  String get teamBoardReadOnlyNote =>
+      'This host doesn\'t let the app change tasks, so the board is read-only here.';
+
+  @override
+  String get teamBoardStatusReadOnly =>
+      'Read-only here · this host doesn\'t let the app change tasks';
+
+  @override
+  String teamBoardCancelTitle(String title) {
+    return 'Cancel “$title”?';
+  }
+
+  @override
+  String get teamBoardCancelBody =>
+      'The team won\'t work on it. It moves to Done as cancelled, and you can put it back in the Backlog later.';
+
+  @override
+  String get teamBoardCancelKeep => 'Keep it';
+
+  @override
+  String teamBoardMoveFailedTitle(String title) {
+    return 'Couldn\'t change “$title”';
+  }
+
+  @override
+  String get teamBoardMoveFailedBody =>
+      'The team\'s host said no, so it stays where it was.';
+
+  @override
+  String get teamBoardPriorityTitle => 'Priority';
+
+  @override
+  String get teamBoardAddTooltip => 'Add to backlog';
+
+  @override
+  String get teamBoardAddHint => 'What should the team do?';
+
+  @override
+  String get teamBoardAddButton => 'Add to backlog';
+
+  @override
+  String get teamBoardAddNote => 'It waits in the Backlog until you start it.';
+
+  @override
+  String get teamBoardAddFailed =>
+      'Couldn\'t add it. The team\'s host said no.';
+
+  @override
+  String get teamBoardProjectTooltip => 'Choose project';
+
+  @override
+  String get teamBoardCardHint => 'long press for moves';
 }
