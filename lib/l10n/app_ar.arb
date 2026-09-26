@@ -5305,5 +5305,13 @@
   "kitDiscardTitle": "هل تريد تجاهل تغييراتك؟",
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
-  "kitCopied": "تم النسخ"
+  "kitCopied": "تم النسخ",
+  "kitImageUnavailable": "يتعذر عرض هذه الصورة",
+  "kitZoomIn": "تكبير",
+  "kitZoomOut": "تصغير",
+  "kitZoomReset": "إعادة ضبط التكبير",
+  "kitZoomFit": "ملائمة الشاشة",
+  "kitZoomAtStart": "في العرض الكامل بالفعل",
+  "kitZoomAtMax": "أقصى تكبير",
+  "kitZoomLevel": "{percent}٪"
 }

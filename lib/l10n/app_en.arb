@@ -22245,5 +22245,42 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitImageUnavailable": "Can't show this image",
+  "@kitImageUnavailable": {
+    "description": "KitImage: shown next to the broken-image glyph when a source fails to decode, from 120dp wide"
+  },
+  "kitZoomIn": "Zoom in",
+  "@kitZoomIn": {
+    "description": "KitZoom: the zoom-in control's label and tooltip, and its custom semantic action"
+  },
+  "kitZoomOut": "Zoom out",
+  "@kitZoomOut": {
+    "description": "KitZoom: the zoom-out control's label and tooltip, and its custom semantic action"
+  },
+  "kitZoomReset": "Reset zoom",
+  "@kitZoomReset": {
+    "description": "KitZoom: the reset control's label in fit mode, once zoomed in"
+  },
+  "kitZoomFit": "Fit to screen",
+  "@kitZoomFit": {
+    "description": "KitZoom: the reset control's label in canvas mode (a work graph, a page)"
+  },
+  "kitZoomAtStart": "Already at full view",
+  "@kitZoomAtStart": {
+    "description": "KitZoom: the reset control's label, and its disabled reason, at 1x in fit mode"
+  },
+  "kitZoomAtMax": "Largest zoom",
+  "@kitZoomAtMax": {
+    "description": "KitZoom: the zoom-in control's label, and its disabled reason, at the largest zoom"
+  },
+  "kitZoomLevel": "{percent} %",
+  "@kitZoomLevel": {
+    "description": "KitZoom: the spoken zoom level value, e.g. 200 %",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
   }
 }
