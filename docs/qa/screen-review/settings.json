@@ -1,0 +1,1423 @@
+[
+  {
+    "pageId": "about",
+    "area": "j1-settings-more",
+    "title": "About and open source notices",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/about.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The legal documents render with their source line breaks, so every paragraph looks broken mid-sentence, and the app bar title is cut to 'not…'.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "P-a / P9",
+        "what": "The app bar title reads 'About and open source not…'. It is cut at normal text size, before any text scaling.",
+        "fix": "Title the screen 'About'. The tabs already say Privacy and Open source. That also meets C6 (four words or fewer)."
+      },
+      {
+        "severity": "high",
+        "principle": "U3 / P8 Craft",
+        "what": "The Privacy Policy keeps the hard wraps from PRIVACY.md. Lines break after 'It does not provide a', 'Prompts, chat history,' and 'The', so the page reads like a broken paste.",
+        "fix": "Render the Markdown with soft line breaks joined into paragraphs (treat a single newline as a space in MarkdownText), or re-flow the asset files so they have one paragraph per line. Add a golden that fails on a mid-sentence break."
+      },
+      {
+        "severity": "high",
+        "principle": "U6 / P1 One thing",
+        "what": "Report a bug is on screen twice: the bug icon in the app bar and the 'Report a bug' link under About this build. The non-affiliation sentence appears again inside the notices.",
+        "fix": "Keep the in-body 'Report a bug' action and drop the app bar icon. Show the non-affiliation line once."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / P4 Detail on request",
+        "what": "'com.opencode.mobile' sits under the version as the second line of the page. It is an internal id above the fold.",
+        "fix": "Show 'Version 1.0.44 (52)' only, and move the package id and signer into a collapsed Details row with one-tap copy."
+      },
+      {
+        "severity": "medium",
+        "principle": "U9 Icons",
+        "what": "The Privacy tab uses Material's Icons.privacy_tip_outlined beside Phosphor icons everywhere else.",
+        "fix": "Use the AppIconography shield icon, as the rest of the app does."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "about-open-source-tab",
+    "area": "j1-settings-more",
+    "title": "Open source",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/about-open-source-tab.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The identity block is repeated above a raw ListTile that is off the rails, and the notices document shows literal Markdown backticks.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U7 / U5 Kit",
+        "what": "The 'OpenCode for Android' block is a plain ListTile. Its icon sits at 32 dp and its title at 64 dp, while the notices above sit at 16 and 48 dp, so there are two leading edges on one page.",
+        "fix": "Build it as a KitRow, or drop it: the identity block above already names the app."
+      },
+      {
+        "severity": "high",
+        "principle": "C2 Words match",
+        "what": "The page calls the app 'OpenCode Mobile' in its identity line and 'OpenCode for Android' two blocks below.",
+        "fix": "Use one product name everywhere."
+      },
+      {
+        "severity": "high",
+        "principle": "U3 Craft",
+        "what": "The THIRD_PARTY_NOTICES text shows '`LICENSES/`' with raw backticks, and has the same hard-wrapped lines as the Privacy tab.",
+        "fix": "Fix the Markdown rendering (inline code and soft breaks), or rewrite the asset intro in plain prose."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 / P1",
+        "what": "Both tabs repeat the same three blocks (version, non-affiliation, About this build) before any content. On this tab the notices start below the fold.",
+        "fix": "Show the identity and build blocks once, above the tabs, or only on the first tab. Then each tab opens straight on its document."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "about-privacy-tab",
+    "area": "j1-settings-more",
+    "title": "Privacy",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/about-privacy-tab.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The privacy policy reads like a spec. Engine words ('Gas City supervisor', 'event cursor', 'idempotency key', 100.64.0.0/10) are in ragged hard-wrapped lines.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U3 Craft",
+        "what": "Every paragraph breaks mid-sentence ('…a random idempotency key / and is identified…'). Short orphan lines make the legal text look broken.",
+        "fix": "Same fix as the About page: join soft line breaks when rendering."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 Plain words",
+        "what": "The AI Team section says 'Gas City supervisor', 'event cursor', 'idempotency key', 'the optional front' and 'server-scoped keys'. The HTTP section says '100.64.0.0/10' and '*.ts.net'.",
+        "fix": "Rewrite in the person's words: 'If you turn on the AI Team, the app reads the team's work from the computer you choose and remembers the last view on this phone. Turning it off or deleting the server erases that.' Put CIDRs and key names in a folded 'Technical details' section."
+      },
+      {
+        "severity": "medium",
+        "principle": "P1",
+        "what": "The Privacy tab is the first tab of a screen called 'About'. Settings also has a separate 'Privacy and data use' row that opens this same tab.",
+        "fix": "Keep one Privacy entry in Settings, and title the screen by its content."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "app-diagnostics",
+    "area": "j1-settings-more",
+    "title": "App diagnostics",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/app-diagnostics--loaded.png",
+      "docs/qa/screen-census/j1-settings-more/app-diagnostics--empty.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "It is useful and honest about privacy, but it has two different 'Clear' buttons, actions stacked above the content they act on, and red monospace step names that look like errors.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "X3 Destructive",
+        "what": "The Performance section's 'Clear' is accent-green, not error-coloured, and clears the timings at once with no confirmation. The error log's 'Clear' is red and confirms first. Same word, two behaviours.",
+        "fix": "Make the Performance Clear a destructive tertiary that confirms like the error Clear ('Clear performance timings? This removes N recorded steps.'), or drop it: the data is cleared when the app closes anyway."
+      },
+      {
+        "severity": "high",
+        "principle": "U4 / P1 One thing",
+        "what": "The page has two full-width button stacks (Send + Copy + Clear, then Copy report + Clear), and each sits above the data it acts on.",
+        "fix": "Make it one page with one primary: 'Send report' pinned at the bottom, sending errors and timings together. Move Copy and both Clears into the overflow menu. Put the error list first."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4 Empty state",
+        "what": "When empty, Send and Copy stay visible but disabled, and the empty message is below them. A disabled button stands in for 'nothing to send' (standard §2).",
+        "fix": "Hide the error actions when there are no errors. The empty state ('No errors this session') then carries the section."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / U2",
+        "what": "Slowest steps shows 'app.bootstrap' and 'linux.setupStatus' in red mono, with '2× · typical 12ms · slow 439ms · longest 439ms · 2 failed' wrapping to a second line. Red reads as an error for a step that only ran slowly.",
+        "fix": "Give each step a plain title ('Starting the app') with the raw name under Details. Use red only for the 'N failed' part, and keep the stats to one line: 'typical 12 ms · worst 439 ms'."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "Error rows are tagged 'flutter ·' and 'sse ·'.",
+        "fix": "Use a plain source name ('App', 'Live updates'), with the raw tag in the expanded row."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "app-diagnostics-clear-sheet",
+    "area": "j1-settings-more",
+    "title": "Clear diagnostics?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/app-diagnostics-clear-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "It is a correct confirmation, but it uses the engine phrase 'process memory' and a vague 'Clear' button.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C3 Plain words",
+        "what": "'This removes every captured error from process memory.'",
+        "fix": "'This removes the 2 errors recorded since the app opened. They can't be recovered.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "C5 Verbs",
+        "what": "The confirm button says only 'Clear'.",
+        "fix": "'Clear 2 errors'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "legacy-drafts",
+    "area": "j1-settings-more",
+    "title": "Older drafts",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/legacy-drafts.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "A clean, quiet list. Only the intro's 'no recorded server' is written in storage terms rather than the person's.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C3 Plain words",
+        "what": "'These drafts have no recorded server.' describes a storage format, not what the person should know.",
+        "fix": "'Saved before the app tracked servers. Check the text before you use it here.'"
+      },
+      {
+        "severity": "low",
+        "principle": "X9",
+        "what": "The search field shows even with only two drafts.",
+        "fix": "Show search only when there are more than about 8 drafts."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "legacy-drafts-review-sheet",
+    "area": "j1-settings-more",
+    "title": "Older drafts",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/legacy-drafts-review-sheet.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "A full-height sheet with a large empty middle. Its destructive action is an accent outlined button right beside the primary, in a right-aligned cluster.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "X3 Destructive apart",
+        "what": "'Delete saved copy' is an accent-coloured outlined button directly beside 'Insert into draft', in one right-aligned row. The frequent and destructive actions sit side by side, and the destructive one is not error-coloured.",
+        "fix": "Stack the actions per §2: 'Insert into draft' as the full-width primary, then Copy as secondary, then 'Delete saved copy' as an error-coloured tertiary on its own line (KitActionStack)."
+      },
+      {
+        "severity": "high",
+        "principle": "U5 Kit",
+        "what": "The sheet is built from raw OutlinedButton, FilledButton and IconButton, and the copy button is icon-only with no label.",
+        "fix": "Use KitButton parts and label Copy."
+      },
+      {
+        "severity": "high",
+        "principle": "U7 / P8",
+        "what": "The sheet expands to full height for two lines of text, so about 60% of the screen is empty between the text and the buttons.",
+        "fix": "Size the sheet to its content (no isScrollControlled full height), with a max height and scroll for long drafts."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6 / P1",
+        "what": "The sheet title repeats the screen title 'Older drafts'.",
+        "fix": "Title the sheet with the draft's date ('Draft from Wed, Sep 23'), or drop the title and let the text lead."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "legacy-drafts-delete-sheet",
+    "area": "j1-settings-more",
+    "title": "Delete saved copy",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/legacy-drafts-delete-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The confirmation opens on top of another sheet, and its question mark and title are in the wrong places.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U9 / C6",
+        "what": "It uses a '?' icon where every other delete confirmation uses the trash icon. The title 'Delete saved copy' is a label while the body is the question.",
+        "fix": "Use the trash icon and the title 'Delete this draft?'. Body: 'It and its attachments are removed from this phone. This can't be undone.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "X8 Container",
+        "what": "A confirmation sheet stacked over the review sheet leaves two scrims and two drag handles on screen.",
+        "fix": "Close the review sheet first and then confirm, or confirm inline inside the review sheet."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "saved-permissions",
+    "area": "j1-settings-more",
+    "title": "Always allowed actions",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/saved-permissions--loaded.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The list works, but it speaks the server's language ('grants', '(all matching resources)'). The rows are misaligned and the delete icons are neutral.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 Plain words",
+        "what": "The header count says '2 grants'. The second row's supporting line is '(all matching resources)' in mono.",
+        "fix": "Show the count as '2 actions'. For a rule without a pattern write 'Any file', and keep mono only for a real command pattern like 'flutter test *'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 Craft",
+        "what": "The shield icons and trash buttons sit about 16 dp below the title and supporting line, and each row has an empty band under its text, as if it reserved a third line.",
+        "fix": "Build the rows as KitRow with supportingMaxLines 1 (or 2 for long patterns) so the icon, text and trailing action centre together."
+      },
+      {
+        "severity": "medium",
+        "principle": "§6 Destructive row",
+        "what": "The trash icons are neutral grey.",
+        "fix": "Move revoke into the row's menu (KitRowMenu) with an error-coloured 'Revoke', or colour the icon as an error. Keep the confirmation."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4 / P3",
+        "what": "There is no line saying what this page is or how an action gets here. The refresh icon in the app bar is the only way to refresh.",
+        "fix": "Add one intro line ('Actions you chose Always allow for in this project. The agent does them without asking.') and pull to refresh with KitRefresh."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "saved-permissions-revoke-dialog",
+    "area": "j1-settings-more",
+    "title": "Revoke access?",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/saved-permissions-revoke-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Good content: it says what changes and that running work is unaffected. But it is a dialog where every other confirmation in the app is a sheet, and it says 'grant' and 'Resource'.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "X8 / P7 One language",
+        "what": "It is an AlertDialog with side-by-side, right-aligned buttons. Disconnect, Delete drafts and Clear diagnostics all confirm with the kit confirm sheet.",
+        "fix": "Use showConfirmSheet (destructive): trash/shield icon, title, body, full-width error 'Revoke access', and Cancel."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "It says 'this grant' and labels a field 'Resource'.",
+        "fix": "'The agent will ask again before running flutter test *.' Show the pattern once, in mono."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "server-capabilities",
+    "area": "j1-settings-more",
+    "title": "Available on this server",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/server-capabilities.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The person comes here asking 'why is X missing?', but the answer is under a screen and a half of green ticks.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X5 Purpose first",
+        "what": "'Available here' comes first with about 17 ticked rows. The 'Not on this server' and 'Not on this device' groups, which explain the missing feature, are below the fold.",
+        "fix": "Order the groups Not on this server, then Not on this device, then Available (collapsed into a KitExpandRow 'Available here · 17'). When nothing is missing, say so in one line at the top."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 Kit",
+        "what": "The rows are raw ListTile (icon at 16 dp, text at 56 dp), a different edge from KitRow on the Settings hub one tap back, and the screen is not a KitScreen.",
+        "fix": "Use KitRow (read-only) and KitScreen."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "It uses the words 'Compact', 'free up context', 'Worktrees' and 'Delegate to a subagent'.",
+        "fix": "'Summarize a long conversation', 'Separate copy for a task', 'Hand part of a task to another agent'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "coding-settings-shell-sheet",
+    "area": "j1-settings-more",
+    "title": "Default shell",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/coding-settings-shell-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "It is a choice sheet whose header is a list row and whose options are raw ListTiles, and it shows a single option to choose from.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U5 / X8",
+        "what": "The sheet header is a ListTile with a terminal icon, so it reads as a first option, not a title. The choices are raw ListTiles with radio glyphs (raw showModalBottomSheet).",
+        "fix": "Use the kit sheet: a title 'Default shell', one short line under it, and KitRow choices with a check on the selected one (like the Language and Appearance sheets)."
+      },
+      {
+        "severity": "medium",
+        "principle": "X9",
+        "what": "In the render the only choice is 'Automatic (server default)'. Opening a sheet to pick from one option wastes the tap.",
+        "fix": "When the server offers one shell, show the row read-only ('Automatic · the only shell on this server') with no chevron."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "'Used by new terminals and compatible shell commands on this OpenCode server.'",
+        "fix": "'New terminals and the agent's commands use this shell.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "notifications-settings",
+    "area": "j1-settings-more",
+    "title": "Notifications",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/notifications-settings--loaded.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "This is the page a person uses to trust a delegated agent, and it reads like a service-level disclaimer: four row styles, undefined 'Keep live', and a truncated line.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "P-a Truncation",
+        "what": "The Background 'Off' row ends 'the app turns the switch off and says s…'. The explanation of the Android six-hour limit is cut at 100% text.",
+        "fix": "Let the row wrap (a settings explanation may take two lines, and app words may wrap), and shorten it: 'Android stops this after 6 hours a day. The app will tell you when it does.'"
+      },
+      {
+        "severity": "high",
+        "principle": "C2 Words match",
+        "what": "'Check in on long runs' and the footer both depend on 'Keep live is on', but no control on the page is called Keep live. The switch is 'Stay connected in the background'.",
+        "fix": "Use one name. Rename the switch 'Keep live in background', or change every 'Keep live' to 'Stay connected in the background'."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 / C6 Plain words",
+        "what": "'Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval…' and a 5-sentence footer ending 'no remaining runtime is promised'.",
+        "fix": "One line per setting in the person's words: Check in on long runs, 'Get a nudge when a run is still going after 15 min.' Move the monitoring mechanics into one folded 'How checks work' Details row."
+      },
+      {
+        "severity": "high",
+        "principle": "U5 / U7 Kit",
+        "what": "There are four row anatomies on one page: SwitchListTile with a subtitle, a switch with a detached paragraph under it, a KitRow with an icon, and a KitRow status. Only 'Stay connected' has a leading icon.",
+        "fix": "Use KitSwitchRow throughout (icon, title, two-line supporting text, switch), with none of the paragraphs separated from their rows."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 / P1",
+        "what": "The section label 'Quiet hours' is followed by a switch also titled 'Quiet hours'.",
+        "fix": "Drop the section label, or title the switch 'Pause notifications at night'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "It says 'Quota thresholds' and 'monitored provider'.",
+        "fix": "'Spending alerts: when a provider passes the limit you set in Usage.'"
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "notifications-settings-quiet-time-dialog",
+    "area": "j1-settings-more",
+    "title": "[Quiet hours time picker]",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/notifications-settings-quiet-time-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "It is the stock Material clock with generic 'Select time' and 'OK', so the person cannot tell whether it sets the start or the end.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C5 / C2",
+        "what": "The header says 'Select time' and the confirm says 'OK', whether it is setting the start or the end of quiet hours.",
+        "fix": "Pass helpText 'Quiet from' or 'Quiet until', and confirmText 'Set'."
+      },
+      {
+        "severity": "low",
+        "principle": "P6 One hand",
+        "what": "The dial is the default. The input-mode keyboard toggle is a small icon in the corner.",
+        "fix": "Open in input mode (TimePickerEntryMode.input). A developer types '22:00' faster than they drag a hand."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "appearance-settings",
+    "area": "j1-settings-more",
+    "title": "Appearance",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/appearance-settings--loaded.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "A good screen: Effects is clear and its preview has character. One row is off the kit and the three-way light/dark choice costs a sheet.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U7 / U5",
+        "what": "The Language row is a raw ListTile. Its icon sits at 16 dp while the icons above and below sit at 20 dp, and its chevron is 8 dp left of the Light or dark chevron. The misalignment is visible in the render.",
+        "fix": "Build LanguageSettingsTile on KitRow with KitChevron."
+      },
+      {
+        "severity": "medium",
+        "principle": "X9 Taps",
+        "what": "'Light or dark' opens a full preview sheet with a disabled 'Current appearance' button for a three-way choice.",
+        "fix": "Put a SegmentedButton (Auto · Light · Dark) on the row, like Animations. The switch itself is the preview."
+      },
+      {
+        "severity": "low",
+        "principle": "U7",
+        "what": "The Animations icon is centred on the title and segmented control together, so it floats between them.",
+        "fix": "Top-align the icon with the title, as the switch rows do."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "privacy-settings",
+    "area": "j1-settings-more",
+    "title": "Privacy and local data",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/privacy-settings--loaded.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The rows are honest and specific, but the page is titled 'Privacy' while it only manages unsent work, and its words disagree with its own confirmations.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C2 Words match",
+        "what": "The rows say 'Clear queued prompts' and 'Clear drafts'. The sheets they open say 'Delete queued prompts?' and 'Delete drafts?', with a 'Delete' button.",
+        "fix": "Use 'Delete' everywhere (it is irreversible), or 'Clear' everywhere."
+      },
+      {
+        "severity": "medium",
+        "principle": "P1 / X5",
+        "what": "The title promises privacy, but the page holds only unsent work. Settings has a second privacy row, 'Privacy and data use', that opens About.",
+        "fix": "Rename this page 'Unsent work' or 'Data on this phone' and add the other local data (voice models, older drafts, cached server data) with sizes. Or merge both privacy rows into one Privacy page that links the policy."
+      },
+      {
+        "severity": "low",
+        "principle": "U9",
+        "what": "The storage row uses Material's Icons.sd_storage_outlined in a Phosphor screen.",
+        "fix": "Use an AppIconography icon."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "It says 'composer text'.",
+        "fix": "'Unsent text in 2 conversations'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "privacy-settings-clear-drafts-sheet",
+    "area": "j1-settings-more",
+    "title": "Delete drafts?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/privacy-settings-clear-drafts-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "A textbook confirmation: it says what goes and what is untouched. Only the button verb is vague.",
+    "issues": [
+      {
+        "severity": "low",
+        "principle": "C5 Verbs",
+        "what": "The button says 'Delete' and the body says 'composer text'.",
+        "fix": "Button 'Delete 2 drafts'. Body: 'The unsent text in 2 conversations is removed. Nothing on the server changes.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "privacy-settings-clear-queued-sheet",
+    "area": "j1-settings-more",
+    "title": "Delete queued prompts?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/privacy-settings-clear-queued-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "A clear, specific, irreversible-aware confirmation.",
+    "issues": [
+      {
+        "severity": "low",
+        "principle": "C5 Verbs",
+        "what": "The button says 'Delete'.",
+        "fix": "'Delete 3 prompts'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "plugins-settings",
+    "area": "j1-settings-more",
+    "title": "Plugins",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/plugins-settings--loaded.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 3,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "The owner's 'Wttf' page is now calm and plain, but a failed plugin gives no reason or way forward, and the AI Team row's chevron leads to a sheet.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X4 Error state",
+        "what": "'Local helper · Failed to load' in red, with no reason and no retry on the row. The only way forward is the ⋯ menu or the section refresh icon.",
+        "fix": "Add the reason in one plain line ('Failed to load · missing dependency') with 'Details' in the row menu (raw error in mono, copyable). Say 'Reload plugins' in words if reloading fixes it."
+      },
+      {
+        "severity": "medium",
+        "principle": "§6 Row types",
+        "what": "The AI Team row ends with a chevron (opens a screen) but opens a bottom sheet.",
+        "fix": "Open the AI Team page (the same destination as Settings › AI Team), so the chevron is honest and there is one AI Team place."
+      },
+      {
+        "severity": "medium",
+        "principle": "X1 / P6",
+        "what": "The section header carries a refresh icon and a ⋯ at the right edge, and each row carries its own ⋯. That is three overflow glyphs in a column.",
+        "fix": "Move 'Reload' into the section ⋯ menu so the header has one action."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "team-plugin-sheet",
+    "area": "j1-settings-more",
+    "title": "AI Team · Gas City",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/team-plugin-sheet.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 1,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "The sheet says 'Off' twice under an engine name and offers only 'Add manually', with no explanation of what gets added or how to turn the team on.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 Plain words",
+        "what": "The sheet title is 'AI Team · Gas City'. 'Gas City' is the engine name the owner already rejected (regression 5 and 18).",
+        "fix": "Title it 'AI Team'. Put the engine and version in Details."
+      },
+      {
+        "severity": "high",
+        "principle": "U6 / C2",
+        "what": "The status block reads 'Off' and then 'Off' again as its supporting line.",
+        "fix": "One status line: 'Off · A team of agents for bigger jobs'."
+      },
+      {
+        "severity": "high",
+        "principle": "X5 / C5",
+        "what": "The only action is an outlined 'Add manually'. It does not say what is added (a computer's team address), and there is no primary way to turn the team on.",
+        "fix": "Make this the AI Team intro: one sentence on what it is, the primary 'Set up AI Team' (to the discover flow), and the tertiary 'Connect a team on another computer' for the manual address."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "The sheet uses 20 dp padding instead of the 16 dp rails and hand-built rows (Icon + Text), not kit parts.",
+        "fix": "Rebuild it with KitRow and kit sheet padding, or better, replace the sheet with the AI Team page itself."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "plugins-clear-mappings-sheet",
+    "area": "j1-settings-more",
+    "title": "Clear all personal command links?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/plugins-clear-mappings-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The confirmation is correct, but its title wraps to two lines and speaks in internal terms ('personal plugin-command links').",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C6 / C3",
+        "what": "The title 'Clear all personal command links?' breaks over two lines, and the body says 'plugin-command links' and 'previous projects'.",
+        "fix": "Title 'Unlink all commands?'. Body: 'Removes the commands you linked to plugins in every project on Laptop. Plugins and commands stay installed.'"
+      },
+      {
+        "severity": "low",
+        "principle": "C5",
+        "what": "The button says 'Clear links'.",
+        "fix": "'Unlink N commands', with the count."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "plugins-mapping-dialog",
+    "area": "j1-settings-more",
+    "title": "Link commands",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/plugins-mapping-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "The feature is hard to explain, and the dialog tries in four sentences above bare '/review' and '/test' checkboxes.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 / C6",
+        "what": "'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.' The person still cannot tell what linking does for them.",
+        "fix": "Lead with the payoff: 'Show these commands on Code review's menu.' Put the scope ('This project on Laptop only') in one muted line."
+      },
+      {
+        "severity": "high",
+        "principle": "X5",
+        "what": "The commands are bare names ('/review', '/test') with no descriptions, so the choice is guesswork.",
+        "fix": "Use KitRow with a checkbox, the command name, and its description as the supporting line."
+      },
+      {
+        "severity": "medium",
+        "principle": "X8 / U4",
+        "what": "The dialog has right-aligned Cancel and filled 'Save links' on a checklist that can grow long.",
+        "fix": "Use a bottom sheet with a scrolling list and a pinned full-width 'Save' (the standard §2 stack)."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "settings",
+    "area": "j1-settings-more",
+    "title": "Settings",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/settings--pushed.png",
+      "docs/qa/screen-census/j1-settings-more/settings--in-shell.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "The hub is built on the kit and searchable, but it runs to about 30 rows across five groups, with the same things twice (model, privacy, AI Team, notices) and engine words in the supporting lines.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 / P1 One thing",
+        "what": "Model settings appear twice: 'Model and mode · Claude Sonnet 4 · build' under Conversation defaults and 'Models & agents · New conversations: Claude Sonnet 4' under Agent setup. Both use the same brain icon.",
+        "fix": "Keep one 'Model' row: 'Claude Sonnet 4 · Build agent'. The provider and agent catalogues live inside it."
+      },
+      {
+        "severity": "high",
+        "principle": "U6 / C3",
+        "what": "The AI Team appears twice: its own row ('Off · A team of agents…') and the Plugins row's supporting line 'AI Team · Gas City', which also puts the engine name on the hub.",
+        "fix": "Plugins supporting line: the count of server plugins ('2 on this server'). AI Team stays in its own row only."
+      },
+      {
+        "severity": "high",
+        "principle": "U6",
+        "what": "There are two privacy entries ('Privacy and local data' in This app, 'Privacy and data use' in Help) and two notices entries ('Voice notices', 'About and open source notices').",
+        "fix": "One 'Privacy' row (local data and the policy) and one 'About' row. Voice model licences go into About's Open source tab."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 Plain words",
+        "what": "The supporting lines include 'Review or revoke durable OpenCode permissions for this project', 'Whisper models, sherpa-onnx, ONNX Runtime, and record' and 'AI Team · Gas City'. There is a bare 'MCP' row with no explanation.",
+        "fix": "'Things the agent may do without asking', 'Licences for the speech models', 'MCP servers · Tools the agent can call'."
+      },
+      {
+        "severity": "medium",
+        "principle": "X5 / X9",
+        "what": "Help holds eight rows and Agent setup seven, so reaching About or Diagnostics takes three or four screens of scrolling. Search helps, but the list has no priority.",
+        "fix": "Cut to about 18 rows: merge the duplicates above, fold Keyboard shortcuts, Show tips again, Report a bug and Diagnostics under one 'Help and feedback' row, and move 'Import a session' to the Work tab."
+      },
+      {
+        "severity": "medium",
+        "principle": "U9 Icons",
+        "what": "MCP and 'Connect with Tailscale' share the network icon. Model and mode, Models & agents and Reasoning share the brain icon. Transcript display and Timestamps share the clock icon.",
+        "fix": "Give each row its own icon, from one family."
+      },
+      {
+        "severity": "low",
+        "principle": "U7",
+        "what": "In the embedded state the page title is the server switcher ('Laptop ⌄' with a small 'Settings' under it), so the first thing read is the server, not the place.",
+        "fix": "Keep the shell header, but make 'Settings' the large title in the body (as in the pushed state) and the server the small line."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "settings-disconnect-sheet",
+    "area": "j1-settings-more",
+    "title": "Disconnect from {server}?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/settings-disconnect-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "Clear and reassuring, but when there is nothing queued it still reads 'No queued prompts. No unsent drafts. They stay on this device…', and 'They' points at nothing.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C2 Words match",
+        "what": "With zero queued prompts and drafts, the body lists both zeros and then says 'They stay on this device until you connect again.'",
+        "fix": "Show the second paragraph only when something is waiting: '3 queued prompts and 2 drafts stay on this phone and send when you reconnect.'"
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "The first paragraph is two sentences with a semicolon ('The server keeps running; nothing on it is changed.').",
+        "fix": "'Live updates stop. The server keeps running and nothing on it changes.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "settings-transcript-display-sheet",
+    "area": "j1-settings-more",
+    "title": "Transcript display",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/settings-transcript-display-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 4,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Two switches in a sheet whose title is a small section label. Showing the two switches on the hub would save a tap and the sheet.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U8 / X8",
+        "what": "The sheet's heading is a muted SectionLabel ('Transcript display') rather than a sheet title. It looks like a list fragment.",
+        "fix": "Use the kit sheet title style, or drop the sheet: put the two KitSwitchRows directly under Conversation defaults on the hub."
+      },
+      {
+        "severity": "low",
+        "principle": "U9",
+        "what": "The Reasoning icon (brain) and Timestamps icon (clock) duplicate the hub's Model and Transcript icons.",
+        "fix": "Use distinct icons (a thought bubble for reasoning, a tag or receipt for usage)."
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "The row says 'Timestamps & usage' while the hub says 'timestamps and usage'.",
+        "fix": "Write 'and' throughout."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "usage-hub",
+    "area": "j1-settings-more",
+    "title": "Usage",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/usage-hub--loaded.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The render caught the load: a bar floating mid-page under the filters over an empty screen. The screen underneath is Card-based and not on the kit.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X4 / §4 Loading",
+        "what": "While loading, a linear bar sits in the body below the filters and the rest of the page is empty. There are no skeletons, and the bar is not under the top bar.",
+        "fix": "Use KitScreen(loading:) for the one bar under the header, and show KitSkeletonRows in place of the totals. Keep the previous result visible while refreshing."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / U5",
+        "what": "The page uses 20 dp rails (40 px) where the kit uses 16. The refresh icon sits beside the intro text in the body. The totals are Material Cards (usage_screen.dart).",
+        "fix": "Migrate to KitScreen and KitRow, move refresh to pull-to-refresh (KitRefresh), and drop the Cards."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "It says 'Project scope', 'Totals for the selected report scope' and 'Filters inspect this server's returned model records…'.",
+        "fix": "Use a 'This project / All projects' segmented control and a 'Total' heading. Delete the filter disclosure."
+      },
+      {
+        "severity": "low",
+        "principle": "C2",
+        "what": "The Settings row and this page say 'Usage', but the inner screen's own title is 'Usage and cost'.",
+        "fix": "Use one name."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "web-sources",
+    "area": "j1-settings-more",
+    "title": "Add web source",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/web-sources--reviewed.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The flow works, but the page is built from raw widgets. It has a meaningless provider picker, a character counter, and 'Add to review' where the person expects 'Add to prompt'.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2 / C5",
+        "what": "Each result offers 'Add to review', and the intro says results are added 'to your editable draft'. The verb names neither.",
+        "fix": "'Add to prompt'. After a tap, show a check and 'Added' on the result, and the count on a pinned 'Done · 2 added' button."
+      },
+      {
+        "severity": "medium",
+        "principle": "X9 / U6",
+        "what": "A 'Refresh providers' text button sits above a dropdown whose only value is 'Configured search provider', and a '22/1000' counter follows the query.",
+        "fix": "Hide the provider picker when there is one provider, fold Refresh into its menu, and show the counter only near the limit."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 Kit",
+        "what": "Results are hand-built blocks (bold title, host, body, two TextButton.icon actions) between Dividers, with raw FilledButton and TextButton (web_sources_screen.dart).",
+        "fix": "One KitRow per result: the title, the host in the supporting line, a trailing add action, and a tap to open through openExternalLink."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "The intro says 'this server's selected search provider' and 'Nothing is sent to the model here.'",
+        "fix": "'Search the web through Laptop. Nothing reaches the agent until you add it.'"
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "appearance-picker-sheet",
+    "area": "j1-settings-more",
+    "title": "Appearance",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/appearance-picker-sheet.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "A preview-then-apply sheet for a three-way choice. It has a sample filled button that competes with the real action and a disabled 'Current appearance' button standing in for status.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "§2 / U4",
+        "what": "The bottom action is a disabled 'Current appearance' button, a disabled button acting as a status display. The preview card's filled 'Try a control' is the brightest thing in the sheet.",
+        "fix": "Drop the apply step. Selecting Auto, Light or Dark applies at once, and the whole app is the preview. If a preview stays, it gets no filled button."
+      },
+      {
+        "severity": "high",
+        "principle": "X9 / X8",
+        "what": "The sheet adds a tap, a preview card and an apply button to a choice that should take one tap.",
+        "fix": "Replace the row and sheet with an inline segmented control on the Appearance page (see appearance-settings)."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'Use the bright editorial theme' and 'Use the focused low-light theme' are brand copy, not help.",
+        "fix": "Remove the supporting lines, except 'Follow Android · Matches your phone'."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "theme-pack-preview-sheet",
+    "area": "j1-settings-more",
+    "title": "<theme pack name>",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/theme-pack-preview-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Previewing a theme pack before applying it earns its place, but the sheet reuses the generic sample card and the disabled 'Current appearance' button.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "§2",
+        "what": "The primary slot is a disabled 'Current appearance' button while viewing the current pack.",
+        "fix": "When the pack is current, say 'In use' as a line of text and show no button. For another pack, the primary is 'Use Catppuccin'."
+      },
+      {
+        "severity": "medium",
+        "principle": "X5",
+        "what": "The preview is the same 'Text and controls' card for every pack, with a Light/Dark chip pair and a line 'Your light or dark setting stays Dark.'",
+        "fix": "Preview the pack on a real miniature (a chat bubble, a code block, the dock) in both modes side by side. Drop the chip pair and the explanatory line."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "language-sheet",
+    "area": "j1-settings-more",
+    "title": "Language",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/language-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The copy is good, but the sheet's anatomy differs from every other sheet in Settings (close X, no handle, options inset 32 dp, checkmark off the rails).",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "P7 / U7",
+        "what": "It has a close X and no drag handle, and its options start at 32 dp with the check at about 40 dp from the edge. The other sheets have a drag handle, no X, and 16 dp rails.",
+        "fix": "Build it on the same kit sheet and KitRow choices as Default shell and Appearance."
+      },
+      {
+        "severity": "low",
+        "principle": "Harness",
+        "what": "The Arabic name draws as boxes. This is a known harness glyph gap, not a product bug.",
+        "fix": "None."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "model-picker-sheet",
+    "area": "j1-settings-more",
+    "title": "Choose a model",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/model-picker-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "It is a capable picker, but it opens with a banner that contradicts every row under it, and 'model', 'mode' and 'agent' are used interchangeably.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2 Words match",
+        "what": "The tinted banner says 'This server returned a basic catalog. Capability and context details are unavailable.' Every row below shows '200K context', and the Options dialog lists context, output, reasoning, tools and prices.",
+        "fix": "Show the notice only when the details really are missing, and then drop the context from the rows. Otherwise remove it."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 / C2",
+        "what": "The footer reads 'Claude Sonnet 4 · Default mode · build' with 'Use model and mode', while the dialogs call the same thing 'Thinking mode' and 'Agent: build'. That is three names for two settings.",
+        "fix": "Name them 'Thinking' (Default, High…) and 'Agent' (Build, Plan), capitalised display names. Button: 'Use Claude Sonnet 4'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / §3",
+        "what": "The notice is a full-bleed tinted block edge to edge, off the rails. The unloaded-providers strip is a hand-built Material+InkWell card.",
+        "fix": "Use KitNotice (no filled block) on the 16 dp rails, and at most one notice at a time."
+      },
+      {
+        "severity": "medium",
+        "principle": "P8 Nothing cut down",
+        "what": "Providers are shown as two-letter tiles 'AN' and 'OP', and the provider is repeated in every supporting line.",
+        "fix": "Group by provider under a SectionLabel ('Anthropic'), drop the tiles, and keep the check for the selection."
+      },
+      {
+        "severity": "low",
+        "principle": "U4",
+        "what": "The segmented tabs (All models, Favorites, Recent) are centred with a pill and also an underline divider under them.",
+        "fix": "Left-align them on the rails, or use a kit segmented control."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "model-picker-sheet-unloaded-providers-dialog",
+    "area": "j1-settings-more",
+    "title": "Providers not loaded",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/model-picker-sheet-unloaded-providers-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "It tells the person to 'Reload to pick up the sign-in' and then offers only 'Done'.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C4 / C5 Next step",
+        "what": "The body ends 'Reload to pick up the sign-in.' The only button is 'Done'. Reload is a small icon on the strip behind the dialog.",
+        "fix": "Primary 'Reload providers' (runs reloadProviderRuntime and closes), tertiary 'Not now'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "It quotes the raw error '“Model not found”' and 'OpenCode is signed in to Anthropic but has not loaded it yet'.",
+        "fix": "'Anthropic is signed in but not ready yet. Reload to use its models.' Put the raw error in Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "X8",
+        "what": "An alert dialog opens from a card inside a sheet.",
+        "fix": "Put the explanation and the Reload button inline in the strip (a KitNotice with an action). Then no dialog is needed."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "model-picker-sheet-agent-dialog",
+    "area": "j1-settings-more",
+    "title": "Choose an agent",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/model-picker-sheet-agent-dialog.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "A dialog holding a single dropdown, opened from a sheet. It is three layers deep to pick one word, and it shows the raw agent id 'build'.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X8 / X9 Container",
+        "what": "The layers stack sheet, then dialog, then dropdown menu. The dialog's only content is a dropdown and 'Done'.",
+        "fix": "Choose the agent in the sheet itself: an 'Agent' row in the footer that opens a short list (KitRow choices with a check and a one-line description of each agent)."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "The value is the raw id 'build' in lowercase, with a headset icon. The helper 'Applied with your model choice' does not say what an agent does.",
+        "fix": "Show 'Build · Edits files and runs commands' and 'Plan · Reads only, proposes changes'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 / P7",
+        "what": "The same agent dropdown also appears inside the model Options dialog, so there are two places for one setting.",
+        "fix": "Keep one place (the sheet footer)."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "model-picker-sheet-options-dialog",
+    "area": "j1-settings-more",
+    "title": "<model name>",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/model-picker-sheet-options-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "It is rich in detail but written as a spec line, it shows the raw model id, and it repeats the agent picker.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C3 / P4",
+        "what": "'Anthropic · claude-sonnet-4' shows the model id above the fold, and the capabilities are one dotted run-on line: '200,000 context · 32,000 output · Reasoning · Tools · Attachments · $3.00 in · $15.00 out /1M'.",
+        "fix": "Use rows: 'Remembers ~150k words', 'Can use tools · reads images', 'About $3 / $15 per million words in/out'. Put the id in a copyable Details row."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6",
+        "what": "The Agent dropdown duplicates the Choose an agent dialog.",
+        "fix": "Remove it here."
+      },
+      {
+        "severity": "medium",
+        "principle": "C2",
+        "what": "'Thinking mode' shows 'Default mode' as static text with no control, so it is unclear whether it can change.",
+        "fix": "Show it as a segmented control when the model supports levels. Otherwise remove the heading."
+      },
+      {
+        "severity": "low",
+        "principle": "X8",
+        "what": "An alert-style dialog is used for a detail view, with a lone 'Done'.",
+        "fix": "Show model details as an expanding row in the sheet, or as a pushed detail page."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "guide",
+    "area": "j1-settings-more",
+    "title": "Setup guide",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/j1-settings-more/guide.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "A calm, well-structured three-step guide, but its button names don't match the Add server screen, it has no button to start, and it leaves out the phone path its Settings row promises.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2 Words match",
+        "what": "Step 2 says 'tap Scan … or copy the code and tap Paste pairing code'. The Add server screen's buttons are now 'Scan code' and 'Paste code' (regression 15 fix).",
+        "fix": "'Open Servers › Add, then tap Scan code, or copy the code and tap Paste code.' Better, reference the button with the same l10n key."
+      },
+      {
+        "severity": "medium",
+        "principle": "X5 Next step",
+        "what": "The guide explains the steps but offers no action. The person has to leave and find Servers themselves.",
+        "fix": "Add a primary 'Add a server' under step 2 that opens Add server, with the pairing choice ready."
+      },
+      {
+        "severity": "medium",
+        "principle": "C2",
+        "what": "The Settings row subtitle says 'Connect a computer or run OpenCode on this phone', but the guide covers only the computer path.",
+        "fix": "Add a short 'No computer? Run OpenCode on this phone' row that opens On this phone, or change the subtitle."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "'Explain an address locally, without connecting' and 'Termux internals'.",
+        "fix": "'Check an address' and 'Advanced: HTTPS, SSH tunnels, older servers'."
+      }
+    ],
+    "quickWin": true
+  }
+]
