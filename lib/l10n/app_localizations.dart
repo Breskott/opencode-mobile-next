@@ -6019,18 +6019,6 @@ abstract class AppLocalizations {
   /// **'Disable quota monitoring'**
   String get quotaMonitorDisable;
 
-  /// Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string.
-  ///
-  /// In en, this message translates to:
-  /// **'Alert when used reaches'**
-  String get quotaMonitorThreshold;
-
-  /// Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved.
-  ///
-  /// In en, this message translates to:
-  /// **'Saving…'**
-  String get quotaMonitorSaving;
-
   /// No description provided for @setupChooseServerTitle.
   ///
   /// In en, this message translates to:
@@ -33388,6 +33376,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn off'**
   String get kitRiskTurnOff;
+
+  /// Body of the Disconnect from server confirmation for a server that is not on this phone. Two sentences at most.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. The server keeps running and nothing on it changes.'**
+  String get safetyDisconnectBody;
+
+  /// Body of the Disconnect from server confirmation when the server runs on this phone: says it stays running and keeps using battery.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. OpenCode keeps running on this phone, using battery, until you stop it.'**
+  String get safetyDisconnectBodyPhone;
+
+  /// One consequence line on the Disconnect confirmation, shown only when queued prompts or unsent drafts exist for this server. count is their total.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message waiting to send stays on this phone until you connect again.} other{{count} messages waiting to send stay on this phone until you connect again.}}'**
+  String safetyDisconnectWaiting(int count);
+
+  /// Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert when used reaches'**
+  String get quotaMonitorThreshold;
+
+  /// Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get quotaMonitorSaving;
+
+  /// Folder browser: title shown once listing a folder has taken 8 seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Still reading this folder'**
+  String get folderBrowserSlowTitle;
+
+  /// Folder browser: says why listing a folder is slow (a Termux read may take up to 15 seconds)
+  ///
+  /// In en, this message translates to:
+  /// **'Folders on this phone can take up to 15 seconds to list.'**
+  String get folderBrowserSlowBody;
+
+  /// Folder browser: the empty projects folder's first step; puts the cursor in the project name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name your first project'**
+  String get folderBrowserFirstProject;
+
+  /// KitBoardLanes: a board lane's screen-reader label, the column's name and how many tasks it holds
+  ///
+  /// In en, this message translates to:
+  /// **'{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}'**
+  String kitBoardLane(String column, int count);
+
+  /// KitBoardLanes: the screen-reader label of the skeleton lane while the board's first answer comes
+  ///
+  /// In en, this message translates to:
+  /// **'Loading {column}'**
+  String kitBoardLaneLoading(String column);
 }
 
 class _AppLocalizationsDelegate

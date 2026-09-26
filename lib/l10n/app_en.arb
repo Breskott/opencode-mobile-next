@@ -23706,5 +23706,26 @@
   "folderBrowserFirstProject": "Name your first project",
   "@folderBrowserFirstProject": {
     "description": "Folder browser: the empty projects folder's first step; puts the cursor in the project name field"
+  },
+  "kitBoardLane": "{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}",
+  "@kitBoardLane": {
+    "description": "KitBoardLanes: a board lane's screen-reader label, the column's name and how many tasks it holds",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitBoardLaneLoading": "Loading {column}",
+  "@kitBoardLaneLoading": {
+    "description": "KitBoardLanes: the screen-reader label of the skeleton lane while the board's first answer comes",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
   }
 }
