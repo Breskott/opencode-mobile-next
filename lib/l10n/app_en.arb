@@ -22245,5 +22245,33 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitMarkWaiting": "Waiting",
+  "@kitMarkWaiting": {
+    "description": "Kit status mark: the default word for the waiting state, in semantics and beside the mark"
+  },
+  "kitMarkWorking": "Working",
+  "@kitMarkWorking": {
+    "description": "Kit status mark: the default word for the working state, in semantics and beside the mark"
+  },
+  "kitMarkDone": "Done",
+  "@kitMarkDone": {
+    "description": "Kit status mark: the default word for the done state, in semantics and beside the mark"
+  },
+  "kitMarkFailed": "Failed",
+  "@kitMarkFailed": {
+    "description": "Kit status mark: the default word for the failed state, in semantics and beside the mark"
+  },
+  "kitMarkPaused": "Paused",
+  "@kitMarkPaused": {
+    "description": "Kit status mark: the default word when a waiting or working mark is paused, in semantics and beside the mark"
+  },
+  "kitTaskNeedsYou": "Needs you",
+  "@kitTaskNeedsYou": {
+    "description": "Kit task mark: the default word for a task that needs the person; also the word KitNeedsYou's own mark uses"
+  },
+  "kitTaskStopped": "Stopped",
+  "@kitTaskStopped": {
+    "description": "Kit task mark: the default word for a task that was stopped before it finished"
   }
 }
