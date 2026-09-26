@@ -1,0 +1,19 @@
+ok - today's shape passes
+ok - replaces names a missing element
+ok - replaces names a missing page
+ok - malformed replaces entry
+ok - nested replaces key is checked too
+ok - kit none grows
+ok - kit none shrinks: passes and prints the new baseline
+ok - hidden on a capability with an enable flow
+ok - hidden on a (proposed) capability with an enable flow
+ok - hidden where the flow says no path in the app is allowed
+ok - explains on a capability with an enable flow is allowed
+ok - 'hiddenly' is not the word hidden
+ok - unknown capability
+ok - baselined hidden pair fixed: passes and says so
+ok - --update-baseline writes a shrunk baseline
+ok - --update-baseline refuses growth
+ok - missing baseline is an input error
+G13 self-test: 17 of 17 passed
+exit=0

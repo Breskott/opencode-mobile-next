@@ -1,0 +1,6 @@
+G13 kit map: 722 replaces entries checked; kit none 810 (baseline 809); hidden with an enable flow 231 (baseline 230)
+  FAIL replaces: new[0][KitSheet].replaces names element 'chat-element-that-does-not-exist' on page 'chat', which the map does not list
+  FAIL kit none: 810 map elements have kit "none", baseline 809; the count may only go down
+  FAIL STATE-12: page 'chat' says whenMissing 'server.any': hidden, but 'server.any' has an enable flow; show one muted line with where it is available and offer the enable flow
+G13 FAILED: 3 violation(s)
+exit=1

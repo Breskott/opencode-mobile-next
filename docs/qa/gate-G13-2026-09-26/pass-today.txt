@@ -1,0 +1,3 @@
+G13 kit map: 721 replaces entries checked; kit none 809 (baseline 809); hidden with an enable flow 230 (baseline 230)
+G13 PASSED
+exit=0
