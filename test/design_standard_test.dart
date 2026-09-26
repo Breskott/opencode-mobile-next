@@ -13,9 +13,24 @@
 // error card is a state) lists its migrated classes in [_migratedClasses]:
 // the scan then covers each class's source. A file that gave up a raw part
 // for a kit one lists it in [_retired] so it cannot come back.
+//
+// G3x (docs/ux-system/revamp/STANDARDS.md §18.2, TEST-10): [_forbidden] also
+// holds every G1, G2, G7, G17 and G21 pattern (test/support/kit_patterns.dart,
+// shared with test/kit_ratchet_test.dart), each counted where its scope says
+// it applies. A screen migrated on or after 2026-09-26 holds all of them at
+// zero and also has a `<golden>_ar_dark.png`. The screens migrated before
+// that date carry their counts in test/design_standard_baseline.json, which
+// only shrinks: a count may fall, never rise, and no entry is ever added.
+// When counts fall the test prints the smaller baseline to commit;
+//   DESIGN_STANDARD_WRITE=1 flutter test test/design_standard_test.dart
+// writes it (lowering counts and dropping entries no longer migrated, never
+// adding one). Then run it again without the variable and commit the file.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/kit_patterns.dart';
 
 /// Screen files built on the kit, with the golden renders that show them.
 /// Only grows (§9 migration order: connection states, the Work tab, phone
@@ -295,17 +310,40 @@ const _allowed = <String, Map<String, String>>{
   },
 };
 
-final _forbidden = <String, RegExp>{
-  'LinearProgressIndicator': RegExp(r'\bLinearProgressIndicator\b'),
-  'CircularProgressIndicator': RegExp(r'\bCircularProgressIndicator\b'),
-  'Card(': RegExp(r'\bCard\('),
-  'FilledButton': RegExp(r'\bFilledButton\b'),
+/// A pattern of the design standard itself (§8), counted in every migrated
+/// file.
+KitPattern _standard(String name, String pattern) {
+  final re = RegExp(pattern);
+  return KitPattern(
+    gate: 'DS',
+    name: name,
+    rules: const ['TEST-10', 'STATE-1'],
+    scope: (_) => true,
+    count: (code) => re.allMatches(code).length,
+  );
+}
+
+/// pattern id -> pattern. A migrated file holds each one that applies to its
+/// path at zero (or, for a file migrated before [_g3xSince], at or below its
+/// baseline count).
+final _forbidden = <String, KitPattern>{
+  for (final pattern in [
+    _standard('LinearProgressIndicator', r'\bLinearProgressIndicator\b'),
+    _standard('CircularProgressIndicator', r'\bCircularProgressIndicator\b'),
+    _standard('Card(', r'\bCard\('),
+    _standard('FilledButton', r'\bFilledButton\b'),
+    ...kitGatePatterns,
+  ])
+    pattern.id: pattern,
 };
 
-String _code(String path) => File(path)
-    .readAsLinesSync()
-    .where((line) => !line.trimLeft().startsWith('//'))
-    .join('\n');
+const _baselinePath = 'test/design_standard_baseline.json';
+
+/// The date G3x took effect: a migrated entry absent from the baseline was
+/// added on or after it.
+const _g3xSince = '2026-09-26';
+
+String _code(String path) => kitCodeOf(path);
 
 /// The source of top-level class [name] in [code]: from its declaration to
 /// the next top-level declaration (a line starting with a letter or `@`).
@@ -324,37 +362,211 @@ String _classCode(String code, String name) {
   return lines.sublist(start, end).join('\n');
 }
 
-List<String> _problems(String label, String code, Map<String, String>? allow) {
+/// pattern id -> count of every [_forbidden] pattern that applies to [path]
+/// in [code], minus the [allow]ed ones; zero counts are left out.
+Map<String, int> _counts(String path, String code, Map<String, String>? allow) {
+  final counts = <String, int>{};
+  for (final MapEntry(key: id, value: pattern) in _forbidden.entries) {
+    if (allow?.containsKey(id) ?? false) continue;
+    if (!pattern.appliesTo(path)) continue;
+    final count = pattern.count(code);
+    if (count > 0) counts[id] = count;
+  }
+  return counts;
+}
+
+/// label -> pattern id -> count, for every migrated file (label = path) and
+/// migrated class (label = path#Class).
+Map<String, Map<String, int>> _currentCounts() => {
+  for (final path in _migrated.keys)
+    path: _counts(path, _code(path), _allowed[path]),
+  for (final MapEntry(key: path, value: classes) in _migratedClasses.entries)
+    for (final name in classes.keys)
+      '$path#$name': _counts(path, _classCode(_code(path), name), null),
+};
+
+/// label -> pattern id -> count, or null when there is no baseline file.
+Map<String, Map<String, int>>? _loadBaseline() {
+  final file = File(_baselinePath);
+  if (!file.existsSync()) return null;
+  final raw = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+  final entries = raw['entries'] as Map<String, dynamic>;
+  return {
+    for (final MapEntry(key: label, value: counts) in entries.entries)
+      label: {
+        for (final MapEntry(key: id, value: n)
+            in (counts as Map<String, dynamic>).entries)
+          id: (n as num).toInt(),
+      },
+  };
+}
+
+String _encodeBaseline(Map<String, Map<String, int>> entries) {
+  final labels = entries.keys.toList()..sort();
+  final json = {
+    'about':
+        'G3x baseline (docs/ux-system/revamp/STANDARDS.md §18.2, TEST-10): '
+        'forbidden-pattern counts of the screens migrated before '
+        '$_g3xSince. Counts only fall; entries are never added. '
+        'See test/design_standard_test.dart.',
+    'entries': {
+      for (final label in labels)
+        label: {
+          for (final id in (entries[label]!.keys.toList()..sort()))
+            id: entries[label]![id],
+        },
+    },
+  };
+  return '${const JsonEncoder.withIndent('  ').convert(json)}\n';
+}
+
+/// Failures of [current] against [baseline]: a count above its baseline, a
+/// pattern the baseline lacks, or any count at all in an entry the baseline
+/// lacks (migrated on or after [_g3xSince], so absolute).
+List<String> _ratchetProblems(
+  Map<String, Map<String, int>> current,
+  Map<String, Map<String, int>> baseline,
+) {
   final problems = <String>[];
-  for (final MapEntry(key: name, value: pattern) in _forbidden.entries) {
-    if (allow?.containsKey(name) ?? false) continue;
-    final count = pattern.allMatches(code).length;
-    if (count > 0) problems.add('$label: $name x$count');
+  for (final MapEntry(key: label, value: counts) in current.entries) {
+    final base = baseline[label];
+    for (final MapEntry(key: id, value: n) in counts.entries) {
+      final rules = _forbidden[id]!.rules.join(', ');
+      if (base == null) {
+        problems.add(
+          '$label: $id x$n (migrated on or after $_g3xSince, so it must be '
+          'zero; $rules)',
+        );
+      } else if (n > (base[id] ?? 0)) {
+        problems.add(
+          '$label: $id rose from ${base[id] ?? 0} to $n (the baseline only '
+          'shrinks; $rules)',
+        );
+      }
+    }
   }
   return problems;
 }
 
-void main() {
-  test('migrated screens use the kit, not raw progress, cards or buttons', () {
-    final problems = <String>[];
-    for (final path in _migrated.keys) {
-      problems.addAll(_problems(path, _code(path), _allowed[path]));
+/// The smaller baseline when [current] is below [baseline] somewhere, else
+/// null. Never adds an entry; drops entries no longer migrated.
+Map<String, Map<String, int>>? _shrunk(
+  Map<String, Map<String, int>> current,
+  Map<String, Map<String, int>> baseline,
+) {
+  var changed = false;
+  final next = <String, Map<String, int>>{};
+  for (final MapEntry(key: label, value: base) in baseline.entries) {
+    final counts = current[label];
+    if (counts == null) {
+      changed = true;
+      continue;
     }
+    final kept = <String, int>{};
+    for (final MapEntry(key: id, value: n) in base.entries) {
+      final now = counts[id] ?? 0;
+      final value = now < n ? now : n;
+      if (value != n) changed = true;
+      if (value > 0) kept[id] = value;
+    }
+    next[label] = kept;
+  }
+  return changed ? next : null;
+}
+
+void main() {
+  final writeMode = Platform.environment['DESIGN_STANDARD_WRITE'] == '1';
+  final current = _currentCounts();
+  var baseline = _loadBaseline();
+  if (writeMode) {
+    // The first run writes every migrated entry; later runs only lower
+    // counts and drop entries, never add one.
+    final next = baseline == null
+        ? current
+        : _shrunk(current, baseline) ?? baseline;
+    File(_baselinePath).writeAsStringSync(_encodeBaseline(next));
+    baseline = next;
+    stdout.writeln(
+      'DESIGN_STANDARD_WRITE=1: wrote $_baselinePath (${next.length})',
+    );
+  }
+
+  test('G3x: migrated screens hold every forbidden pattern at zero '
+      '(or below their baseline)', () {
+    expect(baseline, isNotNull, reason: '$_baselinePath is missing');
+    final fileCounts = {
+      for (final path in _migrated.keys) path: current[path]!,
+    };
+    final problems = _ratchetProblems(fileCounts, baseline!);
     expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
   });
 
-  test('migrated classes in mixed files use the kit', () {
-    final problems = <String>[];
+  test('G3x: migrated classes in mixed files use the kit', () {
     for (final MapEntry(key: path, value: classes)
         in _migratedClasses.entries) {
       final code = _code(path);
       for (final name in classes.keys) {
-        final source = _classCode(code, name);
-        expect(source, isNotEmpty, reason: '$path has no class $name');
-        problems.addAll(_problems('$path#$name', source, null));
+        expect(
+          _classCode(code, name),
+          isNotEmpty,
+          reason: '$path has no class $name',
+        );
       }
     }
+    final classCounts = {
+      for (final MapEntry(key: label, value: counts) in current.entries)
+        if (label.contains('#')) label: counts,
+    };
+    final problems = _ratchetProblems(classCounts, baseline!);
     expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
+  });
+
+  test('G3x: the baseline only shrinks and names only migrated entries', () {
+    final problems = <String>[];
+    for (final MapEntry(key: label, value: counts) in baseline!.entries) {
+      if (!current.containsKey(label)) {
+        problems.add(
+          '$label is in the baseline but not migrated: drop it '
+          '(TEST-10: an entry leaves only when its file is deleted)',
+        );
+      }
+      for (final id in counts.keys) {
+        if (!_forbidden.containsKey(id)) problems.add('$label: unknown $id');
+      }
+    }
+    expect(problems, isEmpty);
+    final smaller = _shrunk(current, baseline);
+    if (smaller != null) {
+      stdout.writeln(
+        '--- G3x: counts fell; commit this as $_baselinePath '
+        '(or run with DESIGN_STANDARD_WRITE=1) ---\n'
+        '${_encodeBaseline(smaller)}--- end baseline ---',
+      );
+    }
+  });
+
+  test('G3x: a screen migrated on or after $_g3xSince has an _ar_dark '
+      'golden', () {
+    final entries = <String, List<String>>{
+      ..._migrated,
+      for (final MapEntry(key: path, value: classes)
+          in _migratedClasses.entries)
+        for (final MapEntry(key: name, value: goldens) in classes.entries)
+          '$path#$name': goldens,
+    };
+    final missing = <String>[];
+    for (final MapEntry(key: label, value: names) in entries.entries) {
+      if (baseline!.containsKey(label)) continue;
+      final found = names.any(
+        (name) => File('test/goldens/${name}_ar_dark.png').existsSync(),
+      );
+      if (!found) {
+        missing.add(
+          '$label: none of ${names.map((n) => '${n}_ar_dark.png').join(', ')}',
+        );
+      }
+    }
+    expect(missing, isEmpty, reason: 'TEST-10: the loaded state in Arabic');
   });
 
   test('raw parts a migrated screen gave up do not come back', () {
@@ -427,5 +639,125 @@ void main() {
         .join('\n');
     expect(kit, contains('LinearProgressIndicator'));
     expect(kit, contains('FilledButton'));
+  });
+
+  group('G3x counters on fixture strings (proves the patterns)', () {
+    const screen = 'lib/ui/screens/fixture_only.dart';
+    const kitPart = 'lib/ui/kit/kit_fixture_only.dart';
+    Map<String, int> count(String path, String source) =>
+        kitCountPatterns(path, kitStripLineComments(source));
+
+    test('every G1, G2, G7, G17 and G21 pattern is forbidden', () {
+      expect(kitGatePatterns.map((p) => p.gate).toSet(), {
+        'G1',
+        'G2',
+        'G7',
+        'G17',
+        'G21',
+      });
+      for (final pattern in kitGatePatterns) {
+        expect(_forbidden[pattern.id], same(pattern), reason: pattern.id);
+        expect(pattern.rules, isNotEmpty, reason: pattern.id);
+      }
+      final ids = kitGatePatterns.map((p) => p.id).toList();
+      expect(ids.toSet().length, ids.length, reason: 'ids are unique');
+    });
+
+    test('a screen that breaks one rule of each gate fails each', () {
+      const source = '''
+showDialog<bool>(context: context, builder: (_) => const SizedBox());
+Clipboard.setData(ClipboardData(text: 'x'));
+AnimatedOpacity(duration: const Duration(milliseconds: 200), opacity: 1);
+const EdgeInsets.only(left: 8);
+const EdgeInsets.fromLTRB(16, 0, 8, 0);
+const EdgeInsets.fromLTRB(16, 0, 16, 0);
+const Text('a', textAlign: TextAlign.left);
+const Color(0xFF000000);
+Colors.red;
+Colors.transparent;
+Theme.of(context).colorScheme.primary;
+roles.hairline.withValues(alpha: 0.5);
+ThemeRoles.of(context).attentionFill;
+KitStatusMark(tone: AppStatusTone.attention);
+const TextStyle(fontSize: 13);
+BorderRadius.circular(12);
+const SizedBox(height: 8);
+const Icon(AppIcons.check, size: 18);
+const Icon(AppIcons.check, size: 20);
+// const TextStyle(fontSize: 99);
+''';
+      expect(count(screen, source), {
+        'G1 showDialog(': 1,
+        'G2 Clipboard.setData(': 1,
+        'G2 duration: Duration(': 1,
+        'G7 EdgeInsets.only(left|right:)': 1,
+        'G7 EdgeInsets.fromLTRB asymmetric': 1,
+        'G7 TextAlign.left|right': 1,
+        'G17 Color(0x': 1,
+        'G17 Colors.*': 1,
+        'G17 .colorScheme.': 1,
+        'G17 hairline.withValues(': 1,
+        'G17 attention role': 1,
+        'G21 fontSize:': 1,
+        'G21 TextStyle(': 1,
+        'G21 BorderRadius.circular(<n>': 1,
+        'G21 EdgeInsets(<n>)': 3,
+        'G21 SizedBox(width|height: <n>)': 1,
+        'G21 Icon size not 20/22/24': 1,
+      });
+    });
+
+    test(
+      'scopes: the kit and the theme files are judged by their own rules',
+      () {
+        const source = '''
+Theme.of(context).colorScheme.primary;
+const TextStyle(fontSize: 13);
+showDialog<bool>(context: context, builder: (_) => const SizedBox());
+''';
+        // Inside the kit: dialogs, TextStyle and colorScheme are its job, but
+        // a numeric fontSize is not.
+        expect(count(kitPart, source), {'G21 kit fontSize: <n>': 1});
+        // The theme files define colour and type; only G1 looks there.
+        expect(count('lib/ui/app_theme.dart', source), {'G1 showDialog(': 1});
+        // A token file may hold the numbers.
+        expect(count('lib/ui/kit/kit_tokens.dart', source), isEmpty);
+      },
+    );
+
+    test('directional and themed forms pass', () {
+      const source = '''
+const EdgeInsetsDirectional.only(start: KitTokens.space2);
+const EdgeInsets.symmetric(horizontal: KitTokens.gutter);
+const Text('a', textAlign: TextAlign.start);
+AlignmentDirectional.centerStart;
+roles.text1;
+KitText.of(context).body;
+const PositionedDirectional(start: 0, child: SizedBox.shrink());
+BorderRadius.circular(KitTokens.panelRadius);
+''';
+      expect(count(screen, source), isEmpty);
+    });
+
+    test('bidi literals count outside the kit, as characters or escapes', () {
+      const source =
+          "final a = '\u2068name\u2069';\n"
+          r"final b = '\u2066path\u2069';";
+      expect(count(screen, source), {'G7 bidi literal': 4});
+      expect(count(kitPart, source), isEmpty);
+    });
+
+    test('an argument list is read to its closing parenthesis', () {
+      final calls = kitCallArguments(
+        "Positioned(top: f(1), child: Text(')'), right: 0)",
+        RegExp(r'\bPositioned\('),
+      );
+      expect(calls, ["top: f(1), child: Text(')'), right: 0"]);
+      expect(kitSplitArguments('a(b, c), d, [e, f]'), [
+        'a(b, c)',
+        'd',
+        '[e, f]',
+      ]);
+    });
   });
 }
