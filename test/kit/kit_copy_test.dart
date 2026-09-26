@@ -71,6 +71,23 @@ void main() {
     expect(copied(), 'password="${KitRedact.mask}"');
   });
 
+  testWidgets('redact false copies code and message text verbatim', (
+    tester,
+  ) async {
+    final context = await pumpKitHost(tester);
+    const text = 'const token = await getToken();\npassword="fixture-secret"';
+    await KitCopy.copy(context, text, redact: false);
+    await tester.pump();
+
+    expect(copied(), text);
+    expect(
+      platform.where((c) => c.method == 'HapticFeedback.vibrate'),
+      hasLength(1),
+    );
+    expect(announcements, hasLength(1));
+    expect((announcements.single['data'] as Map)['message'], 'Copied');
+  });
+
   testWidgets('plain text is copied as is, with a custom announcement', (
     tester,
   ) async {

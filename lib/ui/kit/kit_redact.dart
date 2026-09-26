@@ -11,17 +11,21 @@ import 'dart:convert';
 /// - provider keys: `sk-`, `sk-ant-`, `sk-proj-`, `AIza`, `ghp_`/`gho_`/
 ///   `ghs_`/`ghu_`/`ghr_`, `github_pat_`, `xoxa-`/`xoxb-`/`xoxp-`/`xoxr-`;
 /// - `Bearer <token>`;
-/// - the whole value of an `Authorization` or `Proxy-Authorization` header,
+/// - the whole value of an `Authorization`, `Proxy-Authorization`, `Cookie`,
+///   `Set-Cookie` or `x-api-key` header,
 ///   written `Authorization: x` or `Authorization=x`: to the end of the line,
 ///   through the closing quote of a quoted value, or to the end of the quoted
 ///   string the header itself sits in (`-H "Authorization: …"`);
 /// - the value after `api_key`, `apikey`, `token`, `secret`, `password` or
 ///   `passwd` (also as the tail of a longer name such as `client_secret`)
-///   and `=` or `:`; a quoted value through its closing quote (escaped
+///   and `=` or `:`; also environment names ending in `_KEY`, `_SECRET`,
+///   `_TOKEN` or `_PASSWORD`. A quoted value through its closing quote (escaped
 ///   quotes and embedded delimiters included), an unquoted one up to
 ///   whitespace or `"',;&<>`. Inside a file path (`/tmp/token=cache/x`) the
 ///   name is not a credential; after `?`, `&` or `#` in a URL it is;
-/// - URL user-info: `https://user:pass@host` → `https://•••@host`;
+/// - URL user-info, including connection strings:
+///   `postgres://user:pass@host` → `postgres://•••@host`;
+/// - PEM private key blocks, including their BEGIN/END markers;
 /// - JWTs: three base64url segments whose first two decode to JSON objects
 ///   (or both start `eyJ`). Signatures are not verified.
 ///
@@ -33,7 +37,7 @@ abstract final class KitRedact {
   /// Group 1: a quote right before the name (the header sits in a quoted
   /// string, or is a quoted key); group 2: a quote closing the key.
   static final RegExp _authHeader = RegExp(
-    r'''(["']?)\b(?:Proxy-)?Authorization(["']?)[ \t]*[:=][ \t]*''',
+    r'''(["']?)\b(?:(?:Proxy-)?Authorization|(?:Set-)?Cookie|x-api-key)(["']?)\s*[:=]\s*''',
     caseSensitive: false,
   );
 
@@ -43,12 +47,26 @@ abstract final class KitRedact {
   );
 
   static final RegExp _namedValue = RegExp(
-    r'''(?<![A-Za-z0-9])[A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|token|secret|password|passwd)["']?[ \t]*[:=][ \t]*''',
+    r'''(?<![A-Za-z0-9])[A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|_key|token|secret|password|passwd)["']?\s*[:=]\s*''',
     caseSensitive: false,
   );
 
   static final RegExp _urlUserInfo = RegExp(
     r'\b([A-Za-z][A-Za-z0-9+.\-]*://)[^\s/?#@]+@',
+  );
+
+  static final RegExp _urlScheme = RegExp(
+    r'(?:^|=)[A-Za-z][A-Za-z0-9+.\-]*://',
+  );
+
+  static final RegExp _privateKey = RegExp(
+    r'-----BEGIN ((?:[A-Z0-9]+ )*PRIVATE KEY)-----[\s\S]*?-----END \1-----',
+  );
+
+  // Only declarations distinguish invocations from credentials with parentheses.
+  static final RegExp _declaration = RegExp(r'\b(?:const|let|var|final)\s+$');
+  static final RegExp _invocation = RegExp(
+    r'(?:await\s+)?[A-Za-z_$][A-Za-z0-9_$.]*\s*\(',
   );
 
   static final RegExp _jwtCandidate = RegExp(
@@ -70,17 +88,15 @@ abstract final class KitRedact {
   /// [s] with every recognised secret replaced by [mask].
   static String text(String s) {
     if (s.isEmpty) return s;
-    var out = _scan(s, _authHeader, _authValue);
+    var out = s.replaceAll(_privateKey, mask);
+    out = _scan(out, _authHeader, _authValue);
     out = out.replaceAllMapped(_bearer, (m) => '${m[1]} $mask');
     out = _scan(out, _namedValue, _namedValueEnd);
     out = out.replaceAllMapped(_urlUserInfo, (m) => '${m[1]}$mask@');
     for (final key in _providerKeys) {
       out = out.replaceAllMapped(key, (m) => '${m[1]}$mask');
     }
-    return out.replaceAllMapped(
-      _jwtCandidate,
-      (m) => _isJwt(m[1]!, m[2]!) ? mask : m[0]!,
-    );
+    return _maskJwts(out);
   }
 
   /// Whether [text] would change [s]: it holds something that looks like a
@@ -118,6 +134,7 @@ abstract final class KitRedact {
   }
 
   static _Masked? _authValue(String s, RegExpMatch m) {
+    if (_inPath(s, m.start)) return null;
     final lead = m[1]!;
     final keyQuote = m[2]!;
     final start = m.end;
@@ -143,8 +160,13 @@ abstract final class KitRedact {
     if (_inPath(s, m.start)) return null;
     final start = m.end;
     if (start < s.length && _isQuote(s[start])) return _quoted(s, start);
+    if (_invocation.matchAsPrefix(s, start) != null &&
+        _declaration.hasMatch(s.substring(0, m.start))) {
+      return null;
+    }
     var end = start;
     while (end < s.length && !' \t\r\n"\',;&<>'.contains(s[end])) {
+      if (s.startsWith('*/', end)) break;
       end++;
     }
     return _masked(start, end);
@@ -195,14 +217,42 @@ abstract final class KitRedact {
   /// (`/tmp/token=x`). A name right after a URL's `?`, `&` or `#` is a query
   /// or fragment parameter, not a path.
   static bool _inPath(String s, int i) {
-    var slash = false;
-    for (var j = i - 1; j >= 0; j--) {
-      final c = s[j];
-      if ('?&#'.contains(c)) return false;
-      if (' \t\r\n"\'`,;(){}[]<>=|'.contains(c)) break;
-      if (c == '/' || c == '\\') slash = true;
+    var start = i;
+    while (start > 0 && !' \t\r\n"\'`,;(){}[]<>|'.contains(s[start - 1])) {
+      start--;
     }
-    return slash;
+    final prefix = s.substring(start, i);
+    // Adjacent comment delimiters are not directory separators.
+    if (prefix == '//' || prefix == '/*') return false;
+    final scheme = _urlScheme.firstMatch(prefix);
+    if (scheme != null &&
+        prefix.substring(scheme.end).contains(RegExp(r'[?&#]'))) {
+      return false;
+    }
+    return prefix.contains('/') || prefix.contains('\\');
+  }
+
+  static String _maskJwts(String s) {
+    final out = StringBuffer();
+    var cursor = 0;
+    var from = 0;
+    while (from < s.length) {
+      final candidates = _jwtCandidate.allMatches(s, from).iterator;
+      if (!candidates.moveNext()) break;
+      final m = candidates.current;
+      if (!_isJwt(m[1]!, m[2]!)) {
+        // Retry inside a rejected candidate: its claims may be a JWT header.
+        from = m.start + 1;
+        continue;
+      }
+      out
+        ..write(s.substring(cursor, m.start))
+        ..write(mask);
+      cursor = m.end;
+      from = m.end;
+    }
+    out.write(s.substring(cursor));
+    return out.toString();
   }
 
   /// A compact JWT: header and claims decode to JSON objects, or both keep
