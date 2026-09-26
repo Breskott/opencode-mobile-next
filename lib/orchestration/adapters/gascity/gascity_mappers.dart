@@ -650,6 +650,8 @@ OrchestrationAgent mapAgent(
     sessionStartedAt: session?.createdAt,
     suspended: isSuspendedAgent(agent),
     raw: agent.raw,
+    sessionState: session?.state,
+    sessionRunning: session?.running,
   );
 }
 
@@ -736,6 +738,8 @@ OrchestrationAgent mapSession(
     branch: _branchOf(session.metadata),
     sessionStartedAt: session.createdAt,
     raw: session.raw,
+    sessionState: session.state,
+    sessionRunning: session.running,
   );
 }
 

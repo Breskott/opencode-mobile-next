@@ -32,7 +32,7 @@ import '../widgets/session_inventory_footer.dart';
 import '../widgets/team_discover.dart';
 import '../widgets/team_task_row.dart';
 import '../widgets/team_vocabulary.dart' show teamGatedRuns, teamHostPhrase;
-import 'team/team_conversation_stub.dart';
+import 'team_conversation/team_conversation.dart';
 import 'team/team_intro_screen.dart';
 import '../widgets/termux_phone_tools.dart';
 import '../widgets/work_status_line.dart';

@@ -65,6 +65,8 @@ class OrchestrationAgent {
     this.sessionStartedAt,
     this.suspended = false,
     this.raw = const {},
+    this.sessionState,
+    this.sessionRunning,
   });
 
   final String id;
@@ -113,6 +115,15 @@ class OrchestrationAgent {
 
   /// Untouched provider payload.
   final Map<String, Object?> raw;
+
+  /// The joined session's own `state` string as received (`active`,
+  /// `asleep`, ...); null when no session was joined or it named none.
+  /// The session is the truth about whether the agent runs: Gas City's
+  /// `/agents` can say `stopped` while `/sessions` says `active`.
+  final String? sessionState;
+
+  /// The joined session's `running` flag; null when no session was joined.
+  final bool? sessionRunning;
 
   @override
   String toString() => 'OrchestrationAgent($id, $state)';

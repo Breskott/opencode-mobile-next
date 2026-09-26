@@ -21095,5 +21095,370 @@
   "teamTaskMark": "Team",
   "@teamTaskMark": {
     "description": "Work tab: the word before a team task's state line, so a team task reads apart from a conversation"
+  },
+  "chatWatchEmptyTitle": "Nothing here yet",
+  "@chatWatchEmptyTitle": {
+    "description": "Chat, watching an AI Team worker: its conversation has no messages yet"
+  },
+  "chatWatchEmptyBody": "This conversation fills in as the agent works.",
+  "@chatWatchEmptyBody": {
+    "description": "Chat, watching an AI Team worker: body of the empty state"
+  },
+  "teamWatchBanner": "Watching {name} · {role} · AI Team",
+  "@teamWatchBanner": {
+    "description": "Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamWatchBannerRole": "Watching the {role} · AI Team",
+  "@teamWatchBannerRole": {
+    "description": "Chat status line in watching mode when the agent has no name of its own: its role in plain words",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamWatchNote": "You're watching. Your message goes to it through the AI Team, never into this conversation.",
+  "@teamWatchNote": {
+    "description": "Where the chat composer was, in watching mode: why there is no text field"
+  },
+  "teamWatchNoteNoMessage": "You're watching. This team can't be messaged from here.",
+  "@teamWatchNoteNoMessage": {
+    "description": "Where the chat composer was, in watching mode, when the team takes no messages from the phone"
+  },
+  "teamWatchMessageWorker": "Message the worker",
+  "@teamWatchMessageWorker": {
+    "description": "Watching mode: the one action in place of the composer, for a worker"
+  },
+  "teamWatchMessageAgent": "Message this agent",
+  "@teamWatchMessageAgent": {
+    "description": "Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)"
+  },
+  "teamWatchFallbackUnreadable": "Its conversation can't be read from the server this app is connected to, so this is the team's live output.",
+  "@teamWatchFallbackUnreadable": {
+    "description": "Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder"
+  },
+  "teamWatchFallbackNotFound": "Its conversation isn't on the server this app is connected to yet (it may still be starting, or the team runs on another computer), so this is the team's live output.",
+  "@teamWatchFallbackNotFound": {
+    "description": "Live output opened instead of the agent's conversation: no matching conversation was found"
+  },
+  "teamOpenConversation": "Open conversation",
+  "@teamOpenConversation": {
+    "description": "AI Team: opens an agent's own conversation on the chat page (watching)"
+  },
+  "teamOpenConversationHint": "Watch {name}'s work in the chat",
+  "@teamOpenConversationHint": {
+    "description": "AI Team, supporting line of Open conversation: the agent's name or role",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamOpenConversationFinding": "Finding its conversation…",
+  "@teamOpenConversationFinding": {
+    "description": "AI Team, Open conversation while the app looks for the agent's conversation on the server"
+  },
+  "teamChatUntitled": "Team task",
+  "@teamChatUntitled": {
+    "description": "Team conversation title when the task has no title"
+  },
+  "teamChatSubtitle": "AI Team · {host}",
+  "@teamChatSubtitle": {
+    "description": "Team conversation, under the title: where the team runs (On this phone, On pop-os)",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatOpenTeam": "AI Team",
+  "@teamChatOpenTeam": {
+    "description": "Team conversation top bar: opens the AI Team page (tooltip)"
+  },
+  "teamChatTaskDetails": "Task details",
+  "@teamChatTaskDetails": {
+    "description": "Team conversation overflow menu: opens the task detail page"
+  },
+  "teamChatLoading": "Loading the task",
+  "@teamChatLoading": {
+    "description": "Team conversation loading bar label"
+  },
+  "teamChatLeadName": "The team",
+  "@teamChatLeadName": {
+    "description": "Team conversation: the name over the lead's reply and in the family strip (the app writes it from the team's events)"
+  },
+  "teamChatLeadSent": "Sent to the team",
+  "@teamChatLeadSent": {
+    "description": "Team conversation, lead line: the task left this phone"
+  },
+  "teamChatLeadNothingYet": "Nothing yet. The team has not planned this task.",
+  "@teamChatLeadNothingYet": {
+    "description": "Team conversation, lead reply before any event"
+  },
+  "teamChatLeadPlanned": "{count, plural, =1{Planned 1 step} other{Planned {count} steps}}",
+  "@teamChatLeadPlanned": {
+    "description": "Team conversation, lead line: how many steps the task has",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamChatLeadRouted": "Sent “{title}” to the workers",
+  "@teamChatLeadRouted": {
+    "description": "Team conversation, lead line: a step was routed to the worker pool",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadStarting": "Started a worker on “{title}”",
+  "@teamChatLeadStarting": {
+    "description": "Team conversation, lead line: a worker session started for a step",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimed": "{name} took “{title}”",
+  "@teamChatLeadClaimed": {
+    "description": "Team conversation, lead line: a named worker claimed a step",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimedWorker": "A worker took “{title}”",
+  "@teamChatLeadClaimedWorker": {
+    "description": "Team conversation, lead line: a worker claimed a step (no name reported)",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadPushed": "Changes for “{title}” are on a branch",
+  "@teamChatLeadPushed": {
+    "description": "Team conversation, lead line: a step's change was pushed to a branch",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadReview": "Handed “{title}” to review",
+  "@teamChatLeadReview": {
+    "description": "Team conversation, lead line: a step went to the reviewer (merge queue)",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadMerged": "Merged “{title}”",
+  "@teamChatLeadMerged": {
+    "description": "Team conversation, lead line: a step was merged",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadStepFailed": "“{title}” failed",
+  "@teamChatLeadStepFailed": {
+    "description": "Team conversation, lead line: a step failed",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadStepCancelled": "“{title}” was cancelled",
+  "@teamChatLeadStepCancelled": {
+    "description": "Team conversation, lead line: a step was cancelled",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadNeedsYou": "Needs you: {question}",
+  "@teamChatLeadNeedsYou": {
+    "description": "Team conversation, lead line: the team asked the person something",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadTaskMerged": "Merged. The task is done.",
+  "@teamChatLeadTaskMerged": {
+    "description": "Team conversation, lead line: the whole task was merged"
+  },
+  "teamChatLeadTaskFinished": "The task is done.",
+  "@teamChatLeadTaskFinished": {
+    "description": "Team conversation, lead line: the task finished without a merge"
+  },
+  "teamChatLeadTaskFailed": "The task failed.",
+  "@teamChatLeadTaskFailed": {
+    "description": "Team conversation, lead line: the task failed"
+  },
+  "teamChatLeadTaskCancelled": "The task was cancelled.",
+  "@teamChatLeadTaskCancelled": {
+    "description": "Team conversation, lead line: the task was cancelled"
+  },
+  "teamChatAWorker": "A worker",
+  "@teamChatAWorker": {
+    "description": "Team conversation Now line: an unnamed worker"
+  },
+  "teamChatNowNotAnswering": "The team isn't answering",
+  "@teamChatNowNotAnswering": {
+    "description": "Team conversation Now line after 8 s without an answer from the team"
+  },
+  "teamChatNowPending": "Waiting for the team to pick it up · {elapsed}",
+  "@teamChatNowPending": {
+    "description": "Team conversation Now line: a task just given, not yet listed; elapsed time",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowFinished": "Finished",
+  "@teamChatNowFinished": {
+    "description": "Team conversation Now line: the task is over"
+  },
+  "teamChatNowNeedsYou": "Needs you · {question}",
+  "@teamChatNowNeedsYou": {
+    "description": "Team conversation Now line: something waits on the person",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowWaitingForWorker": "Waiting for a worker · waited {elapsed}",
+  "@teamChatNowWaitingForWorker": {
+    "description": "Team conversation Now line: no worker has started yet; how long it has waited",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowStartingPhone": "{name} is starting · can take a few minutes on a phone · {elapsed}",
+  "@teamChatNowStartingPhone": {
+    "description": "Team conversation Now line: a worker is starting on this phone (slow cold start); elapsed time",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowStarting": "{name} is starting · {elapsed}",
+  "@teamChatNowStarting": {
+    "description": "Team conversation Now line: a worker is starting; elapsed time",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowWorking": "{name} is working on “{title}” · {elapsed}",
+  "@teamChatNowWorking": {
+    "description": "Team conversation Now line: a worker is working on a step; elapsed time",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowReview": "Waiting for review · {elapsed}",
+  "@teamChatNowReview": {
+    "description": "Team conversation Now line: the work waits for the reviewer (merge); elapsed time",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatFamilyRunning": "running",
+  "@teamChatFamilyRunning": {
+    "description": "Team conversation family strip, screen reader: an agent is running"
+  },
+  "teamChatFamilyWaiting": "waiting",
+  "@teamChatFamilyWaiting": {
+    "description": "Team conversation family strip, screen reader: an agent is waiting"
+  },
+  "teamChatFamilyDone": "done",
+  "@teamChatFamilyDone": {
+    "description": "Team conversation family strip, screen reader: an agent is done"
+  },
+  "teamChatFamilyFailed": "failed",
+  "@teamChatFamilyFailed": {
+    "description": "Team conversation family strip, screen reader: an agent failed"
+  },
+  "teamChatStepsSummary": "{count, plural, =1{1 step} other{{count} steps}} · {done} done",
+  "@teamChatStepsSummary": {
+    "description": "Team conversation: the folded steps line",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      }
+    }
+  },
+  "teamChatComposerHint": "Message the team…",
+  "@teamChatComposerHint": {
+    "description": "Team conversation composer hint"
+  },
+  "teamChatComposerGoesTo": "Goes to {name} through the AI Team",
+  "@teamChatComposerGoesTo": {
+    "description": "Team conversation, under the composer: who the message reaches (name · role)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatComposerNobody": "No agent is on this task to message yet.",
+  "@teamChatComposerNobody": {
+    "description": "Team conversation, where the composer is: no worker and no planner to message"
+  },
+  "teamChatComposerCannot": "This team can't be messaged from here.",
+  "@teamChatComposerCannot": {
+    "description": "Team conversation, where the composer is: the team takes no messages from the phone"
+  },
+  "teamOpenTaskConversationHint": "The task and its workers, in the chat",
+  "@teamOpenTaskConversationHint": {
+    "description": "AI Team task page, supporting line of Open conversation: opens the task as a conversation"
   }
 }

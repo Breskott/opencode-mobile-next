@@ -30706,6 +30706,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Team'**
   String get teamTaskMark;
+
+  /// Chat, watching an AI Team worker: its conversation has no messages yet
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get chatWatchEmptyTitle;
+
+  /// Chat, watching an AI Team worker: body of the empty state
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation fills in as the agent works.'**
+  String get chatWatchEmptyBody;
+
+  /// Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team
+  ///
+  /// In en, this message translates to:
+  /// **'Watching {name} · {role} · AI Team'**
+  String teamWatchBanner(String name, String role);
+
+  /// Chat status line in watching mode when the agent has no name of its own: its role in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Watching the {role} · AI Team'**
+  String teamWatchBannerRole(String role);
+
+  /// Where the chat composer was, in watching mode: why there is no text field
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re watching. Your message goes to it through the AI Team, never into this conversation.'**
+  String get teamWatchNote;
+
+  /// Where the chat composer was, in watching mode, when the team takes no messages from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re watching. This team can\'t be messaged from here.'**
+  String get teamWatchNoteNoMessage;
+
+  /// Watching mode: the one action in place of the composer, for a worker
+  ///
+  /// In en, this message translates to:
+  /// **'Message the worker'**
+  String get teamWatchMessageWorker;
+
+  /// Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)
+  ///
+  /// In en, this message translates to:
+  /// **'Message this agent'**
+  String get teamWatchMessageAgent;
+
+  /// Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversation can\'t be read from the server this app is connected to, so this is the team\'s live output.'**
+  String get teamWatchFallbackUnreadable;
+
+  /// Live output opened instead of the agent's conversation: no matching conversation was found
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversation isn\'t on the server this app is connected to yet (it may still be starting, or the team runs on another computer), so this is the team\'s live output.'**
+  String get teamWatchFallbackNotFound;
+
+  /// AI Team: opens an agent's own conversation on the chat page (watching)
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get teamOpenConversation;
+
+  /// AI Team, supporting line of Open conversation: the agent's name or role
+  ///
+  /// In en, this message translates to:
+  /// **'Watch {name}\'s work in the chat'**
+  String teamOpenConversationHint(String name);
+
+  /// AI Team, Open conversation while the app looks for the agent's conversation on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Finding its conversation…'**
+  String get teamOpenConversationFinding;
+
+  /// Team conversation title when the task has no title
+  ///
+  /// In en, this message translates to:
+  /// **'Team task'**
+  String get teamChatUntitled;
+
+  /// Team conversation, under the title: where the team runs (On this phone, On pop-os)
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team · {host}'**
+  String teamChatSubtitle(String host);
+
+  /// Team conversation top bar: opens the AI Team page (tooltip)
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get teamChatOpenTeam;
+
+  /// Team conversation overflow menu: opens the task detail page
+  ///
+  /// In en, this message translates to:
+  /// **'Task details'**
+  String get teamChatTaskDetails;
+
+  /// Team conversation loading bar label
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the task'**
+  String get teamChatLoading;
+
+  /// Team conversation: the name over the lead's reply and in the family strip (the app writes it from the team's events)
+  ///
+  /// In en, this message translates to:
+  /// **'The team'**
+  String get teamChatLeadName;
+
+  /// Team conversation, lead line: the task left this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to the team'**
+  String get teamChatLeadSent;
+
+  /// Team conversation, lead reply before any event
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet. The team has not planned this task.'**
+  String get teamChatLeadNothingYet;
+
+  /// Team conversation, lead line: how many steps the task has
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Planned 1 step} other{Planned {count} steps}}'**
+  String teamChatLeadPlanned(int count);
+
+  /// Team conversation, lead line: a step was routed to the worker pool
+  ///
+  /// In en, this message translates to:
+  /// **'Sent “{title}” to the workers'**
+  String teamChatLeadRouted(String title);
+
+  /// Team conversation, lead line: a worker session started for a step
+  ///
+  /// In en, this message translates to:
+  /// **'Started a worker on “{title}”'**
+  String teamChatLeadStarting(String title);
+
+  /// Team conversation, lead line: a named worker claimed a step
+  ///
+  /// In en, this message translates to:
+  /// **'{name} took “{title}”'**
+  String teamChatLeadClaimed(String name, String title);
+
+  /// Team conversation, lead line: a worker claimed a step (no name reported)
+  ///
+  /// In en, this message translates to:
+  /// **'A worker took “{title}”'**
+  String teamChatLeadClaimedWorker(String title);
+
+  /// Team conversation, lead line: a step's change was pushed to a branch
+  ///
+  /// In en, this message translates to:
+  /// **'Changes for “{title}” are on a branch'**
+  String teamChatLeadPushed(String title);
+
+  /// Team conversation, lead line: a step went to the reviewer (merge queue)
+  ///
+  /// In en, this message translates to:
+  /// **'Handed “{title}” to review'**
+  String teamChatLeadReview(String title);
+
+  /// Team conversation, lead line: a step was merged
+  ///
+  /// In en, this message translates to:
+  /// **'Merged “{title}”'**
+  String teamChatLeadMerged(String title);
+
+  /// Team conversation, lead line: a step failed
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” failed'**
+  String teamChatLeadStepFailed(String title);
+
+  /// Team conversation, lead line: a step was cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” was cancelled'**
+  String teamChatLeadStepCancelled(String title);
+
+  /// Team conversation, lead line: the team asked the person something
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you: {question}'**
+  String teamChatLeadNeedsYou(String question);
+
+  /// Team conversation, lead line: the whole task was merged
+  ///
+  /// In en, this message translates to:
+  /// **'Merged. The task is done.'**
+  String get teamChatLeadTaskMerged;
+
+  /// Team conversation, lead line: the task finished without a merge
+  ///
+  /// In en, this message translates to:
+  /// **'The task is done.'**
+  String get teamChatLeadTaskFinished;
+
+  /// Team conversation, lead line: the task failed
+  ///
+  /// In en, this message translates to:
+  /// **'The task failed.'**
+  String get teamChatLeadTaskFailed;
+
+  /// Team conversation, lead line: the task was cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'The task was cancelled.'**
+  String get teamChatLeadTaskCancelled;
+
+  /// Team conversation Now line: an unnamed worker
+  ///
+  /// In en, this message translates to:
+  /// **'A worker'**
+  String get teamChatAWorker;
+
+  /// Team conversation Now line after 8 s without an answer from the team
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn\'t answering'**
+  String get teamChatNowNotAnswering;
+
+  /// Team conversation Now line: a task just given, not yet listed; elapsed time
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the team to pick it up · {elapsed}'**
+  String teamChatNowPending(String elapsed);
+
+  /// Team conversation Now line: the task is over
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get teamChatNowFinished;
+
+  /// Team conversation Now line: something waits on the person
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you · {question}'**
+  String teamChatNowNeedsYou(String question);
+
+  /// Team conversation Now line: no worker has started yet; how long it has waited
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a worker · waited {elapsed}'**
+  String teamChatNowWaitingForWorker(String elapsed);
+
+  /// Team conversation Now line: a worker is starting on this phone (slow cold start); elapsed time
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is starting · can take a few minutes on a phone · {elapsed}'**
+  String teamChatNowStartingPhone(String name, String elapsed);
+
+  /// Team conversation Now line: a worker is starting; elapsed time
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is starting · {elapsed}'**
+  String teamChatNowStarting(String name, String elapsed);
+
+  /// Team conversation Now line: a worker is working on a step; elapsed time
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is working on “{title}” · {elapsed}'**
+  String teamChatNowWorking(String name, String title, String elapsed);
+
+  /// Team conversation Now line: the work waits for the reviewer (merge); elapsed time
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for review · {elapsed}'**
+  String teamChatNowReview(String elapsed);
+
+  /// Team conversation family strip, screen reader: an agent is running
+  ///
+  /// In en, this message translates to:
+  /// **'running'**
+  String get teamChatFamilyRunning;
+
+  /// Team conversation family strip, screen reader: an agent is waiting
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get teamChatFamilyWaiting;
+
+  /// Team conversation family strip, screen reader: an agent is done
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get teamChatFamilyDone;
+
+  /// Team conversation family strip, screen reader: an agent failed
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get teamChatFamilyFailed;
+
+  /// Team conversation: the folded steps line
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 step} other{{count} steps}} · {done} done'**
+  String teamChatStepsSummary(int count, int done);
+
+  /// Team conversation composer hint
+  ///
+  /// In en, this message translates to:
+  /// **'Message the team…'**
+  String get teamChatComposerHint;
+
+  /// Team conversation, under the composer: who the message reaches (name · role)
+  ///
+  /// In en, this message translates to:
+  /// **'Goes to {name} through the AI Team'**
+  String teamChatComposerGoesTo(String name);
+
+  /// Team conversation, where the composer is: no worker and no planner to message
+  ///
+  /// In en, this message translates to:
+  /// **'No agent is on this task to message yet.'**
+  String get teamChatComposerNobody;
+
+  /// Team conversation, where the composer is: the team takes no messages from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'This team can\'t be messaged from here.'**
+  String get teamChatComposerCannot;
+
+  /// AI Team task page, supporting line of Open conversation: opens the task as a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'The task and its workers, in the chat'**
+  String get teamOpenTaskConversationHint;
 }
 
 class _AppLocalizationsDelegate
