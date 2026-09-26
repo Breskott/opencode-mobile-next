@@ -23101,5 +23101,29 @@
         "type": "int"
       }
     }
+  },
+  "kitTopBarBack": "Back",
+  "@kitTopBarBack": {
+    "description": "KitTopBar: the Back button at the start of a screen's top bar"
+  },
+  "kitTopBarClose": "Close",
+  "@kitTopBarClose": {
+    "description": "KitTopBar: the Close button at the end of a full-screen dialog's top bar"
+  },
+  "kitTopBarSearch": "Search",
+  "@kitTopBarSearch": {
+    "description": "KitShellControls: the glass search button in the shell's top controls, and the field-like search button in the PC sidebar header"
+  },
+  "kitTopBarSwitchServer": "Switch server",
+  "@kitTopBarSwitchServer": {
+    "description": "KitShellControls: what tapping the server pill does, read after the server name and its status word (\"Laptop, Connected, Switch server\")"
+  },
+  "kitTopBarSwitchProject": "Switch project",
+  "@kitTopBarSwitchProject": {
+    "description": "KitShellControls: what tapping the project switcher in the PC sidebar header does, read after the project name"
+  },
+  "kitTopBarMore": "More actions",
+  "@kitTopBarMore": {
+    "description": "KitTopBar: the name of the overflow menu opened from a top bar's More button"
   }
 }

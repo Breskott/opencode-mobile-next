@@ -20536,4 +20536,22 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitTopBarBack => 'Back';
+
+  @override
+  String get kitTopBarClose => 'Close';
+
+  @override
+  String get kitTopBarSearch => 'Search';
+
+  @override
+  String get kitTopBarSwitchServer => 'Switch server';
+
+  @override
+  String get kitTopBarSwitchProject => 'Switch project';
+
+  @override
+  String get kitTopBarMore => 'More actions';
 }

@@ -32782,6 +32782,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// KitTopBar: the Back button at the start of a screen's top bar
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get kitTopBarBack;
+
+  /// KitTopBar: the Close button at the end of a full-screen dialog's top bar
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get kitTopBarClose;
+
+  /// KitShellControls: the glass search button in the shell's top controls, and the field-like search button in the PC sidebar header
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get kitTopBarSearch;
+
+  /// KitShellControls: what tapping the server pill does, read after the server name and its status word ("Laptop, Connected, Switch server")
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server'**
+  String get kitTopBarSwitchServer;
+
+  /// KitShellControls: what tapping the project switcher in the PC sidebar header does, read after the project name
+  ///
+  /// In en, this message translates to:
+  /// **'Switch project'**
+  String get kitTopBarSwitchProject;
+
+  /// KitTopBar: the name of the overflow menu opened from a top bar's More button
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get kitTopBarMore;
 }
 
 class _AppLocalizationsDelegate
