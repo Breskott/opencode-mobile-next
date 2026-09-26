@@ -63,19 +63,26 @@ class FolderListException implements Exception {
 /// Ubuntu's root is `<app files>/linux/ubuntu` (BuiltinLinux.kt: `home =
 /// File(context.filesDir, "linux")`, `rootfs = File(home, "ubuntu")`, marked
 /// installed by `linux/ubuntu.ready`); `path_provider`'s support directory
-/// is that same `filesDir` on Android. proot binds nothing over `/root`, so
-/// what is under `<rootfs>/root` is exactly what Ubuntu sees there. Only
-/// `/dev`, `/proc` and `/sys` are bound from Android at run time; they are
-/// left out of the listing of `/`.
+/// is that same `filesDir` on Android. Projects live at `<app files>/projects`
+/// and proot binds them at `/root/projects`. Before native migration, the
+/// legacy rootfs folder is used instead. Retained projects can be browsed even
+/// after removing Ubuntu. `/dev`, `/proc` and `/sys` are runtime bindings and
+/// are left out of the listing of `/`.
 ///
 /// Links are never followed: an absolute link target means a path inside
 /// Ubuntu, which read from outside would point somewhere else on the phone.
 class BuiltinRootfsFolders {
-  BuiltinRootfsFolders({Future<Directory?> Function()? locate})
-    : _locate = locate ?? locateRootfs;
+  BuiltinRootfsFolders({
+    Future<Directory?> Function()? locate,
+    Future<Directory?> Function()? locateProjects,
+  }) : _locate = locate ?? locateRootfs,
+       _locateProjects =
+           locateProjects ?? (locate == null ? locateProjectStorage : _absent);
 
   final Future<Directory?> Function() _locate;
-  Directory? _rootfs;
+  final Future<Directory?> Function() _locateProjects;
+
+  static Future<Directory?> _absent() async => null;
 
   /// Folders bound from Android when Ubuntu runs: empty in the files.
   static const _boundAtRoot = {'dev', 'proc', 'sys'};
@@ -93,6 +100,19 @@ class BuiltinRootfsFolders {
     if (!await File('$home/ubuntu.ready').exists()) return null;
     final rootfs = Directory('$home/ubuntu');
     return await rootfs.exists() ? rootfs : null;
+  }
+
+  /// Android's retained project storage, independently of Ubuntu installation.
+  /// A supplied [BuiltinRootfsFolders] `locate` isolates custom filesystems;
+  /// supply `locateProjects` too to model the external project binding.
+  static Future<Directory?> locateProjectStorage() async {
+    if (!BuiltinLinux.supported) return null;
+    try {
+      final support = await getApplicationSupportDirectory();
+      return Directory('${support.path}/projects');
+    } catch (_) {
+      return null;
+    }
   }
 
   /// [path] as a plain absolute Ubuntu path (`/root/projects`), or null
@@ -125,22 +145,52 @@ class BuiltinRootfsFolders {
     if (ubuntuPath == null) {
       throw FolderListException(FolderListProblem.invalid, path);
     }
-    final rootfs = _rootfs ??= await _locate();
-    if (rootfs == null) {
+    try {
+      return await _list(ubuntuPath);
+    } on FileSystemException catch (error) {
+      throw FolderListException(_problemOf(error), error.toString());
+    }
+  }
+
+  Future<List<FolderEntry>> _list(String ubuntuPath) async {
+    // Resolve each time: native migration/removal can happen while this
+    // browser remains alive. Never retain a stale path into the old rootfs.
+    final projects = await _locateProjects();
+    final external = projects == null
+        ? null
+        : await _hostPath(projects.path, '/');
+    final rootfs = await _locate();
+    const projectsPath = BuiltinLinux.projectsDir;
+    final inProjects =
+        ubuntuPath == projectsPath || ubuntuPath.startsWith('$projectsPath/');
+    final virtualParent =
+        external != null && (ubuntuPath == '/' || ubuntuPath == '/root');
+    if (rootfs == null && !(external != null && inProjects) && !virtualParent) {
       throw const FolderListException(FolderListProblem.notInstalled);
     }
-    final host = await _hostPath(rootfs.path, ubuntuPath);
-    if (host == null) {
-      if (ubuntuPath == BuiltinLinux.projectsDir) return const [];
+    final String? host;
+    if (external != null && inProjects) {
+      host = await _hostPath(
+        external,
+        ubuntuPath.substring(projectsPath.length),
+      );
+    } else {
+      host = rootfs == null ? null : await _hostPath(rootfs.path, ubuntuPath);
+    }
+    if (host == null && !virtualParent) {
+      if (ubuntuPath == projectsPath) return const [];
       throw FolderListException(FolderListProblem.missing, ubuntuPath);
     }
     final entries = <FolderEntry>[];
-    try {
+    if (host != null) {
       await for (final entity in Directory(host).list(followLinks: false)) {
         if (entity is! Directory) continue; // Files and links are not shown.
         final name = entity.path.substring(entity.path.lastIndexOf('/') + 1);
         if (name.isEmpty || name.startsWith('.')) continue;
         if (ubuntuPath == '/' && _boundAtRoot.contains(name)) continue;
+        if (external != null && ubuntuPath == '/root' && name == 'projects') {
+          continue; // Show the binding, not the disposable mountpoint.
+        }
         entries.add(
           FolderEntry(
             name: name,
@@ -149,8 +199,19 @@ class BuiltinRootfsFolders {
           ),
         );
       }
-    } on FileSystemException catch (error) {
-      throw FolderListException(_problemOf(error), error.toString());
+    }
+    if (external != null && ubuntuPath == '/root') {
+      entries.add(
+        FolderEntry(
+          name: 'projects',
+          path: projectsPath,
+          isGit: await _hasGit(external),
+        ),
+      );
+    } else if (virtualParent &&
+        ubuntuPath == '/' &&
+        !entries.any((entry) => entry.name == 'root')) {
+      entries.add(const FolderEntry(name: 'root', path: '/root'));
     }
     entries.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -162,8 +223,9 @@ class BuiltinRootfsFolders {
   /// real folder (not a link). Null when a part of it is missing.
   static Future<String?> _hostPath(String rootfs, String ubuntuPath) async {
     var host = rootfs;
-    for (final segment in ubuntuPath.split('/').where((s) => s.isNotEmpty)) {
-      host = '$host/$segment';
+    final segments = ubuntuPath.split('/').where((s) => s.isNotEmpty);
+    for (final segment in ['', ...segments]) {
+      if (segment.isNotEmpty) host = '$host/$segment';
       final type = await FileSystemEntity.type(host, followLinks: false);
       if (type == FileSystemEntityType.notFound) return null;
       if (type == FileSystemEntityType.link) {

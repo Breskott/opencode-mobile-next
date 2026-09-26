@@ -24,8 +24,12 @@ import android.os.IBinder
 class BuiltinServerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
-            BuiltinLinux.get(applicationContext).stopAllServices()
-            stopSelf()
+            // Storage measurement/removal can hold the runtime lifecycle lock.
+            // Waiting for that lock (and stopping process trees) must not block UI.
+            Thread {
+                BuiltinLinux.get(applicationContext).stopAllServices()
+                stopSelf(startId)
+            }.start()
             return START_NOT_STICKY
         }
         createChannel()

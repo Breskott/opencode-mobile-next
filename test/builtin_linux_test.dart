@@ -90,7 +90,7 @@ void main() {
         'startServer',
         'stopServer',
         'serverLog',
-        'uninstall',
+        'removeRuntime',
       ]);
       expect(calls[1].arguments, {'script': 'serve', 'port': 4097});
       expect(calls[3].arguments, {'tailBytes': 100});

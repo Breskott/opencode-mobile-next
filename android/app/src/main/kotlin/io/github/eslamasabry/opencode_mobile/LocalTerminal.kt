@@ -195,31 +195,34 @@ class LocalTerminal private constructor(private val context: Context) {
     }
 
     /** Starts `bash -l` in Ubuntu on a new PTY of [rows] x [cols]. */
-    @Synchronized
     fun start(rows: Int, cols: Int): Session {
         val linux = BuiltinLinux.get(context)
-        check(linux.installed) { "Ubuntu is not installed in the app yet" }
-        linux.nameAndroidGroups()
-        val argv = linux.prootCommand(listOf("/bin/bash", "-l"))
-        val env = (System.getenv() + linux.prootEnvironment())
-            .map { (key, value) -> "$key=$value" }
-        val pid = IntArray(1)
-        val fd = PtyAccess.createSubprocess(
-            linux.prootPath,
-            context.filesDir.absolutePath,
-            argv.toTypedArray(),
-            env.toTypedArray(),
-            pid,
-            rows.coerceAtLeast(1),
-            cols.coerceAtLeast(1),
-            0,
-            0,
-        )
-        val session = Session(nextId++, pid[0], fd, ParcelFileDescriptor.adoptFd(fd))
-        sessions[session.id] = session
-        session.startThreads()
-        Log.i(TAG, "shell ${session.id} started as pid ${session.pid}")
-        return session
+        return synchronized(linux) {
+            synchronized(this) {
+                check(linux.installed) { "Ubuntu is not installed in the app yet" }
+                linux.nameAndroidGroups()
+                val argv = linux.prootCommand(listOf("/bin/bash", "-l"))
+                val env = (System.getenv() + linux.prootEnvironment())
+                    .map { (key, value) -> "$key=$value" }
+                val pid = IntArray(1)
+                val fd = PtyAccess.createSubprocess(
+                    linux.prootPath,
+                    context.filesDir.absolutePath,
+                    argv.toTypedArray(),
+                    env.toTypedArray(),
+                    pid,
+                    rows.coerceAtLeast(1),
+                    cols.coerceAtLeast(1),
+                    0,
+                    0,
+                )
+                val session = Session(nextId++, pid[0], fd, ParcelFileDescriptor.adoptFd(fd))
+                sessions[session.id] = session
+                session.startThreads()
+                Log.i(TAG, "shell ${session.id} started as pid ${session.pid}")
+                session
+            }
+        }
     }
 
     @Synchronized

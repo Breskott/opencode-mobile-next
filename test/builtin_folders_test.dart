@@ -145,6 +145,179 @@ void main() {
     expect(linux.calls, isEmpty);
   });
 
+  group('retained project binding', () {
+    late Directory projects;
+    late BuiltinRootfsFolders folders;
+
+    setUp(() {
+      projects = Directory('${temp.path}/projects');
+      folders = BuiltinRootfsFolders(
+        locate: () async => await rootfs.exists() ? rootfs : null,
+        locateProjects: () async => projects,
+      );
+    });
+
+    void migrate() {
+      Directory('${rootfs.path}/root/projects').renameSync(projects.path);
+    }
+
+    test(
+      'same browser follows migration and preserved projects after removal',
+      () async {
+        expect(
+          (await folders.list('/root/projects')).map((entry) => entry.name),
+          ['demo', 'Notes', 'wt'],
+        );
+        migrate();
+        rootfs.deleteSync(recursive: true);
+
+        final linux = _StoppedLinux();
+        final browser = BuiltinFolders(linux, rootfs: folders);
+        expect(
+          (await browser.list(
+            '/root/projects',
+          )).map((entry) => (entry.path, entry.isGit)),
+          [
+            ('/root/projects/demo', true),
+            ('/root/projects/Notes', false),
+            ('/root/projects/wt', true),
+          ],
+        );
+        expect(
+          (await browser.list(
+            '/root/projects/demo',
+          )).map((entry) => entry.path),
+          ['/root/projects/demo/src'],
+        );
+        expect(linux.calls, isEmpty);
+
+        // A subsequent setup uses the retained binding over an empty mountpoint.
+        folder('/root/projects');
+        expect(
+          (await browser.list('/root/projects')).map((entry) => entry.name),
+          ['demo', 'Notes', 'wt'],
+        );
+      },
+    );
+
+    test(
+      'root navigation includes projects without a mountpoint or runtime',
+      () async {
+        migrate();
+        Directory('${projects.path}/.git').createSync();
+        expect(
+          (await folders.list(
+            '/root',
+          )).map((entry) => (entry.path, entry.isGit)),
+          [('/root/projects', true)],
+        );
+        rootfs.deleteSync(recursive: true);
+        expect((await folders.list('/')).map((entry) => entry.path), ['/root']);
+        expect((await folders.list('/root')).map((entry) => entry.path), [
+          '/root/projects',
+        ]);
+      },
+    );
+
+    test(
+      'external projects override the legacy path, with no duplicate row',
+      () async {
+        Directory('${projects.path}/retained').createSync(recursive: true);
+        expect((await folders.list('/root')).map((entry) => entry.path), [
+          '/root/projects',
+        ]);
+        expect(
+          (await folders.list('/root/projects')).map((entry) => entry.path),
+          ['/root/projects/retained'],
+        );
+        await expectLater(
+          folders.list('/root/projects/demo'),
+          throwsA(
+            isA<FolderListException>().having(
+              (error) => error.problem,
+              'problem',
+              FolderListProblem.missing,
+            ),
+          ),
+        );
+        folder('/root/projects-other/legacy');
+        expect(
+          (await folders.list(
+            '/root/projects-other',
+          )).map((entry) => entry.name),
+          ['legacy'],
+        );
+      },
+    );
+
+    test('external storage never follows links or traversal paths', () async {
+      migrate();
+      for (final path in [
+        '/root/projects/alias',
+        '/root/projects/alias/child',
+      ]) {
+        await expectLater(
+          folders.list(path),
+          throwsA(
+            isA<FolderListException>().having(
+              (error) => error.problem,
+              'problem',
+              FolderListProblem.linked,
+            ),
+          ),
+        );
+      }
+      await expectLater(
+        folders.list('/root/projects/../outside'),
+        throwsA(
+          isA<FolderListException>().having(
+            (error) => error.problem,
+            'problem',
+            FolderListProblem.invalid,
+          ),
+        ),
+      );
+      projects.renameSync('${temp.path}/other');
+      Link(projects.path).createSync('${temp.path}/other');
+      await expectLater(
+        folders.list('/root/projects'),
+        throwsA(
+          isA<FolderListException>().having(
+            (error) => error.problem,
+            'problem',
+            FolderListProblem.linked,
+          ),
+        ),
+      );
+    });
+
+    test('missing nested folders and removed storage stay missing', () async {
+      migrate();
+      rootfs.deleteSync(recursive: true);
+      await expectLater(
+        folders.list('/root/projects/missing'),
+        throwsA(
+          isA<FolderListException>().having(
+            (error) => error.problem,
+            'problem',
+            FolderListProblem.missing,
+          ),
+        ),
+      );
+      projects.deleteSync(recursive: true);
+      await expectLater(
+        folders.list('/root/projects'),
+        throwsA(
+          isA<FolderListException>().having(
+            (error) => error.problem,
+            'problem',
+            FolderListProblem.notInstalled,
+          ),
+        ),
+      );
+    });
+  });
+
   test('without Ubuntu\'s files, only the projects folder is listed, through '
       'Ubuntu', () async {
     final linux = _StoppedLinux()..projects = ['hello'];
