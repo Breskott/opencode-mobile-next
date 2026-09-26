@@ -2,11 +2,12 @@
 // §18.2: G1, G2, G7, G17 and G21), in one place so every gate counts the same
 // thing the same way.
 //
-// Two gates read this file:
-// - test/design_standard_test.dart (G3x) holds every screen in `_migrated`
-//   at zero for every pattern that applies to its path;
-// - test/kit_ratchet_test.dart ('G1', 'G2', 'G7', 'G17', 'G21') keeps a
-//   per-file baseline over the whole of lib/ that only shrinks.
+// Today only test/design_standard_test.dart (G3x) reads this file: it holds
+// every screen in `_migrated` at zero for every pattern that applies to its
+// path. The whole-lib/ ratchets in test/kit_ratchet_test.dart do not share
+// the list yet: its G1 keeps its own `_g1PatternNames` (the same names as
+// [kitG1Names]), and G2, G7, G17 and G21 are not built. Their owners are
+// meant to import this file rather than copy it.
 //
 // A pattern knows where it applies ([KitPattern.appliesTo]) and how to count
 // itself in comment-stripped source ([KitPattern.count]); it knows nothing
@@ -203,6 +204,13 @@ int Function(String) _calls(String start, bool Function(String args) test) {
 
 /// A numeric literal that is not part of a name or a member access.
 final _numericLiteral = RegExp(r'(?<![\w.$])\d');
+
+/// A top-level `width:` or `height:` argument with a numeric literal, in
+/// any position and across lines (dart format splits long calls). A nested
+/// call in `child:` is judged as its own call, not as this one's.
+bool _numericSize(String args) => kitSplitArguments(
+  args,
+).any((arg) => RegExp(r'^(?:width|height)\s*:\s*\d').hasMatch(arg));
 
 const _edgeInsetsCall =
     r'\bEdgeInsets(?:Directional)?\.(?:all|only|symmetric|fromLTRB|fromSTEB)\(';
@@ -517,7 +525,7 @@ final kitG21Patterns = <KitPattern>[
   _g21Literal('SizedBox(width|height: <n>)', const [
     'LAY-7',
     'KIT-9',
-  ], _re(r'\bSizedBox\((?:width|height):\s*\d')),
+  ], _calls(r'\bSizedBox\(', _numericSize)),
   _g21OutsideKit('BoxShadow(', const ['LOOK-20'], r'\bBoxShadow\('),
   _g21OutsideKit('boxShadow:', const ['LOOK-20'], r'\bboxShadow:'),
   _g21OutsideKit('shadows: [', const [

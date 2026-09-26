@@ -15,16 +15,20 @@
 // for a kit one lists it in [_retired] so it cannot come back.
 //
 // G3x (docs/ux-system/revamp/STANDARDS.md §18.2, TEST-10): [_forbidden] also
-// holds every G1, G2, G7, G17 and G21 pattern (test/support/kit_patterns.dart,
-// shared with test/kit_ratchet_test.dart), each counted where its scope says
-// it applies. A screen migrated on or after 2026-09-26 holds all of them at
-// zero and also has a `<golden>_ar_dark.png`. The screens migrated before
-// that date carry their counts in test/design_standard_baseline.json, which
-// only shrinks: a count may fall, never rise, and no entry is ever added.
-// When counts fall the test prints the smaller baseline to commit;
+// holds every G1, G2, G7, G17 and G21 pattern (test/support/kit_patterns.dart),
+// each counted where its scope says it applies. A screen migrated on or after
+// 2026-09-26 holds all of them at zero and also has a `<golden>_ar_dark.png`.
+// The screens migrated before that date are listed in [_grandfathered] and
+// carry their counts in test/design_standard_baseline.json, which only
+// shrinks: a count may fall, never rise, and no label outside
+// [_grandfathered] may appear in it. An entry leaves `_migrated` only when its
+// file is deleted (TEST-10). When counts fall the test prints the smaller
+// baseline to commit;
 //   DESIGN_STANDARD_WRITE=1 flutter test test/design_standard_test.dart
-// writes it (lowering counts and dropping entries no longer migrated, never
-// adding one). Then run it again without the variable and commit the file.
+// writes it (lowering counts and dropping entries whose file is gone, never
+// adding one). Write mode refuses to run when the baseline file is missing:
+// restore it with `git checkout -- test/design_standard_baseline.json`. Then
+// run it again without the variable and commit the file.
 import 'dart:convert';
 import 'dart:io';
 
@@ -339,6 +343,71 @@ final _forbidden = <String, KitPattern>{
 
 const _baselinePath = 'test/design_standard_baseline.json';
 
+/// The 59 labels (path, or path#Class) migrated before [_g3xSince]: the
+/// only ones the baseline may hold. Never grows; a label leaves only when its
+/// file is deleted (TEST-10). Every other migrated entry is absolute.
+const _grandfathered = <String>{
+  'lib/ui/kit/scenes/states_scenes.dart',
+  'lib/ui/kit/scenes/states_working_scene.dart',
+  'lib/ui/kit/scenes/team_discover_scenes.dart',
+  'lib/ui/screens/about_screen.dart',
+  'lib/ui/screens/app_diagnostics_screen.dart',
+  'lib/ui/screens/chat/attention_card.dart',
+  'lib/ui/screens/chat/chat_states.dart',
+  'lib/ui/screens/chat/empty_chat.dart',
+  'lib/ui/screens/chat/message_view.dart#_AssistantErrorRow',
+  'lib/ui/screens/chat/message_view.dart#_ErrorActionCard',
+  'lib/ui/screens/chat/permission_sheet.dart',
+  'lib/ui/screens/perf_trace_section.dart',
+  'lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart',
+  'lib/ui/screens/phone_setup/phone_setup_hero.dart',
+  'lib/ui/screens/phone_setup/phone_setup_progress_screen.dart',
+  'lib/ui/screens/phone_setup/phone_setup_ready_screen.dart',
+  'lib/ui/screens/phone_setup/phone_setup_start_screen.dart',
+  'lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart',
+  'lib/ui/screens/servers_screen.dart',
+  'lib/ui/screens/settings/default_shell_row.dart',
+  'lib/ui/screens/settings/notifications_settings_screen.dart',
+  'lib/ui/screens/settings/personal_settings_screens.dart',
+  'lib/ui/screens/settings/plugins_screen.dart#PluginsSettingsScreen',
+  'lib/ui/screens/settings/plugins_screen.dart#_PluginsSettingsScreenState',
+  'lib/ui/screens/settings/server_plugins_section.dart',
+  'lib/ui/screens/settings/server_settings_screen.dart',
+  'lib/ui/screens/settings_screen.dart',
+  'lib/ui/screens/team/agent_output_screen.dart',
+  'lib/ui/screens/team/agent_screen.dart',
+  'lib/ui/screens/team/gate_sheet.dart',
+  'lib/ui/screens/team/merge_section.dart',
+  'lib/ui/screens/team/run_screen.dart',
+  'lib/ui/screens/team/start_run_sheet.dart',
+  'lib/ui/screens/team/team_agents_screen.dart',
+  'lib/ui/screens/team/team_home_screen.dart',
+  'lib/ui/screens/team/team_intro_screen.dart',
+  'lib/ui/screens/team/team_needs_you.dart',
+  'lib/ui/screens/team/team_states.dart',
+  'lib/ui/screens/team/work_sheet.dart',
+  'lib/ui/screens/termux_setup_screen.dart',
+  'lib/ui/screens/workspace_screen.dart',
+  'lib/ui/widgets/connection_status_banner.dart',
+  'lib/ui/widgets/first_reply_notify_card.dart',
+  'lib/ui/widgets/folder_browser.dart',
+  'lib/ui/widgets/local_server_row.dart',
+  'lib/ui/widgets/managed_server_recovery_option.dart',
+  'lib/ui/widgets/nudge_card.dart',
+  'lib/ui/widgets/other_projects_panel.dart',
+  'lib/ui/widgets/other_servers_panel.dart',
+  'lib/ui/widgets/phone_server_card.dart',
+  'lib/ui/widgets/saved_server_connection_card.dart',
+  'lib/ui/widgets/setup_progress_view.dart',
+  'lib/ui/widgets/team_agent_row.dart',
+  'lib/ui/widgets/team_card.dart',
+  'lib/ui/widgets/team_discover.dart',
+  'lib/ui/widgets/team_moments.dart',
+  'lib/ui/widgets/termux_phone_tools.dart',
+  'lib/ui/widgets/termux_running_server_entry.dart',
+  'lib/ui/widgets/work_status_line.dart',
+};
+
 /// The date G3x took effect: a migrated entry absent from the baseline was
 /// added on or after it.
 const _g3xSince = '2026-09-26';
@@ -448,8 +517,13 @@ List<String> _ratchetProblems(
   return problems;
 }
 
+/// The file part of a baseline label (`path` or `path#Class`).
+String _labelPath(String label) => label.split('#').first;
+
 /// The smaller baseline when [current] is below [baseline] somewhere, else
-/// null. Never adds an entry; drops entries no longer migrated.
+/// null. Never adds an entry; drops an entry only when its file is gone (an
+/// entry that left `_migrated` while its file exists is kept, and the test
+/// fails on it).
 Map<String, Map<String, int>>? _shrunk(
   Map<String, Map<String, int>> current,
   Map<String, Map<String, int>> baseline,
@@ -459,7 +533,11 @@ Map<String, Map<String, int>>? _shrunk(
   for (final MapEntry(key: label, value: base) in baseline.entries) {
     final counts = current[label];
     if (counts == null) {
-      changed = true;
+      if (File(_labelPath(label)).existsSync()) {
+        next[label] = base;
+      } else {
+        changed = true;
+      }
       continue;
     }
     final kept = <String, int>{};
@@ -479,25 +557,42 @@ void main() {
   final current = _currentCounts();
   var baseline = _loadBaseline();
   if (writeMode) {
-    // The first run writes every migrated entry; later runs only lower
-    // counts and drop entries, never add one.
-    final next = baseline == null
-        ? current
-        : _shrunk(current, baseline) ?? baseline;
-    File(_baselinePath).writeAsStringSync(_encodeBaseline(next));
-    baseline = next;
-    stdout.writeln(
-      'DESIGN_STANDARD_WRITE=1: wrote $_baselinePath (${next.length})',
+    // Only lowers counts and drops entries whose file is gone; never adds
+    // one, and never recreates a missing file (that would baseline entries
+    // migrated after [_g3xSince]).
+    if (baseline == null) {
+      stdout.writeln(
+        'DESIGN_STANDARD_WRITE=1: refusing to write, $_baselinePath is '
+        'missing (restore it from git; write mode only lowers counts)',
+      );
+    } else {
+      final next = _shrunk(current, baseline) ?? baseline;
+      File(_baselinePath).writeAsStringSync(_encodeBaseline(next));
+      baseline = next;
+      stdout.writeln(
+        'DESIGN_STANDARD_WRITE=1: wrote $_baselinePath (${next.length})',
+      );
+    }
+  }
+
+  /// The baseline, or a failure that says how to get it back.
+  Map<String, Map<String, int>> requireBaseline() {
+    expect(
+      baseline,
+      isNotNull,
+      reason:
+          '$_baselinePath is missing: restore it from git '
+          '(it is never regenerated)',
     );
+    return baseline!;
   }
 
   test('G3x: migrated screens hold every forbidden pattern at zero '
       '(or below their baseline)', () {
-    expect(baseline, isNotNull, reason: '$_baselinePath is missing');
     final fileCounts = {
       for (final path in _migrated.keys) path: current[path]!,
     };
-    final problems = _ratchetProblems(fileCounts, baseline!);
+    final problems = _ratchetProblems(fileCounts, requireBaseline());
     expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
   });
 
@@ -517,17 +612,30 @@ void main() {
       for (final MapEntry(key: label, value: counts) in current.entries)
         if (label.contains('#')) label: counts,
     };
-    final problems = _ratchetProblems(classCounts, baseline!);
+    final problems = _ratchetProblems(classCounts, requireBaseline());
     expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
   });
 
   test('G3x: the baseline only shrinks and names only migrated entries', () {
+    expect(
+      _grandfathered.length,
+      lessThanOrEqualTo(59),
+      reason: '_grandfathered never grows',
+    );
     final problems = <String>[];
-    for (final MapEntry(key: label, value: counts) in baseline!.entries) {
-      if (!current.containsKey(label)) {
+    for (final MapEntry(key: label, value: counts)
+        in requireBaseline().entries) {
+      if (!_grandfathered.contains(label)) {
         problems.add(
-          '$label is in the baseline but not migrated: drop it '
-          '(TEST-10: an entry leaves only when its file is deleted)',
+          '$label is in the baseline but was not migrated before '
+          '$_g3xSince: remove it (a new entry starts at zero; TEST-10, '
+          'PROC-13)',
+        );
+      }
+      if (!current.containsKey(label) && File(_labelPath(label)).existsSync()) {
+        problems.add(
+          '$label left _migrated but its file still exists: put it back in '
+          '_migrated (TEST-10: an entry leaves only when its file is deleted)',
         );
       }
       for (final id in counts.keys) {
@@ -535,7 +643,7 @@ void main() {
       }
     }
     expect(problems, isEmpty);
-    final smaller = _shrunk(current, baseline);
+    final smaller = _shrunk(current, requireBaseline());
     if (smaller != null) {
       stdout.writeln(
         '--- G3x: counts fell; commit this as $_baselinePath '
@@ -556,7 +664,7 @@ void main() {
     };
     final missing = <String>[];
     for (final MapEntry(key: label, value: names) in entries.entries) {
-      if (baseline!.containsKey(label)) continue;
+      if (requireBaseline().containsKey(label)) continue;
       final found = names.any(
         (name) => File('test/goldens/${name}_ar_dark.png').existsSync(),
       );
@@ -682,6 +790,13 @@ KitStatusMark(tone: AppStatusTone.attention);
 const TextStyle(fontSize: 13);
 BorderRadius.circular(12);
 const SizedBox(height: 8);
+SizedBox(
+  key: const Key('k'),
+  width: 16,
+  height: 16,
+  child: const Icon(AppIcons.check),
+);
+SizedBox(child: SizedBox(height: 4));
 const Icon(AppIcons.check, size: 18);
 const Icon(AppIcons.check, size: 20);
 // const TextStyle(fontSize: 99);
@@ -702,7 +817,9 @@ const Icon(AppIcons.check, size: 20);
         'G21 TextStyle(': 1,
         'G21 BorderRadius.circular(<n>': 1,
         'G21 EdgeInsets(<n>)': 3,
-        'G21 SizedBox(width|height: <n>)': 1,
+        // One line, split across lines after `key:`, and only the inner
+        // call of a nested pair.
+        'G21 SizedBox(width|height: <n>)': 3,
         'G21 Icon size not 20/22/24': 1,
       });
     });

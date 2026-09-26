@@ -130,7 +130,7 @@
       "G17 .textTheme.": 11,
       "G2 showConfirmSheet(": 2,
       "G21 EdgeInsets(<n>)": 18,
-      "G21 SizedBox(width|height: <n>)": 24,
+      "G21 SizedBox(width|height: <n>)": 25,
       "G21 TextStyle(": 3
     },
     "lib/ui/screens/settings/default_shell_row.dart": {
@@ -158,7 +158,7 @@
       "G21 Gradient(": 1,
       "G21 Icon size not 20/22/24": 1,
       "G21 KitGlass(|GlassSurface(": 1,
-      "G21 SizedBox(width|height: <n>)": 3,
+      "G21 SizedBox(width|height: <n>)": 5,
       "G21 disableAnimationsOf": 1,
       "G21 withOpacity(|Opacity(": 1
     },
@@ -180,7 +180,7 @@
       "G2 showConfirmSheet(": 1,
       "G21 .toUpperCase()": 2,
       "G21 EdgeInsets(<n>)": 5,
-      "G21 SizedBox(width|height: <n>)": 6,
+      "G21 SizedBox(width|height: <n>)": 7,
       "G21 TextStyle(": 4,
       "G7 EdgeInsets.fromLTRB asymmetric": 1
     },
@@ -337,7 +337,7 @@
       "G2 showConfirmSheet(": 3,
       "G21 EdgeInsets(<n>)": 9,
       "G21 Icon size not 20/22/24": 6,
-      "G21 SizedBox(width|height: <n>)": 7,
+      "G21 SizedBox(width|height: <n>)": 8,
       "G21 TextStyle(": 5,
       "G21 disableAnimationsOf": 1,
       "G21 fontSize:": 2,
