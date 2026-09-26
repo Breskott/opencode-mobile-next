@@ -5,6 +5,7 @@
 // unknown ids do not break it, chips grow with the text, and tapping a
 // node (or its semantics button) reports the id.
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,17 @@ const _six = [
   ),
   WorkGraphNode(id: 'f', title: 'Docs', state: WorkState.queued),
 ];
+
+/// [KitZoom]'s own [GestureDetector] carries `onDoubleTap` alongside
+/// `onTap`/`onScaleStart` (KitImage.md): Flutter's gesture arena then holds
+/// a tap open for `kDoubleTapTimeout` before resolving it as a single tap,
+/// even for a descendant's own recognizer, so a test must wait that out
+/// (a plain `pumpAndSettle` never does: nothing is animating while the
+/// arena's timer runs).
+Future<void> _tapThroughZoom(WidgetTester tester, Offset point) async {
+  await tester.tapAt(point);
+  await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 1));
+}
 
 void main() {
   group('WorkGraphLayout', () {
@@ -211,21 +223,26 @@ void main() {
         findsOneWidget,
       );
       // The graph is smaller than the viewport: shown at 1x, centred.
+      // 368x368: KitWorkGraph.md's 48dp node floor (LAY-9) makes chips
+      // taller than the retired 44dp default, so the canvas is taller too
+      // (368, not 352); KitZoom's own canvas fit has no extra margin
+      // (KitImage.md), unlike the retired WorkGraph._fit's 12dp one.
       final fitted = transform.value.clone();
       expect(fitted.storage[0], closeTo(1, 1e-9));
       expect(fitted.getTranslation().x, closeTo((800 - 368) / 2, 1e-9));
-      expect(fitted.getTranslation().y, closeTo((600 - 352) / 2, 1e-9));
+      expect(fitted.getTranslation().y, closeTo((600 - 368) / 2, 1e-9));
 
-      final layout = WorkGraphLayout.compute(_six);
+      final layout = WorkGraphLayout.compute(_six, nodeSize: const Size(156, 48));
       final origin = tester.getTopLeft(find.byType(WorkGraph));
       Offset onScreen(String id) =>
           origin +
           MatrixUtils.transformPoint(transform.value, layout.rects[id]!.center);
-      await tester.tapAt(onScreen('c'));
+      await _tapThroughZoom(tester, onScreen('c'));
       await tester.pumpAndSettle();
       expect(tapped, ['c']);
       // Between the chips nothing fires.
-      await tester.tapAt(
+      await _tapThroughZoom(
+        tester,
         origin +
             MatrixUtils.transformPoint(transform.value, const Offset(184, 38)),
       );
@@ -264,8 +281,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       final scale = transform.value.storage[0];
-      expect(scale, closeTo((320 - 24) / 368, 1e-9));
-      expect(transform.value.getTranslation().x, closeTo(12, 1e-9));
+      // KitZoom's canvas fit has no extra margin (KitImage.md): the width
+      // is the binding constraint, so the graph sits flush.
+      expect(scale, closeTo(320 / 368, 1e-9));
+      expect(transform.value.getTranslation().x, closeTo(0, 1e-9));
       expect(scale, greaterThanOrEqualTo(.2));
       expect(tester.takeException(), isNull);
     });

@@ -8,6 +8,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_image.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -526,15 +528,13 @@ void main() {
     final (controller, _) = await boot();
     await pumpRun(tester, controller, 'oc-xru', size: const Size(800, 900));
     expect(key('team-run-work-graph'), findsOneWidget);
-    final viewer = tester.widget<InteractiveViewer>(
-      key('team-work-graph-viewer'),
-    );
-    final transform = viewer.transformationController!.value;
+    final viewer = tester.widget<KitZoom>(key('team-work-graph-viewer'));
+    final transform = viewer.controller!.value;
     final nodes = [
       for (final item in controller.snapshot.work)
         if (item.runId == 'oc-xru') WorkGraphNode.of(item),
     ];
-    final layout = WorkGraphLayout.compute(nodes);
+    final layout = WorkGraphLayout.compute(nodes, nodeSize: const Size(156, 48));
     expect(layout.blockedChain, {
       'w-work-a',
       'w-blocked',
@@ -546,7 +546,11 @@ void main() {
     final origin = tester.getTopLeft(key('team-work-graph-canvas'));
     final scale = transform.storage[0];
     expect(scale, lessThanOrEqualTo(1));
+    // KitZoom's own GestureDetector carries onDoubleTap alongside onTap
+    // (KitImage.md): the gesture arena holds a tap open for
+    // kDoubleTapTimeout before resolving it as a single tap.
     await tester.tapAt(origin + layout.rects['w-input']!.center * scale);
+    await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 1));
     await tester.pumpAndSettle();
     expect(key('team-work-sheet-w-input'), findsOneWidget);
     expect(

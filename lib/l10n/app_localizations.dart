@@ -32063,6 +32063,36 @@ abstract class AppLocalizations {
   /// **'{action} · Ctrl+{key}'**
   String kitZoomShortcut(String action, String key);
 
+  /// KitWorkGraph: the viewer's accessibility label, and (in layers) KitZoom's zoom-level announcement subject
+  ///
+  /// In en, this message translates to:
+  /// **'Work graph'**
+  String get kitWorkGraph;
+
+  /// KitWorkGraph: the inline empty state's title when the caller gives no emptyText
+  ///
+  /// In en, this message translates to:
+  /// **'No work items yet'**
+  String get kitWorkGraphEmpty;
+
+  /// KitWorkGraph: one node's accessibility label, the item's title and its state word
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, {state}'**
+  String kitWorkGraphNode(String title, String state);
+
+  /// KitWorkGraph: a row's supporting line and a node's accessibility hint, naming the one item it needs
+  ///
+  /// In en, this message translates to:
+  /// **'needs {title}'**
+  String kitWorkGraphNeeds(String title);
+
+  /// KitWorkGraph: a row's supporting line and a node's accessibility hint when it needs more than one item, naming the first and counting the rest
+  ///
+  /// In en, this message translates to:
+  /// **'needs {title} and {count, plural, =1{1} other{{count}}} more'**
+  String kitWorkGraphNeedsMore(String title, int count);
+
   /// Kit menu: the popup menu's default name for a screen reader, when the caller gives none
   ///
   /// In en, this message translates to:
