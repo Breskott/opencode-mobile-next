@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 
+import '../ui/kit/kit_redact.dart';
+
 /// Whether a finished span completed or threw.
 enum PerfOutcome { ok, error }
 
@@ -166,8 +168,9 @@ class PerfTraceChanges extends ChangeNotifier {
 ///
 /// Spans nest through [Zone]s, so a request made while "location.select" is
 /// open records that as its parent without anything being passed around.
-/// Everything lands in an in-memory ring buffer (never persisted, never
-/// uploaded) that the diagnostics screen reads, and each finished span is
+/// Everything lands in an in-memory ring buffer that the diagnostics screen
+/// reads; an attached ReportProblemCapture can persist completed spans.
+/// Nothing is uploaded, and each finished span is
 /// also written to the device log as one `OCTRACE …` line, so
 /// `adb logcat -s flutter | grep OCTRACE` works on a release build.
 ///
@@ -192,6 +195,13 @@ abstract final class PerfTrace {
   static const Symbol _zoneKey = #ocPerfTraceSpan;
 
   static final PerfTraceChanges changes = PerfTraceChanges._();
+
+  static final _recorded = StreamController<PerfSpan>.broadcast(sync: true);
+
+  /// Completed spans delivered synchronously for crash-durable diagnostic
+  /// capture. Listeners must not start traces or throw; cancel when detached.
+  /// Existing history remains available through [spans].
+  static Stream<PerfSpan> get recorded => _recorded.stream;
 
   /// Monotonic microseconds since the tracer's clock started. The clock
   /// starts on first use, which main() makes the very first thing it does.
@@ -374,6 +384,17 @@ abstract final class PerfTrace {
 
   static void _add(PerfSpan span, {required int logMinMicros}) {
     if (capacity <= 0) return;
+    span = PerfSpan(
+      id: span.id,
+      name: KitRedact.text(span.name),
+      startMicros: span.startMicros,
+      durationMicros: span.durationMicros,
+      wallStart: span.wallStart,
+      parent: span.parent == null ? null : KitRedact.text(span.parent!),
+      attrs: span.attrs,
+      outcome: span.outcome,
+      isMark: span.isMark,
+    );
     _spans.addLast(span);
     while (_spans.length > capacity) {
       _spans.removeFirst();
@@ -382,9 +403,10 @@ abstract final class PerfTrace {
     if (sink != null &&
         (span.isMark || span.failed || span.durationMicros >= logMinMicros)) {
       try {
-        sink(span.toLogLine());
+        sink(KitRedact.text(span.toLogLine()));
       } catch (_) {}
     }
+    _recorded.add(span);
     changes._changed();
   }
 
@@ -467,7 +489,7 @@ abstract final class PerfTrace {
     for (final span in recent(recentCount)) {
       out.writeln('  ${span.toLogLine().substring(logTag.length + 1)}');
     }
-    return out.toString();
+    return KitRedact.text(out.toString());
   }
 
   // ---- scrubbing -----------------------------------------------------------
@@ -481,16 +503,16 @@ abstract final class PerfTrace {
   static void _putAttr(Map<String, String> into, String key, Object? value) {
     if (value == null) return;
     if (_secretKey.hasMatch(key)) {
-      into[key] = '[redacted]';
+      into[scrub(key)] = '[redacted]';
       return;
     }
-    into[key] = scrub(value.toString());
+    into[scrub(key)] = scrub(value.toString());
   }
 
   /// A value as it may be recorded: single line, bounded, with anything that
   /// looks like a token or a credential in a URL replaced.
   static String scrub(String value, {int limit = 80}) {
-    var safe = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    var safe = KitRedact.text(value).replaceAll(RegExp(r'\s+'), ' ').trim();
     safe = safe.replaceAll(RegExp(r'//[^/@\s]*@'), '//[redacted]@');
     safe = safe.replaceAll(_tokenLike, '[redacted]');
     if (safe.length > limit) safe = '${safe.substring(0, limit - 1)}…';
