@@ -32782,6 +32782,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// KitLogPanel: the panel's default header title
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get kitLogTitle;
+
+  /// KitLogPanel.fold: the fold's toggle words
+  ///
+  /// In en, this message translates to:
+  /// **'Show output'**
+  String get kitLogShowOutput;
+
+  /// KitLogPanel: header state words while the source is still writing
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get kitLogLive;
+
+  /// KitLogPanel: header state words once a live source has been quiet; age is a KitSince age ("4 min")
+  ///
+  /// In en, this message translates to:
+  /// **'Last line {age} ago'**
+  String kitLogQuiet(String age);
+
+  /// KitLogPanel: header state words once a live source has been quiet for under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'Last line {seconds} s ago'**
+  String kitLogQuietSeconds(int seconds);
+
+  /// KitLogPanel: header state words once the source finished
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get kitLogEnded;
+
+  /// KitLogPanel: header state words once the source finished with an exit code (code is a number, isolated left to right)
+  ///
+  /// In en, this message translates to:
+  /// **'Ended · exit {code}'**
+  String kitLogEndedExit(String code);
+
+  /// KitLogPanel: header state words once the source failed without an exit code
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get kitLogFailed;
+
+  /// KitLogPanel: header state words once the source failed with an exit code (code is a number, isolated left to right)
+  ///
+  /// In en, this message translates to:
+  /// **'Failed · exit {code}'**
+  String kitLogFailedExit(String code);
+
+  /// KitLogPanel: the body when the source has not written anything
+  ///
+  /// In en, this message translates to:
+  /// **'No output yet'**
+  String get kitLogEmpty;
+
+  /// KitLogPanel: the jump pill after the person scrolled up and new lines arrived
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new line} other{{count} new lines}}'**
+  String kitLogNewLines(int count);
+
+  /// KitLogPanel: the first row when older lines were dropped past the panel's limit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 earlier line not shown} other{{count} earlier lines not shown}}'**
+  String kitLogDropped(int count);
+
+  /// KitLogPanel: inline error when refreshing the output failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the output'**
+  String get kitLogReadFailed;
+
+  /// KitLogPanel: what a screen reader says for a warning line (never colour alone)
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: {line}'**
+  String kitLogWarningLine(String line);
+
+  /// KitLogPanel: what a screen reader says for an error line (never colour alone)
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {line}'**
+  String kitLogErrorLine(String line);
+
+  /// Kit: the toggle that wraps long lines in a log or code view
+  ///
+  /// In en, this message translates to:
+  /// **'Wrap lines'**
+  String get kitWrapLines;
 }
 
 class _AppLocalizationsDelegate

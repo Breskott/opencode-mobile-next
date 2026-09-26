@@ -20827,4 +20827,80 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitLogTitle => 'Output';
+
+  @override
+  String get kitLogShowOutput => 'Show output';
+
+  @override
+  String get kitLogLive => 'Live';
+
+  @override
+  String kitLogQuiet(String age) {
+    return 'Last line $age ago';
+  }
+
+  @override
+  String kitLogQuietSeconds(int seconds) {
+    return 'Last line $seconds s ago';
+  }
+
+  @override
+  String get kitLogEnded => 'Ended';
+
+  @override
+  String kitLogEndedExit(String code) {
+    return 'Ended · exit $code';
+  }
+
+  @override
+  String get kitLogFailed => 'Failed';
+
+  @override
+  String kitLogFailedExit(String code) {
+    return 'Failed · exit $code';
+  }
+
+  @override
+  String get kitLogEmpty => 'No output yet';
+
+  @override
+  String kitLogNewLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new lines',
+      one: '1 new line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitLogDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier lines not shown',
+      one: '1 earlier line not shown',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitLogReadFailed => 'Couldn\'t read the output';
+
+  @override
+  String kitLogWarningLine(String line) {
+    return 'Warning: $line';
+  }
+
+  @override
+  String kitLogErrorLine(String line) {
+    return 'Error: $line';
+  }
+
+  @override
+  String get kitWrapLines => 'Wrap lines';
 }

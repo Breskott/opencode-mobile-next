@@ -23101,5 +23101,109 @@
         "type": "int"
       }
     }
+  },
+  "kitLogTitle": "Output",
+  "@kitLogTitle": {
+    "description": "KitLogPanel: the panel's default header title"
+  },
+  "kitLogShowOutput": "Show output",
+  "@kitLogShowOutput": {
+    "description": "KitLogPanel.fold: the fold's toggle words"
+  },
+  "kitLogLive": "Live",
+  "@kitLogLive": {
+    "description": "KitLogPanel: header state words while the source is still writing"
+  },
+  "kitLogQuiet": "Last line {age} ago",
+  "@kitLogQuiet": {
+    "description": "KitLogPanel: header state words once a live source has been quiet; age is a KitSince age (\"4 min\")",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLogQuietSeconds": "Last line {seconds} s ago",
+  "@kitLogQuietSeconds": {
+    "description": "KitLogPanel: header state words once a live source has been quiet for under a minute",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "kitLogEnded": "Ended",
+  "@kitLogEnded": {
+    "description": "KitLogPanel: header state words once the source finished"
+  },
+  "kitLogEndedExit": "Ended · exit {code}",
+  "@kitLogEndedExit": {
+    "description": "KitLogPanel: header state words once the source finished with an exit code (code is a number, isolated left to right)",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLogFailed": "Failed",
+  "@kitLogFailed": {
+    "description": "KitLogPanel: header state words once the source failed without an exit code"
+  },
+  "kitLogFailedExit": "Failed · exit {code}",
+  "@kitLogFailedExit": {
+    "description": "KitLogPanel: header state words once the source failed with an exit code (code is a number, isolated left to right)",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLogEmpty": "No output yet",
+  "@kitLogEmpty": {
+    "description": "KitLogPanel: the body when the source has not written anything"
+  },
+  "kitLogNewLines": "{count, plural, =1{1 new line} other{{count} new lines}}",
+  "@kitLogNewLines": {
+    "description": "KitLogPanel: the jump pill after the person scrolled up and new lines arrived",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitLogDropped": "{count, plural, =1{1 earlier line not shown} other{{count} earlier lines not shown}}",
+  "@kitLogDropped": {
+    "description": "KitLogPanel: the first row when older lines were dropped past the panel's limit",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitLogReadFailed": "Couldn't read the output",
+  "@kitLogReadFailed": {
+    "description": "KitLogPanel: inline error when refreshing the output failed"
+  },
+  "kitLogWarningLine": "Warning: {line}",
+  "@kitLogWarningLine": {
+    "description": "KitLogPanel: what a screen reader says for a warning line (never colour alone)",
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLogErrorLine": "Error: {line}",
+  "@kitLogErrorLine": {
+    "description": "KitLogPanel: what a screen reader says for an error line (never colour alone)",
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "kitWrapLines": "Wrap lines",
+  "@kitWrapLines": {
+    "description": "Kit: the toggle that wraps long lines in a log or code view"
   }
 }
