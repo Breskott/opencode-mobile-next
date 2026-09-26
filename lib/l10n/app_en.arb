@@ -22529,5 +22529,124 @@
   "kitUndoWorking": "Undoing",
   "@kitUndoWorking": {
     "description": "Kit undo: spoken to a screen reader on the Undo action while the undo is still running (the action ignores taps until it finishes)"
+  },
+  "kitWorkRead": "read {count, plural, =1{1 file} other{{count} files}}",
+  "@kitWorkRead": {
+    "description": "KitWorkLine: a segment of the work summary chip: files read (the first segment is capitalised by the code)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkSearched": "searched {count, plural, =1{once} other{{count} times}}",
+  "@kitWorkSearched": {
+    "description": "KitWorkLine: a segment of the work summary chip: searches (glob, grep)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkListed": "listed {count, plural, =1{1 folder} other{{count} folders}}",
+  "@kitWorkListed": {
+    "description": "KitWorkLine: a segment of the work summary chip: folders listed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkEdited": "edited {count, plural, =1{1 file} other{{count} files}}",
+  "@kitWorkEdited": {
+    "description": "KitWorkLine: a segment of the work summary chip: files edited or written",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkRan": "ran {count, plural, =1{1 command} other{{count} commands}}",
+  "@kitWorkRan": {
+    "description": "KitWorkLine: a segment of the work summary chip: commands run",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkFetched": "fetched {count, plural, =1{1 page} other{{count} pages}}",
+  "@kitWorkFetched": {
+    "description": "KitWorkLine: a segment of the work summary chip: web pages fetched or searched",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkDelegated": "delegated {count, plural, =1{1 task} other{{count} tasks}}",
+  "@kitWorkDelegated": {
+    "description": "KitWorkLine: a segment of the work summary chip: sub-agents started",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkOther": "{count, plural, =1{1 other step} other{{count} other steps}}",
+  "@kitWorkOther": {
+    "description": "KitWorkLine: a segment of the work summary chip: other tool calls",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkNotRun": "{count, plural, =1{1 not run} other{{count} not run}}",
+  "@kitWorkNotRun": {
+    "description": "KitWorkLine: a segment of the work summary chip: calls the server never ran",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkSteps": "{count, plural, =1{1 step} other{{count} steps}}",
+  "@kitWorkSteps": {
+    "description": "KitWorkLine: the work summary chip's words when no tool call was counted: model steps",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitWorkSeparator": " · ",
+  "@kitWorkSeparator": {
+    "description": "KitWorkLine: the separator between the work summary chip's segments (leading and trailing space included)"
+  },
+  "kitWorkWaitingForYou": "Waiting for you",
+  "@kitWorkWaitingForYou": {
+    "description": "KitWorkLine: the work chip's words while a request in this turn waits for the person"
+  },
+  "kitWorkStopped": "Stopped",
+  "@kitWorkStopped": {
+    "description": "KitWorkLine: appended to the work chip's summary when the person stopped the turn"
+  },
+  "kitWorkDidntFinish": "Didn't finish",
+  "@kitWorkDidntFinish": {
+    "description": "KitWorkLine: the word beside the failed mark when the turn's work ended on a failure; also starts the chip's spoken label"
+  },
+  "kitWorkWorking": "Working",
+  "@kitWorkWorking": {
+    "description": "KitWorkLine: starts the work chip's spoken label while a step is running"
+  },
+  "kitWorkEarlierSteps": "Show {count, plural, =1{1 earlier step} other{{count} earlier steps}}",
+  "@kitWorkEarlierSteps": {
+    "description": "KitWorkLine: the button above an opened work line's newest steps that reveals the older ones in place",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
