@@ -155,11 +155,14 @@ Android version, exact steps, observed exit time, service health and screenshot.
 
 Implemented: **partial P6.5** — report service and behavior tests; existing startup
 behavior retained. Enabled: **no new UI wiring**. Verified: formatting and static
-review only; Flutter execution and device proof blocked. Committed: see root
-`COMMIT_MSG.txt` if Git rejects writing this worktree's metadata. Deployed/released:
-**no**.
+review only; Flutter execution and device proof blocked. Committed: implementation,
+tests and initial QA record in **`e38b4344`**, with the requested `[skip ci]` subject
+and both attribution trailers. The subsequent QA correction could not be staged
+(`index.lock`: read-only filesystem); those documentation updates remain in the
+working tree, with their message in root `COMMIT_MSG.txt`. Deployed/released: **no**.
 
-Blockers: environment (read-only Flutter cache and Git metadata); integration
+Blockers: environment (read-only Flutter cache; QA follow-up Git metadata write);
+integration
 (coordinator lifecycle hooks and UI notice); device proof (force-stop/crash,
 reboot and airplane recipes). P6.5 is not complete or merge-ready until the
 verifier clears these. No failed backend contract or unsupported-auth adapter was
