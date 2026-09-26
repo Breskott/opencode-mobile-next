@@ -14,8 +14,8 @@
 // - TEST-8: every golden test file loads the app's real fonts
 //   (loadCaptureFonts or loadKitGalleryFonts); a file that renders
 //   Locale('ar') loads the Arabic families (loadKitGalleryFonts) and renders
-//   through a theme that falls back to them (AppTheme.forLocale or
-//   kitGalleryShot); the loaders register every family AppTheme and
+//   through a theme that falls back to them (AppTheme.forLocale,
+//   kitGalleryShot or kitGalleryPart); the loaders register every family AppTheme and
 //   pubspec.yaml name, including the literals AppTheme.forLocale uses for
 //   Arabic, except the reasoned [arabicFallbackAllowlist].
 // - TEST-20: golden PNG names are
@@ -248,7 +248,11 @@ final _arabicFonts = RegExp(
   r'''\bloadKitGalleryFonts\b|FontLoader\(\s*['"]Noto Sans Arabic['"]''',
 );
 // A theme whose Arabic fallback is one of the registered families.
-final _arabicTheme = RegExp(r'\bAppTheme\.forLocale\(|\bkitGalleryShot\(');
+// kitGalleryShot and kitGalleryPart both render through kit_gallery.dart's
+// theme, whose text falls back to Noto Sans Arabic.
+final _arabicTheme = RegExp(
+  r'\bAppTheme\.forLocale\(|\bkitGallery(?:Shot|Part)\(',
+);
 final _dprAssign = RegExp(r'devicePixelRatio\s*=\s*([0-9.]+)\s*;');
 
 /// [source] with every string literal's content removed, so a check reads

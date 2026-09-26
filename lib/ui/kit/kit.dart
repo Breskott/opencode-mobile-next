@@ -18,7 +18,7 @@
 /// | [KitStatusLine] | §5 one status line |
 /// | [KitAskLine] | §2, §5 a one-time question with its two answers |
 /// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
-/// | [KitRow], [SectionLabel] | §6 rows and sections |
+/// | [KitRow], [KitRowGroup], [KitRowValue], [SectionLabel] | §6 rows, rows grouped on one panel, a row's current value, and sections |
 /// | [KitRowIcon], [KitRowMenu], [KitChevron], [KitSwitchRow], [KitExpandRow] | §6 a row's current mark, overflow menu, chevron, switch and unfolding group |
 /// | [KitPanel] | §3 a block of content the person works with |
 /// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |

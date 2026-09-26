@@ -113,15 +113,6 @@ const kitGallerySizes = <Size>[
 /// Where 2.0 text and Arabic are rendered.
 const kitGalleryScaledSizes = <Size>[Size(412, 915), Size(1280, 800)];
 
-/// The device pixel ratio a window of [size] renders at (visual language
-/// §7: goldens at the device's ratio, so a soft edge or a doubled hairline
-/// shows): 3.0 for a phone, 2.0 for a tablet, 1.0 for a PC window.
-double kitGalleryPixelRatio(Size size) => size.width < 600
-    ? 3
-    : size.shortestSide < 900 && size.width < 1200
-    ? 2
-    : 1;
-
 String kitGallerySize(Size size) =>
     '${size.width.toInt()}x${size.height.toInt()}';
 

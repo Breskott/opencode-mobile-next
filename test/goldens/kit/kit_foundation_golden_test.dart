@@ -232,7 +232,7 @@ void main() {
       testWidgets('foundation work · $at · $mode', (tester) async {
         await kitGalleryPart(
           tester,
-          name: 'kit_foundation_work_${at}_$mode',
+          name: kitGalleryName('kit_foundation_work', size, light: light),
           size: size,
           light: light,
           child: _work(_en),
@@ -242,7 +242,11 @@ void main() {
     testWidgets('foundation type and buttons · $mode', (tester) async {
       await kitGalleryPart(
         tester,
-        name: 'kit_foundation_type_412x915_$mode',
+        name: kitGalleryName(
+          'kit_foundation_type',
+          const Size(412, 915),
+          light: light,
+        ),
         size: const Size(412, 915),
         light: light,
         child: _type(),
@@ -251,7 +255,12 @@ void main() {
     testWidgets('foundation work · 2.0 text · $mode', (tester) async {
       await kitGalleryPart(
         tester,
-        name: 'kit_foundation_work_text2_412x915_$mode',
+        name: kitGalleryName(
+          'kit_foundation_work',
+          const Size(412, 915),
+          light: light,
+          text2: true,
+        ),
         size: const Size(412, 915),
         light: light,
         textScale: 2,
@@ -261,7 +270,12 @@ void main() {
     testWidgets('foundation work · Arabic · $mode', (tester) async {
       await kitGalleryPart(
         tester,
-        name: 'kit_foundation_work_ar_412x915_$mode',
+        name: kitGalleryName(
+          'kit_foundation_work',
+          const Size(412, 915),
+          light: light,
+          ar: true,
+        ),
         size: const Size(412, 915),
         light: light,
         locale: const Locale('ar'),

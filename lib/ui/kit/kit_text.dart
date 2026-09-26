@@ -55,6 +55,8 @@ enum KitTextTone {
 ///
 /// Mono text is laid out left to right whatever the reading direction, so a
 /// path or a command never reorders inside Arabic.
+///
+/// States: none — text shows the words it is given.
 class KitText extends StatelessWidget {
   const KitText(
     this.text, {

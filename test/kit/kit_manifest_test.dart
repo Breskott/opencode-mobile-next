@@ -218,8 +218,13 @@ const _creationAllowlist = <String, List<String>>{
     'KitProgressView',
     'KitRefresh',
     'KitReveal',
+    // Visual language merge (ddcb6bc7), before this gate: kit-KitRow-v2
+    // owns kit_row.dart, whose API spec (docs/ux-system/kit-api/KitRow.md)
+    // keeps both here; remove once that unit settles NAME-1 for them.
+    'KitRowGroup',
     'KitRowIcon',
     'KitRowMenu',
+    'KitRowValue',
     'KitSkeletonRows',
     'KitSwitchRow',
     'KitTabSwitcher',
@@ -319,8 +324,13 @@ const _creationAllowlist = <String, List<String>>{
     'KitRequestCard',
     'KitReveal',
     'KitRow',
+    // Visual language merge (ddcb6bc7), before this gate; shown today in
+    // kit_foundation_golden_test.dart. kit-KitRow-v2 gives them
+    // kit_row_golden_test.dart (KitRow.md open question 3).
+    'KitRowGroup',
     'KitRowIcon',
     'KitRowMenu',
+    'KitRowValue',
     'KitScreen',
     'KitSecretField',
     'KitSkeletonRows',
@@ -331,6 +341,9 @@ const _creationAllowlist = <String, List<String>>{
     'KitSwitchRow',
     'KitTabSwitcher',
     'KitTaskMark',
+    // Visual language merge (ddcb6bc7), before this gate; kit-KitText-v2
+    // writes test/goldens/kit/kit_text_golden_test.dart.
+    'KitText',
     'LiquidGlassFilter',
     'LoadingList',
     'ProductEmptyState',

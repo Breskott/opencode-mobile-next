@@ -953,4 +953,47 @@ final kitOverflowScenes = <KitOverflowScene>[
       child: _row(c),
     ),
   ),
+  // kit_text.dart (visual language merge, before the wave-0b gates)
+  KitOverflowScene(
+    const ['KitText'],
+    'default',
+    build: (_, c) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final role in KitTextRole.values)
+          KitText(
+            role == KitTextRole.mono
+                ? r'$ flutter test test/checkout_test.dart'
+                : c.t(
+                    'Fix the flaky checkout test before the release',
+                    'إصلاح اختبار الدفع غير المستقر قبل الإصدار',
+                  ),
+            role: role,
+          ),
+      ],
+    ),
+  ),
+  // kit_row.dart: rows grouped on one panel, and a row's current value
+  KitOverflowScene(
+    const ['KitRowGroup', 'KitRowValue'],
+    'default',
+    build: (_, c) => KitRowGroup(
+      label: c.t('Laptop on the office network', 'الحاسوب على شبكة المكتب'),
+      children: [
+        _row(c),
+        KitRow(
+          leading: const KitRowIcon(AppIconography.star),
+          title: c.t('Model', 'النموذج'),
+          trailing: const KitRowValue('Claude Sonnet 4'),
+          onTap: _noop,
+        ),
+        KitRow(
+          leading: const KitRowIcon(AppIconography.shield),
+          title: c.t('What agents may do', 'ما يمكن للوكلاء فعله'),
+          trailing: KitRowValue(c.t('Ask first', 'اسأل أولاً'), chevron: false),
+          onTap: _noop,
+        ),
+      ],
+    ),
+  ),
 ];

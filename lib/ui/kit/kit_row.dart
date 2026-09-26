@@ -161,6 +161,8 @@ class KitRow extends StatelessWidget {
 /// A row's trailing value in `text3`, optionally before the chevron
 /// (visual language §5: "Claude Sonnet 4 ›"). The value is what the row
 /// is set to now; the chevron says the row opens a screen.
+///
+/// States: none — the row it sits in carries the states.
 class KitRowValue extends StatelessWidget {
   const KitRowValue(this.value, {super.key, this.chevron = true});
 
@@ -208,6 +210,8 @@ class KitRowValue extends StatelessWidget {
 /// to where the row's words start, with an optional section [label] 8 dp
 /// above. No per-row menus: a row's rarer actions open on long-press or
 /// right-click (`KitRowMenu`).
+///
+/// States: none — each row it holds carries its own states.
 class KitRowGroup extends StatelessWidget {
   const KitRowGroup({
     super.key,
