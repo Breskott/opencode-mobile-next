@@ -1,0 +1,204 @@
+{
+ "area": "j2-library",
+ "renderedAt": "2026-09-25T21:21:47.820265Z",
+ "declaredShots": [
+  {
+   "page": "catalog",
+   "state": "default"
+  },
+  {
+   "page": "commands",
+   "state": "default"
+  },
+  {
+   "page": "skills",
+   "state": "default"
+  },
+  {
+   "page": "skills-preview-sheet",
+   "state": "default"
+  },
+  {
+   "page": "skill-activation-sheet",
+   "state": "default"
+  },
+  {
+   "page": "references",
+   "state": "default"
+  },
+  {
+   "page": "tools",
+   "state": "default"
+  },
+  {
+   "page": "tools-detail-sheet",
+   "state": "default"
+  },
+  {
+   "page": "integrations",
+   "state": "loaded"
+  },
+  {
+   "page": "integrations-connect-method-sheet",
+   "state": "default"
+  },
+  {
+   "page": "integrations-connect-key-dialog",
+   "state": "default"
+  },
+  {
+   "page": "integrations-oauth-inputs-dialog",
+   "state": "default"
+  },
+  {
+   "page": "integrations-authorization-launch-dialog",
+   "state": "default"
+  },
+  {
+   "page": "integrations-disconnect-provider-sheet",
+   "state": "default"
+  },
+  {
+   "page": "credential-management-sheet",
+   "state": "default"
+  },
+  {
+   "page": "credential-management-sheet-rename-dialog",
+   "state": "default"
+  },
+  {
+   "page": "credential-management-sheet-remove-sheet",
+   "state": "default"
+  },
+  {
+   "page": "integrations-remove-mcp-sheet",
+   "state": "default"
+  },
+  {
+   "page": "integrations-mcp-oauth-code-dialog",
+   "state": "default"
+  },
+  {
+   "page": "integrations-forget-pending-auth-sheet",
+   "state": "default"
+  },
+  {
+   "page": "mcp-setup",
+   "state": "default"
+  }
+ ],
+ "notRendered": {
+  "integrations-forget-uncertain-auth-sheet": "no seeding seam: the uncertain-dispatch marker is set only in memory when a live OAuth/command start truly returns no attempt id, with no public API or stored format to fake it outside a real network race.",
+  "integrations-oauth-code-dialog": "reachable up to \"Open browser\" (see integrations-authorization-launch-dialog), but the legacy OAuth branch throws and cancels the pending row right after the stubbed authorizationLauncher answers — the identical shared _openAuthorization/openExternalLink path used by the MCP OAuth flow (which does render) — for a reason not isolated within the census budget; a real fake-server integration test would be the next step.",
+  "command-auth-sheet": "the sheet gates its Start-sign-in button on ConnectionController's private \"actually-connected profile\" (_connectedProfile), which the CaptureController fixture never sets; driving it through the real ConnectionController(apiFactory:, repositoryFactory:, eventStreamFactory:) + connect() seam (proven in test/integration_auth_recovery_test.dart) leaves the provider list empty instead, for a reason not isolated within budget.",
+  "command-auth-sheet-confirm-sheet": "reached only via command-auth-sheet; see its notRendered reason."
+ },
+ "shots": [
+  {
+   "page": "catalog",
+   "state": "default",
+   "image": "j2-library/catalog.png"
+  },
+  {
+   "page": "commands",
+   "state": "default",
+   "image": "j2-library/commands.png"
+  },
+  {
+   "page": "skills",
+   "state": "default",
+   "image": "j2-library/skills.png"
+  },
+  {
+   "page": "skills-preview-sheet",
+   "state": "default",
+   "image": "j2-library/skills-preview-sheet.png"
+  },
+  {
+   "page": "skill-activation-sheet",
+   "state": "default",
+   "image": "j2-library/skill-activation-sheet.png"
+  },
+  {
+   "page": "references",
+   "state": "default",
+   "image": "j2-library/references.png"
+  },
+  {
+   "page": "tools",
+   "state": "default",
+   "image": "j2-library/tools.png"
+  },
+  {
+   "page": "tools-detail-sheet",
+   "state": "default",
+   "image": "j2-library/tools-detail-sheet.png"
+  },
+  {
+   "page": "integrations",
+   "state": "loaded",
+   "image": "j2-library/integrations--loaded.png"
+  },
+  {
+   "page": "integrations-connect-method-sheet",
+   "state": "default",
+   "image": "j2-library/integrations-connect-method-sheet.png"
+  },
+  {
+   "page": "integrations-connect-key-dialog",
+   "state": "default",
+   "image": "j2-library/integrations-connect-key-dialog.png"
+  },
+  {
+   "page": "integrations-oauth-inputs-dialog",
+   "state": "default",
+   "image": "j2-library/integrations-oauth-inputs-dialog.png"
+  },
+  {
+   "page": "integrations-authorization-launch-dialog",
+   "state": "default",
+   "image": "j2-library/integrations-authorization-launch-dialog.png"
+  },
+  {
+   "page": "integrations-disconnect-provider-sheet",
+   "state": "default",
+   "image": "j2-library/integrations-disconnect-provider-sheet.png"
+  },
+  {
+   "page": "credential-management-sheet",
+   "state": "default",
+   "image": "j2-library/credential-management-sheet.png"
+  },
+  {
+   "page": "credential-management-sheet-rename-dialog",
+   "state": "default",
+   "image": "j2-library/credential-management-sheet-rename-dialog.png"
+  },
+  {
+   "page": "credential-management-sheet-remove-sheet",
+   "state": "default",
+   "image": "j2-library/credential-management-sheet-remove-sheet.png"
+  },
+  {
+   "page": "integrations-remove-mcp-sheet",
+   "state": "default",
+   "image": "j2-library/integrations-remove-mcp-sheet.png",
+   "note": "Removes the first MCP server (docs)."
+  },
+  {
+   "page": "integrations-mcp-oauth-code-dialog",
+   "state": "default",
+   "image": "j2-library/integrations-mcp-oauth-code-dialog.png"
+  },
+  {
+   "page": "integrations-forget-pending-auth-sheet",
+   "state": "default",
+   "image": "j2-library/integrations-forget-pending-auth-sheet.png"
+  },
+  {
+   "page": "mcp-setup",
+   "state": "default",
+   "image": "j2-library/mcp-setup.png"
+  }
+ ]
+}

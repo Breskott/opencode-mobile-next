@@ -1,0 +1,263 @@
+{
+ "area": "f-files-review-terminal",
+ "renderedAt": "2026-09-25T21:21:47.818072Z",
+ "declaredShots": [
+  {
+   "page": "project-hub",
+   "state": "default"
+  },
+  {
+   "page": "files",
+   "state": "loaded"
+  },
+  {
+   "page": "files",
+   "state": "empty"
+  },
+  {
+   "page": "files",
+   "state": "error"
+  },
+  {
+   "page": "files-row-actions-sheet",
+   "state": "default"
+  },
+  {
+   "page": "files-changes-sheet",
+   "state": "default"
+  },
+  {
+   "page": "files-file-viewer-sheet",
+   "state": "markdown"
+  },
+  {
+   "page": "files-file-viewer-sheet",
+   "state": "code"
+  },
+  {
+   "page": "review-workspace",
+   "state": "loaded"
+  },
+  {
+   "page": "review-workspace",
+   "state": "empty"
+  },
+  {
+   "page": "review-workspace",
+   "state": "error"
+  },
+  {
+   "page": "review-comment-sheet",
+   "state": "default"
+  },
+  {
+   "page": "terminal",
+   "state": "populated"
+  },
+  {
+   "page": "terminal",
+   "state": "empty"
+  },
+  {
+   "page": "terminal",
+   "state": "failed"
+  },
+  {
+   "page": "terminal-rename-dialog",
+   "state": "default"
+  },
+  {
+   "page": "terminal-remove-sheet",
+   "state": "stop-running"
+  },
+  {
+   "page": "terminal-remove-sheet",
+   "state": "remove-exited"
+  },
+  {
+   "page": "terminal-surface",
+   "state": "connected"
+  },
+  {
+   "page": "terminal-surface",
+   "state": "accessible"
+  },
+  {
+   "page": "stage-revert-sheet",
+   "state": "default"
+  },
+  {
+   "page": "staged-revert",
+   "state": "default"
+  },
+  {
+   "page": "staged-revert-confirm-sheet",
+   "state": "commit"
+  },
+  {
+   "page": "staged-revert-confirm-sheet",
+   "state": "clear"
+  },
+  {
+   "page": "file-preview-sheet",
+   "state": "markdown"
+  },
+  {
+   "page": "embedded-file-preview-body",
+   "state": "default"
+  },
+  {
+   "page": "diff-view",
+   "state": "default"
+  },
+  {
+   "page": "run-command-dialog",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "project-hub",
+   "state": "default",
+   "image": "f-files-review-terminal/project-hub.png"
+  },
+  {
+   "page": "files",
+   "state": "loaded",
+   "image": "f-files-review-terminal/files--loaded.png"
+  },
+  {
+   "page": "files",
+   "state": "empty",
+   "image": "f-files-review-terminal/files--empty.png"
+  },
+  {
+   "page": "files",
+   "state": "error",
+   "image": "f-files-review-terminal/files--error.png",
+   "note": "ProductErrorState from a listFiles failure."
+  },
+  {
+   "page": "files-row-actions-sheet",
+   "state": "default",
+   "image": "f-files-review-terminal/files-row-actions-sheet.png"
+  },
+  {
+   "page": "files-changes-sheet",
+   "state": "default",
+   "image": "f-files-review-terminal/files-changes-sheet.png"
+  },
+  {
+   "page": "files-file-viewer-sheet",
+   "state": "markdown",
+   "image": "f-files-review-terminal/files-file-viewer-sheet--markdown.png"
+  },
+  {
+   "page": "files-file-viewer-sheet",
+   "state": "code",
+   "image": "f-files-review-terminal/files-file-viewer-sheet--code.png"
+  },
+  {
+   "page": "review-workspace",
+   "state": "loaded",
+   "image": "f-files-review-terminal/review-workspace--loaded.png"
+  },
+  {
+   "page": "review-workspace",
+   "state": "empty",
+   "image": "f-files-review-terminal/review-workspace--empty.png"
+  },
+  {
+   "page": "review-workspace",
+   "state": "error",
+   "image": "f-files-review-terminal/review-workspace--error.png"
+  },
+  {
+   "page": "review-comment-sheet",
+   "state": "default",
+   "image": "f-files-review-terminal/review-comment-sheet.png"
+  },
+  {
+   "page": "terminal",
+   "state": "populated",
+   "image": "f-files-review-terminal/terminal--populated.png"
+  },
+  {
+   "page": "terminal",
+   "state": "empty",
+   "image": "f-files-review-terminal/terminal--empty.png"
+  },
+  {
+   "page": "terminal",
+   "state": "failed",
+   "image": "f-files-review-terminal/terminal--failed.png"
+  },
+  {
+   "page": "terminal-rename-dialog",
+   "state": "default",
+   "image": "f-files-review-terminal/terminal-rename-dialog.png"
+  },
+  {
+   "page": "terminal-remove-sheet",
+   "state": "stop-running",
+   "image": "f-files-review-terminal/terminal-remove-sheet--stop-running.png"
+  },
+  {
+   "page": "terminal-remove-sheet",
+   "state": "remove-exited",
+   "image": "f-files-review-terminal/terminal-remove-sheet--remove-exited.png"
+  },
+  {
+   "page": "terminal-surface",
+   "state": "connected",
+   "image": "f-files-review-terminal/terminal-surface--connected.png"
+  },
+  {
+   "page": "terminal-surface",
+   "state": "accessible",
+   "image": "f-files-review-terminal/terminal-surface--accessible.png"
+  },
+  {
+   "page": "stage-revert-sheet",
+   "state": "default",
+   "image": "f-files-review-terminal/stage-revert-sheet.png"
+  },
+  {
+   "page": "staged-revert",
+   "state": "default",
+   "image": "f-files-review-terminal/staged-revert.png"
+  },
+  {
+   "page": "staged-revert-confirm-sheet",
+   "state": "commit",
+   "image": "f-files-review-terminal/staged-revert-confirm-sheet--commit.png"
+  },
+  {
+   "page": "staged-revert-confirm-sheet",
+   "state": "clear",
+   "image": "f-files-review-terminal/staged-revert-confirm-sheet--clear.png"
+  },
+  {
+   "page": "file-preview-sheet",
+   "state": "markdown",
+   "image": "f-files-review-terminal/file-preview-sheet--markdown.png"
+  },
+  {
+   "page": "embedded-file-preview-body",
+   "state": "default",
+   "image": "f-files-review-terminal/embedded-file-preview-body.png",
+   "note": "FilePreviewBody embedded in the file-preview sheet host, JSON mode."
+  },
+  {
+   "page": "diff-view",
+   "state": "default",
+   "image": "f-files-review-terminal/diff-view.png"
+  },
+  {
+   "page": "run-command-dialog",
+   "state": "default",
+   "image": "f-files-review-terminal/run-command-dialog.png"
+  }
+ ]
+}

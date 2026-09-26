@@ -1,0 +1,458 @@
+{
+ "area": "i2-team-sheets",
+ "renderedAt": "2026-09-25T21:21:47.819643Z",
+ "declaredShots": [
+  {
+   "page": "gate-sheet",
+   "state": "decision"
+  },
+  {
+   "page": "gate-sheet",
+   "state": "confirmation"
+  },
+  {
+   "page": "gate-sheet",
+   "state": "free-text"
+  },
+  {
+   "page": "gate-sheet",
+   "state": "run-failed"
+  },
+  {
+   "page": "gate-sheet-confirm-sheet",
+   "state": "deny"
+  },
+  {
+   "page": "gate-sheet-confirm-sheet",
+   "state": "cancel-work"
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "ready"
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "not-ready"
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "armed"
+  },
+  {
+   "page": "team-merge-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-merge-approve-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-merge-changes-sheet",
+   "state": "default"
+  },
+  {
+   "page": "work-sheet",
+   "state": "working"
+  },
+  {
+   "page": "work-sheet",
+   "state": "blocked"
+  },
+  {
+   "page": "work-sheet",
+   "state": "review"
+  },
+  {
+   "page": "work-sheet",
+   "state": "missing"
+  },
+  {
+   "page": "embedded-work-graph",
+   "state": "default"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "empty"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "filled"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "planner-off"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "direct-task"
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "planning"
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "still-planning"
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "unconfirmed"
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "refused"
+  },
+  {
+   "page": "team-phone-onboarding-offer",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-onboarding-project-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-onboarding-steps",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-onboarding-success",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-onboarding-failed",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-onboarding-killed",
+   "state": "default"
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "running"
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "killed"
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "not-installed"
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "unsupported"
+  },
+  {
+   "page": "team-phone-stop-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-remove-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-phone-tips-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-team-phone-reoffer-card",
+   "state": "default"
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "empty"
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "testing"
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "not-found"
+  },
+  {
+   "page": "team-host-guide-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-turn-off-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-team-discovery-card",
+   "state": "default"
+  },
+  {
+   "page": "team-host-details-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-team-technical-value",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "gate-sheet",
+   "state": "decision",
+   "image": "i2-team-sheets/gate-sheet--decision.png",
+   "note": "Over the AI Team home; the first answer picked."
+  },
+  {
+   "page": "gate-sheet",
+   "state": "confirmation",
+   "image": "i2-team-sheets/gate-sheet--confirmation.png"
+  },
+  {
+   "page": "gate-sheet",
+   "state": "free-text",
+   "image": "i2-team-sheets/gate-sheet--free-text.png"
+  },
+  {
+   "page": "gate-sheet",
+   "state": "run-failed",
+   "image": "i2-team-sheets/gate-sheet--run-failed.png"
+  },
+  {
+   "page": "gate-sheet-confirm-sheet",
+   "state": "deny",
+   "image": "i2-team-sheets/gate-sheet-confirm-sheet--deny.png"
+  },
+  {
+   "page": "gate-sheet-confirm-sheet",
+   "state": "cancel-work",
+   "image": "i2-team-sheets/gate-sheet-confirm-sheet--cancel-work.png"
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "ready",
+   "image": "i2-team-sheets/embedded-team-merge-section--ready.png",
+   "note": "Host: the run Overview of a review-ready task, scrolled down."
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "not-ready",
+   "image": "i2-team-sheets/embedded-team-merge-section--not-ready.png",
+   "note": "Host: the run Overview; tests failing, review pending."
+  },
+  {
+   "page": "embedded-team-merge-section",
+   "state": "armed",
+   "image": "i2-team-sheets/embedded-team-merge-section--armed.png",
+   "note": "Host: the run Overview; Merge tapped once (armed for 8 s)."
+  },
+  {
+   "page": "team-merge-confirm-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-merge-confirm-sheet.png"
+  },
+  {
+   "page": "team-merge-approve-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-merge-approve-sheet.png"
+  },
+  {
+   "page": "team-merge-changes-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-merge-changes-sheet.png"
+  },
+  {
+   "page": "work-sheet",
+   "state": "working",
+   "image": "i2-team-sheets/work-sheet--working.png",
+   "note": "Over the run screen."
+  },
+  {
+   "page": "work-sheet",
+   "state": "blocked",
+   "image": "i2-team-sheets/work-sheet--blocked.png"
+  },
+  {
+   "page": "work-sheet",
+   "state": "review",
+   "image": "i2-team-sheets/work-sheet--review.png"
+  },
+  {
+   "page": "work-sheet",
+   "state": "missing",
+   "image": "i2-team-sheets/work-sheet--missing.png"
+  },
+  {
+   "page": "embedded-work-graph",
+   "state": "default",
+   "image": "i2-team-sheets/embedded-work-graph.png",
+   "note": "Host: the run Work tab, Graph view."
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "empty",
+   "image": "i2-team-sheets/start-run-sheet--empty.png"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "filled",
+   "image": "i2-team-sheets/start-run-sheet--filled.png"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "planner-off",
+   "image": "i2-team-sheets/start-run-sheet--planner-off.png"
+  },
+  {
+   "page": "start-run-sheet",
+   "state": "direct-task",
+   "image": "i2-team-sheets/start-run-sheet--direct-task.png",
+   "note": "Planner off on a host that creates work: the direct task form."
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "planning",
+   "image": "i2-team-sheets/embedded-team-planning-card--planning.png",
+   "note": "Host: the AI Team home after Send to planner."
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "still-planning",
+   "image": "i2-team-sheets/embedded-team-planning-card--still-planning.png",
+   "note": "Host: the AI Team home, 31 minutes later."
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "unconfirmed",
+   "image": "i2-team-sheets/embedded-team-planning-card--unconfirmed.png",
+   "note": "Host: the AI Team home; the host did not confirm."
+  },
+  {
+   "page": "embedded-team-planning-card",
+   "state": "refused",
+   "image": "i2-team-sheets/embedded-team-planning-card--refused.png",
+   "note": "Host: the AI Team home; the host refused the message."
+  },
+  {
+   "page": "team-phone-onboarding-offer",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-offer.png",
+   "note": "Host: the phone setup screen after the server is running."
+  },
+  {
+   "page": "team-phone-onboarding-project-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-project-sheet.png",
+   "note": "Two managed projects: the person picks one."
+  },
+  {
+   "page": "team-phone-onboarding-steps",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-steps.png",
+   "note": "Re-entered while step 2 (packages) runs."
+  },
+  {
+   "page": "team-phone-onboarding-success",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-success.png"
+  },
+  {
+   "page": "team-phone-onboarding-failed",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-failed.png",
+   "note": "The download could not resolve github.com."
+  },
+  {
+   "page": "team-phone-onboarding-killed",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-onboarding-killed.png"
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "running",
+   "image": "i2-team-sheets/embedded-team-phone-section--running.png",
+   "note": "Host: Settings › Plugins › AI Team sheet for this phone."
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "killed",
+   "image": "i2-team-sheets/embedded-team-phone-section--killed.png",
+   "note": "Host: the AI Team sheet; Android stopped the team."
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "not-installed",
+   "image": "i2-team-sheets/embedded-team-phone-section--not-installed.png",
+   "note": "Host: the AI Team sheet; nothing installed yet."
+  },
+  {
+   "page": "embedded-team-phone-section",
+   "state": "unsupported",
+   "image": "i2-team-sheets/embedded-team-phone-section--unsupported.png",
+   "note": "Host: the AI Team sheet; this phone cannot run a team."
+  },
+  {
+   "page": "team-phone-stop-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-stop-sheet.png"
+  },
+  {
+   "page": "team-phone-remove-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-remove-sheet.png"
+  },
+  {
+   "page": "team-phone-tips-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-phone-tips-sheet.png"
+  },
+  {
+   "page": "embedded-team-phone-reoffer-card",
+   "state": "default",
+   "image": "i2-team-sheets/embedded-team-phone-reoffer-card.png",
+   "note": "Host: Settings › Plugins, after Skip during the phone setup."
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "empty",
+   "image": "i2-team-sheets/team-host-sheet--empty.png",
+   "note": "Over Settings › Plugins › AI Team."
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "testing",
+   "image": "i2-team-sheets/team-host-sheet--testing.png",
+   "note": "The probe has not answered yet."
+  },
+  {
+   "page": "team-host-sheet",
+   "state": "not-found",
+   "image": "i2-team-sheets/team-host-sheet--not-found.png"
+  },
+  {
+   "page": "team-host-guide-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-host-guide-sheet.png",
+   "note": "Opened from Start a run while the planner is off."
+  },
+  {
+   "page": "team-turn-off-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-turn-off-sheet.png"
+  },
+  {
+   "page": "embedded-team-discovery-card",
+   "state": "default",
+   "image": "i2-team-sheets/embedded-team-discovery-card.png",
+   "note": "Host: Settings › Plugins; a Gas City host answered next to it."
+  },
+  {
+   "page": "team-host-details-sheet",
+   "state": "default",
+   "image": "i2-team-sheets/team-host-details-sheet.png",
+   "note": "From the AI Team home top bar."
+  },
+  {
+   "page": "embedded-team-technical-value",
+   "state": "default",
+   "image": "i2-team-sheets/embedded-team-technical-value.png",
+   "note": "Host: the agent screen, Technical details opened."
+  }
+ ]
+}

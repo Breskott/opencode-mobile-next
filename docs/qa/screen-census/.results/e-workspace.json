@@ -1,0 +1,596 @@
+{
+ "area": "e-workspace",
+ "renderedAt": "2026-09-25T21:21:47.817619Z",
+ "declaredShots": [
+  {
+   "page": "workspace",
+   "state": "loaded"
+  },
+  {
+   "page": "workspace",
+   "state": "needs-you"
+  },
+  {
+   "page": "workspace",
+   "state": "empty"
+  },
+  {
+   "page": "workspace",
+   "state": "loading"
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "phone-server"
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "remote-server"
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "error"
+  },
+  {
+   "page": "workspace-directory-details-dialog",
+   "state": "default"
+  },
+  {
+   "page": "workspace-context-sheet",
+   "state": "default"
+  },
+  {
+   "page": "workspace-session-details-sheet",
+   "state": "default"
+  },
+  {
+   "page": "workspace-rename-session-dialog",
+   "state": "default"
+  },
+  {
+   "page": "workspace-archive-session-sheet",
+   "state": "default"
+  },
+  {
+   "page": "workspace-share-session-sheet",
+   "state": "default"
+  },
+  {
+   "page": "workspace-delete-session-sheet",
+   "state": "default"
+  },
+  {
+   "page": "workspace-archived-sheet",
+   "state": "default"
+  },
+  {
+   "page": "projects",
+   "state": "loaded"
+  },
+  {
+   "page": "projects",
+   "state": "error"
+  },
+  {
+   "page": "projects",
+   "state": "read-only"
+  },
+  {
+   "page": "projects-rename-dialog",
+   "state": "default"
+  },
+  {
+   "page": "manage-project",
+   "state": "default"
+  },
+  {
+   "page": "project-folder-new-dialog",
+   "state": "default"
+  },
+  {
+   "page": "project-folder-open-dialog",
+   "state": "filled"
+  },
+  {
+   "page": "project-folder-open-dialog",
+   "state": "missing"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "projects"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "inside"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "loading"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "error"
+  },
+  {
+   "page": "project-health",
+   "state": "loaded"
+  },
+  {
+   "page": "project-health",
+   "state": "no-git"
+  },
+  {
+   "page": "project-health",
+   "state": "error"
+  },
+  {
+   "page": "project-health-git-init-dialog",
+   "state": "default"
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "loaded"
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "empty"
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "error"
+  },
+  {
+   "page": "managed-workspaces-create-dialog",
+   "state": "default"
+  },
+  {
+   "page": "managed-workspaces-remove-dialog",
+   "state": "default"
+  },
+  {
+   "page": "worktrees",
+   "state": "loaded"
+  },
+  {
+   "page": "worktrees",
+   "state": "empty"
+  },
+  {
+   "page": "worktrees-create-dialog",
+   "state": "default"
+  },
+  {
+   "page": "worktrees-reset-dialog",
+   "state": "default"
+  },
+  {
+   "page": "worktrees-remove-dialog",
+   "state": "default"
+  },
+  {
+   "page": "global-sessions",
+   "state": "loaded"
+  },
+  {
+   "page": "global-sessions",
+   "state": "search"
+  },
+  {
+   "page": "global-sessions",
+   "state": "error"
+  },
+  {
+   "page": "global-sessions-continue-here-sheet",
+   "state": "default"
+  },
+  {
+   "page": "session-destination-sheet",
+   "state": "move"
+  },
+  {
+   "page": "session-destination-sheet",
+   "state": "warp"
+  },
+  {
+   "page": "session-destination-confirm-dialog",
+   "state": "default"
+  },
+  {
+   "page": "console-organization-sheet",
+   "state": "default"
+  },
+  {
+   "page": "console-organization-switch-dialog",
+   "state": "default"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "form"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "creating"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "preparing"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "failed"
+  },
+  {
+   "page": "running-work-sheet",
+   "state": "loaded"
+  },
+  {
+   "page": "running-work-sheet",
+   "state": "empty"
+  },
+  {
+   "page": "shell-output",
+   "state": "default"
+  },
+  {
+   "page": "shell-output-stop-dialog",
+   "state": "default"
+  },
+  {
+   "page": "shell-output-timeout-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-session-inventory-footer",
+   "state": "more"
+  },
+  {
+   "page": "embedded-session-inventory-footer",
+   "state": "error"
+  },
+  {
+   "page": "embedded-mobile-task-list",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "workspace",
+   "state": "loaded",
+   "image": "e-workspace/workspace--loaded.png",
+   "note": "Laptop server on shopfront: one run in progress, a pinned conversation, recent ones; archived row and other projects below the fold."
+  },
+  {
+   "page": "workspace",
+   "state": "needs-you",
+   "image": "e-workspace/workspace--needs-you.png",
+   "note": "A command permission and a question are waiting."
+  },
+  {
+   "page": "workspace",
+   "state": "empty",
+   "image": "e-workspace/workspace--empty.png",
+   "note": "A project with no conversations yet (teaching state)."
+  },
+  {
+   "page": "workspace",
+   "state": "loading",
+   "image": "e-workspace/workspace--loading.png",
+   "note": "First load: the project list and conversations are on the way."
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "phone-server",
+   "image": "e-workspace/workspace-folder-chooser--phone-server.png",
+   "note": "A server this app runs: Create a new folder comes first."
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "remote-server",
+   "image": "e-workspace/workspace-folder-chooser--remote-server.png",
+   "note": "Any other server: folders can only be opened by path."
+  },
+  {
+   "page": "workspace-folder-chooser",
+   "state": "error",
+   "image": "e-workspace/workspace-folder-chooser--error.png",
+   "note": "The project list could not load."
+  },
+  {
+   "page": "workspace-directory-details-dialog",
+   "state": "default",
+   "image": "e-workspace/workspace-directory-details-dialog.png",
+   "note": "Work open in packages/api inside shopfront; the folder row opened."
+  },
+  {
+   "page": "workspace-context-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-context-sheet.png",
+   "note": "Project header tapped; one cloud workspace listed."
+  },
+  {
+   "page": "workspace-session-details-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-session-details-sheet.png",
+   "note": "Row menu › Details on a shared conversation."
+  },
+  {
+   "page": "workspace-rename-session-dialog",
+   "state": "default",
+   "image": "e-workspace/workspace-rename-session-dialog.png"
+  },
+  {
+   "page": "workspace-archive-session-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-archive-session-sheet.png"
+  },
+  {
+   "page": "workspace-share-session-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-share-session-sheet.png"
+  },
+  {
+   "page": "workspace-delete-session-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-delete-session-sheet.png"
+  },
+  {
+   "page": "workspace-archived-sheet",
+   "state": "default",
+   "image": "e-workspace/workspace-archived-sheet.png"
+  },
+  {
+   "page": "projects",
+   "state": "loaded",
+   "image": "e-workspace/projects--loaded.png"
+  },
+  {
+   "page": "projects",
+   "state": "error",
+   "image": "e-workspace/projects--error.png"
+  },
+  {
+   "page": "projects",
+   "state": "read-only",
+   "image": "e-workspace/projects--read-only.png",
+   "note": "A server that cannot manage projects: the read-only context."
+  },
+  {
+   "page": "projects-rename-dialog",
+   "state": "default",
+   "image": "e-workspace/projects-rename-dialog.png"
+  },
+  {
+   "page": "manage-project",
+   "state": "default",
+   "image": "e-workspace/manage-project.png"
+  },
+  {
+   "page": "project-folder-new-dialog",
+   "state": "default",
+   "image": "e-workspace/project-folder-new-dialog.png",
+   "note": "From the folder chooser, a name typed."
+  },
+  {
+   "page": "project-folder-open-dialog",
+   "state": "filled",
+   "image": "e-workspace/project-folder-open-dialog--filled.png",
+   "note": "From the folder chooser on a remote server, a path typed."
+  },
+  {
+   "page": "project-folder-open-dialog",
+   "state": "missing",
+   "image": "e-workspace/project-folder-open-dialog--missing.png",
+   "note": "The server says the typed folder does not exist."
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "projects",
+   "image": "e-workspace/project-folder-browser--projects.png",
+   "note": "Server on this phone, at its projects folder."
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "inside",
+   "image": "e-workspace/project-folder-browser--inside.png"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "loading",
+   "image": "e-workspace/project-folder-browser--loading.png"
+  },
+  {
+   "page": "project-folder-browser",
+   "state": "error",
+   "image": "e-workspace/project-folder-browser--error.png"
+  },
+  {
+   "page": "project-health",
+   "state": "loaded",
+   "image": "e-workspace/project-health--loaded.png"
+  },
+  {
+   "page": "project-health",
+   "state": "no-git",
+   "image": "e-workspace/project-health--no-git.png"
+  },
+  {
+   "page": "project-health",
+   "state": "error",
+   "image": "e-workspace/project-health--error.png",
+   "note": "Version control failed; language services still listed."
+  },
+  {
+   "page": "project-health-git-init-dialog",
+   "state": "default",
+   "image": "e-workspace/project-health-git-init-dialog.png"
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "loaded",
+   "image": "e-workspace/managed-workspaces--loaded.png",
+   "note": "ci-sandbox is the open workspace."
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "empty",
+   "image": "e-workspace/managed-workspaces--empty.png"
+  },
+  {
+   "page": "managed-workspaces",
+   "state": "error",
+   "image": "e-workspace/managed-workspaces--error.png"
+  },
+  {
+   "page": "managed-workspaces-create-dialog",
+   "state": "default",
+   "image": "e-workspace/managed-workspaces-create-dialog.png"
+  },
+  {
+   "page": "managed-workspaces-remove-dialog",
+   "state": "default",
+   "image": "e-workspace/managed-workspaces-remove-dialog.png"
+  },
+  {
+   "page": "worktrees",
+   "state": "loaded",
+   "image": "e-workspace/worktrees--loaded.png"
+  },
+  {
+   "page": "worktrees",
+   "state": "empty",
+   "image": "e-workspace/worktrees--empty.png"
+  },
+  {
+   "page": "worktrees-create-dialog",
+   "state": "default",
+   "image": "e-workspace/worktrees-create-dialog.png"
+  },
+  {
+   "page": "worktrees-reset-dialog",
+   "state": "default",
+   "image": "e-workspace/worktrees-reset-dialog.png",
+   "note": "The worktree has two changed files, listed as a warning."
+  },
+  {
+   "page": "worktrees-remove-dialog",
+   "state": "default",
+   "image": "e-workspace/worktrees-remove-dialog.png"
+  },
+  {
+   "page": "global-sessions",
+   "state": "loaded",
+   "image": "e-workspace/global-sessions--loaded.png",
+   "note": "Conversations from three folders and a cloud environment."
+  },
+  {
+   "page": "global-sessions",
+   "state": "search",
+   "image": "e-workspace/global-sessions--search.png"
+  },
+  {
+   "page": "global-sessions",
+   "state": "error",
+   "image": "e-workspace/global-sessions--error.png"
+  },
+  {
+   "page": "global-sessions-continue-here-sheet",
+   "state": "default",
+   "image": "e-workspace/global-sessions-continue-here-sheet.png",
+   "note": "A conversation in the perf-lab cloud environment."
+  },
+  {
+   "page": "session-destination-sheet",
+   "state": "move",
+   "image": "e-workspace/session-destination-sheet--move.png",
+   "note": "Opened over the chat (command /move)."
+  },
+  {
+   "page": "session-destination-sheet",
+   "state": "warp",
+   "image": "e-workspace/session-destination-sheet--warp.png",
+   "note": "Opened over the chat (command /warp)."
+  },
+  {
+   "page": "session-destination-confirm-dialog",
+   "state": "default",
+   "image": "e-workspace/session-destination-confirm-dialog.png",
+   "note": "Three uncommitted changes, so both move choices are offered."
+  },
+  {
+   "page": "console-organization-sheet",
+   "state": "default",
+   "image": "e-workspace/console-organization-sheet.png",
+   "note": "Opened over the chat (command /org)."
+  },
+  {
+   "page": "console-organization-switch-dialog",
+   "state": "default",
+   "image": "e-workspace/console-organization-switch-dialog.png"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "form",
+   "image": "e-workspace/isolated-task-sheet--form.png"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "creating",
+   "image": "e-workspace/isolated-task-sheet--creating.png"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "preparing",
+   "image": "e-workspace/isolated-task-sheet--preparing.png"
+  },
+  {
+   "page": "isolated-task-sheet",
+   "state": "failed",
+   "image": "e-workspace/isolated-task-sheet--failed.png"
+  },
+  {
+   "page": "running-work-sheet",
+   "state": "loaded",
+   "image": "e-workspace/running-work-sheet--loaded.png",
+   "note": "Opened over the chat: one agent and one command running."
+  },
+  {
+   "page": "running-work-sheet",
+   "state": "empty",
+   "image": "e-workspace/running-work-sheet--empty.png"
+  },
+  {
+   "page": "shell-output",
+   "state": "default",
+   "image": "e-workspace/shell-output.png",
+   "note": "A running flutter test, followed live. The output uses the generic \"monospace\" family; the census lends it JetBrains Mono (a device draws its system mono)."
+  },
+  {
+   "page": "shell-output-stop-dialog",
+   "state": "default",
+   "image": "e-workspace/shell-output-stop-dialog.png"
+  },
+  {
+   "page": "shell-output-timeout-sheet",
+   "state": "default",
+   "image": "e-workspace/shell-output-timeout-sheet.png"
+  },
+  {
+   "page": "embedded-session-inventory-footer",
+   "state": "more",
+   "image": "e-workspace/embedded-session-inventory-footer--more.png",
+   "note": "Host: the Work tab, scrolled to the end of a partial list."
+  },
+  {
+   "page": "embedded-session-inventory-footer",
+   "state": "error",
+   "image": "e-workspace/embedded-session-inventory-footer--error.png",
+   "note": "Host: the Work tab; the next page failed."
+  },
+  {
+   "page": "embedded-mobile-task-list",
+   "state": "default",
+   "image": "e-workspace/embedded-mobile-task-list.png",
+   "note": "Host: the chat, the agent's task list tool card opened."
+  }
+ ]
+}
