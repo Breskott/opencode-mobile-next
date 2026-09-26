@@ -2545,5 +2545,2146 @@
       "Container": 1,
       "Text": 2
     }
-  }
+  },
+  "G2": {
+    "lib/feedback/bug_report.dart": {
+      "Clipboard.setData(": 1,
+      "launchUrl(": 1
+    },
+    "lib/ui/kit/scenes/folders_open_scene.dart": {
+      "Curves. in kit": 3
+    },
+    "lib/ui/kit/scenes/portal_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/servers_link_scene.dart": {
+      "Curves. in kit": 2
+    },
+    "lib/ui/kit/scenes/servers_welcome_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/setup_phone_scene.dart": {
+      "Curves. in kit": 4
+    },
+    "lib/ui/kit/scenes/setup_ready_scene.dart": {
+      "Curves. in kit": 5
+    },
+    "lib/ui/kit/scenes/setup_steps_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/setup_unplugged_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/states_scenes.dart": {
+      "Curves. in kit": 6
+    },
+    "lib/ui/kit/scenes/states_working_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/team_discover_scenes.dart": {
+      "Curves. in kit": 7
+    },
+    "lib/ui/kit/scenes/team_scenes.dart": {
+      "Curves. in kit": 13
+    },
+    "lib/ui/kit/terminal_key_bar.dart": {
+      "HapticFeedback. in kit": 1
+    },
+    "lib/ui/screens/active_context_screen.dart": {
+      "Clipboard.setData(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/activity_screen.dart": {
+      "ProductErrorState(": 1,
+      "ProductInlineEmpty(": 1
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      "ProductEmptyState(": 1
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/approvals_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/chat_states.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/screens/chat/composer.dart": {
+      "Curves.": 2
+    },
+    "lib/ui/screens/chat/empty_chat.dart": {
+      "Curves.": 2,
+      "duration: Duration(": 2
+    },
+    "lib/ui/screens/chat/message_view.dart": {
+      "Clipboard.setData(": 1,
+      "Curves.": 2,
+      "duration: Duration(": 2
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      "AnimatedSize(": 1,
+      "Clipboard.setData(": 2,
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/chat/prompt_editor.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/prompt_stash.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/read_aloud.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/session_sheets.dart": {
+      "ProductErrorState(": 1,
+      "ProductInlineEmpty(": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      "AnimatedSize(": 1,
+      "Clipboard.setData(": 5,
+      "Curves.": 5,
+      "HapticFeedback.": 1,
+      "duration: Duration(": 3,
+      "showConfirmSheet(": 11
+    },
+    "lib/ui/screens/connection_help_screen.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/external_agents_screen.dart": {
+      "showConfirmSheet(": 4
+    },
+    "lib/ui/screens/files_screen.dart": {
+      "Clipboard.setData(": 3,
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1,
+      "duration: Duration(": 3
+    },
+    "lib/ui/screens/global_sessions_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/home_screen.dart": {
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/host_management_screen.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1,
+      "launchUrl(": 1
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/library/command_auth_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/library/commands_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/library/credential_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      "ProductInlineEmpty(": 4,
+      "launchUrl(": 1,
+      "showConfirmSheet(": 2
+    },
+    "lib/ui/screens/library/pending_auth_recovery.dart": {
+      "showConfirmSheet(": 2
+    },
+    "lib/ui/screens/library/references_screen.dart": {
+      "Clipboard.setData(": 1,
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/library/skills_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/local_terminal_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/managed_workspaces_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1,
+      "ProductInlineEmpty(": 1
+    },
+    "lib/ui/screens/mcp_setup_screen.dart": {
+      "KitSecretField(": 1
+    },
+    "lib/ui/screens/perf_trace_section.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/projects_screen.dart": {
+      "ProductEmptyState(": 3,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "Clipboard.setData(": 1,
+      "Curves.": 2,
+      "ProductEmptyState(": 2,
+      "ProductErrorState(": 1,
+      "duration: Duration(": 5
+    },
+    "lib/ui/screens/running_work_sheet.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/screens/saved_permissions_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/servers_screen.dart": {
+      "showConfirmSheet(": 2
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/session_destination_sheet.dart": {
+      "ProductErrorState(": 2
+    },
+    "lib/ui/screens/session_relations_screen.dart": {
+      "ProductEmptyState(": 1,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/settings/personal_settings_screens.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 2,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/team/merge_section.dart": {
+      "showConfirmSheet(": 2
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/terminal_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/termux_processes_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      "Clipboard.setData(": 3,
+      "launchUrl(": 1,
+      "showConfirmSheet(": 6
+    },
+    "lib/ui/screens/termux_storage_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/tools_screen.dart": {
+      "Clipboard.setData(": 1,
+      "ProductEmptyState(": 2,
+      "ProductErrorState(": 1
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "Clipboard.setData(": 1,
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/worktrees_screen.dart": {
+      "ProductErrorState(": 1,
+      "ProductInlineEmpty(": 1
+    },
+    "lib/ui/widgets/agent_blocks.dart": {
+      "Clipboard.setData(": 2,
+      "duration: Duration(": 2
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/entrance.dart": {
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      "AnimatedSize(": 2,
+      "Curves.": 3,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/markdown.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/mobile_task_view.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/phone_server_card.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/provider_logo.dart": {
+      "Curves.": 1
+    },
+    "lib/ui/widgets/safety_confirms.dart": {
+      "showConfirmSheet(": 9
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/session_handoff_sheets.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/setup_progress_view.dart": {
+      "Curves.": 3
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/team_cycle_strip.dart": {
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/team_host_form.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/team_phone_section.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 2
+    },
+    "lib/ui/widgets/team_technical_details.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/work_status_line.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/voice/notices.dart": {
+      "ProductErrorState(": 1
+    }
+  },
+  "G7": {
+    "lib/ui/kit/motion/kit_refresh.dart": {
+      "Positioned(left|right:)": 1
+    },
+    "lib/ui/screens/active_context_screen.dart": {
+      "EdgeInsets.only(left|right:)": 1
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      "bidi literal": 2
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      "Positioned(left|right:)": 1
+    },
+    "lib/ui/screens/demo_screen.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1
+    },
+    "lib/ui/screens/files_screen.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 3
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1
+    },
+    "lib/ui/screens/isolated_task_sheet.dart": {
+      "EdgeInsets.only(left|right:)": 1
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "Alignment.centerRight": 1,
+      "EdgeInsets.fromLTRB asymmetric": 6,
+      "EdgeInsets.only(left|right:)": 3,
+      "TextAlign.right": 1
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "Positioned(left|right:)": 1
+    },
+    "lib/ui/screens/web_sources_screen.dart": {
+      "Alignment.centerLeft": 1
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "bidi literal": 2
+    },
+    "lib/ui/widgets/delimited_file_preview.dart": {
+      "TextAlign.right": 1
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      "EdgeInsets.only(left|right:)": 3,
+      "TextAlign.right": 1
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 1,
+      "Positioned(left|right:)": 1,
+      "TextAlign.right": 1
+    },
+    "lib/ui/widgets/folder_browser.dart": {
+      "bidi literal": 4
+    },
+    "lib/ui/widgets/markdown.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 2,
+      "EdgeInsets.only(left|right:)": 2,
+      "TextAlign.left": 2,
+      "TextAlign.right": 1
+    },
+    "lib/ui/widgets/pickers.dart": {
+      "EdgeInsets.fromLTRB asymmetric": 2
+    },
+    "lib/ui/widgets/question_options.dart": {
+      "EdgeInsets.only(left|right:)": 1
+    },
+    "lib/ui/widgets/run_result_view.dart": {
+      "Alignment.centerLeft": 1
+    },
+    "lib/ui/widgets/tool_card.dart": {
+      "Positioned(left|right:)": 1
+    }
+  },
+  "G15x": {
+    "lib/ui/kit/kit_buttons.dart": {
+      "width-literal": 1
+    },
+    "lib/ui/kit/kit_request_card.dart": {
+      "numeric maxWidth:": 1
+    },
+    "lib/ui/kit/kit_skeleton_transcript.dart": {
+      "numeric maxWidth:": 1
+    },
+    "lib/ui/kit/kit_state_view.dart": {
+      "numeric maxWidth:": 1
+    }
+  },
+  "G17": {
+    "lib/ui/app_iconography.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/desktop/context_menu.dart": {
+      ".colorScheme": 4
+    },
+    "lib/ui/desktop/file_drop.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 1
+    },
+    "lib/ui/desktop/shortcuts.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 4
+    },
+    "lib/ui/kit/glass/kit_glass.dart": {
+      "Colors.*": 3
+    },
+    "lib/ui/kit/kit_tokens.dart": {
+      "Colors.*": 1
+    },
+    "lib/ui/screens/about_screen.dart": {
+      ".textTheme": 5
+    },
+    "lib/ui/screens/active_context_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/activity_screen.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 5
+    },
+    "lib/ui/screens/agent_account_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 15
+    },
+    "lib/ui/screens/agent_choice_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      ".colorScheme": 9,
+      ".textTheme": 6,
+      "Colors.*": 2
+    },
+    "lib/ui/screens/chat/approvals_sheet.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 8
+    },
+    "lib/ui/screens/chat/attention_card.dart": {
+      ".textTheme": 4,
+      "attention roles": 1
+    },
+    "lib/ui/screens/chat/chat_states.dart": {
+      ".textTheme": 1,
+      "attention roles": 2
+    },
+    "lib/ui/screens/chat/command_launcher.dart": {
+      ".colorScheme": 14,
+      ".textTheme": 14
+    },
+    "lib/ui/screens/chat/composer.dart": {
+      ".colorScheme": 13,
+      ".textTheme": 10,
+      "attention roles": 1
+    },
+    "lib/ui/screens/chat/empty_chat.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/chat/message_view.dart": {
+      ".colorScheme": 57,
+      ".textTheme": 28
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      ".colorScheme": 9,
+      ".textTheme": 8
+    },
+    "lib/ui/screens/chat/prompt_history.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat/prompt_stash.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/chat/read_aloud.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat/session_sheets.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat/team_conversation_view.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 9,
+      "attention roles": 3
+    },
+    "lib/ui/screens/chat/timeline_sheet.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/chat/transcript_find.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat/voice_conversation.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat/watching.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/connection_help_screen.dart": {
+      ".textTheme": 4
+    },
+    "lib/ui/screens/context_capsule_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/demo_screen.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 7
+    },
+    "lib/ui/screens/external_agents_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 12
+    },
+    "lib/ui/screens/files_screen.dart": {
+      ".colorScheme": 12,
+      ".textTheme": 7
+    },
+    "lib/ui/screens/global_sessions_screen.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 7
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 7,
+      "Colors.*": 2
+    },
+    "lib/ui/screens/home_screen.dart": {
+      ".textTheme": 3
+    },
+    "lib/ui/screens/host_management_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/isolated_task_sheet.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 9
+    },
+    "lib/ui/screens/keep_running_screen.dart": {
+      ".textTheme": 2,
+      "attention roles": 1
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/library/catalog_screen.dart": {
+      ".textTheme": 1,
+      "attention roles": 1
+    },
+    "lib/ui/screens/library/command_auth_sheet.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/library/credential_sheet.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/library/integration_tiles.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 11,
+      "attention roles": 1
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/library/pending_auth_recovery.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/library/skill_activation.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/library/skills_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/local_terminal_screen.dart": {
+      ".colorScheme": 1,
+      "attention roles": 1
+    },
+    "lib/ui/screens/mcp_setup_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 5
+    },
+    "lib/ui/screens/pairing_scanner_screen.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/perf_trace_section.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart": {
+      ".textTheme": 3,
+      "attention roles": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_hero.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
+      ".textTheme": 1,
+      "attention roles": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/screens/profile_monitor_screen.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/project_health_screen.dart": {
+      ".colorScheme": 2
+    },
+    "lib/ui/screens/project_hub_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/projects_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/provider_quota_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 9,
+      "attention roles": 2
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      ".colorScheme": 36,
+      ".textTheme": 27
+    },
+    "lib/ui/screens/run_result_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/running_work_sheet.dart": {
+      ".colorScheme": 4,
+      ".textTheme": 9
+    },
+    "lib/ui/screens/saved_permissions_screen.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/screens/servers_screen.dart": {
+      ".colorScheme": 8,
+      ".textTheme": 11,
+      "attention roles": 3
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      ".colorScheme": 4,
+      ".textTheme": 11
+    },
+    "lib/ui/screens/session_destination_sheet.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 2
+    },
+    "lib/ui/screens/session_export_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/session_import_screen.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/session_note_screen.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/session_relations_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/settings/notifications_settings_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1,
+      "attention roles": 2
+    },
+    "lib/ui/screens/settings/personal_settings_screens.dart": {
+      ".colorScheme": 8,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/settings/plugins_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 12,
+      "attention roles": 2
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      ".colorScheme": 4,
+      ".textTheme": 6
+    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/screens/settings_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/staged_revert_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 4
+    },
+    "lib/ui/screens/tailscale_setup_screen.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      ".textTheme": 3,
+      "attention roles": 2
+    },
+    "lib/ui/screens/team/agent_screen.dart": {
+      ".textTheme": 24,
+      "attention roles": 3
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 20
+    },
+    "lib/ui/screens/team/merge_section.dart": {
+      ".textTheme": 13,
+      "attention roles": 2
+    },
+    "lib/ui/screens/team/policy_block.dart": {
+      ".textTheme": 7
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 14,
+      "attention roles": 3
+    },
+    "lib/ui/screens/team/start_run_sheet.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 12,
+      "attention roles": 3
+    },
+    "lib/ui/screens/team/team_agents_screen.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/screens/team/team_board_screen.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2,
+      "attention roles": 2
+    },
+    "lib/ui/screens/team/team_home_screen.dart": {
+      ".textTheme": 4
+    },
+    "lib/ui/screens/team/team_intro_screen.dart": {
+      ".textTheme": 2,
+      "attention roles": 1
+    },
+    "lib/ui/screens/team/team_needs_you.dart": {
+      ".textTheme": 3
+    },
+    "lib/ui/screens/team/team_states.dart": {
+      "attention roles": 5
+    },
+    "lib/ui/screens/team/work_graph.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1,
+      "attention roles": 1
+    },
+    "lib/ui/screens/team/work_sheet.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 8
+    },
+    "lib/ui/screens/terminal_screen.dart": {
+      ".textTheme": 2,
+      "Color(0x": 2
+    },
+    "lib/ui/screens/termux_processes_screen.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 12,
+      "attention roles": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      ".colorScheme": 14,
+      ".textTheme": 16,
+      "Colors.*": 4,
+      "attention roles": 3
+    },
+    "lib/ui/screens/termux_storage_screen.dart": {
+      ".colorScheme": 4,
+      ".textTheme": 11,
+      "attention roles": 1
+    },
+    "lib/ui/screens/tools_screen.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 3
+    },
+    "lib/ui/screens/usage_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 24
+    },
+    "lib/ui/screens/web_sources_screen.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 4,
+      "attention roles": 5
+    },
+    "lib/ui/screens/worktrees_screen.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/agent_blocks.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 4,
+      "Colors.*": 2
+    },
+    "lib/ui/widgets/agent_color.dart": {
+      ".colorScheme": 1,
+      "Colors.*": 14
+    },
+    "lib/ui/widgets/app_exit_notice.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/widgets/appearance_picker.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 5
+    },
+    "lib/ui/widgets/builtin_team_section.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 7
+    },
+    "lib/ui/widgets/code_highlight.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/confirm_sheet.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/widgets/connection_status_banner.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 3,
+      "attention roles": 3
+    },
+    "lib/ui/widgets/delimited_file_preview.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 5
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      ".colorScheme": 10,
+      ".textTheme": 7
+    },
+    "lib/ui/widgets/folder_browser.dart": {
+      ".textTheme": 3,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      ".colorScheme": 16,
+      ".textTheme": 13
+    },
+    "lib/ui/widgets/info_label.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/language_picker.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 18,
+      "attention roles": 3
+    },
+    "lib/ui/widgets/local_server_row.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/managed_server_recovery_option.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/markdown.dart": {
+      ".colorScheme": 16,
+      ".textTheme": 7,
+      "Colors.*": 2
+    },
+    "lib/ui/widgets/mobile_task_view.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 4
+    },
+    "lib/ui/widgets/other_projects_panel.dart": {
+      ".colorScheme": 2,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/other_servers_panel.dart": {
+      ".colorScheme": 1,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/phone_server_card.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 3
+    },
+    "lib/ui/widgets/pickers.dart": {
+      ".colorScheme": 10,
+      ".textTheme": 14
+    },
+    "lib/ui/widgets/product_states.dart": {
+      ".colorScheme": 4,
+      ".textTheme": 5
+    },
+    "lib/ui/widgets/provider_logo.dart": {
+      ".colorScheme": 4
+    },
+    "lib/ui/widgets/question_options.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 3
+    },
+    "lib/ui/widgets/quota_monitor_section.dart": {
+      ".textTheme": 3
+    },
+    "lib/ui/widgets/run_command_dialog.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/widgets/run_result_view.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 10
+    },
+    "lib/ui/widgets/saved_server_connection_card.dart": {
+      "attention roles": 2
+    },
+    "lib/ui/widgets/server_switcher_sheet.dart": {
+      ".colorScheme": 2
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/session_handoff_sheets.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 7,
+      "Colors.*": 2
+    },
+    "lib/ui/widgets/session_inventory_footer.dart": {
+      ".colorScheme": 1
+    },
+    "lib/ui/widgets/session_read_state.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/setup_progress_view.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 4
+    },
+    "lib/ui/widgets/setup_terminal.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 3,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/svg_file_preview.dart": {
+      "Colors.*": 1
+    },
+    "lib/ui/widgets/team_agent_row.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/team_board_card.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 3,
+      "attention roles": 3
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 6
+    },
+    "lib/ui/widgets/team_board_tabs.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_card.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 4,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_cycle_strip.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 7,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_discovery_card.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/team_host_form.dart": {
+      ".colorScheme": 1,
+      ".textTheme": 10,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_now.dart": {
+      "attention roles": 2
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 19,
+      "attention roles": 2
+    },
+    "lib/ui/widgets/team_phone_section.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 11,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_receipt.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_task_row.dart": {
+      ".colorScheme": 2
+    },
+    "lib/ui/widgets/team_technical_details.dart": {
+      ".textTheme": 11
+    },
+    "lib/ui/widgets/team_vocabulary.dart": {
+      "attention roles": 11
+    },
+    "lib/ui/widgets/terminal_view.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 1,
+      "Colors.*": 2,
+      "attention roles": 1
+    },
+    "lib/ui/widgets/thermal_notice.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/widgets/tool_card.dart": {
+      ".colorScheme": 31,
+      ".textTheme": 33,
+      "Colors.*": 6
+    },
+    "lib/ui/widgets/transcript_display_toggles.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/transcript_highlight.dart": {
+      ".colorScheme": 2
+    },
+    "lib/ui/widgets/work_status_line.dart": {
+      "attention roles": 3
+    }
+  },
+  "G21": {
+    "lib/ui/desktop/context_menu.dart": {
+      "Border.all(": 1,
+      "SizedBox numeric": 1,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/desktop/file_drop.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1
+    },
+    "lib/ui/desktop/shortcuts.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/glass/kit_glass.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/kit_action_stack.dart": {
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/kit_ask_line.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/kit/kit_buttons.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 4
+    },
+    "lib/ui/kit/kit_notice.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/kit/kit_panel.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/kit_progress.dart": {
+      "EdgeInsets numeric": 1,
+      "Radius.circular(<n>": 1,
+      "SizedBox numeric": 5
+    },
+    "lib/ui/kit/kit_request_card.dart": {
+      "EdgeInsets numeric": 6,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/kit_row.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/kit/kit_row_parts.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/kit/kit_screen.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/kit/kit_sheet.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/kit/kit_skeleton_transcript.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/kit_state_view.dart": {
+      "EdgeInsets numeric": 4
+    },
+    "lib/ui/kit/kit_status_line.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2,
+      "metal|chrome": 2
+    },
+    "lib/ui/kit/motion/kit_tab_switcher.dart": {
+      "Transform.scale|ScaleTransition in kit": 1
+    },
+    "lib/ui/kit/scenes/folders_open_scene.dart": {
+      "Radius.circular(<n>": 8
+    },
+    "lib/ui/kit/scenes/portal_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/servers_cast.dart": {
+      "Radius.circular(<n>": 2
+    },
+    "lib/ui/kit/scenes/servers_link_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/setup_cast.dart": {
+      "Radius.circular(<n>": 2
+    },
+    "lib/ui/kit/scenes/setup_phone_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/setup_ready_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/setup_steps_scene.dart": {
+      "Radius.circular(<n>": 2
+    },
+    "lib/ui/kit/scenes/setup_unplugged_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/states_scenes.dart": {
+      "Radius.circular(<n>": 8
+    },
+    "lib/ui/kit/scenes/states_working_scene.dart": {
+      "Radius.circular(<n>": 1
+    },
+    "lib/ui/kit/scenes/team_scenes.dart": {
+      "Radius.circular(<n>": 3
+    },
+    "lib/ui/kit/terminal_key_bar.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/about_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 7
+    },
+    "lib/ui/screens/active_context_screen.dart": {
+      "EdgeInsets numeric": 10,
+      "SizedBox numeric": 2,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/activity_screen.dart": {
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 7,
+      "TextStyle(": 2,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/agent_account_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 4,
+      "EdgeInsets numeric": 10,
+      "SizedBox numeric": 26,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/agent_choice_screen.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 6,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 7
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 7,
+      "Opacity( around text": 1,
+      "SizedBox numeric": 15,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/chat/approvals_sheet.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 10,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 5
+    },
+    "lib/ui/screens/chat/attention_card.dart": {
+      "EdgeInsets numeric": 6,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/chat/command_launcher.dart": {
+      "Border.all(": 1,
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 4,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/chat/composer.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 3,
+      "EdgeInsets numeric": 16,
+      "Image.asset|network|memory|file(": 1,
+      "SizedBox numeric": 15,
+      "TextStyle(": 1,
+      "boxShadow:": 1,
+      "disableAnimationsOf": 3,
+      "icon size not 20/22/24": 10
+    },
+    "lib/ui/screens/chat/empty_chat.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 6,
+      "disableAnimationsOf": 3
+    },
+    "lib/ui/screens/chat/message_view.dart": {
+      ".toUpperCase()": 2,
+      "Border.all(": 2,
+      "BorderRadius.circular(<n>": 5,
+      "BorderSide(width: not KitTokens": 3,
+      "EdgeInsets numeric": 44,
+      "SizedBox numeric": 27,
+      "TextStyle(": 1,
+      "disableAnimationsOf": 8,
+      "gradient(": 1,
+      "icon size not 20/22/24": 27
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      "Border.all(": 2,
+      "BorderRadius.circular(<n>": 3,
+      "EdgeInsets numeric": 6,
+      "Radius.circular(<n>": 1,
+      "SizedBox numeric": 19,
+      "TextStyle(": 3,
+      "disableAnimationsOf": 1,
+      "fontSize:": 3,
+      "icon size not 20/22/24": 6
+    },
+    "lib/ui/screens/chat/prompt_editor.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/screens/chat/prompt_history.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/screens/chat/prompt_stash.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 3,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/chat/read_aloud.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/chat/session_sheets.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 2,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/chat/team_conversation_view.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 20,
+      "SizedBox numeric": 7,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/screens/chat/timeline_sheet.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 1,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/chat/transcript_find.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/chat/voice_conversation.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 2,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/chat/watching.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      "EdgeInsets numeric": 6,
+      "Opacity( around text": 1,
+      "SizedBox numeric": 1,
+      "TextStyle(": 2,
+      "disableAnimationsOf": 4,
+      "icon size not 20/22/24": 4,
+      "text scale clamp": 1
+    },
+    "lib/ui/screens/connection_help_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 9
+    },
+    "lib/ui/screens/context_capsule_screen.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 6,
+      "TextStyle(": 2,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/screens/demo_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 2,
+      "disableAnimationsOf": 2
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 10,
+      "SizedBox numeric": 20,
+      "TextStyle(": 6,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/external_agents_screen.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 14,
+      "SizedBox numeric": 31,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/files_screen.dart": {
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 15,
+      "SizedBox numeric": 6,
+      "TextStyle(": 4,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 9
+    },
+    "lib/ui/screens/global_sessions_screen.dart": {
+      "Border.all(": 2,
+      "BorderRadius.circular(<n>": 4,
+      "EdgeInsets numeric": 14,
+      "SizedBox numeric": 5,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 10,
+      "SizedBox numeric": 5,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/home_screen.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3,
+      "icon size not 20/22/24": 1,
+      "text scale clamp": 2
+    },
+    "lib/ui/screens/host_management_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 1,
+      "TextStyle(": 1,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/isolated_task_sheet.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 9
+    },
+    "lib/ui/screens/keep_running_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/screens/library/catalog_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/library/command_auth_sheet.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/screens/library/commands_screen.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/library/credential_sheet.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 2,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/library/integration_tiles.dart": {
+      ".toUpperCase()": 1,
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 12,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 4,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/library/pending_auth_recovery.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/screens/library/references_screen.dart": {
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/library/skill_activation.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 1,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/library/skills_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/local_agent_screen.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/local_terminal_screen.dart": {
+      "EdgeInsets numeric": 1,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/manage_project_screen.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/managed_workspaces_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/screens/mcp_setup_screen.dart": {
+      "EdgeInsets numeric": 6,
+      "SizedBox numeric": 17
+    },
+    "lib/ui/screens/pairing_scanner_screen.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 5,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/perf_trace_section.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 6,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_hero.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 6
+    },
+    "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 1,
+      "disableAnimationsOf": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/screens/profile_monitor_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/project_folder_actions.dart": {
+      "SizedBox numeric": 3
+    },
+    "lib/ui/screens/project_health_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 1,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/project_hub_screen.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/screens/projects_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/screens/provider_quota_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 21,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "BorderSide(width: not KitTokens": 2,
+      "EdgeInsets numeric": 23,
+      "SizedBox numeric": 29,
+      "TextStyle(": 6,
+      "fontSize:": 4,
+      "icon size not 20/22/24": 6
+    },
+    "lib/ui/screens/run_result_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/screens/running_work_sheet.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 10,
+      "SizedBox numeric": 10,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/saved_permissions_screen.dart": {
+      "EdgeInsets numeric": 1,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/server_capabilities_screen.dart": {
+      "EdgeInsets numeric": 3
+    },
+    "lib/ui/screens/servers_screen.dart": {
+      "EdgeInsets numeric": 18,
+      "SizedBox numeric": 25,
+      "TextStyle(": 3
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 12,
+      "SizedBox numeric": 10,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/session_destination_sheet.dart": {
+      "EdgeInsets numeric": 8,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/session_export_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 6,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/session_import_screen.dart": {
+      "EdgeInsets numeric": 7,
+      "SizedBox numeric": 7,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/session_note_screen.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 5,
+      "TextStyle(": 2
+    },
+    "lib/ui/screens/session_relations_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/settings/notifications_settings_screen.dart": {
+      "EdgeInsets numeric": 6
+    },
+    "lib/ui/screens/settings/personal_settings_screens.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 6,
+      "EdgeInsets numeric": 10,
+      "KitGlass(/GlassSurface(": 3,
+      "Opacity( around text": 1,
+      "SizedBox numeric": 5,
+      "disableAnimationsOf": 1,
+      "gradient(": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/settings/plugins_screen.dart": {
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 13,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      ".toUpperCase()": 2,
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 7,
+      "TextStyle(": 4
+    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/settings_screen.dart": {
+      "EdgeInsets numeric": 3
+    },
+    "lib/ui/screens/staged_revert_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 16,
+      "TextStyle(": 1
+    },
+    "lib/ui/screens/tailscale_setup_screen.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 11
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      "EdgeInsets numeric": 4
+    },
+    "lib/ui/screens/team/agent_screen.dart": {
+      "EdgeInsets numeric": 17,
+      "SizedBox numeric": 12,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 14,
+      "SizedBox numeric": 15,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 6
+    },
+    "lib/ui/screens/team/merge_section.dart": {
+      "EdgeInsets numeric": 7,
+      "SizedBox numeric": 9,
+      "TextStyle(": 2,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/screens/team/policy_block.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 5,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "Border.all(": 2,
+      "EdgeInsets numeric": 17,
+      "SizedBox numeric": 13,
+      "TextStyle(": 2,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/screens/team/start_run_sheet.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 20,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/screens/team/team_agents_screen.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/screens/team/team_board_screen.dart": {
+      "EdgeInsets numeric": 8,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/team/team_home_screen.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 5,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/team/team_intro_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/screens/team/team_needs_you.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/screens/team/work_graph.dart": {
+      "Radius.circular(<n>": 1,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/team/work_sheet.dart": {
+      ".toUpperCase()": 1,
+      "EdgeInsets numeric": 6,
+      "SizedBox numeric": 10,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/screens/team_conversation/team_conversation.dart": {
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/terminal_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 3,
+      "TextStyle(": 2,
+      "fontSize:": 2
+    },
+    "lib/ui/screens/termux_processes_screen.dart": {
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 5,
+      "TextStyle(": 3,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 5,
+      "EdgeInsets numeric": 14,
+      "Opacity( around text": 1,
+      "SizedBox numeric": 52,
+      "TextStyle(": 3,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/screens/termux_storage_screen.dart": {
+      "EdgeInsets numeric": 14,
+      "SizedBox numeric": 9,
+      "TextStyle(": 2,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/screens/tools_screen.dart": {
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 8,
+      "TextStyle(": 5,
+      "fontSize:": 1
+    },
+    "lib/ui/screens/usage_screen.dart": {
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 32,
+      "TextStyle(": 3
+    },
+    "lib/ui/screens/web_sources_screen.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 4
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 8,
+      "TextStyle(": 5,
+      "disableAnimationsOf": 1,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 6,
+      "metal|chrome": 3
+    },
+    "lib/ui/screens/worktrees_screen.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/agent_blocks.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 6,
+      "SizedBox numeric": 4,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/widgets/app_exit_notice.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/widgets/appearance_picker.dart": {
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 10,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/builtin_team_section.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 11
+    },
+    "lib/ui/widgets/code_highlight.dart": {
+      "TextStyle(": 8
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/widgets/confirm_sheet.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/widgets/connection_status_banner.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/widgets/delimited_file_preview.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      "BorderSide(width: not KitTokens": 1,
+      "EdgeInsets numeric": 7,
+      "SizedBox numeric": 4,
+      "TextStyle(": 2,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/entrance.dart": {
+      "disableAnimationsOf": 1
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 10,
+      "Image.asset|network|memory|file(": 1,
+      "SizedBox numeric": 5,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/widgets/first_run_choice.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/widgets/folder_browser.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 6,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 16,
+      "Radius.circular(<n>": 1,
+      "SizedBox numeric": 9,
+      "disableAnimationsOf": 2,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/info_label.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/widgets/language_picker.dart": {
+      "EdgeInsets numeric": 4,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 9,
+      "SizedBox numeric": 28,
+      "icon size not 20/22/24": 5
+    },
+    "lib/ui/widgets/managed_server_recovery_option.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/widgets/markdown.dart": {
+      "Border.all(": 3,
+      "BorderRadius.circular(<n>": 4,
+      "BorderSide(width: not KitTokens": 1,
+      "EdgeInsets numeric": 12,
+      "SizedBox numeric": 1,
+      "fontSize:": 5,
+      "icon size not 20/22/24": 2,
+      "text scale clamp": 1
+    },
+    "lib/ui/widgets/mobile_task_view.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 4,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/widgets/other_projects_panel.dart": {
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/other_servers_panel.dart": {
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/pdf_file_preview.dart": {
+      "EdgeInsets numeric": 3,
+      "Image.asset|network|memory|file(": 1
+    },
+    "lib/ui/widgets/phone_server_card.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 3,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/pickers.dart": {
+      "BorderRadius.circular(<n>": 4,
+      "EdgeInsets numeric": 18,
+      "SizedBox numeric": 18,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/widgets/product_states.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 7,
+      "Opacity( around text": 1,
+      "SizedBox numeric": 11,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/widgets/provider_logo.dart": {
+      "Border.all(": 1,
+      "TextStyle(": 2,
+      "fontSize:": 2
+    },
+    "lib/ui/widgets/question_options.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 1
+    },
+    "lib/ui/widgets/quota_monitor_section.dart": {
+      "SizedBox numeric": 3
+    },
+    "lib/ui/widgets/run_command_dialog.dart": {
+      "SizedBox numeric": 2,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/run_result_view.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 7,
+      "SizedBox numeric": 15,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/widgets/server_switcher_sheet.dart": {
+      "EdgeInsets numeric": 3,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      "SizedBox numeric": 2
+    },
+    "lib/ui/widgets/session_handoff_sheets.dart": {
+      "BorderRadius.circular(<n>": 3,
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 12,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/widgets/session_inventory_footer.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 1,
+      "TextStyle(": 1
+    },
+    "lib/ui/widgets/setup_progress_view.dart": {
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 7,
+      "TextStyle(": 2,
+      "disableAnimationsOf": 2,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/setup_terminal.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3,
+      "TextStyle(": 5,
+      "fontSize:": 1
+    },
+    "lib/ui/widgets/svg_file_preview.dart": {
+      "EdgeInsets numeric": 5
+    },
+    "lib/ui/widgets/team_board_card.dart": {
+      "EdgeInsets numeric": 5,
+      "Radius.circular(<n>": 2,
+      "SizedBox numeric": 5,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 2
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      "EdgeInsets numeric": 8,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/widgets/team_board_tabs.dart": {
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/widgets/team_card.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 2
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      "Border.all(": 2,
+      "BorderRadius.circular(<n>": 2,
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/team_cycle_strip.dart": {
+      "Border.all(": 2,
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 9,
+      "disableAnimationsOf": 1,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/widgets/team_discovery_card.dart": {
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 3
+    },
+    "lib/ui/widgets/team_host_form.dart": {
+      "EdgeInsets numeric": 4,
+      "SizedBox numeric": 14,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/team_moments.dart": {
+      "EdgeInsets numeric": 2
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      "Border.all(": 1,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 26,
+      "icon size not 20/22/24": 3
+    },
+    "lib/ui/widgets/team_phone_section.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 6,
+      "SizedBox numeric": 13,
+      "TextStyle(": 1,
+      "fontSize:": 1,
+      "icon size not 20/22/24": 4
+    },
+    "lib/ui/widgets/team_receipt.dart": {
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/team_task_row.dart": {
+      "EdgeInsets numeric": 1,
+      "TextStyle(": 1,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/team_technical_details.dart": {
+      "EdgeInsets numeric": 5,
+      "SizedBox numeric": 5,
+      "TextStyle(": 2,
+      "fontSize:": 2,
+      "icon size not 20/22/24": 1
+    },
+    "lib/ui/widgets/terminal_view.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "TextStyle(": 13
+    },
+    "lib/ui/widgets/thermal_notice.dart": {
+      "EdgeInsets numeric": 1
+    },
+    "lib/ui/widgets/tool_card.dart": {
+      "Border.all(": 6,
+      "BorderRadius.circular(<n>": 16,
+      "BorderSide(width: not KitTokens": 3,
+      "EdgeInsets numeric": 28,
+      "Image.asset|network|memory|file(": 1,
+      "SizedBox numeric": 31,
+      "TextStyle(": 2,
+      "disableAnimationsOf": 2,
+      "gradient(": 2,
+      "icon size not 20/22/24": 16
+    },
+    "lib/ui/widgets/transcript_highlight.dart": {
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 2,
+      "SizedBox numeric": 1,
+      "TextStyle(": 4
+    }
+  },
+  "G48": {}
 }
