@@ -1,0 +1,1171 @@
+[
+ {
+  "pageId": "about-open-source-tab",
+  "area": "j1-settings-more",
+  "title": "Open source",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "about-privacy-tab",
+  "area": "j1-settings-more",
+  "title": "Privacy",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "about",
+  "area": "j1-settings-more",
+  "title": "About and open source notices",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "activity",
+  "area": "a-shell",
+  "title": "Inbox",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "add-agent",
+  "area": "g-servers",
+  "title": "Add agent",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "agent-account",
+  "area": "g-servers",
+  "title": "Codex account",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "agent-choice",
+  "area": "g-servers",
+  "title": "On my computer",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "app-diagnostics",
+  "area": "j1-settings-more",
+  "title": "App diagnostics",
+  "verdict": "fix",
+  "note": "We need a first grade page that users willingly willuse toaise bugs and also this page should be accessibleen errors happen across app"
+ },
+ {
+  "pageId": "appearance-picker-sheet",
+  "area": "j1-settings-more",
+  "title": "Appearance",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "attention-overview",
+  "area": "a-shell",
+  "title": "Server attention",
+  "verdict": "rethink",
+  "note": "Rethink and spec, deletingis an option if it's not required."
+ },
+ {
+  "pageId": "bootstrap-gate",
+  "area": "a-shell",
+  "title": "OpenCode could not start",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "builtin-server-log-sheet",
+  "area": "h-termux",
+  "title": "Server log",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "builtin-server-setup",
+  "area": "h-termux",
+  "title": "OpenCode inside the app",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "chat-leave-unsaved-draft-sheet",
+  "area": "b2-chat-screen",
+  "title": "Draft could not be saved",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "chat-pending-photo-sheet",
+  "area": "b1-chat-screen",
+  "title": "Pending photo",
+  "verdict": "rethink",
+  "note": "I don't understand you decide"
+ },
+ {
+  "pageId": "chat-read-aloud-consent-sheet",
+  "area": "c-chat-compose",
+  "title": "Use the system speech engine?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "chat-revert-confirm-sheet",
+  "area": "b2-chat-screen",
+  "title": "Revert from this prompt?",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "chat-run-shell-dialog",
+  "area": "b2-chat-screen",
+  "title": "Run shell command",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "chat",
+  "area": "b1-chat-screen",
+  "title": "[Conversation: <session title>]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "command-auth-sheet",
+  "area": "j2-library",
+  "title": "<provider name> / <method label>",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "command-launcher-sheet",
+  "area": "b2-chat-screen",
+  "title": "Commands",
+  "verdict": "rethink",
+  "note": "We need a better UI and there should be at.sheet ina sense right? Also run an agent to think how tovisually represent these in ai, at the end of the day we are out of the terminal rightand what about using Claude or codex will this support their commands?"
+ },
+ {
+  "pageId": "connection-help",
+  "area": "g-servers",
+  "title": "Connection help",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "connection-status-details-sheet",
+  "area": "a-shell",
+  "title": "Connection lost / Reconnecting",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "console-organization-sheet",
+  "area": "e-workspace",
+  "title": "Switch organization",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "context-capsule",
+  "area": "k-session-misc",
+  "title": "Context capsule",
+  "verdict": "fix",
+  "note": "It's a glorifiednputoxi would kill itif not needed, users candump all this into the input box anyway"
+ },
+ {
+  "pageId": "credential-management-sheet",
+  "area": "j2-library",
+  "title": "<provider name>",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "development-services-confirm-sheet",
+  "area": "h-termux",
+  "title": "{Start | Stop | Restart | Forget last run | Remove configuration} · {service name}",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "development-services-logs-sheet",
+  "area": "h-termux",
+  "title": "{service name} · Logs",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "development-services",
+  "area": "h-termux",
+  "title": "Development services",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "diff-view",
+  "area": "f-files-review-terminal",
+  "title": "Review",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-completion-digest-card",
+  "area": "d-chat-sheets",
+  "title": "Server reported idle. Success or failure is not verified.",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-composer",
+  "area": "c-chat-compose",
+  "title": "[Chat composer]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-connection-status-banner",
+  "area": "a-shell",
+  "title": "[Connection status banner]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-info-label",
+  "area": "k-session-misc",
+  "title": "[Info label: term with info glyph]",
+  "verdict": "fix",
+  "note": "Wtf is this page? Kill if not neededor show tool tip?"
+ },
+ {
+  "pageId": "embedded-local-agent-onboarding-block",
+  "area": "h-termux",
+  "title": "Claude Code on this phone",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-markdown-text",
+  "area": "d-chat-sheets",
+  "title": "[Markdown content]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-message-view",
+  "area": "c-chat-compose",
+  "title": "[Chat transcript: messages, empty state, floating pills]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-mobile-task-list",
+  "area": "e-workspace",
+  "title": "[Task list tool view]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-pending-sends-strip",
+  "area": "c-chat-compose",
+  "title": "[Pending sends strip]",
+  "verdict": "fix",
+  "note": "All the queued messages should be merged in one bubble andwith clear ctar message inside the bubble andthe design should follow the themethey feel so different."
+ },
+ {
+  "pageId": "embedded-permission-attention-card",
+  "area": "d-chat-sheets",
+  "title": "<permission request title>",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-product-states",
+  "area": "a-shell",
+  "title": "[Shared empty / error / refresh / gated states]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-profile-monitor-inbox",
+  "area": "g-servers",
+  "title": "Saved servers",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-prompt-error-banner",
+  "area": "c-chat-compose",
+  "title": "[Prompt error banner]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-session-inventory-footer",
+  "area": "e-workspace",
+  "title": "[Session inventory footer]",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-setup-terminal",
+  "area": "h-termux",
+  "title": "LIVE OUTPUT / LAST OUTPUT",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-cycle-strip",
+  "area": "i1-team-core",
+  "title": "[Dispatch cycle strip]",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-discovery-card",
+  "area": "i2-team-sheets",
+  "title": "{server} also runs an AI team. Turn it on?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-merge-section",
+  "area": "i2-team-sheets",
+  "title": "Ready to merge / Not ready / Merged",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-phone-reoffer-card",
+  "area": "i2-team-sheets",
+  "title": "Set up AI team on this phone",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-phone-section",
+  "area": "i2-team-sheets",
+  "title": "On this phone",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-planning-card",
+  "area": "i2-team-sheets",
+  "title": "Planning… (Mayor) / still planning / unconfirmed / refused",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-team-receipt-chip",
+  "area": "i1-team-core",
+  "title": "[Gate answer receipt chip]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-termux-attention-line",
+  "area": "h-termux",
+  "title": "Something is still running on this phone",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-tool-card",
+  "area": "d-chat-sheets",
+  "title": "<tool title> (e.g. Shell, Edit, Task)",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-transcript-find-bar",
+  "area": "c-chat-compose",
+  "title": "[Transcript find bar]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-voice-conversation-controls",
+  "area": "d-chat-sheets",
+  "title": "Voice conversation",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "embedded-work-graph",
+  "area": "i2-team-sheets",
+  "title": "[Work dependency graph]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "external-agent-detail-input-dialog",
+  "area": "g-servers",
+  "title": "New task | Update credential",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "external-agent-detail",
+  "area": "g-servers",
+  "title": "<agent card name>",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "external-agents",
+  "area": "g-servers",
+  "title": "External agents",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "external-task",
+  "area": "g-servers",
+  "title": "Agent task",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "file-preview-sheet",
+  "area": "f-files-review-terminal",
+  "title": "<file name>",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "files-file-viewer-sheet",
+  "area": "f-files-review-terminal",
+  "title": "<file name>",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "files-row-actions-sheet",
+  "area": "f-files-review-terminal",
+  "title": "[File row actions: <file name>]",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "files",
+  "area": "f-files-review-terminal",
+  "title": "Files",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "form-sheet",
+  "area": "d-chat-sheets",
+  "title": "<form title>",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "gate-sheet",
+  "area": "i2-team-sheets",
+  "title": "<gate title> (Decision / Confirmation / Free text / Gate / Run failed / Review ready)",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "global-sessions-continue-here-sheet",
+  "area": "e-workspace",
+  "title": "Continue this session here?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "global-sessions",
+  "area": "e-workspace",
+  "title": "All sessions",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "home-shell",
+  "area": "a-shell",
+  "title": "{server name} · Work / Inbox / Project / Settings",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "host-management",
+  "area": "g-servers",
+  "title": "Run as a Linux service",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "integrations-forget-uncertain-auth-sheet",
+  "area": "j2-library",
+  "title": "Forget uncertain start?",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "integrations-mcp-oauth-code-dialog",
+  "area": "j2-library",
+  "title": "Complete MCP authorization",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "integrations",
+  "area": "j2-library",
+  "title": "Providers | MCP | MCP and integrations",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "isolated-task-sheet",
+  "area": "e-workspace",
+  "title": "New task in a fresh worktree",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "legacy-drafts-review-sheet",
+  "area": "j1-settings-more",
+  "title": "Older drafts",
+  "verdict": "fix",
+  "note": "Do we even need this?"
+ },
+ {
+  "pageId": "local-agent-page",
+  "area": "h-termux",
+  "title": "Claude Code",
+  "verdict": "rethink",
+  "note": "I will assume you are going to make this inline with installationv2 that we have already.his needs be specced in and alsohinkf users who started with opencode and now wants to mix both."
+ },
+ {
+  "pageId": "managed-workspaces-create-dialog",
+  "area": "e-workspace",
+  "title": "New managed workspace",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "managed-workspaces",
+  "area": "e-workspace",
+  "title": "Cloud environments",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "markdown-code-reader",
+  "area": "d-chat-sheets",
+  "title": "Code reader",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "mcp-setup",
+  "area": "j2-library",
+  "title": "Add MCP server",
+  "verdict": "fix",
+  "note": "Can we have two optios one technical users and one driven by ai agents where users can come and say I wantmcp installed or maybe connect with and oss mcp provider and show the mcp from thateposirto or provider in the app as toggles or somethin"
+ },
+ {
+  "pageId": "model-picker-sheet-agent-dialog",
+  "area": "j1-settings-more",
+  "title": "Choose an agent",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "model-picker-sheet",
+  "area": "j1-settings-more",
+  "title": "Choose a model",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "notifications-settings",
+  "area": "j1-settings-more",
+  "title": "Notifications",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "permission-sheet",
+  "area": "d-chat-sheets",
+  "title": "<permission request title, e.g. \"Run a shell command\">",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "phone-setup-customize-sheet",
+  "area": "h-termux",
+  "title": "Choose what to install | Add tools",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "plugins-mapping-dialog",
+  "area": "j1-settings-more",
+  "title": "Link commands",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "profile-editor-discard-sheet",
+  "area": "g-servers",
+  "title": "Discard server changes?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "profile-editor",
+  "area": "g-servers",
+  "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token | OpenCode | Claude Code or Pi | Codex",
+  "verdict": "rethink",
+  "note": "Inline with v installa?"
+ },
+ {
+  "pageId": "profile-monitor",
+  "area": "g-servers",
+  "title": "Saved-server attention",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "project-health",
+  "area": "e-workspace",
+  "title": "Project health",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "project-hub",
+  "area": "f-files-review-terminal",
+  "title": "Project",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "projects",
+  "area": "e-workspace",
+  "title": "Projects",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "prompt-history-sheet",
+  "area": "c-chat-compose",
+  "title": "Reuse a prompt",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "prompt-stash-sheet",
+  "area": "c-chat-compose",
+  "title": "Saved prompts",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "provider-quota-clear-dialog",
+  "area": "g-servers",
+  "title": "Clear saved provider thresholds",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "provider-quota-enroll-dialog",
+  "area": "g-servers",
+  "title": "Monitor this provider source?",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "provider-quota",
+  "area": "g-servers",
+  "title": "Remaining",
+  "verdict": "rethink",
+  "note": "Featureitself needs a lot of work"
+ },
+ {
+  "pageId": "question-sheet",
+  "area": "a-shell",
+  "title": "OpenCode needs input",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "review-comment-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Comment on change",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "review-workspace",
+  "area": "f-files-review-terminal",
+  "title": "Review changes",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "root-connecting",
+  "area": "a-shell",
+  "title": "Connecting to {name}",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "run-result",
+  "area": "k-session-misc",
+  "title": "Run results",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "running-work-sheet",
+  "area": "e-workspace",
+  "title": "Tasks",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "server-settings-restart-dialog",
+  "area": "g-servers",
+  "title": "Restart OpenCode on its host",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "server-settings-upgrade-sheet",
+  "area": "g-servers",
+  "title": "Update remote OpenCode?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "server-settings",
+  "area": "g-servers",
+  "title": "Server",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "servers",
+  "area": "g-servers",
+  "title": "OpenCode — Servers",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "session-approvals-sheet",
+  "area": "d-chat-sheets",
+  "title": "Approvals for this session",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "session-destination-sheet",
+  "area": "e-workspace",
+  "title": "Move session",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "session-handoff-dialog",
+  "area": "k-session-misc",
+  "title": "Copy handoff reference? | Continue on computer",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "session-link-server-missing-banner",
+  "area": "a-shell",
+  "title": "This server is not saved on this phone. Add it under Servers, then scan the code again.",
+  "verdict": "fix",
+  "note": "Screen sucks"
+ },
+ {
+  "pageId": "session-menu-sheet",
+  "area": "b2-chat-screen",
+  "title": "<session title> (Session menu)",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "session-note",
+  "area": "k-session-misc",
+  "title": "Note for the agent",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "settings",
+  "area": "j1-settings-more",
+  "title": "Settings",
+  "verdict": "fix",
+  "note": "Better layout also? And better search? And can an agent become my opencode configuration assistant help me figure it out, run an agent to research, spec,ckendand frontend also, this can be same as themcpp agent I mentionedeqrlier"
+ },
+ {
+  "pageId": "share-session-failed-banner",
+  "area": "a-shell",
+  "title": "Shared text kept. Could not open a session. Retry when the connection is ready.",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "shell-output",
+  "area": "e-workspace",
+  "title": "Command output",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "shorebird-update-notice",
+  "area": "a-shell",
+  "title": "Shorebird update ready — restart to apply.",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "stage-revert-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Stage a revert from this prompt?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "staged-revert",
+  "area": "f-files-review-terminal",
+  "title": "Review staged revert",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "start-run-sheet",
+  "area": "i2-team-sheets",
+  "title": "Start a run",
+  "verdict": "fix",
+  "note": "Give the user recovery options?"
+ },
+ {
+  "pageId": "tailscale-setup",
+  "area": "g-servers",
+  "title": "Connect with Tailscale",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-agent-message-sheet",
+  "area": "i1-team-core",
+  "title": "Message {agent}",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-agent-output",
+  "area": "i1-team-core",
+  "title": "Live output",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "team-agent-reassign-sheet",
+  "area": "i1-team-core",
+  "title": "Reassign work to {agent}",
+  "verdict": "rethink",
+  "note": "Why manual it's all about automated dev right"
+ },
+ {
+  "pageId": "team-agent",
+  "area": "i1-team-core",
+  "title": "<agent name> (Agent · session {id})",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-agents",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-cycle-how-sheet",
+  "area": "i1-team-core",
+  "title": "How the host dispatches",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-cycle-stop-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Stop {agent}?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-home-needs-you-tab",
+  "area": "i1-team-core",
+  "title": "Needs you ({count})",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-home-runs-tab",
+  "area": "i1-team-core",
+  "title": "Runs ({count})",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-home",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "verdict": "rethink",
+  "note": "You decide and rethink"
+ },
+ {
+  "pageId": "team-host-guide-sheet",
+  "area": "i2-team-sheets",
+  "title": "Run an AI team on your computer",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "team-host-sheet",
+  "area": "i2-team-sheets",
+  "title": "Add AI Team host",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-phone-onboarding-steps",
+  "area": "i2-team-sheets",
+  "title": "Setting up the AI team",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "team-plugin-sheet",
+  "area": "j1-settings-more",
+  "title": "AI Team · Gas City",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "team-run-agents-tab",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-run-cancel-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Cancel this run? / Close this batch?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-run-overview-tab",
+  "area": "i1-team-core",
+  "title": "Overview",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "team-run",
+  "area": "i1-team-core",
+  "title": "<run title> (Run · convoy | Run · formula)",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "terminal-surface",
+  "area": "f-files-review-terminal",
+  "title": "<terminal process title>",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "terminal",
+  "area": "f-files-review-terminal",
+  "title": "Terminal",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "termux-processes",
+  "area": "h-termux",
+  "title": "Running now",
+  "verdict": "rethink",
+  "note": "Good screen respec and make proper tool"
+ },
+ {
+  "pageId": "termux-setup-choose",
+  "area": "h-termux",
+  "title": "Choose how to continue",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "termux-setup-connect-termux",
+  "area": "h-termux",
+  "title": "Connect Termux once",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "termux-setup-connected",
+  "area": "h-termux",
+  "title": "[OpenCode is running on this phone]",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "termux-setup-failed",
+  "area": "h-termux",
+  "title": "[Setup failed]",
+  "verdict": "rethink",
+  "note": "Unify all installation into v2"
+ },
+ {
+  "pageId": "termux-setup-get-termux",
+  "area": "h-termux",
+  "title": "Get Termux",
+  "verdict": "rethink",
+  "note": "Incorporate in installav2"
+ },
+ {
+  "pageId": "termux-setup-installed",
+  "area": "h-termux",
+  "title": "On this phone: {runtime}",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "termux-setup-installing",
+  "area": "h-termux",
+  "title": "[Setup progress: Preparing setup / Setting up Ubuntu / Installing OpenCode / Getting models ready / Starting local server / Restarting local server / Switching to {runtime}]",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "termux-setup-replace-installed-sheet",
+  "area": "h-termux",
+  "title": "Replace installed OpenCode?",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "termux-setup-unsupported",
+  "area": "h-termux",
+  "title": "On-device setup is Android only",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "termux-setup-update-sheet",
+  "area": "h-termux",
+  "title": "Update managed OpenCode?",
+  "verdict": "rethink",
+  "note": "Align with v2"
+ },
+ {
+  "pageId": "termux-setup",
+  "area": "h-termux",
+  "title": "On-device setup",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "termux-storage",
+  "area": "h-termux",
+  "title": "Storage on this phone",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "todos-sheet",
+  "area": "d-chat-sheets",
+  "title": "Todo list",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "usage-budget-clear-dialog",
+  "area": "g-servers",
+  "title": "Clear saved consumption budgets",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "usage",
+  "area": "g-servers",
+  "title": "Spent",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "voice-composer-sheet",
+  "area": "d-chat-sheets",
+  "title": "[Voice input] (status: Ready for local voice input / Listening …)",
+  "verdict": "rethink",
+  "note": "Why only 30 seconds, this needs rework"
+ },
+ {
+  "pageId": "voice-model-setup-sheet",
+  "area": "d-chat-sheets",
+  "title": "Local voice input",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "voice-notices",
+  "area": "d-chat-sheets",
+  "title": "Voice licenses and provenance",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "work-sheet",
+  "area": "i2-team-sheets",
+  "title": "<work item title> (Work · bead <id>)",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "workspace-folder-chooser",
+  "area": "e-workspace",
+  "title": "Choose a project folder",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "workspace-session-details-sheet",
+  "area": "e-workspace",
+  "title": "<session title>",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "workspace",
+  "area": "e-workspace",
+  "title": "Work",
+  "verdict": "rethink",
+  "note": ""
+ },
+ {
+  "pageId": "worktrees-create-dialog",
+  "area": "e-workspace",
+  "title": "New worktree",
+  "verdict": "fix",
+  "note": ""
+ },
+ {
+  "pageId": "worktrees",
+  "area": "e-workspace",
+  "title": "Worktrees",
+  "verdict": "fix",
+  "note": ""
+ }
+]
