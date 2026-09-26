@@ -20223,6 +20223,32 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get kitProgressRowLoading => 'Loading';
+
+  @override
+  String kitProgressRowPercent(int percent) {
+    final intl.NumberFormat percentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String percentString = percentNumberFormat.format(percent);
+
+    return '$percentString percent';
+  }
+
+  @override
+  String get kitProgressRowNearLimit => 'Near limit';
+
+  @override
+  String get kitProgressRowAtLimit => 'Limit reached';
+
+  @override
+  String kitProgressRowAsOf(String time) {
+    return 'as of $time';
+  }
+
+  @override
+  String get kitProgressRowOther => 'Other';
+
+  @override
   String get kitQrTooLong =>
       'This is too long for a QR code. Copy the link instead.';
 

@@ -32105,6 +32105,42 @@ abstract class AppLocalizations {
   /// **'{hours, plural, other{about {hours} h left}}'**
   String kitProgressEtaHours(int hours);
 
+  /// KitProgressRow: the loading-state semantics word for the skeleton bar, before the amount is known
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get kitProgressRowLoading;
+
+  /// KitProgressRow: the measured amount's semantics value, before the caller's own value label
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} percent'**
+  String kitProgressRowPercent(int percent);
+
+  /// KitProgressRow: appended word at 80–99 % of a measured amount (automatic tone only)
+  ///
+  /// In en, this message translates to:
+  /// **'Near limit'**
+  String get kitProgressRowNearLimit;
+
+  /// KitProgressRow: appended word at 100 % of a measured amount (automatic tone only)
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached'**
+  String get kitProgressRowAtLimit;
+
+  /// KitProgressRow: the row's last-known-data age, with the time already formatted for the locale
+  ///
+  /// In en, this message translates to:
+  /// **'as of {time}'**
+  String kitProgressRowAsOf(String time);
+
+  /// KitProgressRow.segments: the folded legend entry for every segment past the first 4
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get kitProgressRowOther;
+
   /// Kit QR code: shown in place of the code when the data does not fit a QR code at any size
   ///
   /// In en, this message translates to:
