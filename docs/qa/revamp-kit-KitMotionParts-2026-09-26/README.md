@@ -11,7 +11,9 @@
   `chat/empty_chat.dart`, `phone_setup_start_screen.dart`,
   `setup_progress_view.dart`, `chat/composer.dart`, `chat_screen.dart`,
   `review_workspace.dart`, `entrance.dart`, …) are a separate unit's work.
-- Files changed: `lib/ui/kit/motion/kit_motion_parts.dart` (new),
+- Files changed (review fix `8bff010c` touches the part, its behaviour
+  test, the two `kit_motion_box_outlined_*` goldens and this record):
+  `lib/ui/kit/motion/kit_motion_parts.dart` (new),
   `test/kit/kit_motion_parts_test.dart` (new),
   `test/goldens/kit/kit_motion_parts_golden_test.dart` (new), its 54 PNGs
   under `test/goldens/kit/kit_motion_*.png`, and this QA record.
@@ -22,7 +24,33 @@
   `docs/ux-system/kit-v2.md` §7, §8.2 (no per-window adaptation: "the same
   on compact, medium, expanded and large"), §8.4 (gallery sizes);
   `docs/design/visual-language-2026-09-26.md` §7 (no fade-scale, MOT-2).
-- Contract problems (PROC-20): none blocking. The spec's own "Open
+- Contract problems (PROC-20): one, not blocking:
+  {rule: `KitMotionParts.md` "Public API" (KitDim doc: "A debug assert fails
+  when the child's render subtree contains a paragraph") read with the
+  "Replaces" table (`Opacity` → "`KitDim` for images, drawings and marks");
+  what it says: KitDim dims marks, and asserts on any `RenderParagraph`
+  below it; why wrong: every `Icon`/glyph mark paints through a
+  `RenderParagraph` (Icon builds a `RichText` whose one span uses the icon
+  font), so KitDim cannot dim an icon mark without failing its own assert
+  — the two sentences contradict each other for the commonest "mark";
+  evidence: `lib/ui/kit/motion/kit_motion_parts.dart:334` and `:342` (the guard,
+  `_paintsNoParagraph`), `test/kit/kit_motion_parts_test.dart:22-33` (the
+  test mark avoids `Icon` for this reason) and the gallery's `_imageMark` /
+  `_drawingMark` (no glyphs); proposed replacement text (recommended, keeps
+  the guard strict): in the Replaces table, "`KitDim` for images and
+  drawings. A glyph mark (an `Icon` or `AppGlyph`) is dimmed by
+  kit-KitIcon's own dimmed state, never by `KitDim`", and in the KitDim
+  doc, "Dims an image or a drawing (Opacity's job) … A debug assert fails
+  when the child's render subtree contains a paragraph, including an icon
+  glyph"; alternative if the owner wants KitDim to take glyphs: "A debug
+  assert fails when the child's render subtree contains a text paragraph;
+  a paragraph whose only span is an icon-font glyph (`Icon`) is exempt";
+  blocks: false}. The item is left at the frozen behaviour (the guard
+  asserts on every paragraph, glyphs included) until the coordinator
+  settles it. `KitSwap` now matches the frozen `extends StatelessWidget`
+  exactly (the first build shipped `StatefulWidget` without reporting it;
+  fixed in `8bff010c`, see §5), so no other contract problem remains.
+  Earlier note, still true: The spec's own "Open
   questions" section names one conditional risk — `KitDim` would be a
   PROC-20 contract problem if the pre-wave `KitTokens.staleAlpha` and
   `disabledAlpha` were missing — but both already exist in
@@ -55,7 +83,7 @@
 
 - Branch `revamp/kit-KitMotionParts`, base
   `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4` (`feat/phone-setup-v2`), code
-  head `e14769a6adf3d45ba005f261b183e1eadfda8b31`.
+  head `8bff010c` (review fix on top of the first build `e14769a6`).
 - No APK (unit agents do not build; R19/R20 reserve device and build proof
   for the coordinator).
 
@@ -74,24 +102,59 @@ None: tests, goldens and renders only.
 | 5 | `flutter analyze lib test` | no errors; no new issues in changed paths | `No issues found!` (22.6 s) | PASS |
 | 6 | `test/kit_ratchet_test.dart` + `test/design_standard_test.dart` | pass | 47 passed (one round-trip: G21's kit stroke-width check first failed on `BorderSide(width: width)` — a parameter, not `KitTokens.hairlineWidth(context)` written at the call site — fixed by inlining the token call; see §5) | PASS |
 | 7 | `test/l10n_coverage_test.dart` + `test/ui_glossary_test.dart` + `test/ui_ledger_coverage_test.dart` | pass | 25 passed | PASS |
+| 8 | Review fix, fails first (TEST-2): the new behaviour tests run against the part at `e14769a6` | the three new tests fail | "leaving child keeps its state" got `['init', 'init', 'dispose']` (the leaving child re-initialised), "a change mid-swap" found no `box-a` (the first leaving child vanished at once), "turning outlined on and off" got `Size(96.3, 56.3)` mid-change (layout lerped through fractional pixels); `failing-first.txt` | FAIL as expected |
+| 9 | Review fix: `test/kit/kit_motion_parts_test.dart` at `8bff010c` | passes | 40 passed | PASS |
+| 10 | Review fix: `test/goldens/kit/kit_motion_parts_golden_test.dart` without `--update-goldens` | only the outlined box changes | `box_outlined` dark and light failed (the box no longer grows by 2/dpr); both re-rendered with `--plain-name "box_outlined ("`, opened and compared, then the whole file re-run: 76 passed | PASS |
+| 11 | Review fix: `test/kit_ratchet_test.dart` + `test/design_standard_test.dart`; `flutter analyze lib test` | pass, clean | 47 passed; `No issues found!` | PASS |
 
 ## 5. Evidence
 
-- No `failing-first.txt`: TEST-2's exception applies (new code, no prior
-  regression to revert to); the two bugs the tests caught during
-  development are described in Run 1 and were fixed before this commit, so
-  there is no "before" state left to capture other than the git history of
-  this single unpublished commit.
+- `failing-first.txt` (review fix): the three new behaviour tests run
+  against the first build's part (`e14769a6`), showing each defect the
+  review found (Run 8). The first build's own development bugs (Run 1)
+  predate any commit and have no captured "before".
+- Review fix (`8bff010c`), what changed and why:
+  - `KitSwap` rebuilt the leaving child from scratch: its unkeyed `Stack`
+    went from `[FadeTransition(A)]` to `[IgnorePointer(…(A)),
+    FadeTransition(B)]`, so the framework matched B onto A's element and
+    inflated a new element and `State` for A (initState ran again, timers
+    and fetches restarted, text fields went blank while fading). It is now
+    the frozen `StatelessWidget` over `AnimatedSwitcher` (which keys each
+    entry), with one private `_KitSwapLayer` per child whose
+    `IgnorePointer`/`ExcludeSemantics` are always in the tree and only
+    flip on when the child's animation turns to reverse. A change during a
+    swap reverses each leaving entry from where it is. Curves:
+    `KitMotion.enter` in, `KitMotion.exit.flipped` out (the switcher runs
+    a leaving entry in reverse; same pairing as `KitReveal`).
+  - `KitAnimatedBox` put the edge on the background `ShapeDecoration`, and
+    `Container` pads its child by that decoration's insets, so turning
+    `outlined` on grew a hugging box by 2/dpr and lerped it over `pace`
+    (layout animation, and fractional pixels mid-change). The fill is now
+    a side-less shape and the edge a `foregroundDecoration` (never padded)
+    with a constant `KitTokens.hairlineWidth(context)` side whose colour
+    fades between transparent and `hairline`.
+  - Tests now read what is painted, not widget fields: `_paintedOpacity`
+    multiplies the render tree's opacity objects above a child;
+    `_paintedTurns` reads the child's paint transform to the screen;
+    semantics are read from the live semantics tree. Added: a
+    `KitPace.standard` swap settling at exactly `KitMotion.standard`; the
+    chevron's painted turn in LTR and RTL sampled every 50 ms against
+    `KitMotion.emphasized` and settling at `KitMotion.standard`;
+    initState/dispose counts across a swap; an interrupted swap; a
+    constant size and child offset while `outlined` toggles; the outline
+    measured from the painted ring (`drawDRRect`, 0.5 logical px at
+    DPR 2).
 - Rule evidence (PROC-31):
 
   | Rule | Test (`file` + `--plain-name`) or golden | Output |
   |---|---|---|
   | First build is final (no mount animation), all 5 parts | `test/kit/kit_motion_parts_test.dart` group "first build is final (no mount animation)" | Run 2 |
   | Instant under system reduced motion and Effects › Animations: Off (MOT-7, G8) | `test/kit/kit_motion_parts_test.dart` group "reduced motion settles after one pump() (G8, MOT-7)", 6 parts × 2 switches | Run 2 |
-  | `KitSwap`: cross-fade over exactly `KitMotion.quick`, no scale/size widget inside its own subtree, outgoing ignores taps and semantics | `test/kit/kit_motion_parts_test.dart` "a keyed change cross-fades over exactly KitMotion.quick, with no scale or size animation, and the outgoing child ignores taps and has no semantics" | Run 2 |
-  | `KitSpin(turns: .5)` animates; `.fixed` swaps width/height; `.chevron` turns .5 under both directions on `KitMotion.standard`/`emphasized` | `test/kit/kit_motion_parts_test.dart` group "KitSpin" | Run 2 |
-  | `KitAnimatedBox`: level change animates paint only (constant `RenderBox` size), child size change snaps in one frame, `outlined` is `1/dpr` | `test/kit/kit_motion_parts_test.dart` group "KitAnimatedBox" | Run 2 |
-  | `KitDim`: debug assert fails over a `KitText` child; paints at `disabledAlpha`/`staleAlpha` over non-text content | `test/kit/kit_motion_parts_test.dart` group "KitDim" | Run 2 |
+  | `KitSwap`: cross-fade over exactly `KitMotion.quick` or `standard`, both children painted part-way, constant size, no scale/size widget inside its own subtree, outgoing ignores taps and is absent from the live semantics tree | `test/kit/kit_motion_parts_test.dart` "a keyed change cross-fades over exactly quick (150 ms)…" and "…standard (250 ms)…" | Run 9 |
+  | `KitSwap`: the leaving child keeps its element and State; a change mid-swap fades each leaving child on from its current opacity | `test/kit/kit_motion_parts_test.dart` "the leaving child keeps its state until it has faded out", "a change mid-swap fades each leaving child on from its current opacity" | Run 8 (fails before), Run 9 |
+  | `KitSpin(turns: .5)` paints part-way round then half a turn, layout unchanged; `.fixed` swaps width/height; `.chevron` paints upright folded and half a turn open under LTR and RTL, following `emphasized` over `KitMotion.standard` | `test/kit/kit_motion_parts_test.dart` group "KitSpin" | Run 9 |
+  | `KitAnimatedBox`: level change and `outlined` toggle animate paint only (constant `RenderBox` size and child offset), child size change snaps in one frame, the painted edge is `1/dpr` | `test/kit/kit_motion_parts_test.dart` group "KitAnimatedBox" | Run 8 (outline toggle fails before), Run 9 |
+  | `KitDim`: debug assert fails over a `KitText` child; the settled painted opacity is `disabledAlpha`/`staleAlpha`/1 | `test/kit/kit_motion_parts_test.dart` group "KitDim" | Run 9 |
   | `KitAnimatedValue`: first value at once, 0.2→0.8 eases over `standard`, `jump: true` resets at once | `test/kit/kit_motion_parts_test.dart` group "KitAnimatedValue" | Run 2 |
   | `pumpAndSettle` completes for every part (nothing loops) | one "pumpAndSettle completes (nothing loops)" test per part group | Run 2 |
   | No `Duration(` literal, no `Curves.` in the source (MOT-1) | `test/kit/kit_motion_parts_test.dart` "no Duration( literal and no Curves. in kit_motion_parts.dart (MOT-1)" | Run 2 |
@@ -130,7 +193,13 @@ None: tests, goldens and renders only.
     from semantics by default — looking like KitSwap's own exclusion logic
     but actually just the normal one-frame gap. Advanced a small amount of
     real time (30 ms) before checking.
-- Goldens changed (all new; each opened and looked at before committing):
+- Goldens changed in the review fix: `kit_motion_box_outlined_{dark,light}.png`
+  only. Old and new were cropped and compared at 4×: the hairline ring is
+  unchanged in weight and colour, and the box is now exactly 96×56 (it was
+  96⅔×56⅔, the child padded by the edge). Every other motion golden
+  matched unchanged, including all `swap` shots (settled frames look the
+  same over `AnimatedSwitcher`).
+- Goldens in the first build (all new; each opened and looked at before committing):
   - `kit_motion_swap_{before,after}_{dark,light}.png` (412×915): a status
     pill ("Sending…" / "Sent") on `surface2`. First render used
     `KitTextRole.secondary` and failed G5's contrast check on
@@ -166,8 +235,8 @@ None: tests, goldens and renders only.
 - Before and after (EVID-10): n/a — new kit part, no existing page or
   golden changes; nothing was migrated onto it in this unit.
 - Accessibility: `KitSwap`'s outgoing child is excluded from semantics
-  (verified: `find.bySemanticsLabel` finds the leaving label until it is
-  gone, never after) and ignores pointer events (verified: a tap over its
+  (verified on the live semantics tree: the leaving label is absent while
+  it fades, the arriving one present) and ignores pointer events (verified: a tap over its
   bounds, away from the incoming child's, calls back nothing); `KitDim`
   changes no semantics of its own; `KitSpin.chevron` is decorative (the
   host owns the `expanded` semantics state, not tested here — it is the
@@ -222,6 +291,6 @@ $F analyze lib test
 | Implemented | Yes | `revamp/kit-KitMotionParts` |
 | Enabled | No: not exported from `kit.dart` yet (R06) | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `e14769a6adf3d45ba005f261b183e1eadfda8b31` |
+| Committed | Yes | code head `8bff010c` (review fix; first build `e14769a6`) |
 | Deployed | No | |
 | Released | No | |
