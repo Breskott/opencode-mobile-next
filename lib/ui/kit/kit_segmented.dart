@@ -45,21 +45,17 @@ class KitSegment<T> {
 /// mode, a range or a filter. Full width, start-aligned, never a centred
 /// pill, and marks the chosen segment with a check rather than colour alone.
 ///
-/// When a label does not fit on one line — a long word, or text at 2.0 — the
-/// frozen spec turns this into a vertical stack of full-width
-/// `KitChoiceRow`s (kit-KitChoiceList, KIT-24). That dependency has not
-/// merged into this integration branch yet, so this build renders the
-/// single-row form only; see docs/qa/revamp-kit-KitSegmented/README.md for
-/// the blocked scope. Nothing here invents a substitute stacked layout
-/// (R14): the row form is today's behaviour, kept as is until the
-/// dependency lands.
+/// Its scenes (KitSegmented.md "States"): default (one selected),
+/// with-counts, segment-disabled (the reason under the control), disabled
+/// (the whole control, with its reason) and stacked (the labels do not fit,
+/// so a stack of `KitChoiceRow`s, KIT-24). The stacked form needs
+/// kit-KitChoiceList, which has not merged, so this build is held there
+/// (docs/qa/revamp-kit-KitSegmented-2026-09-26/README.md): until it lands, a
+/// label that does not fit is cut with an ellipsis rather than stacked.
 ///
 /// States: disabled.
-class KitSegmented<T> extends StatefulWidget {
-  // Not `const`: [selected] must be checked against [segments] at
-  // construction (G37), and `Iterable.any` with a closure is not a constant
-  // expression, so this constructor cannot itself be `const`.
-  KitSegmented({
+class KitSegmented<T> extends StatelessWidget {
+  const KitSegmented({
     super.key,
     required this.segments,
     required this.selected,
@@ -74,18 +70,12 @@ class KitSegmented<T> extends StatefulWidget {
        assert(
          onChanged != null || disabledReason != null,
          'KitSegmented.disabledReason is required when onChanged is null.',
-       ),
-       assert(
-         segments.length < 2 ||
-             segments.length > 4 ||
-             segments.any((s) => s.value == selected),
-         'KitSegmented.selected must be the value of one of its segments.',
        );
 
   /// 2 to 4 choices (G37).
   final List<KitSegment<T>> segments;
 
-  /// One of [segments]' values (G37).
+  /// One of [segments]' values (G37, checked when the control builds).
   final T selected;
 
   /// Null disables the whole control (then [disabledReason] is required).
@@ -101,51 +91,70 @@ class KitSegmented<T> extends StatefulWidget {
   final String? disabledReason;
 
   @override
-  State<KitSegmented<T>> createState() => _KitSegmentedState<T>();
+  Widget build(BuildContext context) {
+    // Not in the constructor: `Iterable.any` is not a constant expression,
+    // and the constructor stays `const` as the frozen API declares it.
+    assert(
+      segments.any((s) => s.value == selected),
+      'KitSegmented.selected must be the value of one of its segments.',
+    );
+    return _SegmentedGroup<T>(part: this);
+  }
 }
 
-class _KitSegmentedState<T> extends State<KitSegmented<T>> {
+/// The focus, hover and press bookkeeping behind [KitSegmented]. The
+/// selection itself is never kept here: value is truth (DATA-11).
+class _SegmentedGroup<T> extends StatefulWidget {
+  const _SegmentedGroup({required this.part});
+
+  final KitSegmented<T> part;
+
+  @override
+  State<_SegmentedGroup<T>> createState() => _SegmentedGroupState<T>();
+}
+
+class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   late List<FocusNode> _nodes;
-  final Set<int> _hovered = {};
-  late int _tabbableIndex;
+
+  /// The segment holding keyboard focus; null while focus is outside the
+  /// group, so Tab enters on the selected segment again.
+  int? _focused;
+
+  /// The segment showing the keyboard focus ring (focus came from the
+  /// keyboard: `FocusHighlightMode.traditional`).
+  int? _ring;
+  int? _hovered;
+  int? _pressed;
+
+  KitSegmented<T> get _part => widget.part;
+  List<KitSegment<T>> get _segments => _part.segments;
+  bool get _controlEnabled => _part.onChanged != null;
+  bool _canChoose(int index) => _controlEnabled && _segments[index].enabled;
 
   @override
   void initState() {
     super.initState();
     _nodes = _buildNodes();
-    _tabbableIndex = _indexOfSelected();
-    _syncNodes();
   }
 
   List<FocusNode> _buildNodes() => [
-    for (var i = 0; i < widget.segments.length; i++)
+    for (var i = 0; i < _segments.length; i++)
       FocusNode(
         debugLabel: 'kit-segmented-$i',
         onKeyEvent: (node, event) => _handleKey(i, event),
       ),
   ];
 
-  int _indexOfSelected() {
-    final i = widget.segments.indexWhere((s) => s.value == widget.selected);
-    return i < 0 ? 0 : i;
-  }
-
   @override
-  void didUpdateWidget(covariant KitSegmented<T> oldWidget) {
+  void didUpdateWidget(covariant _SegmentedGroup<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.segments.length != widget.segments.length) {
+    if (oldWidget.part.segments.length != _segments.length) {
       for (final node in _nodes) {
         node.dispose();
       }
       _nodes = _buildNodes();
-      _tabbableIndex = _indexOfSelected();
-    } else if (oldWidget.selected != widget.selected &&
-        !_nodes.any((n) => n.hasFocus)) {
-      // Value is truth (DATA-11): with nothing here focused, the tab stop
-      // follows the host's selection rather than drifting on its own.
-      _tabbableIndex = _indexOfSelected();
+      _focused = _ring = _hovered = _pressed = null;
     }
-    _syncNodes();
   }
 
   @override
@@ -156,26 +165,51 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
     super.dispose();
   }
 
-  bool get _controlEnabled => widget.onChanged != null;
+  int _selectedIndex() {
+    final i = _segments.indexWhere((s) => s.value == _part.selected);
+    return i < 0 ? 0 : i;
+  }
 
-  void _syncNodes() {
-    if (!_controlEnabled || !widget.segments[_tabbableIndex].enabled) {
-      final fallback = widget.segments.indexWhere((s) => s.enabled);
-      if (fallback >= 0) _tabbableIndex = fallback;
+  /// Where Tab enters the group: the selected segment, or the first one
+  /// that can be chosen when the selected one cannot.
+  int _entryIndex() {
+    final selected = _selectedIndex();
+    if (_canChoose(selected)) return selected;
+    for (var i = 0; i < _segments.length; i++) {
+      if (_canChoose(i)) return i;
     }
+    return selected;
+  }
+
+  /// The group is one Tab stop (§8.2, G14): only the focused segment, or
+  /// the entry segment when nothing here is focused, takes part in Tab.
+  /// Applied on build, never inside a focus-change callback: the focus
+  /// manager is still walking its changed nodes then.
+  void _syncTabStop() {
+    final focused = _focused;
+    final stop = focused != null && focused < _nodes.length
+        ? focused
+        : _entryIndex();
     for (var i = 0; i < _nodes.length; i++) {
-      final enabled = _controlEnabled && widget.segments[i].enabled;
-      _nodes[i]
-        ..canRequestFocus = enabled
-        ..skipTraversal = i != _tabbableIndex;
+      _nodes[i].skipTraversal = i != stop;
     }
   }
 
-  int? _nextEnabled(int from, {required bool forward}) {
-    final n = widget.segments.length;
+  void _groupFocusChanged(bool hasFocus) {
+    if (hasFocus || _focused == null) return;
+    setState(() => _focused = null);
+  }
+
+  void _segmentFocusChanged(int index, bool hasFocus) {
+    if (!hasFocus) return;
+    setState(() => _focused = index);
+  }
+
+  int? _nextChoosable(int from, {required bool forward}) {
+    final n = _segments.length;
     for (var step = 1; step <= n; step++) {
       final i = forward ? (from + step) % n : (from - step + n) % n;
-      if (_controlEnabled && widget.segments[i].enabled) return i;
+      if (_canChoose(i)) return i;
     }
     return null;
   }
@@ -184,36 +218,36 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    final rtl = Directionality.of(context) == TextDirection.rtl;
     final key = event.logicalKey;
-    int? target;
-    // Arrows move focus only; they never select (the same rule as
-    // KitChoiceList).
-    if (key == LogicalKeyboardKey.arrowRight) {
-      target = _nextEnabled(index, forward: !rtl);
-    } else if (key == LogicalKeyboardKey.arrowLeft) {
-      target = _nextEnabled(index, forward: rtl);
+    final right = key == LogicalKeyboardKey.arrowRight;
+    if (!right && key != LogicalKeyboardKey.arrowLeft) {
+      return KeyEventResult.ignored;
     }
-    if (target != null && target != index) {
-      setState(() {
-        _tabbableIndex = target!;
-        _syncNodes();
-      });
-      _nodes[target].requestFocus();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
+    // Arrows follow the reading direction and move focus only; they never
+    // select (the same rule as KitChoiceList). They stay inside the group,
+    // even when no other segment can take focus.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final target = _nextChoosable(index, forward: right != rtl);
+    if (target != null && target != index) _nodes[target].requestFocus();
+    return KeyEventResult.handled;
   }
 
-  void _select(int index) {
-    final segment = widget.segments[index];
-    if (!_controlEnabled || !segment.enabled) return;
-    setState(() {
-      _tabbableIndex = index;
-      _syncNodes();
-    });
-    _nodes[index].requestFocus();
-    if (segment.value != widget.selected) widget.onChanged!(segment.value);
+  /// A tap, Space/Enter or the semantics tap. It never moves focus: a touch
+  /// does not leave a keyboard ring behind.
+  void _choose(int index) {
+    if (!_canChoose(index)) return;
+    final value = _segments[index].value;
+    if (value != _part.selected) _part.onChanged!(value);
+  }
+
+  void _setHovered(int index, bool hovered) {
+    final next = hovered ? index : (_hovered == index ? null : _hovered);
+    if (next != _hovered) setState(() => _hovered = next);
+  }
+
+  void _setPressed(int index, bool pressed) {
+    final next = pressed ? index : (_pressed == index ? null : _pressed);
+    if (next != _pressed) setState(() => _pressed = next);
   }
 
   String _formatCount(BuildContext context, int count) =>
@@ -223,32 +257,38 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
 
   /// Distinct reasons to show under the control, in first-seen order.
   List<String> _reasons() {
-    if (!_controlEnabled) return [widget.disabledReason!];
+    if (!_controlEnabled) return [_part.disabledReason!];
     final seen = <String>{};
     return [
-      for (final segment in widget.segments)
+      for (final segment in _segments)
         if (!segment.enabled && seen.add(segment.disabledReason!))
           segment.disabledReason!,
     ];
   }
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: widget.semanticsLabel,
-    child: ListenableBuilder(
-      listenable: Listenable.merge(_nodes),
-      builder: (context, _) => _content(context),
-    ),
-  );
+  Widget build(BuildContext context) {
+    _syncTabStop();
+    return Semantics(
+      container: true,
+      label: _part.semanticsLabel,
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        includeSemantics: false,
+        onFocusChange: _groupFocusChanged,
+        child: _content(context),
+      ),
+    );
+  }
 
   Widget _content(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final reduced = KitMotion.reduced(context);
     final hairline = KitTokens.hairlineWidth(context);
-    final n = widget.segments.length;
-    final selectedIndex = _indexOfSelected();
+    final n = _segments.length;
+    final selectedIndex = _selectedIndex();
     final indicatorAlign = n > 1
         ? AlignmentDirectional(-1 + selectedIndex * (2 / (n - 1)), 0)
         : AlignmentDirectional.center;
@@ -263,7 +303,10 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
       decoration: BoxDecoration(
         color: roles.surface1,
         borderRadius: BorderRadius.circular(tokens.buttonRadius),
-        border: Border.all(color: roles.hairline, width: hairline),
+        border: Border.all(
+          color: roles.hairline,
+          width: KitTokens.hairlineWidth(context),
+        ),
       ),
       child: Stack(
         alignment: AlignmentDirectional.center,
@@ -281,7 +324,10 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
                   borderRadius: BorderRadius.circular(
                     tokens.buttonRadius - tokens.space1,
                   ),
-                  border: Border.all(color: roles.hairline, width: hairline),
+                  border: Border.all(
+                    color: roles.hairline,
+                    width: KitTokens.hairlineWidth(context),
+                  ),
                 ),
               ),
             ),
@@ -312,10 +358,7 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final reason in reasons)
-                Padding(
-                  padding: EdgeInsets.only(bottom: tokens.space1 / 2),
-                  child: KitText(reason, role: KitTextRole.secondary),
-                ),
+                KitText(reason, role: KitTextRole.secondary),
             ],
           ),
         ),
@@ -326,22 +369,34 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
   Widget _segment(BuildContext context, int index, {required bool reduced}) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    final segment = widget.segments[index];
-    final isSelected = segment.value == widget.selected;
-    final enabled = _controlEnabled && segment.enabled;
-    final hovered = enabled && !isSelected && _hovered.contains(index);
-    final node = _nodes[index];
-    final focused = node.hasFocus;
+    final segment = _segments[index];
+    final isSelected = segment.value == _part.selected;
+    final enabled = _canChoose(index);
+    final radius = BorderRadius.circular(tokens.buttonRadius - tokens.space1);
 
+    // Hover and pressed are surface steps above the surface1 track, never
+    // overlays (KitTappable's rule, README.md decision D11): hover is the
+    // next step whose colour differs (surface2 in dark, surface3 in light),
+    // pressed the step after that, at most surface3. The selected segment
+    // already sits on the surface3 indicator.
+    final KitSurfaceLevel? step = !enabled || isSelected
+        ? null
+        : _pressed == index
+        ? KitSurfaceLevel.surface3
+        : _hovered == index
+        ? (roles.isDark ? KitSurfaceLevel.surface2 : KitSurfaceLevel.surface3)
+        : null;
+    final iconSize = tokens.iconSize(context, tokens.smallIconSize);
+    final tone = !enabled
+        ? KitTextTone.tertiary
+        : isSelected
+        ? KitTextTone.primary
+        : KitTextTone.secondary;
     final Color color = !enabled
         ? roles.text3
         : isSelected
         ? roles.text1
         : roles.text2;
-    final Color? fill = hovered
-        ? (roles.isDark ? roles.surface2 : roles.surface3)
-        : null;
-    final iconSize = tokens.iconSize(context, tokens.smallIconSize);
 
     final count = segment.count;
     final label = count == null
@@ -360,7 +415,6 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
             padding: EdgeInsetsDirectional.only(end: tokens.space1),
             child: Icon(
               Icons.check,
-              key: const ValueKey('kit-segmented-check'),
               size: iconSize,
               color: !enabled ? roles.text3 : roles.accent,
             ),
@@ -371,19 +425,13 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
           SizedBox(width: tokens.space1),
         ],
         Flexible(
+          // The ellipsis stands in until the stacked form lands (see the
+          // class comment); the spec's rule is that nothing truncates.
           child: Text(
             segment.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: KitText.styleOf(
-              context,
-              KitTextRole.label,
-              tone: !enabled
-                  ? KitTextTone.tertiary
-                  : isSelected
-                  ? KitTextTone.primary
-                  : KitTextTone.secondary,
-            ),
+            style: KitText.styleOf(context, KitTextRole.label, tone: tone),
           ),
         ),
         if (count != null) ...[
@@ -393,11 +441,7 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
             style: KitText.styleOf(
               context,
               KitTextRole.caption,
-              tone: !enabled
-                  ? KitTextTone.tertiary
-                  : isSelected
-                  ? KitTextTone.primary
-                  : KitTextTone.secondary,
+              tone: tone,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
@@ -405,6 +449,7 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
     );
 
     return Semantics(
+      key: segment.key,
       container: true,
       excludeSemantics: true,
       button: true,
@@ -412,36 +457,60 @@ class _KitSegmentedState<T> extends State<KitSegmented<T>> {
       inMutuallyExclusiveGroup: true,
       enabled: enabled,
       label: label,
-      onTap: enabled ? () => _select(index) : null,
-      child: MouseRegion(
-        cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
-        onEnter: enabled ? (_) => setState(() => _hovered.add(index)) : null,
-        onExit: (_) => setState(() => _hovered.remove(index)),
-        child: InkWell(
-          key: segment.key,
-          focusNode: node,
-          canRequestFocus: enabled,
-          onTap: enabled ? () => _select(index) : null,
-          borderRadius: BorderRadius.circular(
-            tokens.buttonRadius - tokens.space1,
+      onTap: enabled ? () => _choose(index) : null,
+      child: FocusableActionDetector(
+        focusNode: _nodes[index],
+        enabled: enabled,
+        includeFocusSemantics: false,
+        mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              _choose(index);
+              return null;
+            },
           ),
-          child: Container(
-            constraints: BoxConstraints(minHeight: tokens.minTarget),
-            alignment: Alignment.center,
-            padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space2),
-            decoration: BoxDecoration(
-              color: fill,
-              borderRadius: BorderRadius.circular(
-                tokens.buttonRadius - tokens.space1,
+        },
+        onFocusChange: (focused) => _segmentFocusChanged(index, focused),
+        onShowFocusHighlight: (show) => setState(
+          () => _ring = show ? index : (_ring == index ? null : _ring),
+        ),
+        // Hover comes from the pointer itself, not the focus highlight mode:
+        // a mouse on a phone or tablet leaves that mode on touch.
+        child: MouseRegion(
+          onEnter: enabled ? (_) => _setHovered(index, true) : null,
+          onExit: (_) => _setHovered(index, false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            excludeFromSemantics: true,
+            onTapDown: enabled ? (_) => _setPressed(index, true) : null,
+            onTapUp: enabled ? (_) => _setPressed(index, false) : null,
+            onTapCancel: enabled ? () => _setPressed(index, false) : null,
+            onTap: enabled ? () => _choose(index) : null,
+            child: Container(
+              constraints: BoxConstraints(minHeight: tokens.minTarget),
+              alignment: Alignment.center,
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: tokens.space2,
               ),
-              border: focused
-                  ? Border.all(
-                      color: roles.accent,
-                      width: KitTokens.focusRingWidth(context),
+              decoration: BoxDecoration(
+                color: step == null ? null : tokens.fillOf(step),
+                borderRadius: radius,
+              ),
+              // The keyboard ring is painted over the segment, inside its
+              // bounds, so it never moves the content (LOOK-21: 2 physical px
+              // in accent).
+              foregroundDecoration: _ring == index
+                  ? BoxDecoration(
+                      borderRadius: radius,
+                      border: Border.all(
+                        color: roles.accent,
+                        width: KitTokens.focusRingWidth(context),
+                      ),
                     )
                   : null,
+              child: content,
             ),
-            child: content,
           ),
         ),
       ),

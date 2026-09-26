@@ -1,11 +1,13 @@
 // Gallery (gate G4) for KitSegmented (docs/ux-system/kit-api/KitSegmented.md
-// §"Galleries required"): default, with-counts, segment-disabled and
-// disabled, at the §8.4 sizes, in light and dark, at 2.0 text and in
-// Arabic (right to left).
+// §"Galleries required"): the default, with-counts, segment-disabled and
+// disabled scenes at 412x915, the default state at the other §8.4 sizes, and
+// the default state in Arabic (right to left), each in dark and light.
 //
-// The "stacked" scene is not here: it needs kit-KitChoiceList's
-// `KitChoiceRow` (KIT-24), which has not merged into this integration
-// branch. See docs/qa/revamp-kit-KitSegmented/README.md.
+// Not here yet, because they need kit-KitChoiceList's `KitChoiceRow`
+// (KIT-24), which has not merged: the "stacked" scene, and the default state
+// at text 2.0, which the spec says shows the stacked form. A text-2.0
+// baseline of the one-row form would contradict the spec, so none is
+// committed. See docs/qa/revamp-kit-KitSegmented-2026-09-26/README.md.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_segmented_golden_test.dart
@@ -156,7 +158,7 @@ void main() {
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    // Every declared state (bar "stacked"), dark and light, at 412x915.
+    // Every scene the spec names (bar "stacked"), dark and light, at 412x915.
     testWidgets('default · $mode', (tester) async {
       await kitGalleryPart(
         tester,
@@ -174,7 +176,7 @@ void main() {
       await kitGalleryPart(
         tester,
         name: kitGalleryName(
-          'kit_segmented_counts',
+          'kit_segmented_with_counts',
           const Size(412, 915),
           light: light,
         ),
@@ -227,26 +229,10 @@ void main() {
       });
     }
 
-    // The default state at 2.0 text and in Arabic, at 412x915 and 1280x800
-    // (the stacked form these scenes would otherwise show is blocked; see
-    // the file header).
+    // The default state in Arabic, at 412x915 and 1280x800. Its text-2.0
+    // twins wait for the stacked form (see the file header).
     for (final size in kitGalleryScaledSizes) {
       final at = kitGallerySize(size);
-      testWidgets('default · 2.0 text · $at · $mode', (tester) async {
-        await kitGalleryPart(
-          tester,
-          name: kitGalleryName(
-            'kit_segmented_default',
-            size,
-            light: light,
-            text2: true,
-          ),
-          size: size,
-          light: light,
-          textScale: 2,
-          child: _default(_en),
-        );
-      });
       testWidgets('default · Arabic · $at · $mode', (tester) async {
         await kitGalleryPart(
           tester,
