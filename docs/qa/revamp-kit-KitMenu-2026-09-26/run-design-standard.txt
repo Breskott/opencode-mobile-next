@@ -1,3 +1,4 @@
+machine_lock: got test slot 1 after 3s
 Waiting for another flutter command to release the startup lock...
 Resolving dependencies...
 Downloading packages...
@@ -75,12 +76,12 @@ Try `flutter pub outdated` for more information.
 00:00 +13: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/design_standard_test.dart: G3x counters on fixture strings (proves the patterns) bidi literals count outside the kit, as characters or escapes
 00:00 +14: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/design_standard_test.dart: G3x counters on fixture strings (proves the patterns) an argument list is read to its closing parenthesis
 00:00 +15: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart
-00:01 +15: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) accepts the documented shapes
-00:01 +16: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) rejects the rest
-00:01 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) reads the regenerate header only at the top of the file
-00:01 +18: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 scanner strips line and block comments, not strings
-00:01 +19: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 scanner baseline growth honours ratchet-tighten only for its check
-00:01 +20: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 font loaders register every family AppTheme and pubspec name (TEST-8)
-00:01 +21: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 baseline only shrinks and never holds kit gallery entries
-00:01 +22: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
-00:03 +23: All tests passed!
+00:00 +15: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) accepts the documented shapes
+00:00 +16: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) rejects the rest
+00:00 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden-name rule (TEST-20) reads the regenerate header only at the top of the file
+00:00 +18: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 scanner strips line and block comments, not strings
+00:00 +19: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 scanner baseline growth honours ratchet-tighten only for its check
+00:00 +20: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 font loaders register every family AppTheme and pubspec name (TEST-8)
+00:00 +21: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 baseline only shrinks and never holds kit gallery entries
+00:00 +22: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-1/test/golden_harness_test.dart: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
+00:02 +23: All tests passed!

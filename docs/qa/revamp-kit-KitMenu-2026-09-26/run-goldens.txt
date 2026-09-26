@@ -71,7 +71,7 @@ Try `flutter pub outdated` for more information.
 00:01 +8: kit_menu default · 800x1280 · dark
 00:01 +9: kit_menu default · 1280x800 hovered · dark
 00:01 +10: kit_menu default · 1600x1000 hovered · dark
-00:01 +11: kit_menu default · 2.0 text · dark
+00:02 +11: kit_menu default · 2.0 text · dark
 00:02 +12: kit_menu default · ar · dark
 00:02 +13: kit_menu default · 2.0 text · dark
 00:02 +14: kit_menu default · ar · dark
@@ -81,7 +81,7 @@ Try `flutter pub outdated` for more information.
 00:02 +18: kit_menu groups · light
 00:02 +19: kit_menu destructive · light
 00:02 +20: kit_menu disabled · light
-00:02 +21: kit_menu default · 360x800 · light
+00:03 +21: kit_menu default · 360x800 · light
 00:03 +22: kit_menu default · 915x412 · light
 00:03 +23: kit_menu default · 800x1280 · light
 00:03 +24: kit_menu default · 1280x800 hovered · light

@@ -174,6 +174,15 @@ Future<KitMenuItem?> showKitMenu(
   final gutter = KitTokens.of(context).gutter;
   final reduced = KitMotion.reduced(context);
   final rtl = Directionality.of(context) == TextDirection.rtl;
+  // Decided from the invoking gesture itself, not from the focus highlight
+  // mode (a mouse click also switches that to "traditional"): Shift+F10,
+  // the context-menu key and Enter all act on key down, so their key is
+  // still held while the invoker calls this synchronously. A right-click or
+  // long-press holds no key (a held modifier, as in Shift+right-click, does
+  // not count).
+  final fromKeyboard = _kitMenuOpenedFromKeyboard();
+  // Focus returns to the invoker on close (KitMenu.md Keyboard, LAY-10).
+  final invokerFocus = FocusManager.instance.primaryFocus;
   final selected = await navigator.push<KitMenuItem>(
     _KitMenuRoute(
       items: items,
@@ -182,19 +191,47 @@ Future<KitMenuItem?> showKitMenu(
       rtl: rtl,
       gutter: gutter,
       reducedMotion: reduced,
+      focusFirstItem: fromKeyboard,
       semanticsLabel: semanticsLabel,
-      menuKey: menuKey ?? const ValueKey('kit-menu'),
+      menuKey: menuKey,
     ),
   );
+  if (invokerFocus != null &&
+      invokerFocus.context != null &&
+      invokerFocus.canRequestFocus &&
+      !invokerFocus.hasPrimaryFocus) {
+    invokerFocus.requestFocus();
+  }
   if (selected == null) return null;
   final copyText = selected.copyText;
   if (copyText != null) {
-    if (context.mounted) await KitCopy.copy(context, copyText());
+    // The invoker may have unmounted while the menu was open (a list row
+    // that rebuilt). The navigator outlives it and carries the same view,
+    // localizations and direction, so the chosen copy always happens.
+    final copyContext = context.mounted ? context : navigator.context;
+    if (copyContext.mounted) await KitCopy.copy(copyContext, copyText());
   } else {
     selected.onSelected();
   }
   return selected;
 }
+
+/// The modifier keys, with left/right variants collapsed to one key each.
+final _kitMenuModifierKeys = <LogicalKeyboardKey>{
+  LogicalKeyboardKey.shift,
+  LogicalKeyboardKey.control,
+  LogicalKeyboardKey.alt,
+  LogicalKeyboardKey.meta,
+  LogicalKeyboardKey.capsLock,
+  LogicalKeyboardKey.numLock,
+  LogicalKeyboardKey.fn,
+};
+
+/// Whether a non-modifier key is held right now, i.e. the menu is being
+/// opened from the keyboard (see [showKitMenu]).
+bool _kitMenuOpenedFromKeyboard() => LogicalKeyboardKey.collapseSynonyms(
+  HardwareKeyboard.instance.logicalKeysPressed,
+).any((key) => !_kitMenuModifierKeys.contains(key));
 
 /// The menu's panel on its own, without a route: for galleries and for a
 /// part that shows a menu inline (a `KitTopBar` overflow on a PC). The same
@@ -208,11 +245,25 @@ class KitMenuPanel extends StatelessWidget {
     required this.items,
     required this.onSelected, // ValueChanged<KitMenuItem>
     this.semanticsLabel,
-  });
+  }) : _focusFirstItem = false;
+
+  /// The panel [showKitMenu]'s route shows: [focusFirstItem] when the menu
+  /// was opened from the keyboard (KitMenu.md Keyboard).
+  const KitMenuPanel._route({
+    super.key,
+    required this.items,
+    required this.onSelected,
+    this.semanticsLabel,
+    required bool focusFirstItem,
+  }) : _focusFirstItem = focusFirstItem;
 
   final List<KitMenuItem> items;
   final ValueChanged<KitMenuItem> onSelected;
   final String? semanticsLabel;
+
+  /// False: the panel itself takes focus (opened by pointer, or shown
+  /// inline); true: the first enabled item does.
+  final bool _focusFirstItem;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +284,7 @@ class KitMenuPanel extends StatelessWidget {
         rows: rows,
         hasLeadingSlot: hasLeadingSlot,
         showShortcut: showShortcut,
+        focusFirstItem: _focusFirstItem,
         onSelected: onSelected,
       ),
     );
@@ -260,12 +312,14 @@ class _KitMenuBody extends StatefulWidget {
     required this.rows,
     required this.hasLeadingSlot,
     required this.showShortcut,
+    required this.focusFirstItem,
     required this.onSelected,
   });
 
   final List<Object> rows;
   final bool hasLeadingSlot;
   final bool showShortcut;
+  final bool focusFirstItem;
   final ValueChanged<KitMenuItem> onSelected;
 
   @override
@@ -286,11 +340,9 @@ class _KitMenuBodyState extends State<_KitMenuBody> {
       for (var i = 0; i < _enabledCount; i++)
         FocusNode(debugLabel: 'kit-menu-item'),
     ];
-    final keyboard =
-        FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (keyboard && _itemFocus.isNotEmpty) {
+      if (widget.focusFirstItem && _itemFocus.isNotEmpty) {
         _itemFocus.first.requestFocus();
       } else {
         _panelFocus.requestFocus();
@@ -355,10 +407,15 @@ class _KitMenuBodyState extends State<_KitMenuBody> {
             onSelected: widget.onSelected,
           )
         else
-          Container(
-            key: ValueKey('kit-menu-divider-${dividerCursor++}'),
-            height: hairline,
-            color: roles.hairline,
+          // The outer key keeps siblings apart; the inner one is the
+          // frozen TEST-5 handle, the same on every divider.
+          KeyedSubtree(
+            key: ValueKey<int>(dividerCursor++),
+            child: SizedBox(
+              key: const ValueKey('kit-menu-divider'),
+              height: hairline,
+              child: ColoredBox(color: roles.hairline),
+            ),
           ),
     ];
 
@@ -392,31 +449,41 @@ class _KitMenuBodyState extends State<_KitMenuBody> {
         },
         child: Focus(
           focusNode: _panelFocus,
+          // The border is painted above the content, so an item's hover or
+          // focus fill never covers the panel's hairline (at the rounded
+          // corners too).
           child: DecoratedBox(
+            key: const ValueKey('kit-menu'),
+            position: DecorationPosition.foreground,
             decoration: BoxDecoration(
-              color: roles.surface2,
               borderRadius: BorderRadius.circular(KitTokens.popoverRadius),
               border: Border.all(
                 color: roles.hairline,
                 width: KitTokens.hairlineWidth(context),
               ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(KitTokens.popoverRadius),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: KitLayout.popoverMinWidth,
-                  maxWidth: KitLayout.popoverMaxWidth,
-                  maxHeight: available > 0 ? available : double.infinity,
-                ),
-                child: IntrinsicWidth(
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: tiles,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: roles.surface2,
+                borderRadius: BorderRadius.circular(KitTokens.popoverRadius),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(KitTokens.popoverRadius),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: KitLayout.popoverMinWidth,
+                    maxWidth: KitLayout.popoverMaxWidth,
+                    maxHeight: available > 0 ? available : double.infinity,
+                  ),
+                  child: IntrinsicWidth(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: tiles,
+                        ),
                       ),
                     ),
                   ),
@@ -552,24 +619,70 @@ class _KitMenuItemTile extends StatelessWidget {
         key: item.key,
         button: true,
         enabled: false,
+        checked: item.checked,
         hint: item.disabledReason,
         child: sized,
       );
     }
 
+    final node = focusNode;
     return Semantics(
       button: true,
       checked: item.checked,
       hint: item.shortcut,
       child: InkWell(
         key: item.key,
-        focusNode: focusNode,
+        focusNode: node,
         onTap: () => onSelected(item),
         hoverColor: roles.surface3,
         focusColor: roles.surface3,
         splashFactory: NoSplash.splashFactory,
         highlightColor: Colors.transparent,
-        child: sized,
+        child: node == null
+            ? sized
+            : ListenableBuilder(
+                listenable: node,
+                builder: (context, child) => Stack(
+                  children: [
+                    child!,
+                    if (node.hasFocus) const _KitMenuFocusRing(),
+                  ],
+                ),
+                child: sized,
+              ),
+      ),
+    );
+  }
+}
+
+/// The keyboard focus ring on the focused item (LAY-10, LOOK-21): `accent`,
+/// [KitTokens.focusRingWidth] (two physical pixels), inset by `space1` with
+/// corners concentric to the panel's, so it is never clipped at the first
+/// or last row. Hover keeps the plain `surface3` fill, so the two differ.
+class _KitMenuFocusRing extends StatelessWidget {
+  const _KitMenuFocusRing();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final inset = tokens.space1;
+    return PositionedDirectional(
+      start: inset,
+      end: inset,
+      top: inset,
+      bottom: inset,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(
+              KitTokens.popoverRadius - inset,
+            ),
+            border: Border.all(
+              color: tokens.roles.accent,
+              width: KitTokens.focusRingWidth(context),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -577,27 +690,44 @@ class _KitMenuItemTile extends StatelessWidget {
 
 /// Positions the panel: below the invoker, end-aligned, flipping above when
 /// there is no room (context-anchored), or with its top-start corner at
-/// [anchor]'s point ([byPoint]); always clamped inside the window minus
-/// [gutter] (KitMenu.md Adaptive, LAY-11).
+/// [anchor]'s point ([byPoint]); always inside the window minus the system
+/// [insets] (status bar, cutout, on-screen keyboard) and the [gutter], both
+/// in size and in position (KitMenu.md Adaptive, LAY-11). The position is
+/// snapped to the physical pixel grid ([devicePixelRatio]) so the hairline
+/// and the focus ring land on whole pixels.
 class _KitMenuLayoutDelegate extends SingleChildLayoutDelegate {
   const _KitMenuLayoutDelegate({
     required this.anchor,
     required this.byPoint,
     required this.rtl,
     required this.gutter,
+    required this.insets,
+    required this.devicePixelRatio,
   });
 
   final Rect anchor;
   final bool byPoint;
   final bool rtl;
   final double gutter;
+  final EdgeInsets insets;
+  final double devicePixelRatio;
+
+  /// The area the panel may occupy inside a window of [size].
+  Rect _area(Size size) =>
+      (insets + EdgeInsets.all(gutter)).deflateRect(Offset.zero & size);
 
   @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      BoxConstraints.loose(constraints.biggest);
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final area = _area(constraints.biggest);
+    return BoxConstraints(
+      maxWidth: math.max(0, area.width),
+      maxHeight: math.max(0, area.height),
+    );
+  }
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
+    final area = _area(size);
     double left;
     double top;
     if (byPoint) {
@@ -606,21 +736,30 @@ class _KitMenuLayoutDelegate extends SingleChildLayoutDelegate {
     } else {
       left = rtl ? anchor.left : anchor.right - childSize.width;
       top = anchor.bottom;
-      final fitsBelow = top + childSize.height <= size.height - gutter;
-      final fitsAbove = anchor.top - childSize.height >= gutter;
+      final fitsBelow = top + childSize.height <= area.bottom;
+      final fitsAbove = anchor.top - childSize.height >= area.top;
       if (!fitsBelow && fitsAbove) top = anchor.top - childSize.height;
     }
-    final maxLeft = math.max(gutter, size.width - gutter - childSize.width);
-    final maxTop = math.max(gutter, size.height - gutter - childSize.height);
-    return Offset(left.clamp(gutter, maxLeft), top.clamp(gutter, maxTop));
+    final maxLeft = math.max(area.left, area.right - childSize.width);
+    final maxTop = math.max(area.top, area.bottom - childSize.height);
+    return Offset(
+      _snap(left.clamp(area.left, maxLeft)),
+      _snap(top.clamp(area.top, maxTop)),
+    );
   }
+
+  double _snap(double value) => devicePixelRatio > 0
+      ? (value * devicePixelRatio).roundToDouble() / devicePixelRatio
+      : value;
 
   @override
   bool shouldRelayout(_KitMenuLayoutDelegate oldDelegate) =>
       anchor != oldDelegate.anchor ||
       byPoint != oldDelegate.byPoint ||
       rtl != oldDelegate.rtl ||
-      gutter != oldDelegate.gutter;
+      gutter != oldDelegate.gutter ||
+      insets != oldDelegate.insets ||
+      devicePixelRatio != oldDelegate.devicePixelRatio;
 }
 
 /// The route [showKitMenu] pushes: a transparent, dismissible barrier, a
@@ -633,6 +772,7 @@ class _KitMenuRoute extends PopupRoute<KitMenuItem> {
     required this.rtl,
     required this.gutter,
     required this.reducedMotion,
+    required this.focusFirstItem,
     required this.semanticsLabel,
     required this.menuKey,
   });
@@ -643,8 +783,9 @@ class _KitMenuRoute extends PopupRoute<KitMenuItem> {
   final bool rtl;
   final double gutter;
   final bool reducedMotion;
+  final bool focusFirstItem;
   final String? semanticsLabel;
-  final Key menuKey;
+  final Key? menuKey;
 
   @override
   Color? get barrierColor => null;
@@ -688,9 +829,14 @@ class _KitMenuRoute extends PopupRoute<KitMenuItem> {
             byPoint: byPoint,
             rtl: rtl,
             gutter: gutter,
+            insets:
+                MediaQuery.paddingOf(routeContext) +
+                MediaQuery.viewInsetsOf(routeContext),
+            devicePixelRatio: MediaQuery.devicePixelRatioOf(routeContext),
           ),
-          child: KitMenuPanel(
+          child: KitMenuPanel._route(
             key: menuKey,
+            focusFirstItem: focusFirstItem,
             items: items,
             semanticsLabel: semanticsLabel,
             onSelected: (item) => Navigator.of(routeContext).pop(item),

@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'dart:ui' show CheckedState, Tristate;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,7 @@ import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_harness.dart';
 
@@ -74,6 +76,94 @@ Future<BuildContext> _pumpLoggedHost(WidgetTester tester, _RouteLog log) async {
     ),
   );
   return context;
+}
+
+/// A focusable invoker that opens [items] the ways the spec names: Shift+F10,
+/// the context-menu key or Enter from the keyboard, and a right-click with
+/// the pointer's position (KitMenu.md Keyboard and §8.3).
+class _Invoker {
+  _Invoker(this.items);
+
+  final List<KitMenuItem> items;
+  final focus = FocusNode(debugLabel: 'invoker');
+  final results = <KitMenuItem?>[];
+
+  Widget build() => Builder(
+    builder: (context) => Focus(
+      focusNode: focus,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        final opens =
+            (key == LogicalKeyboardKey.f10 &&
+                HardwareKeyboard.instance.isShiftPressed) ||
+            key == LogicalKeyboardKey.contextMenu ||
+            key == LogicalKeyboardKey.enter;
+        if (!opens) return KeyEventResult.ignored;
+        unawaited(showKitMenu(context, items: items).then(results.add));
+        return KeyEventResult.handled;
+      },
+      child: GestureDetector(
+        onSecondaryTapUp: (details) => unawaited(
+          showKitMenu(
+            context,
+            items: items,
+            position: details.globalPosition,
+          ).then(results.add),
+        ),
+        child: const SizedBox(width: 200, height: 48, child: Text('Invoker')),
+      ),
+    ),
+  );
+}
+
+Future<void> _pumpInvokerHost(WidgetTester tester, _Invoker invoker) async {
+  tester.view.physicalSize = const Size(1280, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.dark(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Align(
+          alignment: AlignmentDirectional.topStart,
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: invoker.build(),
+          ),
+        ),
+      ),
+    ),
+  );
+  invoker.focus.requestFocus();
+  await tester.pump();
+}
+
+/// The accent keyboard focus ring (KitMenu.md Tokens: `accent` for the
+/// focus ring, `KitTokens.focusRingWidth`), wherever it is painted.
+Finder _focusRing(WidgetTester tester) {
+  final accent = KitTokens.of(
+    tester.element(find.byType(KitMenuPanel)),
+  ).roles.accent;
+  return find.byWidgetPredicate((widget) {
+    if (widget is! DecoratedBox) return false;
+    final decoration = widget.decoration;
+    if (decoration is! BoxDecoration) return false;
+    final border = decoration.border;
+    return border is Border && border.top.color == accent;
+  });
+}
+
+Finder _tileOf(String label) =>
+    find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first;
+
+Future<void> _shiftF10(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+  await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
 }
 
 void main() {
@@ -249,9 +339,18 @@ void main() {
               'Delete',
         );
       }
-      expect(find.byKey(const ValueKey('kit-menu-divider-0')), findsOneWidget);
-      expect(find.byKey(const ValueKey('kit-menu-divider-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('kit-menu-divider-2')), findsNothing);
+      // One divider between the two groups, one before the destructive
+      // block, each carrying the frozen TEST-5 key.
+      final dividers = find.byKey(const ValueKey('kit-menu-divider'));
+      expect(dividers, findsNWidgets(2));
+      final dividerYs = [
+        for (final e in dividers.evaluate())
+          tester.getTopLeft(find.byWidget(e.widget)).dy,
+      ]..sort();
+      expect(dividerYs.first, greaterThan(ys[1]));
+      expect(dividerYs.first, lessThan(ys[2]));
+      expect(dividerYs.last, greaterThan(ys[2]));
+      expect(dividerYs.last, lessThan(ys[3]));
     },
   );
 
@@ -298,6 +397,34 @@ void main() {
       final off = tester.getSemantics(find.text('Off'));
       expect(off.flagsCollection.isChecked, isNot(CheckedState.none));
       expect(off.flagsCollection.isChecked, CheckedState.isFalse);
+      semantics.dispose();
+    });
+
+    testWidgets('a disabled checked item keeps its checked semantics', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final context = await pumpKitHost(tester);
+      unawaited(
+        showKitMenu(
+          context,
+          items: [
+            KitMenuItem(
+              label: 'Sort by name',
+              onSelected: () {},
+              checked: true,
+              enabled: false,
+              disabledReason: 'Sorting is locked while syncing',
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(AppIconography.check), findsOneWidget);
+      final data = tester.getSemantics(find.text('Sort by name'));
+      expect(data.flagsCollection.isChecked, CheckedState.isTrue);
+      expect(data.flagsCollection.isEnabled, Tristate.isFalse);
       semantics.dispose();
     });
   });
@@ -397,6 +524,70 @@ void main() {
     expect(result?.label, 'Copy key');
   });
 
+  testWidgets('5. KitMenuItem.copy still copies when the invoker unmounted '
+      'while the menu was open', (tester) async {
+    final platform = <MethodCall>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      platform.add(call);
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    final show = ValueNotifier(true);
+    late BuildContext invoker;
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ValueListenableBuilder<bool>(
+            valueListenable: show,
+            builder: (_, visible, _) => visible
+                ? Builder(
+                    builder: (inner) {
+                      invoker = inner;
+                      return const SizedBox(width: 100, height: 48);
+                    },
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+
+    KitMenuItem? result;
+    unawaited(
+      showKitMenu(
+        invoker,
+        items: [
+          KitMenuItem.copy(label: 'Copy name', text: () => 'fox den notes'),
+        ],
+      ).then((v) => result = v),
+    );
+    await tester.pumpAndSettle();
+
+    // The row that opened the menu rebuilds away underneath it.
+    show.value = false;
+    await tester.pump();
+    expect(invoker.mounted, isFalse);
+
+    await tester.tap(find.text('Copy name'));
+    await tester.pumpAndSettle();
+
+    final setData = platform.singleWhere(
+      (c) => c.method == 'Clipboard.setData',
+    );
+    expect((setData.arguments as Map)['text'], 'fox den notes');
+    expect(result?.label, 'Copy name');
+    show.dispose();
+  });
+
   testWidgets('6. an empty item list resolves to null and pushes no route', (
     tester,
   ) async {
@@ -413,48 +604,58 @@ void main() {
   group('7. keyboard, with desktop capabilities', () {
     setUp(() {
       debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
-      FocusManager.instance.highlightStrategy =
-          FocusHighlightStrategy.alwaysTraditional;
     });
     tearDown(() {
       debugPlatformCapabilities = null;
-      FocusManager.instance.highlightStrategy =
-          FocusHighlightStrategy.automatic;
     });
 
+    List<KitMenuItem> items(List<String> ran) => [
+      KitMenuItem(label: 'First', onSelected: () => ran.add('First')),
+      KitMenuItem(
+        label: 'Disabled',
+        onSelected: () => ran.add('Disabled'),
+        enabled: false,
+        disabledReason: 'x',
+      ),
+      KitMenuItem(label: 'Middle', onSelected: () => ran.add('Middle')),
+      KitMenuItem(label: 'Last', onSelected: () => ran.add('Last')),
+    ];
+
     testWidgets(
-      'opening from the keyboard focuses the first enabled item; Down/Up '
-      'skip disabled and wrap; Enter selects; Esc closes; focus returns',
+      'Shift+F10 focuses the first enabled item with a visible ring; Down/Up '
+      'skip disabled and wrap; End/Home jump; Esc closes and focus returns '
+      'to the invoker',
       (tester) async {
-        final context = await pumpKitHost(tester, size: const Size(1280, 800));
-        KitMenuItem? result;
-        unawaited(
-          showKitMenu(
-            context,
-            items: [
-              KitMenuItem(label: 'First', onSelected: () {}),
-              KitMenuItem(
-                label: 'Disabled',
-                onSelected: () {},
-                enabled: false,
-                disabledReason: 'x',
-              ),
-              KitMenuItem(label: 'Last', onSelected: () {}),
-            ],
-          ).then((v) => result = v),
-        );
+        final ran = <String>[];
+        final invoker = _Invoker(items(ran));
+        await _pumpInvokerHost(tester, invoker);
+
+        await _shiftF10(tester);
         await tester.pumpAndSettle();
 
+        expect(find.byType(KitMenuPanel), findsOneWidget);
         expect(_focusedOnLabel(tester, 'First'), isTrue);
+        // The accent ring marks the focused item, and only it.
+        expect(
+          find.descendant(of: _tileOf('First'), matching: _focusRing(tester)),
+          findsOneWidget,
+        );
+        expect(_focusRing(tester), findsOneWidget);
 
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         expect(
-          _focusedOnLabel(tester, 'Last'),
+          _focusedOnLabel(tester, 'Middle'),
           isTrue,
           reason: 'Down skips the disabled item',
         );
+        expect(
+          find.descendant(of: _tileOf('Middle'), matching: _focusRing(tester)),
+          findsOneWidget,
+          reason: 'the ring follows focus',
+        );
 
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         expect(
@@ -471,13 +672,121 @@ void main() {
           reason: 'Up from the first item wraps to the last',
         );
 
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyEvent(LogicalKeyboardKey.home);
+        await tester.pumpAndSettle();
+        expect(_focusedOnLabel(tester, 'First'), isTrue, reason: 'Home');
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.end);
+        await tester.pumpAndSettle();
+        expect(_focusedOnLabel(tester, 'Last'), isTrue, reason: 'End');
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
 
-        expect(result?.label, 'Last');
-        expect(find.text('Last'), findsNothing);
+        expect(find.byType(KitMenuPanel), findsNothing);
+        expect(invoker.results, [null]);
+        expect(ran, isEmpty);
+        expect(invoker.focus.hasPrimaryFocus, isTrue);
+        invoker.focus.dispose();
       },
     );
+
+    testWidgets('Enter opens on the first enabled item; Enter selects', (
+      tester,
+    ) async {
+      final ran = <String>[];
+      final invoker = _Invoker(items(ran));
+      await _pumpInvokerHost(tester, invoker);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(_focusedOnLabel(tester, 'First'), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KitMenuPanel), findsNothing);
+      expect(ran, ['Last']);
+      expect(invoker.results.single?.label, 'Last');
+      expect(invoker.focus.hasPrimaryFocus, isTrue);
+      invoker.focus.dispose();
+    });
+
+    testWidgets('the context-menu key opens it; Space selects', (tester) async {
+      final ran = <String>[];
+      final invoker = _Invoker(items(ran));
+      await _pumpInvokerHost(tester, invoker);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pumpAndSettle();
+      expect(_focusedOnLabel(tester, 'First'), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KitMenuPanel), findsNothing);
+      expect(ran, ['Middle']);
+      expect(invoker.focus.hasPrimaryFocus, isTrue);
+      invoker.focus.dispose();
+    });
+
+    testWidgets(
+      'a right-click focuses the panel, not an item, and shows no ring; Down '
+      'then reaches the first item',
+      (tester) async {
+        final ran = <String>[];
+        final invoker = _Invoker(items(ran));
+        await _pumpInvokerHost(tester, invoker);
+
+        await tester.tap(
+          find.text('Invoker'),
+          buttons: kSecondaryMouseButton,
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitMenuPanel), findsOneWidget);
+        expect(_focusIn(tester, find.byType(KitMenuPanel)), isTrue);
+        for (final label in ['First', 'Middle', 'Last']) {
+          expect(_focusedOnLabel(tester, label), isFalse, reason: label);
+        }
+        expect(_focusRing(tester), findsNothing);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(_focusedOnLabel(tester, 'First'), isTrue);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(invoker.results, [null]);
+        expect(invoker.focus.hasPrimaryFocus, isTrue);
+        invoker.focus.dispose();
+      },
+    );
+    testWidgets('Shift+right-click still counts as a pointer open', (
+      tester,
+    ) async {
+      final invoker = _Invoker(items(<String>[]));
+      await _pumpInvokerHost(tester, invoker);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.tap(
+        find.text('Invoker'),
+        buttons: kSecondaryMouseButton,
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KitMenuPanel), findsOneWidget);
+      expect(_focusedOnLabel(tester, 'First'), isFalse);
+      expect(_focusRing(tester), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      invoker.focus.dispose();
+    });
   });
 
   group('8. anchoring', () {
@@ -541,37 +850,35 @@ void main() {
       final topLeft = tester.getTopLeft(find.byKey(const ValueKey('kit-menu')));
       expect(topLeft.dx, closeTo(16, 0.5));
     });
-  });
 
-  testWidgets(
-    '9. each item is 48dp or taller and wraps without an ellipsis at text '
-    '2.0, 320dp wide',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 700);
+    testWidgets('stays clear of the status bar and opens above the '
+        'on-screen keyboard', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(top: 24);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 400);
       addTearDown(tester.view.reset);
-      late BuildContext context;
-      const label =
-          'A reasonably long menu label to force wrapping onto '
-          'two lines';
+      late BuildContext chip;
       await tester.pumpWidget(
         MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          builder: (ctx, child) => MediaQuery(
-            data: MediaQuery.of(
-              ctx,
-            ).copyWith(textScaler: const TextScaler.linear(2)),
-            child: child!,
-          ),
           home: Scaffold(
-            body: Builder(
-              builder: (inner) {
-                context = inner;
-                return const SizedBox.expand();
-              },
+            resizeToAvoidBottomInset: false,
+            body: Align(
+              alignment: AlignmentDirectional.topStart,
+              child: Padding(
+                // A composer chip just above the keyboard's top (515).
+                padding: const EdgeInsetsDirectional.only(start: 100, top: 440),
+                child: Builder(
+                  builder: (inner) {
+                    chip = inner;
+                    return const SizedBox(width: 200, height: 48);
+                  },
+                ),
+              ),
             ),
           ),
         ),
@@ -579,23 +886,101 @@ void main() {
 
       unawaited(
         showKitMenu(
-          context,
-          items: [KitMenuItem(label: label, onSelected: () {})],
+          chip,
+          items: [KitMenuItem(label: 'Only', onSelected: () {})],
         ),
       );
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+      final panel = find.byKey(const ValueKey('kit-menu'));
+      final rect = tester.getRect(panel);
+      expect(
+        rect.bottom,
+        lessThanOrEqualTo(440),
+        reason: 'no room below above the keyboard, so it opens above',
+      );
+      expect(rect.bottom, lessThanOrEqualTo(915 - 400 - 16));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
 
-      final panelSize = tester.getSize(find.byKey(const ValueKey('kit-menu')));
-      expect(panelSize.width, lessThanOrEqualTo(320));
+      unawaited(
+        showKitMenu(
+          chip,
+          items: [KitMenuItem(label: 'Only', onSelected: () {})],
+          position: const Offset(40, 2),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(panel).dy,
+        greaterThanOrEqualTo(24 + 16),
+        reason: 'never under the status bar',
+      );
+    });
+  });
 
-      final tile = find
-          .ancestor(of: find.text(label), matching: find.byType(InkWell))
-          .first;
-      expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+  testWidgets(
+    '9. at 320dp wide the panel stays inside the gutters, each item is 48dp '
+    'or taller, and a long label wraps without an ellipsis, at text 1.0 '
+    'and 2.0',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const label =
+          'A reasonably long menu label to force wrapping onto '
+          'two lines';
+      for (final scale in [1.0, 2.0]) {
+        late BuildContext context;
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.dark(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (ctx, child) => MediaQuery(
+              data: MediaQuery.of(
+                ctx,
+              ).copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: Builder(
+                builder: (inner) {
+                  context = inner;
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        );
 
-      final text = tester.widget<Text>(find.text(label));
-      expect(text.overflow, isNot(TextOverflow.ellipsis));
+        unawaited(
+          showKitMenu(
+            context,
+            items: [KitMenuItem(label: label, onSelected: () {})],
+            position: const Offset(300, 100),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'text $scale');
+
+        final panel = tester.getRect(find.byKey(const ValueKey('kit-menu')));
+        expect(panel.left, greaterThanOrEqualTo(16), reason: 'text $scale');
+        expect(panel.right, lessThanOrEqualTo(320 - 16), reason: 'text $scale');
+
+        expect(
+          tester.getSize(_tileOf(label)).height,
+          greaterThanOrEqualTo(48),
+          reason: 'text $scale',
+        );
+        final text = tester.widget<Text>(find.text(label));
+        expect(text.overflow, isNot(TextOverflow.ellipsis));
+        expect(text.maxLines, isNull, reason: 'wraps, never cut');
+        expect(text.softWrap, isNot(false));
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
     },
   );
 
