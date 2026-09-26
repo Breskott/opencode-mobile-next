@@ -1,37 +1,209 @@
+# G26 fail-on-violation runs (2026-09-26). Each run applied throwaway edits,
+# ran tool/qa/machine_lock.sh test -- $F test --no-pub -j 1 test/analyzer_suppressions_test.dart,
+# then removed them (git checkout / rm). The worktree was clean of probes afterwards.
+
+## Run 1: suppression comments (finding 1: count-neutral widening, added code, swap; plus new file and count rise)
+# Probes: new lib/g26_violation_probe.dart with '// ignore_for_file: unused_element';
+# test/kit_ratchet_test.dart:237 'ignore: avoid_print' -> 'ignore_for_file: type=lint' and :308 'ignore: avoid_print' -> 'ignore: type=lint';
+# test/chat_states_standard_test.dart:10 gains ', type=lint'; test/search_index_test.dart:252 'avoid_print' swapped for 'unused_local_variable';
+# test/l10n_coverage_test.dart gains a second '// ignore: avoid_print' at 210.
+```diff
+diff --git a/test/chat_states_standard_test.dart b/test/chat_states_standard_test.dart
+index 02e984a1..67c42533 100644
+--- a/test/chat_states_standard_test.dart
++++ b/test/chat_states_standard_test.dart
+@@ -10 +10 @@
+-// ignore_for_file: invalid_use_of_protected_member
++// ignore_for_file: invalid_use_of_protected_member, type=lint
+diff --git a/test/kit_ratchet_test.dart b/test/kit_ratchet_test.dart
+index a766dfe9..da02bf70 100644
+--- a/test/kit_ratchet_test.dart
++++ b/test/kit_ratchet_test.dart
+@@ -237 +237 @@ void _printBaseline(Map<String, Map<String, Map<String, int>>> current) {
+-  // ignore: avoid_print
++  // ignore_for_file: type=lint
+@@ -308 +308 @@ void main() {
+-    // ignore: avoid_print
++    // ignore: type=lint
+diff --git a/test/l10n_coverage_test.dart b/test/l10n_coverage_test.dart
+index 452ef47f..43c4572f 100644
+--- a/test/l10n_coverage_test.dart
++++ b/test/l10n_coverage_test.dart
+@@ -208,0 +209 @@ void main() {
++      // ignore: avoid_print
+diff --git a/test/search_index_test.dart b/test/search_index_test.dart
+index ca049325..30198f51 100644
+--- a/test/search_index_test.dart
++++ b/test/search_index_test.dart
+@@ -252 +252 @@ void main() {
+-      // ignore: avoid_print
++      // ignore: unused_local_variable
+```
 00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart
 00:00 +0: G26: no new analyzer suppression comments (PROC-3)
 00:00 +0 -1: G26: no new analyzer suppression comments (PROC-3) [E]
   Expected: empty
     Actual: [
-              'lib/g26_violation_probe.dart has 1 suppression comment(s), baseline 0:\n'
+              'lib/g26_violation_probe.dart: 1 suppression comment(s), baseline 0; new suppression(s) ignore_for_file:unused_element:\n'
                 '  lib/g26_violation_probe.dart:1: // ignore_for_file: unused_element',
-              'test/search_index_test.dart has 2 suppression comment(s), baseline 1:\n'
-                '  test/search_index_test.dart:252: // ignore: avoid_print\n'
-                '  test/search_index_test.dart:741: // ignore: avoid_print'
+              'test/chat_states_standard_test.dart: no more comments than the baseline; new suppression(s) ignore_for_file:type=lint:\n'
+                '  test/chat_states_standard_test.dart:10: // ignore_for_file: invalid_use_of_protected_member, type=lint',
+              'test/kit_ratchet_test.dart: no more comments than the baseline; new suppression(s) ignore:type=lint, ignore_for_file:type=lint:\n'
+                '  test/kit_ratchet_test.dart:237: // ignore_for_file: type=lint\n'
+                '  test/kit_ratchet_test.dart:308: // ignore: type=lint',
+              'test/l10n_coverage_test.dart: 3 suppression comment(s), baseline 2; new suppression(s) ignore:avoid_print:\n'
+                '  test/l10n_coverage_test.dart:186: // ignore: avoid_print\n'
+                '  test/l10n_coverage_test.dart:209: // ignore: avoid_print\n'
+                '  test/l10n_coverage_test.dart:210: // ignore: avoid_print',
+              'test/search_index_test.dart: no more comments than the baseline; new suppression(s) ignore:unused_local_variable:\n'
+                '  test/search_index_test.dart:252: // ignore: unused_local_variable'
             ]
-  PROC-3: no new analyzer suppression. Fix the diagnostic instead of silencing it. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
+  PROC-3: no new analyzer suppression, and no wider or extra code on an existing one. Fix the diagnostic instead of silencing it. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
   
   package:matcher                                     expect
   package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/analyzer_suppressions_test.dart 212:5          main.<fn>
+  test/analyzer_suppressions_test.dart 418:5          main.<fn>
   
-00:00 +0 -1: G26: no new analysis_options.yaml suppression (PROC-3)
-00:00 +0 -2: G26: no new analysis_options.yaml suppression (PROC-3) [E]
-  Expected: empty
-    Actual: [
-              'analysis_options.yaml analyzer.exclude gained "lib/g26_probe/**"',
-              'analysis_options.yaml linter.rules.disabled gained "avoid_print"',
-              'test/analysis_options.yaml: a nested analysis options file can silence a directory'
-            ]
-  PROC-3: no new exclude:, errors: ignore or disabled lint rule. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
-  
-  package:matcher                                     expect
-  package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/analyzer_suppressions_test.dart 237:5          main.<fn>
-  
-00:00 +0 -2: (tearDownAll)
-00:00 +0 -2: Some tests failed.
+00:00 +0 -1: G26: no new analysis options suppression (PROC-3)
+00:00 +1 -1: (tearDownAll)
+00:00 +1 -1: Some tests failed.
 
 Failing tests:
-  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analysis_options.yaml suppression (PROC-3)
   /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analyzer suppression comments (PROC-3)
+
+## Run 2: root analysis_options.yaml (finding 2: include removed; fail-closed flow mapping, alias, second document; plus exclude and disabled rule)
+```diff
+diff --git a/analysis_options.yaml b/analysis_options.yaml
+index 9b830558..713e717f 100644
+--- a/analysis_options.yaml
++++ b/analysis_options.yaml
+@@ -7,7 +7,6 @@
+ 
+ # The following line activates a set of recommended lints for Flutter apps,
+ # packages, and plugins designed to encourage good coding practices.
+-include: package:flutter_lints/flutter.yaml
+ 
+ analyzer:
+   exclude:
+@@ -22,6 +21,8 @@ analyzer:
+     - windows/**
+     - macos/**
+     - linux/**
++    - lib/g26_probe/**
++  errors: {avoid_print: ignore}
+ 
+ linter:
+   # The lint rules applied to this project can be customized in the
+@@ -35,8 +36,13 @@ linter:
+   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
+   # producing the lint.
+   rules:
++    avoid_print: false
++    prefer_const_constructors: *off
+     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+ 
+ # Additional information about this file can be found at
+ # https://dart.dev/guides/language/analysis-options
++---
++analyzer:
++  exclude: [lib/**]
+```
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart
+00:00 +0: G26: no new analyzer suppression comments (PROC-3)
+00:00 +1: G26: no new analysis options suppression (PROC-3)
+00:00 +1 -1: G26: no new analysis options suppression (PROC-3) [E]
+  Expected: empty
+    Actual: [
+              'analysis_options.yaml:25: errors: {avoid_print: ignore}: a flow mapping is not read (G26 fails closed)',
+              'analysis_options.yaml:40: prefer_const_constructors: *off: an anchor, alias or tag is not read (G26 fails closed)',
+              'analysis_options.yaml:46: ---: a second YAML document is not read',
+              'analysis_options.yaml include changed: baseline [package:flutter_lints/flutter.yaml], now []; removing or changing it switches off a lint set',
+              'analysis_options.yaml analyzer.exclude gained "lib/**"',
+              'analysis_options.yaml analyzer.exclude gained "lib/g26_probe/**"',
+              'analysis_options.yaml linter.rules.disabled gained "avoid_print"'
+            ]
+  PROC-3: no new exclude:, errors: ignore, disabled lint rule, changed include: or unlisted options file. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/analyzer_suppressions_test.dart 471:5          main.<fn>
+  
+00:00 +1 -1: (tearDownAll)
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analysis options suppression (PROC-3)
+
+## Run 3: options files anywhere (finding 3) plus include changed and the literal 'analyzer: {exclude: [lib/**]}'
+```diff
+diff --git a/analysis_options.yaml b/analysis_options.yaml
+index 9b830558..6c0fddbc 100644
+--- a/analysis_options.yaml
++++ b/analysis_options.yaml
+@@ -7,7 +7,7 @@
+ 
+ # The following line activates a set of recommended lints for Flutter apps,
+ # packages, and plugins designed to encourage good coding practices.
+-include: package:flutter_lints/flutter.yaml
++include: package:lints/core.yaml
+ 
+ analyzer:
+   exclude:
+diff --git a/packages/opencode_sdk/analysis_options.yaml b/packages/opencode_sdk/analysis_options.yaml
+index cea78273..16bc0711 100644
+--- a/packages/opencode_sdk/analysis_options.yaml
++++ b/packages/opencode_sdk/analysis_options.yaml
+@@ -10,3 +10,4 @@ analyzer:
+     deprecated_member_use_from_same_package: ignore
+     strict_raw_type: ignore
+     unused_import: ignore
++    unused_element: ignore
+diff --git a/tool/sdk/templates/analysis_options.mustache b/tool/sdk/templates/analysis_options.mustache
+index cea78273..a45609d0 100644
+--- a/tool/sdk/templates/analysis_options.mustache
++++ b/tool/sdk/templates/analysis_options.mustache
+@@ -6,6 +6,7 @@ analyzer:
+   exclude:
+     - test/*.dart
+     - lib/src/model/*.g.dart
++    - lib/**
+   errors:
+     deprecated_member_use_from_same_package: ignore
+     strict_raw_type: ignore
++++ new integration_test/analysis_options.yaml
+analyzer: {exclude: [lib/**]}
++++ new packages/g26probe/analysis_options.yaml
+analyzer:
+  exclude:
+    - lib/**
++++ new test/analysis_options.yaml
+analyzer:
+  exclude:
+    - "**"
+```
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart
+00:00 +0: G26: no new analyzer suppression comments (PROC-3)
+00:00 +1: G26: no new analysis options suppression (PROC-3)
+00:00 +1 -1: G26: no new analysis options suppression (PROC-3) [E]
+  Expected: empty
+    Actual: [
+              'integration_test/analysis_options.yaml:1: analyzer: {exclude: [lib/**]}: a flow mapping is not read (G26 fails closed)',
+              'analysis_options.yaml include changed: baseline [package:flutter_lints/flutter.yaml], now [package:lints/core.yaml]; removing or changing it switches off a lint set',
+              'integration_test/analysis_options.yaml: an analysis options file not on the G26 allowlist (analysis_options.yaml, packages/opencode_sdk/analysis_options.yaml, tool/sdk/templates/analysis_options.mustache); it can silence a directory',
+              'packages/g26probe/analysis_options.yaml: an analysis options file not on the G26 allowlist (analysis_options.yaml, packages/opencode_sdk/analysis_options.yaml, tool/sdk/templates/analysis_options.mustache); it can silence a directory',
+              'packages/opencode_sdk/analysis_options.yaml analyzer.errors.ignore gained "unused_element"',
+              'test/analysis_options.yaml: an analysis options file not on the G26 allowlist (analysis_options.yaml, packages/opencode_sdk/analysis_options.yaml, tool/sdk/templates/analysis_options.mustache); it can silence a directory',
+              'tool/sdk/templates/analysis_options.mustache analyzer.exclude gained "lib/**"'
+            ]
+  PROC-3: no new exclude:, errors: ignore, disabled lint rule, changed include: or unlisted options file. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/analyzer_suppressions_test.dart 471:5          main.<fn>
+  
+00:00 +1 -1: (tearDownAll)
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analysis options suppression (PROC-3)
