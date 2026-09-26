@@ -118,11 +118,15 @@ Future<void> _pillGalleryShot(
                 builder: (outer) {
                   outerContext = outer;
                   final tokens = KitTokens.of(outer);
-                  return KitBottomInset.add(
+                  final scene = KitBottomInset.add(
                     extraBottom: tokens.navHeight,
                     child: Stack(
                       children: [
-                        Positioned.fill(
+                        PositionedDirectional(
+                          start: 0,
+                          end: 0,
+                          top: 0,
+                          bottom: 0,
                           child: KitJumpPillLayer(
                             pill: pill(outer),
                             child: _transcriptScene(outer),
@@ -131,6 +135,30 @@ Future<void> _pillGalleryShot(
                         _composerScene(outer),
                       ],
                     ),
+                  );
+                  if (size.width < _paneWidth * 1.5) return scene;
+                  // KitJumpPill.md "Adaptive" / Galleries: on a wide
+                  // window the pill centres in its own 700 dp
+                  // conversation pane, not the window.
+                  return Row(
+                    children: [
+                      // A side region (e.g. the session list), its edge
+                      // a hairline, so the pane's own bounds show.
+                      Expanded(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: tokens.roles.surface1,
+                            border: BorderDirectional(
+                              end: BorderSide(
+                                color: tokens.roles.hairline,
+                                width: KitTokens.hairlineWidth(outer),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: _paneWidth, child: scene),
+                    ],
                   );
                 },
               ),
@@ -155,6 +183,10 @@ Future<void> _pillGalleryShot(
 }
 
 const _sizes = <Size>[Size(412, 915), Size(1280, 800)];
+
+/// The conversation pane on a wide window (KitJumpPill.md galleries:
+/// "1280×800 (centred in a 700 dp conversation pane)").
+const double _paneWidth = 700;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

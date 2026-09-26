@@ -1,5 +1,7 @@
 // KitJumpPill (docs/ux-system/kit-api/KitJumpPill.md): the frozen "Tests
 // required" contract, items 1-9.
+import 'dart:ui' as ui;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -9,6 +11,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/kit_jump_pill.dart';
+
+import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
 /// Pumps [child] as a screen's body, with the real test window sized to
 /// [size] (not just a MediaQuery override), so tap and hit-test geometry
@@ -65,14 +69,6 @@ bool _focusIn(WidgetTester tester, Finder target) {
   return found;
 }
 
-/// The keyboard focus ring (a foreground stadium outline), if one is drawn.
-final _ring = find.byWidgetPredicate(
-  (w) =>
-      w is DecoratedBox &&
-      w.position == DecorationPosition.foreground &&
-      w.decoration is ShapeDecoration,
-);
-
 /// The pill's own filled stadium (the background [DecoratedBox]).
 final _fill = find.byWidgetPredicate(
   (w) =>
@@ -81,6 +77,62 @@ final _fill = find.byWidgetPredicate(
       w.decoration is ShapeDecoration &&
       (w.decoration as ShapeDecoration).color != null,
 );
+
+/// Reads back what [boundary] actually painted, one RGBA pixel per logical
+/// pixel at the test window's device pixel ratio of 1.
+Future<({ByteData bytes, int width})> _paintedPixels(
+  WidgetTester tester,
+  GlobalKey boundary,
+) async {
+  final render =
+      boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+  final data = await tester.binding.runAsync(() async {
+    final image = await render.toImage();
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final width = image.width;
+    image.dispose();
+    return (bytes: bytes!, width: width);
+  });
+  return data!;
+}
+
+Color _pixel(({ByteData bytes, int width}) px, int x, int y) {
+  final i = (y * px.width + x) * 4;
+  return Color.fromARGB(
+    px.bytes.getUint8(i + 3),
+    px.bytes.getUint8(i),
+    px.bytes.getUint8(i + 1),
+    px.bytes.getUint8(i + 2),
+  );
+}
+
+/// Every channel within [tolerance] of [expected] (anti-aliasing).
+bool _near(Color a, Color expected, {int tolerance = 24}) {
+  int c(double v) => (v * 255).round();
+  return (c(a.r) - c(expected.r)).abs() <= tolerance &&
+      (c(a.g) - c(expected.g)).abs() <= tolerance &&
+      (c(a.b) - c(expected.b)).abs() <= tolerance;
+}
+
+/// The label's laid-out paragraph inside the pill (the icon is a
+/// [RichText] too, so match on the words).
+RenderParagraph _labelParagraph(WidgetTester tester, String label) =>
+    tester.renderObject<RenderParagraph>(
+      find.descendant(
+        of: find.byType(KitJumpPill),
+        matching: find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText() == label,
+        ),
+      ),
+    );
+
+extension on RenderParagraph {
+  /// How many lines the paragraph actually laid out (distinct line tops of
+  /// its whole text's selection boxes).
+  int get _renderedLines => getBoxesForSelection(
+    TextSelection(baseOffset: 0, extentOffset: text.toPlainText().length),
+  ).map((b) => b.top.round()).toSet().length;
+}
 
 Color _fillColor(WidgetTester tester) =>
     (tester.widget<DecoratedBox>(_fill).decoration as ShapeDecoration).color!;
@@ -198,6 +250,84 @@ void main() {
         expect(tester.hasRunningAnimations, isFalse);
       },
     );
+
+    testWidgets('hidden takes effect at once: 50 ms into the exit fade the '
+        'pill still paints but cannot be tapped, read or focused', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      final theme = AppTheme.dark();
+      Widget host(bool visible) => KitEffectsScope(
+        effects: KitEffects.defaults,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Center(
+              child: KitJumpPill(
+                label: 'Jump to latest',
+                onPressed: () => taps++,
+                visible: visible,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(host(true));
+      await tester.pump(const Duration(seconds: 1));
+      // Focus it first, so hiding has to take focus away, not just refuse it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_focusIn(tester, find.byType(InkWell)), isTrue);
+      expect(find.semantics.byLabel('Jump to latest'), findsOne);
+      final rect = tester.getRect(find.byType(InkWell));
+
+      await tester.pumpWidget(host(false));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Still mid-fade: painted, partly opaque, animation running.
+      expect(tester.hasRunningAnimations, isTrue);
+      expect(underOffstage(tester, onstageOrNot('Jump to latest')), isFalse);
+      final opacity = tester.widget<Opacity>(
+        find.descendant(
+          of: find.byType(KitJumpPill),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(opacity.opacity, greaterThan(0));
+      expect(opacity.opacity, lessThan(1));
+
+      // ...yet already out of the semantics tree and focus...
+      expect(find.semantics.byLabel('Jump to latest'), findsNothing);
+      expect(
+        _focusIn(tester, find.byType(KitJumpPill, skipOffstage: false)),
+        isFalse,
+        reason: 'hiding takes focus off the pill at once',
+      );
+
+      // ...and not hittable: a tap where it is drawn does nothing.
+      await tester.tapAt(rect.center);
+      await tester.pump();
+      expect(taps, 0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 0);
+
+      // Tab does not land on it either.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        _focusIn(tester, find.byType(KitJumpPill, skipOffstage: false)),
+        isFalse,
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(underOffstage(tester, onstageOrNot('Jump to latest')), isTrue);
+      handle.dispose();
+    });
   });
 
   group('3. motion', () {
@@ -496,29 +626,70 @@ void main() {
   });
 
   group('8. desktop capabilities', () {
-    testWidgets('focus ring visible when focused; Enter activates', (
-      tester,
-    ) async {
+    testWidgets('focus ring painted outside the pill in accent when '
+        'focused; Enter activates', (tester) async {
       var taps = 0;
+      final boundary = GlobalKey();
       await _pump(
         tester,
-        KitJumpPill(
-          label: 'Jump to latest',
-          onPressed: () => taps++,
-          visible: true,
+        RepaintBoundary(
+          key: boundary,
+          // Room around the pill for a ring drawn outside its bounds.
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: KitJumpPill(
+              label: 'Jump to latest',
+              onPressed: () => taps++,
+              visible: true,
+            ),
+          ),
         ),
       );
-      expect(_ring, findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      final roles = ThemeRoles.resolve(AppTheme.dark());
+      final origin = tester.getTopLeft(find.byKey(boundary));
+      final pill = tester.getRect(find.byType(InkWell)).shift(-origin);
+      // The ring is focusRingWidth (2 logical px at a ratio of 1), drawn
+      // outside the stadium: sample the two columns just left of the pill's
+      // leftmost point, and the two rows just above its middle.
+      final y = pill.center.dy.floor();
+      final x = pill.center.dx.floor();
+      final left = pill.left.floor();
+      final top = pill.top.floor();
+      List<Color> ringSamples(({ByteData bytes, int width}) px) => [
+        _pixel(px, left - 1, y),
+        _pixel(px, left - 2, y),
+        _pixel(px, x, top - 1),
+        _pixel(px, x, top - 2),
+      ];
+
+      final before = await _paintedPixels(tester, boundary);
+      expect(
+        ringSamples(before).any((c) => _near(c, roles.accent)),
+        isFalse,
+        reason: 'no ring while unfocused',
+      );
+
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
       expect(_focusIn(tester, find.byType(InkWell)), isTrue);
-      expect(_ring, findsOneWidget);
-      final roles = ThemeRoles.resolve(AppTheme.dark());
-      final shape =
-          (tester.widget<DecoratedBox>(_ring).decoration as ShapeDecoration)
-                  .shape
-              as OutlinedBorder;
-      expect(shape.side.color, roles.accent);
+      final after = await _paintedPixels(tester, boundary);
+      // Left of the pill and above it, the painted pixel is accent — the
+      // ring is on screen, not clipped by the pill's own shape.
+      expect(
+        _near(_pixel(after, left - 1, y), roles.accent) ||
+            _near(_pixel(after, left - 2, y), roles.accent),
+        isTrue,
+        reason: 'accent ring left of the pill',
+      );
+      expect(
+        _near(_pixel(after, x, top - 1), roles.accent) ||
+            _near(_pixel(after, x, top - 2), roles.accent),
+        isTrue,
+        reason: 'accent ring above the pill',
+      );
+      // The pill's own fill inside is untouched (the ring sits outside).
+      expect(_near(_pixel(after, x, y), roles.accent), isFalse);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
@@ -543,34 +714,75 @@ void main() {
     });
   });
 
-  group('9. 200% text', () {
-    testWidgets('at 320 dp: no overflow, label on <= 2 lines', (tester) async {
+  group('9. text scale and line count', () {
+    // Real glyph widths (Roboto), not the test font's square boxes, so the
+    // line counts below are what a phone lays out.
+    setUpAll(loadKitGalleryFonts);
+
+    Widget layer(String label) => KitJumpPillLayer(
+      clearBottomInset: false,
+      pill: KitJumpPill(label: label, onPressed: () {}, visible: true),
+      child: const SizedBox.expand(),
+    );
+
+    const real = '3 new · Jump to latest';
+    const long = '123456 new messages · Jump to latest in this conversation';
+
+    testWidgets('200% text at 320 dp: the real label, no overflow, <= 2 '
+        'rendered lines, not truncated', (tester) async {
       await _pump(
         tester,
-        KitJumpPill(
-          label: '3 new · Jump to latest',
-          onPressed: () {},
-          visible: true,
-        ),
+        layer(real),
         size: const Size(320, 700),
         textScale: 2.0,
       );
       await tester.pump(const Duration(seconds: 1));
       expect(tester.takeException(), isNull);
-      final textWidget = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(KitJumpPill),
-          matching: find.byType(Text),
-        ),
+      final paragraph = _labelParagraph(tester, real);
+      expect(paragraph._renderedLines, lessThanOrEqualTo(2));
+      expect(paragraph.didExceedMaxLines, isFalse, reason: 'never truncated');
+      expect(
+        tester.getRect(find.byType(InkWell)).width,
+        lessThanOrEqualTo(320 - 2 * 16),
+        reason: 'max width = area width - 2 x gutter',
       );
-      expect(textWidget.maxLines, anyOf(isNull, lessThanOrEqualTo(2)));
-      final renderBox = tester.renderObject<RenderBox>(
-        find.descendant(
-          of: find.byType(KitJumpPill),
-          matching: find.byType(Text).first,
-        ),
+    });
+
+    testWidgets('200% text at 320 dp: a long count is bounded to 2 lines', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        layer(long),
+        size: const Size(320, 700),
+        textScale: 2.0,
       );
-      expect(renderBox.size.width, lessThanOrEqualTo(320));
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+      expect(
+        _labelParagraph(tester, long)._renderedLines,
+        lessThanOrEqualTo(2),
+      );
+    });
+
+    testWidgets('100% text: one line, even for a long label in a narrow '
+        'area', (tester) async {
+      await _pump(tester, layer(real), size: const Size(320, 700));
+      await tester.pump(const Duration(seconds: 1));
+      final paragraph = _labelParagraph(tester, real);
+      expect(paragraph._renderedLines, 1);
+      expect(paragraph.didExceedMaxLines, isFalse);
+
+      await _pump(tester, layer(long), size: const Size(240, 700));
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+      expect(_labelParagraph(tester, long)._renderedLines, 1);
+      // A label longer than the area: the pill takes exactly the area's
+      // width less two gutters (KitJumpPill.md "Adaptive"), no more.
+      expect(
+        tester.getRect(find.byType(InkWell)).width,
+        moreOrLessEquals(240 - 2 * 16),
+      );
     });
   });
 }
