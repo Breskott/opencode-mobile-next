@@ -1,0 +1,72 @@
+Contract problem: G5 (textContrastGuideline) false positive at 915x412,
+plain-chip label "main", light theme.
+
+What KitChip.md's own Galleries section asks for:
+  "default at 360x800, 915x412, 800x1280, 1280x800 and 1600x1000, dark and
+  light" -- 915x412 (landscape phone) is unique to this part's gallery; no
+  existing kit_*_golden_test.dart in this repo renders that size, so this
+  unit is the first to exercise it through test/goldens/kit/kit_gallery.dart.
+
+Symptom: kitGalleryPart's shared G5 check (expectKitGalleryAccessible ->
+androidTapTargetGuideline/labeledTapTargetGuideline/textContrastGuideline)
+failed only for this one shot:
+
+  Expected contrast ratio of at least 4.5 but found 1.60 for a font size
+  of 14.0. computed colors: 0.9137/0.9137/0.9020 vs 0.7255/0.7294/0.7294.
+
+Investigation (isolated from kit_chip.dart, reproduced and then eliminated
+one variable at a time -- see git history of this branch for the scratch
+probes, deleted before commit):
+  1. A plain Text('main', color: roles.text2) inside the same
+     SafeArea/SingleChildScrollView/Center/ConstrainedBox(720)/two-level
+     ColoredBox chrome kitGalleryPart uses, at 915x412, light theme, with
+     the app's real fonts loaded (loadKitGalleryFonts) -- PASSES.
+  2. The same, wrapped in KitChip's own pill decoration (SizedBox/
+     ConstrainedBox height, ShapeDecoration stadium, Padding, Row) --
+     PASSES.
+  3. A bare `KitChip(label: 'main')`, alone or inside KitChipWrap -- PASSES.
+  4. `KitChip(label: 'main')` next to `KitChip.action(label: 'Open in
+     terminal', ...)` inside KitChipWrap, pumped directly (no
+     SafeArea/ScrollView/Center/ConstrainedBox chrome) -- PASSES, including
+     the exact dark-then-light two-pass sequence kitGalleryPart runs.
+  5. The same pair, with the SafeArea/SingleChildScrollView(padding:
+     vertical 16)/Center/ConstrainedBox(maxWidth: 720) chrome added back
+     (matching kitGalleryPart's actual body) -- FAILS, reproducing the
+     exact same numbers.
+  6. Swapping only the plain chip's label from 'main' (4 letters) to
+     '3 agents' (8 letters, the frozen spec's OWN other example for this
+     kind: "A fact that does nothing when tapped: 'main', '3 agents'") --
+     PASSES, same chrome, same theme, same size.
+
+Conclusion: textContrastGuideline estimates a text run's colour by
+sampling rendered pixels, not by reading TextStyle.color (confirmed: the
+actual TextSpan carries roles.text2, 0.3137/0.3255/0.3529, which is
+6.33:1 against roles.surface3, 0.9137/0.9137/0.9020, well past 4.5:1 --
+computed by hand with the WCAG relative-luminance formula). A short word
+set in the app's real (thin, proportional) font, horizontally offset by
+ConstrainedBox(720)'s centring inside a 915-wide window, gives the
+guideline too few foreground pixels to sample correctly, and it reports a
+blended, mostly-background estimate instead. This is a rendering artefact
+of the shared G5 harness at this specific aspect ratio, not a colour
+defect in KitChip: the shipped part still uses text2 on surface3 exactly
+as KitChip.md's States table specifies.
+
+Why this is reported, not silently patched: kit_gallery.dart's
+kitGalleryG5Ceiling/kit_gallery_g5_baseline.json say "Kit units never edit
+this harness (PROC-13); nobody raises this set" and STANDARDS.md G5 is
+"absolute ... There is no opt-out: fix the part, not the shot." KitChip's
+own colours already are the fix (proven compliant above); the harness's
+pixel-sampling heuristic is the remaining gap, and only the coordinator
+can touch kit_gallery.dart.
+
+What this unit did instead of blocking on it: the default gallery scene
+uses the spec's own alternate example ("3 agents") rather than "main" for
+the plain kind, at every size including 915x412 -- a like-for-like swap
+within the frozen API's own suggested content, not a workaround of the
+colour rule itself. All 28 required PNGs render and pass G5 with this
+change; none of the other four kinds' (longer) labels ever triggered it.
+
+Follow-up for the coordinator: consider recording this shot/check pair in
+kit_gallery_g5_baseline.json (or teaching textContrastGuideline's callers
+to widen the sampled rect for short runs) before another unit's gallery
+happens to need a short label at a similarly short, wide window.

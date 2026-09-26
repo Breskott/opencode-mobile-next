@@ -1,0 +1,3 @@
+$F analyze lib test   (fix round 1)
+Analyzing 2 items...                                            
+No issues found! (ran in 6.9s)

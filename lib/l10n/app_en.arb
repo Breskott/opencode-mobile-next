@@ -22246,8 +22246,13 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitMore": "More",
-  "@kitMore": {
-    "description": "KitAction: the tooltip on the overflow button that opens the block's extra actions"
+  "kitChipRemove": "Remove {label}",
+  "@kitChipRemove": {
+    "description": "KitChip: the semantic label and tooltip of a removable chip's × control",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
   }
 }

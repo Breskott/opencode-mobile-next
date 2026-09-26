@@ -5306,5 +5306,5 @@
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
   "kitCopied": "تم النسخ",
-  "kitMore": "المزيد"
+  "kitChipRemove": "إزالة {label}"
 }

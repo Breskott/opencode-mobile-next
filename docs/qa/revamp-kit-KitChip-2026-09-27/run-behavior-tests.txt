@@ -1,0 +1,67 @@
+$F test -j 1 test/kit/kit_chip_test.dart   (fix round 1)
+KitChip (MOT-7) plain settles at once under system
+KitChip (MOT-7) count settles at once under system
+KitChip (MOT-7) removable settles at once under system
+KitChip (MOT-7) action selects changes and settles at once under system
+KitChip (MOT-7) action deselects changes and settles at once under system
+KitChip (MOT-7) summary expands changes and settles at once under system
+KitChip (MOT-7) plain settles at once under effectsOff
+KitChip (MOT-7) count settles at once under effectsOff
+KitChip (MOT-7) removable settles at once under effectsOff
+KitChip (MOT-7) action selects changes and settles at once under effectsOff
+KitChip (MOT-7) action deselects changes and settles at once under effectsOff
+KitChip (MOT-7) summary expands changes and settles at once under effectsOff
+plain is not a button, has no tap action, is not focusable
+action tapping calls onPressed once
+action selected: true shows the check and toggled: true
+action selected: null has no toggled flag
+removable the x is a separate 48x48 target labelled "Remove {label}"
+removable tapping the x calls onRemove only, not onPressed
+removable tapping the body calls onPressed only, not onRemove
+removable Delete on the focused chip calls onRemove
+removable Backspace on the focused x also calls onRemove
+count semantics label is "{label}, {count}"
+count the number is formatted with intl for en and ar
+count with onPressed it is a button that fires once
+summary a tap calls onPressed
+summary expanded true/false exposes expanded semantics
+summary the chevron points down folded and up open
+hit area (LAY-9) at least 48 dp high at text 1.0
+hit area (LAY-9) at least 48 dp high at text 2.0
+hit area (LAY-9) every kind in a KitChipWrap at 320 dp: hit areas never overlap and pills line up in each run
+truncation (A11Y-8, G6) at text 2.0 a long label ellipsises with the full text in semantics
+truncation (A11Y-8, G6) no overflow at 320.0 dp, LTR
+truncation (A11Y-8, G6) no overflow at 320.0 dp, RTL
+truncation (A11Y-8, G6) no overflow at 360.0 dp, LTR
+truncation (A11Y-8, G6) no overflow at 360.0 dp, RTL
+truncation (A11Y-8, G6) no overflow at 412.0 dp, LTR
+truncation (A11Y-8, G6) no overflow at 412.0 dp, RTL
+honesty (LOOK-14, LOOK-4) no text is painted below full alpha, no attention role (dark)
+honesty (LOOK-14, LOOK-4) no text is painted below full alpha, no attention role (light)
+selected check (KitMotion.quick cross-fade) turning selection on and off cross-fades check and icon
+hover and press (the pill, under the words) action: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) action: press fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) action, selected: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) action, selected: press fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) count: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) count: press fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) summary: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) summary: press fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) removable body: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) removable body: press fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) removable x: hover fills the pill surface2 and the words stay on top
+hover and press (the pill, under the words) removable x: press fills the pill surface2 and the words stay on top
+truncation tooltip (KitChip.md "Adaptive") long-press on a truncated action chip shows the full label and does not tap
+truncation tooltip (KitChip.md "Adaptive") long-press on a truncated summary chip shows the full label and does not tap
+truncation tooltip (KitChip.md "Adaptive") long-press on a truncated removable with a body tap chip shows the full label and does not tap
+truncation tooltip (KitChip.md "Adaptive") long-press on a truncated removable chip shows the full label and does not tap
+truncation tooltip (KitChip.md "Adaptive") long-press on a truncated plain chip shows the full label and does not tap
+truncation tooltip (KitChip.md "Adaptive") a truncated count chip with a tap shows "label · n" in full
+truncation tooltip (KitChip.md "Adaptive") a fine pointer hovering a truncated action chip shows it
+truncation tooltip (KitChip.md "Adaptive") a label that fits shows no tooltip
+focus ring (around the pill) action: keyboard focus draws an accent ring on the 32 dp pill, not the 48 dp box
+focus ring (around the pill) count: keyboard focus draws an accent ring on the 32 dp pill, not the 48 dp box
+focus ring (around the pill) summary: keyboard focus draws an accent ring on the 32 dp pill, not the 48 dp box
+focus ring (around the pill) removable x: keyboard focus draws an accent ring on the 32 dp pill, not the 48 dp box
+keyboard (G14) Tab order is the chip, then its x; Enter and Space activate
+All tests passed!
