@@ -1179,3 +1179,65 @@ Ratchet mechanics (G1, G2, G7): a committed `test/kit_ratchet_baseline.json` map
 - **Source.** `docs/ux-system/map/all.json` (356 pages). An element is counted when `kit == "none"` or it has a `kitGap`.
 - **Assignment.** A `kitGap` name maps to its consolidated part. Elements without a proposal map by `kind` to the existing part that fits. 218 elements are assigned individually where the kind default is wrong: a confirm sheet's buttons go with the sheet, dropdowns go to `KitPickerRow`, sheet headers go to `KitSheet`. Every element's target is recorded in `kit-v2.json` › `assignment` (`"<pageId>#<elementId>": "<target>"`), so the counts can be re-derived when the map changes.
 - **Code counts** (2026-09-26, `lib/` outside `lib/ui/kit/`): `showModalBottomSheet` 80 in 53 files, `showDialog` 46 in 31, `AlertDialog` 46 in 32, `showConfirmSheet` 70 in 37, `showSnackBar` 127 (6 with an action), `ListTile` family 193 in 72 (147 plain), `ExpansionTile` 18, `SwitchListTile` 24, `TextField`/`TextFormField` 92, `IconButton(` 152, `PopupMenuButton` 23, `Clipboard.setData` 47, `Duration(milliseconds` 51 in `lib/ui`, `AnimatedSize` 8 in `lib/ui`, raw `HapticFeedback` 2, `launchUrl` 4 outside `external_link.dart` (all app-authored, or the launcher passed into `openExternalLink`).
+
+---
+
+## 8. Every screen size and input (owner, 2026-09-26)
+
+The owner approved P9 with this note: "Ideally I would build this first and it should support tablet, PC, phones etc." The kit is therefore built first, and every part in §1–§2 is adaptive from its first commit. A later retrofit is not allowed. Today only the shell adapts: `home_screen.dart` shows a `NavigationRail` from 760 dp and extends it from 1040 dp. Desktop input already has one seam, `desktopInteractions` in `lib/ui/desktop/desktop_interaction.dart`, which delegates to `platformCapabilities.isDesktop`. The kit has no breakpoints of its own.
+
+### 8.1 Window classes: one answer, in the kit
+
+```dart
+/// Material 3 window size classes, measured on the window, never the device.
+enum KitWindow { compact, medium, expanded, large }
+// compact < 600 dp · medium 600–839 · expanded 840–1199 · large ≥ 1200
+
+class KitLayout {
+  static KitWindow windowOf(BuildContext context);      // MediaQuery.sizeOf(context).width
+  static bool finePointer(BuildContext context);        // desktopInteractions, or a mouse seen by MouseTracker
+  static double readingWidth = 720;                     // forms, settings, sheets' content
+  static double listWidth = 960;                        // lists on their own
+  static double paneListWidth = 360;                    // the list pane in two panes
+}
+```
+
+- A part reads only `KitLayout`. Nothing in `lib/ui/` compares a width to a literal. The ratchet (G2) adds `MediaQuery.sizeOf(context).width <` and `constraints.maxWidth <` literals outside the kit.
+- The shell's rail moves onto the same classes: a rail from `medium`, extended from `expanded`. This happens in P9.2, not in step A.
+- Phones in landscape are usually `medium` by width but short. A part that stacks vertically also checks the height (below 480 dp it keeps the compact layout).
+
+### 8.2 How each part adapts
+
+| Part | compact (phone) | medium (small tablet, phone landscape) | expanded / large (tablet landscape, PC, web) |
+|---|---|---|---|
+| `KitScreen` | full width, 16 dp gutter | content centred at `readingWidth` or `listWidth` | the same, or `KitScreen.twoPane(list:, detail:)`: the list at `paneListWidth`, the detail in the rest; selecting a row fills the detail instead of pushing a route |
+| `showKitSheet` | a bottom sheet (§1.1) | a bottom sheet, capped at 640 dp wide and centred | a dialog panel of up to 560 dp; `KitSheetHeight.full` becomes an end-side sheet of 400–480 dp. Esc closes it and obeys `draft`/`dirty` as swipe-down does |
+| `showKitConfirm` | a bottom sheet (§1.2) | the same, capped at 560 dp | a centred dialog of 480 dp. Esc cancels. Enter confirms only for `neutral`; `destructive`, `stop` and `discard` need a click or Tab to the button |
+| `showKitDialog` / `showKitAlert` | a dialog | a dialog | a dialog, 480 dp, with Enter as the primary for input |
+| `KitUndo` | above the dock, full width minus the gutters | 480 dp, bottom-start | 480 dp, bottom-start, clear of the rail |
+| `KitTopBar` | title and at most 2 icons; the rest go in the menu | up to 3 icons | actions with labels (`KitAction` text) instead of an overflow menu, where room allows |
+| `KitRow` | 48 dp or more, tap | the same | a hover highlight, a focus ring, right-click or long-press opens `KitRowMenu`, and Enter activates |
+| `KitIconButton` | 48 dp target, a semantic label | the same | a tooltip on hover with the label and the shortcut, if there is one |
+| `KitChoiceList` / `KitSegmented` | stacked from 2.0 text | the same | arrow keys move within the group, and Space selects |
+| `KitLogPanel` / `KitCodeBlock` / `KitViewer` / `KitDiffView` | wraps; horizontal scroll inside its own box | the same | mouse text selection; diffs side by side from `expanded` |
+| `KitRequestCard` | in the transcript | the same | the same, plus shortcuts once it has focus: A for allow, D for deny, 1–9 for choices |
+| `KitStatusLine` / `KitNeedsYou` | under the header | the same | the same; also a count badge on the rail destination |
+
+### 8.3 Input rules
+
+- **Touch targets stay 48 dp everywhere.** Desktop density is not a reason to shrink them. A fine pointer adds hover, never smaller targets.
+- **Everything works from the keyboard on a PC:** Tab order follows the reading order, the focus ring is always visible (`FocusableActionDetector` with kit tokens), and Esc closes the top modal. The existing global shortcuts layer is kept and documented in its help sheet.
+- **Hover never carries the only copy of information.** Tooltips repeat a label that the semantics already carry.
+- **Right-click and long-press open the same `KitRowMenu`.**
+- **Scrollbars** follow `desktop_interaction.dart` (always visible on desktop where a controller exists).
+
+### 8.4 Gates added to §7
+
+- **G4 galleries** render each part at 360×800 (phone), 412×915 (the existing census size), 800×1280 (tablet portrait), 1280×800 (tablet landscape or PC) and 1600×1000 (large PC), in light and dark. Text scale 2.0 and Arabic RTL are rendered at 412 and 1280.
+- **G6 overflow** adds widths 600, 840 and 1280 dp, and a landscape phone of 915×412.
+- **G14 (new): keyboard and pointer.** For each modal part: Esc closes it, and obeys the draft and dirty rules; Enter confirms only where §8.2 says so; Tab reaches every action; hover shows the tooltip on a `KitIconButton`; right-click on a `KitRow` opens its menu. These run with `debugPlatformCapabilities` set to desktop.
+- **G15 (new): no width literals.** Part of the G2 ratchet, as in §8.1.
+
+### 8.5 Order within P9
+
+Step A (P9.1) ships with `KitLayout`, and the sheet and confirmation adapt from the start. P9.2 moves the shell's rail and the Work/Inbox/Settings lists onto `KitScreen.twoPane`. Every later step's part meets §8.2 in the same commit as the part itself.

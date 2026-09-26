@@ -1,0 +1,57 @@
+{
+ "source": "https://claude.ai/artifact/7j8sxxNQEdmgaBiiVTi6mW (db collection decisions)",
+ "read": "2026-09-26",
+ "legend": {
+  "go": "Approve",
+  "later": "Not now",
+  "rethink": "Rethink"
+ },
+ "decisions": {
+  "P0": {
+   "verdict": "go",
+   "at": "2026-09-26T08:15:54.010Z"
+  },
+  "P1": {
+   "verdict": "go",
+   "at": "2026-09-26T08:28:51.633Z"
+  },
+  "P10": {
+   "verdict": "go",
+   "at": "2026-09-26T08:30:42.226Z"
+  },
+  "P2": {
+   "verdict": "later",
+   "at": "2026-09-26T08:29:06.908Z"
+  },
+  "P3": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:18.147Z"
+  },
+  "P4": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:22.069Z"
+  },
+  "P5": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:29.848Z"
+  },
+  "P6": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:35.291Z"
+  },
+  "P7": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:45.823Z"
+  },
+  "P8": {
+   "verdict": "go",
+   "at": "2026-09-26T08:29:48.358Z"
+  },
+  "P9": {
+   "verdict": "go",
+   "note": "Ideally I would build this first and it should support tablet, PC, phones etc.",
+   "at": "2026-09-26T08:30:32.484Z"
+  }
+ },
+ "order": "P9 kit first (owner note), adaptive for phone, tablet and PC (kit-v2.md §8); P0 in parallel; then P4, P7, P8; P1, P3 after P0; P5 after P3; P6 after P4+P5; P10 after P4. P2 deferred."
+}
