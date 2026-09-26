@@ -1,0 +1,15 @@
+Candidate base: dcf05c5efbf82781bcfb97b629f5cda86ead2382
+Source/document SHA-256:
+7731a90468e307377c034b29c8d5de7c74ce3934052461607cbbf3078043815f  lib/domain/while_away.dart
+9545e79736a62afe88d0cece7b1be6f3ee45f71207b4bffc31b52393c1e7c2e0  lib/state/automatic_activity.dart
+806e6c5f544d77344e83ea8ac6e6ee68b523b0392152d3faa8b7e383f4413497  test/while_away_test.dart
+d92a5cb501b024c57e81050ddcceca316c775e0a2d0a02e5f7712aec563ea085  test/automatic_activity_test.dart
+60200d4f54eb5d4a46a32293371f9868499978e0858cfdd1adf297d61d6a651e  docs/qa/codex-p62-2026-09-27/README.md
+d4a94b78623a4d42e9ee84c780f50684bc5338c3d335c384b0371972a46a7b08  COMMIT_MSG.txt
+Whitespace: PASS for all listed files.
+Tracked changes: none; all implementation files are new.
+No lib/ui, reserved single-owner, native, or existing files modified.
+git diff --check:
+PASS
+Behavior tests/analyzer: BLOCKED before execution; see saved launcher errors.
+Git staging/commit: BLOCKED by read-only worktree index; see commit.txt.
