@@ -5305,5 +5305,14 @@
   "kitDiscardTitle": "هل تريد تجاهل تغييراتك؟",
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
-  "kitCopied": "تم النسخ"
+  "kitCopied": "تم النسخ",
+  "kitSwatchInUse": "قيد الاستخدام",
+  "kitThemePreviewTitle": "إصلاح خطأ تسجيل الدخول",
+  "kitThemePreviewWorking": "قيد التنفيذ · دقيقتان",
+  "kitThemePreviewNeedsYou": "يحتاجك",
+  "kitThemePreviewPrimary": "إرسال",
+  "kitThemePreviewSecondary": "إرفاق",
+  "kitThemePreviewSegment": "مفعّل",
+  "kitThemePreviewCode": "final ready = true;",
+  "kitThemePreviewLabel": "معاينة {theme}"
 }
