@@ -23346,5 +23346,36 @@
   "kitTopBarMore": "More actions",
   "@kitTopBarMore": {
     "description": "KitTopBar: the name of the overflow menu opened from a top bar's More button"
+  },
+  "kitAgentStripLabel": "Agents on this task",
+  "@kitAgentStripLabel": {
+    "description": "KitAgentStrip: the semantics name of the row of agents (lead, workers, reviewers) working on a team task"
+  },
+  "kitAgentOpen": "Open {name}'s conversation",
+  "@kitAgentOpen": {
+    "description": "KitAgentStrip: the screen-reader hint on an agent chip that opens that agent's own conversation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kitAgentLabel": "{hasRole, select, yes{{name}, {role}, {state}} other{{name}, {state}}}",
+  "@kitAgentLabel": {
+    "description": "KitAgentStrip: an agent chip's semantics label and tooltip: its name, its role (Lead, Worker, Reviewer; left out when it has none) and its state word (Working, Waiting, Needs you, ...). hasRole is yes or no.",
+    "placeholders": {
+      "hasRole": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
   }
 }

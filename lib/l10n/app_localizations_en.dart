@@ -20004,6 +20004,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kitTaskStopped => 'Stopped';
 
   @override
+  String get kitAgentStripLabel => 'Agents on this task';
+
+  @override
+  String kitAgentOpen(String name) {
+    return 'Open $name\'s conversation';
+  }
+
+  @override
+  String kitAgentLabel(String hasRole, String name, String role, String state) {
+    String _temp0 = intl.Intl.selectLogic(hasRole, {
+      'yes': '$name, $role, $state',
+      'other': '$name, $state',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get kitSwatchInUse => 'In use';
 
   @override
