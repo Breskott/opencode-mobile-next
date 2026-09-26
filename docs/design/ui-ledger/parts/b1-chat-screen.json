@@ -225,6 +225,22 @@
       "isPromptHistoryKey(...): no slash-command or @agent suggestions open, collapsed selection, no IME composing, no Ctrl/Alt/Meta/Shift held"
      ],
      "destructive": false
+    },
+    {
+     "id": "chat-watching-message",
+     "type": "button",
+     "label": "Message the worker | Message this agent",
+     "key": "chat-watching-message",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 158,
+     "action": "open-sheet",
+     "target": "chat-watching-message-sheet",
+     "targetWidget": "_messageTeamAgent",
+     "effect": "_WatchingComposerState._message() -> watch.onMessage(context); the AI Team's ChatWatch (teamAgentWatch, team_conversation_view.dart:1293) opens the message sheet, then on a non-empty answer calls OrchestrationController.messageAgent(agent.id, text).",
+     "gates": [
+      "widget.watch != null && watch.messageLabel != null && watch.onMessage != null"
+     ],
+     "destructive": false
     }
    ]
   },
@@ -661,6 +677,53 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "chat-watching-message-sheet",
+   "title": "Message {agent}",
+   "kind": "sheet",
+   "file": "lib/ui/screens/chat/team_conversation_view.dart",
+   "widget": "_TeamMessageSheet",
+   "presentedBy": [
+    "_messageTeamAgent"
+   ],
+   "line": 1353,
+   "purpose": "The watched worker's message field: Send pops the text; teamAgentWatch's 'Message the worker' action opens it, then OrchestrationController.messageAgent sends it and a snackbar shows the receipt.",
+   "reachedFrom": [
+    {
+     "page": "chat",
+     "element": "chat-watching-message"
+    }
+   ],
+   "gates": [
+    "ChatWatch.onMessage != null (AI Team watching mode only)"
+   ],
+   "elements": [
+    {
+     "id": "chat-watching-message-field",
+     "type": "text-field",
+     "label": "Tell the agent what to do next",
+     "key": "chat-watching-message-field",
+     "line": 1390,
+     "action": "submit",
+     "target": null,
+     "effect": "TeamComposerField onSend -> _send(): pops the trimmed text (Navigator.pop) when non-empty.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-message-send",
+     "type": "button",
+     "label": "Send",
+     "key": "chat-watching-message-send",
+     "line": 1394,
+     "action": "submit",
+     "target": null,
+     "effect": "Same as the field's onSend: _send() pops the trimmed text; _messageTeamAgent then calls team.messageAgent(agent.id, text.trim()) and shows a receipt snackbar (chat-watching-message-receipt).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
   }
  ],
  "notPages": [
@@ -671,6 +734,10 @@
   {
    "file": "lib/ui/screens/chat/empty_chat.dart",
    "reason": "part of chat_screen.dart: ChatStartFacts plus the empty-conversation starters/body shown inline on the chat page before the first message, not a surface of their own."
+  },
+  {
+   "file": "lib/ui/screens/chat/watching.dart",
+   "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its one action (chat-watching-message) and the sheet it opens (chat-watching-message-sheet) are recorded on the chat page. _openWatchedChild (watching.dart:80, a child session delegated to, watched the same way) is wired from chat_screen.dart:7408,7590 (b1/b2, not yet in the ledger)."
   }
  ],
  "notes": [

@@ -909,6 +909,15 @@
       "visibleEquivalent": "is itself a visible, labeled tap target (the text ends in 'View details')",
       "evidence": "lib/ui/widgets/pickers.dart:518",
       "changed": false
+    },
+    {
+      "page": "team-board",
+      "element": "team-board-card-long-press",
+      "gesture": "long press on a card",
+      "action": "open the move sheet",
+      "visibleEquivalent": "visible '⋯' icon button on the same card (team-board-card-moves, tooltip 'Move or change') when moves exist; the card's own tap already opens the same conversation directly (team-board-card)",
+      "evidence": "lib/ui/widgets/team_board_card.dart:322",
+      "changed": false
     }
   ]
 }

@@ -66,6 +66,12 @@ const _excluded = <String, String>{
   'team-agent': 'one agent of one AI Team run',
   'team-agent-output': 'one agent of one AI Team run',
   'team-agents': "needs the AI Team; opened from the home's agents row",
+  'team-board':
+      "needs the AI Team; opened from the home's board icon or "
+      "'View board' row",
+  'team-conversation':
+      'one AI Team task\'s conversation; opened from the '
+      "run's Overview, the board or the Work tab",
   'team-run': 'one AI Team run',
   'team-run-agents-tab': 'a tab of one AI Team run',
   'team-run-overview-tab': 'a tab of one AI Team run',

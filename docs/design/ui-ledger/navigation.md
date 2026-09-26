@@ -43,6 +43,7 @@ graph LR
   gate_sheet["gate-sheet"]:::ext
   global_shortcuts(["global-shortcuts"])
   home_shell["home-shell"]
+  keep_running["keep-running"]:::ext
   model_picker_sheet["model-picker-sheet"]:::ext
   notifications_settings["notifications-settings"]:::ext
   permission_sheet["permission-sheet"]:::ext
@@ -81,6 +82,7 @@ graph LR
   home_shell --> server_switcher_sheet
   home_shell --> servers
   home_shell --> connection_status_details_sheet
+  home_shell --> keep_running
   server_switcher_sheet --> servers
   server_switcher_sheet --> profile_editor
   server_switcher_sheet --> settings_disconnect_sheet
@@ -162,6 +164,7 @@ graph LR
   chat_share_confirm_sheet(["chat-share-confirm-sheet"])
   chat_stash_attachments_unavailable_sheet(["chat-stash-attachments-unavailable-sheet"])
   chat_stash_restore_confirm_sheet(["chat-stash-restore-confirm-sheet"])
+  chat_watching_message_sheet(["chat-watching-message-sheet"])
   command_launcher_sheet(["command-launcher-sheet"])
   commands["commands"]:::ext
   console_organization_sheet["console-organization-sheet"]:::ext
@@ -240,6 +243,7 @@ graph LR
   skills["skills"]:::ext
   stage_revert_sheet["stage-revert-sheet"]:::ext
   staged_revert["staged-revert"]:::ext
+  team_conversation["team-conversation"]:::ext
   terminal["terminal"]:::ext
   timeline_sheet(["timeline-sheet"])
   todos_sheet(["todos-sheet"])
@@ -258,6 +262,7 @@ graph LR
   global_shortcuts --> chat
   share_session_failed_banner --> chat
   demo --> chat
+  chat --> chat_watching_message_sheet
   chat --> chat_leave_unsaved_draft_sheet
   chat --> running_work_sheet
   chat --> diff_view
@@ -388,6 +393,7 @@ graph LR
   profile_monitor --> chat
   embedded_profile_monitor_inbox --> permission_sheet
   phone_setup_ready --> chat
+  team_conversation --> chat
   settings --> voice_model_setup_sheet
   settings --> session_import
   settings --> voice_notices
@@ -506,8 +512,8 @@ graph LR
   session_relations["session-relations"]:::ext
   shell_output["shell-output"]
   shell_output_timeout_sheet(["shell-output-timeout-sheet"])
+  team_conversation["team-conversation"]:::ext
   team_home["team-home"]:::ext
-  team_run["team-run"]:::ext
   workspace["workspace"]
   workspace_archive_session_sheet(["workspace-archive-session-sheet"])
   workspace_archived_sheet(["workspace-archived-sheet"])
@@ -538,7 +544,7 @@ graph LR
   workspace --> workspace_archived_sheet
   workspace --> isolated_task_sheet
   workspace --> embedded_session_inventory_footer
-  workspace --> team_run
+  workspace --> team_conversation
   workspace_folder_chooser --> projects
   workspace_folder_chooser --> global_sessions
   workspace_context_sheet --> projects
@@ -831,6 +837,7 @@ graph LR
   embedded_termux_attention_line(["embedded-termux-attention-line"])
   embedded_termux_running_server_entry(["embedded-termux-running-server-entry"])
   home_shell["home-shell"]:::ext
+  keep_running["keep-running"]:::ext
   local_agent_page["local-agent-page"]
   local_agent_project_sheet(["local-agent-project-sheet"])
   manage_project["manage-project"]:::ext
@@ -924,6 +931,7 @@ graph LR
   embedded_local_agent_server_entry --> termux_setup
   builtin_server_setup --> builtin_server_log_sheet
   builtin_server_setup --> builtin_server_remove_confirm_sheet
+  builtin_server_setup --> keep_running
   phone_setup_start --> phone_setup_progress
   phone_setup_start --> home_shell
   phone_setup_start --> servers
@@ -988,6 +996,7 @@ graph LR
 ```mermaid
 graph LR
   activity["activity"]:::ext
+  chat["chat"]:::ext
   embedded_markdown_text["embedded-markdown-text"]:::ext
   embedded_product_states["embedded-product-states"]:::ext
   embedded_setup_terminal["embedded-setup-terminal"]:::ext
@@ -1017,6 +1026,12 @@ graph LR
   team_agent_restart_confirm_sheet(["team-agent-restart-confirm-sheet"])
   team_agent_stop_confirm_sheet(["team-agent-stop-confirm-sheet"])
   team_agents["team-agents"]
+  team_board["team-board"]
+  team_board_add_sheet(["team-board-add-sheet"])
+  team_board_cancel_confirm_sheet(["team-board-cancel-confirm-sheet"])
+  team_board_move_sheet(["team-board-move-sheet"])
+  team_board_priority_sheet(["team-board-priority-sheet"])
+  team_conversation["team-conversation"]
   team_cycle_how_sheet(["team-cycle-how-sheet"])
   team_cycle_stop_confirm_sheet(["team-cycle-stop-confirm-sheet"])
   team_home["team-home"]
@@ -1054,15 +1069,17 @@ graph LR
   activity --> gate_sheet
   activity --> team_agent
   workspace --> team_home
-  workspace --> team_run
+  workspace --> team_conversation
   profile_editor --> team_host_guide_sheet
   profile_editor --> team_host_sheet
   team_home --> start_run_sheet
   team_home --> team_host_details_sheet
   team_home --> embedded_team_planning_card
+  team_home --> team_board
   team_home_runs_tab --> team_run
   team_home_runs_tab --> start_run_sheet
   team_home_runs_tab --> team_agents
+  team_home_runs_tab --> team_board
   team_home_agents_tab --> team_agent
   team_home_needs_you_tab --> gate_sheet
   team_run --> team_run_details_sheet
@@ -1071,6 +1088,7 @@ graph LR
   team_run_overview_tab --> team_agent_output
   team_run_overview_tab --> team_cycle_stop_confirm_sheet
   team_run_overview_tab --> embedded_team_merge_section
+  team_run_overview_tab --> team_conversation
   team_run_work_tab --> work_sheet
   team_run_agents_tab --> team_agent
   team_agents --> team_agent
@@ -1089,6 +1107,17 @@ graph LR
   team_intro --> team_host_sheet
   team_intro --> team_host_guide_sheet
   embedded_team_discover --> team_intro
+  team_board --> team_board_add_sheet
+  team_board --> team_conversation
+  team_board --> team_board_move_sheet
+  team_board_move_sheet --> team_board_priority_sheet
+  team_board_move_sheet --> team_conversation
+  team_board_move_sheet --> team_board_cancel_confirm_sheet
+  team_conversation --> team_home
+  team_conversation --> team_run
+  team_conversation --> chat
+  team_conversation --> gate_sheet
+  team_conversation --> embedded_team_merge_section
   gate_sheet --> work_sheet
   gate_sheet --> gate_sheet_confirm_sheet
   gate_sheet --> team_agent
@@ -1165,6 +1194,7 @@ graph LR
   app_diagnostics_clear_sheet(["app-diagnostics-clear-sheet"])
   appearance_picker_sheet(["appearance-picker-sheet"])
   appearance_settings["appearance-settings"]
+  builtin_server_setup["builtin-server-setup"]:::ext
   capabilities["capabilities"]:::ext
   catalog["catalog"]
   chat["chat"]:::ext
@@ -1198,6 +1228,7 @@ graph LR
   integrations_forget_pending_auth_sheet(["integrations-forget-pending-auth-sheet"])
   integrations_forget_uncertain_auth_sheet(["integrations-forget-uncertain-auth-sheet"])
   integrations_remove_mcp_sheet(["integrations-remove-mcp-sheet"])
+  keep_running["keep-running"]
   language_sheet(["language-sheet"])
   legacy_drafts["legacy-drafts"]
   legacy_drafts_delete_sheet(["legacy-drafts-delete-sheet"])
@@ -1245,6 +1276,7 @@ graph LR
   web_sources["web-sources"]
   workspace["workspace"]:::ext
   home_shell --> settings
+  home_shell --> keep_running
   server_switcher_sheet --> settings_disconnect_sheet
   activity --> notifications_settings
   global_shortcuts --> settings
@@ -1275,6 +1307,7 @@ graph LR
   profile_monitor --> notifications_settings
   provider_quota --> notifications_settings
   embedded_termux_running_server_entry --> settings_disconnect_sheet
+  builtin_server_setup --> keep_running
   team_intro --> plugins_settings
   settings --> server_settings
   settings --> servers
@@ -1303,6 +1336,7 @@ graph LR
   settings --> app_diagnostics
   settings --> about
   settings --> voice_notices
+  settings --> keep_running
   settings_disconnect_sheet --> servers
   usage_hub --> usage
   usage_hub --> provider_quota
@@ -1500,7 +1534,7 @@ graph LR
 | `question-sheet-dismiss-dialog` | dialog | 2 / 4 | `question-sheet` / question-sheet-dismiss | _none_ |
 | `attention-overview` | screen | 2 / 1 | `servers` / servers-attention | attention-overview-monitor-settings -> `profile-monitor` |
 | `capabilities` | screen | 1 / 3 | `command-launcher-sheet` / chat-command-tools<br>`settings` / settings-commands-tools | capabilities-tab-commands -> `commands`<br>capabilities-tab-tools -> `tools`<br>capabilities-tab-skills -> `skills`<br>capabilities-tab-references -> `references` |
-| `home-shell` | screen | 0 / 1 | `termux-setup`<br>`global-shortcuts` / global-shortcuts-destinations<br>`command-palette-dialog` / command-palette-dialog-cmd-workspace<br>`command-palette-dialog` / command-palette-dialog-cmd-files<br>`command-palette-dialog` / command-palette-dialog-cmd-activity<br>`command-palette-dialog` / command-palette-dialog-cmd-more<br>`system` / system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell<br>`system` / system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell<br>`command-launcher-sheet` / chat-command-workspaces<br>`servers` / servers-profile-row<br>`servers` / servers-profile-menu-connect<br>`termux-setup-connected` / termux-setup-connected-continue<br>`termux-setup-connected` / termux-setup-connected-team-open-workspace<br>`termux-setup-installed` / termux-setup-installed-continue<br>`termux-setup-installed` / termux-setup-installed-team-open-workspace<br>`phone-setup-start` / phone-setup-start-primary-open<br>`phone-setup-ready` / phone-setup-ready-close<br>`team-phone-onboarding-success` / team-phone-onboarding-success-open-workspace | home-shell-tab-workspace -> `workspace`<br>home-shell-tab-files -> `project-hub`<br>home-shell-tab-activity -> `activity`<br>home-shell-tab-more -> `settings`<br>home-shell-shortcut-terminal -> `terminal`<br>home-shell-server-switcher -> `server-switcher-sheet`<br>home-shell-banner-update-token -> `servers`<br>home-shell-banner-update-password -> `servers`<br>home-shell-banner-details -> `connection-status-details-sheet`<br>home-shell-tab-workspace -> `workspace-folder-chooser`<br>-> `model-picker-sheet` |
+| `home-shell` | screen | 0 / 1 | `termux-setup`<br>`global-shortcuts` / global-shortcuts-destinations<br>`command-palette-dialog` / command-palette-dialog-cmd-workspace<br>`command-palette-dialog` / command-palette-dialog-cmd-files<br>`command-palette-dialog` / command-palette-dialog-cmd-activity<br>`command-palette-dialog` / command-palette-dialog-cmd-more<br>`system` / system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell<br>`system` / system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell<br>`command-launcher-sheet` / chat-command-workspaces<br>`servers` / servers-profile-row<br>`servers` / servers-profile-menu-connect<br>`termux-setup-connected` / termux-setup-connected-continue<br>`termux-setup-connected` / termux-setup-connected-team-open-workspace<br>`termux-setup-installed` / termux-setup-installed-continue<br>`termux-setup-installed` / termux-setup-installed-team-open-workspace<br>`phone-setup-start` / phone-setup-start-primary-open<br>`phone-setup-ready` / phone-setup-ready-close<br>`team-phone-onboarding-success` / team-phone-onboarding-success-open-workspace | home-shell-tab-workspace -> `workspace`<br>home-shell-tab-files -> `project-hub`<br>home-shell-tab-activity -> `activity`<br>home-shell-tab-more -> `settings`<br>home-shell-shortcut-terminal -> `terminal`<br>home-shell-server-switcher -> `server-switcher-sheet`<br>home-shell-banner-update-token -> `servers`<br>home-shell-banner-update-password -> `servers`<br>home-shell-banner-details -> `connection-status-details-sheet`<br>home-shell-app-exit-keep-running -> `keep-running`<br>home-shell-tab-workspace -> `workspace-folder-chooser`<br>-> `model-picker-sheet` |
 | `embedded-connection-status-banner` | overlay | 1 / 2 | `chat` / chat-connection-status-banner<br>`chat` / (embedded) | embedded-connection-status-banner-update-token -> `servers`<br>embedded-connection-status-banner-update-password -> `servers`<br>embedded-connection-status-banner-details -> `connection-status-details-sheet` |
 | `connection-status-details-sheet` | sheet | 1 / 2 | `home-shell` / home-shell-banner-details<br>`embedded-connection-status-banner` / embedded-connection-status-banner-details | connection-status-details-sheet-change-server -> `servers` |
 | `server-switcher-sheet` | sheet | 1 / 2 | `home-shell` / home-shell-server-switcher | server-switcher-sheet-profile -> `servers`<br>server-switcher-sheet-add -> `profile-editor`<br>server-switcher-sheet-manage -> `servers`<br>server-switcher-sheet-disconnect -> `settings-disconnect-sheet`<br>server-switcher-sheet-phone-connect -> `servers`<br>server-switcher-sheet-phone-disconnect -> `settings-disconnect-sheet`<br>server-switcher-sheet-phone-manage -> `termux-setup`<br>server-switcher-sheet-phone-forget -> `servers`<br>(embedded) -> `embedded-termux-running-server-entry`<br>(embedded) -> `embedded-local-agent-server-entry` |
@@ -1539,10 +1573,11 @@ graph LR
 | `chat-read-aloud-consent-sheet` | sheet | 2 / 3 | `chat` | chat-read-aloud-consent-sheet-confirm -> `chat-read-aloud-voice-sheet` |
 | `chat-read-aloud-voice-sheet` | sheet | 2 / 3 | `chat-read-aloud-consent-sheet` / chat-read-aloud-consent-sheet-confirm<br>`chat` | _none_ |
 | `todos-sheet` | sheet | 3 / 4 | `session-menu-sheet` / session-menu-sheet-todos | -> `diff-view` |
+| `chat-watching-message-sheet` | sheet | 2 / 3 | `chat` / chat-watching-message | _none_ |
 | `timeline-sheet` | sheet | 2 / 3 | `session-menu-sheet` / session-menu-sheet-timeline<br>`chat` / chat-earlier-messages-pill<br>`command-launcher-sheet` / chat-command-timeline<br>`command-launcher-sheet` / chat-command-fork<br>`embedded-message-view` / embedded-message-view-earlier-messages-pill | _none_ |
 | `embedded-transcript-find-bar` | overlay | 1 / 2 | `chat` / chat-find-bar<br>`chat` / (embedded) | _none_ |
 | `embedded-voice-conversation-controls` | overlay | 1 / 2 | `chat`<br>`chat` / (embedded) | embedded-voice-conversation-controls-listen -> `voice-composer-sheet` |
-| `chat` | screen | 1 / 2 | `profile-monitor-switch-server-dialog`<br>`run-command-dialog`<br>`chat` / chat-message-menu-fork<br>`command-launcher-sheet` / chat-command-new<br>`activity` / activity-running-row<br>`activity` / activity-digest-open-conversation<br>`global-shortcuts` / global-shortcuts-new-session<br>`command-palette-dialog` / command-palette-dialog-cmd-new-session<br>`system` / system-entry-share-text<br>`system` / system-entry-launch-new-task<br>`system` / system-entry-launch-pinned-session<br>`system` / system-entry-session-link<br>`system` / system-entry-alert-session<br>`system` / system-first-run-homescreen-openfirstconversation-pushes-chat-id-wi-to-chat<br>`share-session-failed-banner` / share-session-failed-banner-retry<br>`demo` / demo-chat<br>`chat` / chat-subagent-banner-parent<br>`chat` / chat-v2-row-open-child<br>`chat` / chat-message-open-subagent-session<br>`chat-message-actions-sheet` / chat-message-actions-sheet-fork<br>`session-menu-sheet` / session-menu-sheet-fork<br>`embedded-subagent-context-banner` / embedded-subagent-context-banner-parent<br>`embedded-message-view` / embedded-message-view-background-result-open-child<br>`embedded-tool-card` / embedded-tool-card-open-subagent-session<br>`embedded-completion-digest-card` / embedded-completion-digest-card-open-conversation<br>`embedded-return-brief-panel` / embedded-return-brief-panel-run-continue<br>`workspace` / workspace-session-row<br>`workspace` / workspace-session-context-open<br>`workspace` / workspace-new-session<br>`workspace-archived-sheet` / workspace-archived-sheet-row<br>`workspace-archived-sheet` / workspace-archived-sheet-context-open<br>`global-sessions` / global-sessions-row<br>`global-sessions` / global-sessions-row-menu-open<br>`global-sessions` / global-sessions-row-context-open<br>`running-work-sheet` / running-work-sheet-agent<br>`profile-monitor` / profile-monitor-busy-row<br>`phone-setup-ready` / phone-setup-ready-create<br>`commands` / commands-row-open-chat<br>`session-import` / session-import-open<br>`run-result` / run-result-open-conversation | chat-back-leave -> `chat-leave-unsaved-draft-sheet`<br>chat-appbar-running-work -> `running-work-sheet`<br>chat-appbar-demo-review-changes -> `diff-view`<br>chat-appbar-session-menu -> `session-menu-sheet`<br>chat-body-demo-review-changes -> `diff-view`<br>chat-connection-status-banner -> `embedded-connection-status-banner`<br>chat-prompt-error-choose-model -> `model-picker-sheet`<br>chat-subagent-banner-parent -> `chat`<br>chat-subagent-banner-all -> `session-relations`<br>chat-staged-revert-review -> `staged-revert`<br>chat-find-bar -> `embedded-transcript-find-bar`<br>chat-transcript-path-link -> `file-preview-sheet`<br>chat-v2-row-open-child -> `chat`<br>chat-message-long-press -> `chat-message-actions-sheet`<br>chat-message-menu-fork -> `chat`<br>chat-message-menu-revert -> `stage-revert-sheet`<br>chat-message-menu-delete -> `chat-delete-message-sheet`<br>chat-message-tool-file-preview -> `embedded-message-view`<br>chat-message-error-open-providers -> `integrations`<br>chat-message-error-choose-model -> `model-picker-sheet`<br>chat-message-open-subagent-session -> `chat`<br>chat-earlier-messages-pill -> `timeline-sheet`<br>chat-question-card-answer -> `embedded-question-attention-card`<br>chat-question-card-more -> `question-sheet`<br>chat-auto-approval-indicator -> `session-approvals-sheet`<br>chat-permission-card-review -> `permission-sheet`<br>chat-form-request-card -> `form-sheet`<br>chat-form-request-answer -> `form-sheet`<br>chat-pending-sends-strip -> `embedded-pending-sends-strip`<br>chat-pending-photo-review -> `file-preview-sheet`<br>chat-composer-open-commands -> `command-launcher-sheet`<br>chat-composer-open-agents -> `command-launcher-sheet`<br>chat-composer-open-editor -> `prompt-editor`<br>chat-composer-reuse-prompt -> `prompt-history-sheet`<br>chat-composer-open-stash -> `prompt-stash-sheet`<br>chat-composer-legacy-drafts -> `legacy-drafts`<br>chat-composer-voice -> `voice-composer-sheet`<br>chat-composer-web-sources -> `web-sources`<br>chat-composer-context-capsule -> `context-capsule`<br>chat-composer-choose-model -> `model-picker-sheet`<br>chat-shortcut-command-palette -> `command-launcher-sheet`<br>chat-shortcut-model-cycle -> `embedded-model-shortcuts`<br>chat-shortcut-background-work -> `embedded-model-shortcuts`<br>(embedded) -> `embedded-connection-status-banner`<br>(embedded) -> `embedded-desktop-file-drop-target`<br>(embedded) -> `embedded-product-states`<br>-> `chat-share-confirm-sheet`<br>-> `embedded-composer`<br>(embedded) -> `embedded-composer`<br>(embedded) -> `embedded-transcript-find-bar`<br>-> `chat-read-aloud-consent-sheet`<br>-> `chat-read-aloud-voice-sheet`<br>(embedded) -> `embedded-model-shortcuts`<br>-> `embedded-prompt-error-banner`<br>(embedded) -> `embedded-prompt-error-banner`<br>-> `embedded-subagent-context-banner`<br>(embedded) -> `embedded-subagent-context-banner`<br>-> `embedded-shared-session-banner`<br>(embedded) -> `embedded-shared-session-banner`<br>(embedded) -> `embedded-message-view`<br>(embedded) -> `embedded-pending-sends-strip`<br>(embedded) -> `embedded-chat-nudge-slot`<br>(embedded) -> `embedded-auto-approval-indicator`<br>(embedded) -> `embedded-permission-attention-card`<br>(embedded) -> `embedded-question-attention-card`<br>-> `embedded-voice-conversation-controls`<br>(embedded) -> `embedded-voice-conversation-controls`<br>-> `voice-model-setup-sheet`<br>(embedded) -> `embedded-tool-card`<br>(embedded) -> `embedded-markdown-text`<br>(embedded) -> `embedded-question-options`<br>-> `project-health`<br>-> `global-sessions`<br>-> `session-destination-sheet`<br>-> `console-organization-sheet`<br>-> `files`<br>-> `review-workspace`<br>-> `appearance-picker-sheet`<br>-> `app-diagnostics`<br>-> `skills`<br>-> `references`<br>-> `tools`<br>-> `session-context`<br>-> `session-export`<br>-> `session-note`<br>-> `continue-on-computer-sheet`<br>-> `continue-on-phone-sheet` |
+| `chat` | screen | 1 / 2 | `profile-monitor-switch-server-dialog`<br>`run-command-dialog`<br>`chat` / chat-message-menu-fork<br>`command-launcher-sheet` / chat-command-new<br>`activity` / activity-running-row<br>`activity` / activity-digest-open-conversation<br>`global-shortcuts` / global-shortcuts-new-session<br>`command-palette-dialog` / command-palette-dialog-cmd-new-session<br>`system` / system-entry-share-text<br>`system` / system-entry-launch-new-task<br>`system` / system-entry-launch-pinned-session<br>`system` / system-entry-session-link<br>`system` / system-entry-alert-session<br>`system` / system-first-run-homescreen-openfirstconversation-pushes-chat-id-wi-to-chat<br>`share-session-failed-banner` / share-session-failed-banner-retry<br>`demo` / demo-chat<br>`chat` / chat-subagent-banner-parent<br>`chat` / chat-v2-row-open-child<br>`chat` / chat-message-open-subagent-session<br>`chat-message-actions-sheet` / chat-message-actions-sheet-fork<br>`session-menu-sheet` / session-menu-sheet-fork<br>`embedded-subagent-context-banner` / embedded-subagent-context-banner-parent<br>`embedded-message-view` / embedded-message-view-background-result-open-child<br>`embedded-tool-card` / embedded-tool-card-open-subagent-session<br>`embedded-completion-digest-card` / embedded-completion-digest-card-open-conversation<br>`embedded-return-brief-panel` / embedded-return-brief-panel-run-continue<br>`workspace` / workspace-session-row<br>`workspace` / workspace-session-context-open<br>`workspace` / workspace-new-session<br>`workspace-archived-sheet` / workspace-archived-sheet-row<br>`workspace-archived-sheet` / workspace-archived-sheet-context-open<br>`global-sessions` / global-sessions-row<br>`global-sessions` / global-sessions-row-menu-open<br>`global-sessions` / global-sessions-row-context-open<br>`running-work-sheet` / running-work-sheet-agent<br>`profile-monitor` / profile-monitor-busy-row<br>`phone-setup-ready` / phone-setup-ready-create<br>`team-conversation` / team-conversation-family-agent<br>`team-conversation` / team-conversation-agent-line<br>`commands` / commands-row-open-chat<br>`session-import` / session-import-open<br>`run-result` / run-result-open-conversation | chat-watching-message -> `chat-watching-message-sheet`<br>chat-back-leave -> `chat-leave-unsaved-draft-sheet`<br>chat-appbar-running-work -> `running-work-sheet`<br>chat-appbar-demo-review-changes -> `diff-view`<br>chat-appbar-session-menu -> `session-menu-sheet`<br>chat-body-demo-review-changes -> `diff-view`<br>chat-connection-status-banner -> `embedded-connection-status-banner`<br>chat-prompt-error-choose-model -> `model-picker-sheet`<br>chat-subagent-banner-parent -> `chat`<br>chat-subagent-banner-all -> `session-relations`<br>chat-staged-revert-review -> `staged-revert`<br>chat-find-bar -> `embedded-transcript-find-bar`<br>chat-transcript-path-link -> `file-preview-sheet`<br>chat-v2-row-open-child -> `chat`<br>chat-message-long-press -> `chat-message-actions-sheet`<br>chat-message-menu-fork -> `chat`<br>chat-message-menu-revert -> `stage-revert-sheet`<br>chat-message-menu-delete -> `chat-delete-message-sheet`<br>chat-message-tool-file-preview -> `embedded-message-view`<br>chat-message-error-open-providers -> `integrations`<br>chat-message-error-choose-model -> `model-picker-sheet`<br>chat-message-open-subagent-session -> `chat`<br>chat-earlier-messages-pill -> `timeline-sheet`<br>chat-question-card-answer -> `embedded-question-attention-card`<br>chat-question-card-more -> `question-sheet`<br>chat-auto-approval-indicator -> `session-approvals-sheet`<br>chat-permission-card-review -> `permission-sheet`<br>chat-form-request-card -> `form-sheet`<br>chat-form-request-answer -> `form-sheet`<br>chat-pending-sends-strip -> `embedded-pending-sends-strip`<br>chat-pending-photo-review -> `file-preview-sheet`<br>chat-composer-open-commands -> `command-launcher-sheet`<br>chat-composer-open-agents -> `command-launcher-sheet`<br>chat-composer-open-editor -> `prompt-editor`<br>chat-composer-reuse-prompt -> `prompt-history-sheet`<br>chat-composer-open-stash -> `prompt-stash-sheet`<br>chat-composer-legacy-drafts -> `legacy-drafts`<br>chat-composer-voice -> `voice-composer-sheet`<br>chat-composer-web-sources -> `web-sources`<br>chat-composer-context-capsule -> `context-capsule`<br>chat-composer-choose-model -> `model-picker-sheet`<br>chat-shortcut-command-palette -> `command-launcher-sheet`<br>chat-shortcut-model-cycle -> `embedded-model-shortcuts`<br>chat-shortcut-background-work -> `embedded-model-shortcuts`<br>(embedded) -> `embedded-connection-status-banner`<br>(embedded) -> `embedded-desktop-file-drop-target`<br>(embedded) -> `embedded-product-states`<br>-> `chat-share-confirm-sheet`<br>-> `embedded-composer`<br>(embedded) -> `embedded-composer`<br>(embedded) -> `embedded-transcript-find-bar`<br>-> `chat-read-aloud-consent-sheet`<br>-> `chat-read-aloud-voice-sheet`<br>(embedded) -> `embedded-model-shortcuts`<br>-> `embedded-prompt-error-banner`<br>(embedded) -> `embedded-prompt-error-banner`<br>-> `embedded-subagent-context-banner`<br>(embedded) -> `embedded-subagent-context-banner`<br>-> `embedded-shared-session-banner`<br>(embedded) -> `embedded-shared-session-banner`<br>(embedded) -> `embedded-message-view`<br>(embedded) -> `embedded-pending-sends-strip`<br>(embedded) -> `embedded-chat-nudge-slot`<br>(embedded) -> `embedded-auto-approval-indicator`<br>(embedded) -> `embedded-permission-attention-card`<br>(embedded) -> `embedded-question-attention-card`<br>-> `embedded-voice-conversation-controls`<br>(embedded) -> `embedded-voice-conversation-controls`<br>-> `voice-model-setup-sheet`<br>(embedded) -> `embedded-tool-card`<br>(embedded) -> `embedded-markdown-text`<br>(embedded) -> `embedded-question-options`<br>-> `project-health`<br>-> `global-sessions`<br>-> `session-destination-sheet`<br>-> `console-organization-sheet`<br>-> `files`<br>-> `review-workspace`<br>-> `appearance-picker-sheet`<br>-> `app-diagnostics`<br>-> `skills`<br>-> `references`<br>-> `tools`<br>-> `session-context`<br>-> `session-export`<br>-> `session-note`<br>-> `continue-on-computer-sheet`<br>-> `continue-on-phone-sheet` |
 | `chat-draft-attachment-recovery-sheet` | sheet | system only | `system` / system-automatic-from-initstate-line-570-when-the-saved-session-dra-to-chat-draft-attachment-recovery-sheet | _none_ |
 | `chat-stash-attachments-unavailable-sheet` | sheet | 3 / 4 | `prompt-stash-sheet` | chat-stash-attachments-unavailable-sheet-confirm -> `chat-stash-restore-confirm-sheet` |
 | `chat-stash-restore-confirm-sheet` | sheet | 3 / 4 | `prompt-stash-sheet`<br>`chat-stash-attachments-unavailable-sheet` / chat-stash-attachments-unavailable-sheet-confirm | _none_ |
@@ -1612,7 +1647,7 @@ graph LR
 | `session-destination-confirm-dialog` | dialog | 3 / 4 | `session-destination-sheet` / session-destination-sheet-destination | _none_ |
 | `console-organization-sheet` | sheet | 2 / 3 | `chat`<br>`command-launcher-sheet` / chat-command-org | console-organization-sheet-org -> `console-organization-switch-dialog` |
 | `console-organization-switch-dialog` | dialog | 3 / 4 | `console-organization-sheet` / console-organization-sheet-org | _none_ |
-| `workspace` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace | workspace-error-search-all -> `global-sessions`<br>workspace-no-projects-search-all -> `global-sessions`<br>workspace-project-header -> `workspace-context-sheet`<br>workspace-active-session-directory -> `workspace-directory-details-dialog`<br>workspace-restricted-directory -> `workspace-directory-details-dialog`<br>workspace-return-brief-panel -> `embedded-return-brief-panel`<br>workspace-team-card -> `team-home`<br>workspace-termux-attention-line -> `embedded-termux-attention-line`<br>workspace-session-row -> `chat`<br>workspace-session-menu-details -> `workspace-session-details-sheet`<br>workspace-session-menu-rename -> `workspace-rename-session-dialog`<br>workspace-session-menu-share -> `workspace-share-session-sheet`<br>workspace-session-menu-archive -> `workspace-archive-session-sheet`<br>workspace-session-menu-delete -> `workspace-delete-session-sheet`<br>workspace-session-context-details -> `workspace-session-details-sheet`<br>workspace-session-context-open -> `chat`<br>workspace-session-context-rename -> `workspace-rename-session-dialog`<br>workspace-session-context-share -> `workspace-share-session-sheet`<br>workspace-session-context-archive -> `workspace-archive-session-sheet`<br>workspace-session-context-delete -> `workspace-delete-session-sheet`<br>workspace-search-all-sessions -> `global-sessions`<br>workspace-section-menu-background -> `notifications-settings`<br>workspace-archived-sessions -> `workspace-archived-sheet`<br>workspace-new-session -> `chat`<br>workspace-isolated-task -> `isolated-task-sheet`<br>workspace-inventory-footer -> `embedded-session-inventory-footer`<br>workspace-team-task-row -> `team-run`<br>workspace-team-door -> `team-home`<br>workspace-session-row-swipe -> `workspace-delete-session-sheet`<br>(embedded) -> `embedded-context-menu-region`<br>(embedded) -> `embedded-return-brief-panel`<br>(state) -> `workspace-folder-chooser`<br>(embedded) -> `embedded-session-inventory-footer`<br>(embedded) -> `embedded-termux-attention-line`<br>(embedded) -> `embedded-team-card`<br>(embedded) -> `embedded-team-discover` |
+| `workspace` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace | workspace-error-search-all -> `global-sessions`<br>workspace-no-projects-search-all -> `global-sessions`<br>workspace-project-header -> `workspace-context-sheet`<br>workspace-active-session-directory -> `workspace-directory-details-dialog`<br>workspace-restricted-directory -> `workspace-directory-details-dialog`<br>workspace-return-brief-panel -> `embedded-return-brief-panel`<br>workspace-team-card -> `team-home`<br>workspace-termux-attention-line -> `embedded-termux-attention-line`<br>workspace-session-row -> `chat`<br>workspace-session-menu-details -> `workspace-session-details-sheet`<br>workspace-session-menu-rename -> `workspace-rename-session-dialog`<br>workspace-session-menu-share -> `workspace-share-session-sheet`<br>workspace-session-menu-archive -> `workspace-archive-session-sheet`<br>workspace-session-menu-delete -> `workspace-delete-session-sheet`<br>workspace-session-context-details -> `workspace-session-details-sheet`<br>workspace-session-context-open -> `chat`<br>workspace-session-context-rename -> `workspace-rename-session-dialog`<br>workspace-session-context-share -> `workspace-share-session-sheet`<br>workspace-session-context-archive -> `workspace-archive-session-sheet`<br>workspace-session-context-delete -> `workspace-delete-session-sheet`<br>workspace-search-all-sessions -> `global-sessions`<br>workspace-section-menu-background -> `notifications-settings`<br>workspace-archived-sessions -> `workspace-archived-sheet`<br>workspace-new-session -> `chat`<br>workspace-isolated-task -> `isolated-task-sheet`<br>workspace-inventory-footer -> `embedded-session-inventory-footer`<br>workspace-team-task-row -> `team-conversation`<br>workspace-team-door -> `team-home`<br>workspace-session-row-swipe -> `workspace-delete-session-sheet`<br>workspace-new-session -> `team-conversation`<br>(embedded) -> `embedded-context-menu-region`<br>(embedded) -> `embedded-return-brief-panel`<br>(state) -> `workspace-folder-chooser`<br>(embedded) -> `embedded-session-inventory-footer`<br>(embedded) -> `embedded-termux-attention-line`<br>(embedded) -> `embedded-team-card`<br>(embedded) -> `embedded-team-discover` |
 | `workspace-directory-details-dialog` | dialog | 1 / 3 | `workspace` / workspace-active-session-directory<br>`workspace` / workspace-restricted-directory | _none_ |
 | `workspace-context-sheet` | sheet | 1 / 3 | `workspace` / workspace-project-header | workspace-context-sheet-switch-project -> `projects`<br>workspace-context-sheet-manage-project -> `manage-project` |
 | `workspace-session-details-sheet` | sheet | 1 / 3 | `workspace` / workspace-session-menu-details<br>`workspace` / workspace-session-context-details | _none_ |
@@ -1693,7 +1728,7 @@ graph LR
 
 | Page | Kind | Depth | Inbound (page / element) | Outbound (element -> page) |
 |---|---|---|---|---|
-| `builtin-server-setup` | screen | 2 / 1 | `root-connecting`<br>`termux-setup` | builtin-server-show-log -> `builtin-server-log-sheet`<br>builtin-server-remove -> `builtin-server-remove-confirm-sheet` |
+| `builtin-server-setup` | screen | 2 / 1 | `root-connecting`<br>`termux-setup` | builtin-server-show-log -> `builtin-server-log-sheet`<br>builtin-server-remove -> `builtin-server-remove-confirm-sheet`<br>builtin-server-keep-running -> `keep-running` |
 | `builtin-server-log-sheet` | sheet | 3 / 2 | `builtin-server-setup` / builtin-server-show-log | _none_ |
 | `builtin-server-remove-confirm-sheet` | sheet | 3 / 2 | `builtin-server-setup` / builtin-server-remove | _none_ |
 | `development-services` | screen | 3 / 5 | `manage-project` / manage-project-services | development-services-register -> `development-services-editor-sheet`<br>development-services-start -> `development-services-confirm-sheet`<br>development-services-stop -> `development-services-confirm-sheet`<br>development-services-restart -> `development-services-confirm-sheet`<br>development-services-logs -> `development-services-logs-sheet`<br>development-services-visit -> `external-link-dialog`<br>development-services-forget -> `development-services-confirm-sheet`<br>development-services-remove -> `development-services-confirm-sheet` |
@@ -1743,6 +1778,7 @@ graph LR
 
 | Page | Kind | Depth | Inbound (page / element) | Outbound (element -> page) |
 |---|---|---|---|---|
+| `team-conversation` | screen | 1 / 3 | `team-run-overview-tab` / team-run-overview-open-conversation<br>`team-board` / team-board-card<br>`team-board-move-sheet` / team-board-move-open<br>`workspace` / workspace-team-task-row<br>`workspace` / workspace-new-session | team-conversation-team-page -> `team-home`<br>team-conversation-menu-details -> `team-run`<br>team-conversation-family-agent -> `chat`<br>team-conversation-agent-line -> `chat`<br>team-conversation-gate-card -> `gate-sheet`<br>team-conversation-merge-section -> `embedded-team-merge-section` |
 | `team-agent-output` | screen | 2 / 4 | `team-agent` / team-agent-open-output<br>`team-run-overview-tab` / team-run-overview-cycle-open-output<br>`embedded-team-cycle-strip` / embedded-team-cycle-strip-open-output<br>`gate-sheet` / gate-sheet-run-logs<br>`embedded-team-planning-card` / embedded-team-planning-card-output | _none_ |
 | `team-agent` | screen | 1 / 3 | `team-home-agents-tab` / team-home-agents-row<br>`team-run-agents-tab` / team-run-agents-row<br>`activity` / activity-team-agent-blocked-row<br>`team-agents` / team-agents-row<br>`gate-sheet` / gate-sheet-run-agent | team-agent-details -> `team-agent-details-sheet`<br>team-agent-open-output -> `team-agent-output`<br>team-agent-control-message -> `team-agent-message-sheet`<br>team-agent-control-stop -> `team-agent-stop-confirm-sheet`<br>team-agent-control-restart -> `team-agent-restart-confirm-sheet`<br>team-agent-control-reassign -> `team-agent-reassign-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-technical-value` |
 | `team-agent-stop-confirm-sheet` | sheet | 2 / 4 | `team-agent` / team-agent-control-stop | _none_ |
@@ -1750,29 +1786,34 @@ graph LR
 | `team-agent-message-sheet` | sheet | 2 / 4 | `team-agent` / team-agent-control-message | _none_ |
 | `team-agent-reassign-sheet` | sheet | 2 / 4 | `team-agent` / team-agent-control-reassign | _none_ |
 | `team-agent-details-sheet` | sheet | 2 / 4 | `team-agent` / team-agent-details | _none_ |
-| `gate-sheet` | sheet | 1 / 3 | `activity` / activity-team-gate-row<br>`system` / system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet<br>`team-home-needs-you-tab` / team-home-needs-you-gate-row<br>`team-home-needs-you-tab` / team-home-needs-you-gate-receipt-chip<br>`embedded-team-receipt-chip` / embedded-team-receipt-chip-open | gate-sheet-work-chip -> `work-sheet`<br>gate-sheet-approve -> `gate-sheet-confirm-sheet`<br>gate-sheet-deny -> `gate-sheet-confirm-sheet`<br>gate-sheet-run-agent -> `team-agent`<br>gate-sheet-run-logs -> `team-agent-output`<br>gate-sheet-run-cancel -> `gate-sheet-confirm-sheet`<br>gate-sheet-how -> `team-host-guide-sheet`<br>(embedded) -> `embedded-markdown-text` |
+| `gate-sheet` | sheet | 1 / 3 | `activity` / activity-team-gate-row<br>`system` / system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet<br>`team-home-needs-you-tab` / team-home-needs-you-gate-row<br>`team-home-needs-you-tab` / team-home-needs-you-gate-receipt-chip<br>`embedded-team-receipt-chip` / embedded-team-receipt-chip-open<br>`team-conversation` / team-conversation-gate-card | gate-sheet-work-chip -> `work-sheet`<br>gate-sheet-approve -> `gate-sheet-confirm-sheet`<br>gate-sheet-deny -> `gate-sheet-confirm-sheet`<br>gate-sheet-run-agent -> `team-agent`<br>gate-sheet-run-logs -> `team-agent-output`<br>gate-sheet-run-cancel -> `gate-sheet-confirm-sheet`<br>gate-sheet-how -> `team-host-guide-sheet`<br>(embedded) -> `embedded-markdown-text` |
 | `gate-sheet-confirm-sheet` | sheet | 2 / 4 | `gate-sheet` / gate-sheet-approve<br>`gate-sheet` / gate-sheet-deny<br>`gate-sheet` / gate-sheet-run-cancel | _none_ |
-| `embedded-team-merge-section` | overlay | 1 / 3 | `team-run-overview-tab` / team-run-overview-merge-section<br>`team-run` / (embedded) | embedded-team-merge-section-review -> `team-merge-changes-sheet`<br>embedded-team-merge-section-approve -> `team-merge-approve-sheet`<br>embedded-team-merge-section-merge -> `team-merge-confirm-sheet` |
-| `team-merge-confirm-sheet` | sheet | 2 / 4 | `embedded-team-merge-section` / embedded-team-merge-section-merge | _none_ |
-| `team-merge-approve-sheet` | sheet | 2 / 4 | `embedded-team-merge-section` / embedded-team-merge-section-approve | _none_ |
-| `team-merge-changes-sheet` | sheet | 2 / 4 | `embedded-team-merge-section` / embedded-team-merge-section-review | team-merge-changes-sheet-work-row -> `work-sheet` |
-| `team-run` | screen | 1 / 3 | `team-home-runs-tab` / team-home-runs-row<br>`system` / system-entry-team-link-run<br>`workspace` / workspace-team-task-row | team-run-details -> `team-run-details-sheet`<br>team-run-cancel -> `team-run-cancel-confirm-sheet`<br>team-run-tabs -> `team-run-overview-tab`<br>team-run-tabs -> `team-run-work-tab`<br>team-run-tabs -> `team-run-agents-tab`<br>team-run-tabs -> `team-run-timeline-tab`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-merge-section`<br>-> `work-sheet`<br>(embedded) -> `embedded-work-graph`<br>(embedded) -> `embedded-team-technical-value` |
-| `team-run-cancel-confirm-sheet` | sheet | 2 / 4 | `team-run` / team-run-cancel | _none_ |
-| `team-run-agents-tab` | tab | 2 / 4 | `team-run` / team-run-tabs | team-run-agents-row -> `team-agent` |
-| `team-run-overview-tab` | tab | 2 / 4 | `team-run` / team-run-tabs | team-run-overview-cycle-how -> `team-cycle-how-sheet`<br>team-run-overview-cycle-open-output -> `team-agent-output`<br>team-run-overview-cycle-stop -> `team-cycle-stop-confirm-sheet`<br>team-run-overview-merge-section -> `embedded-team-merge-section` |
-| `team-run-work-tab` | tab | 2 / 4 | `team-run` / team-run-tabs | team-run-work-row -> `work-sheet`<br>team-run-work-graph-node -> `work-sheet`<br>-> `embedded-work-graph` |
-| `team-run-timeline-tab` | tab | 2 / 4 | `team-run` / team-run-tabs | _none_ |
-| `team-run-details-sheet` | sheet | 2 / 4 | `team-run` / team-run-details | _none_ |
+| `embedded-team-merge-section` | overlay | 2 / 4 | `team-run-overview-tab` / team-run-overview-merge-section<br>`team-conversation` / team-conversation-merge-section<br>`team-run` / (embedded) | embedded-team-merge-section-review -> `team-merge-changes-sheet`<br>embedded-team-merge-section-approve -> `team-merge-approve-sheet`<br>embedded-team-merge-section-merge -> `team-merge-confirm-sheet` |
+| `team-merge-confirm-sheet` | sheet | 3 / 5 | `embedded-team-merge-section` / embedded-team-merge-section-merge | _none_ |
+| `team-merge-approve-sheet` | sheet | 3 / 5 | `embedded-team-merge-section` / embedded-team-merge-section-approve | _none_ |
+| `team-merge-changes-sheet` | sheet | 3 / 5 | `embedded-team-merge-section` / embedded-team-merge-section-review | team-merge-changes-sheet-work-row -> `work-sheet` |
+| `team-run` | screen | 2 / 4 | `team-home-runs-tab` / team-home-runs-row<br>`system` / system-entry-team-link-run<br>`team-conversation` / team-conversation-menu-details | team-run-details -> `team-run-details-sheet`<br>team-run-cancel -> `team-run-cancel-confirm-sheet`<br>team-run-tabs -> `team-run-overview-tab`<br>team-run-tabs -> `team-run-work-tab`<br>team-run-tabs -> `team-run-agents-tab`<br>team-run-tabs -> `team-run-timeline-tab`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-merge-section`<br>-> `work-sheet`<br>(embedded) -> `embedded-work-graph`<br>(embedded) -> `embedded-team-technical-value` |
+| `team-run-cancel-confirm-sheet` | sheet | 3 / 5 | `team-run` / team-run-cancel | _none_ |
+| `team-run-agents-tab` | tab | 3 / 5 | `team-run` / team-run-tabs | team-run-agents-row -> `team-agent` |
+| `team-run-overview-tab` | tab | 3 / 5 | `team-run` / team-run-tabs | team-run-overview-cycle-how -> `team-cycle-how-sheet`<br>team-run-overview-cycle-open-output -> `team-agent-output`<br>team-run-overview-cycle-stop -> `team-cycle-stop-confirm-sheet`<br>team-run-overview-merge-section -> `embedded-team-merge-section`<br>team-run-overview-open-conversation -> `team-conversation` |
+| `team-run-work-tab` | tab | 3 / 5 | `team-run` / team-run-tabs | team-run-work-row -> `work-sheet`<br>team-run-work-graph-node -> `work-sheet`<br>-> `embedded-work-graph` |
+| `team-run-timeline-tab` | tab | 3 / 5 | `team-run` / team-run-tabs | _none_ |
+| `team-run-details-sheet` | sheet | 3 / 5 | `team-run` / team-run-details | _none_ |
 | `start-run-sheet` | sheet | 2 / 4 | `team-home` / team-home-start-run<br>`team-home-runs-tab` / team-home-runs-tab-empty-start-run | start-run-sheet-host-guide -> `team-host-guide-sheet` |
 | `embedded-team-planning-card` | overlay | 1 / 3 | `team-home` / team-home-planning-card<br>`team-home` / (embedded) | embedded-team-planning-card-output -> `team-agent-output` |
 | `team-agents` | screen | 3 / 5 | `team-home-runs-tab` / team-home-runs-agents-row | team-agents-row -> `team-agent` |
-| `team-home` | screen | 1 / 3 | `embedded-team-card` / embedded-team-card-open<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`embedded-team-card` / embedded-team-card-run-row<br>`embedded-team-card` / embedded-team-card-completed-runs<br>`embedded-team-card` / embedded-team-card-more-runs | team-home-start-run -> `start-run-sheet`<br>team-home-host-chip -> `team-host-details-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-segments -> `team-home-runs-tab`<br>team-home-segments-menu-item -> `team-home-runs-tab`<br>team-home-segments -> `team-home-agents-tab`<br>team-home-segments-menu-item -> `team-home-agents-tab`<br>team-home-segments -> `team-home-needs-you-tab`<br>team-home-segments-menu-item -> `team-home-needs-you-tab`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card` |
-| `team-home-runs-tab` | tab | 2 / 4 | `team-home` / team-home-segments<br>`team-home` / team-home-segments-menu-item | team-home-runs-row -> `team-run`<br>team-home-runs-tab-empty-start-run -> `start-run-sheet`<br>team-home-runs-agents-row -> `team-agents` |
+| `team-board` | screen | 2 / 4 | `team-home` / team-home-board<br>`team-home-runs-tab` / team-home-board-row | team-board-add -> `team-board-add-sheet`<br>team-board-empty-add -> `team-board-add-sheet`<br>team-board-card -> `team-conversation`<br>team-board-card-moves -> `team-board-move-sheet`<br>team-board-card-long-press -> `team-board-move-sheet` |
+| `team-home` | screen | 1 / 3 | `embedded-team-card` / embedded-team-card-open<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`embedded-team-card` / embedded-team-card-run-row<br>`embedded-team-card` / embedded-team-card-completed-runs<br>`embedded-team-card` / embedded-team-card-more-runs<br>`team-conversation` / team-conversation-team-page | team-home-start-run -> `start-run-sheet`<br>team-home-host-chip -> `team-host-details-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-board -> `team-board`<br>team-home-segments -> `team-home-runs-tab`<br>team-home-segments-menu-item -> `team-home-runs-tab`<br>team-home-segments -> `team-home-agents-tab`<br>team-home-segments-menu-item -> `team-home-agents-tab`<br>team-home-segments -> `team-home-needs-you-tab`<br>team-home-segments-menu-item -> `team-home-needs-you-tab`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card` |
+| `team-home-runs-tab` | tab | 2 / 4 | `team-home` / team-home-segments<br>`team-home` / team-home-segments-menu-item | team-home-runs-row -> `team-run`<br>team-home-runs-tab-empty-start-run -> `start-run-sheet`<br>team-home-runs-agents-row -> `team-agents`<br>team-home-board-row -> `team-board` |
 | `team-home-agents-tab` | tab | 2 / 4 | `team-home` / team-home-segments<br>`team-home` / team-home-segments-menu-item | team-home-agents-row -> `team-agent` |
 | `team-home-needs-you-tab` | tab | 2 / 4 | `team-home` / team-home-segments<br>`team-home` / team-home-segments-menu-item | team-home-needs-you-gate-row -> `gate-sheet`<br>team-home-needs-you-gate-receipt-chip -> `gate-sheet` |
 | `team-intro` | screen | 1 / 3 | `embedded-team-discover` / embedded-team-discover-open<br>`embedded-team-discover` / embedded-team-discover-row<br>`settings` / settings-ai-team | team-intro-set-up -> `plugins-settings`<br>team-intro-address -> `team-host-sheet`<br>team-intro-on-computer -> `team-host-guide-sheet` |
-| `embedded-work-graph` | overlay | 1 / 3 | `team-run-work-tab`<br>`team-run` / (embedded) | embedded-work-graph-node -> `work-sheet` |
+| `embedded-work-graph` | overlay | 2 / 4 | `team-run-work-tab`<br>`team-run` / (embedded) | embedded-work-graph-node -> `work-sheet` |
 | `work-sheet` | sheet | 2 / 4 | `gate-sheet` / gate-sheet-work-chip<br>`team-merge-changes-sheet` / team-merge-changes-sheet-work-row<br>`work-sheet` / work-sheet-dependency-chip<br>`embedded-work-graph` / embedded-work-graph-node<br>`team-run`<br>`team-run-work-tab` / team-run-work-row<br>`team-run-work-tab` / team-run-work-graph-node<br>`work-sheet` / work-sheet-blocking-chip | work-sheet-dependency-chip -> `work-sheet`<br>work-sheet-blocking-chip -> `work-sheet`<br>(embedded) -> `embedded-markdown-text`<br>(embedded) -> `embedded-team-cycle-strip` |
+| `team-board-move-sheet` | sheet | 3 / 5 | `team-board` / team-board-card-moves<br>`team-board` / team-board-card-long-press | team-board-move-priority -> `team-board-priority-sheet`<br>team-board-move-open -> `team-conversation`<br>team-board-move-cancel -> `team-board-cancel-confirm-sheet` |
+| `team-board-priority-sheet` | sheet | 4 / 6 | `team-board-move-sheet` / team-board-move-priority | _none_ |
+| `team-board-cancel-confirm-sheet` | sheet | 4 / 6 | `team-board-move-sheet` / team-board-move-cancel | _none_ |
+| `team-board-add-sheet` | sheet | 3 / 5 | `team-board` / team-board-add<br>`team-board` / team-board-empty-add | _none_ |
 | `embedded-team-card` | overlay | 0 / 2 | `workspace` / (embedded) | embedded-team-card-run-row -> `team-home`<br>embedded-team-card-completed-runs -> `team-home`<br>embedded-team-card-more-runs -> `team-home`<br>embedded-team-card-open -> `team-home` |
 | `team-cycle-how-sheet` | sheet | 3 / 5 | `team-run-overview-tab` / team-run-overview-cycle-how<br>`embedded-team-cycle-strip` / embedded-team-cycle-strip-how | _none_ |
 | `embedded-team-cycle-strip` | overlay | 2 / 4 | `work-sheet` / (embedded) | embedded-team-cycle-strip-how -> `team-cycle-how-sheet`<br>embedded-team-cycle-strip-open-output -> `team-agent-output`<br>embedded-team-cycle-strip-stop -> `team-cycle-stop-confirm-sheet` |
@@ -1806,6 +1847,7 @@ graph LR
 | `about-privacy-tab` | tab | 2 / 2 | `about` / about-tab-privacy | _none_ |
 | `app-diagnostics` | screen | 1 / 3 | `settings` / settings-app-diagnostics<br>`chat`<br>`command-palette-dialog` / command-palette-dialog-cmd-diagnostics<br>`system` / system-named-route-debug-via-desktop-command-diagnostics-lib-main-d-to-app-diagnostics<br>`command-launcher-sheet` / chat-command-debug | app-diagnostics-clear -> `app-diagnostics-clear-sheet` |
 | `app-diagnostics-clear-sheet` | sheet | 2 / 4 | `app-diagnostics` / app-diagnostics-clear | _none_ |
+| `keep-running` | screen | 1 / 2 | `settings` / settings-keep-running<br>`builtin-server-setup` / builtin-server-keep-running<br>`home-shell` / home-shell-app-exit-keep-running | _none_ |
 | `legacy-drafts` | screen | 2 / 3 | `chat` / chat-composer-legacy-drafts<br>`prompt-tools-sheet` / prompt-tools-sheet-legacy-drafts | legacy-drafts-item -> `legacy-drafts-review-sheet` |
 | `legacy-drafts-review-sheet` | sheet | 3 / 4 | `legacy-drafts` / legacy-drafts-item | legacy-drafts-review-sheet-delete -> `legacy-drafts-delete-sheet` |
 | `legacy-drafts-delete-sheet` | sheet | 4 / 5 | `legacy-drafts-review-sheet` / legacy-drafts-review-sheet-delete | _none_ |
@@ -1846,7 +1888,7 @@ graph LR
 | `team-plugin-sheet` | sheet | 2 / 4 | `plugins-settings` / plugins-settings-ai-team-row<br>`plugins-settings` / plugins-team-other | team-plugin-sheet-how -> `team-host-guide-sheet`<br>team-plugin-sheet-add-manually -> `team-host-sheet`<br>team-plugin-sheet-turn-off -> `team-turn-off-sheet`<br>-> `embedded-team-phone-section`<br>(embedded) -> `embedded-team-phone-section`<br>(embedded) -> `embedded-team-technical-value` |
 | `plugins-clear-mappings-sheet` | sheet | 2 / 4 | `plugins-settings` / plugins-clear-mappings | -> `run-command-dialog` |
 | `plugins-mapping-dialog` | dialog | 2 / 4 | `plugins-settings` / plugins-manage-mapping | _none_ |
-| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup`<br>settings-accounts -> `agent-account`<br>settings-external-agents -> `external-agents`<br>settings-tailscale -> `tailscale-setup`<br>settings-disconnect -> `settings-disconnect-sheet`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-saved-permissions -> `saved-permissions`<br>settings-transcript-display -> `settings-transcript-display-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-models -> `catalog`<br>settings-providers -> `integrations`<br>settings-mcp -> `integrations`<br>settings-commands-tools -> `capabilities`<br>settings-ai-team -> `team-intro`<br>settings-category-plugins -> `plugins-settings`<br>settings-import-session -> `session-import`<br>settings-category-usage -> `usage-hub`<br>settings-category-privacy -> `privacy-settings`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-keyboard-shortcuts -> `shortcuts-help-dialog`<br>settings-app-diagnostics -> `app-diagnostics`<br>settings-privacy-data-use -> `about`<br>settings-voice-notices -> `voice-notices`<br>settings-about-notices -> `about`<br>(embedded) -> `embedded-product-states` |
+| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup`<br>settings-accounts -> `agent-account`<br>settings-external-agents -> `external-agents`<br>settings-tailscale -> `tailscale-setup`<br>settings-disconnect -> `settings-disconnect-sheet`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-saved-permissions -> `saved-permissions`<br>settings-transcript-display -> `settings-transcript-display-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-models -> `catalog`<br>settings-providers -> `integrations`<br>settings-mcp -> `integrations`<br>settings-commands-tools -> `capabilities`<br>settings-ai-team -> `team-intro`<br>settings-category-plugins -> `plugins-settings`<br>settings-import-session -> `session-import`<br>settings-category-usage -> `usage-hub`<br>settings-category-privacy -> `privacy-settings`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-keyboard-shortcuts -> `shortcuts-help-dialog`<br>settings-app-diagnostics -> `app-diagnostics`<br>settings-privacy-data-use -> `about`<br>settings-voice-notices -> `voice-notices`<br>settings-about-notices -> `about`<br>settings-keep-running -> `keep-running`<br>(embedded) -> `embedded-product-states` |
 | `settings-disconnect-sheet` | sheet | 1 / 1 | `settings` / settings-disconnect<br>`server-switcher-sheet` / server-switcher-sheet-disconnect<br>`server-switcher-sheet` / server-switcher-sheet-phone-disconnect<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-disconnect | settings-disconnect-sheet-confirm -> `servers` |
 | `settings-transcript-display-sheet` | sheet | 1 / 3 | `settings` / settings-transcript-display | _none_ |
 | `tools` | screen | 2 / 3 | `chat`<br>`capabilities` / capabilities-tab-tools | tools-choose-model-empty -> `model-picker-sheet`<br>tools-model-summary -> `model-picker-sheet`<br>tools-header-change -> `model-picker-sheet`<br>tools-callable-row -> `tools-detail-sheet`<br>(embedded) -> `embedded-product-states` |

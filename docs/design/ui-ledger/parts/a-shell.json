@@ -458,6 +458,37 @@
             "!controller.passwordRejected"
           ],
           "destructive": false
+        },
+        {
+          "id": "home-shell-app-exit-keep-running",
+          "type": "button",
+          "label": "Keep it running",
+          "key": "app-exit-keep-running",
+          "file": "lib/ui/widgets/app_exit_notice.dart",
+          "line": 76,
+          "action": "navigate",
+          "target": "keep-running",
+          "targetWidget": "openKeepRunningScreen",
+          "effect": "AppExitNoticeLine (app_exit_notice.dart): KitAction onPressed -> openKeepRunningScreen(context); offered only when notice.offersKeepAlive, after Android ended the app while the built-in server ran (AppExitRecovery).",
+          "gates": [
+            "recovery.notice != null && notice.offersKeepAlive"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-app-exit-dismiss",
+          "type": "icon-button",
+          "label": "Dismiss",
+          "key": "kit-notice-dismiss",
+          "file": "lib/ui/kit/kit_notice.dart",
+          "line": 140,
+          "action": "other",
+          "target": null,
+          "effect": "AppExitNoticeLine's KitNotice.onDismiss -> recovery.dismiss(): the notice folds away and does not return.",
+          "gates": [
+            "recovery.notice != null"
+          ],
+          "destructive": false
         }
       ],
       "states": [

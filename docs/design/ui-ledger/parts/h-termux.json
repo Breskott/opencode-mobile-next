@@ -3347,6 +3347,19 @@
             "disabled while _busy"
           ],
           "destructive": true
+        },
+        {
+          "id": "builtin-server-keep-running",
+          "type": "list-tile",
+          "label": "Keep running in the background",
+          "key": "builtin-server-keep-running",
+          "line": 722,
+          "action": "navigate",
+          "target": "keep-running",
+          "targetWidget": "openKeepRunningScreen",
+          "effect": "onTap -> openKeepRunningScreen(context): the built-in server lives in this app's process, so what to allow so Android leaves it running.",
+          "gates": [],
+          "destructive": false
         }
       ]
     },

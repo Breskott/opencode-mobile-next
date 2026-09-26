@@ -581,6 +581,22 @@
             "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
+        },
+        {
+          "id": "settings-keep-running",
+          "type": "list-tile",
+          "label": "Keep running in the background",
+          "key": "settings-keep-running",
+          "line": 400,
+          "action": "navigate",
+          "target": "keep-running",
+          "targetWidget": "openKeepRunningScreen",
+          "effect": "row('settings-keep-running') -> _openEntry(entries['settings-keep-running'], scope): SearchEntry.open calls openKeepRunningScreen(context).",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))",
+            "platform: android only (scope.platform.supportsBackgroundService)"
+          ],
+          "destructive": false
         }
       ]
     },
@@ -3315,6 +3331,51 @@
         "controller.isConnected (hub row and search entry gate)"
       ],
       "elements": []
+    },
+    {
+      "id": "keep-running",
+      "title": "Keep running in the background",
+      "kind": "screen",
+      "file": "lib/ui/screens/keep_running_screen.dart",
+      "widget": "KeepRunningScreen",
+      "presentedBy": [
+        "openKeepRunningScreen"
+      ],
+      "line": 60,
+      "purpose": "Settings › Keep running in the background: what to allow on this phone so Android leaves the app (and the built-in OpenCode/AI Team inside it) running; never opens by itself.",
+      "reachedFrom": [
+        {
+          "page": "settings",
+          "element": "settings-keep-running"
+        },
+        {
+          "page": "builtin-server-setup",
+          "element": "builtin-server-keep-running"
+        },
+        {
+          "page": "home-shell",
+          "element": "home-shell-app-exit-keep-running"
+        }
+      ],
+      "gates": [
+        "platform: android only (supportsBackgroundService)"
+      ],
+      "elements": [
+        {
+          "id": "keep-running-open-setting",
+          "type": "list-tile",
+          "label": "<step title>",
+          "key": "keep-running-<step>",
+          "line": 218,
+          "action": "external-link",
+          "target": null,
+          "effect": "KitRow onTap -> _open(setting): ref.read(appLifecycleBridgeProvider).openKeepAliveSetting(setting), opening the phone's own battery/autostart/lock/background-restriction settings screen for this step; no onTap once allowed or when the step has no direct setting.",
+          "gates": [
+            "setting != null && !allowed"
+          ],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [

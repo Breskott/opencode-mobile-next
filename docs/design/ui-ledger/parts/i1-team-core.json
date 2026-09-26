@@ -175,6 +175,21 @@
             "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
           ],
           "destructive": false
+        },
+        {
+          "id": "team-home-board",
+          "type": "icon-button",
+          "label": "Board",
+          "key": "team-home-board",
+          "line": 266,
+          "action": "navigate",
+          "target": "team-board",
+          "targetWidget": "TeamBoardScreen",
+          "effect": "openTeamBoard(context, controller, now: widget.now): pushes the board.",
+          "gates": [
+            "ready (controller.phase == OrchestrationPhase.ready && snapshot.hasData)"
+          ],
+          "destructive": false
         }
       ]
     },
@@ -337,6 +352,19 @@
           "target": "team-agents",
           "targetWidget": "TeamAgentsScreen",
           "effect": "_AgentsRow.onTap -> _openAgents(): Navigator.push(TeamAgentsScreen(controller, onOpenAgent: widget.onOpenAgent, now: widget.now)) (team_home_screen.dart:142-152). \"3. The team itself: one row, not a tab.\"",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-home-board-row",
+          "type": "list-tile",
+          "label": "View board",
+          "key": "team-home-board-row",
+          "line": 575,
+          "action": "navigate",
+          "target": "team-board",
+          "targetWidget": "TeamBoardScreen",
+          "effect": "openTeamBoard(context, controller, now: widget.now): pushes the board (docs/design/team-board-2026-09-26.md); every task by where it stands.",
           "gates": [],
           "destructive": false
         }
@@ -737,6 +765,20 @@
           "target": null,
           "targetWidget": "TeamMergeSection",
           "effect": "TeamMergeSection(controller, run) (merge_section.dart, owned by i2); renders empty until every work item is done or review-ready and the host has merge roles.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-run-overview-open-conversation",
+          "type": "list-tile",
+          "label": "Open conversation",
+          "key": "team-run-open-conversation",
+          "file": "lib/ui/screens/team_conversation/team_conversation.dart",
+          "line": 111,
+          "action": "navigate",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversation.open",
+          "effect": "TeamTaskConversationRow (run_screen.dart:758) -> TeamConversation.open(context, team, runId: run.id): pushes the task's own conversation; the task's workers are one tap further, each in watching mode.",
           "gates": [],
           "destructive": false
         }
@@ -2203,6 +2245,610 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-board",
+      "title": "Board",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/team_board_screen.dart",
+      "widget": "TeamBoardScreen",
+      "presentedBy": [
+        "openTeamBoard"
+      ],
+      "line": 75,
+      "purpose": "The AI Team's board (docs/design/team-board-2026-09-26.md): a project's tasks in five columns (Backlog/Ready/Working/Review/Done), one page at a time; a card opens its conversation (or its Work sheet when it belongs to no task), its ⋯ or a long press opens the move sheet.",
+      "reachedFrom": [
+        {
+          "page": "team-home",
+          "element": "team-home-board"
+        },
+        {
+          "page": "team-home-runs-tab",
+          "element": "team-home-board-row"
+        }
+      ],
+      "gates": [
+        "ConnectionController.orchestration != null (as team-home, connection.dart:712)"
+      ],
+      "elements": [
+        {
+          "id": "team-board-project",
+          "type": "icon-button",
+          "label": "Choose project",
+          "key": "team-board-project",
+          "line": 696,
+          "action": "other",
+          "target": null,
+          "effect": "_ProjectSwitcher: PopupMenuButton opener; opens the project menu (shown only when the host reports more than one project).",
+          "gates": [
+            "projects.length > 1"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-project-item",
+          "type": "menu-item",
+          "label": "<project name>",
+          "key": "team-board-project-<id>",
+          "line": 703,
+          "action": "other",
+          "target": null,
+          "effect": "_ProjectSwitcher.onSelect(id): setState(() => _project = id); clears pending moves and their hold timers.",
+          "gates": [
+            "projects.length > 1"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-tabs",
+          "type": "tab",
+          "label": "Backlog | Ready | Working | Review | Done",
+          "key": null,
+          "file": "lib/ui/widgets/team_board_tabs.dart",
+          "line": 78,
+          "action": "other",
+          "target": null,
+          "effect": "TeamBoardTabs.onSelect -> _select(column): setState(() => _column = column) then pages.animateToPage (jumpToPage when motion is reduced).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-board-add",
+          "type": "icon-button",
+          "label": "Add to backlog",
+          "key": "team-board-add",
+          "line": 404,
+          "action": "open-sheet",
+          "target": "team-board-add-sheet",
+          "targetWidget": "showTeamBoardAddSheet",
+          "effect": "_add(): showTeamBoardAddSheet(context); on a non-empty answer calls edits.addToBacklog(title, projectId) and selects the Backlog column.",
+          "gates": [
+            "canAdd (ready && edits.canCreate && board != null && !board.isEmpty)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-failure-dismiss",
+          "type": "icon-button",
+          "label": "Dismiss",
+          "key": "kit-notice-dismiss",
+          "file": "lib/ui/kit/kit_notice.dart",
+          "line": 140,
+          "action": "other",
+          "target": null,
+          "effect": "KitNotice.onDismiss -> setState(() => _failure = null): clears the move-failed notice (team-board-failure).",
+          "gates": [
+            "a move was refused by the host (_failure != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "team-board-retry",
+          "line": 490,
+          "action": "mutate",
+          "target": null,
+          "effect": "KitAction onPressed -> _refresh(): controller.retry() when failed, else controller.refresh().",
+          "gates": [
+            "the first answer is overdue (GraceTimer, 8 s) while board == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-empty-add",
+          "type": "button",
+          "label": "Add to backlog",
+          "key": "team-board-empty-add",
+          "line": 533,
+          "action": "open-sheet",
+          "target": "team-board-add-sheet",
+          "targetWidget": "showTeamBoardAddSheet",
+          "effect": "_add(): showTeamBoardAddSheet(context); same as team-board-add, offered once in the empty state instead of the app bar (design standard §6).",
+          "gates": [
+            "board != null && board.isEmpty && edits.canCreate"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-card",
+          "type": "card",
+          "label": "<task title>",
+          "key": "team-board-card-<id>",
+          "file": "lib/ui/widgets/team_board_card.dart",
+          "line": 327,
+          "action": "navigate",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversation.open",
+          "effect": "TeamBoardCardView.onOpen -> _open(card) -> openTeamBoardCard: opens the task's conversation (TeamConversation.open) when card.runId != null, else the card's Work sheet (showWorkSheet, work-sheet) for a card that belongs to no task.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-board-card-moves",
+          "type": "icon-button",
+          "label": "Move or change",
+          "key": "team-board-card-more-<id>",
+          "file": "lib/ui/widgets/team_board_card.dart",
+          "line": 299,
+          "action": "open-sheet",
+          "target": "team-board-move-sheet",
+          "targetWidget": "showTeamBoardMoveSheet",
+          "effect": "TeamBoardCardView.onMoves -> _showMoves(card): showTeamBoardMoveSheet.",
+          "gates": [
+            "edits.movesFor(card) is not empty (hidden when the host allows no moves for this card)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-card-long-press",
+          "type": "gesture",
+          "label": "[long press on a card]",
+          "key": "team-board-card-<id>",
+          "file": "lib/ui/widgets/team_board_card.dart",
+          "line": 322,
+          "action": "open-sheet",
+          "target": "team-board-move-sheet",
+          "targetWidget": "showTeamBoardMoveSheet",
+          "effect": "GestureDetector.onLongPress -> _showMoves(card): showTeamBoardMoveSheet (same sheet as the card's ⋯ button; unconditional, even when onMoves is hidden, in which case the sheet only offers Open conversation/details and says why there are no moves).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-board-move-sheet",
+      "title": "<task title>",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/team_board_move_sheet.dart",
+      "widget": "_MoveSheet",
+      "presentedBy": [
+        "showTeamBoardMoveSheet"
+      ],
+      "line": 57,
+      "purpose": "The moves available for one card (start now, back to backlog, change priority, reopen, cancel) plus Open conversation/Open details; no gesture moves a card by itself.",
+      "reachedFrom": [
+        {
+          "page": "team-board",
+          "element": "team-board-card-moves"
+        },
+        {
+          "page": "team-board",
+          "element": "team-board-card-long-press"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "team-board-move-startNow",
+          "type": "list-tile",
+          "label": "Start now",
+          "key": "team-board-move-startNow",
+          "line": 125,
+          "action": "mutate",
+          "target": null,
+          "effect": "row(TeamBoardMove.startNow) onTap: pops TeamBoardChoseMove(startNow); the board's _move() then calls edits.run(startNow, card) directly.",
+          "gates": [
+            "moves.contains(TeamBoardMove.startNow)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-move-backToBacklog",
+          "type": "list-tile",
+          "label": "Back to backlog",
+          "key": "team-board-move-backToBacklog",
+          "line": 125,
+          "action": "mutate",
+          "target": null,
+          "effect": "row(TeamBoardMove.backToBacklog) onTap: pops TeamBoardChoseMove(backToBacklog); the board's _move() then calls edits.run directly.",
+          "gates": [
+            "moves.contains(TeamBoardMove.backToBacklog)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-move-priority",
+          "type": "list-tile",
+          "label": "Change priority",
+          "key": "team-board-move-priority",
+          "line": 125,
+          "action": "open-sheet",
+          "target": "team-board-priority-sheet",
+          "targetWidget": "showTeamBoardPrioritySheet",
+          "effect": "row(TeamBoardMove.priority) onTap: pops TeamBoardChoseMove(priority); the board's _move() then opens showTeamBoardPrioritySheet before calling edits.run(priority, card, priority: chosen).",
+          "gates": [
+            "moves.contains(TeamBoardMove.priority)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-move-reopen",
+          "type": "list-tile",
+          "label": "Reopen",
+          "key": "team-board-move-reopen",
+          "line": 125,
+          "action": "mutate",
+          "target": null,
+          "effect": "row(TeamBoardMove.reopen) onTap: pops TeamBoardChoseMove(reopen); the board's _move() then calls edits.run directly.",
+          "gates": [
+            "moves.contains(TeamBoardMove.reopen)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-board-move-open",
+          "type": "list-tile",
+          "label": "Open conversation | Open details",
+          "key": "team-board-move-open",
+          "line": 177,
+          "action": "navigate",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversation.open",
+          "effect": "onTap: pops TeamBoardChoseOpen(); the board's _showMoves() then calls _open(card) -> openTeamBoardCard, same target as the card's own tap (team-board-card).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-board-move-cancel",
+          "type": "list-tile",
+          "label": "Cancel task",
+          "key": "team-board-move-cancel",
+          "line": 125,
+          "action": "open-sheet",
+          "target": "team-board-cancel-confirm-sheet",
+          "targetWidget": "confirmTeamBoardCancel",
+          "effect": "row(TeamBoardMove.cancel) onTap (styled error, set apart with a divider): pops TeamBoardChoseMove(cancel); the board's _move() then calls confirmTeamBoardCancel before edits.run(cancel, card).",
+          "gates": [
+            "moves.contains(TeamBoardMove.cancel)"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "team-board-priority-sheet",
+      "title": "Priority",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/team_board_move_sheet.dart",
+      "widget": "showTeamBoardPrioritySheet",
+      "presentedBy": [
+        "showTeamBoardPrioritySheet"
+      ],
+      "line": 191,
+      "purpose": "The priority choice for one card, current level checked.",
+      "reachedFrom": [
+        {
+          "page": "team-board-move-sheet",
+          "element": "team-board-move-priority"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "team-board-priority-sheet-row",
+          "type": "list-tile",
+          "label": "<priority>",
+          "key": "team-board-priority-<priority>",
+          "line": 236,
+          "action": "mutate",
+          "target": null,
+          "effect": "KitRow onTap: pops the tapped priority (null when tapping the current one); the board's _move() then calls edits.run(TeamBoardMove.priority, card, priority: priority).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-board-add-sheet",
+      "title": "Add to backlog",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/team_board_move_sheet.dart",
+      "widget": "_AddSheet",
+      "presentedBy": [
+        "showTeamBoardAddSheet"
+      ],
+      "line": 273,
+      "purpose": "\"Add to backlog\": one field, the task's own words.",
+      "reachedFrom": [
+        {
+          "page": "team-board",
+          "element": "team-board-add"
+        },
+        {
+          "page": "team-board",
+          "element": "team-board-empty-add"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "team-board-add-sheet-field",
+          "type": "text-field",
+          "label": "What should the team do?",
+          "key": "team-board-add-field",
+          "line": 319,
+          "action": "submit",
+          "target": null,
+          "effect": "TextField.onSubmitted -> _submit(): pops the trimmed text (Navigator.pop) when non-empty.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-board-add-sheet-submit",
+          "type": "button",
+          "label": "Add to backlog",
+          "key": "team-board-add-submit",
+          "line": 338,
+          "action": "submit",
+          "target": null,
+          "effect": "KitButton.onPressed -> _submit(): pops the trimmed text; disabled while the field is empty.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-board-cancel-confirm-sheet",
+      "title": "Cancel “{title}”?",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/team_board_move_sheet.dart",
+      "widget": "confirmTeamBoardCancel",
+      "presentedBy": [
+        "confirmTeamBoardCancel",
+        "showConfirmSheet"
+      ],
+      "line": 248,
+      "purpose": "Confirms before cancelling a backlog/ready task (§2: destructive, confirmed).",
+      "reachedFrom": [
+        {
+          "page": "team-board-move-sheet",
+          "element": "team-board-move-cancel"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "team-board-cancel-confirm-sheet-confirm",
+          "type": "button",
+          "label": "Cancel task",
+          "key": "team-board-cancel-confirm",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops true; the board's _move() then calls edits.run(TeamBoardMove.cancel, card).",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "team-board-cancel-confirm-sheet-keep",
+          "type": "button",
+          "label": "Keep it",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 85,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context, false); nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "sheetKey": "team-board-cancel-confirm"
+    },
+    {
+      "id": "team-conversation",
+      "title": "<task title>",
+      "kind": "screen",
+      "file": "lib/ui/screens/chat/team_conversation_view.dart",
+      "widget": "TeamConversationScreen",
+      "presentedBy": [
+        "TeamConversation.open",
+        "TeamConversation.start"
+      ],
+      "line": 37,
+      "purpose": "The AI Team task as a conversation (docs/design/team-conversation-2026-09-26.md): the task's prompt, the lead's narrated reply, the family strip of workers/reviewers, folded steps, gate cards, the merge section, and a composer that messages the worker (or planner) through the team's own message control.",
+      "reachedFrom": [
+        {
+          "page": "team-run-overview-tab",
+          "element": "team-run-overview-open-conversation"
+        },
+        {
+          "page": "team-board",
+          "element": "team-board-card"
+        },
+        {
+          "page": "team-board-move-sheet",
+          "element": "team-board-move-open"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-team-task-row"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-new-session"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "team-conversation-team-page",
+          "type": "icon-button",
+          "label": "AI Team",
+          "key": "team-conversation-team-page",
+          "line": 284,
+          "action": "navigate",
+          "target": "team-home",
+          "targetWidget": "TeamHomeScreen",
+          "effect": "_openTeamPage(): pushes TeamHomeScreen(controller: team).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-menu",
+          "type": "icon-button",
+          "label": "[opens overflow menu]",
+          "key": "team-conversation-menu",
+          "line": 290,
+          "action": "other",
+          "target": null,
+          "effect": "PopupMenuButton opener; onSelected fires for any item (there is one).",
+          "gates": [
+            "run != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-menu-details",
+          "type": "menu-item",
+          "label": "Task details",
+          "key": null,
+          "line": 292,
+          "action": "navigate",
+          "target": "team-run",
+          "targetWidget": "RunScreen",
+          "effect": "Selecting 'Task details' -> onSelected -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
+          "gates": [
+            "run != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-lead-earlier",
+          "type": "list-tile",
+          "label": "Earlier ({count})",
+          "key": "team-conversation-lead-earlier",
+          "line": 557,
+          "action": "other",
+          "target": null,
+          "effect": "_FoldLine.onTap: toggles expansion[_TeamLeadReply._storeKey], folding/unfolding the lead's earlier lines.",
+          "gates": [
+            "more than 3 lead lines"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-family-agent",
+          "type": "chip",
+          "label": "<agent short name>",
+          "key": "team-conversation-family-<agentId>",
+          "line": 840,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "ChatScreen",
+          "effect": "_TeamFamilyStrip chip onTap -> onOpen(agent) -> _openAgent(agent) -> openTeamAgentConversation: pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or AgentOutputScreen (team-agent-output) as Live output when the agent's own OpenCode session cannot be found on the connected server.",
+          "gates": [
+            "run != null && agents.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-agent-line",
+          "type": "list-tile",
+          "label": "<agent title>",
+          "key": "team-conversation-agent-<agentId>",
+          "line": 967,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "ChatScreen",
+          "effect": "_TeamAgentLine InkWell.onTap -> onOpen -> _openAgent(agent): same as the family strip's chip, shown again inline with the reply's own steps.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "team-conversation-retry",
+          "line": 664,
+          "action": "mutate",
+          "target": null,
+          "effect": "KitAction onPressed: team.phase == failed ? team.retry() : team.refresh().",
+          "gates": [
+            "the team is overdue (GraceTimer, 8 s) and not answering"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-gate-card",
+          "type": "card",
+          "label": "[Needs-you gate card]",
+          "key": null,
+          "file": "lib/ui/widgets/team_needs_you.dart",
+          "line": 397,
+          "action": "open-sheet",
+          "target": "gate-sheet",
+          "targetWidget": "showGateSheet",
+          "effect": "TeamNeedsYouCard.onOpen -> showGateSheet(context, team, gate.id, now: widget.now); one card per open gate on this task.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-merge-section",
+          "type": "card",
+          "label": "[Merge section]",
+          "key": null,
+          "file": "lib/ui/screens/team/merge_section.dart",
+          "line": 410,
+          "action": "other",
+          "target": null,
+          "targetWidget": "TeamMergeSection",
+          "effect": "Embeds TeamMergeSection(controller, run) (merge_section.dart, owned by i2); same widget as team-run-overview-merge-section.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-field",
+          "type": "text-field",
+          "label": "Message the team…",
+          "key": "team-conversation-field",
+          "line": 1130,
+          "action": "submit",
+          "target": null,
+          "effect": "TeamComposerField onSend -> _send(recipient): team.messageAgent(recipient.id, text).",
+          "gates": [
+            "canMessage && recipient != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-conversation-send",
+          "type": "button",
+          "label": "Send",
+          "key": "team-conversation-send",
+          "line": 1131,
+          "action": "submit",
+          "target": null,
+          "effect": "Same as the field's onSend: _send(recipient) -> team.messageAgent(recipient.id, text).",
+          "gates": [
+            "canMessage && recipient != null"
+          ],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
@@ -2227,8 +2873,8 @@
       "reason": "Drawings (KitScene, design standard §10), not pages: the AI Team's cast (board, planning, waking, merged, nudge, rest, idle) shown on team-home (no tasks, Needs you, the planning card, the host starting), team-run-overview-tab, team-agents (no agents), embedded-team-card (Nothing running) and the in-app and Termux AI Team sections while the team starts."
     },
     {
-      "file": "lib/ui/screens/team/team_conversation_stub.dart",
-      "reason": "Stub of TeamConversation.start/open (feat/team-agent-chat replaces it at merge): opens the existing start sheet and RunScreen; no surface of its own."
+      "file": "lib/ui/screens/team_conversation/team_conversation.dart",
+      "reason": "The routing API for the task conversation, not a page of its own: TeamConversation.open/start push TeamConversationScreen (team-conversation, chat/team_conversation_view.dart). TeamTaskConversationRow (the Overview's 'Open conversation' row) is recorded as team-run-overview-open-conversation on team-run-overview-tab; TeamAgentTranscript and TeamOpenConversationRow are re-exports of chat/team_conversation_view.dart (see team-conversation's own elements and team-agent-output)."
     }
   ],
   "notes": [
@@ -2242,6 +2888,7 @@
     "TeamPlanningCard (start_run_sheet.dart:463), TeamMergeSection (merge_section.dart), WorkGraph (work_graph.dart), showWorkSheet, showGateSheet, showStartRunSheet and showTeamHostDetailsSheet belong to i2; referenced by targetWidget only. Target ids used: start-run-sheet, gate-sheet, work-sheet, team-host-details-sheet.",
     "A TeamLinkKind.gate deep link goes to ActivityScreen(initialTeamGateId) (lib/main.dart:881-888), not to a team screen.",
     "team-agents (team_agents_screen.dart) added for the aiteam-redesign-2026-09-24 merge; its RefreshIndicator (team_agents_screen.dart:177, onRefresh -> _refresh()) is left out of elements: unlike team-home/team-run/team-agent it has no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of a stale/failed state. Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row.",
-    "team-home, team-run and team-agent's error/loading states are recorded elsewhere in this file with `file: lib/ui/widgets/product_states.dart` (ProductErrorState/ProductEmptyState); their code now goes through team_states.dart's teamScreenState instead (see its docstring: \"they now come from here\"). Left as recorded (not this task's scope); team-agents, added after that refactor, is recorded against team_states.dart directly."
+    "team-home, team-run and team-agent's error/loading states are recorded elsewhere in this file with `file: lib/ui/widgets/product_states.dart` (ProductErrorState/ProductEmptyState); their code now goes through team_states.dart's teamScreenState instead (see its docstring: \"they now come from here\"). Left as recorded (not this task's scope); team-agents, added after that refactor, is recorded against team_states.dart directly.",
+    "team-board (team_board_screen.dart), added with the board (docs/design/team-board-2026-09-26.md): its KitRefresh.onRefresh -> _refresh() on every column (team_board_screen.dart:640) and on the empty state (line 519) is left out of elements for the same reason as team-agents: no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of the not-answering state (which has 'Try again', team-board-retry). Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row."
   ]
 }

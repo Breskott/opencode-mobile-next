@@ -575,7 +575,7 @@
           "action": "navigate",
           "target": "chat",
           "targetWidget": "/chat/<sessionId>",
-          "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
+          "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB. In Team mode (workspace-new-mode on), onTap is _createTeamTask instead: TeamConversation.start (team-conversation) when the team is on, else openTeamIntro (team-intro).",
           "gates": [
             "disabled while _creating"
           ],
@@ -655,9 +655,9 @@
           "file": "lib/ui/widgets/team_task_row.dart",
           "line": 64,
           "action": "navigate",
-          "target": "team-run",
-          "targetWidget": "TeamConversation.open (stub: RunScreen)",
-          "effect": "A team task in Needs you or Running with the team mark and 'Team · <state line>'; opens the task's team conversation.",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversation.open",
+          "effect": "A team task in Needs you or Running with the team mark and 'Team · <state line>'; opens the task's own conversation (TeamConversation.open, team_conversation/team_conversation.dart).",
           "gates": [
             "controller.orchestration != null; open tasks only"
           ],
