@@ -23462,5 +23462,18 @@
   "kitCodeEmpty": "Empty",
   "@kitCodeEmpty": {
     "description": "KitCodeBlock: shown in place of the block when its text is empty"
+  },
+  "kitTabLabel": "{label}, {count}",
+  "@kitTabLabel": {
+    "description": "KitTabStrip: a tab's semantics when it shows a count, e.g. 'Working, 3'. label is the host's tab word",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }

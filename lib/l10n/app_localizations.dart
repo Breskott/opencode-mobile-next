@@ -32765,6 +32765,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Needs you · } other{{count} need you · }}'**
   String kitNeedsYouSpan(int count);
 
+  /// KitTabStrip: a tab's semantics when it shows a count, e.g. 'Working, 3'. label is the host's tab word
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, {count}'**
+  String kitTabLabel(String label, int count);
+
   /// KitNeedsYou.badge: appended to the host's own semantics label so the count is read once, never by the badge itself
   ///
   /// In en, this message translates to:
