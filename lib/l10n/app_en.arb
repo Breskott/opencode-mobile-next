@@ -22246,32 +22246,46 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitMarkWaiting": "Waiting",
-  "@kitMarkWaiting": {
-    "description": "Kit status mark: the default word for the waiting state, in semantics and beside the mark"
+  "kitSwatchInUse": "In use",
+  "@kitSwatchInUse": {
+    "description": "KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now"
   },
-  "kitMarkWorking": "Working",
-  "@kitMarkWorking": {
-    "description": "Kit status mark: the default word for the working state, in semantics and beside the mark"
+  "kitThemePreviewTitle": "Fix the login bug",
+  "@kitThemePreviewTitle": {
+    "description": "KitThemePreview: the sample row's title in the theme preview picture"
   },
-  "kitMarkDone": "Done",
-  "@kitMarkDone": {
-    "description": "Kit status mark: the default word for the done state, in semantics and beside the mark"
+  "kitThemePreviewWorking": "Working · 2 min",
+  "@kitThemePreviewWorking": {
+    "description": "KitThemePreview: the sample row's status line, next to the working mark"
   },
-  "kitMarkFailed": "Failed",
-  "@kitMarkFailed": {
-    "description": "Kit status mark: the default word for the failed state, in semantics and beside the mark"
+  "kitThemePreviewNeedsYou": "Needs you",
+  "@kitThemePreviewNeedsYou": {
+    "description": "KitThemePreview: the sample needs-you word shown in the theme preview picture"
   },
-  "kitMarkPaused": "Paused",
-  "@kitMarkPaused": {
-    "description": "Kit status mark: the default word when a waiting or working mark is paused, in semantics and beside the mark"
+  "kitThemePreviewPrimary": "Send",
+  "@kitThemePreviewPrimary": {
+    "description": "KitThemePreview: the sample primary button's label in the theme preview picture"
   },
-  "kitTaskNeedsYou": "Needs you",
-  "@kitTaskNeedsYou": {
-    "description": "Kit task mark: the default word for a task that needs the person; also the word KitNeedsYou's own mark uses"
+  "kitThemePreviewSecondary": "Attach",
+  "@kitThemePreviewSecondary": {
+    "description": "KitThemePreview: the sample secondary button's label in the theme preview picture"
   },
-  "kitTaskStopped": "Stopped",
-  "@kitTaskStopped": {
-    "description": "Kit task mark: the default word for a task that was stopped before it finished"
+  "kitThemePreviewSegment": "On",
+  "@kitThemePreviewSegment": {
+    "description": "KitThemePreview: the sample selected segment's label in the theme preview picture"
+  },
+  "kitThemePreviewCode": "final ready = true;",
+  "@kitThemePreviewCode": {
+    "description": "Technical: KitThemePreview's sample code line, shown in mono in every locale"
+  },
+  "kitThemePreviewLabel": "Preview of {theme}",
+  "@kitThemePreviewLabel": {
+    "description": "KitThemePreview: the whole picture's semantic label, filled in by the host with the theme's name",
+    "placeholders": {
+      "theme": {
+        "type": "String",
+        "example": "Graphite"
+      }
+    }
   }
 }

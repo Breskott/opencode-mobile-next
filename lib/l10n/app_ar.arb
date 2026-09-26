@@ -5306,11 +5306,13 @@
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
   "kitCopied": "تم النسخ",
-  "kitMarkWaiting": "بانتظار",
-  "kitMarkWorking": "يعمل",
-  "kitMarkDone": "انتهى",
-  "kitMarkFailed": "فشل",
-  "kitMarkPaused": "متوقف مؤقتًا",
-  "kitTaskNeedsYou": "يحتاجك",
-  "kitTaskStopped": "متوقف"
+  "kitSwatchInUse": "قيد الاستخدام",
+  "kitThemePreviewTitle": "إصلاح خطأ تسجيل الدخول",
+  "kitThemePreviewWorking": "قيد التنفيذ · دقيقتان",
+  "kitThemePreviewNeedsYou": "يحتاجك",
+  "kitThemePreviewPrimary": "إرسال",
+  "kitThemePreviewSecondary": "إرفاق",
+  "kitThemePreviewSegment": "مفعّل",
+  "kitThemePreviewCode": "final ready = true;",
+  "kitThemePreviewLabel": "معاينة {theme}"
 }
