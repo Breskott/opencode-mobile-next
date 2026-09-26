@@ -7,21 +7,9 @@
 // duplicated; KIT-43) from `lib/ui/app_iconography.dart`, which now
 // re-exports them so every existing import keeps compiling.
 //
-// Contract problem (PROC-20, docs/qa/revamp-kit-KitIcon-2026-09-26/README.md):
-// KitIcon.md names a shared `KitTokens.toneFor` / `toneColor(AppStatusTone)` as an
-// already-available pre-wave seam ("Open questions: None"). It is not one:
-// `docs/ux-system/kit-api/_new-tokens.md`'s own "Not added here" section
-// says the D12 table it needs was never written, and
-// `docs/ux-system/revamp/STANDARDS.md` §0.5 step 2 does not list it among
-// the seams the coordinator adds before wave 1. Wave-1 units may not edit
-// `kit_tokens.dart` (§0.5 step 3), so this unit cannot add the shared token
-// either. [KitIcon.status] implements the D12 mapping the spec's prose
-// describes (`_statusTone`, below) directly, through the existing
-// `KitText.toneColor`, instead of inventing a fourth behaviour or blocking
-// on a token nothing else has built yet. `blocks: false`: every acceptance
-// criterion and required test for this unit still passes. Once the
-// coordinator adds `KitTokens.toneFor`, `_statusTone` should be deleted in
-// its favour.
+// [KitIcon.status] draws a status in its own glyph and tone from the kit's
+// one status map, [KitTokens.glyphFor] and [KitTokens.toneFor] (README.md
+// decision D12), the same map KitStatusMark reads.
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -77,26 +65,6 @@ IconData? _backgroundOf(IconData icon) =>
     ? _duotoneBackgrounds[icon.codePoint]
     : null;
 
-/// The kit's one [AppStatusTone] tone map (README.md decision D12), pending
-/// the shared `KitTokens.toneFor` (see the file header's contract problem):
-/// neutral → secondary, progress → accent, ok → success, attention →
-/// primary, failure → primary. Attention's amber belongs only to the
-/// needs-you parts (LOOK-4, LOOK-24); a failure is said in words and a
-/// neutral error glyph, not in red (LOOK-5, B2 interim).
-///
-/// Open PROC-20 item: this is a stopgap, not a seam. No other part copies
-/// it (KitNotice, KitStatusLine, KitStatusMark and the rest wait for the
-/// shared `KitTokens.toneFor`); once the coordinator adds that token to
-/// `_new-tokens.md` and STANDARDS §0.5 step 2, this function is deleted in
-/// its favour.
-KitTextTone _statusTone(AppStatusTone status) => switch (status) {
-  AppStatusTone.neutral => KitTextTone.secondary,
-  AppStatusTone.progress => KitTextTone.accent,
-  AppStatusTone.ok => KitTextTone.success,
-  AppStatusTone.attention => KitTextTone.primary,
-  AppStatusTone.failure => KitTextTone.primary,
-};
-
 /// KitIcon is the one way to draw a glyph (kit-v2.md §9, KitIcon.md).
 ///
 /// It takes a glyph from the app's named Phosphor set ([AppIconography],
@@ -119,7 +87,7 @@ class KitIcon extends StatelessWidget {
   /// [AppIcons] verb. A debug assert rejects any other font family, for
   /// example Material's `Icons.*`.
   const KitIcon(
-    this.icon, {
+    IconData this._icon, {
     super.key,
     this.size = KitIconSize.large,
     this.tone,
@@ -127,22 +95,28 @@ class KitIcon extends StatelessWidget {
     this.semanticsLabel,
   }) : _status = null;
 
-  /// An icon that says a status, in the tone for [status]: the kit's tone
-  /// map, [_statusTone] (README.md decision D12; see the file header for
-  /// why this is not yet `KitTokens.toneFor`).
+  /// An icon that says a status: [KitTokens.glyphFor] in
+  /// [KitTokens.toneFor] (README.md decision D12), so each status has its
+  /// own shape as well as its tone. [icon] replaces the glyph only where a
+  /// condition has its own (a status line's "offline" cloud); the tone
+  /// still comes from [status].
   const KitIcon.status(
-    this.icon,
     AppStatusTone status, {
     super.key,
+    IconData? icon,
     this.size = KitIconSize.small,
     this.growsWithText = true,
     this.semanticsLabel,
-  }) : tone = null,
+  }) : _icon = icon,
+       tone = null,
        _status = status;
 
   /// Must come from [AppIconography] or [AppIcons] (a debug assert checks
-  /// the font family).
-  final IconData icon;
+  /// the font family). On [KitIcon.status] without an explicit glyph, the
+  /// status's own ([KitTokens.glyphFor]).
+  IconData get icon => _icon ?? KitTokens.glyphFor(_status!);
+
+  final IconData? _icon;
 
   final KitIconSize size;
 
@@ -166,7 +140,7 @@ class KitIcon extends StatelessWidget {
 
   Color _resolveColor(BuildContext context, ThemeRoles roles) {
     final status = _status;
-    if (status != null) return KitText.toneColor(roles, _statusTone(status));
+    if (status != null) return KitTokens.toneColor(roles, status);
     final explicit = tone;
     if (explicit != null) return KitText.toneColor(roles, explicit);
     // The ambient colour is made opaque: a translucent one (a Material
@@ -188,6 +162,7 @@ class KitIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icon = this.icon;
     assert(
       icon.fontFamily != null && icon.fontFamily!.startsWith('AppPhosphor'),
       'KitIcon: "$icon" is not from AppIconography/AppIcons (font family '

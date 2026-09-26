@@ -69,10 +69,14 @@ class KitIcon extends StatelessWidget {
   /// secondary, progress → accent, ok → success, attention → primary,
   /// failure → primary. Attention's amber belongs only to the needs-you
   /// parts (LOOK-4, LOOK-24); a failure is said in words and a neutral
-  /// error glyph, not in red (LOOK-5, B2 interim).
+  /// error glyph, not in red (LOOK-5, B2 interim). The glyph is the
+  /// status's own, KitTokens.glyphFor: neutral radioEmpty, progress sync,
+  /// ok check, attention warning, failure error (KitStatusMark reads the
+  /// same map). [icon] overrides the glyph only where a condition has its
+  /// own (a status line's cloudOff); the tone still comes from [status].
   const KitIcon.status(
-    IconData icon,
     AppStatusTone status, {
+    IconData? icon,
     Key? key,
     KitIconSize size = KitIconSize.small,
     bool growsWithText = true,

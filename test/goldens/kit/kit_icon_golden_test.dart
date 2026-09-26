@@ -139,7 +139,7 @@ Widget _statusScene({bool arabic = false}) => _gutter(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
-              KitIcon.status(AppIconography.info, status),
+              KitIcon.status(status),
               const SizedBox(width: 10),
               KitText(arabic ? ar : en, role: KitTextRole.body),
             ],

@@ -3,6 +3,8 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
+import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
 import '../theme_roles.dart';
 import 'kit_shape.dart';
 import 'kit_text.dart';
@@ -413,6 +415,42 @@ class KitTokens extends ThemeExtension<KitTokens> {
 
   /// KitQr.md: the QR paper (graphiteLight's `surface1`).
   static Color get qrPaper => graphiteLight.surface1;
+
+  /// The kit's one status tone map (README.md decision D12): neutral →
+  /// secondary, progress → accent, ok → success, attention → primary,
+  /// failure → primary. Attention's amber belongs only to the needs-you
+  /// parts (LOOK-4, LOOK-24); a failure is said in words and a neutral
+  /// error glyph, not in red (LOOK-5, B2 interim). Attention and failure
+  /// share `text1` and differ by [glyphFor]'s shape. KitIcon.status and
+  /// KitStatusMark read this, never a local map.
+  static KitTextTone toneFor(AppStatusTone status) => switch (status) {
+    AppStatusTone.neutral => KitTextTone.secondary,
+    AppStatusTone.progress => KitTextTone.accent,
+    AppStatusTone.ok => KitTextTone.success,
+    AppStatusTone.attention => KitTextTone.primary,
+    AppStatusTone.failure => KitTextTone.primary,
+  };
+
+  /// The one glyph per status, paired with [toneFor]: every status has its
+  /// own shape, so no state is told apart by colour alone (STATE-9): an
+  /// empty ring idle, turning arrows under way, a check done, a warning
+  /// triangle needs-you, the neutral error glyph failed.
+  static IconData glyphFor(AppStatusTone status) => switch (status) {
+    AppStatusTone.neutral => AppIconography.radioEmpty,
+    AppStatusTone.progress => AppIconography.sync,
+    AppStatusTone.ok => AppIconography.check,
+    AppStatusTone.attention => AppIconography.warning,
+    AppStatusTone.failure => AppIconography.error,
+  };
+
+  /// [toneFor] resolved against [roles].
+  static Color toneColor(ThemeRoles roles, AppStatusTone status) =>
+      KitText.toneColor(roles, toneFor(status));
+
+  /// KitImage.md: the avatar's failed-image badge (the [glyphFor] failure
+  /// glyph on a `ground` ring), and the ring's width.
+  static const double avatarBadgeSize = 16;
+  static const double avatarBadgeRing = 2;
 
   /// KitSurface.md: [shape] as a border with the kit radii.
   ShapeBorder shapeOf(KitShape shape) {
