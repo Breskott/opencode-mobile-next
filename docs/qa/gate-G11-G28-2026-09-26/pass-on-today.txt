@@ -1,3 +1,9 @@
+$ tool/qa/machine_lock.sh test -- $F test -j 1 test/ui_glossary_test.dart --reporter expanded
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
 00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart
 00:00 +0: the label rule separates labels from sentences
 00:00 +1: action labels use the glossary word, not a banned synonym
@@ -12,11 +18,13 @@
 00:00 +10: G11 confirm titles and labels are checked through wrappers
 00:00 +11: G11 confirmation titles ask and labels name the act (COPY-9)
 00:00 +12: G11 the contradiction rule finds both halves of a pair
-00:00 +13: G11 no text says two contradicting states at once (COPY-17)
-00:00 +14: G11 every allow-listed contradiction key still needs it
-00:00 +15: G11 the technical-word rule finds engine words, ports, paths and versions
-00:00 +16: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
-00:00 +17: G28 the glossary extension finds each pattern
-00:00 +18: G28 every allow-listed product key still needs it
-00:00 +19: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15)
-00:00 +20: All tests passed!
+00:00 +13: G11 the contradiction scan skips text that is never rendered
+00:00 +14: G11 no text says two contradicting states at once (COPY-17)
+00:00 +15: G11 every allow-listed contradiction key still needs it
+00:00 +16: G11 the technical-word rule finds engine words, ports, paths and versions
+00:00 +17: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
+00:00 +18: G28 the glossary extension finds each pattern
+00:00 +19: G28 every allow-listed product key still needs it
+00:00 +20: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15)
+00:00 +21: All tests passed!
+exit 0

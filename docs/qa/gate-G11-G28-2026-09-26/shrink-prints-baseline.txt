@@ -1,7 +1,374 @@
-00:00 +8: every allow-listed noun key still needs its exemption
-00:00 +9: G11 ICU messages expand to their plain wordings
-00:00 +10: G11 confirm titles and labels are checked through wrappers
-00:00 +11: G11 confirmation titles ask and labels name the act (COPY-9)
---- ui_glossary baseline for "G11 confirm" shrank: commit this section in test/ui_glossary_baseline.json (or run with UI_GLOSSARY_WRITE=1) ---
-{
-  "G11 confirm": {
+Baseline raised by hand: G11 technical / a2aSupportedConnection / en version "A2A 1.0" 1 -> 2, so today's count is lower.
+$ tool/qa/machine_lock.sh test -- $F test -j 1 test/ui_glossary_test.dart --plain-name 'G11 technical words'
+machine_lock: got test slot 1 after 18s
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading test/ui_glossary_test.dart
+00:00 +0: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
+Shell: --- ui_glossary baseline for "G11 technical" shrank: commit this section in test/ui_glossary_baseline.json (or run with UI_GLOSSARY_WRITE=1) ---
+Shell: {
+Shell:   "G11 technical": {
+Shell:     "a2aCardVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "a2aSupportedConnection": {
+Shell:       "ar version \"A2A 1.0\"": 1,
+Shell:       "en version \"A2A 1.0\"": 1
+Shell:     },
+Shell:     "a2aUnsupported": {
+Shell:       "ar version \"A2A 1.0\"": 1,
+Shell:       "en version \"A2A 1.0\"": 1
+Shell:     },
+Shell:     "aboutBuildVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "agentAccountUnsupportedDetail": {
+Shell:       "ar version \"0.153.4\"": 1,
+Shell:       "en version \"0.153.4\"": 1
+Shell:     },
+Shell:     "builtinServerOpenCodeHint": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "builtinServerOpenCodeInstalled": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "builtinServerRunning": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1
+Shell:     },
+Shell:     "builtinServerUbuntuHint": {
+Shell:       "ar version \"Base 24.04\"": 1,
+Shell:       "en version \"Base 24.04\"": 1
+Shell:     },
+Shell:     "chatAttachmentOfficeHeader": {
+Shell:       "en engine word \"formulas\"": 1
+Shell:     },
+Shell:     "codexAddressHint": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar port \":4500\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1,
+Shell:       "en port \":4500\"": 1
+Shell:     },
+Shell:     "connectionHelpGuideTip": {
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "connectionHelpLoopback": {
+Shell:       "ar address \"localhost\"": 1
+Shell:     },
+Shell:     "connectionHelpRemoteHttp": {
+Shell:       "ar address \"100.64.0.0\"": 1,
+Shell:       "en address \"100.64.0.0/10\"": 1
+Shell:     },
+Shell:     "connectionHelpTunnelSteps": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1
+Shell:     },
+Shell:     "connectionHelpTunnelTitle": {
+Shell:       "ar address \"localhost\"": 1
+Shell:     },
+Shell:     "discoverTerminalAliases": {
+Shell:       "en engine word \"pty\"": 1
+Shell:     },
+Shell:     "e7SettingsCurrentServer": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsHealthVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsInstallVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsInstalledCurrent": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsInstalledVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsRestartBody": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsRestartVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsUpdateVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SettingsVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupCompleteUrl": {
+Shell:       "ar port \":4096\"": 1,
+Shell:       "en port \":4096\"": 1
+Shell:     },
+Shell:     "e7SetupFoundInstalled": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupIncludeScheme": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "e7SetupInstalledVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupLocalHttp": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "e7SetupPairingPhoneHint": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1
+Shell:     },
+Shell:     "e7SetupProbeV1": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupProbeV2": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupReplaceDetail": {
+Shell:       "ar version \"{installedVersion}\"": 1,
+Shell:       "ar version \"{targetVersion}\"": 1,
+Shell:       "en version \"{installedVersion}\"": 1,
+Shell:       "en version \"{targetVersion}\"": 1
+Shell:     },
+Shell:     "e7SetupRuntimeInstallDetail": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupServerVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupStartInstalledDetail": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SetupVersionAddress": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding": {
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "e7SharedTheChrootSharesTheNetworkStackSo": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar port \":4096\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1,
+Shell:       "en port \":4096\"": 1
+Shell:     },
+Shell:     "handoffCommandUnavailable": {
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "localAgentFailedPortInUse": {
+Shell:       "en port \"Port 6767\"": 1
+Shell:     },
+Shell:     "localAgentProjectPathInvalid": {
+Shell:       "en path \"/root/projects/my-app.\"": 1
+Shell:     },
+Shell:     "localAgentReadyBody": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1
+Shell:     },
+Shell:     "managedHealthVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "paseoAddressHint": {
+Shell:       "ar address \"100.64.0.1\"": 1,
+Shell:       "ar port \":6767\"": 1,
+Shell:       "en address \"100.64.0.1\"": 1,
+Shell:       "en port \":6767\"": 1
+Shell:     },
+Shell:     "phoneServerCardVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "quotaSetupGuide": {
+Shell:       "ar path \"tool/quota/README.md\"": 1,
+Shell:       "en path \"tool/quota/README.md\"": 1
+Shell:     },
+Shell:     "servicesUrlHint": {
+Shell:       "ar address \"localhost\"": 1,
+Shell:       "en address \"localhost\"": 1
+Shell:     },
+Shell:     "setupInstallVersionStart": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "setupReplaceDescription": {
+Shell:       "ar version \"{installedVersion}\"": 1,
+Shell:       "ar version \"{targetVersion}\"": 1,
+Shell:       "en version \"{installedVersion}\"": 1,
+Shell:       "en version \"{targetVersion}\"": 1
+Shell:     },
+Shell:     "setupRuntimeInstallDetail": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "setupRuntimeUpdateDetail": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "teamUiAddAddressHint": {
+Shell:       "ar port \":8372\"": 1,
+Shell:       "en port \":8372\"": 1
+Shell:     },
+Shell:     "teamUiAddCityLabel": {
+Shell:       "en engine word \"City\"": 1
+Shell:     },
+Shell:     "teamUiCycleActionNudgeRefinery": {
+Shell:       "ar engine word \"refinery\"": 1,
+Shell:       "en engine word \"refinery\"": 1
+Shell:     },
+Shell:     "teamUiGateTermBead": {
+Shell:       "ar engine word \"bead\"": 1,
+Shell:       "en engine word \"bead\"": 1
+Shell:     },
+Shell:     "teamUiHostGuideDocs": {
+Shell:       "ar path \"docs/ai-team-host.md\"": 1,
+Shell:       "en path \"docs/ai-team-host.md\"": 1
+Shell:     },
+Shell:     "teamUiHostGuideStep2": {
+Shell:       "ar engine word \"rig\"": 1,
+Shell:       "en engine word \"city\"": 1,
+Shell:       "en engine word \"rig\"": 1
+Shell:     },
+Shell:     "teamUiHostGuideStep3": {
+Shell:       "ar address \"127.0.0.1\"": 1,
+Shell:       "ar engine word \"city\"": 1,
+Shell:       "ar port \":8372\"": 1,
+Shell:       "en address \"127.0.0.1\"": 1,
+Shell:       "en engine word \"city\"": 1,
+Shell:       "en port \":8372\"": 1
+Shell:     },
+Shell:     "teamUiHostGuideStep4": {
+Shell:       "ar port \":8372\"": 1,
+Shell:       "en engine word \"city\"": 1,
+Shell:       "en port \":8372\"": 1,
+Shell:       "en port \"port 8372\"": 1
+Shell:     },
+Shell:     "teamUiLabelCity": {
+Shell:       "en engine word \"City\"": 1
+Shell:     },
+Shell:     "teamUiPhoneFailedCity": {
+Shell:       "en engine word \"city\"": 1
+Shell:     },
+Shell:     "teamUiPhoneOfferSize": {
+Shell:       "ar engine word \"beads\"": 1,
+Shell:       "en engine word \"beads\"": 1
+Shell:     },
+Shell:     "teamUiPhoneRemoveBody": {
+Shell:       "en engine word \"city\"": 1
+Shell:     },
+Shell:     "teamUiPhoneStatusInstalled": {
+Shell:       "en engine word \"city\"": 1
+Shell:     },
+Shell:     "teamUiPhoneStepCity": {
+Shell:       "en engine word \"city\"": 1
+Shell:     },
+Shell:     "teamUiPolicyRig": {
+Shell:       "ar engine word \"rig\"": 1,
+Shell:       "en engine word \"rig\"": 1
+Shell:     },
+Shell:     "teamUiRowFound": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "teamUiRunLabelFormula": {
+Shell:       "en engine word \"Formula\"": 1
+Shell:     },
+Shell:     "teamUiRunTermBatch": {
+Shell:       "ar engine word \"convoy\"": 1,
+Shell:       "en engine word \"convoy\"": 1
+Shell:     },
+Shell:     "teamUiRunTermFormula": {
+Shell:       "ar engine word \"formula\"": 1,
+Shell:       "en engine word \"formula\"": 1
+Shell:     },
+Shell:     "teamUiStartRunPlannerMayor": {
+Shell:       "ar engine word \"Mayor\"": 1,
+Shell:       "en engine word \"Mayor\"": 1
+Shell:     },
+Shell:     "teamUiStartRunPlannerMissingBody": {
+Shell:       "en engine word \"Mayor\"": 1
+Shell:     },
+Shell:     "teamUiStartRunPlannerOffTitle": {
+Shell:       "ar engine word \"Mayor\"": 1,
+Shell:       "en engine word \"Mayor\"": 1
+Shell:     },
+Shell:     "teamUiTermAgent": {
+Shell:       "ar engine word \"polecat\"": 1,
+Shell:       "en engine word \"polecat\"": 1
+Shell:     },
+Shell:     "teamUiTermProject": {
+Shell:       "ar engine word \"rig\"": 1,
+Shell:       "en engine word \"rig\"": 1
+Shell:     },
+Shell:     "teamUiTermRun": {
+Shell:       "ar engine word \"convoy\"": 1,
+Shell:       "en engine word \"convoy\"": 1
+Shell:     },
+Shell:     "teamUiTermTeam": {
+Shell:       "ar engine word \"city\"": 1,
+Shell:       "en engine word \"city\"": 1
+Shell:     },
+Shell:     "teamUiTermWork": {
+Shell:       "ar engine word \"bead\"": 1,
+Shell:       "en engine word \"bead\"": 1
+Shell:     },
+Shell:     "teamUiVerdictFound": {
+Shell:       "ar engine word \"city\"": 1,
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en engine word \"city\"": 2,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "teamUiVerdictFoundControls": {
+Shell:       "ar engine word \"city\"": 1,
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en engine word \"city\"": 2,
+Shell:       "en version \"{version}\"": 1
+Shell:     },
+Shell:     "teamUiWorkTerm": {
+Shell:       "ar engine word \"bead\"": 1,
+Shell:       "en engine word \"bead\"": 1
+Shell:     },
+Shell:     "termuxPhoneRuntimeVersion": {
+Shell:       "ar version \"{version}\"": 1,
+Shell:       "en version \"{version}\"": 1
+Shell:     }
+Shell:   }
+Shell: }
+Shell: --- end baseline ---
+00:00 +1: All tests passed!
+exit 0
