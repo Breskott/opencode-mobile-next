@@ -269,8 +269,9 @@ abstract final class KitRedact {
     return close > open + 1 ? (text: '$q$mask$q', end: close + 1) : null;
   }
 
-  /// The index of the unescaped [quote] at or after [i] on the same line;
-  /// -1 when the line or text ends first.
+  /// The index of the unescaped [quote] at or after [i], however many lines
+  /// the value spans; -1 when the text ends first. A quoted secret must not
+  /// leak a partial redaction just because it was written across lines.
   static int _closingQuote(String s, int i, String quote) {
     while (i < s.length) {
       final c = s[i];
@@ -279,7 +280,6 @@ abstract final class KitRedact {
         continue;
       }
       if (c == quote) return i;
-      if (c == '\n' || c == '\r') return -1;
       i++;
     }
     return -1;
