@@ -1,47 +1,76 @@
-54 packages have newer versions incompatible with dependency constraints.
+Gate G23 fail-on-violation runs, candidate 7dd5efa3 (gate/G23), 2026-09-26.
+Every probe below was removed afterwards; `git status --short` was clean.
+
+== Run A: planted in the working tree
+- test/goldens/kit/kit_gallery.dart: devicePixelRatio = 1.0; the Android
+  override commented out as /* debugDefaultTargetPlatformOverride = ... */;
+  the load('Noto Sans Arabic', ...) line removed.
+- test/goldens/zz_probe_golden_test.dart: no header, no Android override,
+  renders Locale('ar') after loadKitGalleryFonts but through captureTheme
+  (no AppTheme.forLocale).
+- test/goldens/kit/kit_probe_state_412x915_dark.png.
+- test/golden_harness_baseline.json edited by hand to hold all of the above
+  (kit_gallery.dart in kitGalleryDpr3 and androidPlatform, the probe harness
+  in androidPlatform, the kit PNG in goldenNames).
+
 00:00 +0: loading test/golden_harness_test.dart
 00:00 +0: G23 golden-name rule (TEST-20) accepts the documented shapes
 00:00 +1: G23 golden-name rule (TEST-20) rejects the rest
 00:00 +2: G23 golden-name rule (TEST-20) reads the regenerate header only at the top of the file
-00:00 +3: G23 loadCaptureFonts registers every AppTheme and pubspec family
-00:00 +3 -1: G23 loadCaptureFonts registers every AppTheme and pubspec family [E]
-  Expected: empty
-    Actual: ['AppPhosphorDuotone']
-  loadCaptureFonts (tool/capture/fixtures.dart) must register every family AppTheme or pubspec.yaml declares (TEST-8); missing: [AppPhosphorDuotone]
-  
-  package:matcher                                     expect
-  package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/golden_harness_test.dart 335:5                 main.<fn>
-  
-00:00 +3 -1: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
-00:00 +3 -2: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11) [E]
+00:00 +3: G23 scanner strips line and block comments, not strings
+00:00 +4: G23 scanner baseline growth honours ratchet-tighten only for its check
+00:00 +5: G23 font loaders register every family AppTheme and pubspec name (TEST-8)
+00:00 +5 -1: G23 font loaders register every family AppTheme and pubspec name (TEST-8) [E]
   Expected: empty
     Actual: [
-              'kitGalleryDpr3: test/goldens/kit/zz_g23_probe_golden_test.dart',
-              'androidPlatform: test/goldens/zz_g23_probe_golden_test.dart',
-              'regenerateHeader: test/goldens/zz_g23_probe_golden_test.dart',
-              'captureFonts: test/goldens/zz_g23_probe_golden_test.dart',
-              'arabicFont: test/goldens/zz_g23_probe_golden_test.dart',
-              'goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png (412x915 is the default: leave it out)',
-              'goldenNames: test/goldens/zz_probe_dark.png (needs <module>_<page>_<state>)',
-              'trackedFailures: test/goldens/failures/zz_probe_testImage.png'
+              'loadKitGalleryFonts (test/goldens/kit/kit_gallery.dart) does not register the AppTheme literal families [Noto Sans Arabic]'
             ]
-  New golden-harness violations (STANDARDS.md §18 G23). Fix them; the baseline only shrinks:
-    kitGalleryDpr3: test/goldens/kit/zz_g23_probe_golden_test.dart
-    androidPlatform: test/goldens/zz_g23_probe_golden_test.dart
-    regenerateHeader: test/goldens/zz_g23_probe_golden_test.dart
-    captureFonts: test/goldens/zz_g23_probe_golden_test.dart
-    arabicFont: test/goldens/zz_g23_probe_golden_test.dart
+  TEST-8: goldens render with the families AppTheme names
+00:00 +5 -1: G23 baseline only shrinks and never holds kit gallery entries
+00:00 +5 -2: G23 baseline only shrinks and never holds kit gallery entries [E]
+  Expected: empty
+    Actual: [
+              'absolute, never baselined: androidPlatform: test/goldens/kit/kit_gallery.dart',
+              'absolute, never baselined: goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png',
+              'absolute, never baselined: kitGalleryDpr3: test/goldens/kit/kit_gallery.dart',
+              'uncommitted edit added androidPlatform: test/goldens/kit/kit_gallery.dart',
+              'uncommitted edit added androidPlatform: test/goldens/zz_probe_golden_test.dart',
+              'uncommitted edit added goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png',
+              'uncommitted edit added kitGalleryDpr3: test/goldens/kit/kit_gallery.dart'
+            ]
+  test/golden_harness_baseline.json may only shrink (PROC-13, KIT-4); a commit may raise one check only with `ratchet-tighten: G23 <check>` in its body (KIT-44); nothing under test/goldens/kit/ is ever baselined
+00:00 +5 -2: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
+00:00 +5 -3: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11) [E]
+  Expected: empty
+    Actual: [
+              'kitGalleryDpr3: test/goldens/kit/kit_gallery.dart',
+              'androidPlatform: test/goldens/kit/kit_gallery.dart',
+              'regenerateHeader: test/goldens/zz_probe_golden_test.dart',
+              'arabicFont: test/goldens/zz_probe_golden_test.dart',
+              'goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png (412x915 is the default: leave it out)'
+            ]
+  New golden-harness violations (STANDARDS.md §18 G23). Fix them; the baseline only shrinks, and nothing under test/goldens/kit/ is ever baselined:
+    kitGalleryDpr3: test/goldens/kit/kit_gallery.dart
+    androidPlatform: test/goldens/kit/kit_gallery.dart
+    regenerateHeader: test/goldens/zz_probe_golden_test.dart
+    arabicFont: test/goldens/zz_probe_golden_test.dart
     goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png (412x915 is the default: leave it out)
-    goldenNames: test/goldens/zz_probe_dark.png (needs <module>_<page>_<state>)
-    trackedFailures: test/goldens/failures/zz_probe_testImage.png
-  
-  package:matcher                                     expect
-  package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/golden_harness_test.dart 386:5                 main.<fn>
-  
-00:00 +3 -2: Some tests failed.
-
+00:00 +5 -3: Some tests failed.
 Failing tests:
+  test/golden_harness_test.dart: G23 baseline only shrinks and never holds kit gallery entries
+  test/golden_harness_test.dart: G23 font loaders register every family AppTheme and pubspec name (TEST-8)
   test/golden_harness_test.dart: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
-  test/golden_harness_test.dart: G23 loadCaptureFonts registers every AppTheme and pubspec family
+
+== Run B: the baseline grown by a commit (probe harness file present, one
+   androidPlatform entry added for it, committed on top of 7dd5efa3; the
+   commit was then undone with git reset --soft and the file restored)
+== Run B1: a commit grows the baseline (no ratchet-tighten)
+00:00 +0 -1: G23 baseline only shrinks and never holds kit gallery entries [E]
+  Expected: empty
+    Actual: ['2ed47bfa added androidPlatform: test/goldens/zz_probe_golden_test.dart']
+  test/golden_harness_baseline.json may only shrink (PROC-13, KIT-4); a commit may raise one check only with `ratchet-tighten: G23 <check>` in its body (KIT-44); nothing under test/goldens/kit/ is ever baselined
+00:00 +0 -1: Some tests failed.
+Failing tests:
+  test/golden_harness_test.dart: G23 baseline only shrinks and never holds kit gallery entries
+== Run B2: the same commit with 'ratchet-tighten: G23 androidPlatform' in its body
+00:00 +1: All tests passed!
