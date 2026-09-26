@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import '../kit/glass/kit_glass.dart';
 import '../kit/kit_tokens.dart';
 
+/// Retired by kit-KitNav: use KitNavBar.
+///
+/// A forwarding wrapper (KIT-43: kept without `@Deprecated` so its remaining
+/// callers, `home_screen.dart` and `tool/capture`, stay analyzer-clean until
+/// screen-shell-1 adopts `KitNav`). New code never constructs it.
+///
 /// The bottom dock's glass: a [KitGlass] with the floating tab bar's 22 dp
 /// corners (visual language §4).
 ///
@@ -26,6 +32,7 @@ class GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => KitGlass(
+    dim: true,
     borderRadius: BorderRadius.circular(KitTokens.of(context).navRadius),
     child: child,
   );
