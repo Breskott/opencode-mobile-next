@@ -1,0 +1,224 @@
+machine_lock: got test slot 4 after 54s
+Waiting for another flutter command to release the startup lock...
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart
+00:00 +0: disabled requires disabledReason (STATE-8, debug assert)
+00:00 +1: onLongPress cannot combine with a non-empty menu
+00:00 +2: 1. a 20×20 child gets a 48×48 hit area
+00:00 +3: 2. Enter and Space fire once; key repeat does not refire
+00:00 +4: 3. disabled: no Tab stop, no hover fill, basic cursor
+00:00 +5: 4. menu: right-click, long-press, Shift+F10, onLongPress hook right-click opens the menu at the click point
+00:01 +6: 4. menu: right-click, long-press, Shift+F10, onLongPress hook long-press opens the same items at the press point
+00:01 +7: 4. menu: right-click, long-press, Shift+F10, onLongPress hook Shift+F10 opens it anchored (position: null)
+00:01 +8: 4. menu: right-click, long-press, Shift+F10, onLongPress hook the Menu key also opens it anchored
+00:01 +9: 4. menu: right-click, long-press, Shift+F10, onLongPress hook keys from a focused child belong to the child, not the row
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0>
+Enter reaches the child's action
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart:438:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart line 438
+The test description was:
+  keys from a focused child belong to the child, not the row
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +9 -1: 4. menu: right-click, long-press, Shift+F10, onLongPress hook keys from a focused child belong to the child, not the row [E]
+  Test failed. See exception logs above.
+  The test description was: keys from a focused child belong to the child, not the row
+  
+00:01 +9 -1: 4. menu: right-click, long-press, Shift+F10, onLongPress hook onLongPress: a long-press calls it and opens no menu
+00:01 +10 -1: 5. screen reader: the menu as semantic actions each enabled item is a custom action that runs it
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: equals ['Rename', 'Archive'] unordered
+  Actual: _CompactKeysIterable<String>:['Show actions', 'Rename', 'Archive']
+   Which: has too many elements (3 > 2)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart:497:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart line 497
+The test description was:
+  each enabled item is a custom action that runs it
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +10 -2: 5. screen reader: the menu as semantic actions each enabled item is a custom action that runs it [E]
+  Test failed. See exception logs above.
+  The test description was: each enabled item is a custom action that runs it
+  
+00:01 +10 -2: 5. screen reader: the menu as semantic actions the long-press action is "Show actions" and opens the menu
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: true
+  Actual: <false>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart:522:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart line 522
+The test description was:
+  the long-press action is "Show actions" and opens the menu
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +10 -3: 5. screen reader: the menu as semantic actions the long-press action is "Show actions" and opens the menu [E]
+  Test failed. See exception logs above.
+  The test description was: the long-press action is "Show actions" and opens the menu
+  
+00:01 +10 -3: 5. screen reader: the menu as semantic actions disabled with a menu: no custom actions, no long-press
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [0, 1]
+no menu items and no "Show actions" hint
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart:549:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart line 549
+The test description was:
+  disabled with a menu: no custom actions, no long-press
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +10 -4: 5. screen reader: the menu as semantic actions disabled with a menu: no custom actions, no long-press [E]
+  Test failed. See exception logs above.
+  The test description was: disabled with a menu: no custom actions, no long-press
+  
+00:01 +10 -4: 6. empty menu: long-press shows the tooltip, opens nothing
+00:01 +11 -4: 7. hover and pressed fills come from surface steps surface1: hover surface2 in dark, pressed surface3
+00:01 +12 -4: 7. hover and pressed fills come from surface steps surface1: hover surface3 in light, pressed surface3
+00:01 +13 -4: 7. hover and pressed fills come from surface steps surface3: hover and pressed both step down to surface2
+00:01 +14 -4: 7. hover and pressed fills come from surface steps touch (no mouse connected): no hover paint
+00:01 +15 -4: 8. keyboard focus shows the ring; a tap does not
+00:02 +16 -4: 9. the tooltip shows on hover and on keyboard focus
+00:02 +17 -4: 10. no HapticFeedback on tap or long-press
+00:02 +18 -4: the child keeps its state across Effects Off and tooltip
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <5>
+the child subtree was never remounted
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart:799:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart line 799
+The test description was:
+  the child keeps its state across Effects Off and tooltip
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +18 -5: the child keeps its state across Effects Off and tooltip [E]
+  Test failed. See exception logs above.
+  The test description was: the child keeps its state across Effects Off and tooltip
+  
+00:02 +18 -5: 12. selected exposes isSelected in semantics
+00:02 +19 -5: KitTappable (MOT-7) enabled settles at once under system
+00:02 +20 -5: KitTappable (MOT-7) disabled settles at once under system
+00:02 +21 -5: KitTappable (MOT-7) pressed then released changes and settles at once under system
+00:02 +22 -5: KitTappable (MOT-7) enabled settles at once under effectsOff
+00:02 +23 -5: KitTappable (MOT-7) disabled settles at once under effectsOff
+00:02 +24 -5: KitTappable (MOT-7) pressed then released changes and settles at once under effectsOff
+00:02 +25 -5: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart: 4. menu: right-click, long-press, Shift+F10, onLongPress hook keys from a focused child belong to the child, not the row
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart: 5. screen reader: the menu as semantic actions disabled with a menu: no custom actions, no long-press
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart: 5. screen reader: the menu as semantic actions each enabled item is a custom action that runs it
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart: 5. screen reader: the menu as semantic actions the long-press action is "Show actions" and opens the menu
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart: the child keeps its state across Effects Off and tooltip
