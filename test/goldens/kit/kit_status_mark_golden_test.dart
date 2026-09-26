@@ -1,8 +1,9 @@
 // Gallery (gate G4) for KitStatusMark and KitTaskMark v2
 // (docs/ux-system/kit-api/KitStatusMark.md): every declared state as it
 // sits in a KitRow with its supporting word (slice-P9.5: no state shown by
-// colour alone), plus the marks drawn standalone with their own visible
-// word (showLabel).
+// colour alone), at the spec's sizes including the 915x412 landscape phone,
+// plus the marks drawn standalone, outside a KitRow, with their own visible
+// word (showLabel), in English and Arabic.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_status_mark_golden_test.dart
@@ -114,54 +115,79 @@ Widget _all(bool arabic) => Padding(
   ),
 );
 
-/// The mark carrying its own visible word (`showLabel`) in a [KitRow]'s
-/// leading slot, for a row whose title is not the state (a compact layout
-/// that does not also spend the supporting line on it).
-const _labelledRows = [
+/// The marks standalone, each drawing its own visible word (`showLabel`),
+/// as the API doc places it: outside a [KitRow], in a spot that does not
+/// already say the state. Here that is a card header: the task's name at
+/// the start, its mark and word at the end, read as one line (the header's
+/// MergeSemantics, as a real header would). The word follows the mark in
+/// reading order, so Arabic mirrors the pair.
+///
+/// Why merged: G5's textContrast (Flutter's textContrastGuideline) samples
+/// a lone Text at 1x device pixels, where a 14 sp word is mostly
+/// anti-aliased grey, so an unmerged text2 word that measures 5:1 and more
+/// on every pack (theme_roles_test, LOOK-8) fails by luck of its letter
+/// shapes. Reported in docs/qa/revamp-kit-KitStatusMark-v2-2026-09-27.
+List<(String, Widget)> _labelledMarks(bool arabic) => [
   (
-    leading: KitStatusMark(state: KitMarkState.waiting, showLabel: true),
-    title: 'Reach the server',
+    arabic ? 'الوصول إلى الخادم' : 'Reach the server',
+    const KitStatusMark(state: KitMarkState.waiting, showLabel: true),
   ),
   (
-    leading: KitStatusMark(state: KitMarkState.working, showLabel: true),
-    title: 'Install the toolchain',
+    arabic ? 'تثبيت الأدوات' : 'Install the toolchain',
+    const KitStatusMark(state: KitMarkState.working, showLabel: true),
   ),
   (
-    leading: KitStatusMark(state: KitMarkState.done, showLabel: true),
-    title: 'Connect to the server',
+    arabic ? 'الاتصال بالخادم' : 'Connect to the server',
+    const KitStatusMark(state: KitMarkState.done, showLabel: true),
   ),
   (
-    leading: KitStatusMark(state: KitMarkState.failed, showLabel: true),
-    title: 'Verify the certificate',
+    arabic ? 'التحقق من الشهادة' : 'Verify the certificate',
+    const KitStatusMark(state: KitMarkState.failed, showLabel: true),
   ),
   (
-    leading: KitStatusMark(
+    arabic ? 'تحديث الأدوات' : 'Update the toolchain',
+    const KitStatusMark(
       state: KitMarkState.working,
       paused: true,
       showLabel: true,
     ),
-    title: 'Update the toolchain',
   ),
   (
-    leading: KitTaskMark(state: KitTaskState.needsYou, showLabel: true),
-    title: 'Approve the migration',
+    arabic ? 'الموافقة على الترحيل' : 'Approve the migration',
+    const KitTaskMark(state: KitTaskState.needsYou, showLabel: true),
   ),
   (
-    leading: KitTaskMark(state: KitTaskState.stopped, showLabel: true),
-    title: 'Refactor the parser',
+    arabic ? 'إعادة هيكلة المحلل' : 'Refactor the parser',
+    const KitTaskMark(state: KitTaskState.stopped, showLabel: true),
   ),
 ];
 
-Widget _labelled() => Padding(
+Widget _labelled(bool arabic) => Padding(
   padding: const EdgeInsets.symmetric(horizontal: 16),
   child: Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      for (final row in _labelledRows)
-        KitRow(leading: row.leading, title: row.title),
+      for (final (title, mark) in _labelledMarks(arabic))
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: MergeSemantics(
+            child: Row(
+              children: [
+                Expanded(child: KitText(title, role: KitTextRole.rowTitle)),
+                const SizedBox(width: 12),
+                mark,
+              ],
+            ),
+          ),
+        ),
     ],
   ),
 );
+
+/// The landscape phone the spec's default-sheet list names (915x412).
+/// The shared kitGallerySizes has no landscape phone, so this gallery adds
+/// it itself.
+const _landscapePhone = Size(915, 412);
 
 void main() {
   setUpAll(loadKitGalleryFonts);
@@ -169,7 +195,7 @@ void main() {
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    for (final size in kitGallerySizes) {
+    for (final size in [...kitGallerySizes, _landscapePhone]) {
       testWidgets('all states · ${kitGallerySize(size)} · $mode', (
         tester,
       ) async {
@@ -183,19 +209,25 @@ void main() {
       });
     }
 
-    testWidgets('labelled marks · $mode', (tester) async {
-      await kitGalleryPart(
+    for (final arabic in [false, true]) {
+      testWidgets('labelled marks${arabic ? ' · Arabic' : ''} · $mode', (
         tester,
-        name: kitGalleryName(
-          'kit_status_mark_labelled',
-          const Size(412, 915),
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_status_mark_labelled',
+            const Size(412, 915),
+            light: light,
+            ar: arabic,
+          ),
+          size: const Size(412, 915),
           light: light,
-        ),
-        size: const Size(412, 915),
-        light: light,
-        child: _labelled(),
-      );
-    });
+          locale: arabic ? const Locale('ar') : const Locale('en'),
+          child: _labelled(arabic),
+        );
+      });
+    }
 
     for (final size in kitGalleryScaledSizes) {
       testWidgets('all states · 2.0 text · ${kitGallerySize(size)} · $mode', (

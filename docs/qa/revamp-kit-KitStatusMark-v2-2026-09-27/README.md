@@ -40,6 +40,36 @@
     which the spec gives as the concrete instruction either way. Blocks
     nothing for this unit; flagged so `toneFor`/`toneColor` isn't
     double-claimed as already-merged when a later unit needs it.
+  - **Waiting ring legibility (LOOK-21 vs. the review's LOOK-8 finding).**
+    The spec fixes the ring at "a hollow ring, 1 physical px stroke" and
+    `markRingSize` 10. The review found it barely visible in
+    `kit_status_mark_labelled_dark.png`. A sweep of every pack (dark and
+    light) measured `text3` at 3.96:1 to 6.06:1 on ground and surface1-3,
+    so the implemented `text2` fallback never fires in a shipped pack: the
+    faintness comes from the 1 px stroke on a 10 dp ring, not the colour.
+    Only a spec change fixes that (for example `focusRingWidth`, a larger
+    `markRingSize` or a filled ring). Needs a coordinator or owner decision.
+    I did not work around the frozen spec.
+  - **No spinner stroke token.** `KitTokens` has no stroke for the working
+    ring, and `kit_tokens.dart` is outside this write set. The spinner now
+    uses `KitTokens.focusRingWidth(context)` (2 physical px, 0.67 dp at DPR
+    3, the kit's heavier stroke) in place of the literal 2 dp. This is
+    thinner than before. The goldens do not show it, because the gallery
+    always runs under reduced motion (still dot). Proposed
+    `_new-tokens.md` entry: `KitTokens.spinnerStroke` (2 dp, shared with
+    `kit_buttons.dart`'s `_Spinner`, which has the same literal).
+  - **Gallery harness: no landscape phone, and G5 textContrast on a lone
+    word.** `kitGallerySizes` has no 915x412, although this spec's gallery
+    list asks for it, so the golden test adds 915x412 itself
+    (`kit_status_mark_all_915x412_{dark,light}.png`). Flutter's
+    `textContrastGuideline` samples a lone `Text` at 1x device pixels. At
+    that size a 14 sp `text2` word is mostly anti-aliased grey, so
+    unmerged showLabel words failed by luck of their letter shapes ("Working"
+    and "Stopped" at 1.16-2.89:1), although the same role measures at least
+    4.5:1 in every pack (LOOK-8). The labelled scene therefore shows each
+    mark as a card header (the title at the start, the mark and its word at
+    the end, one `MergeSemantics`), which is how a real header reads.
+    Proposal for the harness owner: sample textContrast at the view's DPR.
 - New kit parts (KIT-3): none — this changes the two existing parts named in
   the spec's own "File" section.
 - Map items (EVID-11): n/a — no map page.
@@ -51,7 +81,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitStatusMark-v2`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4`, code head `76b3ed81`.
+- Branch `revamp/kit-KitStatusMark-v2`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4`, first code head `76b3ed81`, review-fix commit on top (see `git log`).
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
@@ -59,6 +89,22 @@
 None: tests, goldens and renders only. Device proof is coordinator/checkpoint work.
 
 ## 4. Runs
+
+### Review fixes (round 2)
+
+| # | Finding | Fix | Check | Result |
+|---|---|---|---|---|
+| R1 | No cross-fade on a state change | `KitStatusMark` wraps the glyph in an `AnimatedSwitcher` keyed by `(state, paused)`: `KitMotion.quick`, or `Duration.zero` under `KitMotion.reduced`. `KitTaskMark` puts all six states through one switcher, so working to needsYou also fades | `kit_status_mark_test.dart` "with motion on, a state change cross-fades on KitMotion.quick", "a state change swaps at once under …", "a task turning to needsYou swaps at once under …" | PASS |
+| R2 | Required test 4 (G8) missing from this file | Working, paused working, working with showLabel, task working and task paused+showLabel: still dot or pause glyph, no `CircularProgressIndicator`, `hasRunningAnimations == false`, each under `system` and `effectsOff` (`kitStillApp`) | group "reduced motion (G8, MOT-7)", 16 cases | PASS |
+| R3 | Waiting ring: 3:1 fallback not implemented | The ring uses `text3` when it reaches 3:1 on ground and surface1-3, and `text2` otherwise (`contrastRatio`) | group "waiting ring contrast (LOOK-8)": a sweep of every pack in dark and light, plus a built pack whose `text3` misses 3:1 | PASS (legibility itself: contract problem above) |
+| R4 | Spinner literals `16` and `2` | Size is the pixel-snapped 20 dp glyph (`smallIconSize`, grows with text). Stroke is `KitTokens.focusRingWidth` (token gap reported) | "the working ring is the glyph size and grows with text" (26 dp at 1.3 text) | PASS |
+| R5 | Glyph size not snapped to physical pixels | `(size * dpr).roundToDouble() / dpr` in both parts | "snaps to whole physical pixels at DPR 2.625/3.0/1.75" (done, paused, needsYou, stopped) | PASS |
+| R6 | No 915x412 shot, and showLabel in KitRow's leading slot | 915x412 added. Labelled marks now sit outside KitRow as card headers, in English and Arabic | golden test: 24 shots, each looked at | PASS |
+| R7 | Edits outside the write set | Flagged for the integrator (see "Integrator notes") | n/a | flagged |
+
+With showLabel, the word's semantics node now covers the visible word only, and the glyph is excluded. The screen reader still hears the word once. Semantics tests pass unchanged.
+
+### First build
 
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
@@ -75,6 +121,42 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
 | 11 | `test/builtin_team_section_test.dart` (this unit's tests write set) | passes unmodified | 4 passed, no edit needed | PASS |
 | 12 | `flutter analyze lib test` | no errors; no new issues | "No issues found!" | PASS |
 
+### Round 2 runs
+
+| # | Step | Result |
+|---|---|---|
+| a | `test/kit/kit_status_mark_test.dart` | 58 passed |
+| b | `test/goldens/kit/kit_status_mark_golden_test.dart` (`--update-goldens`, looked at, re-run) | 24 passed |
+| c | `test/kit_motion_test.dart` + `test/builtin_team_section_test.dart` | 183 passed |
+| d | `test/kit/kit_manifest_test.dart` + `test/ui_glossary_test.dart` | 23 passed |
+| e | `test/design_standard_test.dart` + `test/kit_ratchet_test.dart` | 47 passed |
+| f | `test/golden_harness_test.dart` + `test/text_scale_overflow_test.dart` | 83 passed |
+| g | `test/l10n_coverage_test.dart` | 2 passed |
+| h | `flutter analyze` (whole tree) | No issues found |
+
+## Integrator notes (R7)
+
+- **l10n regeneration dependency.** The unit adds 7 ARB keys, each in both
+  `app_en.arb` and `app_ar.arb`: `kitMarkWaiting`, `kitMarkWorking`,
+  `kitMarkDone`, `kitMarkFailed`, `kitMarkPaused`, `kitTaskNeedsYou` and
+  `kitTaskStopped`. Under PROC-13, the regenerated
+  `lib/l10n/app_localizations*.dart` are **not committed**. The branch's
+  kit code calls those getters, so it compiles only after the integrator
+  runs `flutter gen-l10n` on the merge.
+- **`kitTaskNeedsYou` collision check.** `KitNeedsYou.md` names only
+  `kitNeedsYouWaiting` as its own key. It gets its mark word from
+  `KitTaskMark(state: needsYou)` / `KitTaskMark.wordFor`, and
+  `KitStatusMark.md` says "the same key KitNeedsYou uses". So the
+  KitNeedsYou unit should reuse this key and not add it. If its branch
+  adds `kitTaskNeedsYou` as well, the ARB union produces a duplicate JSON
+  key. Keep one copy (the values should be "Needs you" / "يحتاجك").
+- **Ratchet change.** `test/kit/kit_manifest_allowlist.json` (shared) lost
+  its stale `test · KitStatusMark` entry, because G4 forces removal once
+  `test/kit/kit_status_mark_test.dart` exists. The allowlist only shrinks.
+  Merge it deliberately. `test/kit_ratchet_baseline.json` is untouched: its
+  `kit_status_mark.dart` "stroke width not KitTokens in kit" entry (1) can
+  drop to 0.
+
 ## 5. Evidence
 
 - `failing-first.txt`: n/a — not a fix.
@@ -88,7 +170,10 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
   | LOOK-5 (failed paints `text1`, never `danger`) / LOOK-6 (done paints `success`, never `accent`; working paints `accent`) | `test/kit/kit_status_mark_test.dart` "colour roles (LOOK-5, LOOK-6, STATE-9)" group, against a theme whose accent is deliberately far from success/danger so a role mix-up would fail | run 2 above |
   | P9.5 (a word beside every mark; `label`/`showLabel`) | `test/kit/kit_status_mark_test.dart` "label overrides the word; showLabel shows it" group | run 2 above |
   | TEST-9 (galleries: declared states, 5 LAY-4 sizes, 2.0 text, Arabic RTL) | `test/goldens/kit/kit_status_mark_golden_test.dart` | run 3 above |
-  | G8 (reduced motion, no ticker after one pump) | `test/kit_motion_test.dart` (shared, pre-existing registration; not re-built here per the task's "do not redo it") | run 6 above |
+  | G8 (reduced motion, no ticker after one pump, every new configuration and a state change) | `test/kit/kit_status_mark_test.dart` group "reduced motion (G8, MOT-7)"; the shared `test/kit_motion_test.dart` default samples too | round 2 runs a, c |
+  | Motion (cross-fade on `KitMotion.quick`) | `test/kit/kit_status_mark_test.dart` "with motion on, a state change cross-fades on KitMotion.quick" | round 2 run a |
+  | LOOK-8 (ring ≥ 3:1, `text2` fallback) | `test/kit/kit_status_mark_test.dart` group "waiting ring contrast (LOOK-8)" | round 2 run a |
+  | LOOK-33 (glyph snapped to physical pixels, ≤ 1.5x) | `test/kit/kit_status_mark_test.dart` group "glyph size (LOOK-33)" | round 2 run a |
 
 - Changed test expectations (TEST-19): none — no existing test asserted on the
   old look/behaviour of these two parts.
@@ -101,9 +186,16 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
     task needsYou (amber question mark), task stopped (muted stop glyph).
     No approved VL canvas render exists for this part yet (EVID-12: no
     approved render).
-  - `kit_status_mark_labelled_{dark,light}.png` (2 files): the same 7 marks
-    with `showLabel: true` in a `KitRow`'s leading slot, word next to the
-    mark instead of on the supporting line. No approved render (EVID-12).
+  - `kit_status_mark_labelled_{dark,light}.png` and `_labelled_ar_…`
+    (4 files, round 2): the 7 marks with `showLabel: true` outside a
+    `KitRow`, as card headers: the title at the start, the mark with its word
+    at the end, mirrored in Arabic. This replaces the round-1 scene in the
+    KitRow leading slot, which the review rejected. No approved render
+    (EVID-12).
+  - `kit_status_mark_all_915x412_{dark,light}.png` (2 files, round 2): the
+    default sheet on a landscape phone. The `all` shots did not change
+    (the ring stays `text3` in the gallery pack, and the glyph sizes were
+    already whole pixels at DPR 3).
   - A first attempt at this scene (marks stacked in a bare `Column`, not a
     `KitRow`) tripped `textContrastGuideline` on "Working"/"Paused"/"Needs you"
     (found ratios 1.16–3.56 against a 4.5 floor) once real fonts + DPR 3 were
@@ -146,11 +238,11 @@ $F analyze lib test
   is unit-level work, not the wave's stable-batch boundary (AGENTS.md
   productivity rule 6). The files this change plausibly touches were run
   individually instead (§4).
-- No pack-contrast sweep for `KitStatusMark`'s waiting-ring `text3` stroke
-  across every theme pack (the spec's own fallback note — "if a pack fails
-  that, the ring uses `text2`" — is not implemented; no test in this unit's
-  acceptance list asked for it, and it would need a G18-style pack sweep
-  this unit does not own).
+- The spinner (motion on) is not in any golden. The gallery runs under
+  reduced motion, so its thinner `focusRingWidth` stroke has not been seen
+  rendered.
+- The waiting ring's legibility at 1 physical px is still open (see the
+  contract problems).
 - `KitNeedsYou.mark()` producing the same configuration as
   `KitTaskMark(state: needsYou)` (spec test #6) is explicitly that unit's
   test, not this one's — `KitNeedsYou` does not exist yet.
@@ -165,6 +257,6 @@ $F analyze lib test
 | Implemented | Yes | `revamp/kit-KitStatusMark-v2` |
 | Enabled | Yes — both parts are already exported from `lib/ui/kit/kit.dart` and used by existing callers | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `76b3ed81` |
+| Committed | Yes | `76b3ed81` + the round-2 review-fix commit |
 | Deployed | No | |
 | Released | No | |

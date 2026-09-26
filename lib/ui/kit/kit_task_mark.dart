@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'kit_motion.dart';
 import 'kit_status_mark.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
@@ -84,40 +85,66 @@ class KitTaskMark extends StatelessWidget {
       KitTaskState.failed => KitMarkState.failed,
       KitTaskState.needsYou || KitTaskState.stopped => null,
     };
-    if (mapped != null) {
-      return KitStatusMark(
-        state: mapped,
-        paused: paused,
-        label: label,
-        showLabel: showLabel,
-      );
-    }
-
     final theme = Theme.of(context);
     final roles = AppTheme.rolesOf(theme);
     final tokens = KitTokens.of(context);
-    final word = label ?? wordFor(context, state);
-    final glyph = Icon(
-      state == KitTaskState.needsYou
-          ? AppIconography.question
-          : AppIconography.stopCircle,
-      size: tokens.iconSize(context, tokens.smallIconSize),
-      color: state == KitTaskState.needsYou ? roles.attention : roles.text2,
+    final word = label ?? wordFor(context, state, paused: paused);
+    // The four step states are KitStatusMark's own mark (its word is this
+    // mark's semantics, below); needsYou and stopped draw theirs here, in
+    // the same 32 dp slot, at the same pixel-snapped glyph size.
+    final Widget slot = mapped != null
+        ? KitStatusMark(state: mapped, paused: paused, label: word)
+        : SizedBox.square(
+            dimension: KitTokens.markSlotSize,
+            child: Center(
+              child: Icon(
+                state == KitTaskState.needsYou
+                    ? AppIconography.question
+                    : AppIconography.stopCircle,
+                size: _glyphSize(context, tokens),
+                color: state == KitTaskState.needsYou
+                    ? roles.attention
+                    : roles.text2,
+              ),
+            ),
+          );
+    // One cross-fade across all six states, so a task that turns from
+    // working to needs-you fades like any other change (KitStatusMark.md,
+    // Motion; instant under reduced motion, MOT-7).
+    final mark = AnimatedSwitcher(
+      duration: KitMotion.reduced(context) ? Duration.zero : KitMotion.quick,
+      switchInCurve: KitMotion.enter,
+      switchOutCurve: KitMotion.exit,
+      child: KeyedSubtree(key: ValueKey((state, paused)), child: slot),
     );
-    final mark = SizedBox.square(
-      dimension: KitTokens.markSlotSize,
-      child: Center(child: glyph),
+    // The word is the one semantics node (STATE-9). With [showLabel] it
+    // sits on the visible word alone, so the node's bounds are the text
+    // the person reads and the glyph beside it stays decoration.
+    if (!showLabel) {
+      return Semantics(label: word, excludeSemantics: true, child: mark);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ExcludeSemantics(child: mark),
+        SizedBox(width: tokens.labelGap),
+        Flexible(
+          child: Semantics(
+            label: word,
+            excludeSemantics: true,
+            child: KitText(word, role: KitTextRole.secondary),
+          ),
+        ),
+      ],
     );
-    final content = showLabel
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              mark,
-              SizedBox(width: tokens.labelGap),
-              Flexible(child: KitText(word, role: KitTextRole.secondary)),
-            ],
-          )
-        : mark;
-    return Semantics(label: word, excludeSemantics: true, child: content);
   }
+}
+
+/// [KitTokens.smallIconSize] grown with text up to [KitTokens.maxIconScale]
+/// and rounded to whole physical pixels, as [KitStatusMark] sizes its glyph
+/// (KitStatusMark.md, Adaptive; LOOK-33).
+double _glyphSize(BuildContext context, KitTokens tokens) {
+  final scaled = tokens.iconSize(context, tokens.smallIconSize);
+  final dpr = MediaQuery.devicePixelRatioOf(context);
+  return dpr > 0 ? (scaled * dpr).roundToDouble() / dpr : scaled;
 }

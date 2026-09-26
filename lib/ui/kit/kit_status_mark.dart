@@ -21,6 +21,10 @@ enum KitMarkState { waiting, working, done, failed }
 /// in semantics always, and beside the mark as visible text when
 /// [showLabel].
 ///
+/// A change of state cross-fades the glyph on [KitMotion.quick] and swaps
+/// it at once under reduced motion. The glyph grows with text up to
+/// [KitTokens.maxIconScale], snapped to whole physical pixels.
+///
 /// States: waiting, working, done, failed, paused (a waiting or working
 /// modifier, never its own value — KitStatusMark.md).
 class KitStatusMark extends StatelessWidget {
@@ -70,6 +74,26 @@ class KitStatusMark extends StatelessWidget {
     };
   }
 
+  /// LOOK-8: a glyph's floor on `ground` and `surface1`–`surface3`.
+  static const double _glyphContrastFloor = 3;
+
+  /// The waiting ring's colour: `text3`, or `text2` in a pack where `text3`
+  /// misses [_glyphContrastFloor] on the ground or any surface
+  /// (KitStatusMark.md, Accessibility; LOOK-8).
+  static Color _ringColor(ThemeRoles roles) {
+    final grounds = [
+      roles.ground,
+      roles.surface1,
+      roles.surface2,
+      roles.surface3,
+    ];
+    return grounds.every(
+          (g) => contrastRatio(roles.text3, g) >= _glyphContrastFloor,
+        )
+        ? roles.text3
+        : roles.text2;
+  }
+
   @override
   Widget build(BuildContext context) {
     assert(
@@ -83,13 +107,15 @@ class KitStatusMark extends StatelessWidget {
     // The system setting and Animations: Off in Settings (KitEffects).
     final reduceMotion = KitMotion.reduced(context);
     final word = label ?? wordFor(context, state, paused: paused);
-    double glyphSize() => tokens.iconSize(context, tokens.smallIconSize);
+    // The 20 dp glyph, grown with text up to maxIconScale and snapped to
+    // whole physical pixels (LOOK-33).
+    final glyphSize = _glyphSize(context, tokens);
     final Widget glyph = paused
-        ? Icon(AppIconography.pause, size: glyphSize(), color: roles.text2)
+        ? Icon(AppIconography.pause, size: glyphSize, color: roles.text2)
         : switch (state) {
             KitMarkState.done => Icon(
               AppIconography.check,
-              size: glyphSize(),
+              size: glyphSize,
               color: AppTheme.successOf(theme),
             ),
             KitMarkState.working =>
@@ -99,16 +125,19 @@ class KitStatusMark extends StatelessWidget {
                       size: KitTokens.markDotSize,
                       color: roles.accent,
                     )
+                  // The spec's "small indeterminate ring": the glyph's own
+                  // size, and the kit's heavier stroke (two physical px;
+                  // KitTokens has no spinner stroke yet — reported).
                   : SizedBox.square(
-                      dimension: 16,
+                      dimension: glyphSize,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: KitTokens.focusRingWidth(context),
                         color: roles.accent,
                       ),
                     ),
             KitMarkState.failed => Icon(
               AppIconography.error,
-              size: glyphSize(),
+              size: glyphSize,
               color: roles.text1,
             ),
             KitMarkState.waiting => Container(
@@ -117,7 +146,7 @@ class KitStatusMark extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: roles.text3,
+                  color: _ringColor(roles),
                   width: KitTokens.hairlineWidth(context),
                 ),
               ),
@@ -125,18 +154,50 @@ class KitStatusMark extends StatelessWidget {
           };
     final mark = SizedBox.square(
       dimension: KitTokens.markSlotSize,
-      child: Center(child: glyph),
+      child: Center(
+        child: _crossFade(
+          context,
+          KeyedSubtree(key: ValueKey((state, paused)), child: glyph),
+        ),
+      ),
     );
-    final content = showLabel
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              mark,
-              SizedBox(width: tokens.labelGap),
-              Flexible(child: KitText(word, role: KitTextRole.secondary)),
-            ],
-          )
-        : mark;
-    return Semantics(label: word, excludeSemantics: true, child: content);
+    // The word is the one semantics node (STATE-9). With [showLabel] it
+    // sits on the visible word alone, so the node's bounds are the text
+    // the person reads and the glyph beside it stays decoration.
+    if (!showLabel) {
+      return Semantics(label: word, excludeSemantics: true, child: mark);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ExcludeSemantics(child: mark),
+        SizedBox(width: tokens.labelGap),
+        Flexible(
+          child: Semantics(
+            label: word,
+            excludeSemantics: true,
+            child: KitText(word, role: KitTextRole.secondary),
+          ),
+        ),
+      ],
+    );
   }
 }
+
+/// [KitTokens.smallIconSize] grown with the person's text up to
+/// [KitTokens.maxIconScale], rounded to whole physical pixels so the glyph
+/// never lands between pixels (KitStatusMark.md, Adaptive; LOOK-33).
+double _glyphSize(BuildContext context, KitTokens tokens) {
+  final scaled = tokens.iconSize(context, tokens.smallIconSize);
+  final dpr = MediaQuery.devicePixelRatioOf(context);
+  return dpr > 0 ? (scaled * dpr).roundToDouble() / dpr : scaled;
+}
+
+/// A state change cross-fades the glyph on [KitMotion.quick], and swaps it
+/// at once under reduced motion (KitStatusMark.md, Motion; MOT-7).
+Widget _crossFade(BuildContext context, Widget child) => AnimatedSwitcher(
+  duration: KitMotion.reduced(context) ? Duration.zero : KitMotion.quick,
+  switchInCurve: KitMotion.enter,
+  switchOutCurve: KitMotion.exit,
+  child: child,
+);
