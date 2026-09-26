@@ -1,7 +1,8 @@
 // Gallery (gate G4) for KitChip and KitChipWrap
 // (docs/ux-system/kit-api/KitChip.md): five kinds — plain, action,
 // removable, count, summary — one of each in a KitChipWrap, shown on
-// `ground` and on `surface1` (KitChip.md "Galleries required").
+// `ground` and on `surface1` (KitChip.md "Galleries required"), at 412x915
+// and 1280x800 only, English only (owner decision 2026-09-27).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_chip_golden_test.dart
@@ -17,31 +18,18 @@ import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import '../../../tool/capture/fixtures.dart' show captureTheme;
 import 'kit_gallery.dart';
 
-/// One of each [KitChipKind] (KitChip.md "Purpose"), in English or Arabic.
-List<Widget> _chips({
-  bool arabic = false,
-  bool? selected,
-  bool? expanded,
-  int count = 3,
-}) => [
-  // "3 agents", not the spec's other example "main": at 915x412 (this
-  // gallery's own landscape-phone size, KitChip.md "Galleries required"),
-  // Flutter's textContrastGuideline (G5) pixel-samples too small a run of
-  // real, thin glyphs from a 4-letter word and estimates a false-positive
-  // contrast failure against the correctly-opaque, WCAG-compliant text2 (a
-  // computed 6.33:1 against surface3 — see docs/qa/revamp-kit-KitChip/README.md
-  // "Contract problems"); a longer label sidesteps the harness artifact
-  // without changing what it proves.
-  KitChip(label: arabic ? '3 وكلاء' : '3 agents'),
+/// One of each [KitChipKind] (KitChip.md "Purpose").
+List<Widget> _chips({bool? selected, bool? expanded, int count = 3}) => [
+  const KitChip(label: 'main'),
   KitChip.action(
-    label: arabic ? 'افتح في الطرفية' : 'Open in terminal',
+    label: 'Open in terminal',
     onPressed: () {},
     selected: selected,
   ),
   KitChip.removable(label: 'file.txt', onRemove: () {}),
-  KitChip.count(label: arabic ? 'المهام' : 'Tasks', count: count),
+  KitChip.count(label: 'Tasks', count: count),
   KitChip.summary(
-    label: arabic ? 'قرأ 3 ملفات · حرر 1' : 'Read 3 files · edited 1',
+    label: 'Read 3 files · edited 1',
     onPressed: () {},
     expanded: expanded,
   ),
@@ -88,21 +76,19 @@ Widget _expandedScene() => _scene([
   ),
 ]);
 
-const _longEn =
+const _long =
     'A genuinely long label that will never fit inside this short chip';
-const _longAr = 'تسمية طويلة حقًا لن تتسع أبدًا داخل هذه الشريحة القصيرة';
 
 /// Every kind with a long label, each capped to 160 dp so it must
 /// ellipsise (A11Y-8: "a chip may truncate").
-Widget _truncatedScene({bool arabic = false}) {
-  final long = arabic ? _longAr : _longEn;
+Widget _truncatedScene() {
   Widget capped(Widget chip) => SizedBox(width: 160, child: chip);
   return _scene([
-    capped(KitChip(label: long)),
-    capped(KitChip.action(label: long, onPressed: () {})),
-    capped(KitChip.removable(label: long, onRemove: () {})),
-    capped(KitChip.count(label: long, count: 42)),
-    capped(KitChip.summary(label: long, onPressed: () {})),
+    capped(const KitChip(label: _long)),
+    capped(KitChip.action(label: _long, onPressed: () {})),
+    capped(KitChip.removable(label: _long, onRemove: () {})),
+    capped(KitChip.count(label: _long, count: 42)),
+    capped(KitChip.summary(label: _long, onPressed: () {})),
   ]);
 }
 
@@ -219,24 +205,21 @@ void main() {
       await _focusedShot(tester, light: light);
     });
 
-    for (final size in const [
-      Size(360, 800),
-      Size(915, 412),
-      Size(800, 1280),
-      Size(1280, 800),
-      Size(1600, 1000),
-    ]) {
-      final at = kitGallerySize(size);
-      testWidgets('kit_chip default · $at · $mode', (tester) async {
-        await kitGalleryPart(
-          tester,
-          name: kitGalleryName('kit_chip_default', size, light: light),
-          size: size,
+    // Owner decision 2026-09-27 (STANDARDS.md, commit 97975859): galleries
+    // at the phone size and one wide size only, and no Arabic or RTL shots.
+    testWidgets('kit_chip default · 1280x800 · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_chip_default',
+          const Size(1280, 800),
           light: light,
-          child: _scene(_chips()),
-        );
-      });
-    }
+        ),
+        size: const Size(1280, 800),
+        light: light,
+        child: _scene(_chips()),
+      );
+    });
 
     for (final size in kitGalleryScaledSizes) {
       final at = kitGallerySize(size);
@@ -253,22 +236,6 @@ void main() {
           light: light,
           textScale: 2,
           child: _scene(_chips()),
-        );
-      });
-      testWidgets('kit_chip default · ar · $at · $mode', (tester) async {
-        await kitGalleryPart(
-          tester,
-          name: kitGalleryName(
-            'kit_chip_default',
-            size,
-            light: light,
-            ar: true,
-          ),
-          size: size,
-          light: light,
-          locale: const Locale('ar'),
-          textScale: 1.3,
-          child: _scene(_chips(arabic: true)),
         );
       });
     }

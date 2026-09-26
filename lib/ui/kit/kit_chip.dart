@@ -10,6 +10,13 @@
 // not shown) and no loading, empty or error state (KIT-12: a chip shows a
 // value its host already has). Declared states: selected (action) and
 // expanded (summary).
+//
+// Layout: every kind is a 48 dp-high box (KitTokens.minTarget) with the
+// 32 dp pill (KitTokens.chipHeight) centred in it, so chips of different
+// kinds line up in a KitChipWrap run. The tap zones fill the box and paint
+// nothing themselves: hover, press and keyboard focus are drawn by the pill
+// (its fill turns surface2, its accent ring appears), under the words and
+// inside the pill's own stadium.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -43,6 +50,9 @@ class KitChip extends StatelessWidget {
   /// on/off filter (replaces FilterChip): a check at the start when on,
   /// toggled semantics. One choice among several is `KitSegmented`, not
   /// this (KIT-24).
+  ///
+  /// The start has one glyph slot: while [selected] is true the check
+  /// takes [icon]'s place there, cross-fading on `KitMotion.quick`.
   const KitChip.action({
     super.key,
     required this.label,
@@ -111,9 +121,9 @@ class KitChip extends StatelessWidget {
   static const _checkKey = ValueKey('kit-chip-check');
 
   /// Test-only (TEST-5): the removable chip's body tap zone is a sibling of
-  /// its visible label, not an ancestor of it (the label stays in the
-  /// static pill so the × can sit beside it in one continuous surface), so
-  /// a test needs a handle of its own to find it and check its focus.
+  /// its visible label, not an ancestor of it (the label stays in the pill
+  /// so the × can sit beside it in one continuous surface), so a test needs
+  /// a handle of its own to find it and check its focus.
   static const _bodyKey = ValueKey('kit-chip-body');
 
   @override
@@ -121,470 +131,473 @@ class KitChip extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final reduceMotion = KitMotion.reduced(context);
-    final labelStyle = _labelStyle(context, tokens);
-
-    switch (kind) {
-      case KitChipKind.plain:
-        return _staticPill(
-          context: context,
-          tokens: tokens,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: tokens.smallIconSize, color: roles.text2),
-                SizedBox(width: tokens.space1),
-              ],
-              Flexible(
-                child: _EllipsisLabel(text: label, style: labelStyle(false)),
-              ),
-            ],
-          ),
-        );
-
-      case KitChipKind.action:
-        final selected = this.selected;
-        return _interactivePill(
-          context: context,
-          tokens: tokens,
-          onTap: onPressed,
-          semanticsLabel: label,
-          toggled: selected,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (selected == true) ...[
-                AnimatedSwitcher(
-                  duration: reduceMotion ? Duration.zero : KitMotion.quick,
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: Icon(
-                    AppIconography.check,
-                    key: _checkKey,
-                    size: tokens.smallIconSize,
-                    color: roles.accent,
-                  ),
-                ),
-                SizedBox(width: tokens.space1),
-              ],
-              if (icon != null && selected != true) ...[
-                Icon(icon, size: tokens.smallIconSize, color: roles.text1),
-                SizedBox(width: tokens.space1),
-              ],
-              Flexible(
-                child: _EllipsisLabel(text: label, style: labelStyle(true)),
-              ),
-            ],
-          ),
-        );
-
-      case KitChipKind.summary:
-        final expanded = this.expanded;
-        return _interactivePill(
-          context: context,
-          tokens: tokens,
-          onTap: onPressed,
-          semanticsLabel: label,
-          expanded: expanded,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: tokens.smallIconSize, color: roles.text1),
-                SizedBox(width: tokens.space1),
-              ],
-              Flexible(
-                child: _EllipsisLabel(text: label, style: labelStyle(true)),
-              ),
-              if (expanded != null) ...[
-                SizedBox(width: tokens.space1),
-                AnimatedRotation(
-                  turns: expanded ? .5 : 0,
-                  duration: reduceMotion ? Duration.zero : KitMotion.standard,
-                  curve: KitMotion.emphasized,
-                  child: Icon(
-                    AppIconography.chevronDown,
-                    size: tokens.smallIconSize,
-                    color: roles.text1,
-                    textDirection: TextDirection.ltr,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-
-      case KitChipKind.count:
-        final count = this.count!;
-        final formatted = NumberFormat.decimalPattern(
-          Localizations.localeOf(context).toLanguageTag(),
-        ).format(count);
-        final span = TextSpan(
-          style: labelStyle(false),
-          children: [
-            TextSpan(text: label),
-            const TextSpan(text: ' · '),
-            TextSpan(
-              text: formatted,
-              style: labelStyle(
-                true,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
-        );
-        final composedLabel = '$label, $formatted';
-        final content = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: tokens.smallIconSize, color: roles.text2),
-              SizedBox(width: tokens.space1),
-            ],
-            Flexible(child: _EllipsisSpan(span: span, semantics: null)),
-          ],
-        );
-        if (onPressed == null) {
-          return Semantics(
-            label: composedLabel,
-            container: true,
-            excludeSemantics: true,
-            child: _staticPill(
-              context: context,
-              tokens: tokens,
-              child: content,
-            ),
-          );
-        }
-        return _interactivePill(
-          context: context,
-          tokens: tokens,
-          onTap: onPressed,
-          semanticsLabel: composedLabel,
-          child: content,
-        );
-
-      case KitChipKind.removable:
-        return _removablePill(context: context, tokens: tokens);
-    }
-  }
-
-  /// The label's type: [KitTextRole.secondary] (14/20) in [KitTextTone.primary]
-  /// (`text1`) where the States table calls for emphasis (action, removable,
-  /// summary and a count's number), [KitTextTone.secondary] (`text2`)
-  /// otherwise (plain, and a count's own label).
-  TextStyle Function(bool emphasized) _labelStyle(
-    BuildContext context,
-    KitTokens tokens,
-  ) {
-    final emphasizedStyle = KitText.styleOf(
+    // The label's type: KitTextRole.secondary (14/20) in KitTextTone.primary
+    // (text1) where the States table calls for emphasis (action, removable,
+    // summary and a count's number), KitTextTone.secondary (text2) otherwise
+    // (plain, and a count's own label).
+    final emphasized = KitText.styleOf(
       context,
       KitTextRole.secondary,
       tone: KitTextTone.primary,
     );
-    final quietStyle = KitText.styleOf(
+    final quiet = KitText.styleOf(
       context,
       KitTextRole.secondary,
       tone: KitTextTone.secondary,
     );
-    return (emphasized) => emphasized ? emphasizedStyle : quietStyle;
-  }
-
-  /// The non-interactive kinds: `plain`, and `count` without [onPressed].
-  Widget _staticPill({
-    required BuildContext context,
-    required KitTokens tokens,
-    required Widget child,
-  }) => _PillSurface(tokens: tokens, child: child);
-
-  /// A single tappable zone spanning the whole chip: `action`, `summary`,
-  /// `count` with [onPressed], and `removable`'s body when [onPressed] is
-  /// set. Enlarges the tap target to 48 dp (KitChip.md "Accessibility:
-  /// Target") without growing the visual pill past [KitTokens.chipHeight].
-  Widget _interactivePill({
-    required BuildContext context,
-    required KitTokens tokens,
-    required VoidCallback? onTap,
-    required String semanticsLabel,
-    bool? toggled,
-    bool? expanded,
-    required Widget child,
-  }) {
-    final roles = tokens.roles;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      toggled: toggled,
-      expanded: expanded,
-      onTap: onTap,
-      container: true,
-      excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minWidth: tokens.minTarget,
-          minHeight: tokens.minTarget,
-        ),
-        child: Stack(
-          alignment: AlignmentDirectional.center,
-          children: [
-            _PillSurface(tokens: tokens, child: child),
-            Positioned.fill(
-              child: Material(
-                color: Colors.transparent,
-                shape: const StadiumBorder(),
-                child: InkWell(
-                  onTap: onTap,
-                  customBorder: const StadiumBorder(),
-                  hoverColor: roles.surface2,
-                  highlightColor: roles.surface2,
-                  splashColor: roles.surface2,
-                  focusColor: Colors.transparent,
-                  child: onTap == null
-                      ? null
-                      : Builder(
-                          builder: (context) => _FocusRingHost(tokens: tokens),
-                        ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    // A glyph and the gap after it (start) or before it (end).
+    final glyphExtent = tokens.smallIconSize + tokens.space1;
+    Widget startGlyph(IconData data, Color color, {Key? key}) => Padding(
+      padding: EdgeInsetsDirectional.only(end: tokens.space1),
+      child: Icon(data, key: key, size: tokens.smallIconSize, color: color),
     );
-  }
-
-  Widget _removablePill({
-    required BuildContext context,
-    required KitTokens tokens,
-  }) {
-    final roles = tokens.roles;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final removeLabel = l10n.kitChipRemove(label);
-    final labelStyle = _labelStyle(context, tokens);
-    final bodyOnPressed = onPressed;
-
-    // The visible content (icon, label, the × glyph) sits in the static
-    // pill; when the body is a tap target too, that content carries no
-    // semantics of its own, because the real 48 dp hit zone below (whose
-    // rect is what a screen reader should report as the target) already
-    // declares the same label (KitChip.md "Accessibility: Target").
-    Widget visualRow = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: tokens.smallIconSize, color: roles.text1),
-          SizedBox(width: tokens.space1),
-        ],
-        Flexible(
-          child: _EllipsisLabel(text: label, style: labelStyle(true)),
-        ),
-        SizedBox(width: tokens.space1),
-        Icon(
-          AppIconography.close,
-          size: tokens.smallIconSize,
-          color: roles.text2,
-        ),
-      ],
+    Widget endGlyph(Widget glyph) => Padding(
+      padding: EdgeInsetsDirectional.only(start: tokens.space1),
+      child: glyph,
     );
-    if (bodyOnPressed != null) {
-      visualRow = ExcludeSemantics(child: visualRow);
-    }
 
-    final removeControl = Semantics(
-      key: _removeKey,
-      button: true,
-      label: removeLabel,
-      container: true,
-      excludeSemantics: true,
-      onTap: onRemove,
-      child: Tooltip(
-        message: removeLabel,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onRemove,
-            hoverColor: roles.surface2,
-            highlightColor: roles.surface2,
-            splashColor: roles.surface2,
-            focusColor: Colors.transparent,
-            child: Builder(
-              builder: (context) => _FocusRingHost(tokens: tokens),
+    switch (kind) {
+      case KitChipKind.plain:
+        return _ChipFrame(
+          tokens: tokens,
+          span: TextSpan(text: label, style: quiet),
+          textSemantics: label,
+          leading: icon == null ? null : startGlyph(icon!, roles.text2),
+          leadingExtent: icon == null ? 0 : glyphExtent,
+        );
+
+      case KitChipKind.action:
+        final selected = this.selected;
+        final icon = this.icon;
+        // One slot that always exists, so turning selection on or off
+        // cross-fades (an AnimatedSwitcher never animates its first child).
+        final Widget slotChild;
+        if (selected == true) {
+          slotChild = KeyedSubtree(
+            key: const ValueKey('check'),
+            child: startGlyph(
+              AppIconography.check,
+              roles.accent,
+              key: _checkKey,
             ),
+          );
+        } else if (icon != null) {
+          slotChild = KeyedSubtree(
+            key: const ValueKey('icon'),
+            child: startGlyph(icon, roles.text1),
+          );
+        } else {
+          slotChild = const SizedBox.shrink(key: ValueKey('none'));
+        }
+        return _ChipFrame(
+          tokens: tokens,
+          span: TextSpan(text: label, style: emphasized),
+          textSemantics: label,
+          leading: AnimatedSwitcher(
+            duration: reduceMotion ? Duration.zero : KitMotion.quick,
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: slotChild,
           ),
-        ),
-      ),
-    );
+          leadingExtent: selected == true || icon != null ? glyphExtent : 0,
+          onPressed: onPressed,
+          semanticsLabel: label,
+          toggled: selected,
+        );
 
-    Widget stack = ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: tokens.minTarget,
-        minHeight: tokens.minTarget,
-      ),
-      child: Stack(
-        alignment: AlignmentDirectional.center,
-        children: [
-          _PillSurface(tokens: tokens, child: visualRow),
-          if (bodyOnPressed != null)
-            PositionedDirectional(
-              start: 0,
-              top: 0,
-              bottom: 0,
-              end: tokens.minTarget,
-              child: Semantics(
-                key: _bodyKey,
-                button: true,
-                label: label,
-                container: true,
-                excludeSemantics: true,
-                onTap: bodyOnPressed,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: bodyOnPressed,
-                    hoverColor: roles.surface2,
-                    highlightColor: roles.surface2,
-                    splashColor: roles.surface2,
-                    focusColor: Colors.transparent,
+      case KitChipKind.summary:
+        final expanded = this.expanded;
+        return _ChipFrame(
+          tokens: tokens,
+          span: TextSpan(text: label, style: emphasized),
+          textSemantics: label,
+          leading: icon == null ? null : startGlyph(icon!, roles.text1),
+          leadingExtent: icon == null ? 0 : glyphExtent,
+          trailing: expanded == null
+              ? null
+              : endGlyph(
+                  AnimatedRotation(
+                    turns: expanded ? .5 : 0,
+                    duration: reduceMotion ? Duration.zero : KitMotion.standard,
+                    curve: KitMotion.emphasized,
+                    child: Icon(
+                      AppIconography.chevronDown,
+                      size: tokens.smallIconSize,
+                      color: roles.text1,
+                      textDirection: TextDirection.ltr,
+                    ),
                   ),
                 ),
-              ),
-            ),
-          PositionedDirectional(
-            end: 0,
-            top: 0,
-            bottom: 0,
-            width: tokens.minTarget,
-            child: removeControl,
-          ),
-        ],
-      ),
-    );
+          trailingExtent: expanded == null ? 0 : glyphExtent,
+          onPressed: onPressed,
+          semanticsLabel: label,
+          expanded: expanded,
+        );
 
-    // Delete/Backspace on either focused zone removes the chip (KitChip.md
-    // "Keyboard"). canRequestFocus: false keeps this out of Tab order; the
-    // event still bubbles here from whichever zone holds focus.
-    return Focus(
-      canRequestFocus: false,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.delete ||
-            key == LogicalKeyboardKey.backspace) {
-          onRemove!();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: stack,
-    );
+      case KitChipKind.count:
+        final formatted = NumberFormat.decimalPattern(
+          Localizations.localeOf(context).toLanguageTag(),
+        ).format(count!);
+        return _ChipFrame(
+          tokens: tokens,
+          span: TextSpan(
+            style: quiet,
+            children: [
+              TextSpan(text: label),
+              const TextSpan(text: ' · '),
+              TextSpan(
+                text: formatted,
+                style: emphasized.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          leading: icon == null ? null : startGlyph(icon!, roles.text2),
+          leadingExtent: icon == null ? 0 : glyphExtent,
+          onPressed: onPressed,
+          semanticsLabel: '$label, $formatted',
+        );
+
+      case KitChipKind.removable:
+        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+        return _ChipFrame(
+          tokens: tokens,
+          span: TextSpan(text: label, style: emphasized),
+          textSemantics: label,
+          leading: icon == null ? null : startGlyph(icon!, roles.text1),
+          leadingExtent: icon == null ? 0 : glyphExtent,
+          trailing: endGlyph(
+            Icon(
+              AppIconography.close,
+              size: tokens.smallIconSize,
+              color: roles.text2,
+            ),
+          ),
+          trailingExtent: glyphExtent,
+          onPressed: onPressed,
+          semanticsLabel: label,
+          onRemove: onRemove,
+          removeLabel: l10n.kitChipRemove(label),
+        );
+    }
   }
 }
 
-/// The pill's own decoration and visual height (KitChip.md "200 % text":
-/// "the pill grows in height with the text (chipHeight is a minimum)"):
-/// the kit's `surface3` stadium ([KitShape.pill]), with [KitTokens.space3]
-/// inner horizontal padding.
-class _PillSurface extends StatelessWidget {
-  const _PillSurface({required this.tokens, required this.child});
+/// The tap zones a chip can have: its body, and a removable chip's ×.
+enum _Zone { body, remove }
+
+/// Every kind's frame: the 48 dp box, the pill centred in it, the tap
+/// zone(s) over the box, the truncation tooltip over the zone it belongs
+/// to, and the pill's hover, press and focus look (KitChip.md "States").
+class _ChipFrame extends StatefulWidget {
+  const _ChipFrame({
+    required this.tokens,
+    required this.span,
+    this.textSemantics,
+    this.leading,
+    this.leadingExtent = 0,
+    this.trailing,
+    this.trailingExtent = 0,
+    this.onPressed,
+    this.semanticsLabel,
+    this.toggled,
+    this.expanded,
+    this.onRemove,
+    this.removeLabel,
+  });
 
   final KitTokens tokens;
-  final Widget child;
+
+  /// The words, drawn on one line with an ellipsis when they do not fit.
+  final InlineSpan span;
+
+  /// The visible text's own semantics label; null keeps [span]'s text.
+  final String? textSemantics;
+
+  /// The start glyph with its gap, and its width (for the truncation test).
+  final Widget? leading;
+  final double leadingExtent;
+
+  /// The end glyph with its gap, and its width.
+  final Widget? trailing;
+  final double trailingExtent;
+
+  /// The body's tap; null makes the body static.
+  final VoidCallback? onPressed;
+
+  /// The chip's announced name (the body button's, or a static count's).
+  /// Null keeps the visible text's own semantics (plain).
+  final String? semanticsLabel;
+  final bool? toggled;
+  final bool? expanded;
+
+  /// The ×'s tap and name; null means the chip has no ×.
+  final VoidCallback? onRemove;
+  final String? removeLabel;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: KitTokens.chipHeight),
-    child: DecoratedBox(
-      decoration: ShapeDecoration(
-        color: tokens.roles.surface3,
-        shape: tokens.shapeOf(KitShape.pill),
-      ),
-      child: Padding(
-        padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space3),
-        child: child,
-      ),
-    ),
-  );
+  State<_ChipFrame> createState() => _ChipFrameState();
 }
 
-/// Draws the keyboard focus ring (KitChip.md "States": "a 2-physical-pixel
-/// accent focus ring around the pill") by reading the ambient [InkWell]'s
-/// own [FocusNode] through [Focus.of] — no extra focus node or tab stop.
-class _FocusRingHost extends StatelessWidget {
-  const _FocusRingHost({required this.tokens});
+class _ChipFrameState extends State<_ChipFrame> {
+  final _hovered = <_Zone>{};
+  final _pressed = <_Zone>{};
+  final _focused = <_Zone>{};
 
-  final KitTokens tokens;
+  void _mark(Set<_Zone> set, _Zone zone, bool on) {
+    final changed = on ? set.add(zone) : set.remove(zone);
+    if (changed) setState(() {});
+  }
+
+  /// Whether [widget.span] ellipsises at this width: the same sum the Row
+  /// inside the pill makes (the pill's padding, the glyphs, then the label).
+  bool _truncated(BuildContext context, BoxConstraints constraints) {
+    if (!constraints.hasBoundedWidth) return false;
+    final tokens = widget.tokens;
+    final available =
+        constraints.maxWidth -
+        2 * tokens.space3 -
+        widget.leadingExtent -
+        widget.trailingExtent;
+    if (available <= 0) return true;
+    final painter = TextPainter(
+      text: widget.span,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout(maxWidth: available);
+    final truncated = painter.didExceedMaxLines;
+    painter.dispose();
+    return truncated;
+  }
+
+  /// A tap zone: the whole area it is given, painting nothing itself (no
+  /// ink over the words, no spread past the pill); it tells the pill when
+  /// it is hovered, pressed or focused.
+  Widget _zone(_Zone zone, VoidCallback onTap) => Material(
+    type: MaterialType.transparency,
+    child: InkWell(
+      onTap: onTap,
+      onHover: (on) => _mark(_hovered, zone, on),
+      onHighlightChanged: (on) => _mark(_pressed, zone, on),
+      onFocusChange: (on) => _mark(_focused, zone, on),
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      child: const SizedBox.expand(),
+    ),
+  );
+
+  /// The full label or the ×'s name; no haptic on long-press (MOT-11).
+  Widget _tooltip(String message, Widget child) => Tooltip(
+    message: message,
+    excludeFromSemantics: true,
+    enableFeedback: false,
+    child: child,
+  );
 
   @override
   Widget build(BuildContext context) {
-    final hasFocus = Focus.of(context).hasFocus;
-    if (!hasFocus) return const SizedBox.expand();
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        shape: StadiumBorder(
-          side: BorderSide(
-            color: tokens.roles.accent,
-            width: KitTokens.focusRingWidth(context),
+    final tokens = widget.tokens;
+    final roles = tokens.roles;
+    final onPressed = widget.onPressed;
+    final onRemove = widget.onRemove;
+    final interactive = onPressed != null || onRemove != null;
+    final fullText = widget.span.toPlainText();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final truncated = _truncated(context, constraints);
+        Widget row = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ?widget.leading,
+            Flexible(
+              child: Text.rich(
+                widget.span,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                semanticsLabel: widget.textSemantics,
+              ),
+            ),
+            ?widget.trailing,
+          ],
+        );
+        // A body that is a button (or a static count, which is announced
+        // as "{label}, {count}") names itself; the visible text then says
+        // nothing of its own. A removable chip with no body tap keeps the
+        // text's own semantics beside its × button.
+        final named = onRemove == null && widget.semanticsLabel != null;
+        if (onPressed != null || named) {
+          row = ExcludeSemantics(child: row);
+        }
+        final pill = _PillSurface(
+          tokens: tokens,
+          fill: _hovered.isNotEmpty || _pressed.isNotEmpty
+              ? roles.surface2
+              : roles.surface3,
+          focused: _focused.isNotEmpty,
+          child: row,
+        );
+
+        final children = <Widget>[pill];
+        if (onRemove != null) {
+          // The body zone runs from the start to the ×'s 48 dp zone.
+          Widget? body = onPressed == null
+              ? null
+              : Semantics(
+                  key: KitChip._bodyKey,
+                  button: true,
+                  label: widget.semanticsLabel,
+                  container: true,
+                  excludeSemantics: true,
+                  onTap: onPressed,
+                  child: _zone(_Zone.body, onPressed),
+                );
+          if (truncated) {
+            body = _tooltip(fullText, body ?? const SizedBox.expand());
+          }
+          if (body != null) {
+            children.add(
+              PositionedDirectional(
+                start: 0,
+                top: 0,
+                bottom: 0,
+                end: tokens.minTarget,
+                child: body,
+              ),
+            );
+          }
+          children.add(
+            PositionedDirectional(
+              end: 0,
+              top: 0,
+              bottom: 0,
+              width: tokens.minTarget,
+              child: Semantics(
+                key: KitChip._removeKey,
+                button: true,
+                label: widget.removeLabel,
+                container: true,
+                excludeSemantics: true,
+                onTap: onRemove,
+                child: _tooltip(
+                  widget.removeLabel!,
+                  _zone(_Zone.remove, onRemove),
+                ),
+              ),
+            ),
+          );
+        } else if (onPressed != null) {
+          children.add(
+            PositionedDirectional(
+              start: 0,
+              end: 0,
+              top: 0,
+              bottom: 0,
+              child: _zone(_Zone.body, onPressed),
+            ),
+          );
+        }
+
+        Widget frame = ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: interactive ? tokens.minTarget : 0,
+            minHeight: tokens.minTarget,
           ),
-        ),
-      ),
-      child: const SizedBox.expand(),
+          child: Stack(
+            alignment: AlignmentDirectional.center,
+            children: children,
+          ),
+        );
+        // The full label on long-press (touch) or hover (a fine pointer),
+        // only when it is cut (KitChip.md "Adaptive"). It sits over the tap
+        // zone, not under it, so the gesture reaches it.
+        if (truncated && onRemove == null) frame = _tooltip(fullText, frame);
+
+        if (onRemove != null) {
+          // Delete/Backspace on either focused zone removes the chip
+          // (KitChip.md "Keyboard"). canRequestFocus: false keeps this out
+          // of Tab order; the event still bubbles here from either zone.
+          return Focus(
+            canRequestFocus: false,
+            onKeyEvent: (node, event) {
+              if (event is! KeyDownEvent) return KeyEventResult.ignored;
+              final key = event.logicalKey;
+              if (key == LogicalKeyboardKey.delete ||
+                  key == LogicalKeyboardKey.backspace) {
+                onRemove();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: frame,
+          );
+        }
+        if (widget.semanticsLabel == null) return frame;
+        return Semantics(
+          button: onPressed != null,
+          label: widget.semanticsLabel,
+          toggled: widget.toggled,
+          expanded: widget.expanded,
+          onTap: onPressed,
+          container: true,
+          excludeSemantics: true,
+          child: frame,
+        );
+      },
     );
   }
 }
 
-/// One line of [text] that ellipsises when it does not fit (A11Y-8), with
-/// the full value in semantics and a tooltip (long-press on touch, hover on
-/// a fine pointer) only when it is actually truncated (KitChip.md
-/// "Adaptive").
-class _EllipsisLabel extends StatelessWidget {
-  const _EllipsisLabel({required this.text, required this.style});
+/// The pill (KitChip.md "States", "200 % text": "the pill grows in height
+/// with the text (chipHeight is a minimum)"): a [KitShape.pill] stadium in
+/// [fill], with [KitTokens.space3] inner horizontal padding, and, when
+/// [focused], a 2-physical-pixel `accent` ring around it (LOOK-21).
+class _PillSurface extends StatelessWidget {
+  const _PillSurface({
+    required this.tokens,
+    required this.fill,
+    required this.focused,
+    required this.child,
+  });
 
-  final String text;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) => _EllipsisSpan(
-    span: TextSpan(text: text, style: style),
-    semantics: text,
-  );
-}
-
-/// As [_EllipsisLabel], for a multi-styled [span] (the `count` kind's
-/// "label · number"). [semantics] overrides the announced label; null keeps
-/// [Text.rich]'s own (the full, untruncated plain text of [span]).
-class _EllipsisSpan extends StatelessWidget {
-  const _EllipsisSpan({required this.span, required this.semantics});
-
-  final InlineSpan span;
-  final String? semantics;
+  final KitTokens tokens;
+  final Color fill;
+  final bool focused;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final maxWidth = constraints.hasBoundedWidth
-          ? constraints.maxWidth
-          : double.infinity;
-      var truncated = false;
-      if (maxWidth.isFinite) {
-        final painter = TextPainter(
-          text: span,
-          textDirection: Directionality.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-          maxLines: 1,
-        )..layout(maxWidth: maxWidth);
-        truncated = painter.didExceedMaxLines;
-        painter.dispose();
-      }
-      final text = Text.rich(
-        span,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        softWrap: false,
-        semanticsLabel: semantics,
+  Widget build(BuildContext context) {
+    final shape = tokens.shapeOf(KitShape.pill);
+    Widget pill = DecoratedBox(
+      decoration: ShapeDecoration(color: fill, shape: shape),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: KitTokens.chipHeight),
+        child: Padding(
+          padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space3),
+          child: child,
+        ),
+      ),
+    );
+    if (focused) {
+      pill = DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: ShapeDecoration(
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: tokens.roles.accent,
+              width: KitTokens.focusRingWidth(context),
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+          ),
+        ),
+        child: pill,
       );
-      if (!truncated) return text;
-      return Tooltip(message: semantics ?? span.toPlainText(), child: text);
-    },
-  );
+    }
+    return pill;
+  }
 }
 
 /// Lays chips out in a wrapping row with the kit's spacing: [KitTokens.space2]
