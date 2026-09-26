@@ -22245,5 +22245,17 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitTermHint": "Explanation available",
+  "@kitTermHint": {
+    "description": "KitTerm: the semantics hint on a term that explains itself, read after its name"
+  },
+  "kitTermShow": "Show explanation",
+  "@kitTermShow": {
+    "description": "KitTerm: the semantics tap hint that replaces \"Activate\" on a term"
+  },
+  "kitTermClose": "Close explanation",
+  "@kitTermClose": {
+    "description": "KitTerm: the open bubble's spoken label and dismiss action"
   }
 }

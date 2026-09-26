@@ -19826,4 +19826,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitCopied => 'Copied';
+
+  @override
+  String get kitTermHint => 'Explanation available';
+
+  @override
+  String get kitTermShow => 'Show explanation';
+
+  @override
+  String get kitTermClose => 'Close explanation';
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../kit/kit_term.dart';
 
 /// Plain-language explanations for the handful of terms a first-time user
 /// meets in the first ten minutes. Screens attach these to the word itself
@@ -104,9 +104,13 @@ abstract final class Glossary {
   };
 }
 
-/// A term with an inline "what is this?" affordance. Renders the word in the
-/// surrounding text style followed by a small info glyph; tapping either opens
-/// a short explanation sheet. Keep the explanation to two sentences.
+/// Retired by kit-KitTerm: use [KitTerm]. Kept as a forwarding wrapper
+/// (R11, R12) so `worktrees_screen.dart`, the chat chain and the library
+/// screens keep compiling until their own units move to [KitTerm]
+/// directly; slice-P3.1 deletes this file and moves [Glossary] to its
+/// caller. [style] and [iconSize] are accepted and ignored: the term now
+/// takes the look of its [KitTerm] role.
+@Deprecated('Retired by kit-KitTerm: use KitTerm')
 class InfoLabel extends StatelessWidget {
   const InfoLabel(
     this.term, {
@@ -135,6 +139,7 @@ class InfoLabel extends StatelessWidget {
   final TextStyle? style;
   final double iconSize;
 
+  /// Forwards to [showKitTerm]: no [InfoLabel] needs to be on screen.
   static Future<void> show(
     BuildContext context, {
     required String term,
@@ -145,86 +150,21 @@ class InfoLabel extends StatelessWidget {
       term: term,
       explanation: explanation,
     );
-    term = localized.term;
-    explanation = localized.explanation;
-    return showModalBottomSheet<void>(
-      context: context,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(term, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 10),
-                Text(
-                  explanation,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7GlossaryGotIt,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return showKitTerm(
+      context,
+      term: localized.term,
+      explanation: localized.explanation,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final localized = Glossary.localized(
       l10n,
       term: term,
       explanation: explanation,
     );
-    final shownTerm = localized.term;
-    final textStyle = style ?? DefaultTextStyle.of(context).style;
-    return Semantics(
-      button: true,
-      label: l10n.e7GlossaryExplain(shownTerm),
-      excludeSemantics: true,
-      onTap: () => show(context, term: term, explanation: explanation),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () => show(context, term: term, explanation: explanation),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Flexible, not bare: a long localized term at 2.5x text
-              // wraps inside the label instead of pushing the icon out of
-              // its row.
-              Flexible(child: Text(shownTerm, style: textStyle)),
-              const SizedBox(width: 3),
-              Icon(
-                AppIconography.info,
-                size: iconSize,
-                color: AppTheme.mutedOf(theme),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return KitTerm(localized.term, explanation: localized.explanation);
   }
 }

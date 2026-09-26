@@ -20096,4 +20096,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCopied => 'تم النسخ';
+
+  @override
+  String get kitTermHint => 'يتوفر شرح';
+
+  @override
+  String get kitTermShow => 'إظهار الشرح';
+
+  @override
+  String get kitTermClose => 'إغلاق الشرح';
 }
