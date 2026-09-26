@@ -1,0 +1,15 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-1/test/kit_ratchet_test.dart
+00:00 +0: G7: layout is directional and bidi marks come from KitBidi
+00:00 +0 -1: G7: layout is directional and bidi marks come from KitBidi [E]
+  G7: lib/ui/widgets/markdown.dart "TextAlign.right" rose from 1 to 2 — use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional) (LAY-8; STANDARDS.md §18 G7)
+00:00 +0 -1: every G2/G7/G15x/G17/G21/G48 row is named once and has a reason
+00:00 +1 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts uses of an old API, not its declaration
+00:00 +2 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts motion literals and seams, not KitMotion names
+00:00 +3 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G7 counts left/right layout, not the directional forms
+00:00 +4 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G15x counts breakpoints and layout widths, not guards or gaps
+00:00 +5 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G17 counts literal colours and theme reads, not transparent
+00:00 +6 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 counts look literals the way the rulebook writes them
+00:00 +7 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 metal/chrome reads identifiers and file names
+00:00 +8 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings G48 flags a sheet with a multiline field and no draft
+00:00 +9 -1: G2/G7/G15x/G17/G21/G48 rows on fixture strings theme files, allowlist keys and scopes resolve as documented
+00:00 +10 -1: Some tests failed.

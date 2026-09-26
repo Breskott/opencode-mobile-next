@@ -1,0 +1,42 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-1/test/kit_ratchet_test.dart
+00:00 +0: G1: modal and toast entry points live in the kit
+00:00 +1: G15: no width literals outside the kit
+00:00 +2: G16: every UI component comes from the kit
+00:00 +3: G2: copy, haptics, links and motion go through the kit
+00:00 +3 -1: G2: copy, haptics, links and motion go through the kit [E]
+  G2: lib/ui/screens/zz_gate_violation.dart uses "Clipboard.setData(" x1 (new — baseline has none) — use KitCopy.copy(context, text) (KIT-23; STANDARDS.md §18 G2)
+00:00 +3 -1: G7: layout is directional and bidi marks come from KitBidi
+00:00 +3 -2: G7: layout is directional and bidi marks come from KitBidi [E]
+  G7: lib/ui/screens/zz_gate_violation.dart uses "EdgeInsets.only(left|right:)" x1 (new — baseline has none) — use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional) (LAY-8; STANDARDS.md §18 G7)
+00:00 +3 -2: G15 inside the kit: only kit_layout.dart owns widths
+00:00 +3 -3: G15 inside the kit: only kit_layout.dart owns widths [E]
+  G15x: lib/ui/kit/zz_gate_violation.dart uses "width-literal" x1 (new — baseline has none) — name the width in KitLayout and decide layout from the window class (LAY-2; STANDARDS.md §18 G15x)
+00:00 +3 -3: G17 colour: every colour comes from a ThemeRoles role
+00:00 +3 -4: G17 colour: every colour comes from a ThemeRoles role [E]
+  G17: lib/ui/screens/zz_gate_violation.dart uses "Colors.*" x1 (new — baseline has none) — use a ThemeRoles role (LOOK-1; STANDARDS.md §18 G17)
+00:00 +3 -4: G21 look and motion: numbers and effects come from the kit
+00:00 +3 -5: G21 look and motion: numbers and effects come from the kit [E]
+  G21: lib/ui/screens/zz_gate_violation.dart "KitSurfaceLevel.glass|raised|tonal" x1 — absolute, never baselined: use ground or surface1-3 (KIT-42)
+  G21: lib/ui/screens/zz_gate_violation.dart uses "fontSize:" x1 (new — baseline has none) — name a KitText role (LOOK-12, LOOK-13; STANDARDS.md §18 G21)
+  G21: lib/ui/screens/zz_gate_violation.dart uses "TextStyle(" x1 (new — baseline has none) — name a KitText role (LOOK-12; STANDARDS.md §18 G21)
+  G21: lib/ui/screens/zz_gate_violation.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+00:00 +3 -5: G48 drafts: multiline input in a kit sheet keeps a draft
+00:00 +3 -6: G48 drafts: multiline input in a kit sheet keeps a draft [E]
+  G48: lib/ui/screens/zz_gate_violation.dart uses "sheet multiline without draft:" x1 (new — baseline has none) — pass draft: KitDraft to the field (DATA-2; STANDARDS.md §18 G48)
+00:00 +3 -6: every G2/G7/G15x/G17/G21/G48 row is named once and has a reason
+00:00 +4 -6: every allowlist entry gives a real reason
+00:00 +5 -6: the Flutter widget catalogue exists and is non-trivial
+00:00 +6 -6: counters on fixture strings (proves the regexes, not just files) G1 matches showDialog<T>( but not showKitDialog( or a comment
+00:00 +7 -6: counters on fixture strings (proves the regexes, not just files) SnackBar( does not count showSnackBar( or KitSnackBar(
+00:00 +8 -6: counters on fixture strings (proves the regexes, not just files) G16 counts real widget constructions, not static members or app classes
+00:00 +9 -6: counters on fixture strings (proves the regexes, not just files) G15 counts a width compared to a literal, not BoxConstraints(maxWidth: n)
+00:00 +10 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts uses of an old API, not its declaration
+00:00 +11 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts motion literals and seams, not KitMotion names
+00:00 +12 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G7 counts left/right layout, not the directional forms
+00:00 +13 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G15x counts breakpoints and layout widths, not guards or gaps
+00:00 +14 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G17 counts literal colours and theme reads, not transparent
+00:00 +15 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 counts look literals the way the rulebook writes them
+00:00 +16 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 metal/chrome reads identifiers and file names
+00:00 +17 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings G48 flags a sheet with a multiline field and no draft
+00:00 +18 -6: G2/G7/G15x/G17/G21/G48 rows on fixture strings theme files, allowlist keys and scopes resolve as documented
+00:00 +19 -6: Some tests failed.
