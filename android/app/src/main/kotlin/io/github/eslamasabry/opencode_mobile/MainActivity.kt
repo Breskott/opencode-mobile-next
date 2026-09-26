@@ -44,6 +44,7 @@ class MainActivity : FlutterActivity() {
     private var linkDartReady = false
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
+    private val voiceDownloadNotifications by lazy { VoiceDownloadNotifications(this) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -178,7 +179,7 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
-                    else -> result.notImplemented()
+                    else -> if (!voiceDownloadNotifications.handle(call, result)) result.notImplemented()
                 }
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CAMERA_CHANNEL_NAME)
@@ -346,6 +347,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        voiceDownloadNotifications.dispose()
         localPdf?.dispose()
         localPdf = null
         readAloud?.dispose()
@@ -714,6 +716,7 @@ class MainActivity : FlutterActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (voiceDownloadNotifications.onPermissionResult(requestCode, grantResults)) return
         when (requestCode) {
             RUN_COMMAND_PERMISSION_REQUEST -> {
                 val result = permissionResult ?: return
