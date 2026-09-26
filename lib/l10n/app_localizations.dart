@@ -32284,6 +32284,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undoing'**
   String get kitUndoWorking;
+
+  /// Kit composer chips: the model chip's words when no model is picked and the server's default model is not known by name
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get kitModelServerDefault;
+
+  /// Kit composer chips: the model chip's words when no model provider is signed in; tapping opens the provider sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a model'**
+  String get kitModelSignIn;
+
+  /// Kit composer chips: the model chip's words when models exist but none is picked and there is no server default
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get kitModelChoose;
+
+  /// Kit composer chips: screen-reader hint on the model chip (what tapping it does)
+  ///
+  /// In en, this message translates to:
+  /// **'Change model'**
+  String get kitModelChange;
+
+  /// Kit composer chips: the name of the model chip's menu (next model, previous model, favourites)
+  ///
+  /// In en, this message translates to:
+  /// **'Model shortcuts'**
+  String get kitModelActions;
+
+  /// Kit composer chips: after the model's name, how full the conversation's context is, from 70 %; {percent} is a locale-formatted whole number
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String kitModelContext(String percent);
+
+  /// Kit composer chips: after the model's name when the conversation's context is 95 % full or more
+  ///
+  /// In en, this message translates to:
+  /// **'Context almost full'**
+  String get kitModelContextFull;
+
+  /// Kit composer chips: screen-reader words for the context meter after the model's name; {percent} is a locale-formatted whole number
+  ///
+  /// In en, this message translates to:
+  /// **'Context {percent} % full'**
+  String kitModelContextLabel(String percent);
+
+  /// Kit composer chips: screen-reader label of an attachment chip that opens a preview; {label} is the file name or reference
+  ///
+  /// In en, this message translates to:
+  /// **'Preview {label}'**
+  String kitAttachmentOpen(String label);
+
+  /// Kit composer chips: screen-reader words for an image attachment that cannot be opened (a sent prompt's read-only chip); {label} is the file name
+  ///
+  /// In en, this message translates to:
+  /// **'Image, {label}'**
+  String kitAttachmentImage(String label);
+
+  /// Kit composer chips: screen-reader words for a file attachment that cannot be opened; {label} is the file name
+  ///
+  /// In en, this message translates to:
+  /// **'File, {label}'**
+  String kitAttachmentFile(String label);
+
+  /// Kit composer chips: screen-reader words for a folder reference that cannot be opened; {label} is the folder path
+  ///
+  /// In en, this message translates to:
+  /// **'Folder, {label}'**
+  String kitAttachmentFolder(String label);
+
+  /// Kit composer chips: screen-reader words for a code reference that cannot be opened; {label} is the reference
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, {label}'**
+  String kitAttachmentReference(String label);
+
+  /// Kit composer chips: under the inline command or agent suggestions when there are more than five
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get kitSuggestionsShowAll;
+
+  /// Kit composer chips: screen-reader name of the inline command or agent suggestions list
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get kitSuggestionsLabel;
 }
 
 class _AppLocalizationsDelegate

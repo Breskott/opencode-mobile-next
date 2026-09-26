@@ -20366,4 +20366,63 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitUndoWorking => 'جارٍ التراجع';
+
+  @override
+  String get kitModelServerDefault => 'Server default';
+
+  @override
+  String get kitModelSignIn => 'Sign in to a model';
+
+  @override
+  String get kitModelChoose => 'Choose a model';
+
+  @override
+  String get kitModelChange => 'Change model';
+
+  @override
+  String get kitModelActions => 'Model shortcuts';
+
+  @override
+  String kitModelContext(String percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get kitModelContextFull => 'Context almost full';
+
+  @override
+  String kitModelContextLabel(String percent) {
+    return 'Context $percent % full';
+  }
+
+  @override
+  String kitAttachmentOpen(String label) {
+    return 'Preview $label';
+  }
+
+  @override
+  String kitAttachmentImage(String label) {
+    return 'Image, $label';
+  }
+
+  @override
+  String kitAttachmentFile(String label) {
+    return 'File, $label';
+  }
+
+  @override
+  String kitAttachmentFolder(String label) {
+    return 'Folder, $label';
+  }
+
+  @override
+  String kitAttachmentReference(String label) {
+    return 'Reference, $label';
+  }
+
+  @override
+  String get kitSuggestionsShowAll => 'Show all';
+
+  @override
+  String get kitSuggestionsLabel => 'Suggestions';
 }
