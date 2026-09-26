@@ -29,6 +29,23 @@
 /// | [KitEffects], [KitEffectsScope] | §10 the person's glass, motion, celebration and vibration choices (Settings › Appearance) |
 /// | [KitGlass] | §10 glass: a bounded surface floating over content (liquid, frosted or solid) |
 /// | [KitIllustration], [KitScene], [KitDraw], [KitPortalScene] | §10 drawings in the brand's line, drawn in code, that can move |
+/// | [KitSurface] | kit v2 §4 the one solid box: a surface step fill, token shape and padding, optional hairline edge |
+/// | [KitDivider] | kit v2 the one separator: a pixel-snapped hairline, optionally inset to a row's words |
+/// | [KitIcon], [KitIconSize], [KitBrandMark] | kit v2 §9 the one way to draw a glyph at a designed size, and the open-portal mark |
+/// | [KitChip], [KitChipKind], [KitChipWrap] | kit v2 §4-§5 a small rounded label, always with a word, and its wrapping row |
+/// | [KitSegmented], [KitSegment] | kit v2 §1.6 one choice among 2–4 short, always-visible options |
+/// | [KitMenuItem], [showKitMenu], [KitMenuPanel] | kit v2 the one popup menu: groups, checks, disabled reasons, destructive last |
+/// | [KitTerm], [showKitTerm] | K2 §1.20 a term that explains itself |
+/// | [KitUndo], [showKitUndo] | K2 §1.17, §4.1 the one Undo bar |
+/// | [KitBottomInset], [KitClearance] | K2 §2.12 how much of the bottom is covered by something pinned or floating |
+/// | [KitSince], [KitSincePhase], [KitSinceStatus], [KitSinceTicks] | the one wait timer: slow after a while, then minute ticks |
+/// | [KitImage], [KitAvatar], [KitZoom], [KitZoomController] | kit v2 sharp raster images, the one identity mark, and the one pinch/pan/zoom viewer |
+/// | [KitQr] | kit v2 §5 a QR code another device can scan |
+/// | [KitSwatch], [KitSwatchGrid] | kit v2 §5 choosing a theme or accent by looking |
+/// | [KitLevelMeter] | the microphone's input level as bars (decorative) |
+/// | [KitTerminalView] | kit v2 §9.2 the terminal: a live xterm session or a transcript, in the theme's colours |
+/// | [KitPageRoute] | §10 a pushed page with the kit's one transition |
+/// | [KitSwap], [KitSpin], [KitAnimatedBox], [KitDim], [KitAnimatedValue], [KitPace] | §10 the small motion parts: cross-fade, spin, surface change, dim, eased number |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -70,9 +87,26 @@ export 'kit_technical_value.dart';
 export 'kit_text.dart';
 export 'kit_tokens.dart';
 export 'kit_task_mark.dart';
+export 'kit_bottom_inset.dart';
+export 'kit_chip.dart';
+export 'kit_divider.dart';
+export 'kit_icon.dart';
+export 'kit_image.dart';
+export 'kit_level_meter.dart';
+export 'kit_menu.dart';
+export 'kit_page_route.dart';
+export 'kit_qr.dart';
+export 'kit_segmented.dart';
+export 'kit_since.dart';
+export 'kit_surface.dart';
+export 'kit_swatch.dart';
+export 'kit_term.dart';
+export 'kit_terminal_view.dart';
+export 'kit_undo.dart';
 export 'scenes/portal_scene.dart';
 export 'motion/kit_animated_rows.dart';
 export 'motion/kit_haptics.dart';
+export 'motion/kit_motion_parts.dart';
 export 'motion/kit_page_transitions.dart';
 export 'motion/kit_refresh.dart';
 export 'motion/kit_reveal.dart';

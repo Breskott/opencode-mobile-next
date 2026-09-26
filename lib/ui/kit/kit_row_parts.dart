@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'kit_menu.dart';
 import 'kit_motion.dart';
 import 'kit_row.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_reveal.dart';
+
+// KitMenuItem moved to kit_menu.dart (docs/ux-system/kit-api/KitMenu.md).
+export 'kit_menu.dart' show KitMenuItem;
 
 /// A [KitRow]'s leading icon with an optional current mark (design
 /// standard §6, "state lives in the row"): the thing the person is using
@@ -49,25 +53,6 @@ TextSpan kitCurrentSpan(BuildContext context, String word) => TextSpan(
     fontWeight: FontWeight.w600,
   ),
 );
-
-/// One entry of a [KitRowMenu].
-class KitMenuItem {
-  const KitMenuItem({
-    required this.label,
-    required this.onSelected,
-    this.key,
-    this.destructive = false,
-    this.enabled = true,
-  });
-
-  final String label;
-  final VoidCallback onSelected;
-  final Key? key;
-
-  /// Error-coloured; what it opens confirms before acting (§2).
-  final bool destructive;
-  final bool enabled;
-}
 
 /// A row's trailing overflow menu (§6: "a single icon action"): the rarer
 /// things a row can do, so the row itself carries no buttons. Destructive
