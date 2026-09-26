@@ -6,6 +6,7 @@
 // reduced motion (G8x) and keyboard activation (G14).
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -228,21 +229,44 @@ void main() {
     'onPressed: null disables the button: no tap, enabled: false, the hint '
     'is the reason, the glyph is text3 at full alpha',
     (tester) async {
+      // The same button, first enabled with a counter, then disabled: a tap
+      // counts only while it is enabled.
       var taps = 0;
+      var enabled = true;
+      late StateSetter setHost;
       await tester.pumpWidget(
         _host(
-          KitIconButton(
-            icon: AppIconography.delete,
-            tooltip: 'Remove header',
-            onPressed: null,
-            disabledReason: 'Read-only connection',
+          StatefulBuilder(
+            builder: (context, setState) {
+              setHost = setState;
+              return KitIconButton(
+                icon: AppIconography.delete,
+                tooltip: 'Remove header',
+                onPressed: enabled ? () => taps++ : null,
+                disabledReason: 'Read-only connection',
+              );
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
+      await tester.tap(_button);
+      await tester.pump();
+      expect(taps, 1);
+
+      setHost(() => enabled = false);
+      await tester.pumpAndSettle();
       await tester.tap(_button, warnIfMissed: false);
       await tester.pump();
-      expect(taps, 0);
+      expect(taps, 1);
+      expect(
+        tester
+            .widget<InkWell>(
+              find.descendant(of: _button, matching: find.byType(InkWell)),
+            )
+            .onTap,
+        isNull,
+      );
 
       expect(
         tester.getSemantics(_button),
@@ -258,6 +282,106 @@ void main() {
       final color = _glyphColor(tester)!;
       expect(color, roles.text3);
       expect(color.a, 1.0);
+    },
+  );
+
+  testWidgets(
+    'a disabled button tooltip says why: the label span, then the reason',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const KitIconButton(
+            icon: AppIconography.delete,
+            tooltip: 'Remove header',
+            shortcut: 'Del',
+            onPressed: null,
+            disabledReason: 'Read-only connection',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final spans =
+          (tester.widget<Tooltip>(find.byType(Tooltip)).richMessage!
+                  as TextSpan)
+              .children!
+              .cast<TextSpan>();
+      expect(spans.first.text, tester.getSemantics(_button).label);
+      expect(spans.last.text, 'Read-only connection');
+      expect(spans.map((s) => s.text).join(), isNot(contains('Del')));
+
+      // A long-press (the compact-window path) shows both lines.
+      await tester.longPress(_button);
+      await tester.pump();
+      expect(find.textContaining('Read-only connection'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets('an enabled or working button tooltip has no reason span', (
+    tester,
+  ) async {
+    for (final working in [false, true]) {
+      await tester.pumpWidget(
+        _host(
+          KitIconButton(
+            icon: AppIconography.send,
+            tooltip: 'Send',
+            working: working,
+            onPressed: () {},
+            disabledReason: 'Nothing to send',
+          ),
+        ),
+      );
+      await tester.pump();
+      final rich =
+          tester.widget<Tooltip>(find.byType(Tooltip)).richMessage! as TextSpan;
+      expect(rich.toPlainText(), 'Send', reason: 'working: $working');
+    }
+  });
+
+  testWidgets(
+    'at 412x915 and text 2.0 the long-press tooltip wraps to at most two '
+    'lines and is not cut',
+    (tester) async {
+      tester.view
+        ..physicalSize = const Size(412, 915) * 3
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _host(
+          KitIconButton(
+            icon: AppIconography.retry,
+            tooltip: 'Retry this connection',
+            onPressed: () {},
+          ),
+          textScale: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.longPress(_button);
+      await tester.pumpAndSettle();
+
+      final text = find.textContaining('Retry this connection');
+      expect(text, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: text, matching: find.byType(RichText)).first,
+      );
+      final plain = paragraph.text.toPlainText();
+      final lines = paragraph
+          .getBoxesForSelection(
+            TextSelection(baseOffset: 0, extentOffset: plain.length),
+          )
+          .map((box) => box.top.round())
+          .toSet()
+          .length;
+      expect(lines, inInclusiveRange(1, 2));
+      expect(paragraph.didExceedMaxLines, isFalse);
+      final box = tester.getRect(text);
+      expect(box.left, greaterThanOrEqualTo(0));
+      expect(box.right, lessThanOrEqualTo(412));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     },
   );
 
@@ -438,46 +562,117 @@ void main() {
   });
 
   group('reduced motion settles after one pump (G8x)', () {
-    final cases = <String, Widget>{
-      'default': KitIconButton(
-        icon: AppIconography.close,
-        tooltip: 'Close',
-        onPressed: () {},
+    const iconKey = ValueKey('kit-icon-button-icon');
+    const workingKey = ValueKey('kit-icon-button-working');
+    const copiedKey = ValueKey('kit-icon-button-copied');
+
+    // Each state is reached from the default look, so the glyph swap itself
+    // must be instant: after one pump only the new glyph is in the tree and
+    // nothing is scheduled.
+    final cases = <String, (Widget, ValueKey<String>)>{
+      'default': (
+        KitIconButton(
+          icon: AppIconography.close,
+          tooltip: 'Close',
+          onPressed: () {},
+        ),
+        iconKey,
       ),
-      'disabled': const KitIconButton(
-        icon: AppIconography.close,
-        tooltip: 'Close',
-        onPressed: null,
-        disabledReason: 'Not available',
+      'disabled': (
+        const KitIconButton(
+          icon: AppIconography.close,
+          tooltip: 'Close',
+          onPressed: null,
+          disabledReason: 'Not available',
+        ),
+        iconKey,
       ),
-      'working': KitIconButton(
-        icon: AppIconography.send,
-        tooltip: 'Send',
-        working: true,
-        onPressed: () {},
+      'working': (
+        KitIconButton(
+          icon: AppIconography.close,
+          tooltip: 'Close',
+          working: true,
+          onPressed: () {},
+        ),
+        workingKey,
       ),
-      'selected': KitIconButton(
-        icon: AppIconography.wrapText,
-        tooltip: 'Wrap lines',
-        selected: true,
-        onPressed: () {},
+      'selected': (
+        KitIconButton(
+          icon: AppIconography.close,
+          tooltip: 'Close',
+          selected: true,
+          onPressed: () {},
+        ),
+        iconKey,
       ),
-      'destructive': KitIconButton(
-        icon: AppIconography.delete,
-        tooltip: 'Delete',
-        destructive: true,
-        onPressed: () {},
+      'destructive': (
+        KitIconButton(
+          icon: AppIconography.close,
+          tooltip: 'Close',
+          destructive: true,
+          onPressed: () {},
+        ),
+        iconKey,
       ),
-      'copy': KitIconButton.copy(text: () => 'x'),
     };
 
-    for (final MapEntry(key: name, value: widget) in cases.entries) {
+    for (final MapEntry(key: name, value: (widget, glyph)) in cases.entries) {
       testWidgets(name, (tester) async {
-        await tester.pumpWidget(_host(widget, disableAnimations: true));
+        // One host throughout, so only the button changes (a fresh host
+        // would animate its theme).
+        final shown = ValueNotifier<Widget>(cases['default']!.$1);
+        addTearDown(shown.dispose);
+        await tester.pumpWidget(
+          _host(
+            ValueListenableBuilder<Widget>(
+              valueListenable: shown,
+              builder: (_, child, _) => child,
+            ),
+            disableAnimations: true,
+          ),
+        );
+        await tester.pump();
+        expect(tester.binding.hasScheduledFrame, isFalse, reason: name);
+        shown.value = widget;
+        await tester.pump();
+        expect(find.byKey(glyph), findsOneWidget, reason: name);
+        for (final other in [iconKey, workingKey, copiedKey]) {
+          if (other != glyph) {
+            expect(find.byKey(other), findsNothing, reason: '$name: $other');
+          }
+        }
+        // No animation is left running. (Turning disabled or working makes
+        // the InkWell unfocusable, and the framework's Focus widget rebuilds
+        // once for that: one frame of bookkeeping, not motion, so the check
+        // is on tickers rather than on any scheduled frame.)
+        expect(tester.binding.transientCallbackCount, 0, reason: name);
         await tester.pump();
         expect(tester.binding.hasScheduledFrame, isFalse, reason: name);
       });
     }
+
+    testWidgets('without reduced motion the same swap cross-fades', (
+      tester,
+    ) async {
+      final shown = ValueNotifier<Widget>(cases['default']!.$1);
+      addTearDown(shown.dispose);
+      await tester.pumpWidget(
+        _host(
+          ValueListenableBuilder<Widget>(
+            valueListenable: shown,
+            builder: (_, child, _) => child,
+          ),
+        ),
+      );
+      await tester.pump();
+      shown.value = cases['working']!.$1;
+      await tester.pump();
+      expect(find.byKey(iconKey), findsOneWidget);
+      expect(find.byKey(workingKey), findsOneWidget);
+      expect(tester.binding.hasScheduledFrame, isTrue);
+      // The spinner never settles; drop it so the test can end.
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
 
     testWidgets('copied, under reduced motion', (tester) async {
       await tester.pumpWidget(
@@ -486,16 +681,21 @@ void main() {
       await tester.pump();
       await tester.tap(_button);
       await tester.pump();
-      expect(
-        find.byKey(const ValueKey('kit-icon-button-copied')),
-        findsOneWidget,
-      );
+      expect(find.byKey(copiedKey), findsOneWidget);
+      expect(find.byKey(iconKey), findsNothing);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      // The hold is a state timer, not an animation: it still runs.
+      await tester.pump(KitMotion.copiedHold);
+      await tester.pump();
+      expect(find.byKey(iconKey), findsOneWidget);
+      expect(find.byKey(copiedKey), findsNothing);
       expect(tester.binding.hasScheduledFrame, isFalse);
     });
   });
 
   testWidgets(
-    'Tab reaches it, the focus ring shows, Enter and Space activate it',
+    'one Tab reaches it and it keeps focus: the ring shows, Enter and Space '
+    'activate it',
     (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
       var taps = 0;
@@ -509,13 +709,18 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(_focusRingPainted(tester), isFalse);
 
-      var tabs = 0;
-      while (!_focusIn(tester, _button) && tabs < 5) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
-        tabs++;
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_focusIn(tester, _button), isTrue);
+      expect(_focusRingPainted(tester), isTrue);
+
+      // Focus survives the rebuild that paints the ring.
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
       }
+      await tester.pumpAndSettle();
       expect(_focusIn(tester, _button), isTrue);
       expect(_focusRingPainted(tester), isTrue);
 
@@ -526,6 +731,96 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
       expect(taps, 2);
+    },
+  );
+
+  testWidgets(
+    'after a focusable neighbour, exactly two Tabs reach it, and the ring '
+    'goes when focus moves on',
+    (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+      var taps = 0;
+      await tester.pumpWidget(
+        _host(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Focus(child: const SizedBox.square(dimension: 48)),
+              KitIconButton(
+                icon: AppIconography.check,
+                tooltip: 'Approve',
+                onPressed: () => taps++,
+              ),
+              Focus(child: const SizedBox.square(dimension: 48)),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_focusIn(tester, _button), isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(_focusIn(tester, _button), isTrue);
+      expect(_focusRingPainted(tester), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 1);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(_focusIn(tester, _button), isFalse);
+      expect(_focusRingPainted(tester), isFalse);
+    },
+  );
+
+  testWidgets(
+    'focused and hovered, the ring paints above the hover fill (§8.3)',
+    (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+      await tester.pumpWidget(
+        _host(
+          KitIconButton(
+            icon: AppIconography.check,
+            tooltip: 'Approve',
+            onPressed: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(_button));
+      await tester.pumpAndSettle();
+      expect(_focusIn(tester, _button), isTrue);
+
+      // The ring is a foreground decoration over the Material the hover ink
+      // is drawn on, so it paints after (above) that ink.
+      final ring = find.descendant(
+        of: _button,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              (w.decoration as BoxDecoration).border != null,
+        ),
+      );
+      expect(ring, findsOneWidget);
+      expect(
+        tester.widget<DecoratedBox>(ring).position,
+        DecorationPosition.foreground,
+      );
+      expect(
+        find.descendant(of: ring, matching: find.byType(Material)),
+        findsOneWidget,
+      );
     },
   );
 }

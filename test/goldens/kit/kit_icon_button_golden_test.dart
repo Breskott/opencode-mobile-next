@@ -126,29 +126,48 @@ Future<void> Function(WidgetTester) _hoverThen() {
   };
 }
 
-bool _focusIn(WidgetTester tester, Finder target) {
-  final focused = FocusManager.instance.primaryFocus?.context;
-  if (focused == null) return false;
-  final element = tester.element(target);
-  if (focused == element) return true;
-  var found = false;
-  (focused as Element).visitAncestorElements((ancestor) {
-    if (ancestor == element) {
-      found = true;
-      return false;
-    }
-    return true;
-  });
-  return found;
+/// A touch long-press on the ground copy, held so the tooltip stays up for
+/// the shot (the compact-window path: no hover, the tooltip shows on
+/// long-press). Like [_hoverThen], each theme pass holds its own pointer;
+/// the previous pass's pointer is lifted first. [release] lifts the last one
+/// after the golden, and lets the tooltip's dismiss delay run out.
+({
+  Future<void> Function(WidgetTester) then,
+  Future<void> Function(WidgetTester) release,
+})
+_longPressThen() {
+  TestGesture? held;
+  return (
+    then: (tester) async {
+      await held?.up();
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(_groundKey)),
+      );
+      held = gesture;
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    },
+    release: (tester) async {
+      await held?.up();
+      held = null;
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+    },
+  );
 }
 
+/// One Tab from the freshly pushed route lands on the ground copy, the
+/// first control in reading order, and focus stays there (LAY-10).
 Future<void> _focusGround(WidgetTester tester) async {
-  var tabs = 0;
-  while (!_focusIn(tester, find.byKey(_groundKey)) && tabs < 6) {
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.pump();
-    tabs++;
-  }
+  await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+  await tester.pumpAndSettle();
+  final focused = FocusManager.instance.primaryFocus?.context;
+  final ground = tester.element(find.byKey(_groundKey));
+  var inGround = focused == ground;
+  (focused as Element?)?.visitAncestorElements((ancestor) {
+    if (ancestor == ground) inGround = true;
+    return !inGround;
+  });
+  expect(inGround, isTrue, reason: 'one Tab focuses the ground copy');
 }
 
 void main() {
@@ -282,7 +301,9 @@ void main() {
 
     // The default state at the other LAY-4 gallery sizes (kit_gallery.dart's
     // kitGallerySizes; the phone entry above coincides with one of these).
-    for (final size in kitGallerySizes) {
+    // The shared harness lacks LAY-4's 915x412 landscape phone, so this
+    // gallery adds it itself (TEST-9, LAY-4).
+    for (final size in [...kitGallerySizes, const Size(915, 412)]) {
       final at = kitGallerySize(size);
       testWidgets('kit_icon_button default · $at · $mode', (tester) async {
         await kitGalleryPart(
@@ -305,7 +326,11 @@ void main() {
         tester,
       ) async {
         if (!wide) {
-          await kitGalleryPart(
+          // The compact-window path: a touch long-press shows the tooltip,
+          // whose label wraps to two lines at 2.0 text and is not cut.
+          debugPlatformCapabilities = null;
+          final press = _longPressThen();
+          await kitGalleryShot(
             tester,
             name: kitGalleryName(
               'kit_icon_button_default',
@@ -316,8 +341,15 @@ void main() {
             size: size,
             light: light,
             textScale: 2,
-            child: _scene(shortcut: 'Ctrl+R'),
+            open: _push(
+              _scene(
+                tooltip: 'Retry the connection to this server',
+                shortcut: 'Ctrl+R',
+              ),
+            ),
+            then: press.then,
           );
+          await press.release(tester);
           return;
         }
         await kitGalleryShot(

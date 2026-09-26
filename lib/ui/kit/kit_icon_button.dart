@@ -14,6 +14,11 @@ import 'kit_tokens.dart';
 /// The one icon-only control (kit-v2.md §1.10).
 ///
 /// States: disabled, working.
+///
+/// Its other looks (selected, copied, destructive, hover, focused) are not
+/// KIT-12 states; they are covered by its gallery and contract test. The
+/// frozen API line also lists selected and copied, which gate G4 rejects
+/// (a PROC-20 contract problem in docs/qa/revamp-kit-KitIconButton-v2-*).
 class KitIconButton extends StatefulWidget {
   const KitIconButton({
     super.key,
@@ -192,43 +197,52 @@ class _KitIconButtonState extends State<KitIconButton> {
       child: glyph,
     );
 
-    Widget control = Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox.square(
-        dimension: tokens.minTarget,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: widget.selected == true ? roles.surface3 : null,
-            shape: BoxShape.circle,
-          ),
-          child: InkWell(
-            onTap: active ? _handleTap : null,
-            customBorder: const CircleBorder(),
-            hoverColor: roles.surface3,
-            focusColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            splashFactory: NoSplash.splashFactory,
-            onFocusChange: (value) => setState(() => _focused = value),
-            child: Center(child: swapped),
+    // The focus ring is always built and only its border switches: the
+    // tree keeps the same shape whether or not the button is focused, so the
+    // focused InkWell (and its FocusNode) is never rebuilt out from under the
+    // keyboard (LAY-10, G14). It paints in the foreground, so a hover or
+    // selected fill on the Material below never covers it (§8.3).
+    final control = DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: _focused
+            ? Border.all(
+                color: roles.accent,
+                width: KitTokens.focusRingWidth(context),
+              )
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox.square(
+          dimension: tokens.minTarget,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: widget.selected == true ? roles.surface3 : null,
+              shape: BoxShape.circle,
+            ),
+            child: InkWell(
+              onTap: active ? _handleTap : null,
+              customBorder: const CircleBorder(),
+              hoverColor: roles.surface3,
+              focusColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashFactory: NoSplash.splashFactory,
+              // InkWell reports every focus notification, also an unchanged
+              // one (it re-reports when the button turns disabled); only a
+              // real change rebuilds.
+              onFocusChange: (value) {
+                if (value != _focused) setState(() => _focused = value);
+              },
+              child: Center(child: swapped),
+            ),
           ),
         ),
       ),
     );
-
-    if (_focused) {
-      control = DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: roles.accent,
-            width: KitTokens.focusRingWidth(context),
-          ),
-        ),
-        child: control,
-      );
-    }
 
     final String? hint = widget.working
         ? l10n.kitWorking
@@ -244,8 +258,25 @@ class _KitIconButtonState extends State<KitIconButton> {
         ),
       ),
     ];
+    // The second span says why a disabled button is disabled (the same text
+    // as the semantic hint), on any pointer; otherwise it is the shortcut,
+    // on a fine pointer only.
+    final reason = !active && !widget.working ? widget.disabledReason : null;
     final shortcut = widget.shortcut;
-    if (shortcut != null && KitLayout.finePointer(context)) {
+    if (reason != null) {
+      spans
+        ..add(const TextSpan(text: '\n'))
+        ..add(
+          TextSpan(
+            text: reason,
+            style: KitText.styleOf(
+              context,
+              KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+          ),
+        );
+    } else if (shortcut != null && KitLayout.finePointer(context)) {
       spans
         ..add(const TextSpan(text: '  '))
         ..add(
