@@ -153,6 +153,9 @@ class _AgentScreenState extends State<AgentScreen> {
         await controller.refresh();
       }
     } finally {
+      // Look for its conversation again too: a worker still starting has
+      // one by now.
+      _lookupFor = null;
       if (mounted) setState(() => _refreshing = false);
     }
   }

@@ -220,18 +220,19 @@ void main() {
       'why', (tester) async {
     phoneViewport(tester);
     final (team, _) = await bootTeam();
+    // Only the previous task's session in the worktree: furiosa's current
+    // one is not on this server (still starting, or the team runs on
+    // another computer).
+    final repository = TeamChatRepository([
+      teamSession(
+        'ses_furiosa_old',
+        teamPolecatDir,
+        updated: DateTime.utc(2026, 9, 24, 17, 10),
+      ),
+    ]);
     final connection = await teamConnection(
       api: TeamChatApi(const {}),
-      // Only the previous task's session in the worktree: furiosa's
-      // current one is not on this server (still starting, or the team
-      // runs on another computer).
-      repository: TeamChatRepository([
-        teamSession(
-          'ses_furiosa_old',
-          teamPolecatDir,
-          updated: DateTime.utc(2026, 9, 24, 17, 10),
-        ),
-      ]),
+      repository: repository,
     );
     await tester.pumpWidget(
       teamChatApp(
@@ -272,6 +273,25 @@ void main() {
       find.textContaining("Its conversation isn't on the server"),
       findsOneWidget,
     );
+
+    // Its session shows up (the worker got going): Refresh looks again and
+    // Open conversation becomes the primary.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    repository.results.add(
+      teamSession(
+        'ses_furiosa',
+        teamPolecatDir,
+        updated: DateTime.utc(2026, 9, 25, 19, 54),
+      ),
+    );
+    await tester.tap(_key('team-agent-refresh'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<KitButton>(_key('team-agent-open-conversation')).role,
+      KitButtonRole.primary,
+    );
+    expect(_key('team-agent-conversation-miss'), findsNothing);
   });
 
   testWidgets('a watched team session stays out of the person\'s lists', (
