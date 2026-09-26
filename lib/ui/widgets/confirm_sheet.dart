@@ -1,100 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'request_routes.dart';
 import '../app_iconography.dart';
+import '../kit/kit_sheet.dart';
 
-/// Mobile-idiomatic confirmation: a bottom sheet with one clear primary
-/// action, replacing centered [AlertDialog] confirms. Returns true only when
-/// the confirming action is chosen.
+/// The older name of [showKitConfirm] (docs/ux-system/kit-v2.md §2.14):
+/// deprecated, kept as a thin wrapper so its call sites get the kit's
+/// confirmation at once. New code calls [showKitConfirm] with a [kind];
+/// this wrapper is deleted once every call site passes one.
+///
+/// [message] is the body. [destructive] maps to [KitConfirmKind.destructive]
+/// unless [kind] says otherwise (a stop is [KitConfirmKind.stop]). The old
+/// default "?" icon and the English "Cancel" give way to the kind's own
+/// icon and cancel word. Returns true only when the confirming action is
+/// chosen.
 Future<bool> showConfirmSheet(
   BuildContext context, {
   required String title,
   required String message,
   required String confirmLabel,
-  String cancelLabel = 'Cancel',
-  IconData icon = AppIconography.question,
+  String? cancelLabel,
+  IconData? icon,
   bool destructive = false,
+  KitConfirmKind? kind,
   Key? sheetKey,
   Key? confirmKey,
   RequestRoutes? routes,
-}) async {
-  if (routes?.isPending == false) return false;
-  final result = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) {
-      routes?.own(ModalRoute.of(context));
-      final theme = Theme.of(context);
-      final accent = destructive
-          ? theme.colorScheme.error
-          : theme.colorScheme.primary;
-      return SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-            child: Column(
-              key: sheetKey,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: .14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, size: 24, color: accent),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                FilledButton(
-                  key: confirmKey,
-                  style: destructive
-                      ? FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.error,
-                          foregroundColor: theme.colorScheme.onError,
-                        )
-                      : null,
-                  onPressed: () {
-                    if (destructive) {
-                      HapticFeedback.mediumImpact();
-                    }
-                    Navigator.pop(context, true);
-                  },
-                  child: Text(confirmLabel),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(cancelLabel),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-  return result == true;
-}
+}) => showKitConfirm(
+  context,
+  title: title,
+  body: message,
+  confirmLabel: confirmLabel,
+  kind:
+      kind ??
+      (destructive ? KitConfirmKind.destructive : KitConfirmKind.neutral),
+  cancelLabel: cancelLabel == 'Cancel' ? null : cancelLabel,
+  icon: icon == AppIconography.question ? null : icon,
+  sheetKey: sheetKey,
+  confirmKey: confirmKey,
+  routes: routes,
+);
 
 /// End-swipe reveal behind list rows whose swipe leads into the destructive
 /// confirm flow above: a destructive field with a trailing delete glyph.

@@ -2100,7 +2100,7 @@ pid=
         ),
         findsOneWidget,
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Cancel'));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(

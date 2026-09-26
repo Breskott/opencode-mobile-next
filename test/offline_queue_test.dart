@@ -1251,7 +1251,7 @@ void main() {
 
       await _openQueuedAction(tester, 'queued-action-resend');
       expect(find.text('Send this draft again?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Keep for review'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Keep for review'));
       await tester.pumpAndSettle();
       expect(api.prompts, isEmpty);
       expect(
@@ -1709,7 +1709,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.widgetWithText(TextButton, 'Keep for review'),
+        find.widgetWithText(FilledButton, 'Keep for review'),
         findsOneWidget,
       );
       expect(controller.queuedPromptCount, 1);

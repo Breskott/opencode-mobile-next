@@ -695,7 +695,9 @@ void main() {
 
       await tester.tap(deny);
       await tester.pumpAndSettle();
-      final yes = tester.widget<FilledButton>(confirmYes);
+      final yes = tester.widget<FilledButton>(
+        find.descendant(of: confirmYes, matching: find.byType(FilledButton)),
+      );
       expect(yes.style?.backgroundColor?.resolve({}), error);
       await tester.tap(confirmYes);
       await tester.pumpAndSettle();
