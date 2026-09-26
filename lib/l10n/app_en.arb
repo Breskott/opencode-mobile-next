@@ -18332,8 +18332,7 @@
     "description": "Button above the end of a command output, revealing the lines before it",
     "placeholders": {
       "count": {
-        "type": "int",
-        "format": "decimalPattern"
+        "type": "int"
       }
     }
   },
@@ -18342,42 +18341,7 @@
     "description": "Opens a very long command output in the file viewer",
     "placeholders": {
       "count": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
-  },
-  "kitTerminalViewKeySlash": "Slash key",
-  "@kitTerminalViewKeySlash": {
-    "description": "Spoken name of the terminal key bar's / key"
-  },
-  "kitTerminalViewKeyDash": "Dash key",
-  "@kitTerminalViewKeyDash": {
-    "description": "Spoken name of the terminal key bar's - key"
-  },
-  "kitTerminalViewKeyPipe": "Pipe key",
-  "@kitTerminalViewKeyPipe": {
-    "description": "Spoken name of the terminal key bar's | key (the shell's pipe)"
-  },
-  "kitTerminalViewKeyTilde": "Tilde key",
-  "@kitTerminalViewKeyTilde": {
-    "description": "Spoken name of the terminal key bar's ~ key"
-  },
-  "kitTerminalViewKeyHome": "Home key",
-  "@kitTerminalViewKeyHome": {
-    "description": "Spoken name of the terminal key bar's Home key"
-  },
-  "kitTerminalViewKeyEnd": "End key",
-  "@kitTerminalViewKeyEnd": {
-    "description": "Spoken name of the terminal key bar's End key"
-  },
-  "kitTerminalViewShowingLast": "{count, plural, =1{Showing the last line} other{Showing the last {count} lines}}",
-  "@kitTerminalViewShowingLast": {
-    "description": "Under a very long command output that cannot open elsewhere: only its last lines are shown inline",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "decimalPattern"
+        "type": "int"
       }
     }
   },
@@ -22282,46 +22246,22 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitSwatchInUse": "In use",
-  "@kitSwatchInUse": {
-    "description": "KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now"
+  "kitUndoAction": "Undo",
+  "@kitUndoAction": {
+    "description": "Kit undo: the default label of the one Undo bar's action button"
   },
-  "kitThemePreviewTitle": "Fix the login bug",
-  "@kitThemePreviewTitle": {
-    "description": "KitThemePreview: the sample row's title in the theme preview picture"
-  },
-  "kitThemePreviewWorking": "Working · 2 min",
-  "@kitThemePreviewWorking": {
-    "description": "KitThemePreview: the sample row's status line, next to the working mark"
-  },
-  "kitThemePreviewNeedsYou": "Needs you",
-  "@kitThemePreviewNeedsYou": {
-    "description": "KitThemePreview: the sample needs-you word shown in the theme preview picture"
-  },
-  "kitThemePreviewPrimary": "Send",
-  "@kitThemePreviewPrimary": {
-    "description": "KitThemePreview: the sample primary button's label in the theme preview picture"
-  },
-  "kitThemePreviewSecondary": "Attach",
-  "@kitThemePreviewSecondary": {
-    "description": "KitThemePreview: the sample secondary button's label in the theme preview picture"
-  },
-  "kitThemePreviewSegment": "On",
-  "@kitThemePreviewSegment": {
-    "description": "KitThemePreview: the sample selected segment's label in the theme preview picture"
-  },
-  "kitThemePreviewCode": "final ready = true;",
-  "@kitThemePreviewCode": {
-    "description": "Technical: KitThemePreview's sample code line, shown in mono in every locale"
-  },
-  "kitThemePreviewLabel": "Preview of {theme}",
-  "@kitThemePreviewLabel": {
-    "description": "KitThemePreview: the whole picture's semantic label, filled in by the host with the theme's name",
+  "kitUndoFailed": "Couldn't undo. {message}",
+  "@kitUndoFailed": {
+    "description": "Kit undo: the bar's message once Undo has failed and no host failure handler was given; {message} is the bar's own done message (\"Archived “Fix login”\")",
     "placeholders": {
-      "theme": {
+      "message": {
         "type": "String",
-        "example": "Graphite"
+        "example": "Archived “Fix login”"
       }
     }
+  },
+  "kitUndoWorking": "Undoing",
+  "@kitUndoWorking": {
+    "description": "Kit undo: spoken to a screen reader on the Undo action while the undo is still running (the action ignores taps until it finishes)"
   }
 }
