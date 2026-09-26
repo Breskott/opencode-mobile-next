@@ -520,8 +520,22 @@ void main() {
       );
       final first = tester.getRect(_key(TerminalBarKey.esc));
       final last = tester.getRect(_key(TerminalBarKey.pageUp));
-      expect(last.right - first.left, 720);
-      expect(first.left, 40);
+      // 720 dp of room: eight keys of a whole 86 dp (not 86.5) and seven
+      // 4 dp gaps, centred on a whole pixel (LOOK-21).
+      expect(first.width, 86);
+      expect(last.right - first.left, 716);
+      expect(first.left, 42);
+      // At DPR 3 each cap edge still lands on a whole physical pixel.
+      tester.view
+        ..devicePixelRatio = 3
+        ..physicalSize = const Size(430 * 3, 915 * 3);
+      await tester.pump();
+      for (final key in TerminalBarKey.rows.first) {
+        final rect = tester.getRect(_key(key));
+        for (final edge in [rect.left, rect.right]) {
+          expect(edge * 3, moreOrLessEquals((edge * 3).roundToDouble()));
+        }
+      }
       expect(
         tester
             .widget<xterm.TerminalView>(find.byType(xterm.TerminalView))
@@ -757,11 +771,21 @@ void main() {
       await _pump(
         tester,
         SingleChildScrollView(
-          child: KitTerminalView.output(output: _lines(2500)),
+          child: KitTerminalView.output(output: _lines(2500), tailLines: 40),
         ),
+      );
+      // The button counts what a tap reveals: from the last 40 back to the
+      // last 2,000, not all 2,460 hidden lines (COPY-17).
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('terminal-show-earlier')),
+          matching: find.text('Show 1,960 earlier lines'),
+        ),
+        findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('terminal-show-earlier')));
       await tester.pump();
+      expect(_drawn(tester), startsWith('line 501\n'));
       expect(find.text('Showing the last 2,000 lines'), findsOneWidget);
       expect(find.byKey(const ValueKey('terminal-open-full')), findsNothing);
       expect(find.byType(TextButton), findsNothing);
@@ -791,7 +815,10 @@ void main() {
             command: 'curl -H "Authorization: Bearer $token" api',
             output:
                 '${_lines(2500)}\n'
-                'using $key\n\x1b[33mAuthorization: Bearer $token\x1b[0m',
+                'using $key\n\x1b[33mAuthorization: Bearer $token\x1b[0m\n'
+                // jq -C and httpie colour a name apart from its value.
+                '\x1b[34;1m"password"\x1b[0m:\x1b[0;32m"hunter2"\x1b[0m\n'
+                'curl: Bearer \x1b[1m$token\x1b[0m',
             tailLines: 2600,
             onOpenFull: opened.add,
           ),
@@ -800,6 +827,9 @@ void main() {
       final drawn = _drawn(tester);
       expect(drawn, isNot(contains('Zx9Qw8Er7Ty6')));
       expect(drawn, isNot(contains(token)));
+      expect(drawn, isNot(contains('hunter2')));
+      expect(drawn, contains('"password":"${KitRedact.mask}'));
+      expect(drawn, contains('Bearer ${KitRedact.mask}'));
       expect(drawn, contains(KitRedact.mask));
       final open = find.byKey(const ValueKey('terminal-open-full'));
       await tester.ensureVisible(open);
@@ -808,6 +838,33 @@ void main() {
       expect(opened.single, isNot(contains(token)));
       expect(opened.single, contains('sk-ant-${KitRedact.mask}'));
       expect(opened.single, contains('Authorization: ${KitRedact.mask}'));
+      expect(opened.single, isNot(contains('hunter2')));
+    });
+
+    test('11. a value coloured apart from its name is still masked', () {
+      String drawn(String line) => KitTerminalText.line(
+        line,
+        graphiteDark,
+      ).whereType<TextSpan>().map((span) => span.text ?? '').join();
+      const jq = '\x1b[34;1m"password"\x1b[0m:\x1b[0;32m"hunter2"\x1b[0m';
+      expect(drawn(jq), isNot(contains('hunter2')));
+      expect(drawn(jq), '"password":"${KitRedact.mask}"');
+      expect(
+        drawn('Bearer \x1b[1mTOKEN123\x1b[0m'),
+        'Bearer ${KitRedact.mask}',
+      );
+      expect(
+        drawn('\x1b[1mBearer\x1b[0m TOKEN123'),
+        'Bearer ${KitRedact.mask}',
+      );
+      // A line with no secret keeps its colours.
+      expect(
+        (KitTerminalText.line('\x1b[31mred\x1b[0m', graphiteDark).first
+                as TextSpan)
+            .style
+            ?.color,
+        graphiteDark.danger,
+      );
     });
 
     test('12. tints: errors text1 semibold, warnings not amber, ANSI red', () {

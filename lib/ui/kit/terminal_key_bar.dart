@@ -358,10 +358,18 @@ class TerminalKeyBar extends StatelessWidget {
                             : KitLayout.readingWidth;
                         final needed = side * columns + gap * (columns - 1);
                         final fits = needed <= room;
+                        // Whole physical pixels: a fractional width puts
+                        // every other cap edge on a half pixel, and it
+                        // blurs (LOOK-21).
+                        final dpr = MediaQuery.devicePixelRatioOf(context);
                         final width = fits
-                            ? (room - gap * (columns - 1)) / columns
+                            ? ((room - gap * (columns - 1)) / columns * dpr)
+                                      .floorToDouble() /
+                                  dpr
                             : side;
-                        final span = fits ? room : needed;
+                        final span = fits
+                            ? width * columns + gap * (columns - 1)
+                            : needed;
                         Widget row(List<TerminalBarKey> keys) => Row(
                           mainAxisSize: MainAxisSize.min,
                           spacing: gap,
@@ -394,7 +402,23 @@ class TerminalKeyBar extends StatelessWidget {
                             child: grid,
                           );
                         }
-                        return Center(heightFactor: 1, child: grid);
+                        // Centred, with the lead snapped to a pixel so the
+                        // grid starts on a pixel boundary.
+                        final outer = constraints.hasBoundedWidth
+                            ? constraints.maxWidth
+                            : span;
+                        final lead =
+                            ((outer - span) / 2 * dpr).floorToDouble() / dpr;
+                        return Align(
+                          alignment: AlignmentDirectional.topStart,
+                          heightFactor: 1,
+                          child: Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: math.max(0, lead),
+                            ),
+                            child: grid,
+                          ),
+                        );
                       },
                     ),
             ),

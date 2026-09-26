@@ -427,7 +427,9 @@ class _KitTerminalOutputState extends State<_KitTerminalOutput> {
             alignment: AlignmentDirectional.centerStart,
             child: KitButton.tertiary(
               key: widget.showEarlierKey,
-              label: l10n.terminalShowEarlier(tailStart),
+              // The count is what a tap reveals: back to the cap, not the
+              // whole output, when it is too long (COPY-17).
+              label: l10n.terminalShowEarlier(tailStart - allStart),
               // In place, no animation: tens of lines in a scrolling list
               // must not animate layout (MOT-5).
               onPressed: () => setState(() => _all = true),
@@ -558,10 +560,17 @@ abstract final class KitTerminalText {
   /// One output line, secrets masked: its own ANSI colours when it has
   /// them, otherwise a tint from what it says (errors, warnings, passes,
   /// test progress).
+  ///
+  /// Secrets are found in the text without its escapes: a value coloured
+  /// apart from its name (`jq -C`, `Bearer \x1b[1mTOKEN`) is still one
+  /// secret. A line holding one drops its colours and shows the masked
+  /// text, tinted like plain output (SEC-2, SEC-4).
   static List<InlineSpan> line(String line, ThemeRoles roles) {
-    final safe = KitRedact.text(line);
-    if (safe.contains('\x1B[')) return _ansi(safe, roles);
-    final plain = strip(safe);
+    final stripped = strip(line);
+    if (line.contains('\x1B[') && !KitRedact.containsSecret(stripped)) {
+      return _ansi(line, roles);
+    }
+    final plain = KitRedact.text(stripped);
     if (_testProgress.firstMatch(plain) case final progress?) {
       return [
         TextSpan(
