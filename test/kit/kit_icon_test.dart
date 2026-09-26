@@ -35,6 +35,11 @@ Widget _host(
 
 void main() {
   kitMotionStillTests(
+    'KitBrandMark',
+    builds: {'tile': () => const KitBrandMark()},
+  );
+
+  kitMotionStillTests(
     'KitIcon',
     builds: {
       'small': () => const KitIcon(AppIconography.check),

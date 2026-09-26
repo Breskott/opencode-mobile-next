@@ -15,6 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/widgets/info_label.dart' show Glossary;
 
+import 'kit_motion_still.dart';
+
 Widget _host(
   Widget child, {
   Size size = const Size(412, 915),
@@ -95,6 +97,23 @@ final _longTerm = 'A very very very very long technical term name'.substring(
 final _longExplanation = List.generate(260, (i) => 'abcdefghij'[i % 10]).join();
 
 void main() {
+  kitMotionStillTests(
+    'KitTerm',
+    builds: {
+      'default': () => const KitTerm('MCP', explanation: 'Extra tools.'),
+    },
+  );
+  kitMotionStillTests(
+    'showKitTerm',
+    opens: {
+      'default': KitMotionOpen(
+        (context) =>
+            showKitTerm(context, term: 'MCP', explanation: 'Extra tools.'),
+        shows: 'Extra tools.',
+      ),
+    },
+  );
+
   testWidgets('tap opens the bubble with the explanation', (tester) async {
     await tester.pumpWidget(_host(_term));
     expect(_bubble, findsNothing);

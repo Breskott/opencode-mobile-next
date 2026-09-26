@@ -13,6 +13,8 @@ import 'package:opencode_mobile/ui/kit/kit_surface.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 Widget _host(
   Widget child, {
   bool light = false,
@@ -35,6 +37,11 @@ Material _materialOf<T extends Widget>(WidgetTester tester) =>
     );
 
 void main() {
+  kitMotionStillTests(
+    'KitSurface',
+    builds: {'default': () => const KitSurface(child: KitText('A panel'))},
+  );
+
   group('levels', () {
     for (final level in KitSurfaceLevel.values) {
       testWidgets(

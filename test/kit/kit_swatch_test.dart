@@ -15,6 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 /// Pumps [child] as the whole body of an app at [size], in [light] or dark,
 /// at [textScale] and in [locale] (Arabic flips the app to right to left).
 Future<void> _pump(
@@ -112,6 +114,48 @@ Widget _eightThemeSwatches(List<Key> keys) => KitSwatchGrid(
 );
 
 void main() {
+  kitMotionStillTests(
+    'KitSwatch',
+    builds: {
+      'default': () => KitSwatchGrid(
+        label: 'Theme',
+        children: [
+          KitSwatch(
+            roles: graphiteDark,
+            label: 'Graphite',
+            selected: true,
+            onPressed: () {},
+          ),
+        ],
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitSwatchGrid',
+    builds: {
+      'default': () => KitSwatchGrid(
+        label: 'Accent colour',
+        children: [
+          KitSwatch.accent(
+            color: const Color(0xFF3D6BFF),
+            label: 'blue',
+            selected: true,
+            onPressed: () {},
+          ),
+        ],
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitThemePreview',
+    builds: {
+      'graphite': () => const KitThemePreview(
+        roles: graphiteDark,
+        label: 'Preview of Graphite',
+      ),
+    },
+  );
+
   group('press (test 1)', () {
     testWidgets('tapping a swatch calls onPressed once', (tester) async {
       var count = 0;

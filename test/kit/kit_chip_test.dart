@@ -153,6 +153,18 @@ bool _near(Color a, Color b) =>
 
 void main() {
   kitMotionStillTests(
+    'KitChipWrap',
+    builds: {
+      'default': () => const KitChipWrap(
+        children: [
+          KitChip(label: 'main'),
+          KitChip(label: '3 agents'),
+        ],
+      ),
+    },
+  );
+
+  kitMotionStillTests(
     'KitChip',
     builds: {
       'plain': () => const KitChip(label: 'main'),

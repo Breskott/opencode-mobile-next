@@ -15,6 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_image.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 /// A valid 1x1 opaque PNG so a source can decode without the network (the
 /// same fixture test/provider_logo_test.dart uses).
 final Uint8List _onePixelPng = Uint8List.fromList(const [
@@ -135,6 +137,41 @@ Semantics? _ownSemantics(WidgetTester tester, Finder of) {
 const _unavailable = "Can't show this image";
 
 void main() {
+  kitMotionStillTests(
+    'KitImage',
+    builds: {
+      'loaded': () => SizedBox(
+        width: 120,
+        height: 90,
+        child: KitImage(
+          source: KitImageSource.memory(_onePixelPng),
+          semanticsLabel: 'A photo',
+        ),
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitAvatar',
+    builds: {'initials': () => const KitAvatar(name: 'Open AI')},
+  );
+  kitMotionStillTests(
+    'KitZoom',
+    builds: {
+      'rest': () => const SizedBox(
+        width: 280,
+        height: 280,
+        child: KitZoom(
+          label: 'Screenshot.png',
+          child: SizedBox(
+            width: 160,
+            height: 120,
+            child: ColoredBox(color: Color(0xFF3D6BFF)),
+          ),
+        ),
+      ),
+    },
+  );
+
   group('KitImage decode size (KitImage.md "Decode size")', () {
     testWidgets('a 100dp box at DPR 3 requests a decode width of 300', (
       tester,

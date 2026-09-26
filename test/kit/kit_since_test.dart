@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_since.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 /// A minimal host: records every [KitSinceStatus] the builder is given and
 /// draws nothing (a bare [KitSince] needs no ancestor to pump).
@@ -31,6 +32,16 @@ Widget _host({
 );
 
 void main() {
+  kitMotionStillTests(
+    'KitSince',
+    builds: {
+      'waiting': () => KitSince(
+        since: DateTime(2026),
+        builder: (context, status) => Text(status.phase.name),
+      ),
+    },
+  );
+
   // 1. since = now escalates to slow at exactly 8 s, one rebuild for the
   // change.
   testWidgets('escalates to slow at exactly 8 s, rebuilding once', (

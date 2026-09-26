@@ -16,6 +16,8 @@ import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/motion/kit_motion_parts.dart';
 
+import 'kit_motion_still.dart';
+
 /// One theme instance for every pump: a fresh `AppTheme.dark()` on a rebuild
 /// would not compare equal and `MaterialApp`'s `AnimatedTheme` would animate
 /// between the two (the harness moving, not the part under test).
@@ -142,6 +144,47 @@ final _starFinder = find.byKey(const ValueKey('star'));
 final _chevronFinder = find.byIcon(AppIconography.chevronDown);
 
 void main() {
+  kitMotionStillTests(
+    'KitSwap',
+    builds: {'default': () => const KitSwap(child: KitText('Working'))},
+  );
+  kitMotionStillTests(
+    'KitSpin',
+    builds: {
+      'quarter': () =>
+          const KitSpin(turns: 0.25, child: SizedBox.square(dimension: 24)),
+    },
+  );
+  kitMotionStillTests(
+    'KitAnimatedBox',
+    builds: {
+      'surface2': () => const KitAnimatedBox(
+        level: KitSurfaceLevel.surface2,
+        child: KitText('Working'),
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitDim',
+    builds: {
+      'dimmed': () => const KitDim(
+        child: SizedBox.square(
+          dimension: 24,
+          child: ColoredBox(color: Color(0xFF3D6BFF)),
+        ),
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitAnimatedValue',
+    builds: {
+      'value': () => KitAnimatedValue(
+        value: 0.4,
+        builder: (context, value) => KitText('${(value * 100).round()} %'),
+      ),
+    },
+  );
+
   group('first build is final (no mount animation)', () {
     testWidgets('KitSwap', (tester) async {
       await tester.pumpWidget(

@@ -108,18 +108,8 @@ const _predatesG8x = {
 /// test/kit_motion_baseline.json must stay inside it; entries leave both
 /// together when the part is fixed. Never add a key.
 const _frozenBaseline = <String>{
-  'KitActionBlock / working / effectsOff',
-  'KitActionBlock / working / system',
-  'KitButton / primary working / effectsOff',
-  'KitButton / primary working / system',
-  'KitButton / secondary working / effectsOff',
-  'KitButton / secondary working / system',
-  'KitConfirmSheet / working / effectsOff',
-  'KitConfirmSheet / working / system',
   'KitLoadingBar / loading / effectsOff',
   'KitLoadingBar / loading / system',
-  'KitProgressView / waiting / effectsOff',
-  'KitProgressView / waiting / system',
   'KitRefresh / pulled and released / effectsOff',
   'KitRefresh / pulled and released / system',
   'KitRowMenu / menu opens / effectsOff',
@@ -128,8 +118,6 @@ const _frozenBaseline = <String>{
   'KitScreen / loading / system',
   'KitSheet / loading / effectsOff',
   'KitSheet / loading / system',
-  'KitStateView / working / effectsOff',
-  'KitStateView / working / system',
   'KitSwitchRow / switched on / effectsOff',
   'KitSwitchRow / switched on / system',
 };

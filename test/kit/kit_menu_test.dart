@@ -22,6 +22,7 @@ import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 /// Whether keyboard focus is on [target] itself or something inside it (the
 /// same technique as `kit_keyboard_test.dart`'s `_focusIn`).
@@ -167,6 +168,28 @@ Future<void> _shiftF10(WidgetTester tester) async {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitMenuPanel',
+    builds: {
+      'default': () => KitMenuPanel(
+        items: [KitMenuItem(label: 'Archive', onSelected: () {})],
+        onSelected: (_) {},
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'showKitMenu',
+    opens: {
+      'default': KitMotionOpen(
+        (context) => showKitMenu(
+          context,
+          items: [KitMenuItem(label: 'Archive', onSelected: () {})],
+        ),
+        shows: 'Archive',
+      ),
+    },
+  );
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('kitMenuLayout (ordering, structural)', () {

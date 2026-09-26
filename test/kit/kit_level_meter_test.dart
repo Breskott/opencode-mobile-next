@@ -12,6 +12,8 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_level_meter.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 const _key = Key('kit-level-meter-test');
 
 /// Pumps [child] under a real theme (so `KitTokens.of` resolves the same
@@ -146,6 +148,11 @@ Future<_Capture> _capture(
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitLevelMeter',
+    builds: {'listening': () => const KitLevelMeter(level: 0.6)},
+  );
+
   group('litFor (bar i lit when level >= (i + 1) / 12)', () {
     test('thresholds', () {
       expect(KitLevelMeter.litFor(0), 0);
