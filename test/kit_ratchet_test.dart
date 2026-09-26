@@ -81,8 +81,11 @@ const _g16Allowlist = <String>{
   'Semantics', 'MergeSemantics', 'ExcludeSemantics', 'Focus', 'FocusScope',
   'FocusTraversalGroup', 'Shortcuts', 'Actions', 'CallbackShortcuts',
   'PopScope', 'Hero',
-  // Routes (not widgets anyway, but harmless to list).
-  'MaterialPageRoute', 'PageRouteBuilder',
+  // KitPageRoute lands the kit's one route (KIT-7): MaterialPageRoute and
+  // PageRouteBuilder leave the allowlist here. Neither is in
+  // kit_ratchet_flutter_widgets.json (routes, not widgets), so this counts
+  // nothing today — the gate is ready the day a widget-catalogue change
+  // would otherwise start counting them.
 };
 
 /// Scrollbar is allowed only in the one file that owns desktop scroll
