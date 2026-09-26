@@ -1,0 +1,20 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/goldens/kit/kit_tappable_golden_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: kit_tappable enabled · 412x915 · dark
+00:00 +1: kit_tappable disabled · 412x915 · dark
+00:00 +2: kit_tappable enabled · 1280x800 · dark
+00:00 +3: kit_tappable disabled · 1280x800 · dark
+00:00 +4: kit_tappable hovered · dark
+00:01 +5: kit_tappable pressed · dark
+00:01 +6: kit_tappable focused · dark
+00:01 +7: kit_tappable menu_open · dark
+00:01 +8: kit_tappable enabled · 412x915 · light
+00:01 +9: kit_tappable disabled · 412x915 · light
+00:01 +10: kit_tappable enabled · 1280x800 · light
+00:01 +11: kit_tappable disabled · 1280x800 · light
+00:01 +12: kit_tappable hovered · light
+00:01 +13: kit_tappable pressed · light
+00:01 +14: kit_tappable focused · light
+00:01 +15: kit_tappable menu_open · light
+00:01 +16: (tearDownAll)
+00:01 +16: All tests passed!

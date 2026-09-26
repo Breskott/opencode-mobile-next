@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
 // kit_row_parts.dart's pre-v2 KitMenuItem is superseded by kit_menu.dart's
 // (KitMenu.md); hide the older one so the v2 type below is unambiguous.
@@ -110,21 +111,31 @@ List<KitMenuItem> _menu() => [
 ];
 
 /// The interactive states [kitGalleryPart] has no hook for: it pumps its own
-/// small app, drives the interaction, settles, then compares — the same
-/// technique as `kit_chip_golden_test.dart`'s `_focusedShot`. It does not
-/// run the shared G5 accessibility scan (private to kit_gallery.dart, R06);
-/// every non-interactive shot in this file does, through [kitGalleryPart].
+/// small app, drives the interaction, settles, runs the same G5 scan
+/// ([expectKitGalleryAccessible]: tap target, labelled tap target, text
+/// contrast, reading order) on what is then on screen, and compares — the
+/// same technique as `kit_chip_golden_test.dart`'s `_focusedShot`.
+/// [desktop] sets the desktop platform override (a fine pointer, keyboard).
 Future<void> _interactiveShot(
   WidgetTester tester, {
   required String name,
   required bool light,
   required Future<void> Function(WidgetTester tester) act,
+  Size size = const Size(412, 915),
+  bool desktop = false,
+  Widget? scene,
 }) async {
-  tester.view.physicalSize = const Size(412, 915) * 3.0;
+  tester.view.physicalSize = size * 3.0;
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
+  final semantics = tester.ensureSemantics();
+  // ARCH-11: rendered as Android; the desktop override changes only the
+  // platform capabilities (KitLayout.finePointer and friends).
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  if (desktop) {
+    debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+  }
   try {
     await tester.pumpWidget(
       RepaintBoundary(
@@ -138,7 +149,7 @@ Future<void> _interactiveShot(
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
             child: child!,
           ),
-          home: Scaffold(body: _scene(_State.enabled)),
+          home: Scaffold(body: scene ?? _scene(_State.enabled)),
         ),
       ),
     );
@@ -146,8 +157,15 @@ Future<void> _interactiveShot(
     await act(tester);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await expectKitGalleryAccessible(
+      tester,
+      shot: name,
+      direction: TextDirection.ltr,
+    );
   } finally {
     debugDefaultTargetPlatformOverride = null;
+    debugPlatformCapabilities = null;
+    semantics.dispose();
   }
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }
@@ -240,48 +258,45 @@ void main() {
       );
     });
 
-    testWidgets('kit_tappable menu_open · $mode', (tester) async {
-      tester.view.physicalSize = const Size(412, 915) * 3.0;
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(tester.view.reset);
-      final boundary = GlobalKey();
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      try {
-        await tester.pumpWidget(
-          RepaintBoundary(
-            key: boundary,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: captureTheme(light: light),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: child!,
-              ),
-              home: Scaffold(
-                body: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: _row(onTap: () {}, menu: _menu()),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pumpAndSettle();
-        await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-      } finally {
-        debugDefaultTargetPlatformOverride = null;
-      }
-      await expectLater(
-        find.byKey(boundary),
-        matchesGoldenFile(
-          '${kitGalleryName('kit_tappable_menu_open', const Size(412, 915), light: light)}.png',
+    // KitTappable.md Galleries: "focused also at 1280×800 with the desktop
+    // platform override".
+    testWidgets('kit_tappable focused · 1280x800 desktop · $mode', (
+      tester,
+    ) async {
+      await _interactiveShot(
+        tester,
+        name: kitGalleryName(
+          'kit_tappable_focused',
+          const Size(1280, 800),
+          light: light,
         ),
+        light: light,
+        size: const Size(1280, 800),
+        desktop: true,
+        act: (tester) async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        },
+      );
+    });
+
+    testWidgets('kit_tappable menu_open · $mode', (tester) async {
+      await _interactiveShot(
+        tester,
+        name: kitGalleryName(
+          'kit_tappable_menu_open',
+          const Size(412, 915),
+          light: light,
+        ),
+        light: light,
+        scene: Padding(
+          padding: const EdgeInsets.all(20),
+          child: _row(onTap: () {}, menu: _menu()),
+        ),
+        act: (tester) async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.pumpAndSettle();
+          await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+        },
       );
     });
   }
