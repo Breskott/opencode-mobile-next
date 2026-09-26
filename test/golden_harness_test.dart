@@ -251,6 +251,15 @@ final _arabicFonts = RegExp(
 final _arabicTheme = RegExp(r'\bAppTheme\.forLocale\(|\bkitGalleryShot\(');
 final _dprAssign = RegExp(r'devicePixelRatio\s*=\s*([0-9.]+)\s*;');
 
+/// [source] with every string literal's content removed, so a check reads
+/// only code.
+String _blankStrings(String source) => source.replaceAll(
+  RegExp(
+    r'r?\x27{3}[\s\S]*?\x27{3}|r?\x22{3}[\s\S]*?\x22{3}|r?\x27(?:\\.|[^\x27\\\n])*\x27|r?\x22(?:\\.|[^\x22\\\n])*\x22',
+  ),
+  "''",
+);
+
 String _rel(String path) =>
     path.startsWith('./') ? path.substring(2) : path.replaceAll('\\', '/');
 
@@ -274,9 +283,11 @@ Map<String, Set<String>> scan() {
   final code = {
     for (final p in dart) p: stripComments(File(p).readAsStringSync()),
   };
+  // A file that names the matcher only inside a string (a gate's own
+  // patterns, for example) is not a golden harness.
   final harnesses = {
     for (final p in dart)
-      if (code[p]!.contains(_goldenMatcher)) p,
+      if (_blankStrings(code[p]!).contains(_goldenMatcher)) p,
   };
   final goldenTests = {
     for (final p in dart)
@@ -354,8 +365,7 @@ Map<String, Set<String>> scan() {
     }
   } else {
     // Not a git checkout (an exported tree): nothing can be tracked.
-    // ignore: avoid_print
-    print('G23: git ls-files failed, trackedFailures not checked');
+    stdout.writeln('G23: git ls-files failed, trackedFailures not checked');
   }
   return result;
 }
@@ -675,8 +685,7 @@ void main() {
     final baseline = _readBaseline();
     final growth = baselineHistoryGrowth();
     if (growth == null) {
-      // ignore: avoid_print
-      print('G23: git unavailable, baseline history not checked');
+      stdout.writeln('G23: git unavailable, baseline history not checked');
     }
     expect(
       [
@@ -725,13 +734,11 @@ void main() {
         expect(added, isEmpty, reason: 'write mode never grows the baseline');
       }
       File(_baselinePath).writeAsStringSync(_baselineJson(current));
-      // ignore: avoid_print
-      print('G23: wrote $_baselinePath');
+      stdout.writeln('G23: wrote $_baselinePath');
       return;
     }
     if (shrank && added.isEmpty) {
-      // ignore: avoid_print
-      print(
+      stdout.writeln(
         'G23: violations dropped. Commit the smaller baseline '
         '($_baselinePath):\n${_baselineJson(current)}',
       );
