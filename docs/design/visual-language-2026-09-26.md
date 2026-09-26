@@ -127,3 +127,43 @@ Surfaces, attention and danger never change with the pack, so meaning stays cons
 - **Composer:** a `surface2` pill holding attach, the field, the model chip, voice, and send or stop. Send is an accent circle; stop is a `text1` circle with a `ground` square.
 - **Sheets:** grabber, then an icon tile and a left-aligned `title`. Consequences are a `surface1` panel of rows. Buttons are stacked full-width on phones and right-aligned in a row on PC.
 - **PC:** three panes (list 296 · conversation 700 max · changes 340), with keyboard hints on buttons.
+
+## 6. Material: liquid glass (owner decision, 2026-09-26)
+
+The owner saw liquid glass and liquid metal on the Work page and chose: "Forget metal, I like the liquid glass one in the artifact. Everything should be very very sharp and crisp." The reference is the canvas artboard "Work · liquid glass" (`GlassWork.dc.html`, variant `lens`), rendered at `docs/design/visual-language-2026-09-26/GlassWork.png`.
+
+- **Where glass goes:** only the navigation layer that floats above content. That is:
+  - the top controls (the server pill and the search button);
+  - the composer;
+  - the floating tab bar, whose active tab is a glass lens;
+  - on PC, the sidebar header and toolbar.
+
+  Content never gets glass: rows, cards, the needs-you card, the transcript and sheets' bodies stay solid surfaces. Glass never sits on glass.
+- **The material:** built on `KitGlass` (`shaders/kit_glass.frag`), which is refraction at the rim, a background blur and a slight saturation lift.
+  - **Behind anything with text:** the composer and any glass holding a text field or labels gets a dimming layer. Text behind glass must read as colour, never as letters.
+  - **Fallbacks, as today:** Impeller and Android 12+ get the shader; older devices get frosted glass; Effects › Glass off gets a solid `surface2` at 94 %.
+- **Ambient ground:** the theme may put two or three very soft colour fields on the ground behind content, so glass has something to bend. They belong to the theme; "none" is valid, and the default theme keeps them subtle.
+- **Metal:** dropped. There is no metallic or chrome treatment anywhere.
+
+## 7. Sharp and crisp (owner rule, 2026-09-26)
+
+"Everything should be very very sharp and crisp." That means:
+
+- **Type:** integer sizes only. Round the §2 table as follows:
+
+  | Role | Before | After |
+  |---|---|---|
+  | `body` | 15.5 / 23 | 16 / 24 |
+  | `rowTitle` | 15.5 / 21 | 16 / 22 |
+  | `headline` | 16.5 / 22 | 17 / 22 |
+  | `secondary` | 13.5 / 19 | 14 / 20 |
+  | `mono` | 12.5 / 19 | 13 / 19 |
+  | `title` | 23 / 29 | 24 / 30 |
+
+  Text colours are opaque tokens, never text at partial opacity. No text shadows and no glow on text.
+- **Edges:** separators and glass rims are exactly one physical pixel wide (`1 / devicePixelRatio`) and snapped to the pixel grid. A glass rim is a crisp 1 px light line on the top edge and a 1 px darker line on the bottom edge, not a soft glow.
+- **Shadows:** none on content. Floating glass gets one tight shadow (y 6, blur 16, 30 %) so it separates without a halo.
+- **Blur:** only behind glass, never on content, text or icons. Transitions do not blur or fade-scale; they slide or cross-fade on `KitMotion` quick/standard curves.
+- **Icons:** 20, 22 or 24 logical px only, at one stroke weight, aligned to whole pixels.
+- **Images and illustrations:** decoded at the device pixel ratio with high filter quality. Illustrations are vector or shader, never scaled bitmaps.
+- **Goldens:** the kit galleries render at the device pixel ratio (3.0 for phones). A golden that shows soft edges, a doubled hairline or a half-pixel offset is a bug.
