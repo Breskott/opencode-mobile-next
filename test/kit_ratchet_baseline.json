@@ -392,9 +392,6 @@
       "showConfirmSheet(": 1,
       "showModalBottomSheet(": 1
     },
-    "lib/ui/widgets/info_label.dart": {
-      "showModalBottomSheet(": 1
-    },
     "lib/ui/widgets/language_picker.dart": {
       "showModalBottomSheet(": 1
     },
@@ -551,10 +548,6 @@
   "G16": {
     "lib/main.dart": {
       "MaterialPageRoute": 9
-    },
-    "lib/ui/app_iconography.dart": {
-      "Icon": 2,
-      "Opacity": 1
     },
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
@@ -2172,12 +2165,6 @@
       "TextButton": 1,
       "TextField": 5
     },
-    "lib/ui/widgets/info_label.dart": {
-      "FilledButton": 1,
-      "Icon": 1,
-      "InkWell": 1,
-      "Text": 4
-    },
     "lib/ui/widgets/language_picker.dart": {
       "Icon": 4,
       "IconButton": 1,
@@ -2555,13 +2542,6 @@
     "lib/ui/widgets/technical_direction.dart": {
       "Directionality": 1
     },
-    "lib/ui/widgets/terminal_view.dart": {
-      "Container": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "Text": 2,
-      "TextButton": 2
-    },
     "lib/ui/widgets/termux_phone_tools.dart": {
       "MaterialPageRoute": 2
     },
@@ -2640,9 +2620,6 @@
     },
     "lib/ui/kit/scenes/team_scenes.dart": {
       "Curves. in kit": 13
-    },
-    "lib/ui/kit/terminal_key_bar.dart": {
-      "HapticFeedback. in kit": 1
     },
     "lib/ui/screens/active_context_screen.dart": {
       "Clipboard.setData(": 1,
@@ -3032,13 +3009,7 @@
     }
   },
   "G15x": {
-    "lib/ui/kit/kit_buttons.dart": {
-      "width-literal": 1
-    },
     "lib/ui/kit/kit_request_card.dart": {
-      "numeric maxWidth:": 1
-    },
-    "lib/ui/kit/kit_skeleton_transcript.dart": {
       "numeric maxWidth:": 1
     },
     "lib/ui/kit/kit_state_view.dart": {
@@ -3052,9 +3023,6 @@
     "lib/main.dart": {
       ".colorScheme": 2,
       ".textTheme": 2
-    },
-    "lib/ui/app_iconography.dart": {
-      ".colorScheme": 1
     },
     "lib/ui/desktop/context_menu.dart": {
       ".colorScheme": 4
@@ -3526,10 +3494,6 @@
       ".colorScheme": 16,
       ".textTheme": 13
     },
-    "lib/ui/widgets/info_label.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 2
-    },
     "lib/ui/widgets/language_picker.dart": {
       ".colorScheme": 1,
       ".textTheme": 1
@@ -3692,12 +3656,6 @@
     "lib/ui/widgets/team_vocabulary.dart": {
       "attention roles": 11
     },
-    "lib/ui/widgets/terminal_view.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 1,
-      "Colors.*": 2,
-      "attention roles": 1
-    },
     "lib/ui/widgets/thermal_notice.dart": {
       "attention roles": 1
     },
@@ -3751,34 +3709,15 @@
     "lib/ui/kit/glass/kit_glass.dart": {
       "stroke width not KitTokens in kit": 1
     },
-    "lib/ui/kit/kit_action_stack.dart": {
-      "SizedBox numeric": 2
-    },
-    "lib/ui/kit/kit_ask_line.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 1
-    },
-    "lib/ui/kit/kit_buttons.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 2
-    },
     "lib/ui/kit/kit_confirm_sheet.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/kit/kit_notice.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 3,
-      "stroke width not KitTokens in kit": 1
-    },
     "lib/ui/kit/kit_panel.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 2,
-      "stroke width not KitTokens in kit": 1
+      "EdgeInsets numeric": 1
     },
     "lib/ui/kit/kit_progress.dart": {
       "EdgeInsets numeric": 1,
-      "Radius.circular(<n>": 1,
-      "SizedBox numeric": 5
+      "SizedBox numeric": 4
     },
     "lib/ui/kit/kit_request_card.dart": {
       "BorderRadius.circular(<n>": 1,
@@ -3799,11 +3738,6 @@
     "lib/ui/kit/kit_sheet.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/kit/kit_skeleton_transcript.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 2
-    },
     "lib/ui/kit/kit_state_view.dart": {
       "EdgeInsets numeric": 4
     },
@@ -3811,9 +3745,6 @@
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 2,
       "metal|chrome": 2,
-      "stroke width not KitTokens in kit": 1
-    },
-    "lib/ui/kit/kit_status_mark.dart": {
       "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/motion/kit_tab_switcher.dart": {
@@ -4532,11 +4463,6 @@
       "disableAnimationsOf": 2,
       "icon size not 20/22/24": 1
     },
-    "lib/ui/widgets/info_label.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 3
-    },
     "lib/ui/widgets/language_picker.dart": {
       "EdgeInsets numeric": 4,
       "TextStyle(": 1
@@ -4734,11 +4660,6 @@
       "TextStyle(": 2,
       "fontSize:": 2,
       "icon size not 20/22/24": 1
-    },
-    "lib/ui/widgets/terminal_view.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 2,
-      "TextStyle(": 13
     },
     "lib/ui/widgets/thermal_notice.dart": {
       "EdgeInsets numeric": 1
