@@ -1,0 +1,22 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart
+00:00 +0: the label rule separates labels from sentences
+00:00 +1: action labels use the glossary word, not a banned synonym
+00:00 +2: every allow-listed key still needs its exemption
+00:00 +3: the noun rule matches standalone words only
+00:00 +4: labels say conversation, not session or chat
+00:00 +5: the engine-word rule catches Gas City terms, not plain words
+00:00 +6: AI Team rows and cards use the person's words, not the engine's
+00:00 +7: every allow-listed engine key is still there and still needs it
+00:00 +8: every allow-listed noun key still needs its exemption
+00:00 +9: G11 ICU messages expand to their plain wordings
+00:00 +10: G11 confirm titles and labels are checked through wrappers
+00:00 +11: G11 confirmation titles ask and labels name the act (COPY-9)
+00:00 +12: G11 the contradiction rule finds both halves of a pair
+00:00 +13: G11 no text says two contradicting states at once (COPY-17)
+00:00 +14: G11 every allow-listed contradiction key still needs it
+00:00 +15: G11 the technical-word rule finds engine words, ports, paths and versions
+00:00 +16: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
+00:00 +17: G28 the glossary extension finds each pattern
+00:00 +18: G28 every allow-listed product key still needs it
+00:00 +19: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15)
+00:00 +20: All tests passed!

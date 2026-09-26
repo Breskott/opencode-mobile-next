@@ -1,0 +1,7 @@
+00:00 +8: every allow-listed noun key still needs its exemption
+00:00 +9: G11 ICU messages expand to their plain wordings
+00:00 +10: G11 confirm titles and labels are checked through wrappers
+00:00 +11: G11 confirmation titles ask and labels name the act (COPY-9)
+--- ui_glossary baseline for "G11 confirm" shrank: commit this section in test/ui_glossary_baseline.json (or run with UI_GLOSSARY_WRITE=1) ---
+{
+  "G11 confirm": {

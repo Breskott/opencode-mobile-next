@@ -1,0 +1,92 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart
+00:00 +0: the label rule separates labels from sentences
+00:00 +1: action labels use the glossary word, not a banned synonym
+00:00 +2: every allow-listed key still needs its exemption
+00:00 +3: the noun rule matches standalone words only
+00:00 +4: labels say conversation, not session or chat
+00:00 +5: the engine-word rule catches Gas City terms, not plain words
+00:00 +6: AI Team rows and cards use the person's words, not the engine's
+00:00 +7: every allow-listed engine key is still there and still needs it
+00:00 +8: every allow-listed noun key still needs its exemption
+00:00 +9: G11 ICU messages expand to their plain wordings
+00:00 +10: G11 confirm titles and labels are checked through wrappers
+00:00 +11: G11 confirmation titles ask and labels name the act (COPY-9)
+00:00 +11 -1: G11 confirmation titles ask and labels name the act (COPY-9) [E]
+  Expected: empty
+    Actual: [
+              'G11 confirm: lib/ui/screens/zz_gate_violation.dart: title a2aDeleteAgent: English does not end with "?" (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)',
+              'G11 confirm: lib/ui/screens/zz_gate_violation.dart: title a2aDeleteAgent: Arabic does not end with "؟" (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)',
+              'G11 confirm: lib/ui/screens/zz_gate_violation.dart: label mcpRemove: fewer than two words (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)'
+            ]
+  G11 confirm: lib/ui/screens/zz_gate_violation.dart: title a2aDeleteAgent: English does not end with "?" (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)
+  G11 confirm: lib/ui/screens/zz_gate_violation.dart: title a2aDeleteAgent: Arabic does not end with "؟" (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)
+  G11 confirm: lib/ui/screens/zz_gate_violation.dart: label mcpRemove: fewer than two words (new) — a confirm title is a question ending in "?" (Arabic "؟") and its label names the act and the thing in two or more words (STANDARDS.md COPY-9)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/ui_glossary_test.dart 1169:5                   _copyGates.ratchet
+  test/ui_glossary_test.dart 1267:7                   _copyGates.<fn>.<fn>
+  
+00:00 +11 -1: G11 the contradiction rule finds both halves of a pair
+00:00 +12 -1: G11 no text says two contradicting states at once (COPY-17)
+00:00 +12 -2: G11 no text says two contradicting states at once (COPY-17) [E]
+  Expected: empty
+    Actual: [
+              'test/goldens/zz_violation_golden_test.dart literal at 88 says working and stopped'
+            ]
+  Words never contradict the state: no Working with stopped, Paused with idle or Connected with reconnecting (STANDARDS.md COPY-17).
+  test/goldens/zz_violation_golden_test.dart literal at 88 says working and stopped
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/ui_glossary_test.dart 1299:7                   _copyGates.<fn>.<fn>
+  
+00:00 +12 -2: G11 every allow-listed contradiction key still needs it
+00:00 +13 -2: G11 the technical-word rule finds engine words, ports, paths and versions
+00:00 +14 -2: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
+00:00 +14 -3: G11 technical words only in keys described as Technical: or Field example: (COPY-11) [E]
+  Expected: empty
+    Actual: [
+              'G11 technical: zzGateProbe: en engine word "rig" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key\'s @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)',
+              'G11 technical: zzGateProbe: en loopback "127.0.0.1" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key\'s @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)',
+              'G11 technical: zzGateProbe: en port ":4096" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key\'s @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)'
+            ]
+  G11 technical: zzGateProbe: en engine word "rig" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key's @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)
+  G11 technical: zzGateProbe: en loopback "127.0.0.1" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key's @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)
+  G11 technical: zzGateProbe: en port ":4096" (new) — paths, ports, ids, versions and engine words go inside a Details fold, log, code block, technical value or typed field, and the key's @description starts with "Technical:" or "Field example:" (STANDARDS.md COPY-11)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/ui_glossary_test.dart 1169:5                   _copyGates.ratchet
+  test/ui_glossary_test.dart 1344:7                   _copyGates.<fn>.<fn>
+  
+00:00 +14 -3: G28 the glossary extension finds each pattern
+00:00 +15 -3: G28 every allow-listed product key still needs it
+00:00 +16 -3: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15)
+00:00 +16 -4: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15) [E]
+  Expected: empty
+    Actual: [
+              'G28: zzGateProbeTitle: title capital "Settings" (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)',
+              'G28: zzGateProbeTitle: title over four words (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)',
+              'G28: zzGateOk: bare OK (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)',
+              'G28: zzGateMode: mode (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)',
+              'G28: zzGateReload: verb Reload (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)'
+            ]
+  G28: zzGateProbeTitle: title capital "Settings" (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)
+  G28: zzGateProbeTitle: title over four words (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)
+  G28: zzGateOk: bare OK (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)
+  G28: zzGateMode: mode (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)
+  G28: zzGateReload: verb Reload (new) — use the glossary words: Conversation, Project, Server, Inbox, "On this phone"; Try again, Delete, Remove, Stop, Disconnect; verbs that say what happens; titles of four sentence-case words; bodies of two sentences (STANDARDS.md §8.2, LOOK-15)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/ui_glossary_test.dart 1169:5                   _copyGates.ratchet
+  test/ui_glossary_test.dart 1411:7                   _copyGates.<fn>.<fn>
+  
+00:00 +16 -4: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart: G11 confirmation titles ask and labels name the act (COPY-9)
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart: G11 no text says two contradicting states at once (COPY-17)
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart: G11 technical words only in keys described as Technical: or Field example: (COPY-11)
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-1/test/ui_glossary_test.dart: G28 labels and copy follow the glossary (COPY-6–8, COPY-10, COPY-12, COPY-21, LOOK-15)
