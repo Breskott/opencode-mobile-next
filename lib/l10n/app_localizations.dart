@@ -1910,6 +1910,42 @@ abstract class AppLocalizations {
   /// **'MCP server added for this project'**
   String get mcpRuntimeAdded;
 
+  /// MCP setup: label of one HTTP header row's name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Header name'**
+  String get mcpHeaderName;
+
+  /// MCP setup: label of one HTTP header row's value field. Hidden by default; see mcpShowHeaderValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Header value'**
+  String get mcpHeaderValue;
+
+  /// MCP setup: reveals one header row's obscured value.
+  ///
+  /// In en, this message translates to:
+  /// **'Show header value'**
+  String get mcpShowHeaderValue;
+
+  /// MCP setup: hides a revealed header row's value again.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide header value'**
+  String get mcpHideHeaderValue;
+
+  /// MCP setup: adds another blank HTTP header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another header'**
+  String get mcpAddHeader;
+
+  /// MCP setup: removes one HTTP header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove header'**
+  String get mcpRemoveHeader;
+
   /// No description provided for @sessionUnread.
   ///
   /// In en, this message translates to:

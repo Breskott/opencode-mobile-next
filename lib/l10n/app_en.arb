@@ -519,6 +519,30 @@
   "mcpAdd": "Add MCP server",
   "mcpRuntimeEmpty": "Add tools for the current project until OpenCode restarts.",
   "mcpRuntimeAdded": "MCP server added for this project",
+  "mcpHeaderName": "Header name",
+  "@mcpHeaderName": {
+    "description": "MCP setup: label of one HTTP header row's name field."
+  },
+  "mcpHeaderValue": "Header value",
+  "@mcpHeaderValue": {
+    "description": "MCP setup: label of one HTTP header row's value field. Hidden by default; see mcpShowHeaderValue."
+  },
+  "mcpShowHeaderValue": "Show header value",
+  "@mcpShowHeaderValue": {
+    "description": "MCP setup: reveals one header row's obscured value."
+  },
+  "mcpHideHeaderValue": "Hide header value",
+  "@mcpHideHeaderValue": {
+    "description": "MCP setup: hides a revealed header row's value again."
+  },
+  "mcpAddHeader": "Add another header",
+  "@mcpAddHeader": {
+    "description": "MCP setup: adds another blank HTTP header row."
+  },
+  "mcpRemoveHeader": "Remove header",
+  "@mcpRemoveHeader": {
+    "description": "MCP setup: removes one HTTP header row."
+  },
   "sessionUnread": "Unread result",
   "shareSessionViewsTitle": "Sync read state",
   "shareSessionViewsOn": "Let your other OpenCode clients know which completed results you have viewed.",

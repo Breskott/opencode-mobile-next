@@ -1052,6 +1052,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpRuntimeAdded => 'MCP server added for this project';
 
   @override
+  String get mcpHeaderName => 'Header name';
+
+  @override
+  String get mcpHeaderValue => 'Header value';
+
+  @override
+  String get mcpShowHeaderValue => 'Show header value';
+
+  @override
+  String get mcpHideHeaderValue => 'Hide header value';
+
+  @override
+  String get mcpAddHeader => 'Add another header';
+
+  @override
+  String get mcpRemoveHeader => 'Remove header';
+
+  @override
   String get sessionUnread => 'Unread result';
 
   @override

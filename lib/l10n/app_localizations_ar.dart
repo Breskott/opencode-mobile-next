@@ -1055,6 +1055,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpRuntimeAdded => 'أُضيف خادم MCP لهذا المشروع';
 
   @override
+  String get mcpHeaderName => 'اسم الترويسة';
+
+  @override
+  String get mcpHeaderValue => 'قيمة الترويسة';
+
+  @override
+  String get mcpShowHeaderValue => 'إظهار قيمة الترويسة';
+
+  @override
+  String get mcpHideHeaderValue => 'إخفاء قيمة الترويسة';
+
+  @override
+  String get mcpAddHeader => 'إضافة ترويسة أخرى';
+
+  @override
+  String get mcpRemoveHeader => 'إزالة الترويسة';
+
+  @override
   String get sessionUnread => 'نتيجة غير مقروءة';
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../api/product_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../kit/kit.dart' show KitButton;
 import '../widgets/product_states.dart';
 import '../widgets/info_label.dart';
 import '../app_iconography.dart';
@@ -23,7 +24,12 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   final _url = TextEditingController();
   final _command = TextEditingController();
   final _cwd = TextEditingController();
-  final _headers = TextEditingController();
+  // P0.1: a header's value is a secret (Authorization: Bearer …). Kept as
+  // one row per pair, each with its own obscured value field, rather than
+  // the old single multi-line "KEY=VALUE per line" box that rendered every
+  // value in clear. kit-gap: KitSecretField (docs/ux-system/kit-v2.md) does
+  // not exist yet, so these stay small raw fields.
+  final List<_HeaderRow> _headerRows = [_HeaderRow()];
   final _environment = TextEditingController();
   final _timeout = TextEditingController();
 
@@ -85,7 +91,9 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     _url.dispose();
     _command.dispose();
     _cwd.dispose();
-    _headers.dispose();
+    for (final row in _headerRows) {
+      row.dispose();
+    }
     _environment.dispose();
     _timeout.dispose();
     super.dispose();
@@ -114,7 +122,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         cwd: _kind == McpServerKind.local ? _cwd.text : null,
         headers: _kind == McpServerKind.remote
             ? _pairs(
-                _headers.text,
+                _headersDraftText(),
                 lookupAppLocalizations(
                   Localizations.localeOf(context),
                 ).e7LibraryHTTPHeader,
@@ -583,32 +591,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       },
     ),
     const SizedBox(height: 16),
-    TextFormField(
-      key: const ValueKey('mcp-headers'),
-      controller: _headers,
-      textDirection: TextDirection.ltr,
-      enabled: _editable,
-      minLines: 2,
-      maxLines: 5,
-      keyboardType: TextInputType.multiline,
-      autocorrect: false,
-      decoration: InputDecoration(
-        labelText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryHTTPHeaders,
-        hintText: 'Authorization=Bearer token',
-        helperText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryOptionalEnterOneKEYVALUEPairPer,
-        alignLabelWithHint: true,
-      ),
-      validator: (value) => _pairError(
-        value ?? '',
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryHTTPHeader,
-      ),
-    ),
+    ..._headerFields(),
     const SizedBox(height: 8),
     SwitchListTile.adaptive(
       key: const ValueKey('mcp-oauth-detection'),
@@ -629,6 +612,122 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           : (value) => setState(() => _detectOAuth = value),
     ),
   ];
+
+  /// One row per header pair: the key is plain text, the value is obscured
+  /// with a reveal-on-press toggle (P0.1). Never prefilled from a saved
+  /// server — this screen only ever adds a new one (there is no edit entry
+  /// point today; see docs/qa/p0-secure-settings-2026-09-26/README.md).
+  List<Widget> _headerFields() {
+    final label = lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7LibraryHTTPHeader;
+    return [
+      for (var index = 0; index < _headerRows.length; index++)
+        _headerRow(index, label),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: KitButton.tertiary(
+          key: const ValueKey('mcp-header-add'),
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).mcpAddHeader,
+          icon: AppIconography.add,
+          onPressed: !_editable
+              ? null
+              : () => setState(() => _headerRows.add(_HeaderRow())),
+        ),
+      ),
+    ];
+  }
+
+  // kit-gap: KitSecretField (docs/ux-system/kit-v2.md lists it; not built
+  // yet). This is the smallest raw pair-of-fields-plus-toggle that masks a
+  // header value; do not add another one elsewhere without it.
+  Widget _headerRow(int index, String label) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final row = _headerRows[index];
+    final denyNewlines = [FilteringTextInputFormatter.deny(RegExp(r'[\r\n]'))];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: TextFormField(
+              key: ValueKey('mcp-header-key-$index'),
+              controller: row.key,
+              textDirection: TextDirection.ltr,
+              enabled: _editable,
+              autocorrect: false,
+              inputFormatters: denyNewlines,
+              decoration: InputDecoration(
+                labelText: l10n.mcpHeaderName,
+                hintText: index == 0 ? 'Authorization' : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: TextFormField(
+              key: ValueKey('mcp-header-value-$index'),
+              controller: row.value,
+              textDirection: TextDirection.ltr,
+              enabled: _editable,
+              autocorrect: false,
+              obscureText: !row.revealed,
+              inputFormatters: denyNewlines,
+              decoration: InputDecoration(
+                labelText: l10n.mcpHeaderValue,
+                hintText: index == 0 ? 'Bearer token' : null,
+                suffixIcon: IconButton(
+                  key: ValueKey('mcp-header-reveal-$index'),
+                  tooltip: row.revealed
+                      ? l10n.mcpHideHeaderValue
+                      : l10n.mcpShowHeaderValue,
+                  onPressed: !_editable
+                      ? null
+                      : () => setState(() => row.revealed = !row.revealed),
+                  icon: Icon(
+                    row.revealed
+                        ? AppIconography.hidden
+                        : AppIconography.visible,
+                  ),
+                ),
+              ),
+              validator: (_) => _pairError(_headersDraftText(), label),
+            ),
+          ),
+          if (_headerRows.length > 1) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              key: ValueKey('mcp-header-remove-$index'),
+              tooltip: l10n.mcpRemoveHeader,
+              onPressed: !_editable
+                  ? null
+                  : () => setState(() {
+                      _headerRows[index].dispose();
+                      _headerRows.removeAt(index);
+                    }),
+              icon: const Icon(AppIconography.close),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// The rows as `KEY=VALUE` lines, exactly what the old single field held,
+  /// so [_pairs] and [_pairError] need no change. A row left entirely empty
+  /// (the default extra row) never becomes a line.
+  String _headersDraftText() => _headerRows
+      .where(
+        (row) =>
+            row.key.text.trim().isNotEmpty || row.value.text.trim().isNotEmpty,
+      )
+      .map((row) => '${row.key.text}=${row.value.text}')
+      .join('\n');
 
   List<Widget> _localFields() => [
     TextFormField(
@@ -755,5 +854,20 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     } on ProductException catch (error) {
       return error.message;
     }
+  }
+}
+
+/// One HTTP header pair's editing state (P0.1): the value starts obscured
+/// and stays that way until the person presses reveal for that row.
+class _HeaderRow {
+  _HeaderRow() : key = TextEditingController(), value = TextEditingController();
+
+  final TextEditingController key;
+  final TextEditingController value;
+  bool revealed = false;
+
+  void dispose() {
+    key.dispose();
+    value.dispose();
   }
 }
