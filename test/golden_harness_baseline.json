@@ -4,7 +4,6 @@
     "androidPlatform": [
       "test/goldens/chat_states_golden_test.dart",
       "test/goldens/folder_browser_golden_test.dart",
-      "test/goldens/kit/kit_gallery.dart",
       "test/goldens/phone_server_screens_golden_test.dart",
       "test/goldens/phone_setup_golden_test.dart",
       "test/goldens/servers_motion_golden_test.dart",
@@ -63,24 +62,6 @@
       "test/goldens/gallery_opencode_light.png",
       "test/goldens/gallery_solarized_dark.png",
       "test/goldens/gallery_solarized_light.png",
-      "test/goldens/kit/kit_confirm_destructive_412x915_dark.png",
-      "test/goldens/kit/kit_confirm_destructive_412x915_light.png",
-      "test/goldens/kit/kit_confirm_destructive_ar_412x915_dark.png",
-      "test/goldens/kit/kit_confirm_destructive_ar_412x915_light.png",
-      "test/goldens/kit/kit_confirm_destructive_text2_412x915_dark.png",
-      "test/goldens/kit/kit_confirm_destructive_text2_412x915_light.png",
-      "test/goldens/kit/kit_sheet_ar_1280x800_dark.png",
-      "test/goldens/kit/kit_sheet_ar_1280x800_light.png",
-      "test/goldens/kit/kit_sheet_ar_412x915_dark.png",
-      "test/goldens/kit/kit_sheet_ar_412x915_light.png",
-      "test/goldens/kit/kit_sheet_default_412x915_dark.png",
-      "test/goldens/kit/kit_sheet_default_412x915_light.png",
-      "test/goldens/kit/kit_sheet_full_412x915_dark.png",
-      "test/goldens/kit/kit_sheet_full_412x915_light.png",
-      "test/goldens/kit/kit_sheet_text2_1280x800_dark.png",
-      "test/goldens/kit/kit_sheet_text2_1280x800_light.png",
-      "test/goldens/kit/kit_sheet_text2_412x915_dark.png",
-      "test/goldens/kit/kit_sheet_text2_412x915_light.png",
       "test/goldens/kit_portal_dark.png",
       "test/goldens/kit_portal_light.png",
       "test/goldens/phone_running_dark.png",
@@ -158,9 +139,7 @@
       "test/goldens/work_team_dark.png",
       "test/goldens/work_team_light.png"
     ],
-    "kitGalleryDpr3": [
-      "test/goldens/kit/kit_gallery.dart"
-    ],
+    "kitGalleryDpr3": [],
     "regenerateHeader": [
       "test/goldens/theme_gallery_golden_test.dart",
       "test/kit_illustration_test.dart",
