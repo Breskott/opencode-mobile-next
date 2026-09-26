@@ -241,8 +241,10 @@ Future<void> teamWake(
   messenger?.showSnackBar(
     SnackBar(
       content: Text(
-        '${teamControlWord(l10n, record.request)} · '
-        '${teamControlReceiptWord(l10n, record.status)}',
+        [
+          teamControlWord(l10n, record.request),
+          teamControlReceiptWord(l10n, record.status),
+        ].join(teamUsageSeparator),
       ),
     ),
   );
