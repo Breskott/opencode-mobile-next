@@ -15,6 +15,8 @@
 // zone that tells the surface it is hovered, pressed or focused — and the
 // hover tooltip is a manual-trigger Tooltip as KitChip's is. The QA record
 // lists this under NOT proven; swap the zones for KitTappable once it lands.
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
@@ -23,6 +25,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
 import '../kit_buttons.dart';
+import '../kit_chip.dart' show KitChipWrap;
 import '../kit_copy.dart';
 import '../kit_divider.dart';
 import '../kit_image.dart';
@@ -329,7 +332,6 @@ enum _ContextLevel { none, percent, full }
 
 class _ModelChip extends StatefulWidget {
   const _ModelChip({
-    super.key,
     required this.label,
     required this.onPressed,
     required this.state,
@@ -740,7 +742,7 @@ class _AttachmentStripState extends State<_AttachmentStrip>
   Widget build(BuildContext context) {
     if (_entries.isEmpty) return SizedBox.shrink(key: widget.stripKey);
     final onRemove = widget.onRemove;
-    return _ChipWrap(
+    return KitChipWrap(
       key: widget.stripKey,
       children: [
         for (final entry in _entries)
@@ -776,25 +778,6 @@ class _AttachmentStripState extends State<_AttachmentStrip>
                 ),
         ),
       ),
-    );
-  }
-}
-
-/// KitChipWrap's spacing ([KitTokens.space2] between chips, a run spacing
-/// that keeps each 48 dp target clear of the next run's, LAY-9), with a
-/// key for the host (today's `composer-reference-strip`).
-class _ChipWrap extends StatelessWidget {
-  const _ChipWrap({super.key, required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    return Wrap(
-      spacing: tokens.space2,
-      runSpacing: tokens.minTarget - KitTokens.chipHeight,
-      children: children,
     );
   }
 }
@@ -868,20 +851,11 @@ class _AttachmentChipState extends State<_AttachmentChip> {
       children: [
         leading,
         SizedBox(width: tokens.space2),
-        Flexible(flex: 3, child: KitText.mono(a.label, cut: KitMonoCut.middle)),
-        if (detail != null) ...[
-          SizedBox(width: tokens.space2),
-          Flexible(
-            flex: 2,
-            child: KitText(
-              detail,
-              role: KitTextRole.secondary,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-            ),
-          ),
-        ],
+        Flexible(
+          child: detail == null
+              ? KitText.mono(a.label, cut: KitMonoCut.middle)
+              : _LabelAndDetail(label: a.label, detail: detail),
+        ),
         if (onRemove != null) ...[
           // The gap that keeps the body's target 8 dp from the ×'s (LAY-9),
           // then the × centred in its own 48 dp target.
@@ -1282,6 +1256,97 @@ class _SuggestionRowState extends State<_SuggestionRow> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// An attachment's label and detail on one line. The label takes the room
+/// it needs first; the detail keeps its own width, and is capped at two
+/// fifths of the line only when the pair does not fit. Only then is the
+/// label middle-cut (and the detail end-cut), so a file name is never cut
+/// while the chip still has room for it (AUTO-4, A11Y-8).
+class _LabelAndDetail extends StatelessWidget {
+  const _LabelAndDetail({required this.label, required this.detail});
+
+  final String label;
+  final String detail;
+
+  /// The width [text] paints at in [role], measured as the paragraph
+  /// paints it (the ambient text style, bold text, scale and locale), so a
+  /// value given exactly this width is never cut.
+  static double _need(
+    BuildContext context,
+    String text,
+    KitTextRole role,
+    TextDirection direction,
+  ) {
+    var style = DefaultTextStyle.of(
+      context,
+    ).style.merge(KitText.styleOf(context, role));
+    if (MediaQuery.boldTextOf(context)) {
+      style = style.merge(const TextStyle(fontWeight: FontWeight.bold));
+    }
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: direction,
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = KitTokens.of(context).space2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // A mono value always paints left to right (KitText.mono).
+        final labelNeed = _need(
+          context,
+          label,
+          KitTextRole.mono,
+          TextDirection.ltr,
+        );
+        final detailNeed = _need(
+          context,
+          detail,
+          KitTextRole.secondary,
+          Directionality.of(context),
+        );
+        final room = math.max(0.0, constraints.maxWidth - gap);
+        var labelWidth = labelNeed;
+        var detailWidth = detailNeed;
+        if (labelNeed + detailNeed > room) {
+          detailWidth = math.min(
+            detailNeed,
+            math.max((room * 2 / 5).floorToDouble(), room - labelNeed),
+          );
+          labelWidth = math.max(0.0, math.min(labelNeed, room - detailWidth));
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: labelWidth,
+              child: KitText.mono(label, cut: KitMonoCut.middle),
+            ),
+            SizedBox(width: gap),
+            SizedBox(
+              width: detailWidth,
+              child: KitText(
+                detail,
+                role: KitTextRole.secondary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

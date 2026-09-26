@@ -70,6 +70,27 @@ const _wide = Size(900, 600);
 /// animation (which would read as the part still moving).
 final _theme = AppTheme.dark();
 
+/// The colours of every paragraph (words and icon glyphs) painted under
+/// [root], read from the render tree rather than the widgets that built it.
+Set<Color?> _paintedColors(RenderObject root) {
+  final colors = <Color?>{};
+  void visit(RenderObject node) {
+    if (node is RenderParagraph) {
+      node.text.visitChildren((span) {
+        final color = span.style?.color;
+        if (color != null) colors.add(color);
+        return true;
+      });
+      final base = node.text.style?.color;
+      if (base != null) colors.add(base);
+    }
+    node.visitChildren(visit);
+  }
+
+  visit(root);
+  return colors;
+}
+
 const _chipKey = Key('composer-model-context');
 const _contextKey = Key('composer-context-percent');
 
@@ -246,18 +267,14 @@ void main() {
       await _pump(tester, _model(contextUsed: 0.96), size: _wide);
       expect(find.text('· Context almost full'), findsOneWidget);
       final roles = _roles(tester);
-      for (final text in tester.widgetList<Text>(
-        find.descendant(of: find.byKey(_chipKey), matching: find.byType(Text)),
-      )) {
-        expect(text.style?.color, isNot(roles.attention));
-        expect(text.style?.color, isNot(roles.danger));
-      }
-      for (final icon in tester.widgetList<Icon>(
-        find.descendant(of: find.byKey(_chipKey), matching: find.byType(Icon)),
-      )) {
-        expect(icon.color, isNot(roles.attention));
-        expect(icon.color, isNot(roles.danger));
-      }
+      // Every colour the chip paints: its words and glyphs, as rendered.
+      final colors = _paintedColors(tester.renderObject(find.byKey(_chipKey)));
+      expect(colors, isNotEmpty);
+      expect(colors, isNot(contains(roles.attention)));
+      expect(colors, isNot(contains(roles.danger)));
+      expect(_paintedColors(tester.renderObject(find.byKey(_contextKey))), {
+        roles.text1,
+      });
     });
   });
 
@@ -303,6 +320,67 @@ void main() {
       );
       expect(find.byKey(const Key('attachment-thumbnail')), findsOneWidget);
       expect(find.byType(KitImage), findsOneWidget);
+    });
+
+    for (final scale in [1.0, 2.0]) {
+      testWidgets('a name and its detail both show whole while the chip has '
+          'room · text x$scale', (tester) async {
+        const name = 'screenshot-2026-09-27.png';
+        await _pump(
+          tester,
+          KitComposerChips.attachments(
+            items: [
+              KitAttachment(
+                id: 'img',
+                label: name,
+                kind: KitAttachmentKind.image,
+                detail: 'Recovered',
+              ),
+            ],
+            onRemove: (_) {},
+          ),
+          textScale: scale,
+          // Room for both, but less than the name would get as a fixed
+          // three-fifths share of the line.
+          size: Size(scale == 1 ? 640 : 1120, 915),
+        );
+        // The label is painted uncut, and the detail beside it is too.
+        expect(find.text(name), findsOneWidget);
+        final detail = tester.renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.text('Recovered'),
+            matching: find.byType(RichText),
+          ),
+        );
+        expect(detail.didExceedMaxLines, isFalse);
+      });
+    }
+
+    testWidgets('a name too long for the slot is middle-cut, keeping its '
+        'file name and its detail', (tester) async {
+      const name = 'lib/ui/screens/chat/composer/attachment_preview.dart';
+      await _pump(
+        tester,
+        SizedBox(
+          width: 320,
+          child: KitComposerChips.attachments(
+            items: [
+              KitAttachment(
+                id: 'ref',
+                label: name,
+                kind: KitAttachmentKind.reference,
+                detail: 'Recovered',
+              ),
+            ],
+            onRemove: (_) {},
+          ),
+        ),
+      );
+      expect(find.text(name), findsNothing);
+      // Middle-cut: the path's start and its extension stay.
+      expect(find.textContaining(RegExp(r'^l.*….*\.dart$')), findsOneWidget);
+      expect(find.text('Recovered'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('the remove target calls onRemove with that attachment', (
@@ -387,6 +465,7 @@ void main() {
     testWidgets('no "Show all" without onShowAll; empty renders nothing', (
       tester,
     ) async {
+      final semantics = tester.ensureSemantics();
       await _pump(
         tester,
         KitComposerChips.suggestions(
@@ -399,7 +478,10 @@ void main() {
         tester,
         KitComposerChips.suggestions(suggestions: const [], onSelected: (_) {}),
       );
-      expect(find.byType(InkWell), findsNothing);
+      expect(find.bySemanticsLabel('Suggestions'), findsNothing);
+      expect(find.text('Show all'), findsNothing);
+      expect(tester.getSize(find.byType(KitComposerChips)), Size.zero);
+      semantics.dispose();
     });
 
     testWidgets('tapping a row calls onSelected once', (tester) async {
