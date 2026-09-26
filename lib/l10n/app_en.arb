@@ -22245,5 +22245,9 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitMenu": "Menu",
+  "@kitMenu": {
+    "description": "Kit menu: the popup menu's default name for a screen reader, when the caller gives none"
   }
 }
