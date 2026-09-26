@@ -19,7 +19,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitWorkLine`, base `dcf05c5e`, code head `897f9f7e` (review round 1: `106a4d0a` drops generated l10n, `897f9f7e` focus, doc and test fixes).
+- Branch `revamp/kit-KitWorkLine`, base `dcf05c5e`, code head `897f9f7e` (review round 1: `106a4d0a` and the next l10n commit put the generated `app_localizations*.dart` back at the base, so `git diff feat/phone-setup-v2...HEAD` carries only `app_en.arb` in `lib/l10n`; `897f9f7e` focus, doc and test fixes). A trial merge into feat/phone-setup-v2 conflicts only in `app_en.arb` (both sides append keys; take the union), then regenerate.
 - No APK (unit agents do not build).
 
 ## 3. Devices
