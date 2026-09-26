@@ -1,0 +1,354 @@
+Waiting for another flutter command to release the startup lock...
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart
+00:00 +0: G24 scanner strips comments but keeps strings
+00:00 +1: G24 scanner resolves relative and package imports
+00:00 +2: G24 scanner counts flavour gating
+00:00 +3: G24 scanner counts Dart 3.10 flavour branches (dot shorthand, name, case)
+00:00 +4: G24 scanner names the declaration that encloses each use
+00:00 +5: G24 scanner ARCH-10 counts every form of the channel and methods
+00:00 +6: G24 architecture boundaries ARCH-1: lib/ui never imports lib/api/ or lib/api2/
+00:00 +7: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor
+Shell: ARCH-2 counts dropped. Commit the smaller baseline (ARCH_BOUNDARIES_WRITE=1 regenerates test/architecture_boundaries_baseline.json):
+Shell: {
+Shell:   "ARCH-1": {
+Shell:     "lib/ui/agent_error_words.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/active_context_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/activity_screen.dart": {
+Shell:       "lib/api/": 2,
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/app_diagnostics_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/chat/form_flow.dart": {
+Shell:       "lib/api/": 1,
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/chat/permission_sheet.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/chat_screen.dart": {
+Shell:       "lib/api/": 5,
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/files_screen.dart": {
+Shell:       "lib/api/": 2
+Shell:     },
+Shell:     "lib/ui/screens/global_sessions_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/home_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/library_screen.dart": {
+Shell:       "lib/api/": 3
+Shell:     },
+Shell:     "lib/ui/screens/manage_project_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/managed_workspaces_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/mcp_setup_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/project_health_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/projects_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/review_workspace.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/run_result_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/running_work_sheet.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/saved_permissions_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/servers_screen.dart": {
+Shell:       "lib/api/": 2
+Shell:     },
+Shell:     "lib/ui/screens/session_context_screen.dart": {
+Shell:       "lib/api/": 3
+Shell:     },
+Shell:     "lib/ui/screens/session_destination_sheet.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/session_export_screen.dart": {
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/session_import_screen.dart": {
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/session_note_screen.dart": {
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/session_relations_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/settings_screen.dart": {
+Shell:       "lib/api/": 3
+Shell:     },
+Shell:     "lib/ui/screens/staged_revert_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/terminal_screen.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/screens/tools_screen.dart": {
+Shell:       "lib/api/": 2
+Shell:     },
+Shell:     "lib/ui/screens/usage_screen.dart": {
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/screens/workspace_screen.dart": {
+Shell:       "lib/api/": 2
+Shell:     },
+Shell:     "lib/ui/screens/worktrees_screen.dart": {
+Shell:       "lib/api/": 2
+Shell:     },
+Shell:     "lib/ui/search/search_index.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/connection_status_banner.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/diff_view.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/form_renderer.dart": {
+Shell:       "lib/api2/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/pickers.dart": {
+Shell:       "lib/api/": 3
+Shell:     },
+Shell:     "lib/ui/widgets/product_states.dart": {
+Shell:       "lib/api/": 3
+Shell:     },
+Shell:     "lib/ui/widgets/provider_logo.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/run_result_view.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/running_agents_strip.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/server_switcher_sheet.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/session_read_state.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/session_title.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/tool_card.dart": {
+Shell:       "lib/api/": 1
+Shell:     },
+Shell:     "lib/ui/widgets/work_status_line.dart": {
+Shell:       "lib/api/": 1
+Shell:     }
+Shell:   },
+Shell:   "ARCH-10 calls": {
+Shell:     "lib/state/connection.dart": {
+Shell:       "publishLiveStatus": 1,
+Shell:       "showCodingAlert": 5
+Shell:     },
+Shell:     "lib/ui/screens/settings/notifications_settings_screen.dart": {
+Shell:       "sendTestNotification": 1
+Shell:     }
+Shell:   },
+Shell:   "ARCH-10 wire": {
+Shell:     "lib/background/live_background.dart": {
+Shell:       "'oc/background'": 1,
+Shell:       "'showCodingAlert'": 2,
+Shell:       "'updateLiveStatus'": 1
+Shell:     },
+Shell:     "lib/background/widget_snapshot.dart": {
+Shell:       "'oc/background'": 1
+Shell:     }
+Shell:   },
+Shell:   "ARCH-2": {
+Shell:     "lib/ui/screens/chat_screen.dart": {
+Shell:       ".flavor ==": 2,
+Shell:       "ServerFlavor.": 2
+Shell:     },
+Shell:     "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
+Shell:       ".flavor ==": 1,
+Shell:       "ServerFlavor.": 1
+Shell:     },
+Shell:     "lib/ui/screens/servers_screen.dart": {
+Shell:       ".flavor ==": 3,
+Shell:       "ServerFlavor.": 5
+Shell:     },
+Shell:     "lib/ui/screens/termux_setup_screen.dart": {
+Shell:       ".flavor ==": 2,
+Shell:       "ServerFlavor.": 4
+Shell:     },
+Shell:     "lib/ui/widgets/phone_server_card.dart": {
+Shell:       ".flavor ==": 2,
+Shell:       "ServerFlavor.": 1
+Shell:     },
+Shell:     "lib/ui/widgets/server_switcher_sheet.dart": {
+Shell:       ".flavor ==": 1,
+Shell:       "ServerFlavor.": 1
+Shell:     }
+Shell:   },
+Shell:   "ARCH-2 allowlist": {
+Shell:     "lib/ui/screens/builtin_server_screen.dart": {
+Shell:       "_BuiltinServerScreenState._flavor": [
+Shell:         "The flavour the built-in server setup writes onto the saved profile for the chosen runtime."
+Shell:       ]
+Shell:     },
+Shell:     "lib/ui/screens/servers_screen.dart": {
+Shell:       "_ProbeVerdict.build": [
+Shell:         "Labels the connection-test verdict in the profile editor with the probed flavour (OpenCode 1 or 2 found, OpenCode 1 limits)."
+Shell:       ],
+Shell:       "_ProfileEditorScreenState._save": [
+Shell:         "The profile editor stores the flavour on the profile: the probed one, or OpenCode 1 when the endpoint changed and nothing was probed."
+Shell:       ],
+Shell:       "_ProfileEditorScreenState._testConnection": [
+Shell:         "Probe: a unit allowlists a behaviour gate by adding only a reason."
+Shell:       ],
+Shell:       "_ServersScreenState._enterPhoneCredentials": [
+Shell:         "Creates the phone server profile from its credentials sheet and sets its flavour (OpenCode 1 or 2) from the runtime the sheet was opened for."
+Shell:       ],
+Shell:       "_knownOpenCodeGeneration": [
+Shell:         "Labels a saved profile in the server list as OpenCode 1 or OpenCode 2; no behaviour depends on it."
+Shell:       ]
+Shell:     },
+Shell:     "lib/ui/screens/termux_setup_screen.dart": {
+Shell:       "_TermuxSetupScreenState._ensureLocalProfile": [
+Shell:         "Termux setup writes the saved profile for the runtime the person installed: finds that runtime's profile and sets its flavour."
+Shell:       ],
+Shell:       "_TermuxSetupScreenState._restoreLocalProfileIfMissing": [
+Shell:         "Restores the saved profile for the installed runtime after a reinstall and sets its flavour."
+Shell:       ]
+Shell:     }
+Shell:   },
+Shell:   "ARCH-2 allowlisted": {
+Shell:     "lib/ui/screens/builtin_server_screen.dart": {
+Shell:       "_BuiltinServerScreenState._flavor: ServerFlavor.": 2
+Shell:     },
+Shell:     "lib/ui/screens/servers_screen.dart": {
+Shell:       "_ProbeVerdict.build: .flavor ==": 3,
+Shell:       "_ProbeVerdict.build: ServerFlavor.": 3,
+Shell:       "_ProfileEditorScreenState._save: .flavor ==": 1,
+Shell:       "_ProfileEditorScreenState._save: ServerFlavor.": 3,
+Shell:       "_ProfileEditorScreenState._testConnection: .flavor ==": 1,
+Shell:       "_ProfileEditorScreenState._testConnection: ServerFlavor.": 1,
+Shell:       "_ServersScreenState._enterPhoneCredentials: ServerFlavor.": 2,
+Shell:       "_knownOpenCodeGeneration: ServerFlavor.": 2,
+Shell:       "_knownOpenCodeGeneration: switch (flavor)": 1
+Shell:     },
+Shell:     "lib/ui/screens/termux_setup_screen.dart": {
+Shell:       "_TermuxSetupScreenState._ensureLocalProfile: .flavor ==": 1,
+Shell:       "_TermuxSetupScreenState._ensureLocalProfile: ServerFlavor.": 4,
+Shell:       "_TermuxSetupScreenState._restoreLocalProfileIfMissing: .flavor ==": 1,
+Shell:       "_TermuxSetupScreenState._restoreLocalProfileIfMissing: ServerFlavor.": 2
+Shell:     }
+Shell:   }
+Shell: }
+Shell: 
+00:00 +8: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink
+00:00 +8 -1: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink [E]
+  Expected: empty
+    Actual: [
+              'ARCH-2 allowlisted lib/ui/screens/servers_screen.dart: "_ProfileEditorScreenState._testConnection: ServerFlavor." x1 (baseline 0)',
+              'ARCH-2 allowlisted lib/ui/screens/servers_screen.dart: "_ProfileEditorScreenState._testConnection: .flavor ==" x1 (baseline 0)'
+            ]
+  ARCH-2 allowlisted: an allowlisted profile-editor member gained flavour uses, or a new member was allowlisted. The allowlist only shrinks; gate the feature on a ServerCapabilities flag.
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/architecture_boundaries_test.dart 855:7        main.<fn>.check
+  test/architecture_boundaries_test.dart 868:7        main.<fn>.<fn>
+  
+00:00 +8 -1: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason
+00:00 +8 -2: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason [E]
+  Expected: empty
+    Actual: [
+              'lib/ui/screens/termux_setup_screen.dart "_TermuxSetupScreenState._localProfile: ServerFlavor.": counted as allowlisted but "_TermuxSetupScreenState._localProfile" has no reason in "ARCH-2 allowlist"'
+            ]
+  ARCH-2 allowlist (G24)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/architecture_boundaries_test.dart 907:7        main.<fn>.<fn>
+  
+00:00 +8 -2: G24 architecture boundaries ARCH-10: the oc/background wire names stay with their owners
+00:00 +9 -2: G24 architecture boundaries ARCH-10: notifications have one posting path
+00:00 +10 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason
