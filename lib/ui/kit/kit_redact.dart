@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Display-safe masking of credentials in text the app shows, copies or
 /// shares (AGENTS.md security invariants: provider keys must never reach
 /// logs, diagnostics, notification copy or the clipboard).
@@ -9,21 +11,29 @@
 /// - provider keys: `sk-`, `sk-ant-`, `sk-proj-`, `AIza`, `ghp_`/`gho_`/
 ///   `ghs_`/`ghu_`/`ghr_`, `github_pat_`, `xoxa-`/`xoxb-`/`xoxp-`/`xoxr-`;
 /// - `Bearer <token>`;
-/// - the value of an `Authorization` or `Proxy-Authorization` header, written
-///   `Authorization: x` or `Authorization=x`;
+/// - the whole value of an `Authorization` or `Proxy-Authorization` header,
+///   written `Authorization: x` or `Authorization=x`: to the end of the line,
+///   through the closing quote of a quoted value, or to the end of the quoted
+///   string the header itself sits in (`-H "Authorization: …"`);
 /// - the value after `api_key`, `apikey`, `token`, `secret`, `password` or
 ///   `passwd` (also as the tail of a longer name such as `client_secret`)
-///   and `=` or `:`, quoted or not;
+///   and `=` or `:`; a quoted value through its closing quote (escaped
+///   quotes and embedded delimiters included), an unquoted one up to
+///   whitespace or `"',;&<>`. Inside a file path (`/tmp/token=cache/x`) the
+///   name is not a credential; after `?`, `&` or `#` in a URL it is;
 /// - URL user-info: `https://user:pass@host` → `https://•••@host`;
-/// - JWTs (three base64url segments, the first starting `eyJ`).
+/// - JWTs: three base64url segments whose first two decode to JSON objects
+///   (or both start `eyJ`). Signatures are not verified.
 ///
 /// Never touched: file paths, git SHAs, UUIDs, ordinary long words.
 abstract final class KitRedact {
   /// What a secret is replaced with.
-  static const String mask = '\u2022\u2022\u2022';
+  static const String mask = '•••';
 
+  /// Group 1: a quote right before the name (the header sits in a quoted
+  /// string, or is a quoted key); group 2: a quote closing the key.
   static final RegExp _authHeader = RegExp(
-    r'\b((?:Proxy-)?Authorization)(["\x27]?\s*[:=]\s*)(["\x27]?)([^\r\n"\x27,;&]+)',
+    r'''(["']?)\b(?:Proxy-)?Authorization(["']?)[ \t]*[:=][ \t]*''',
     caseSensitive: false,
   );
 
@@ -33,8 +43,7 @@ abstract final class KitRedact {
   );
 
   static final RegExp _namedValue = RegExp(
-    r'(?<![A-Za-z0-9])([A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|token|secret|password|passwd))'
-    r'(["\x27]?\s*[:=]\s*)(["\x27]?)([^\s"\x27,;&<>]+)',
+    r'''(?<![A-Za-z0-9])[A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|token|secret|password|passwd)["']?[ \t]*[:=][ \t]*''',
     caseSensitive: false,
   );
 
@@ -42,8 +51,8 @@ abstract final class KitRedact {
     r'\b([A-Za-z][A-Za-z0-9+.\-]*://)[^\s/?#@]+@',
   );
 
-  static final RegExp _jwt = RegExp(
-    r'(?<![A-Za-z0-9_\-])eyJ[A-Za-z0-9_\-]{4,}\.[A-Za-z0-9_\-]{4,}\.[A-Za-z0-9_\-]+',
+  static final RegExp _jwtCandidate = RegExp(
+    r'(?<![A-Za-z0-9_\-])([A-Za-z0-9_\-]{2,})\.([A-Za-z0-9_\-]{2,})\.[A-Za-z0-9_\-]*(?![A-Za-z0-9_\-])',
   );
 
   /// Provider keys, most specific prefix first. Group 1 is the public
@@ -61,23 +70,155 @@ abstract final class KitRedact {
   /// [s] with every recognised secret replaced by [mask].
   static String text(String s) {
     if (s.isEmpty) return s;
-    var out = s.replaceAllMapped(
-      _authHeader,
-      (m) => '${m[1]}${m[2]}${m[3]}$mask',
-    );
+    var out = _scan(s, _authHeader, _authValue);
     out = out.replaceAllMapped(_bearer, (m) => '${m[1]} $mask');
-    out = out.replaceAllMapped(
-      _namedValue,
-      (m) => '${m[1]}${m[2]}${m[3]}$mask',
-    );
+    out = _scan(out, _namedValue, _namedValueEnd);
     out = out.replaceAllMapped(_urlUserInfo, (m) => '${m[1]}$mask@');
     for (final key in _providerKeys) {
       out = out.replaceAllMapped(key, (m) => '${m[1]}$mask');
     }
-    return out.replaceAll(_jwt, mask);
+    return out.replaceAllMapped(
+      _jwtCandidate,
+      (m) => _isJwt(m[1]!, m[2]!) ? mask : m[0]!,
+    );
   }
 
   /// Whether [text] would change [s]: it holds something that looks like a
   /// secret.
   static bool containsSecret(String s) => text(s) != s;
+
+  /// Replaces, for each match of [re] in [s], the match plus the value
+  /// [value] finds after it. [value] returns null to leave a match alone.
+  static String _scan(
+    String s,
+    RegExp re,
+    _Masked? Function(String s, RegExpMatch m) value,
+  ) {
+    final out = StringBuffer();
+    var cursor = 0;
+    var from = 0;
+    while (from < s.length) {
+      final it = re.allMatches(s, from).iterator;
+      if (!it.moveNext()) break;
+      final m = it.current;
+      final hit = value(s, m);
+      if (hit == null) {
+        from = m.end > m.start ? m.end : m.start + 1;
+        continue;
+      }
+      out
+        ..write(s.substring(cursor, m.start))
+        ..write(m[0])
+        ..write(hit.text);
+      cursor = hit.end;
+      from = hit.end;
+    }
+    out.write(s.substring(cursor));
+    return out.toString();
+  }
+
+  static _Masked? _authValue(String s, RegExpMatch m) {
+    final lead = m[1]!;
+    final keyQuote = m[2]!;
+    final start = m.end;
+    if (lead.isNotEmpty && keyQuote.isEmpty) {
+      // `"Authorization: …"`: the header is the content of a quoted string,
+      // so its value runs to that string's closing quote.
+      final close = _closingQuote(s, start, lead);
+      return _masked(start, close < 0 ? _lineEnd(s, start) : close);
+    }
+    if (start < s.length && _isQuote(s[start])) return _quoted(s, start);
+    if (lead.isNotEmpty) {
+      // A quoted key with an unquoted value: `"Authorization": null`.
+      var end = start;
+      while (end < s.length && !',}]\r\n'.contains(s[end])) {
+        end++;
+      }
+      return _masked(start, end);
+    }
+    return _masked(start, _lineEnd(s, start));
+  }
+
+  static _Masked? _namedValueEnd(String s, RegExpMatch m) {
+    if (_inPath(s, m.start)) return null;
+    final start = m.end;
+    if (start < s.length && _isQuote(s[start])) return _quoted(s, start);
+    var end = start;
+    while (end < s.length && !' \t\r\n"\',;&<>'.contains(s[end])) {
+      end++;
+    }
+    return _masked(start, end);
+  }
+
+  /// The value `[start, end)` as a mask; null when it is empty.
+  static _Masked? _masked(int start, int end) =>
+      end > start ? (text: mask, end: end) : null;
+
+  /// A value opening with the quote at [open], masked through its closing
+  /// quote, or to the end of the line when the quote never closes there.
+  static _Masked? _quoted(String s, int open) {
+    final q = s[open];
+    final close = _closingQuote(s, open + 1, q);
+    if (close < 0) {
+      final end = _lineEnd(s, open + 1);
+      return end > open + 1 ? (text: '$q$mask', end: end) : null;
+    }
+    return close > open + 1 ? (text: '$q$mask$q', end: close + 1) : null;
+  }
+
+  /// The index of the unescaped [quote] at or after [i] on the same line;
+  /// -1 when the line or text ends first.
+  static int _closingQuote(String s, int i, String quote) {
+    while (i < s.length) {
+      final c = s[i];
+      if (c == '\\') {
+        i += 2;
+        continue;
+      }
+      if (c == quote) return i;
+      if (c == '\n' || c == '\r') return -1;
+      i++;
+    }
+    return -1;
+  }
+
+  static int _lineEnd(String s, int i) {
+    while (i < s.length && s[i] != '\n' && s[i] != '\r') {
+      i++;
+    }
+    return i;
+  }
+
+  static bool _isQuote(String c) => c == '"' || c == "'";
+
+  /// Whether the name starting at [i] sits inside a file path segment
+  /// (`/tmp/token=x`). A name right after a URL's `?`, `&` or `#` is a query
+  /// or fragment parameter, not a path.
+  static bool _inPath(String s, int i) {
+    var slash = false;
+    for (var j = i - 1; j >= 0; j--) {
+      final c = s[j];
+      if ('?&#'.contains(c)) return false;
+      if (' \t\r\n"\'`,;(){}[]<>=|'.contains(c)) break;
+      if (c == '/' || c == '\\') slash = true;
+    }
+    return slash;
+  }
+
+  /// A compact JWT: header and claims decode to JSON objects, or both keep
+  /// the `eyJ` (`{"`) spelling even when truncated.
+  static bool _isJwt(String header, String claims) =>
+      (header.startsWith('eyJ') && claims.startsWith('eyJ')) ||
+      (_isJsonObject(header) && _isJsonObject(claims));
+
+  static bool _isJsonObject(String segment) {
+    try {
+      final bytes = base64Url.decode(base64Url.normalize(segment));
+      return jsonDecode(utf8.decode(bytes)) is Map;
+    } on FormatException {
+      return false;
+    }
+  }
 }
+
+typedef _Masked = ({String text, int end});
