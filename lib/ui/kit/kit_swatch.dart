@@ -7,9 +7,11 @@ import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
+import 'kit_layout.dart';
 import 'kit_panel.dart';
 import 'kit_row.dart';
 import 'kit_status_mark.dart';
+import 'kit_task_mark.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -206,7 +208,11 @@ class _SwatchBodyState extends State<_SwatchBody> {
     final node = _nodeFor(hosted);
     final enabled = swatch.onPressed != null;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // One node per swatch: its name is the label, "In use" the value, the
+    // reason the hint. The visible label, reason and tooltip below are
+    // excluded so a screen reader never reads the name twice (A11Y-1).
     return Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       selected: swatch.selected,
@@ -233,12 +239,14 @@ class _SwatchBodyState extends State<_SwatchBody> {
                     node.requestFocus();
                     swatch.onPressed!();
                   },
-            child: AnimatedBuilder(
-              animation: node,
-              builder: (context, _) => _SwatchTile(
-                swatch: swatch,
-                hovered: _hovered,
-                focused: node.hasFocus,
+            child: ExcludeSemantics(
+              child: AnimatedBuilder(
+                animation: node,
+                builder: (context, _) => _SwatchTile(
+                  swatch: swatch,
+                  hovered: _hovered,
+                  focused: node.hasFocus,
+                ),
               ),
             ),
           ),
@@ -271,84 +279,127 @@ class _SwatchTile extends StatelessWidget {
         : _themeTile(context, tokens, roles, enabled);
   }
 
+  /// KitTappable's hover treatment (KitTappable.md, tests 7): a tile on
+  /// `surface1` steps up to `surface2` in dark and `surface3` in light.
+  Color _fill(KitTokens tokens, BuildContext context, bool enabled) {
+    if (!hovered || !enabled) return tokens.fillOf(KitSurfaceLevel.surface1);
+    return tokens.fillOf(
+      Theme.of(context).brightness == Brightness.dark
+          ? KitSurfaceLevel.surface2
+          : KitSurfaceLevel.surface3,
+    );
+  }
+
+  /// The keyboard focus ring: [focusRingWidth] in `accent`, drawn outside
+  /// the state border (never replacing it), so selected and focused both
+  /// show at once. Painted over the child, outside its box.
+  Widget _focusRing(
+    BuildContext context,
+    ThemeRoles roles, {
+    required BoxShape shape,
+    BorderRadius? radius,
+    required Widget child,
+  }) {
+    if (!focused) return child;
+    return DecoratedBox(
+      key: const ValueKey('kit-swatch-focus-ring'),
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        shape: shape,
+        borderRadius: radius,
+        border: Border.all(
+          color: roles.accent,
+          width: KitTokens.focusRingWidth(context),
+          strokeAlign: BorderSide.strokeAlignOutside,
+        ),
+      ),
+      child: child,
+    );
+  }
+
   Widget _themeTile(
     BuildContext context,
     KitTokens tokens,
     ThemeRoles roles,
     bool enabled,
   ) {
-    final borderColor = !enabled
-        ? roles.hairline
-        : (swatch.selected ? roles.accent : roles.hairline);
+    final borderColor = enabled && swatch.selected
+        ? roles.accent
+        : roles.hairline;
     final reason = swatch.disabledReason;
-    return DecoratedBox(
-      key: const ValueKey('kit-swatch-tile'),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: focused ? roles.accent : borderColor,
-          width: focused
-              ? KitTokens.focusRingWidth(context)
-              : KitTokens.hairlineWidth(context),
+    final radius = BorderRadius.circular(tokens.panelCornerRadius);
+    return _focusRing(
+      context,
+      roles,
+      shape: BoxShape.rectangle,
+      radius: radius,
+      child: DecoratedBox(
+        key: const ValueKey('kit-swatch-tile'),
+        // The fill and the border share one rounded shape, so the hover
+        // fill never shows square corners past the border.
+        decoration: BoxDecoration(
+          color: _fill(tokens, context, enabled),
+          border: Border.all(
+            color: borderColor,
+            width: KitTokens.hairlineWidth(context),
+          ),
+          borderRadius: radius,
         ),
-        borderRadius: BorderRadius.circular(tokens.panelCornerRadius),
-      ),
-      child: Container(
-        constraints: BoxConstraints(minHeight: tokens.minTarget),
-        padding: EdgeInsets.all(tokens.space2),
-        color: hovered && enabled ? roles.surface1.withValues(alpha: .6) : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(tokens.iconTileRadius),
-              child: SizedBox(
-                height: KitTokens.swatchPreviewHeight,
-                child: switch (swatch.roles) {
-                  final swatchRoles? when enabled => _Miniature(
-                    roles: swatchRoles,
-                  ),
-                  // Disabled, or no palette to show at all (`roles: null`,
-                  // e.g. Material You below Android 12): unavailable is
-                  // said, not faded (STATE-8, LOOK-14).
-                  _ => _UnavailableMiniature(roles: roles),
-                },
-              ),
-            ),
-            SizedBox(height: tokens.space2),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: tokens.minTarget),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.space2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: KitText(
-                    KitBidi.auto(swatch.label),
-                    key: const ValueKey('kit-swatch-label'),
-                    role: KitTextRole.label,
-                    tone: enabled ? null : KitTextTone.tertiary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(tokens.iconTileRadius),
+                  child: SizedBox(
+                    height: KitTokens.swatchPreviewHeight,
+                    child: switch (swatch.roles) {
+                      final swatchRoles? when enabled => _Miniature(
+                        roles: swatchRoles,
+                      ),
+                      // Disabled, or no palette to show at all (`roles:
+                      // null`, e.g. Material You below Android 12):
+                      // unavailable is said, not faded (STATE-8, LOOK-14).
+                      _ => _UnavailableMiniature(roles: roles),
+                    },
                   ),
                 ),
-                if (swatch.selected) ...[
-                  SizedBox(width: tokens.space1),
-                  Icon(
-                    AppIconography.check,
-                    key: const ValueKey('kit-swatch-check'),
-                    size: tokens.smallIconSize,
-                    color: roles.accent,
+                SizedBox(height: tokens.space2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _SwatchLabel(
+                        label: swatch.label,
+                        enabled: enabled,
+                      ),
+                    ),
+                    if (swatch.selected) ...[
+                      SizedBox(width: tokens.space1),
+                      Icon(
+                        AppIconography.check,
+                        key: const ValueKey('kit-swatch-check'),
+                        size: tokens.smallIconSize,
+                        color: roles.accent,
+                      ),
+                    ],
+                  ],
+                ),
+                if (!enabled && reason != null) ...[
+                  SizedBox(height: tokens.space1),
+                  KitText(
+                    reason,
+                    key: const ValueKey('kit-swatch-reason'),
+                    role: KitTextRole.secondary,
                   ),
                 ],
               ],
             ),
-            if (!enabled && reason != null) ...[
-              SizedBox(height: tokens.space1),
-              KitText(
-                reason,
-                key: const ValueKey('kit-swatch-reason'),
-                role: KitTextRole.secondary,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -368,40 +419,105 @@ class _SwatchTile extends StatelessWidget {
       '_new-tokens.md §0.5 step 1); this is a temporary local check — see '
       'the contract note in this unit\'s QA record.',
     );
-    final circleColor = enabled ? swatch.color! : roles.surface3;
-    final ringColor = !enabled
-        ? roles.hairline
-        : (swatch.selected ? roles.text1 : roles.hairline);
-    return SizedBox(
-      width: tokens.minTarget,
-      height: tokens.minTarget,
-      child: Center(
-        child: Container(
-          key: const ValueKey('kit-swatch-accent-circle'),
-          width: tokens.markSize,
-          height: tokens.markSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: circleColor,
-            border: Border.all(
-              color: focused ? roles.accent : ringColor,
-              width: focused
-                  ? KitTokens.focusRingWidth(context)
-                  : KitTokens.hairlineWidth(context),
-            ),
-          ),
-          child: swatch.selected
-              ? Center(
-                  child: Icon(
-                    AppIconography.check,
-                    key: const ValueKey('kit-swatch-accent-check'),
-                    size: tokens.smallIconSize,
-                    color: onColor(swatch.color!),
-                  ),
-                )
-              : null,
+    final circle = DecoratedBox(
+      key: const ValueKey('kit-swatch-accent-circle'),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: enabled ? swatch.color! : roles.surface3,
+        border: Border.all(
+          color: roles.hairline,
+          width: KitTokens.hairlineWidth(context),
         ),
       ),
+      child: SizedBox.square(
+        dimension: tokens.markSize,
+        child: swatch.selected
+            ? Center(
+                child: Icon(
+                  AppIconography.check,
+                  key: const ValueKey('kit-swatch-accent-check'),
+                  size: tokens.smallIconSize,
+                  color: onColor(swatch.color!),
+                ),
+              )
+            : null,
+      ),
+    );
+    // Selected: a 1 px text1 ring outside the circle, the circle's own
+    // hairline kept. The focus ring sits outside the 48 dp target, so the
+    // two never cover each other.
+    return _focusRing(
+      context,
+      roles,
+      shape: BoxShape.circle,
+      child: SizedBox.square(
+        dimension: tokens.minTarget,
+        child: Center(
+          child: swatch.selected
+              ? DecoratedBox(
+                  key: const ValueKey('kit-swatch-accent-ring'),
+                  position: DecorationPosition.foreground,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: roles.text1,
+                      width: KitTokens.hairlineWidth(context),
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                    ),
+                  ),
+                  child: circle,
+                )
+              : circle,
+        ),
+      ),
+    );
+  }
+}
+
+/// A swatch's name, isolated with [KitBidi.auto] and cut to two lines. On a
+/// fine pointer a cut name gets a tooltip with the whole of it (the pointer
+/// rule in KitSwatch.md "Adaptive"); semantics carry the full name anyway.
+class _SwatchLabel extends StatelessWidget {
+  const _SwatchLabel({required this.label, required this.enabled});
+
+  final String label;
+  final bool enabled;
+
+  static const _maxLines = 2;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = enabled ? null : KitTextTone.tertiary;
+    final text = KitText(
+      KitBidi.auto(label),
+      key: const ValueKey('kit-swatch-label'),
+      role: KitTextRole.label,
+      tone: tone,
+      maxLines: _maxLines,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (!KitLayout.finePointer(context)) return text;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: KitBidi.auto(label),
+            style: KitText.styleOf(context, KitTextRole.label, tone: tone),
+          ),
+          maxLines: _maxLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final cut = painter.didExceedMaxLines;
+        painter.dispose();
+        if (!cut) return text;
+        return Tooltip(
+          key: const ValueKey('kit-swatch-tooltip'),
+          message: label,
+          excludeFromSemantics: true,
+          child: text,
+        );
+      },
     );
   }
 }
@@ -497,7 +613,11 @@ class _UnavailableMiniature extends StatelessWidget {
     key: const ValueKey('kit-swatch-unavailable'),
     decoration: BoxDecoration(color: roles.surface3),
     child: Center(
-      child: Icon(AppIconography.sparkle, size: 20, color: roles.text3),
+      child: Icon(
+        AppIconography.sparkle,
+        size: KitTokens.of(context).smallIconSize,
+        color: roles.text3,
+      ),
     ),
   );
 }
@@ -530,9 +650,18 @@ class _SwatchGridBodyState extends State<_SwatchGridBody> {
     (_) => FocusNode(debugLabel: 'KitSwatchGrid item'),
   );
 
+  bool _enabled(int i) => widget.children[i].onPressed != null;
+
+  /// The one Tab stop: the selected swatch when it can take focus, else the
+  /// first that can. A disabled swatch never holds it (it cannot take
+  /// focus, so Tab would never enter the grid).
   int _initialActive() {
-    final selected = widget.children.indexWhere((c) => c.selected);
-    return selected >= 0 ? selected : 0;
+    final selected = widget.children.indexWhere(
+      (c) => c.selected && c.onPressed != null,
+    );
+    if (selected >= 0) return selected;
+    final first = widget.children.indexWhere((c) => c.onPressed != null);
+    return first >= 0 ? first : 0;
   }
 
   @override
@@ -555,9 +684,9 @@ class _SwatchGridBodyState extends State<_SwatchGridBody> {
       for (final node in _nodes) {
         node.addListener(_handleFocusChange);
       }
-      if (_active >= _nodes.length) {
-        _active = _nodes.isEmpty ? 0 : _nodes.length - 1;
-      }
+    }
+    if (_active >= _nodes.length || !_enabled(_active)) {
+      _active = _initialActive();
     }
   }
 
@@ -575,29 +704,36 @@ class _SwatchGridBodyState extends State<_SwatchGridBody> {
     if (i >= 0 && i != _active) setState(() => _active = i);
   }
 
+  /// The next swatch from [from] in steps of [step] that can take focus,
+  /// skipping disabled ones; null when there is none that way.
+  int? _nextEnabled(int from, int step) {
+    for (var i = from + step; i >= 0 && i < _nodes.length; i += step) {
+      if (_enabled(i)) return i;
+    }
+    return null;
+  }
+
   KeyEventResult _onOtherKey(int index, KeyEvent event, int columns) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final ltr = Directionality.of(context) == TextDirection.ltr;
     final key = event.logicalKey;
-    int? target;
+    final int? target;
     if (key == LogicalKeyboardKey.arrowDown) {
-      target = index + columns;
+      target = _nextEnabled(index, columns);
     } else if (key == LogicalKeyboardKey.arrowUp) {
-      target = index - columns;
+      target = _nextEnabled(index, -columns);
     } else if (key == LogicalKeyboardKey.arrowRight) {
-      target = index + (ltr ? 1 : -1);
+      target = _nextEnabled(index, ltr ? 1 : -1);
     } else if (key == LogicalKeyboardKey.arrowLeft) {
-      target = index + (ltr ? -1 : 1);
+      target = _nextEnabled(index, ltr ? -1 : 1);
     } else if (key == LogicalKeyboardKey.home) {
-      target = 0;
+      target = _nextEnabled(-1, 1);
     } else if (key == LogicalKeyboardKey.end) {
-      target = _nodes.length - 1;
+      target = _nextEnabled(_nodes.length, -1);
     } else {
       return KeyEventResult.ignored;
     }
-    if (target >= 0 && target < _nodes.length) {
-      _nodes[target].requestFocus();
-    }
+    if (target != null) _nodes[target].requestFocus();
     return KeyEventResult.handled;
   }
 
@@ -609,47 +745,74 @@ class _SwatchGridBodyState extends State<_SwatchGridBody> {
     return columns;
   }
 
+  /// Accent circles are 48 dp targets 8 dp apart (LAY-9): as many as fit
+  /// the width, for the ↑ and ↓ row step.
+  static int accentColumnsFor(double width, double target, double spacing) =>
+      math.max(((width + spacing) / (target + spacing)).floor(), 1);
+
+  Widget _hosted(int i, int columns) => _SwatchFocusHost(
+    node: _nodes[i],
+    skipTraversal: i != _active,
+    onOtherKey: (event) => _onOtherKey(i, event, columns),
+    child: widget.children[i],
+  );
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
+    final accents =
+        widget.children.isNotEmpty && widget.children.first._isAccent;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : KitTokens.swatchMinWidth * 3;
-        final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final columns = columnsFor(width, textScale);
-        final spacing = tokens.space3;
-        // Floored, so the row's total width never rounds up past what
-        // [Wrap] was given (which would push the last column onto a new
-        // line). [columnsFor] already keeps `width / columns` at or above
-        // [KitTokens.swatchMinWidth] except at the fixed 2-column floor on
-        // a very narrow window, so no extra floor is applied here — one
-        // would only make the tiles too wide to fit the columns chosen.
-        final tileWidth = math.max(
-          ((width - spacing * (columns - 1)) / columns).floorToDouble(),
-          1.0,
-        );
-        return Semantics(
-          label: widget.label,
-          container: true,
-          explicitChildNodes: true,
-          child: Wrap(
+        final Widget grid;
+        if (accents) {
+          // Each accent keeps its own 48 dp target; start-aligned, 8 dp
+          // apart, never stretched to a theme tile's column.
+          final spacing = tokens.space2;
+          final columns = accentColumnsFor(width, tokens.minTarget, spacing);
+          // The full width, so the circles start at the start edge
+          // whatever the host centres (a [Wrap] alone shrinks to its run).
+          grid = SizedBox(
+            width: width,
+            child: Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var i = 0; i < widget.children.length; i++)
+                  _hosted(i, columns),
+              ],
+            ),
+          );
+        } else {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final columns = columnsFor(width, textScale);
+          final spacing = tokens.space3;
+          // Floored, so the row's total width never rounds up past what
+          // [Wrap] was given (which would push the last column onto a new
+          // line). [columnsFor] already keeps `width / columns` at or above
+          // [KitTokens.swatchMinWidth] except at the fixed 2-column floor on
+          // a very narrow window, so no extra floor is applied here.
+          final tileWidth = math.max(
+            ((width - spacing * (columns - 1)) / columns).floorToDouble(),
+            1.0,
+          );
+          grid = Wrap(
             spacing: spacing,
             runSpacing: spacing,
             children: [
               for (var i = 0; i < widget.children.length; i++)
-                SizedBox(
-                  width: tileWidth,
-                  child: _SwatchFocusHost(
-                    node: _nodes[i],
-                    skipTraversal: i != _active,
-                    onOtherKey: (event) => _onOtherKey(i, event, columns),
-                    child: widget.children[i],
-                  ),
-                ),
+                SizedBox(width: tileWidth, child: _hosted(i, columns)),
             ],
-          ),
+          );
+        }
+        return Semantics(
+          label: widget.label,
+          container: true,
+          explicitChildNodes: true,
+          child: grid,
         );
       },
     );
@@ -659,6 +822,14 @@ class _SwatchGridBodyState extends State<_SwatchGridBody> {
 // -----------------------------------------------------------------------
 // KitThemePreview
 // -----------------------------------------------------------------------
+
+/// Test seam, debug builds only: adapts the theme [KitThemePreview] builds
+/// for its sample before it is applied. A gallery uses it to give the
+/// sample's button styles the Arabic font fallback a device supplies from
+/// its system fonts (the test engine has none). Never set in app code; a
+/// test that sets it resets it to null.
+@visibleForTesting
+ThemeData Function(ThemeData theme)? debugKitThemePreviewTheme;
 
 /// A picture of a candidate theme (docs/ux-system/kit-api/KitSwatch.md):
 /// the app's own parts — a panel with a row (icon tile, title, "Working ·
@@ -692,7 +863,12 @@ class KitThemePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    final theme = AppTheme.forLocale(AppTheme.fromRoles(roles), locale);
+    var theme = AppTheme.forLocale(AppTheme.fromRoles(roles), locale);
+    assert(() {
+      final adapt = debugKitThemePreviewTheme;
+      if (adapt != null) theme = adapt(theme);
+      return true;
+    }());
     return Semantics(
       key: previewKey,
       label: label,
@@ -761,9 +937,15 @@ class KitThemePreview extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.all(tokens.space2),
-              child: KitBidi.ltrText(
-                l10n.kitThemePreviewCode,
-                style: tokens.technicalValue,
+              // An LTR island aligned left in every language (COPY-30):
+              // the line keeps left-to-right direction, not only its marks.
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: KitBidi.ltrText(
+                  l10n.kitThemePreviewCode,
+                  key: const ValueKey('kit-theme-preview-code'),
+                  style: tokens.technicalValue,
+                ),
               ),
             ),
           ),
@@ -771,7 +953,7 @@ class KitThemePreview extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIconography.question, size: 18, color: r.attention),
+              const KitTaskMark(state: KitTaskState.needsYou),
               SizedBox(width: tokens.space1),
               Flexible(
                 child: KitText(
@@ -785,6 +967,8 @@ class KitThemePreview extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.space3),
+          // A stand-in for a selected segment until KitSegmented (a planned
+          // wave-1 part) merges; then this renders that part instead.
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: DecoratedBox(
@@ -800,7 +984,11 @@ class KitThemePreview extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(AppIconography.check, size: 16, color: r.accent),
+                    Icon(
+                      AppIconography.check,
+                      size: tokens.smallIconSize,
+                      color: r.accent,
+                    ),
                     SizedBox(width: tokens.space1),
                     KitText(
                       l10n.kitThemePreviewSegment,

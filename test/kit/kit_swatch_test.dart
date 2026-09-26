@@ -3,12 +3,15 @@
 // numbered to match that section.
 import 'dart:ui' show Tristate;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_swatch.dart';
+import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -510,6 +513,270 @@ void main() {
         find.byKey(const ValueKey('kit-swatch-reason')),
       );
       expect(reason.maxLines, isNull);
+    });
+  });
+
+  group('semantics', () {
+    testWidgets('the swatch node reads its name exactly once', (tester) async {
+      await _pump(
+        tester,
+        KitSwatch(
+          swatchKey: const ValueKey('sw'),
+          roles: graphiteLight,
+          label: 'Graphite',
+          selected: false,
+          onPressed: () {},
+        ),
+      );
+      final node = tester.getSemantics(find.byKey(const ValueKey('sw')));
+      expect(node.label, 'Graphite');
+      expect(node.hint, isEmpty);
+    });
+
+    testWidgets('a disabled swatch reads its reason only as the hint', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const KitSwatch(
+          swatchKey: ValueKey('sw'),
+          roles: null,
+          label: 'Material You',
+          selected: false,
+          onPressed: null,
+          disabledReason: 'Needs Android 12 or later',
+        ),
+      );
+      final node = tester.getSemantics(find.byKey(const ValueKey('sw')));
+      expect(node.label, 'Material You');
+      expect(node.hint, 'Needs Android 12 or later');
+    });
+  });
+
+  group('keyboard skips disabled swatches', () {
+    Widget gridWithDisabled(List<Key> keys, {Set<int> disabled = const {1}}) =>
+        KitSwatchGrid(
+          label: 'Theme',
+          children: [
+            for (var i = 0; i < keys.length; i++)
+              disabled.contains(i)
+                  ? KitSwatch(
+                      swatchKey: keys[i],
+                      roles: null,
+                      label: 'Pack $i',
+                      selected: false,
+                      onPressed: null,
+                      disabledReason: 'Needs Android 12 or later',
+                    )
+                  : KitSwatch(
+                      swatchKey: keys[i],
+                      roles: graphiteLight,
+                      label: 'Pack $i',
+                      selected: false,
+                      onPressed: () {},
+                    ),
+          ],
+        );
+
+    testWidgets('→ passes over a disabled swatch in the middle', (
+      tester,
+    ) async {
+      final keys = _eightKeys();
+      await _pump(tester, SizedBox(width: 412, child: gridWithDisabled(keys)));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[0]), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[2]), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[0]), isTrue);
+    });
+
+    testWidgets('Tab enters on the first enabled swatch; Home and End skip '
+        'disabled ends', (tester) async {
+      final keys = _eightKeys();
+      await _pump(
+        tester,
+        SizedBox(
+          width: 412,
+          child: gridWithDisabled(keys, disabled: const {0, 7}),
+        ),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[1]), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[6]), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await tester.pump();
+      expect(_swatchHasFocus(tester, keys[1]), isTrue);
+    });
+  });
+
+  group('focus ring and hover', () {
+    testWidgets('a focused selected swatch keeps its accent border and gets '
+        'a separate ring outside it', (tester) async {
+      await _pump(
+        tester,
+        KitSwatch(
+          swatchKey: const ValueKey('sw'),
+          roles: graphiteLight,
+          label: 'Graphite',
+          selected: true,
+          onPressed: () {},
+        ),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final context = tester.element(find.byKey(const ValueKey('sw')));
+      final tile =
+          tester
+                  .widget<DecoratedBox>(
+                    find.byKey(const ValueKey('kit-swatch-tile')),
+                  )
+                  .decoration
+              as BoxDecoration;
+      final border = tile.border! as Border;
+      expect(border.top.color, graphiteDark.accent);
+      expect(border.top.width, KitTokens.hairlineWidth(context));
+      final ring =
+          tester
+                  .widget<DecoratedBox>(
+                    find.byKey(const ValueKey('kit-swatch-focus-ring')),
+                  )
+                  .decoration
+              as BoxDecoration;
+      final ringSide = (ring.border! as Border).top;
+      expect(ringSide.color, graphiteDark.accent);
+      expect(ringSide.width, KitTokens.focusRingWidth(context));
+      expect(ringSide.strokeAlign, BorderSide.strokeAlignOutside);
+    });
+
+    testWidgets('hover fills the rounded tile with the next surface step', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        KitSwatch(
+          swatchKey: const ValueKey('sw'),
+          roles: graphiteLight,
+          label: 'Graphite',
+          selected: false,
+          onPressed: () {},
+        ),
+      );
+      BoxDecoration tile() =>
+          tester
+                  .widget<DecoratedBox>(
+                    find.byKey(const ValueKey('kit-swatch-tile')),
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(tile().color, graphiteDark.surface1);
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('sw'))));
+      await tester.pump();
+      expect(tile().color, graphiteDark.surface2);
+      expect(tile().borderRadius, isNotNull);
+    });
+
+    testWidgets('a cut label gets a tooltip on a fine pointer', (tester) async {
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await _pump(
+        tester,
+        SizedBox(
+          width: 120,
+          child: Column(
+            children: [
+              KitSwatch(
+                roles: graphiteLight,
+                label: 'Graphite',
+                selected: false,
+                onPressed: () {},
+              ),
+              KitSwatch(
+                roles: graphiteLight,
+                label:
+                    'A theme pack with a very long name that never fits in '
+                    'two lines of a narrow tile',
+                selected: false,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+      final tooltips = tester.widgetList<Tooltip>(
+        find.byKey(const ValueKey('kit-swatch-tooltip')),
+      );
+      expect(tooltips.map((t) => t.message), [
+        'A theme pack with a very long name that never fits in two lines of '
+            'a narrow tile',
+      ]);
+    });
+  });
+
+  group('accent layout (LAY-9)', () {
+    testWidgets('accent circles are 48 dp targets 8 dp apart, from the start', (
+      tester,
+    ) async {
+      const keys = [ValueKey('a0'), ValueKey('a1'), ValueKey('a2')];
+      const colors = [Color(0xFF5AB0FF), Color(0xFF3CCFCF), Color(0xFFC7A6FF)];
+      await _pump(
+        tester,
+        SizedBox(
+          width: 412,
+          child: KitSwatchGrid(
+            label: 'Accent colour',
+            children: [
+              for (var i = 0; i < 3; i++)
+                KitSwatch.accent(
+                  swatchKey: keys[i],
+                  color: colors[i],
+                  label: 'Accent $i',
+                  selected: i == 0,
+                  onPressed: () {},
+                ),
+            ],
+          ),
+        ),
+      );
+      final rects = [for (final k in keys) tester.getRect(find.byKey(k))];
+      for (final r in rects) {
+        expect(r.size, const Size(48, 48));
+      }
+      expect(rects[0].left, 0);
+      expect(rects[1].left - rects[0].right, 8);
+      expect(rects[2].left - rects[1].right, 8);
+    });
+  });
+
+  group('preview parts', () {
+    testWidgets('under Arabic the code line stays left to right and the '
+        'needs-you word uses the task mark', (tester) async {
+      await _pump(
+        tester,
+        const KitThemePreview(
+          roles: graphiteLight,
+          label: 'Preview of Graphite',
+        ),
+        locale: const Locale('ar'),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.byKey(const ValueKey('kit-theme-preview-code')),
+          matching: find.byType(RichText),
+        ),
+      );
+      expect(paragraph.textDirection, TextDirection.ltr);
+      expect(find.byType(KitTaskMark), findsOneWidget);
     });
   });
 }

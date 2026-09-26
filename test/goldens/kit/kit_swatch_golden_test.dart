@@ -16,9 +16,16 @@ import 'package:opencode_mobile/ui/theme_packs.dart';
 
 import 'kit_gallery.dart';
 
+/// A pack's roles in the gallery's brightness: a swatch shows the theme of
+/// the brightness in use (KitSwatch.md, `roles`).
+ThemeRoles _roles(ThemePackId id, {required bool light}) {
+  final pack = themePack(id);
+  return (light ? pack.light : pack.dark).themeRoles;
+}
+
 /// The 8-pack grid the spec asks for: Graphite selected, Material You
 /// unavailable (no palette below Android 12), the rest available.
-Widget _grid({bool focusedFirst = false}) => KitSwatchGrid(
+Widget _grid({required bool light}) => KitSwatchGrid(
   label: 'Theme',
   children: [
     for (final id in const [
@@ -43,7 +50,7 @@ Widget _grid({bool focusedFirst = false}) => KitSwatchGrid(
       else
         KitSwatch(
           swatchKey: ValueKey('theme-pack-${id.name}'),
-          roles: themePack(id).dark.themeRoles,
+          roles: _roles(id, light: light),
           label: themePackLabels[id]!,
           selected: id == ThemePackId.opencode,
           onPressed: () {},
@@ -51,15 +58,16 @@ Widget _grid({bool focusedFirst = false}) => KitSwatchGrid(
   ],
 );
 
-/// The 3 guarded Graphite accents (`graphiteAccents`, minus the default
-/// green already shown by the grid above): blue selected.
-Widget _accentGrid() => KitSwatchGrid(
+/// The 3 guarded Graphite accents (`graphiteAccents` minus the default
+/// green, which the Graphite pack itself shows in the grid above), in the
+/// gallery's brightness: blue selected.
+Widget _accentGrid({required bool light}) => KitSwatchGrid(
   label: 'Accent colour',
   children: [
-    for (final accent in graphiteAccents)
+    for (final accent in graphiteAccents.where((a) => a.name != 'green'))
       KitSwatch.accent(
         swatchKey: ValueKey('accent-${accent.name}'),
-        color: accent.dark,
+        color: light ? accent.light : accent.dark,
         label: accent.name,
         selected: accent.name == 'blue',
         onPressed: () {},
@@ -67,17 +75,51 @@ Widget _accentGrid() => KitSwatchGrid(
   ],
 );
 
-Widget _previewGraphite() => const KitThemePreview(
-  previewKey: ValueKey('kit-theme-preview'),
-  roles: graphiteLight,
+Widget _previewGraphite({required bool light}) => KitThemePreview(
+  previewKey: const ValueKey('kit-theme-preview'),
+  roles: light ? graphiteLight : graphiteDark,
   label: 'Preview of Graphite',
 );
 
-Widget _previewCatppuccin() => KitThemePreview(
+Widget _previewCatppuccin({required bool light}) => KitThemePreview(
   previewKey: const ValueKey('kit-theme-preview'),
-  roles: themePack(ThemePackId.catppuccin).dark.themeRoles,
+  roles: _roles(ThemePackId.catppuccin, light: light),
   label: 'Preview of Catppuccin',
 );
+
+/// The preview builds its own theme, which the gallery's outer theme cannot
+/// reach. A device draws Arabic button labels through its system font
+/// fallback; the test engine has none, so the gallery gives the sample's
+/// button styles the same Noto Sans Arabic fallback kit_gallery.dart gives
+/// the outer theme (the family loadKitGalleryFonts loads).
+ThemeData _withArabicButtonFallback(ThemeData theme) {
+  const fallback = ['Noto Sans Arabic'];
+  ButtonStyle? withFallback(ButtonStyle? style) {
+    final text = style?.textStyle;
+    if (style == null || text == null) return style;
+    return style.copyWith(
+      textStyle: WidgetStateProperty.resolveWith(
+        (states) =>
+            text.resolve(states)?.copyWith(fontFamilyFallback: fallback),
+      ),
+    );
+  }
+
+  return theme.copyWith(
+    filledButtonTheme: FilledButtonThemeData(
+      style: withFallback(theme.filledButtonTheme.style),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: withFallback(theme.textButtonTheme.style),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: withFallback(theme.outlinedButtonTheme.style),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: withFallback(theme.elevatedButtonTheme.style),
+    ),
+  );
+}
 
 /// [kitGalleryPart], but Tab is pressed once after the tree settles and
 /// before the shot is taken — for the one state (`grid_focused`) that needs
@@ -115,7 +157,7 @@ Future<void> _focusedGridShot(
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 720),
-                  child: _grid(),
+                  child: _grid(light: light),
                 ),
               ),
             ),
@@ -145,7 +187,7 @@ void main() {
   setUpAll(loadKitGalleryFonts);
 
   // ── Declared states × dark and light at 412×915 (10 PNGs).
-  const declared = <String, Widget Function()>{
+  const declared = <String, Widget Function({required bool light})>{
     'grid': _grid,
     'accent': _accentGrid,
     'preview_graphite': _previewGraphite,
@@ -165,7 +207,7 @@ void main() {
           ),
           size: const Size(412, 915),
           light: light,
-          child: build(),
+          child: build(light: light),
         );
       });
     }
@@ -202,7 +244,7 @@ void main() {
             name: kitGalleryName('kit_swatch_grid', size, light: light),
             size: size,
             light: light,
-            child: _grid(),
+            child: _grid(light: light),
           );
         },
       );
@@ -211,7 +253,7 @@ void main() {
 
   // ── Text 2.0 and Arabic (`grid`, `preview_graphite`) at 412×915 and
   // 1280×800, dark (8 PNGs).
-  const scaledScenes = <String, Widget Function()>{
+  const scaledScenes = <String, Widget Function({required bool light})>{
     'grid': _grid,
     'preview_graphite': _previewGraphite,
   };
@@ -231,13 +273,15 @@ void main() {
           size: size,
           light: false,
           textScale: 2,
-          child: build(),
+          child: build(light: false),
         );
       });
 
       testWidgets('kit_swatch $state ar · ${kitGallerySize(size)}', (
         tester,
       ) async {
+        debugKitThemePreviewTheme = _withArabicButtonFallback;
+        addTearDown(() => debugKitThemePreviewTheme = null);
         await kitGalleryPart(
           tester,
           name: kitGalleryName(
@@ -249,7 +293,7 @@ void main() {
           size: size,
           light: false,
           locale: const Locale('ar'),
-          child: build(),
+          child: build(light: false),
         );
       });
     }
