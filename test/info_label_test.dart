@@ -102,6 +102,42 @@ void main() {
     expect(find.textContaining('Model Context Protocol'), findsOneWidget);
   });
 
+  testWidgets('back closes the InfoLabel.show explanation, not the screen', (
+    tester,
+  ) async {
+    late BuildContext screen;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: const Scaffold(body: Text('previous')),
+        routes: {
+          '/mcp': (_) => Scaffold(
+            body: Builder(
+              builder: (context) {
+                screen = context;
+                return const Text('mcp setup');
+              },
+            ),
+          ),
+        },
+      ),
+    );
+    tester.state<NavigatorState>(find.byType(Navigator)).pushNamed('/mcp');
+    await tester.pumpAndSettle();
+    unawaited(
+      InfoLabel.show(
+        screen,
+        term: Glossary.mcp.term,
+        explanation: Glossary.mcp.explanation,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Model Context Protocol'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Model Context Protocol'), findsNothing);
+    expect(find.text('mcp setup'), findsOneWidget);
+  });
+
   test('every glossary entry stays short enough to read in one glance', () {
     for (final entry in [
       Glossary.mcp,

@@ -40,9 +40,15 @@ ThemeData _themeWithArabicFallback({required bool light}) {
   );
 }
 
-/// A section label above a row that ends in the term (KitTerm.md's
-/// "Galleries required": "a section label and at the end of a row's line").
-Widget _page(BuildContext context, Widget term) {
+/// KitTerm.md's "Galleries required" placements: a term as a section
+/// label, and [term] (the one each scene opens) at the end of a row's line,
+/// so the bubble has to keep itself inside the window at the end edge.
+Widget _page(
+  BuildContext context,
+  Widget term, {
+  String label = 'Worktrees',
+  String line = 'Runs each task in a separate',
+}) {
   final tokens = KitTokens.of(context);
   return Padding(
     padding: EdgeInsetsDirectional.all(tokens.rail),
@@ -50,13 +56,28 @@ Widget _page(BuildContext context, Widget term) {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const KitText('Advanced', role: KitTextRole.label),
+        KitTerm(
+          label,
+          explanation: 'Separate checkouts of this repository.',
+          role: KitTextRole.label,
+          termKey: const ValueKey('kit-term-label'),
+        ),
         SizedBox(height: tokens.space2),
-        Row(mainAxisSize: MainAxisSize.min, children: [term]),
+        Row(
+          children: [
+            Expanded(child: KitText(line, role: KitTextRole.body)),
+            SizedBox(width: tokens.space2),
+            term,
+          ],
+        ),
       ],
     ),
   );
 }
+
+/// The mouse a hover scene added: removed before the next pass renders, so
+/// each theme's frame is hovered from scratch.
+TestGesture? _mouse;
 
 /// [kitGalleryPart] plus an [interact] hook run once after the first
 /// settle and before the accessibility check and golden compare (focusing,
@@ -72,16 +93,6 @@ Future<void> _interactiveScene(
   double textScale = 1,
   required Future<void> Function(WidgetTester tester, BuildContext context)
   interact,
-  // A pointer-focused or opened frame renders a second "Worktree" (the
-  // bubble's own title) or a focus ring right at the term's tight text
-  // bounds; flutter_test's MinimumTextContrastGuideline samples a window
-  // only 4 px past those bounds (packages/flutter_test/src/accessibility.dart)
-  // and, at some sizes, blends that neighbour in, reporting a false
-  // contrast failure though the declared colours (verified directly:
-  // roles.text1 on roles.ground/surface3) meet WCAG AA. The G5 check still
-  // runs on the plain "default" state; see docs/qa/revamp-kit-KitTerm-…
-  // NOT proven for the sizes this is suppressed at.
-  bool checkAccessibility = true,
 }) async {
   final own = light ? 'light' : 'dark';
   final stem = name.substring(0, name.length - own.length - 1);
@@ -94,6 +105,8 @@ Future<void> _interactiveScene(
   late BuildContext context;
   try {
     for (final pass in [!light, light]) {
+      await _mouse?.removePointer();
+      _mouse = null;
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         RepaintBoundary(
@@ -125,16 +138,15 @@ Future<void> _interactiveScene(
         ),
       );
       await tester.pumpAndSettle();
-      if (pass == light) await interact(tester, context);
+      // G5 checks both themes in the state the shot shows (A11Y-6).
+      await interact(tester, context);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      if (checkAccessibility) {
-        await expectKitGalleryAccessible(
-          tester,
-          shot: '${stem}_${pass ? 'light' : 'dark'}',
-          direction: Directionality.of(context),
-        );
-      }
+      await expectKitGalleryAccessible(
+        tester,
+        shot: '${stem}_${pass ? 'light' : 'dark'}',
+        direction: Directionality.of(context),
+      );
     }
   } finally {
     debugDefaultTargetPlatformOverride = null;
@@ -153,14 +165,29 @@ Future<void> _hoverOpen(WidgetTester tester, BuildContext context) async {
   debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
   addTearDown(() => debugPlatformCapabilities = null);
   final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-  addTearDown(gesture.removePointer);
+  _mouse = gesture;
+  addTearDown(() async {
+    await _mouse?.removePointer();
+    _mouse = null;
+  });
   await gesture.addPointer(location: Offset.zero);
   await tester.pump();
   await gesture.moveTo(tester.getCenter(_termFinder));
   await tester.pump(const Duration(milliseconds: 450));
+  // Past the fade and the leave grace: the bubble must still be open.
+  await tester.pump(const Duration(seconds: 1));
+  expect(find.byKey(const ValueKey('kit-term-bubble')), findsOneWidget);
 }
 
+/// Keyboard focus: the ring is drawn only in the traditional (keyboard)
+/// highlight mode, never after a touch (KitTappable's rule).
 Future<void> _focus(WidgetTester tester, BuildContext context) async {
+  FocusManager.instance.highlightStrategy =
+      FocusHighlightStrategy.alwaysTraditional;
+  addTearDown(
+    () => FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.automatic,
+  );
   Focus.of(tester.element(_termFinder)).requestFocus();
   await tester.pump();
 }
@@ -212,7 +239,6 @@ void main() {
         light: light,
         builder: defaultTerm,
         interact: _focus,
-        checkAccessibility: false,
       );
     });
 
@@ -228,7 +254,6 @@ void main() {
         light: light,
         builder: defaultTerm,
         interact: _tapOpen,
-        checkAccessibility: false,
       );
     });
 
@@ -246,7 +271,6 @@ void main() {
         builder: (context) =>
             _page(context, KitTerm(term, explanation: longExplanation)),
         interact: _tapOpen,
-        checkAccessibility: false,
       );
     });
 
@@ -267,7 +291,6 @@ void main() {
           light: light,
           builder: defaultTerm,
           interact: desktop ? _hoverOpen : _tapOpen,
-          checkAccessibility: false,
         );
       });
     }
@@ -288,7 +311,6 @@ void main() {
           textScale: 2,
           builder: defaultTerm,
           interact: _tapOpen,
-          checkAccessibility: false,
         );
       });
 
@@ -308,10 +330,11 @@ void main() {
                 'ووركتري',
                 explanation: 'نسخة عمل منفصلة من نفس المستودع.',
               ),
+              label: 'نسخ العمل',
+              line: 'تعمل كل مهمة في نسخة منفصلة:',
             ),
           ),
           interact: _tapOpen,
-          checkAccessibility: false,
         );
       });
     }
