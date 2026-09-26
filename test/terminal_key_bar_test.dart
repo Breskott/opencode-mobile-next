@@ -116,7 +116,8 @@ void main() {
 
     testWidgets('has every key the spec lists', (tester) async {
       await mount(tester, TerminalKeyBarController());
-      for (final key in TerminalBarKey.values) {
+      // The default bar: the two rows (extraRow needs interruptKeys).
+      for (final key in TerminalBarKey.rows.expand((row) => row)) {
         expect(
           find.byKey(ValueKey('terminal-key-${key.name}')),
           findsOneWidget,
@@ -160,7 +161,8 @@ void main() {
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await mount(tester, TerminalKeyBarController());
-      for (final key in TerminalBarKey.values) {
+      // The default bar: the two rows (extraRow needs interruptKeys).
+      for (final key in TerminalBarKey.rows.expand((row) => row)) {
         final size = tester.getSize(
           find.byKey(ValueKey('terminal-key-${key.name}')),
         );

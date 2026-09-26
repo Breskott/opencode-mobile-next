@@ -18332,7 +18332,8 @@
     "description": "Button above the end of a command output, revealing the lines before it",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -18341,7 +18342,42 @@
     "description": "Opens a very long command output in the file viewer",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitTerminalViewKeySlash": "Slash key",
+  "@kitTerminalViewKeySlash": {
+    "description": "Spoken name of the terminal key bar's / key"
+  },
+  "kitTerminalViewKeyDash": "Dash key",
+  "@kitTerminalViewKeyDash": {
+    "description": "Spoken name of the terminal key bar's - key"
+  },
+  "kitTerminalViewKeyPipe": "Pipe key",
+  "@kitTerminalViewKeyPipe": {
+    "description": "Spoken name of the terminal key bar's | key (the shell's pipe)"
+  },
+  "kitTerminalViewKeyTilde": "Tilde key",
+  "@kitTerminalViewKeyTilde": {
+    "description": "Spoken name of the terminal key bar's ~ key"
+  },
+  "kitTerminalViewKeyHome": "Home key",
+  "@kitTerminalViewKeyHome": {
+    "description": "Spoken name of the terminal key bar's Home key"
+  },
+  "kitTerminalViewKeyEnd": "End key",
+  "@kitTerminalViewKeyEnd": {
+    "description": "Spoken name of the terminal key bar's End key"
+  },
+  "kitTerminalViewShowingLast": "{count, plural, =1{Showing the last line} other{Showing the last {count} lines}}",
+  "@kitTerminalViewShowingLast": {
+    "description": "Under a very long command output that cannot open elsewhere: only its last lines are shown inline",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },

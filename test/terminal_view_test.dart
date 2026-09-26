@@ -57,7 +57,8 @@ void main() {
     expect(program.$2?.color, theme.colorScheme.primary);
     expect(
       _colorOf(tester, '/tmp/opencode/flutter/bin/'),
-      AppTheme.mutedOf(theme),
+      // KitTerminalView.md tokens: the dimmed folder is text3.
+      AppTheme.rolesOf(theme).text3,
     );
     final roles = AppTheme.rolesOf(theme);
     expect(_colorOf(tester, '--concurrency=1'), roles.codeType);
@@ -80,10 +81,19 @@ void main() {
     );
     expect(_colorOf(tester, 'red from the tool'), theme.colorScheme.error);
     expect(_spans(tester).any((s) => s.$1.contains('\x1B')), isFalse);
-    expect(_colorOf(tester, 'Error: something'), theme.colorScheme.error);
+    // LOOK-5 (until B2): an error line is text1 in semibold, never danger.
+    final roles = AppTheme.rolesOf(theme);
+    expect(_colorOf(tester, 'Error: something'), roles.text1);
+    expect(
+      _spans(tester)
+          .firstWhere((span) => span.$1.contains('Error: something'))
+          .$2
+          ?.fontWeight,
+      FontWeight.w600,
+    );
     expect(_colorOf(tester, 'Found 0 errors'), isNot(theme.colorScheme.error));
     expect(_colorOf(tester, '+6'), AppTheme.successOf(theme));
-    expect(_colorOf(tester, ' -1'), theme.colorScheme.error);
+    expect(_colorOf(tester, ' -1'), roles.text1);
     expect(_colorOf(tester, 'All tests passed!'), AppTheme.successOf(theme));
   });
 

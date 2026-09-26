@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:xterm/core.dart' as xterm;
 
 import '../../l10n/app_localizations.dart';
-import '../app_theme.dart';
+import 'kit_layout.dart';
+import 'kit_text.dart';
+import 'kit_tokens.dart';
 
 /// The keys a phone keyboard lacks, for a terminal
 /// (docs/design/local-terminal-2026-09-24.md §3). Written for this app;
@@ -24,7 +27,13 @@ enum TerminalBarKey {
   left('←'),
   down('↓'),
   right('→'),
-  pageDown('PgDn');
+  pageDown('PgDn'),
+
+  /// Ctrl-C in one tap (a server terminal's first key).
+  interrupt('^C'),
+
+  /// Ctrl-D in one tap.
+  endOfInput('^D');
 
   const TerminalBarKey(this.face);
 
@@ -36,6 +45,10 @@ enum TerminalBarKey {
     [esc, slash, dash, pipe, home, up, end, pageUp],
     [tab, ctrl, alt, tilde, left, down, right, pageDown],
   ];
+
+  /// The keys a bar with `interruptKeys` leads with, on a row of their own
+  /// above [rows].
+  static const extraRow = [interrupt, endOfInput];
 
   bool get isModifier => this == ctrl || this == alt;
 
@@ -114,6 +127,8 @@ class TerminalKeyBarController extends ChangeNotifier {
 
 /// Sends [key] to [terminal] as a real keyboard would, so programs in
 /// application-cursor mode (vim, less, htop) get the sequences they expect.
+/// Everything goes through the terminal's input, so a server terminal
+/// (whose output goes to its socket) and a phone shell behave alike.
 void sendTerminalBarKey(
   xterm.Terminal terminal,
   TerminalBarKey key, {
@@ -123,6 +138,15 @@ void sendTerminalBarKey(
   final text = key.text;
   if (text != null) {
     terminal.textInput(terminalModifiedText(text, ctrl: ctrl, alt: alt));
+    return;
+  }
+  final control = switch (key) {
+    TerminalBarKey.interrupt => 'c',
+    TerminalBarKey.endOfInput => 'd',
+    _ => null,
+  };
+  if (control != null) {
+    terminal.textInput(terminalModifiedText(control, ctrl: true, alt: alt));
     return;
   }
   final named = switch (key) {
@@ -155,9 +179,25 @@ void sendTerminalBarKey(
   terminal.keyInput(named, ctrl: ctrl, alt: alt);
 }
 
+/// The NAME-1 name for the bar (kit v2 §9.2).
+typedef KitTerminalKeyBar = TerminalKeyBar;
+
 /// Two rows of terminal keys above the phone's keyboard, with sticky Ctrl
 /// and Alt. [onKey] gets every non-modifier key with the modifiers that
 /// were latched for it.
+///
+/// States: enabled, disabled (with [disabledReason] as each key's hint),
+/// latched (Ctrl or Alt drawn selected until the next key), compact (one
+/// row that scrolls sideways).
+///
+/// Every key is at least [keyHeight] square (LAY-9), `space1` from the
+/// next. Where the window is too narrow for eight such keys (under 412 dp)
+/// the rows scroll sideways together, so columns stay where a keyboard has
+/// them; on a wider window the keys grow to fill it, capped at
+/// `KitLayout.readingWidth` and centred. The keys are laid out left to
+/// right in every language.
+///
+/// Retired by kit-hygiene: use KitTerminalKeyBar.
 class TerminalKeyBar extends StatelessWidget {
   const TerminalKeyBar({
     super.key,
@@ -165,6 +205,8 @@ class TerminalKeyBar extends StatelessWidget {
     required this.onKey,
     this.enabled = true,
     this.compact = false,
+    this.interruptKeys = false,
+    this.disabledReason,
   });
 
   final TerminalKeyBarController controller;
@@ -180,7 +222,16 @@ class TerminalKeyBar extends StatelessWidget {
   /// (landscape with the keyboard up).
   final bool compact;
 
-  static const keyHeight = 44.0;
+  /// Leads the bar with Ctrl-C and Ctrl-D ([TerminalBarKey.extraRow]): a
+  /// server terminal's keys.
+  final bool interruptKeys;
+
+  /// What each key's hint says while the bar is disabled; by default
+  /// "Unavailable while the terminal is disconnected".
+  final String? disabledReason;
+
+  /// A key's height, and the least width of a key: `KitTokens.minTarget`.
+  static const keyHeight = 48.0;
 
   /// A key's width in the one-row form.
   static const compactKeyWidth = 56.0;
@@ -194,11 +245,16 @@ class TerminalKeyBar extends StatelessWidget {
     TerminalBarKey.right => l10n.e7SetupRightKey,
     TerminalBarKey.ctrl => l10n.localTerminalKeyCtrl,
     TerminalBarKey.alt => l10n.localTerminalKeyAlt,
-    TerminalBarKey.home => l10n.localTerminalKeyHome,
-    TerminalBarKey.end => l10n.localTerminalKeyEnd,
+    TerminalBarKey.home => l10n.kitTerminalViewKeyHome,
+    TerminalBarKey.end => l10n.kitTerminalViewKeyEnd,
+    TerminalBarKey.slash => l10n.kitTerminalViewKeySlash,
+    TerminalBarKey.dash => l10n.kitTerminalViewKeyDash,
+    TerminalBarKey.pipe => l10n.kitTerminalViewKeyPipe,
+    TerminalBarKey.tilde => l10n.kitTerminalViewKeyTilde,
     TerminalBarKey.pageUp => l10n.localTerminalKeyPageUp,
     TerminalBarKey.pageDown => l10n.localTerminalKeyPageDown,
-    _ => key.face,
+    TerminalBarKey.interrupt => l10n.e7SetupInterruptKey,
+    TerminalBarKey.endOfInput => l10n.e7SetupEndInputKey,
   };
 
   static const _compactOrder = [
@@ -220,8 +276,8 @@ class TerminalKeyBar extends StatelessWidget {
     TerminalBarKey.pageDown,
   ];
 
+  // A key tap is a local choice: no haptic (MOT-11).
   void _tap(TerminalBarKey key) {
-    HapticFeedback.selectionClick();
     if (key.isModifier) {
       controller.toggle(key);
       return;
@@ -233,7 +289,17 @@ class TerminalKeyBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final side = math.max(keyHeight, tokens.minTarget);
+    final reason = disabledReason ?? l10n.e7SetupKeyUnavailable;
+    // Keys are space1 apart; each key's cap is its whole 48 dp target, so
+    // no two targets overlap and a screen reader's node is the cap.
+    final gap = tokens.space1;
+    final compactKeys = [
+      if (interruptKeys) ...TerminalBarKey.extraRow,
+      ..._compactOrder,
+    ];
     Widget keyOf(TerminalBarKey key) => _Key(
       key: ValueKey('terminal-key-${key.name}'),
       face: key.face,
@@ -244,57 +310,136 @@ class TerminalKeyBar extends StatelessWidget {
         _ => null,
       },
       onTap: enabled ? () => _tap(key) : null,
-      theme: theme,
+      disabledReason: reason,
     );
     return Semantics(
       container: true,
       label: l10n.localTerminalKeysLabel,
-      child: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => Directionality(
-          // Keys sit where a keyboard has them in every language.
-          textDirection: TextDirection.ltr,
-          child: compact
-              ? SizedBox(
-                  height: keyHeight,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      // Modifiers and arrows first: what a short screen
-                      // needs most.
-                      for (final key in _compactOrder)
-                        SizedBox(width: compactKeyWidth, child: keyOf(key)),
-                    ],
-                  ),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final row in TerminalBarKey.rows)
-                      SizedBox(
-                        height: keyHeight,
-                        child: Row(
-                          children: [
-                            for (final key in row) Expanded(child: keyOf(key)),
-                          ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: roles.surface2,
+          border: Border(
+            top: BorderSide(
+              color: roles.hairline,
+              width: KitTokens.hairlineWidth(context),
+            ),
+          ),
+        ),
+        child: ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => Directionality(
+            // Keys sit where a keyboard has them in every language.
+            textDirection: TextDirection.ltr,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: gap),
+              child: compact
+                  ? SizedBox(
+                      height: side,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        // Modifiers and arrows first: what a short screen
+                        // needs most.
+                        itemCount: compactKeys.length,
+                        separatorBuilder: (_, _) => SizedBox(width: gap),
+                        itemBuilder: (_, i) => SizedBox(
+                          width: math.max(compactKeyWidth, side),
+                          child: keyOf(compactKeys[i]),
                         ),
                       ),
-                  ],
-                ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns = TerminalBarKey.rows.first.length;
+                        final room = constraints.hasBoundedWidth
+                            ? math.min(
+                                constraints.maxWidth,
+                                KitLayout.readingWidth,
+                              )
+                            : KitLayout.readingWidth;
+                        final needed = side * columns + gap * (columns - 1);
+                        final fits = needed <= room;
+                        // Whole physical pixels: a fractional width puts
+                        // every other cap edge on a half pixel, and it
+                        // blurs (LOOK-21).
+                        final dpr = MediaQuery.devicePixelRatioOf(context);
+                        final width = fits
+                            ? ((room - gap * (columns - 1)) / columns * dpr)
+                                      .floorToDouble() /
+                                  dpr
+                            : side;
+                        final span = fits
+                            ? width * columns + gap * (columns - 1)
+                            : needed;
+                        Widget row(List<TerminalBarKey> keys) => Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: gap,
+                          children: [
+                            for (final key in keys)
+                              SizedBox(
+                                width: width,
+                                height: side,
+                                child: keyOf(key),
+                              ),
+                          ],
+                        );
+                        final Widget grid = SizedBox(
+                          width: span,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: gap,
+                            children: [
+                              if (interruptKeys) row(TerminalBarKey.extraRow),
+                              for (final keys in TerminalBarKey.rows) row(keys),
+                            ],
+                          ),
+                        );
+                        if (!fits) {
+                          // Too narrow for eight 48 dp keys: the rows scroll
+                          // together rather than shrink the keys.
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: grid,
+                          );
+                        }
+                        // Centred, with the lead snapped to a pixel so the
+                        // grid starts on a pixel boundary.
+                        final outer = constraints.hasBoundedWidth
+                            ? constraints.maxWidth
+                            : span;
+                        final lead =
+                            ((outer - span) / 2 * dpr).floorToDouble() / dpr;
+                        return Align(
+                          alignment: AlignmentDirectional.topStart,
+                          heightFactor: 1,
+                          child: Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: math.max(0, lead),
+                            ),
+                            child: grid,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _Key extends StatelessWidget {
+/// One key: a [TerminalBarKey.face] on a `surface3` cap, `accent` while
+/// latched, `text3` while disabled. The cap is the whole target (at least
+/// 48 dp square), and its screen-reader node is exactly the cap.
+class _Key extends StatefulWidget {
   const _Key({
     super.key,
     required this.face,
     required this.label,
     required this.latched,
     required this.onTap,
-    required this.theme,
+    required this.disabledReason,
   });
 
   final String face;
@@ -303,38 +448,96 @@ class _Key extends StatelessWidget {
   /// Null for a key that does not latch.
   final bool? latched;
   final VoidCallback? onTap;
-  final ThemeData theme;
+  final String disabledReason;
+
+  @override
+  State<_Key> createState() => _KeyState();
+}
+
+class _KeyState extends State<_Key> {
+  bool _hovered = false;
+  bool _pressed = false;
+  bool _focused = false;
+
+  void _press(bool down) {
+    if (_pressed != down) setState(() => _pressed = down);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final on = latched == true;
-    final scheme = theme.colorScheme;
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final onTap = widget.onTap;
+    final enabled = onTap != null;
+    final on = widget.latched == true;
+    // Hover and pressed step the cap up by the hairline's tint: surface3 is
+    // the top surface step, so there is no role above it (KitTappable.md).
+    final fill = !enabled
+        ? roles.surface3
+        : on
+        ? roles.accent
+        : _hovered || _pressed
+        ? Color.alphaBlend(roles.hairline, roles.surface3)
+        : roles.surface3;
+    final tone = !enabled
+        ? KitTextTone.tertiary
+        : on
+        ? KitTextTone.onAccent
+        : KitTextTone.primary;
     return Semantics(
       button: true,
-      toggled: latched,
-      enabled: onTap != null,
-      label: label,
+      toggled: widget.latched,
+      enabled: enabled,
+      label: widget.label,
+      hint: enabled ? null : widget.disabledReason,
       onTap: onTap,
       excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Material(
-          color: on ? scheme.primary : scheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(AppTheme.radiusControl / 2),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppTheme.radiusControl / 2),
-            onTap: onTap,
+      child: FocusableActionDetector(
+        enabled: enabled,
+        mouseCursor: enabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        onShowHoverHighlight: (value) => setState(() => _hovered = value),
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap?.call();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          onTapDown: enabled ? (_) => _press(true) : null,
+          onTapUp: enabled ? (_) => _press(false) : null,
+          onTapCancel: enabled ? () => _press(false) : null,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(tokens.buttonRadius),
+              // Drawn inside the cap, so no parent clip cuts it (LOOK-21).
+              border: _focused && enabled
+                  ? Border.all(
+                      color: roles.accent,
+                      width: KitTokens.focusRingWidth(context),
+                    )
+                  : null,
+            ),
             child: Center(
-              child: Text(
-                face,
-                maxLines: 1,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontFamily: AppTheme.monoFamily,
-                  color: onTap == null
-                      ? AppTheme.mutedOf(theme)
-                      : on
-                      ? scheme.onPrimary
-                      : scheme.onSurface,
+              // Caps stop growing at 1.3x so "PgDn" fits a 48 dp key; the
+              // key's full name is in its semantics (A11Y-8).
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: KitTokens.terminalKeyMaxTextScale,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: KitText(
+                    widget.face,
+                    role: KitTextRole.mono,
+                    tone: tone,
+                    maxLines: 1,
+                  ),
                 ),
               ),
             ),
