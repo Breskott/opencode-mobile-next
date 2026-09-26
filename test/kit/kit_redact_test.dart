@@ -36,6 +36,42 @@ void main() {
       'git clone https://ghtoken@github.com/o/r':
           'git clone https://$m@github.com/o/r',
       'jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig-nat_ure end': 'jwt $m end',
+      // Quoted values are masked through their closing quote.
+      'password=";hunter2"': 'password="$m"',
+      'password="correct horse battery staple"': 'password="$m"',
+      "password='correct horse battery staple' user=me":
+          "password='$m' user=me",
+      r'password="a\"b; c" next': 'password="$m" next',
+      '{"password":"a,b;c","user":"me"}': '{"password":"$m","user":"me"}',
+      // The whole Authorization value, not just its first word.
+      'Authorization: Digest username="alice", nonce="fake-nonce", '
+              'response="fake-response"':
+          'Authorization: $m',
+      'Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20260926/'
+              'us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-date, '
+              'Signature=fakesignature0123':
+          'Authorization: $m',
+      'authorization: Digest username="alice", response="fake-response"':
+          'authorization: $m',
+      'proxy-authorization: Digest username="bob", response="fake"':
+          'proxy-authorization: $m',
+      '{"Authorization":"Bearer x","id":1}': '{"Authorization":"$m","id":1}',
+      r'{"log":"Authorization: Digest username=\"alice\", response=\"f\"","n":1}':
+          '{"log":"Authorization: $m","n":1}',
+      "curl -H 'Authorization: AWS4-HMAC-SHA256 Credential=x, Signature=f' "
+              'https://h':
+          "curl -H 'Authorization: $m' https://h",
+      'Authorization: Digest response="x"\nHost: example.com':
+          'Authorization: $m\nHost: example.com',
+      // JWTs recognised by decoding, whatever the header's spelling.
+      'jwt eyAiYWxnIjogIkhTMjU2IiB9.eyJzdWIiOiIxIn0.ZmFrZS1zaWduYXR1cmU end':
+          'jwt $m end',
+      'eyJhbGciOiJIUzI1NiJ9.e30.ZmFrZS1zaWduYXR1cmU': m,
+      // URL query and fragment credentials.
+      'https://example.com/cb?token=abc&password=hunter2':
+          'https://example.com/cb?token=$m&password=$m',
+      'https://example.com/cb#access_token=abc123&x=1':
+          'https://example.com/cb#access_token=$m&x=1',
     };
     for (final e in cases.entries) {
       test(e.key, () {
@@ -73,6 +109,12 @@ void main() {
       'sk-short',
       'ghp_short',
       'eyJhbGciOi only one segment',
+      '/tmp/token=cache/output.log',
+      '/tmp/password:notes.txt',
+      '/tmp/cache/my_secret=old.txt',
+      r'C:\temp\token=cache\out.log',
+      'open lib.ui.kit and pubspec.yaml.lock',
+      'password=""',
     ];
     for (final s in untouched) {
       test(s.isEmpty ? '(empty)' : s, () {

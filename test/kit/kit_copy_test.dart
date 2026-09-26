@@ -63,6 +63,14 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
   });
 
+  testWidgets('a quoted password is masked whole', (tester) async {
+    final context = await pumpKitHost(tester);
+    await KitCopy.copy(context, 'password="correct horse battery staple"');
+    await tester.pump();
+
+    expect(copied(), 'password="${KitRedact.mask}"');
+  });
+
   testWidgets('plain text is copied as is, with a custom announcement', (
     tester,
   ) async {
