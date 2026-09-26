@@ -3,7 +3,10 @@
 // and the first behaviour checks live here; kit-KitText-v2 owns this file
 // and adds the full G19 contracts (LOOK-10–LOOK-17), plus KitText.selectable,
 // KitText.mono, KitSelectable and KitLtr (docs/ux-system/kit-api/KitText.md).
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -64,7 +67,7 @@ Finder _button(String label) => find.ancestor(
 /// paragraph out in, which can be wider than its content): [RenderParagraph]
 /// gives the run's own boxes, in its local coordinates.
 Rect _glyphRect(WidgetTester tester, String text) {
-  final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+  final paragraph = _paragraph(tester, text);
   final boxes = paragraph.getBoxesForSelection(
     TextSelection(baseOffset: 0, extentOffset: text.length),
   );
@@ -74,6 +77,54 @@ Rect _glyphRect(WidgetTester tester, String text) {
   }
   return paragraph.localToGlobal(rect.topLeft) & rect.size;
 }
+
+/// Records every string the app puts on the clipboard until the test ends.
+List<String> _mockClipboard(WidgetTester tester) {
+  final copied = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied.add((call.arguments! as Map)['text'] as String);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  return copied;
+}
+
+Future<void> _pressCtrlC(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  await tester.pump();
+}
+
+/// The global centre of [word] inside the sole selectable text on screen
+/// (its [RenderEditable], so the press lands on that word's glyphs).
+Offset _wordCenter(WidgetTester tester, String sentence, String word) {
+  final editable = tester
+      .state<EditableTextState>(find.byType(EditableText))
+      .renderEditable;
+  final start = sentence.indexOf(word);
+  final boxes = editable.getBoxesForSelection(
+    TextSelection(baseOffset: start, extentOffset: start + word.length),
+  );
+  return editable.localToGlobal(boxes.first.toRect().center);
+}
+
+/// The [RenderParagraph] that paints [text] (below the [Semantics] a cut
+/// mono value wraps it in).
+RenderParagraph _paragraph(WidgetTester tester, String text) =>
+    tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.text(text), matching: find.byType(RichText)),
+    );
 
 void main() {
   kitMotionStillTests(
@@ -206,8 +257,8 @@ void main() {
   });
 
   testWidgets(
-    '2. under Arabic every non-mono role has letter spacing 0 and falls '
-    'back to Noto Sans Arabic',
+    '2. under Arabic every role has letter spacing 0 and falls back to '
+    'Noto Sans Arabic',
     (tester) async {
       for (final role in KitTextRole.values) {
         late BuildContext capturedContext;
@@ -223,16 +274,19 @@ void main() {
         );
         final style = KitText.styleOf(capturedContext, role);
         expect(style.letterSpacing, 0, reason: '$role letter spacing');
-        if (role != KitTextRole.mono) {
-          // KitText.mono keeps AppMono (a technical value): the Arabic face
-          // swap is for the nine prose roles that read Arabic words.
-          expect(
-            style.fontFamilyFallback,
-            contains('Noto Sans Arabic'),
-            reason: '$role fallback',
-          );
-        }
+        expect(
+          style.fontFamilyFallback,
+          contains('Noto Sans Arabic'),
+          reason: '$role fallback',
+        );
       }
+      // Mono keeps its own face for the Latin of a technical value; only
+      // its fallback is the Arabic one.
+      final context = tester.element(find.byType(SizedBox).first);
+      expect(
+        KitText.styleOf(context, KitTextRole.mono).fontFamily,
+        AppTheme.monoFamily,
+      );
     },
   );
 
@@ -325,8 +379,9 @@ void main() {
       expect(
         longPath.endsWith(tail),
         isTrue,
-        reason: 'the tail is the path\'s own end (the file name)',
+        reason: 'the tail is the path\'s own end',
       );
+      expect(tail, endsWith('main.dart'), reason: 'the file name is kept');
       expect(head.length + tail.length, lessThan(longPath.length));
       final semantics = tester.getSemantics(find.text(shown));
       expect(semantics.label, longPath);
@@ -343,11 +398,19 @@ void main() {
           ),
         ),
       );
-      final text = tester.widgetList<Text>(find.byType(Text)).single;
-      expect(text.data, longPath);
-      expect(text.overflow, TextOverflow.ellipsis);
-      expect(text.maxLines, 1);
-      final semantics = tester.getSemantics(find.byType(Text).first);
+      final box = tester.getRect(find.byType(SizedBox).first);
+      final paragraph = _paragraph(tester, longPath);
+      expect(paragraph.didExceedMaxLines, isTrue, reason: 'it was cut');
+      expect(paragraph.size.width, lessThanOrEqualTo(box.width));
+      expect(paragraph.size.height, lessThan(40), reason: 'one line');
+      // The head is painted, from the box's own start edge.
+      final headBoxes = paragraph.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 5),
+      );
+      final head = paragraph.localToGlobal(headBoxes.first.toRect().topLeft);
+      expect(head.dx, closeTo(box.left, 1.0));
+      expect(headBoxes.last.toRect().right, lessThanOrEqualTo(box.width));
+      final semantics = tester.getSemantics(find.text(longPath));
       expect(semantics.label, longPath);
     });
   });
@@ -364,16 +427,19 @@ void main() {
         // the invariant check runs ahead of.
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         try {
-          await tester.pumpWidget(
-            _host(const KitText.selectable('Copy me now')),
-          );
-          await tester.longPress(find.text('Copy me now'));
+          const sentence = 'Release notes ready';
+          final copied = _mockClipboard(tester);
+          await tester.pumpWidget(_host(const KitText.selectable(sentence)));
+          await tester.longPressAt(_wordCenter(tester, sentence, 'notes'));
           await tester.pump(const Duration(milliseconds: 300));
           expect(find.text('Copy'), findsOneWidget);
           expect(find.text('Select all'), findsOneWidget);
           expect(find.text('Cut'), findsNothing);
           expect(find.text('Paste'), findsNothing);
           expect(find.text('Share'), findsNothing);
+          await tester.tap(find.text('Copy'));
+          await tester.pump();
+          expect(copied, ['notes'], reason: 'the long-pressed word');
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
@@ -409,13 +475,14 @@ void main() {
     });
   });
 
-  testWidgets(
-    '7. KitSelectable(mode: finePointer): off on touch (an ancestor keeps '
-    'the gesture), on for a fine pointer',
-    (tester) async {
-      addTearDown(() => debugPlatformCapabilities = null);
+  group('7. KitSelectable(mode: finePointer)', () {
+    const line = 'Row title for the transcript';
 
+    testWidgets('on touch a drag does not select, and a long-press reaches '
+        'the ancestor', (tester) async {
+      addTearDown(() => debugPlatformCapabilities = null);
       debugPlatformCapabilities = const PlatformCapabilities.android();
+      final copied = _mockClipboard(tester);
       var longPressed = false;
       await tester.pumpWidget(
         _host(
@@ -425,54 +492,61 @@ void main() {
             // matters here is that the region does not eat the gesture.
             child: const KitSelectable(
               mode: KitSelectMode.finePointer,
-              child: KitText('Row title'),
+              child: KitText(line),
             ),
           ),
         ),
       );
-      expect(find.byType(SelectionArea), findsNothing);
-      await tester.longPress(find.text('Row title'));
+      final rect = tester.getRect(find.text(line));
+      await tester.dragFrom(
+        rect.centerLeft + const Offset(2, 0),
+        Offset(rect.width - 4, 0),
+        kind: PointerDeviceKind.touch,
+      );
+      await tester.pump();
+      await _pressCtrlC(tester);
+      expect(copied, isEmpty, reason: 'a touch drag selects nothing');
+
+      await tester.longPress(find.text(line));
       await tester.pump();
       expect(longPressed, isTrue);
+    });
 
+    testWidgets('with a fine pointer a mouse drag selects', (tester) async {
+      addTearDown(() => debugPlatformCapabilities = null);
       debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+      final copied = _mockClipboard(tester);
       await tester.pumpWidget(
         _host(
           const KitSelectable(
             mode: KitSelectMode.finePointer,
-            child: KitText('Row title'),
+            child: KitText(line),
           ),
         ),
       );
-      expect(
-        find.byType(SelectionArea),
-        findsOneWidget,
-        reason: 'a fine pointer turns selection on, so a drag can select',
+      final rect = tester.getRect(find.text(line));
+      final mouse = await tester.startGesture(
+        rect.centerLeft + const Offset(1, 0),
+        kind: PointerDeviceKind.mouse,
       );
-    },
-  );
+      addTearDown(mouse.removePointer);
+      await tester.pump();
+      await mouse.moveTo(rect.centerRight - const Offset(1, 0));
+      await tester.pump();
+      await mouse.up();
+      await tester.pump();
+      await _pressCtrlC(tester);
+      expect(copied, isNotEmpty, reason: 'the drag selected the line');
+      expect(copied.last, line);
+    });
+  });
 
   testWidgets(
     '8. KitSelectable.excluded leaves its content out of Select all + Copy',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       try {
-        final copied = <String>[];
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          (call) async {
-            if (call.method == 'Clipboard.setData') {
-              copied.add((call.arguments! as Map)['text'] as String);
-            }
-            return null;
-          },
-        );
-        addTearDown(
-          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            SystemChannels.platform,
-            null,
-          ),
-        );
+        final copied = _mockClipboard(tester);
 
         await tester.pumpWidget(
           _host(
@@ -554,6 +628,74 @@ void main() {
     final at1 = await widthAt(1);
     final at2 = await widthAt(2);
     expect(at2, closeTo(at1 * 2, 1.0));
+  });
+
+  testWidgets('selectableRich accepts any InlineSpan root, such as a '
+      'WidgetSpan', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        const KitText.selectableRich(
+          WidgetSpan(child: SizedBox(width: 12, height: 12)),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(KitText), findsOneWidget);
+  });
+
+  group('A11Y-8: the middle cut at 200 % text', () {
+    // The real mono face, so the measured widths are Geist Mono's (the test
+    // font's square glyphs are twice as wide and would leave no room for
+    // the file name in 200 dp at 200 %).
+    setUpAll(() async {
+      final loader = FontLoader(AppTheme.monoFamily)
+        ..addFont(
+          File(
+            'assets/fonts/geist/GeistMono-Variable.ttf',
+          ).readAsBytes().then(ByteData.sublistView),
+        );
+      await loader.load();
+    });
+
+    testWidgets('keeps main.dart and fits 200 dp at TextScaler.linear(2)', (
+      tester,
+    ) async {
+      const longPath = '/home/user/projects/very/long/path/main.dart';
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: const Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 200,
+                    child: KitText.mono(longPath, cut: KitMonoCut.middle),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      final shown = tester.widgetList<Text>(find.byType(Text)).single.data!;
+      expect(shown, endsWith('main.dart'));
+      expect(shown.split('…'), hasLength(2));
+      expect(longPath.startsWith(shown.split('…').first), isTrue);
+      final box = tester.getRect(find.byType(SizedBox).first);
+      final glyphs = _glyphRect(tester, shown);
+      expect(glyphs.left, greaterThanOrEqualTo(box.left - 0.5));
+      expect(glyphs.right, lessThanOrEqualTo(box.right + 0.5));
+      expect(
+        _paragraph(tester, shown).size.height,
+        lessThan(19 * 2 + 1),
+        reason: 'one line',
+      );
+      expect(tester.getSemantics(find.text(shown)).label, longPath);
+    });
   });
 
   // 12. Reduced motion (G8) is the kitMotionStillTests groups above: every

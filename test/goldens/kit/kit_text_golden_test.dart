@@ -116,6 +116,11 @@ Widget _type(_Copy copy) => Padding(
   ),
 );
 
+Widget _fixedWidth(Widget child) => Align(
+  alignment: AlignmentDirectional.centerStart,
+  child: SizedBox(width: 260, child: child),
+);
+
 Widget _mono(_Copy copy) => Padding(
   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
   child: Column(
@@ -129,15 +134,14 @@ Widget _mono(_Copy copy) => Padding(
       const SizedBox(height: 4),
       // A fixed width, narrower than either value, so end and middle
       // actually cut in every gallery size and text scale this state is
-      // shot at (the reading column alone can be wide enough not to).
-      SizedBox(width: 260, child: KitText.mono(copy.host, cut: KitMonoCut.end)),
+      // shot at (the reading column alone can be wide enough not to). The
+      // Align lets the 260 dp hold inside the stretched column; it sits at
+      // the start edge, so the Arabic shot shows it on the right.
+      _fixedWidth(KitText.mono(copy.host, cut: KitMonoCut.end)),
       const SizedBox(height: 20),
       const KitText('middle', role: KitTextRole.label),
       const SizedBox(height: 4),
-      SizedBox(
-        width: 260,
-        child: KitText.mono(copy.path, cut: KitMonoCut.middle),
-      ),
+      _fixedWidth(KitText.mono(copy.path, cut: KitMonoCut.middle)),
     ],
   ),
 );

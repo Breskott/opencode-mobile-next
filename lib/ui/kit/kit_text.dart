@@ -164,6 +164,12 @@ class KitText extends StatelessWidget {
   /// is aligned to the START of the ambient direction, so under Arabic it
   /// sits at the row's right edge. When [cut] is not [KitMonoCut.wrap], the
   /// semantics carry the full value.
+  ///
+  /// [KitMonoCut.middle] (and [KitMonoCut.end] with [selectable]) measures
+  /// the value against the width it is given, so it needs a bounded width
+  /// and answers no intrinsic-size query: it cannot sit under
+  /// `IntrinsicWidth`, `IntrinsicHeight` or an intrinsically sized table
+  /// column. Give it a fixed or flexible width instead (a row's `Expanded`).
   const KitText.mono(
     this.text, {
     super.key,
@@ -299,16 +305,22 @@ class KitText extends StatelessWidget {
     final theme = Theme.of(context);
     final roles = ThemeRoles.resolve(theme);
     final face = theme.textTheme.bodyLarge;
+    // Arabic (the system face) keeps zero tracking for connected shaping.
+    final arabic = face?.fontFamily == 'sans-serif';
     var style = styleFor(role);
     if (role != KitTextRole.mono) {
       style = style.copyWith(
         fontFamily: face?.fontFamily,
         fontFamilyFallback: face?.fontFamilyFallback,
-        // Arabic (the system face) keeps zero tracking for connected
-        // shaping.
-        letterSpacing: face?.fontFamily == 'sans-serif'
-            ? 0
-            : style.letterSpacing,
+        letterSpacing: arabic ? 0 : style.letterSpacing,
+      );
+    } else if (arabic) {
+      // Mono keeps AppMono for the Latin of a technical value, but an
+      // Arabic file or branch name inside a path falls back to the same
+      // Arabic faces as the prose roles, never to whatever the engine picks.
+      style = style.copyWith(
+        fontFamilyFallback: face?.fontFamilyFallback,
+        letterSpacing: 0,
       );
     }
     return style.copyWith(color: toneColor(roles, tone ?? defaultTone(role)));
@@ -474,8 +486,11 @@ class KitLtr extends StatelessWidget {
 /// and [KitSelectable] all share: Copy and Select all, nothing else (no Cut,
 /// Paste or Share — the content is read-only and never a secret; see
 /// KitText.md "Data safety").
-Widget _kitTextContextMenu(BuildContext context, EditableTextState state) {
-  final items = state.contextMenuButtonItems
+Widget _kitCopyMenu(
+  List<ContextMenuButtonItem> offered,
+  TextSelectionToolbarAnchors anchors,
+) {
+  final items = offered
       .where(
         (item) =>
             item.type == ContextMenuButtonType.copy ||
@@ -484,28 +499,18 @@ Widget _kitTextContextMenu(BuildContext context, EditableTextState state) {
       .toList();
   if (items.isEmpty) return const SizedBox.shrink();
   return AdaptiveTextSelectionToolbar.buttonItems(
-    anchors: state.contextMenuAnchors,
+    anchors: anchors,
     buttonItems: items,
   );
 }
 
+Widget _kitTextContextMenu(BuildContext context, EditableTextState state) =>
+    _kitCopyMenu(state.contextMenuButtonItems, state.contextMenuAnchors);
+
 Widget _kitSelectionAreaMenu(
   BuildContext context,
   SelectableRegionState state,
-) {
-  final items = state.contextMenuButtonItems
-      .where(
-        (item) =>
-            item.type == ContextMenuButtonType.copy ||
-            item.type == ContextMenuButtonType.selectAll,
-      )
-      .toList();
-  if (items.isEmpty) return const SizedBox.shrink();
-  return AdaptiveTextSelectionToolbar.buttonItems(
-    anchors: state.contextMenuAnchors,
-    buttonItems: items,
-  );
-}
+) => _kitCopyMenu(state.contextMenuButtonItems, state.contextMenuAnchors);
 
 /// [SelectableText] / [SelectableText.rich] with a long-lived [FocusNode]
 /// that is skipped by keyboard Tab traversal ([KitText.selectable] is never
@@ -550,11 +555,11 @@ class _KitSelectableTextState extends State<_KitSelectableText> {
   Widget build(BuildContext context) {
     final span = widget.span;
     if (span != null) {
-      // SelectableText.rich only takes a TextSpan (unlike Text.rich, which
-      // takes any InlineSpan); a WidgetSpan cannot be selected as text
-      // anyway, so every real caller already passes a TextSpan tree.
+      // SelectableText.rich takes a TextSpan root (unlike Text.rich, which
+      // takes any InlineSpan): any other root, such as a WidgetSpan, is
+      // wrapped as the only child of an unstyled TextSpan.
       return SelectableText.rich(
-        span as TextSpan,
+        span is TextSpan ? span : TextSpan(children: [span]),
         focusNode: _focusNode,
         style: widget.style,
         maxLines: widget.maxLines,
@@ -646,9 +651,11 @@ class _KitMonoText extends StatelessWidget {
         final display = constraints.maxWidth.isFinite
             ? _kitMonoTruncate(
                 text,
-                style,
+                _kitMonoPaintedStyle(context, style),
                 constraints.maxWidth,
                 keepTail: cut == KitMonoCut.middle,
+                textScaler: MediaQuery.textScalerOf(context),
+                locale: Localizations.maybeLocaleOf(context),
               )
             : text;
         if (selectable) {
@@ -677,24 +684,48 @@ class _KitMonoText extends StatelessWidget {
 
 const _kitMonoEllipsis = '…';
 
+/// The style the [Text] (or [SelectableText]) below paints [style] in: the
+/// ambient [DefaultTextStyle] under it and, when the platform asks for bold
+/// text, the bold weight, exactly as those widgets resolve it. The cut must
+/// measure what is painted, or the chosen string overflows the box.
+TextStyle _kitMonoPaintedStyle(BuildContext context, TextStyle style) {
+  var painted = DefaultTextStyle.of(context).style.merge(style);
+  if (MediaQuery.boldTextOf(context)) {
+    painted = painted.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+  return painted;
+}
+
 /// The single line of [text] in [style] that fits [maxWidth], with one
 /// [_kitMonoEllipsis] cutting the end (an id, a host) or the middle
 /// ([keepTail]: a path keeps its root and its file name). A binary search
 /// over how many characters to keep, measuring the candidate string each
-/// time: even a monospace face varies glyph width with ligatures and wide
-/// punctuation, so a plain character count cannot stand in for it.
+/// time with the [textScaler] and [locale] the paragraph paints with: even
+/// a monospace face varies glyph width with ligatures and wide punctuation,
+/// so a plain character count cannot stand in for it.
+///
+/// The middle cut favours the tail up to the last path segment (the file
+/// name with its separator), so `/home/…/main.dart` keeps `main.dart` for
+/// as long as one head character still fits beside it; a value with no
+/// separator is cut evenly.
 String _kitMonoTruncate(
   String text,
   TextStyle style,
   double maxWidth, {
   required bool keepTail,
+  required TextScaler textScaler,
+  Locale? locale,
 }) {
   double widthOf(String value) {
     final painter = TextPainter(
-      text: TextSpan(text: value, style: style),
+      text: TextSpan(text: value, style: style, locale: locale),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
+      locale: locale,
     )..layout();
-    return painter.width;
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 
   if (widthOf(text) <= maxWidth) return text;
@@ -716,18 +747,26 @@ String _kitMonoTruncate(
     return best;
   }
 
-  var low = 0;
-  var high = text.length ~/ 2;
+  // The last segment with its separator ('/main.dart'), or nothing when
+  // the value has no separator.
+  final lastSeparator = text.lastIndexOf(RegExp(r'[/\\]'));
+  final fileName = lastSeparator > 0 ? text.length - lastSeparator : 0;
+  String candidateOf(int kept) {
+    final even = kept - kept ~/ 2;
+    final tail = kept <= 1
+        ? 0
+        : (fileName < kept ? fileName : kept - 1).clamp(even, kept - 1);
+    final head = kept - tail;
+    return '${text.substring(0, head)}$_kitMonoEllipsis'
+        '${text.substring(text.length - tail)}';
+  }
+
+  var low = 1;
+  var high = text.length - 1;
   var best = _kitMonoEllipsis;
   while (low <= high) {
     final mid = (low + high) ~/ 2;
-    if (mid * 2 >= text.length) {
-      high = mid - 1;
-      continue;
-    }
-    final candidate =
-        '${text.substring(0, mid)}$_kitMonoEllipsis'
-        '${text.substring(text.length - mid)}';
+    final candidate = candidateOf(mid);
     if (widthOf(candidate) <= maxWidth) {
       best = candidate;
       low = mid + 1;
