@@ -221,6 +221,22 @@ private val scenarios: Map<String, (Fixture) -> Unit> = linkedMapOf(
         check(File(f.projects, "source").readText() == "keep")
         check(f.archive.readText() == "download")
     },
+    "read-only-directories" to { f ->
+        f.write(File(f.legacy, "app/main.go"), "package main\n")
+        val module = File(f.files, "linux/ubuntu/root/go/pkg/mod/example.com/m@v1")
+        f.write(File(module, "go.mod"), "module example.com/m\n")
+        f.write(File(f.projects.parentFile, "linux/ubuntu.ready"), "ready")
+        // Go leaves each cached module directory read-only; removal must finish.
+        check(module.setWritable(false, false))
+        f.storage.removeRuntime()
+        check(!File(f.files, "linux").exists())
+        check(File(f.projects, "app/main.go").readText() == "package main\n")
+        val readOnlyProject = File(f.projects, "vendor/cache")
+        f.write(File(readOnlyProject, "blob"), "x")
+        check(readOnlyProject.setWritable(false, false))
+        f.storage.removeRuntime(alsoDeleteProjects = true)
+        check(!f.projects.exists())
+    },
     "invalid-size" to { f ->
         f.write(File(f.legacy, "a"), "a")
         f.write(File(f.legacy, "b"), "b")

@@ -134,7 +134,16 @@ class BuiltinProjectStorage(
 
     private fun deleteTree(file: File) {
         val entry = inspect(file) ?: return
-        if (entry.kind == Kind.DIRECTORY) children(file).forEach(::deleteTree)
+        if (entry.kind == Kind.DIRECTORY) {
+            // Tools inside Ubuntu leave owner-read-only directories (Go's module
+            // cache is 0555). The app owns them; restore owner access so one
+            // such directory cannot make every removal fail. lstat above
+            // established a real directory, so no link target is changed.
+            file.setReadable(true, true)
+            file.setWritable(true, true)
+            file.setExecutable(true, true)
+            children(file).forEach(::deleteTree)
+        }
         // File.delete removes the link itself, never the linked target.
         check(file.delete())
     }
