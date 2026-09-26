@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import 'kit_surface.dart';
+import 'kit_text.dart';
 import 'kit_tokens.dart';
 
 /// A block of content the person works with (design standard §3: "cards
 /// are for content the person works with, not for wrapping a message"):
 /// one `surface1` panel, 18 dp corners, no border and no shadow (surface
-/// steps carry depth, visual language §4), 16 dp inside. It replaces the hand-drawn containers of 10, 12, 14 and
-/// 20 dp radius that each screen used to draw its own way.
+/// steps carry depth, visual language §4), 16 dp inside. It replaces the
+/// hand-drawn containers of 10, 12, 14 and 20 dp radius that each screen
+/// used to draw its own way.
 ///
-/// A [tone] other than neutral tints the border and washes the surface
-/// faintly: something in it needs the person (a question waiting, a
-/// request being planned). The optional header is the tone's [icon] and a
-/// one-line [title] in that tone, above the [child].
+/// Retired by kit-KitSurface (docs/ux-system/kit-api/KitSurface.md, KIT-43):
+/// with [tone] neutral this is `KitSurface.panel`'s look, and with the
+/// default [padding] and no [onTap] it forwards to `KitSurface.panel`
+/// directly. A [tone] other than neutral keeps today's tinted-border,
+/// tonal-wash look for its existing callers (team `agent_screen`,
+/// `merge_section`, `start_run_sheet` and `team_board_card`) so they do not
+/// change silently — the attention look belongs only to `KitNeedsYou`,
+/// `KitRequestCard` and `KitNotice.card` (LOOK-24). New code names one of
+/// those, or `KitSurface.panel` for a plain grouped panel, instead of a
+/// tinted `KitPanel`.
 ///
-/// Never used for a state message: that is `KitStateView`.
+/// States: none — a panel only draws its own fill, border and header.
 class KitPanel extends StatelessWidget {
   const KitPanel({
     super.key,
@@ -23,9 +32,11 @@ class KitPanel extends StatelessWidget {
     this.icon,
     this.title,
     this.titleKey,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = _defaultPadding,
     this.onTap,
   });
+
+  static const EdgeInsets _defaultPadding = EdgeInsets.all(16);
 
   final Widget child;
   final AppStatusTone tone;
@@ -34,7 +45,8 @@ class KitPanel extends StatelessWidget {
   final Key? titleKey;
   final EdgeInsetsGeometry padding;
 
-  /// The whole panel opens something (a run, a sheet).
+  /// The whole panel opens something (a run, a sheet). Kept as today's
+  /// `InkWell`; new interactive code wraps with `KitTappable` instead.
   final VoidCallback? onTap;
 
   /// The border colour for [tone]: none (transparent) when neutral, since
@@ -49,20 +61,86 @@ class KitPanel extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => tone == AppStatusTone.neutral
+      ? _buildNeutral(context)
+      : _buildRetired(context);
+
+  /// `tone: neutral` is `KitSurface.panel`'s look (KIT-43). The default
+  /// padding and no [onTap] forward to it directly; a custom inset or an
+  /// interactive panel still gets the panel fill and shape from
+  /// `KitSurface`, with the header rebuilt here so the caller's exact
+  /// [padding] and `InkWell` still work (`KitSurface` itself takes neither).
+  Widget _buildNeutral(BuildContext context) {
+    final title = this.title;
+    final icon = this.icon;
+    if (onTap == null && padding == _defaultPadding) {
+      return KitSurface.panel(
+        title: title,
+        icon: icon,
+        titleKey: titleKey,
+        child: child,
+      );
+    }
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final hasHeader = title != null || icon != null;
+    final Widget body = !hasHeader
+        ? child
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: tokens.smallIconSize, color: roles.text2),
+                    SizedBox(width: tokens.labelGap),
+                  ],
+                  if (title != null)
+                    Expanded(
+                      child: KitText(
+                        title,
+                        key: titleKey,
+                        role: KitTextRole.headline,
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: tokens.labelGap),
+              child,
+            ],
+          );
+    return KitSurface(
+      shape: KitShape.panel,
+      padding: KitSurfacePadding.none,
+      child: Padding(
+        padding: padding,
+        child: onTap == null ? body : InkWell(onTap: onTap, child: body),
+      ),
+    );
+  }
+
+  /// Retired: today's tinted-border, tonal-wash look, unchanged except the
+  /// header icon (18 → 20, VL §7) and the border now sized from
+  /// `KitTokens.hairlineWidth` instead of the platform default.
+  Widget _buildRetired(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    final neutral = tone == AppStatusTone.neutral;
     final attention = tone == AppStatusTone.attention;
-    final tint = neutral
-        ? AppTheme.mutedOf(theme)
-        : AppTheme.statusColor(theme, tone);
-    // A panel is 18 dp; a needs-you card 22 (§4).
-    final radius = BorderRadius.circular(
-      attention ? tokens.cardRadius : tokens.panelCornerRadius,
-    );
+    final tint = AppTheme.statusColor(theme, tone);
+    final base = tokens.shapeOf(attention ? KitShape.card : KitShape.panel);
+    final shape = base is OutlinedBorder
+        ? base.copyWith(
+            side: BorderSide(
+              color: borderOf(theme, tone),
+              width: KitTokens.hairlineWidth(context),
+            ),
+          )
+        : base;
     final title = this.title;
+    final icon = this.icon;
     final content = Padding(
       padding: padding,
       child: title == null && icon == null
@@ -74,43 +152,31 @@ class KitPanel extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (icon case final icon?) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Icon(icon, size: 18, color: tint),
-                      ),
-                      const SizedBox(width: 8),
+                    if (icon != null) ...[
+                      Icon(icon, size: tokens.smallIconSize, color: tint),
+                      SizedBox(width: tokens.labelGap),
                     ],
                     if (title != null)
                       Expanded(
                         child: Text(
                           title,
                           key: titleKey,
-                          style: tokens.cardTitle.copyWith(
-                            color: neutral ? null : tint,
-                          ),
+                          style: tokens.cardTitle.copyWith(color: tint),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.labelGap),
                 child,
               ],
             ),
     );
     return Material(
-      color: neutral
-          ? roles.surface1
-          : Color.alphaBlend(
-              attention ? roles.attentionSurface : tint.withValues(alpha: .06),
-              roles.surface1,
-            ),
-      shape: RoundedRectangleBorder(
-        borderRadius: radius,
-        side: neutral
-            ? BorderSide.none
-            : BorderSide(color: borderOf(theme, tone)),
+      color: Color.alphaBlend(
+        attention ? roles.attentionSurface : tint.withValues(alpha: .06),
+        roles.surface1,
       ),
+      shape: shape,
       clipBehavior: Clip.antiAlias,
       child: onTap == null ? content : InkWell(onTap: onTap, child: content),
     );
