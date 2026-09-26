@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
-import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
@@ -82,11 +81,7 @@ void _performCustomAction(WidgetTester tester, Finder row, String label) {
   final id = node.getSemanticsData().customSemanticsActionIds!.firstWhere(
     (id) => CustomSemanticsAction.getAction(id)!.label == label,
   );
-  tester.binding.pipelineOwner.semanticsOwner!.performAction(
-    node.id,
-    SemanticsAction.customAction,
-    id,
-  );
+  node.owner!.performAction(node.id, SemanticsAction.customAction, id);
 }
 
 Finder _richTextContaining(String text) => find.byWidgetPredicate(
