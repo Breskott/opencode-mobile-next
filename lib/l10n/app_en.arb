@@ -22246,6 +22246,272 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
+  "kitMore": "More",
+  "@kitMore": {
+    "description": "KitAction: the tooltip on the overflow button that opens the block's extra actions"
+  },
+  "kitChipRemove": "Remove {label}",
+  "@kitChipRemove": {
+    "description": "KitChip: the semantic label and tooltip of a removable chip's × control",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCopy": "Copy",
+  "@kitCopy": {
+    "description": "Kit icon button: the default tooltip and semantic label of a copy icon button when the caller gives none"
+  },
+  "kitWorking": "Working",
+  "@kitWorking": {
+    "description": "Kit icon button: the accessibility hint while a button's own tap is in flight"
+  },
+  "kitImageUnavailable": "Can't show this image",
+  "@kitImageUnavailable": {
+    "description": "KitImage: shown next to the broken-image glyph when a source fails to decode, from 120dp wide"
+  },
+  "kitZoomIn": "Zoom in",
+  "@kitZoomIn": {
+    "description": "KitZoom: the zoom-in control's label and tooltip, and its custom semantic action"
+  },
+  "kitZoomOut": "Zoom out",
+  "@kitZoomOut": {
+    "description": "KitZoom: the zoom-out control's label and tooltip, and its custom semantic action"
+  },
+  "kitZoomReset": "Reset zoom",
+  "@kitZoomReset": {
+    "description": "KitZoom: the reset control's label in fit mode, once zoomed in"
+  },
+  "kitZoomFit": "Fit to screen",
+  "@kitZoomFit": {
+    "description": "KitZoom: the reset control's label in canvas mode (a work graph, a page)"
+  },
+  "kitZoomAtStart": "Already at full view",
+  "@kitZoomAtStart": {
+    "description": "KitZoom: the reset control's label, and its disabled reason, at 1x in fit mode"
+  },
+  "kitZoomAtMax": "Largest zoom",
+  "@kitZoomAtMax": {
+    "description": "KitZoom: the zoom-in control's label, and its disabled reason, at the largest zoom"
+  },
+  "kitZoomLevel": "{percent} %",
+  "@kitZoomLevel": {
+    "description": "KitZoom: the spoken zoom level value, e.g. 200 %",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "kitZoomShortcut": "{action} · Ctrl+{key}",
+  "@kitZoomShortcut": {
+    "description": "KitZoom: a zoom control's tooltip and label when a mouse or keyboard is in use, naming its keyboard shortcut, e.g. Zoom in · Ctrl+=",
+    "placeholders": {
+      "action": {
+        "type": "String",
+        "example": "Zoom in"
+      },
+      "key": {
+        "type": "String",
+        "example": "="
+      }
+    }
+  },
+  "kitMenu": "Menu",
+  "@kitMenu": {
+    "description": "Kit menu: the popup menu's default name for a screen reader, when the caller gives none"
+  },
+  "kitCopyDetails": "Copy details",
+  "@kitCopyDetails": {
+    "description": "Kit notice and state view: the label of the icon button that copies an error's technical details (redacted) to the clipboard"
+  },
+  "kitReportProblem": "Report a problem",
+  "@kitReportProblem": {
+    "description": "Kit notice and state view: the action on an error that opens the app's problem report, prefilled with that error and previewed before anything is sent"
+  },
+  "kitProgressStep": "Step {step} of {of}",
+  "@kitProgressStep": {
+    "description": "KitProgress: the current stage of a staged job, before its label (\"Step 3 of 5\")",
+    "placeholders": {
+      "step": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "of": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressEtaSeconds": "{seconds, plural, other{about {seconds} s left}}",
+  "@kitProgressEtaSeconds": {
+    "description": "KitProgress: time left under a minute, rounded up to the nearest 10 s",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressEtaMinutes": "{minutes, plural, other{about {minutes} min left}}",
+  "@kitProgressEtaMinutes": {
+    "description": "KitProgress: time left under an hour, whole minutes rounded up",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressEtaHours": "{hours, plural, other{about {hours} h left}}",
+  "@kitProgressEtaHours": {
+    "description": "KitProgress: time left of an hour or more, whole hours with the decimal dropped",
+    "placeholders": {
+      "hours": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitQrTooLong": "This is too long for a QR code. Copy the link instead.",
+  "@kitQrTooLong": {
+    "description": "Kit QR code: shown in place of the code when the data does not fit a QR code at any size"
+  },
+  "kitSinceStillWaiting": "Still waiting after {seconds} s",
+  "@kitSinceStillWaiting": {
+    "description": "KitSince: a wait's words once it escalates at KitMotion.escalateAfter",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitSinceWaitingFor": "{minutes, plural, =0{Waiting less than a minute} =1{Waiting 1 min} other{Waiting {minutes} min}}",
+  "@kitSinceWaitingFor": {
+    "description": "KitSince: a slow wait's words once minute ticks are on (KitSinceTicks.minutes)",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitSinceAge": "{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}",
+  "@kitSinceAge": {
+    "description": "KitSince: the age alone, for a host that places it mid-line (\"waiting {age}\")",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitMarkWaiting": "Waiting",
+  "@kitMarkWaiting": {
+    "description": "Kit status mark: the default word for the waiting state, in semantics and beside the mark"
+  },
+  "kitMarkWorking": "Working",
+  "@kitMarkWorking": {
+    "description": "Kit status mark: the default word for the working state, in semantics and beside the mark"
+  },
+  "kitMarkDone": "Done",
+  "@kitMarkDone": {
+    "description": "Kit status mark: the default word for the done state, in semantics and beside the mark"
+  },
+  "kitMarkFailed": "Failed",
+  "@kitMarkFailed": {
+    "description": "Kit status mark: the default word for the failed state, in semantics and beside the mark"
+  },
+  "kitMarkPaused": "Paused",
+  "@kitMarkPaused": {
+    "description": "Kit status mark: the default word when a waiting or working mark is paused, in semantics and beside the mark"
+  },
+  "kitTaskNeedsYou": "Needs you",
+  "@kitTaskNeedsYou": {
+    "description": "Kit task mark: the default word for a task that needs the person; also the word KitNeedsYou's own mark uses"
+  },
+  "kitTaskStopped": "Stopped",
+  "@kitTaskStopped": {
+    "description": "Kit task mark: the default word for a task that was stopped before it finished"
+  },
+  "kitSwatchInUse": "In use",
+  "@kitSwatchInUse": {
+    "description": "KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now"
+  },
+  "kitThemePreviewTitle": "Fix the login bug",
+  "@kitThemePreviewTitle": {
+    "description": "KitThemePreview: the sample row's title in the theme preview picture"
+  },
+  "kitThemePreviewWorking": "Working · 2 min",
+  "@kitThemePreviewWorking": {
+    "description": "KitThemePreview: the sample row's status line, next to the working mark"
+  },
+  "kitThemePreviewNeedsYou": "Needs you",
+  "@kitThemePreviewNeedsYou": {
+    "description": "KitThemePreview: the sample needs-you word shown in the theme preview picture"
+  },
+  "kitThemePreviewPrimary": "Send",
+  "@kitThemePreviewPrimary": {
+    "description": "KitThemePreview: the sample primary button's label in the theme preview picture"
+  },
+  "kitThemePreviewSecondary": "Attach",
+  "@kitThemePreviewSecondary": {
+    "description": "KitThemePreview: the sample secondary button's label in the theme preview picture"
+  },
+  "kitThemePreviewSegment": "On",
+  "@kitThemePreviewSegment": {
+    "description": "KitThemePreview: the sample selected segment's label in the theme preview picture"
+  },
+  "kitThemePreviewCode": "final ready = true;",
+  "@kitThemePreviewCode": {
+    "description": "Technical: KitThemePreview's sample code line, shown in mono in every locale"
+  },
+  "kitThemePreviewLabel": "Preview of {theme}",
+  "@kitThemePreviewLabel": {
+    "description": "KitThemePreview: the whole picture's semantic label, filled in by the host with the theme's name",
+    "placeholders": {
+      "theme": {
+        "type": "String",
+        "example": "Graphite"
+      }
+    }
+  },
+  "kitTerminalViewKeySlash": "Slash key",
+  "@kitTerminalViewKeySlash": {
+    "description": "Spoken name of the terminal key bar's / key"
+  },
+  "kitTerminalViewKeyDash": "Dash key",
+  "@kitTerminalViewKeyDash": {
+    "description": "Spoken name of the terminal key bar's - key"
+  },
+  "kitTerminalViewKeyPipe": "Pipe key",
+  "@kitTerminalViewKeyPipe": {
+    "description": "Spoken name of the terminal key bar's | key (the shell's pipe)"
+  },
+  "kitTerminalViewKeyTilde": "Tilde key",
+  "@kitTerminalViewKeyTilde": {
+    "description": "Spoken name of the terminal key bar's ~ key"
+  },
+  "kitTerminalViewKeyHome": "Home key",
+  "@kitTerminalViewKeyHome": {
+    "description": "Spoken name of the terminal key bar's Home key"
+  },
+  "kitTerminalViewKeyEnd": "End key",
+  "@kitTerminalViewKeyEnd": {
+    "description": "Spoken name of the terminal key bar's End key"
+  },
+  "kitTerminalViewShowingLast": "{count, plural, =1{Showing the last line} other{Showing the last {count} lines}}",
+  "@kitTerminalViewShowingLast": {
+    "description": "Under a very long command output that cannot open elsewhere: only its last lines are shown inline",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "kitUndoAction": "Undo",
   "@kitUndoAction": {
     "description": "Kit undo: the default label of the one Undo bar's action button"

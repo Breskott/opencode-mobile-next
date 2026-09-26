@@ -20096,4 +20096,274 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCopied => 'تم النسخ';
+
+  @override
+  String get kitMore => 'المزيد';
+
+  @override
+  String kitChipRemove(String label) {
+    return 'إزالة $label';
+  }
+
+  @override
+  String get kitCopy => 'نسخ';
+
+  @override
+  String get kitWorking => 'قيد التنفيذ';
+
+  @override
+  String get kitImageUnavailable => 'يتعذر عرض هذه الصورة';
+
+  @override
+  String get kitZoomIn => 'تكبير';
+
+  @override
+  String get kitZoomOut => 'تصغير';
+
+  @override
+  String get kitZoomReset => 'إعادة ضبط التكبير';
+
+  @override
+  String get kitZoomFit => 'ملائمة الشاشة';
+
+  @override
+  String get kitZoomAtStart => 'في العرض الكامل بالفعل';
+
+  @override
+  String get kitZoomAtMax => 'أقصى تكبير';
+
+  @override
+  String kitZoomLevel(String percent) {
+    return '$percent٪';
+  }
+
+  @override
+  String kitZoomShortcut(String action, String key) {
+    return '$action · Ctrl+$key';
+  }
+
+  @override
+  String get kitMenu => 'قائمة';
+
+  @override
+  String get kitCopyDetails => 'نسخ التفاصيل';
+
+  @override
+  String get kitReportProblem => 'الإبلاغ عن مشكلة';
+
+  @override
+  String kitProgressStep(int step, int of) {
+    final intl.NumberFormat stepNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String stepString = stepNumberFormat.format(step);
+    final intl.NumberFormat ofNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String ofString = ofNumberFormat.format(of);
+
+    return 'الخطوة $stepString من $ofString';
+  }
+
+  @override
+  String kitProgressEtaSeconds(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: 'بقيت $secondsString ثانية تقريبًا',
+      many: 'بقيت $secondsString ثانية تقريبًا',
+      few: 'بقيت $secondsString ثوانٍ تقريبًا',
+      two: 'بقيت ثانيتان تقريبًا',
+      one: 'بقيت ثانية تقريبًا',
+      zero: 'بقي أقل من ثانية',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitProgressEtaMinutes(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'بقيت $minutesString دقيقة تقريبًا',
+      many: 'بقيت $minutesString دقيقة تقريبًا',
+      few: 'بقيت $minutesString دقائق تقريبًا',
+      two: 'بقيت دقيقتان تقريبًا',
+      one: 'بقيت دقيقة تقريبًا',
+      zero: 'بقي أقل من دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitProgressEtaHours(int hours) {
+    final intl.NumberFormat hoursNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String hoursString = hoursNumberFormat.format(hours);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'بقيت $hoursString ساعة تقريبًا',
+      many: 'بقيت $hoursString ساعة تقريبًا',
+      few: 'بقيت $hoursString ساعات تقريبًا',
+      two: 'بقيت ساعتان تقريبًا',
+      one: 'بقيت ساعة تقريبًا',
+      zero: 'بقي أقل من ساعة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitQrTooLong =>
+      'This is too long for a QR code. Copy the link instead.';
+
+  @override
+  String kitSinceStillWaiting(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    return 'لا يزال الانتظار مستمرًا بعد $secondsString ث';
+  }
+
+  @override
+  String kitSinceWaitingFor(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'جارٍ الانتظار منذ $minutesString دقيقة',
+      many: 'جارٍ الانتظار منذ $minutesString دقيقة',
+      few: 'جارٍ الانتظار منذ $minutesString دقائق',
+      two: 'جارٍ الانتظار منذ دقيقتين',
+      one: 'جارٍ الانتظار منذ دقيقة واحدة',
+      zero: 'جارٍ الانتظار منذ أقل من دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitSinceAge(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutesString دقيقة',
+      many: '$minutesString دقيقة',
+      few: '$minutesString دقائق',
+      two: 'دقيقتين',
+      one: 'دقيقة واحدة',
+      zero: 'أقل من دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitMarkWaiting => 'بانتظار';
+
+  @override
+  String get kitMarkWorking => 'يعمل';
+
+  @override
+  String get kitMarkDone => 'انتهى';
+
+  @override
+  String get kitMarkFailed => 'فشل';
+
+  @override
+  String get kitMarkPaused => 'متوقف مؤقتًا';
+
+  @override
+  String get kitTaskNeedsYou => 'يحتاجك';
+
+  @override
+  String get kitTaskStopped => 'متوقف';
+
+  @override
+  String get kitSwatchInUse => 'قيد الاستخدام';
+
+  @override
+  String get kitThemePreviewTitle => 'إصلاح خطأ تسجيل الدخول';
+
+  @override
+  String get kitThemePreviewWorking => 'قيد التنفيذ · دقيقتان';
+
+  @override
+  String get kitThemePreviewNeedsYou => 'يحتاجك';
+
+  @override
+  String get kitThemePreviewPrimary => 'إرسال';
+
+  @override
+  String get kitThemePreviewSecondary => 'إرفاق';
+
+  @override
+  String get kitThemePreviewSegment => 'مفعّل';
+
+  @override
+  String get kitThemePreviewCode => 'final ready = true;';
+
+  @override
+  String kitThemePreviewLabel(String theme) {
+    return 'معاينة $theme';
+  }
+
+  @override
+  String get kitTerminalViewKeySlash => 'مفتاح الشرطة المائلة';
+
+  @override
+  String get kitTerminalViewKeyDash => 'مفتاح الشرطة';
+
+  @override
+  String get kitTerminalViewKeyPipe => 'مفتاح الخط العمودي';
+
+  @override
+  String get kitTerminalViewKeyTilde => 'مفتاح التلدة';
+
+  @override
+  String get kitTerminalViewKeyHome => 'مفتاح Home';
+
+  @override
+  String get kitTerminalViewKeyEnd => 'مفتاح End';
+
+  @override
+  String kitTerminalViewShowingLast(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تُعرض آخر $countString من الأسطر',
+      one: 'يُعرض آخر سطر فقط',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitUndoAction => 'تراجع';
+
+  @override
+  String kitUndoFailed(String message) {
+    return 'تعذّر التراجع. $message';
+  }
+
+  @override
+  String get kitUndoWorking => 'جارٍ التراجع';
 }

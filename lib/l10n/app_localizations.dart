@@ -31984,6 +31984,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied'**
   String get kitCopied;
+
+  /// KitAction: the tooltip on the overflow button that opens the block's extra actions
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get kitMore;
+
+  /// KitChip: the semantic label and tooltip of a removable chip's × control
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {label}'**
+  String kitChipRemove(String label);
+
+  /// Kit icon button: the default tooltip and semantic label of a copy icon button when the caller gives none
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get kitCopy;
+
+  /// Kit icon button: the accessibility hint while a button's own tap is in flight
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get kitWorking;
+
+  /// KitImage: shown next to the broken-image glyph when a source fails to decode, from 120dp wide
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t show this image'**
+  String get kitImageUnavailable;
+
+  /// KitZoom: the zoom-in control's label and tooltip, and its custom semantic action
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get kitZoomIn;
+
+  /// KitZoom: the zoom-out control's label and tooltip, and its custom semantic action
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get kitZoomOut;
+
+  /// KitZoom: the reset control's label in fit mode, once zoomed in
+  ///
+  /// In en, this message translates to:
+  /// **'Reset zoom'**
+  String get kitZoomReset;
+
+  /// KitZoom: the reset control's label in canvas mode (a work graph, a page)
+  ///
+  /// In en, this message translates to:
+  /// **'Fit to screen'**
+  String get kitZoomFit;
+
+  /// KitZoom: the reset control's label, and its disabled reason, at 1x in fit mode
+  ///
+  /// In en, this message translates to:
+  /// **'Already at full view'**
+  String get kitZoomAtStart;
+
+  /// KitZoom: the zoom-in control's label, and its disabled reason, at the largest zoom
+  ///
+  /// In en, this message translates to:
+  /// **'Largest zoom'**
+  String get kitZoomAtMax;
+
+  /// KitZoom: the spoken zoom level value, e.g. 200 %
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String kitZoomLevel(String percent);
+
+  /// KitZoom: a zoom control's tooltip and label when a mouse or keyboard is in use, naming its keyboard shortcut, e.g. Zoom in · Ctrl+=
+  ///
+  /// In en, this message translates to:
+  /// **'{action} · Ctrl+{key}'**
+  String kitZoomShortcut(String action, String key);
+
+  /// Kit menu: the popup menu's default name for a screen reader, when the caller gives none
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get kitMenu;
+
+  /// Kit notice and state view: the label of the icon button that copies an error's technical details (redacted) to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details'**
+  String get kitCopyDetails;
+
+  /// Kit notice and state view: the action on an error that opens the app's problem report, prefilled with that error and previewed before anything is sent
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get kitReportProblem;
+
+  /// KitProgress: the current stage of a staged job, before its label ("Step 3 of 5")
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {of}'**
+  String kitProgressStep(int step, int of);
+
+  /// KitProgress: time left under a minute, rounded up to the nearest 10 s
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds, plural, other{about {seconds} s left}}'**
+  String kitProgressEtaSeconds(int seconds);
+
+  /// KitProgress: time left under an hour, whole minutes rounded up
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, other{about {minutes} min left}}'**
+  String kitProgressEtaMinutes(int minutes);
+
+  /// KitProgress: time left of an hour or more, whole hours with the decimal dropped
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, other{about {hours} h left}}'**
+  String kitProgressEtaHours(int hours);
+
+  /// Kit QR code: shown in place of the code when the data does not fit a QR code at any size
+  ///
+  /// In en, this message translates to:
+  /// **'This is too long for a QR code. Copy the link instead.'**
+  String get kitQrTooLong;
+
+  /// KitSince: a wait's words once it escalates at KitMotion.escalateAfter
+  ///
+  /// In en, this message translates to:
+  /// **'Still waiting after {seconds} s'**
+  String kitSinceStillWaiting(int seconds);
+
+  /// KitSince: a slow wait's words once minute ticks are on (KitSinceTicks.minutes)
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =0{Waiting less than a minute} =1{Waiting 1 min} other{Waiting {minutes} min}}'**
+  String kitSinceWaitingFor(int minutes);
+
+  /// KitSince: the age alone, for a host that places it mid-line ("waiting {age}")
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}'**
+  String kitSinceAge(int minutes);
+
+  /// Kit status mark: the default word for the waiting state, in semantics and beside the mark
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get kitMarkWaiting;
+
+  /// Kit status mark: the default word for the working state, in semantics and beside the mark
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get kitMarkWorking;
+
+  /// Kit status mark: the default word for the done state, in semantics and beside the mark
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitMarkDone;
+
+  /// Kit status mark: the default word for the failed state, in semantics and beside the mark
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get kitMarkFailed;
+
+  /// Kit status mark: the default word when a waiting or working mark is paused, in semantics and beside the mark
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get kitMarkPaused;
+
+  /// Kit task mark: the default word for a task that needs the person; also the word KitNeedsYou's own mark uses
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get kitTaskNeedsYou;
+
+  /// Kit task mark: the default word for a task that was stopped before it finished
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get kitTaskStopped;
+
+  /// KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get kitSwatchInUse;
+
+  /// KitThemePreview: the sample row's title in the theme preview picture
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the login bug'**
+  String get kitThemePreviewTitle;
+
+  /// KitThemePreview: the sample row's status line, next to the working mark
+  ///
+  /// In en, this message translates to:
+  /// **'Working · 2 min'**
+  String get kitThemePreviewWorking;
+
+  /// KitThemePreview: the sample needs-you word shown in the theme preview picture
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get kitThemePreviewNeedsYou;
+
+  /// KitThemePreview: the sample primary button's label in the theme preview picture
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitThemePreviewPrimary;
+
+  /// KitThemePreview: the sample secondary button's label in the theme preview picture
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get kitThemePreviewSecondary;
+
+  /// KitThemePreview: the sample selected segment's label in the theme preview picture
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get kitThemePreviewSegment;
+
+  /// Technical: KitThemePreview's sample code line, shown in mono in every locale
+  ///
+  /// In en, this message translates to:
+  /// **'final ready = true;'**
+  String get kitThemePreviewCode;
+
+  /// KitThemePreview: the whole picture's semantic label, filled in by the host with the theme's name
+  ///
+  /// In en, this message translates to:
+  /// **'Preview of {theme}'**
+  String kitThemePreviewLabel(String theme);
+
+  /// Spoken name of the terminal key bar's / key
+  ///
+  /// In en, this message translates to:
+  /// **'Slash key'**
+  String get kitTerminalViewKeySlash;
+
+  /// Spoken name of the terminal key bar's - key
+  ///
+  /// In en, this message translates to:
+  /// **'Dash key'**
+  String get kitTerminalViewKeyDash;
+
+  /// Spoken name of the terminal key bar's | key (the shell's pipe)
+  ///
+  /// In en, this message translates to:
+  /// **'Pipe key'**
+  String get kitTerminalViewKeyPipe;
+
+  /// Spoken name of the terminal key bar's ~ key
+  ///
+  /// In en, this message translates to:
+  /// **'Tilde key'**
+  String get kitTerminalViewKeyTilde;
+
+  /// Spoken name of the terminal key bar's Home key
+  ///
+  /// In en, this message translates to:
+  /// **'Home key'**
+  String get kitTerminalViewKeyHome;
+
+  /// Spoken name of the terminal key bar's End key
+  ///
+  /// In en, this message translates to:
+  /// **'End key'**
+  String get kitTerminalViewKeyEnd;
+
+  /// Under a very long command output that cannot open elsewhere: only its last lines are shown inline
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Showing the last line} other{Showing the last {count} lines}}'**
+  String kitTerminalViewShowingLast(int count);
+
+  /// Kit undo: the default label of the one Undo bar's action button
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get kitUndoAction;
+
+  /// Kit undo: the bar's message once Undo has failed and no host failure handler was given; {message} is the bar's own done message ("Archived “Fix login”")
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo. {message}'**
+  String kitUndoFailed(String message);
+
+  /// Kit undo: spoken to a screen reader on the Undo action while the undo is still running (the action ignores taps until it finishes)
+  ///
+  /// In en, this message translates to:
+  /// **'Undoing'**
+  String get kitUndoWorking;
 }
 
 class _AppLocalizationsDelegate

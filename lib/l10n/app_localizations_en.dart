@@ -19826,4 +19826,253 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitCopied => 'Copied';
+
+  @override
+  String get kitMore => 'More';
+
+  @override
+  String kitChipRemove(String label) {
+    return 'Remove $label';
+  }
+
+  @override
+  String get kitCopy => 'Copy';
+
+  @override
+  String get kitWorking => 'Working';
+
+  @override
+  String get kitImageUnavailable => 'Can\'t show this image';
+
+  @override
+  String get kitZoomIn => 'Zoom in';
+
+  @override
+  String get kitZoomOut => 'Zoom out';
+
+  @override
+  String get kitZoomReset => 'Reset zoom';
+
+  @override
+  String get kitZoomFit => 'Fit to screen';
+
+  @override
+  String get kitZoomAtStart => 'Already at full view';
+
+  @override
+  String get kitZoomAtMax => 'Largest zoom';
+
+  @override
+  String kitZoomLevel(String percent) {
+    return '$percent %';
+  }
+
+  @override
+  String kitZoomShortcut(String action, String key) {
+    return '$action · Ctrl+$key';
+  }
+
+  @override
+  String get kitMenu => 'Menu';
+
+  @override
+  String get kitCopyDetails => 'Copy details';
+
+  @override
+  String get kitReportProblem => 'Report a problem';
+
+  @override
+  String kitProgressStep(int step, int of) {
+    final intl.NumberFormat stepNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String stepString = stepNumberFormat.format(step);
+    final intl.NumberFormat ofNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String ofString = ofNumberFormat.format(of);
+
+    return 'Step $stepString of $ofString';
+  }
+
+  @override
+  String kitProgressEtaSeconds(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: 'about $secondsString s left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitProgressEtaMinutes(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'about $minutesString min left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitProgressEtaHours(int hours) {
+    final intl.NumberFormat hoursNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String hoursString = hoursNumberFormat.format(hours);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'about $hoursString h left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitQrTooLong =>
+      'This is too long for a QR code. Copy the link instead.';
+
+  @override
+  String kitSinceStillWaiting(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    return 'Still waiting after $secondsString s';
+  }
+
+  @override
+  String kitSinceWaitingFor(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Waiting $minutesString min',
+      one: 'Waiting 1 min',
+      zero: 'Waiting less than a minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitSinceAge(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutesString min',
+      one: '1 min',
+      zero: 'less than a minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitMarkWaiting => 'Waiting';
+
+  @override
+  String get kitMarkWorking => 'Working';
+
+  @override
+  String get kitMarkDone => 'Done';
+
+  @override
+  String get kitMarkFailed => 'Failed';
+
+  @override
+  String get kitMarkPaused => 'Paused';
+
+  @override
+  String get kitTaskNeedsYou => 'Needs you';
+
+  @override
+  String get kitTaskStopped => 'Stopped';
+
+  @override
+  String get kitSwatchInUse => 'In use';
+
+  @override
+  String get kitThemePreviewTitle => 'Fix the login bug';
+
+  @override
+  String get kitThemePreviewWorking => 'Working · 2 min';
+
+  @override
+  String get kitThemePreviewNeedsYou => 'Needs you';
+
+  @override
+  String get kitThemePreviewPrimary => 'Send';
+
+  @override
+  String get kitThemePreviewSecondary => 'Attach';
+
+  @override
+  String get kitThemePreviewSegment => 'On';
+
+  @override
+  String get kitThemePreviewCode => 'final ready = true;';
+
+  @override
+  String kitThemePreviewLabel(String theme) {
+    return 'Preview of $theme';
+  }
+
+  @override
+  String get kitTerminalViewKeySlash => 'Slash key';
+
+  @override
+  String get kitTerminalViewKeyDash => 'Dash key';
+
+  @override
+  String get kitTerminalViewKeyPipe => 'Pipe key';
+
+  @override
+  String get kitTerminalViewKeyTilde => 'Tilde key';
+
+  @override
+  String get kitTerminalViewKeyHome => 'Home key';
+
+  @override
+  String get kitTerminalViewKeyEnd => 'End key';
+
+  @override
+  String kitTerminalViewShowingLast(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Showing the last $countString lines',
+      one: 'Showing the last line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitUndoAction => 'Undo';
+
+  @override
+  String kitUndoFailed(String message) {
+    return 'Couldn\'t undo. $message';
+  }
+
+  @override
+  String get kitUndoWorking => 'Undoing';
 }
