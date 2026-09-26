@@ -75,7 +75,8 @@ Hard rules:
   hairlines 1 physical px. Tooltip only through KitIconButton, KitTerm or KitTappable.tooltip; FloatingActionButton becomes
   the KitScreen bottom primary; Theme/DefaultTextStyle overrides only in lib/ui/app_theme.dart; Positioned becomes
   PositionedDirectional (R23).
-- Planned kit parts (R13): never create a file or class named ${PLANNED.join(', ')}. If you need one that has not merged,
+- Planned kit parts (R13): apart from the part YOUR unit builds or changes, never create a file or class named
+  ${PLANNED.join(', ')}. If you need another unit's part that has not merged,
   stop and report it; never build a local substitute. A genuinely new part goes to the coordinator for the contract.
 - Additive only (R11): public class names and constructors gain optional parameters; old APIs stay as @Deprecated wrappers.
   A file a kit part replaces becomes a thin @Deprecated wrapper or is git mv-ed into lib/ui/kit with a re-export (R12).
