@@ -52,7 +52,7 @@ void main() {
       testWidgets('kit_confirm destructive · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_confirm_destructive_${at}_$mode',
+          name: kitGalleryName('kit_confirm_destructive', size, light: light),
           size: size,
           light: light,
           open: _destructive,
@@ -67,7 +67,12 @@ void main() {
       ) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_confirm_destructive_text2_${at}_$mode',
+          name: kitGalleryName(
+            'kit_confirm_destructive',
+            size,
+            light: light,
+            text2: true,
+          ),
           size: size,
           light: light,
           textScale: 2,
@@ -77,7 +82,12 @@ void main() {
       testWidgets('kit_confirm destructive · ar · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_confirm_destructive_ar_${at}_$mode',
+          name: kitGalleryName(
+            'kit_confirm_destructive',
+            size,
+            light: light,
+            ar: true,
+          ),
           size: size,
           light: light,
           locale: const Locale('ar'),
@@ -94,7 +104,7 @@ void main() {
     testWidgets('kit_confirm neutral · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_confirm_neutral_$mode',
+        name: kitGalleryName('kit_confirm_neutral', phone, light: light),
         size: phone,
         light: light,
         open: (context) => showKitConfirm(
@@ -112,7 +122,7 @@ void main() {
       final never = Completer<void>();
       await kitGalleryShot(
         tester,
-        name: 'kit_confirm_stop_working_$mode',
+        name: kitGalleryName('kit_confirm_stop_working', phone, light: light),
         size: phone,
         light: light,
         open: (context) => showKitConfirm(
@@ -135,7 +145,7 @@ void main() {
     testWidgets('kit_confirm failed · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_confirm_failed_$mode',
+        name: kitGalleryName('kit_confirm_failed', phone, light: light),
         size: phone,
         light: light,
         open: (context) => showKitConfirm(
@@ -155,7 +165,7 @@ void main() {
     testWidgets('kit_confirm discard · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_confirm_discard_$mode',
+        name: kitGalleryName('kit_confirm_discard', phone, light: light),
         size: phone,
         light: light,
         open: (context) => showKitConfirm(
@@ -173,7 +183,7 @@ void main() {
     testWidgets('kit_confirm typed name ready · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_confirm_typed_ready_$mode',
+        name: kitGalleryName('kit_confirm_typed_ready', phone, light: light),
         size: phone,
         light: light,
         open: _destructive,
