@@ -39,20 +39,26 @@ abstract final class TeamConversation {
     BuildContext context,
     OrchestrationController team, {
     required String runId,
-  }) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => TeamControllerScope(
-        team: team,
-        child: TeamConversationScreen(team: team, runId: runId),
-      ),
+  }) => Navigator.of(context).push(route(team, runId: runId));
+
+  /// The route [open] pushes, for a door that holds a [NavigatorState]
+  /// rather than a context (the team notification).
+  static Route<void> route(
+    OrchestrationController team, {
+    required String runId,
+  }) => MaterialPageRoute<void>(
+    builder: (_) => TeamControllerScope(
+      team: team,
+      child: TeamConversationScreen(team: team, runId: runId),
     ),
   );
 
   /// Asks for a new task (the team's Start-a-task sheet: the planner, or a
   /// direct task when the planner is off), then opens its conversation.
-  /// Nothing opens when the person backs out or the host refused the task
-  /// (the sheet says why).
-  static Future<void> start(
+  /// Nothing opens when the person backs out or the host refused the task;
+  /// the sheet's record comes back so a caller can say a refusal the sheet
+  /// did not (a work item made but refused by its worker pool).
+  static Future<MutationRecord?> start(
     BuildContext context,
     OrchestrationController team,
   ) async {
@@ -60,7 +66,7 @@ abstract final class TeamConversation {
     if (record == null ||
         record.status == MutationStatus.rejected ||
         !context.mounted) {
-      return;
+      return record;
     }
     final TeamPendingTask pending;
     switch (record.kind) {
@@ -79,7 +85,7 @@ abstract final class TeamConversation {
           record: record,
         );
       default:
-        return;
+        return record;
     }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -89,6 +95,7 @@ abstract final class TeamConversation {
         ),
       ),
     );
+    return record;
   }
 }
 

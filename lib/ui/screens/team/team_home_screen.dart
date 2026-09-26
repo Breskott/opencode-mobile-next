@@ -14,18 +14,21 @@
 /// 3. **Tasks**: one list, what needs the person and what runs first, then
 ///    what waits; then **Done today** (three shown, the rest behind one
 ///    row). A row is the task's title, one supporting line ("Working · 3 of
-///    5 steps done") and one leading mark ([KitTaskMark]); it opens
-///    [RunScreen].
+///    5 steps done") and one leading mark ([KitTaskMark]); it opens the
+///    task's conversation ([TeamConversation.open]), the same page every
+///    other door to a task opens.
 /// 4. One **agents** row ("3 agents · 1 working") that opens
 ///    [TeamAgentsScreen].
 ///
 /// **Give the team a task** (TEAM-204, only with `controlMessage`) is the
 /// screen's one primary button, pinned below the list; it opens
-/// [StartRunSheet], whose planning cards sit above the tasks until the task
-/// appears. Stale data shows the one status line and dims the rows; pull to
-/// refresh calls [OrchestrationController.refresh].
+/// [StartRunSheet] through [TeamConversation.start], so a task given here
+/// lands in its conversation like one given from Solo · Team. Stale data
+/// shows the one status line and dims the rows; pull to refresh calls
+/// [OrchestrationController.refresh].
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -38,13 +41,11 @@ import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_moments.dart';
 import '../../widgets/team_now.dart';
-import '../../widgets/team_controls.dart'
-    show teamControlReceiptWord, teamControlWord;
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart' show TeamConversation;
 import 'gate_sheet.dart';
-import 'run_screen.dart';
 import 'start_run_sheet.dart';
 import 'team_board_screen.dart';
 import 'team_agents_screen.dart';
@@ -75,7 +76,7 @@ class TeamHomeScreen extends StatefulWidget {
 
   final OrchestrationController controller;
 
-  /// Opens a task's detail; pushes [RunScreen] when null.
+  /// Opens a task; its conversation ([TeamConversation.open]) when null.
   final ValueChanged<OrchestrationRun>? onOpenRun;
 
   /// Opens an agent's detail from the agents list; pushes [AgentScreen]
@@ -132,15 +133,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   void _openRun(OrchestrationRun run) {
     final open = widget.onOpenRun;
     if (open != null) return open(run);
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RunScreen(
-          controller: widget.controller,
-          runId: run.id,
-          now: widget.now,
-        ),
-      ),
-    );
+    unawaited(TeamConversation.open(context, widget.controller, runId: run.id));
   }
 
   void _openAgents() {
@@ -174,22 +167,21 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   }
 
   Future<void> _startRun() async {
-    final record = await showStartRunSheet(context, widget.controller);
+    // The task's conversation opens once the host took it (the planner's
+    // message or the direct task); back here, a refusal the sheet did not
+    // say (the work item made, its worker pool refused it) is said once.
+    final record = await TeamConversation.start(context, widget.controller);
     if (!mounted) return;
-    // A planner message shows as the planning card; a direct task
-    // (TEAM-306) has no card of its own, so its receipt is said once here:
-    // "Task sent to an agent · Confirmed", or the host's refusal.
-    if (record == null || record.kind == MutationKind.message) return;
+    if (record == null ||
+        record.kind == MutationKind.message ||
+        record.status != MutationStatus.rejected) {
+      return;
+    }
     final l10n = _copy(context);
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       SnackBar(
         key: const ValueKey('team-home-direct-receipt'),
-        content: Text(
-          record.status == MutationStatus.rejected
-              ? teamReceiptLine(l10n, record)
-              : '${teamControlWord(l10n, record.request)} · '
-                    '${teamControlReceiptWord(l10n, record.status)}',
-        ),
+        content: Text(teamReceiptLine(l10n, record)),
       ),
     );
   }

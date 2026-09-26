@@ -40,6 +40,8 @@ import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1526,9 +1528,8 @@ void main() {
       },
     );
 
-    testWidgets('a completed-run notification tap opens the run', (
-      tester,
-    ) async {
+    testWidgets('a completed-run notification tap opens the task\'s '
+        'conversation (P0.3), not the run page', (tester) async {
       SharedPreferences.setMockInitialValues({
         BackgroundLiveController.preferenceKey: true,
       });
@@ -1553,7 +1554,13 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pumpAndSettle();
-      expect(tester.widget<RunScreen>(find.byType(RunScreen)).runId, 'oc-done');
+      expect(
+        tester
+            .widget<TeamConversationScreen>(find.byType(TeamConversationScreen))
+            .runId,
+        'oc-done',
+      );
+      expect(find.byType(RunScreen), findsNothing);
       expect(gateway.calls, isEmpty);
       expect(tester.takeException(), isNull);
     });

@@ -1780,9 +1780,9 @@
           "key": null,
           "line": 889,
           "action": "navigate",
-          "target": "run",
-          "targetWidget": "RunScreen",
-          "effect": "_pushTeamDestination: pushes RunScreen(controller: team, runId: link.id); without _controller.orchestration pushes plain ActivityScreen.",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversationScreen",
+          "effect": "_pushTeamDestination: pushes TeamConversation.route(team, runId: link.id), the task's conversation (P0.3); without _controller.orchestration pushes plain ActivityScreen.",
           "gates": [
             "_controller.orchestration != null (else ActivityScreen)"
           ],

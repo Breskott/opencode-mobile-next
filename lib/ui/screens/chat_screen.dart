@@ -100,6 +100,7 @@ import 'team/merge_section.dart' show TeamMergeSection;
 import 'team/run_screen.dart' show RunScreen;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
 import 'team/team_needs_you.dart' show TeamNeedsYouCard, teamOpenGates;
+import 'team_conversation/team_conversation.dart' show TeamConversation;
 import '../kit/scenes/states_scenes.dart';
 import '../kit/scenes/states_working_scene.dart';
 import '../widgets/grace_timer.dart';

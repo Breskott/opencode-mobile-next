@@ -1,5 +1,5 @@
 {
- "generatedFrom": "a318c83ad6af1e6a75bb7922a0e520a415446fe3",
+ "generatedFrom": "ebbc1a71a2bad43a38c34e9ca3884b50fe141f3d",
  "pages": [
   {
    "id": "system",
@@ -670,9 +670,9 @@
      "file": "lib/main.dart",
      "line": 889,
      "action": "navigate",
-     "target": "team-run",
-     "targetWidget": "RunScreen",
-     "effect": "_pushTeamDestination: pushes RunScreen(controller: team, runId: link.id); without _controller.orchestration pushes plain ActivityScreen.",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversationScreen",
+     "effect": "_pushTeamDestination: pushes TeamConversation.route(team, runId: link.id), the task's conversation (P0.3); without _controller.orchestration pushes plain ActivityScreen.",
      "gates": [
       "_controller.orchestration != null (else ActivityScreen)"
      ],
@@ -27695,6 +27695,19 @@
     {
      "page": "workspace",
      "element": "workspace-new-session"
+    },
+    {
+     "page": "team-home-runs-tab",
+     "element": "team-home-runs-row"
+    },
+    {
+     "page": "team-home",
+     "element": null,
+     "evidence": "lib/ui/screens/team/team_home_screen.dart:None"
+    },
+    {
+     "page": "system",
+     "element": "system-entry-team-link-run"
     }
    ],
    "gates": [],
@@ -27709,7 +27722,7 @@
      "action": "navigate",
      "target": "team-home",
      "targetWidget": "TeamHomeScreen",
-     "effect": "_openTeamPage(): pushes TeamHomeScreen(controller: team).",
+     "effect": "_openTeamPage(): pushes TeamHomeScreen(controller: team, onOpenRun: ...); its row for this same task pops back to this conversation, another task opens its own conversation (P0.3).",
      "gates": [],
      "destructive": false
     },
@@ -27722,7 +27735,7 @@
      "line": 290,
      "action": "other",
      "target": null,
-     "effect": "PopupMenuButton opener; onSelected fires for any item (there is one).",
+     "effect": "KitRowMenu opener: Task details always, Stop task while the task runs and the host takes cancelRun.",
      "gates": [
       "run != null"
      ],
@@ -27732,17 +27745,35 @@
      "id": "team-conversation-menu-details",
      "type": "menu-item",
      "label": "Task details",
-     "key": null,
+     "key": "team-conversation-details",
      "file": "lib/ui/screens/chat/team_conversation_view.dart",
      "line": 292,
      "action": "navigate",
      "target": "team-run",
      "targetWidget": "RunScreen",
-     "effect": "Selecting 'Task details' -> onSelected -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
+     "effect": "Selecting 'Task details' -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
      "gates": [
       "run != null"
      ],
      "destructive": false
+    },
+    {
+     "id": "team-conversation-menu-stop",
+     "type": "menu-item",
+     "label": "Stop task",
+     "key": "team-conversation-stop",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 349,
+     "action": "open-sheet",
+     "target": "team-conversation-stop-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_stop(run): opens the confirm sheet 'Stop this task?' (P0.4); the receipt 'Stop task · Sent / Confirmed / Refused' then shows in the conversation (key team-conversation-stop-receipt).",
+     "gates": [
+      "run != null",
+      "team.capabilities.controlCancelRun",
+      "run.state not completed/cancelled/failed"
+     ],
+     "destructive": true
     },
     {
      "id": "team-conversation-gate-card",
@@ -27864,6 +27895,57 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "team-conversation-stop-confirm-sheet",
+   "title": "Stop this task?",
+   "kind": "sheet",
+   "area": "team",
+   "file": "lib/ui/screens/chat/team_conversation_view.dart",
+   "widget": "_stop",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 218,
+   "purpose": "Confirmation before stopping a team task from its conversation (P0.4): names the task and says its running workers stop and finished work stays.",
+   "reachedFrom": [
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-menu-stop"
+    }
+   ],
+   "gates": [
+    "team.capabilities.controlCancelRun && the task is still running"
+   ],
+   "elements": [
+    {
+     "id": "team-conversation-stop-confirm-sheet-confirm",
+     "type": "button",
+     "label": "Stop task",
+     "key": "team-conversation-stop-confirm-action",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "effect": "Pops true; _stop then calls team.cancelRun(run.id); the receipt shows in the conversation.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "team-conversation-stop-confirm-sheet-keep",
+     "type": "button",
+     "label": "Keep running",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 87,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ],
+   "sheetKey": "team-conversation-stop-confirm"
   },
   {
    "id": "team-agent-output",
@@ -29151,14 +29233,6 @@
    "line": 86,
    "purpose": "Run detail with Overview / Work / Agents / Timeline tabs, run technical details and the cancel/close control.",
    "reachedFrom": [
-    {
-     "page": "team-home-runs-tab",
-     "element": "team-home-runs-row"
-    },
-    {
-     "page": "system",
-     "element": "system-entry-team-link-run"
-    },
     {
      "page": "team-conversation",
      "element": "team-conversation-menu-details"
@@ -30532,9 +30606,9 @@
      "file": "lib/ui/screens/team/team_home_screen.dart",
      "line": 935,
      "action": "navigate",
-     "target": "team-run",
-     "targetWidget": "RunScreen",
-     "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> Navigator.push(MaterialPageRoute(RunScreen(controller, runId: run.id))) (line 102).",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversationScreen",
+     "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> TeamConversation.open(context, controller, runId: run.id) (P0.3). Opened from a conversation, the row for that same task pops back to it instead of stacking a second copy.",
      "gates": [],
      "destructive": false
     }
@@ -39938,7 +40012,7 @@
    {
     "from": "system",
     "element": "system-entry-team-link-run",
-    "to": "team-run"
+    "to": "team-conversation"
    },
    {
     "from": "system",
@@ -42123,7 +42197,7 @@
    {
     "from": "team-home-runs-tab",
     "element": "team-home-runs-row",
-    "to": "team-run"
+    "to": "team-conversation"
    },
    {
     "from": "team-home-runs-tab",
@@ -42354,6 +42428,11 @@
     "from": "team-conversation",
     "element": "team-conversation-menu-details",
     "to": "team-run"
+   },
+   {
+    "from": "team-conversation",
+    "element": "team-conversation-menu-stop",
+    "to": "team-conversation-stop-confirm-sheet"
    },
    {
     "from": "team-conversation",
@@ -44109,6 +44188,11 @@
     "via": "embedded"
    },
    {
+    "from": "team-home",
+    "element": null,
+    "to": "team-conversation"
+   },
+   {
     "from": "team-run",
     "element": null,
     "to": "embedded-team-merge-section",
@@ -44937,10 +45021,6 @@
   },
   {
    "part": "i1-team-core",
-   "note": "TeamHomeScreen.onOpenRun / onOpenAgent (team_home_screen.dart:58-61) can override row navigation, but the only production constructor (workspace_screen.dart:856) passes neither, so rows push RunScreen / AgentScreen."
-  },
-  {
-   "part": "i1-team-core",
    "note": "team_cycle_strip.dart:345 shows a control TeamReceiptChip without onRetry (no button) while `receipt != null && !receipt.isSettled`; not interactive."
   },
   {
@@ -44974,6 +45054,10 @@
   {
    "part": "i1-team-core",
    "note": "team-board (team_board_screen.dart), added with the board (docs/design/team-board-2026-09-26.md): its KitRefresh.onRefresh -> _refresh() on every column (team_board_screen.dart:640) and on the empty state (line 519) is left out of elements for the same reason as team-agents: no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of the not-answering state (which has 'Try again', team-board-retry). Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row."
+  },
+  {
+   "part": "i1-team-core",
+   "note": "TeamHomeScreen.onOpenRun falls back to TeamConversation.open (P0.3, 2026-09-26); only the conversation's own team-page door passes it (to pop back to the same task). onOpenAgent is still never passed."
   },
   {
    "part": "i2-team-sheets",

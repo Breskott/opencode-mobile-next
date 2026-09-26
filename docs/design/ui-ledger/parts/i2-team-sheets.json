@@ -775,7 +775,8 @@
      "element": null,
      "widget": "_TeamHomeScreenState._startRun",
      "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 141
+     "line": 141,
+     "via": "TeamConversation.start: the sheet, then the new task's conversation (P0.3)"
     }
    ],
    "gates": [],

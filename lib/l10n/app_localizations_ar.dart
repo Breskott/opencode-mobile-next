@@ -19346,6 +19346,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamChatTaskDetails => 'تفاصيل المهمة';
 
   @override
+  String get teamChatStopTask => 'إيقاف المهمة';
+
+  @override
+  String get teamChatStopConfirmTitle => 'هل تريد إيقاف هذه المهمة؟';
+
+  @override
+  String teamChatStopConfirmBody(String task) {
+    return 'ستتوقف «$task» على جهاز الفريق. يتوقف الآن العاملون الذين ما زالوا يعملون عليها، ويبقى العمل المنجز كما هو. لا يمكن التراجع عن ذلك من الهاتف.';
+  }
+
+  @override
+  String get teamChatStopKeepRunning => 'دعها تعمل';
+
+  @override
   String get teamChatLoading => 'جارٍ تحميل المهمة';
 
   @override
