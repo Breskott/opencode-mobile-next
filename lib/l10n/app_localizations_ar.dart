@@ -20366,4 +20366,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitUndoWorking => 'جارٍ التراجع';
+
+  @override
+  String get kitTermHint => 'يتوفر شرح';
+
+  @override
+  String get kitTermShow => 'إظهار الشرح';
+
+  @override
+  String get kitTermClose => 'إغلاق الشرح';
 }

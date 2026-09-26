@@ -32284,6 +32284,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undoing'**
   String get kitUndoWorking;
+
+  /// KitTerm: the semantics hint on a term that explains itself, read after its name
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation available'**
+  String get kitTermHint;
+
+  /// KitTerm: the semantics tap hint that replaces "Activate" on a term
+  ///
+  /// In en, this message translates to:
+  /// **'Show explanation'**
+  String get kitTermShow;
+
+  /// KitTerm: the open bubble's spoken label and dismiss action
+  ///
+  /// In en, this message translates to:
+  /// **'Close explanation'**
+  String get kitTermClose;
 }
 
 class _AppLocalizationsDelegate
