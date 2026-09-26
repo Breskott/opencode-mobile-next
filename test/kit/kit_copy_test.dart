@@ -13,6 +13,7 @@ void main() {
   late List<Map<Object?, Object?>> announcements;
 
   setUp(() {
+    KitRedact.clearKnownSecrets();
     platform = [];
     announcements = [];
     final messenger =
@@ -32,6 +33,7 @@ void main() {
   });
 
   tearDown(() {
+    KitRedact.clearKnownSecrets();
     final messenger =
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(SystemChannels.platform, null);
@@ -62,6 +64,26 @@ void main() {
     expect((announcements.single['data'] as Map)['message'], 'Copied');
     expect(find.byType(SnackBar), findsNothing);
   });
+
+  testWidgets(
+    'registered secrets are masked by default and verbatim is explicit',
+    (tester) async {
+      final context = await pumpKitHost(tester);
+      const input = 'diagnostic fixture-value repeated fixture-value';
+      KitRedact.registerKnownSecret('fixture-value');
+      await KitCopy.copy(context, input);
+      expect(
+        copied(),
+        'diagnostic ${KitRedact.mask} repeated ${KitRedact.mask}',
+      );
+      await KitCopy.copy(context, input, redact: false);
+      expect(copied(), input);
+      KitRedact.clearKnownSecrets();
+      await KitCopy.copy(context, input);
+      expect(copied(), input);
+      await tester.pump();
+    },
+  );
 
   testWidgets('a quoted password is masked whole', (tester) async {
     final context = await pumpKitHost(tester);

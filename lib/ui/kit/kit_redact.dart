@@ -4,6 +4,10 @@ import 'dart:convert';
 /// shares (AGENTS.md security invariants: provider keys must never reach
 /// logs, diagnostics, notification copy or the clipboard).
 ///
+/// The app must register provider keys and server passwords as it loads them
+/// using [registerKnownSecret]. Exact values are masked before the patterns.
+/// Registration is process-local; tests must call [clearKnownSecrets].
+///
 /// A secret becomes "•••". Where a key's prefix is public (it only names the
 /// provider), the prefix stays as a hint: `sk-ant-•••`, `ghp_•••`, `AIza•••`.
 ///
@@ -13,15 +17,17 @@ import 'dart:convert';
 /// - `Bearer <token>`;
 /// - the whole value of an `Authorization`, `Proxy-Authorization`, `Cookie`,
 ///   `Set-Cookie` or `x-api-key` header,
+///   at line start (allowing indentation) or in an explicitly quoted header,
 ///   written `Authorization: x` or `Authorization=x`: to the end of the line,
 ///   through the closing quote of a quoted value, or to the end of the quoted
 ///   string the header itself sits in (`-H "Authorization: …"`);
 /// - the value after `api_key`, `apikey`, `token`, `secret`, `password` or
 ///   `passwd` (also as the tail of a longer name such as `client_secret`)
-///   and `=` or `:`; also environment names ending in `_KEY`, `_SECRET`,
-///   `_TOKEN` or `_PASSWORD`. A quoted value through its closing quote (escaped
+///   and `=` or `:`; also UPPER_SNAKE names ending in `_KEY`, `_SECRET`,
+///   `_TOKEN` or `_PASSWORD`, and `access_key`, `secret_key`, `private_key`
+///   in any case. A quoted value through its closing quote (escaped
 ///   quotes and embedded delimiters included), an unquoted one up to
-///   whitespace or `"',;&<>`. Inside a file path (`/tmp/token=cache/x`) the
+///   whitespace or `"',;&#<>`. Inside a file path (`/tmp/token=cache/x`) the
 ///   name is not a credential; after `?`, `&` or `#` in a URL it is;
 /// - URL user-info, including connection strings:
 ///   `postgres://user:pass@host` → `postgres://•••@host`;
@@ -33,6 +39,21 @@ import 'dart:convert';
 abstract final class KitRedact {
   /// What a secret is replaced with.
   static const String mask = '•••';
+
+  static final List<String> _knownSecrets = [];
+
+  /// Registers a loaded provider key or server password for exact masking.
+  /// Values shorter than six characters are ignored; values are not trimmed.
+  /// Longer values take precedence over registered substrings.
+  static void registerKnownSecret(String value) {
+    if (value.length < 6 || _knownSecrets.contains(value)) return;
+    _knownSecrets.add(value);
+    _knownSecrets.sort((a, b) => b.length.compareTo(a.length));
+  }
+
+  /// Drops process-local registrations. Tests must clear these in setup and
+  /// teardown; the app must re-register still-loaded secrets after clearing.
+  static void clearKnownSecrets() => _knownSecrets.clear();
 
   /// Group 1: a quote right before the name (the header sits in a quoted
   /// string, or is a quoted key); group 2: a quote closing the key.
@@ -47,7 +68,15 @@ abstract final class KitRedact {
   );
 
   static final RegExp _namedValue = RegExp(
-    r'''(?<![A-Za-z0-9])[A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|_key|token|secret|password|passwd)["']?\s*[:=]\s*''',
+    r'''(?<![A-Za-z0-9_\-])([A-Za-z0-9_\-]*?(?:api[_\-]?key|apikey|_key|token|secret|password|passwd))["']?\s*[:=]\s*''',
+    caseSensitive: false,
+  );
+
+  static final RegExp _envName = RegExp(
+    r'^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*_(?:KEY|SECRET|TOKEN|PASSWORD)$',
+  );
+  static final RegExp _credentialName = RegExp(
+    r'^(?:api[_\-]?key|apikey|access_key|secret_key|private_key|x-api-key|[A-Za-z0-9_\-]*(?:token|secret|password|passwd))$',
     caseSensitive: false,
   );
 
@@ -56,7 +85,7 @@ abstract final class KitRedact {
   );
 
   static final RegExp _urlScheme = RegExp(
-    r'(?:^|=)[A-Za-z][A-Za-z0-9+.\-]*://',
+    r'(?:\b[A-Za-z][A-Za-z0-9+.\-]*:|^|=)//',
   );
 
   static final RegExp _privateKey = RegExp(
@@ -85,10 +114,15 @@ abstract final class KitRedact {
     RegExp(r'(?<![A-Za-z0-9_\-])(xox[abpr]-)[A-Za-z0-9\-]{10,}'),
   ];
 
-  /// [s] with every recognised secret replaced by [mask].
+  /// [s] with registered exact values masked longest first, followed by the
+  /// credential patterns. Exact matching is case-sensitive and literal.
   static String text(String s) {
     if (s.isEmpty) return s;
-    var out = s.replaceAll(_privateKey, mask);
+    var out = s;
+    for (final secret in _knownSecrets) {
+      out = out.replaceAll(secret, mask);
+    }
+    out = out.replaceAll(_privateKey, mask);
     out = _scan(out, _authHeader, _authValue);
     out = out.replaceAllMapped(_bearer, (m) => '${m[1]} $mask');
     out = _scan(out, _namedValue, _namedValueEnd);
@@ -137,6 +171,15 @@ abstract final class KitRedact {
     if (_inPath(s, m.start)) return null;
     final lead = m[1]!;
     final keyQuote = m[2]!;
+    // Unquoted headers occupy their own line. Quoted keys and header strings
+    // (JSON diagnostics and curl -H) have explicit value boundaries instead.
+    if (lead.isEmpty) {
+      var lineStart = m.start;
+      while (lineStart > 0 && !'\r\n'.contains(s[lineStart - 1])) {
+        lineStart--;
+      }
+      if (s.substring(lineStart, m.start).trim().isNotEmpty) return null;
+    }
     final start = m.end;
     if (lead.isNotEmpty && keyQuote.isEmpty) {
       // `"Authorization: …"`: the header is the content of a quoted string,
@@ -158,18 +201,56 @@ abstract final class KitRedact {
 
   static _Masked? _namedValueEnd(String s, RegExpMatch m) {
     if (_inPath(s, m.start)) return null;
+    final name = m[1]!;
+    if (!_credentialName.hasMatch(name) && !_envName.hasMatch(name)) {
+      return null;
+    }
     final start = m.end;
+    if (start < s.length && s[start] == r'\') {
+      final quoted = _serializedQuoted(s, start);
+      if (quoted != null) return quoted;
+    }
     if (start < s.length && _isQuote(s[start])) return _quoted(s, start);
     if (_invocation.matchAsPrefix(s, start) != null &&
         _declaration.hasMatch(s.substring(0, m.start))) {
       return null;
     }
     var end = start;
-    while (end < s.length && !' \t\r\n"\',;&<>'.contains(s[end])) {
+    while (end < s.length && !' \t\r\n"\',;&#<>'.contains(s[end])) {
       if (s.startsWith('*/', end)) break;
       end++;
     }
     return _masked(start, end);
+  }
+
+  /// Quotes encoded inside a serialized string include a backslash run in the
+  /// delimiter. A longer run escapes a quote inside that value.
+  static _Masked? _serializedQuoted(String s, int open) {
+    var quoteAt = open;
+    while (quoteAt < s.length && s[quoteAt] == r'\') {
+      quoteAt++;
+    }
+    if (quoteAt == s.length || !_isQuote(s[quoteAt])) return null;
+    final width = quoteAt - open;
+    final delimiter = s.substring(open, quoteAt + 1);
+    var i = quoteAt + 1;
+    while (i < s.length && s[i] != '\r' && s[i] != '\n') {
+      if (s[i] != r'\') {
+        i++;
+        continue;
+      }
+      final run = i;
+      while (i < s.length && s[i] == r'\') {
+        i++;
+      }
+      if (i < s.length && s[i] == s[quoteAt] && i - run == width) {
+        return run > quoteAt + 1
+            ? (text: '$delimiter$mask$delimiter', end: i + 1)
+            : (text: '$delimiter$delimiter', end: i + 1);
+      }
+      if (i < s.length) i++;
+    }
+    return null;
   }
 
   /// The value `[start, end)` as a mask; null when it is empty.

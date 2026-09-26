@@ -16,7 +16,10 @@ abstract final class KitCopy {
   ///
   /// [redact] defaults to true for technical values, logs, diagnostics and
   /// report previews. Code blocks and message text should pass false to copy
-  /// verbatim, preserving their original content.
+  /// verbatim, preserving their original content (including registered secrets).
+  /// Register loaded provider keys and server passwords with
+  /// [KitRedact.registerKnownSecret] so default copies also mask opaque values.
+  /// Tests that register values must call [KitRedact.clearKnownSecrets].
   static Future<void> copy(
     BuildContext context,
     String text, {
