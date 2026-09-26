@@ -217,16 +217,15 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   /// conversation (Sent, then Confirmed or the host's refusal).
   Future<void> _stop(OrchestrationRun run) async {
     final l10n = _chatL10n(context);
-    final ok = await showConfirmSheet(
+    final ok = await showKitConfirm(
       context,
       title: l10n.teamChatStopConfirmTitle,
-      message: l10n.teamChatStopConfirmBody(
+      body: l10n.teamChatStopConfirmBody(
         run.title.trim().isEmpty ? l10n.teamChatUntitled : run.title.trim(),
       ),
       confirmLabel: l10n.teamChatStopTask,
       cancelLabel: l10n.teamChatStopKeepRunning,
-      icon: AppIconography.warning,
-      destructive: true,
+      kind: KitConfirmKind.stop,
       sheetKey: const ValueKey('team-conversation-stop-confirm'),
       confirmKey: const ValueKey('team-conversation-stop-confirm-action'),
     );

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../api/product_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../kit/kit.dart' show KitButton;
+import '../kit/kit.dart' show KitButton, KitIconButton, KitSecretField;
 import '../widgets/product_states.dart';
 import '../widgets/info_label.dart';
 import '../app_iconography.dart';
@@ -27,8 +27,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   // P0.1: a header's value is a secret (Authorization: Bearer …). Kept as
   // one row per pair, each with its own obscured value field, rather than
   // the old single multi-line "KEY=VALUE per line" box that rendered every
-  // value in clear. kit-gap: KitSecretField (docs/ux-system/kit-v2.md) does
-  // not exist yet, so these stay small raw fields.
+  // value in clear. The value is a KitSecretField.
   final List<_HeaderRow> _headerRows = [_HeaderRow()];
   final _environment = TextEditingController();
   final _timeout = TextEditingController();
@@ -640,9 +639,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     ];
   }
 
-  // kit-gap: KitSecretField (docs/ux-system/kit-v2.md lists it; not built
-  // yet). This is the smallest raw pair-of-fields-plus-toggle that masks a
-  // header value; do not add another one elsewhere without it.
+  // A header's name stays visible; its value is a KitSecretField.
   Widget _headerRow(int index, String label) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final row = _headerRows[index];
@@ -670,47 +667,32 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           const SizedBox(width: 8),
           Expanded(
             flex: 3,
-            child: TextFormField(
-              key: ValueKey('mcp-header-value-$index'),
+            child: KitSecretField(
+              key: ObjectKey(row),
+              fieldKey: ValueKey('mcp-header-value-$index'),
+              revealKey: ValueKey('mcp-header-reveal-$index'),
               controller: row.value,
-              textDirection: TextDirection.ltr,
               enabled: _editable,
-              autocorrect: false,
-              obscureText: !row.revealed,
               inputFormatters: denyNewlines,
-              decoration: InputDecoration(
-                labelText: l10n.mcpHeaderValue,
-                hintText: index == 0 ? 'Bearer token' : null,
-                suffixIcon: IconButton(
-                  key: ValueKey('mcp-header-reveal-$index'),
-                  tooltip: row.revealed
-                      ? l10n.mcpHideHeaderValue
-                      : l10n.mcpShowHeaderValue,
-                  onPressed: !_editable
-                      ? null
-                      : () => setState(() => row.revealed = !row.revealed),
-                  icon: Icon(
-                    row.revealed
-                        ? AppIconography.hidden
-                        : AppIconography.visible,
-                  ),
-                ),
-              ),
+              label: l10n.mcpHeaderValue,
+              hint: index == 0 ? 'Bearer token' : null,
+              showLabel: l10n.mcpShowHeaderValue,
+              hideLabel: l10n.mcpHideHeaderValue,
               validator: (_) => _pairError(_headersDraftText(), label),
             ),
           ),
           if (_headerRows.length > 1) ...[
             const SizedBox(width: 4),
-            IconButton(
+            KitIconButton(
               key: ValueKey('mcp-header-remove-$index'),
-              tooltip: l10n.mcpRemoveHeader,
+              icon: AppIconography.close,
+              label: l10n.mcpRemoveHeader,
               onPressed: !_editable
                   ? null
                   : () => setState(() {
                       _headerRows[index].dispose();
                       _headerRows.removeAt(index);
                     }),
-              icon: const Icon(AppIconography.close),
             ),
           ],
         ],
@@ -857,14 +839,13 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   }
 }
 
-/// One HTTP header pair's editing state (P0.1): the value starts obscured
-/// and stays that way until the person presses reveal for that row.
+/// One HTTP header pair's editing state (P0.1). Its value field masks
+/// itself (KitSecretField) until the person presses show for that row.
 class _HeaderRow {
   _HeaderRow() : key = TextEditingController(), value = TextEditingController();
 
   final TextEditingController key;
   final TextEditingController value;
-  bool revealed = false;
 
   void dispose() {
     key.dispose();
