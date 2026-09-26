@@ -3,6 +3,8 @@
 // Appearance › Animations: Off (KitEffects.motion), which the kit reads
 // only through KitMotion.reduced. A part that settles after one pump()
 // leaves no ticker running.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -39,6 +41,40 @@ void main() {
         await tester.pump();
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.byIcon(AppIconography.statusDot), findsOneWidget);
+        expect(tester.hasRunningAnimations, isFalse);
+      });
+
+      testWidgets('KitConfirmSheet opens and settles at once', (tester) async {
+        await tester.pumpWidget(_app(const SizedBox(), still));
+        final context = tester.element(find.byType(SizedBox).first);
+        unawaited(
+          showKitConfirm(
+            context,
+            title: 'Delete fox?',
+            body: 'The conversation is removed from the server.',
+            confirmLabel: 'Delete conversation',
+            kind: KitConfirmKind.destructive,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Delete fox?'), findsOneWidget);
+        expect(tester.hasRunningAnimations, isFalse);
+      });
+
+      testWidgets('KitSheet opens and settles at once', (tester) async {
+        await tester.pumpWidget(_app(const SizedBox(), still));
+        final context = tester.element(find.byType(SizedBox).first);
+        unawaited(
+          showKitSheet<void>(
+            context,
+            title: 'Language',
+            body: (_) => const Text('English'),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('English'), findsOneWidget);
         expect(tester.hasRunningAnimations, isFalse);
       });
     });

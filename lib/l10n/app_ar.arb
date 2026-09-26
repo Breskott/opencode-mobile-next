@@ -5263,5 +5263,19 @@
   "thermalStoppedNotice": "هاتفك ساخن جدًا — أوقفنا فريق الذكاء الاصطناعي لحمايته. عمله محفوظ، وسيبدأ من جديد عندما يبرد الهاتف.",
   "thermalResumedNotice": "استأنف فريق الذكاء الاصطناعي عمله — لقد برد هاتفك.",
   "thermalGuardSetting": "إيقاف فريق الذكاء الاصطناعي مؤقتًا عندما يسخن الهاتف",
-  "thermalGuardSettingDetail": "يتوقف الفريق مؤقتًا مع حفظ عمله ويستأنف من تلقاء نفسه عندما يبرد الهاتف."
+  "thermalGuardSettingDetail": "يتوقف الفريق مؤقتًا مع حفظ عمله ويستأنف من تلقاء نفسه عندما يبرد الهاتف.",
+  "kitSheetClose": "إغلاق",
+  "kitSheetDismiss": "إخفاء",
+  "kitSheetLoading": "جارٍ التحميل",
+  "kitConfirmCancel": "إلغاء",
+  "kitConfirmKeepRunning": "مواصلة التشغيل",
+  "kitConfirmKeepEditing": "متابعة التحرير",
+  "kitConfirmTypeName": "اكتب {name} للتأكيد",
+  "kitConfirmTypeNameReason": "اكتب الاسم تمامًا كما يظهر لتفعيل هذا الزر.",
+  "kitConfirmFailed": "لم يكتمل ذلك. يمكنك إعادة المحاولة.",
+  "kitTryAgain": "إعادة المحاولة",
+  "kitDetails": "التفاصيل",
+  "kitDiscardTitle": "هل تريد تجاهل تغييراتك؟",
+  "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
+  "kitDiscardConfirm": "تجاهل التغييرات"
 }

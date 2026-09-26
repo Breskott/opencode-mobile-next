@@ -19952,4 +19952,50 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get thermalGuardSettingDetail =>
       'يتوقف الفريق مؤقتًا مع حفظ عمله ويستأنف من تلقاء نفسه عندما يبرد الهاتف.';
+
+  @override
+  String get kitSheetClose => 'إغلاق';
+
+  @override
+  String get kitSheetDismiss => 'إخفاء';
+
+  @override
+  String get kitSheetLoading => 'جارٍ التحميل';
+
+  @override
+  String get kitConfirmCancel => 'إلغاء';
+
+  @override
+  String get kitConfirmKeepRunning => 'مواصلة التشغيل';
+
+  @override
+  String get kitConfirmKeepEditing => 'متابعة التحرير';
+
+  @override
+  String kitConfirmTypeName(String name) {
+    return 'اكتب $name للتأكيد';
+  }
+
+  @override
+  String get kitConfirmTypeNameReason =>
+      'اكتب الاسم تمامًا كما يظهر لتفعيل هذا الزر.';
+
+  @override
+  String get kitConfirmFailed => 'لم يكتمل ذلك. يمكنك إعادة المحاولة.';
+
+  @override
+  String get kitTryAgain => 'إعادة المحاولة';
+
+  @override
+  String get kitDetails => 'التفاصيل';
+
+  @override
+  String get kitDiscardTitle => 'هل تريد تجاهل تغييراتك؟';
+
+  @override
+  String get kitDiscardBody =>
+      'ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.';
+
+  @override
+  String get kitDiscardConfirm => 'تجاهل التغييرات';
 }

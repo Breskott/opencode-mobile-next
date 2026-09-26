@@ -22054,5 +22054,67 @@
   "thermalGuardSettingDetail": "The team pauses with its work kept and resumes by itself once the phone cools.",
   "@thermalGuardSettingDetail": {
     "description": "Keep running screen: one line under the thermal guard switch"
+  },
+  "kitSheetClose": "Close",
+  "@kitSheetClose": {
+    "description": "Kit sheet: the close button's label in every sheet header"
+  },
+  "kitSheetDismiss": "Dismiss",
+  "@kitSheetDismiss": {
+    "description": "Kit sheet: the drag handle's spoken action that closes the sheet"
+  },
+  "kitSheetLoading": "Loading",
+  "@kitSheetLoading": {
+    "description": "Kit sheet: the spoken label of the loading bar under a sheet's header"
+  },
+  "kitConfirmCancel": "Cancel",
+  "@kitConfirmCancel": {
+    "description": "Kit confirmation: the cancel button for a neutral or destructive question"
+  },
+  "kitConfirmKeepRunning": "Keep running",
+  "@kitConfirmKeepRunning": {
+    "description": "Kit confirmation: the cancel button when the question is whether to stop running work"
+  },
+  "kitConfirmKeepEditing": "Keep editing",
+  "@kitConfirmKeepEditing": {
+    "description": "Kit confirmation: the cancel button when the question is whether to drop unsaved input"
+  },
+  "kitConfirmTypeName": "Type {name} to confirm",
+  "@kitConfirmTypeName": {
+    "description": "Kit confirmation: the label of the field where the person types the exact name of what will be deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "fox"
+      }
+    }
+  },
+  "kitConfirmTypeNameReason": "Type the name exactly as shown to turn this on.",
+  "@kitConfirmTypeNameReason": {
+    "description": "Kit confirmation: the reason shown under the disabled confirm button until the typed name matches"
+  },
+  "kitConfirmFailed": "That didn't finish. You can try again.",
+  "@kitConfirmFailed": {
+    "description": "Kit confirmation: a failure notice when the confirmed act did not complete; the question stays open"
+  },
+  "kitTryAgain": "Try again",
+  "@kitTryAgain": {
+    "description": "Kit: the action that repeats something that failed"
+  },
+  "kitDetails": "Details",
+  "@kitDetails": {
+    "description": "Kit: the row that unfolds technical values (addresses, paths)"
+  },
+  "kitDiscardTitle": "Discard your changes?",
+  "@kitDiscardTitle": {
+    "description": "Kit sheet: the question asked in place when the person closes a sheet with unsaved input"
+  },
+  "kitDiscardBody": "What you changed here isn't saved. Discarding it can't be undone.",
+  "@kitDiscardBody": {
+    "description": "Kit sheet: the body of the discard question"
+  },
+  "kitDiscardConfirm": "Discard changes",
+  "@kitDiscardConfirm": {
+    "description": "Kit sheet: the button that closes the sheet and drops the unsaved input"
   }
 }

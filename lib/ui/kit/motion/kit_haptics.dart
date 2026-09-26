@@ -16,6 +16,8 @@ import '../kit_motion.dart';
 /// - [done]: a soft confirmation when something they waited for finishes
 ///   (a setup that is ready, a reply that finished, a task merged). It is
 ///   skipped under reduced motion, like the celebration it accompanies.
+/// - [commit]: a firm tick when the person confirms a stop, a delete or a
+///   discard.
 ///
 /// Never on scrolling, on every row, or on a failure the screen already
 /// shows: feedback that fires often stops meaning anything.
@@ -31,6 +33,15 @@ abstract final class KitHaptics {
   static void send([BuildContext? context]) {
     if (!_allowed(context)) return;
     unawaited(HapticFeedback.lightImpact());
+  }
+
+  /// A firm tick: the person confirmed an act that stops running work,
+  /// deletes, or drops unsaved input (a `KitConfirmSheet` of kind stop,
+  /// destructive or discard; docs/ux-system/kit-v2.md §2.13). Like [send],
+  /// it obeys Settings › Vibration.
+  static void commit([BuildContext? context]) {
+    if (!_allowed(context)) return;
+    unawaited(HapticFeedback.mediumImpact());
   }
 
   /// A soft confirmation: something the person waited for finished.
