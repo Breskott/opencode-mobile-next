@@ -753,11 +753,12 @@ void main() {
   group('manifest', () {
     final manifest = readKitManifest();
     final registered = readKitMotionRegistrations();
-    // G4's definition: drawn parts, drawings and openers need samples;
-    // scopes draw nothing and need none.
+    // G4's definition: exported drawn parts, drawings and openers need
+    // samples; scopes draw nothing, and kit files imported only by path
+    // (TerminalKeyBar, scenes) are sampled through the part that uses them.
     final needSamples = <String>{
       for (final p in manifest.parts)
-        if (p.kind != KitManifestKind.scope) p.name,
+        if (p.kind != KitManifestKind.scope && p.exported) p.name,
       for (final o in manifest.openers) o.name,
     };
     final exported = <String>{

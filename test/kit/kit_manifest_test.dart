@@ -1268,6 +1268,27 @@ KitManifest readKitManifest() {
 }
 
 /// One golden a gallery file records.
+/// The golden name of a `name:` argument: a string literal, or a
+/// `kitGalleryName('<shot>', size, …)` call (G23's naming helper), read as
+/// `<shot>[_ar][_text2]_$size_$mode`.
+String? _galleryName(String? expression) {
+  if (expression == null) return null;
+  final literal = _Gallery._literal(expression);
+  if (literal != null) return literal;
+  final call = RegExp(
+    r'''^kitGalleryName\(\s*(['"])(\w+)\1([\s\S]*)\)$''',
+  ).firstMatch(expression.trim());
+  if (call == null) return null;
+  final rest = call[3]!;
+  return [
+    call[2]!,
+    if (RegExp(r'\bar:\s*true\b').hasMatch(rest)) 'ar',
+    if (RegExp(r'\btext2:\s*true\b').hasMatch(rest)) 'text2',
+    r'$size',
+    r'$mode',
+  ].join('_');
+}
+
 class _Shot {
   _Shot(this.name, this.arguments);
 
@@ -1289,7 +1310,7 @@ class _Gallery {
         final n = RegExp(r'^(\w+)\s*:\s*([\s\S]*)$').firstMatch(a);
         if (n != null) named[n[1]!] = n[2]!.trim();
       }
-      final name = _literal(named['name']);
+      final name = _galleryName(named['name']);
       if (name != null) shots.add(_Shot(name, named));
     }
     for (final m in RegExp(r'\bmatchesGoldenFile\s*\(').allMatches(code)) {
