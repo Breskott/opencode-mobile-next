@@ -94,8 +94,10 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitLevelMeter`, base `2723b205` (`feat/phone-setup-v2`),
-  code head: see `git log -1` after the build commit below.
+- Branch `revamp/kit-KitLevelMeter`, base `b67e3276` (`feat/phone-setup-v2`
+  at branch creation; that integration branch moved further ahead while
+  this unit worked, as expected with several agents sharing it), code head
+  `9fc79e16`.
 - No APK (unit agents do not build).
 
 ## 3. Devices
@@ -148,7 +150,7 @@ None: tests, goldens and renders only.
   gallery shot since all 9 bars light at 0.9 regardless of direction).
   No approved VL canvas render exists for this part yet (EVID-12: none).
 - Before and after: n/a — new part, nothing existed before it
-  (`git show 2723b205:lib/ui/kit/kit_level_meter.dart` does not exist).
+  (`git show b67e3276:lib/ui/kit/kit_level_meter.dart` does not exist).
 - Accessibility: excluded from semantics entirely (proven by test); no
   touch target (not interactive); 200% text and Arabic galleries reviewed
   above; colour is never the only signal (the host's own words carry the
@@ -192,6 +194,6 @@ $F test -j 1 test/kit/kit_manifest_test.dart   # fails: see Contract problems
 | Implemented | Yes | `revamp/kit-KitLevelMeter` |
 | Enabled | No: not exported from `kit.dart` yet (integrator) | |
 | Verified | Tests and goldens only (this record) | this record |
-| Committed | Yes | code head (see `git log -1`) |
+| Committed | Yes | code head `9fc79e16` |
 | Deployed | No | |
 | Released | No | |
