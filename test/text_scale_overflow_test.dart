@@ -193,13 +193,21 @@ const _widgetBases = {'InheritedNotifier', 'InheritedModel', 'InheritedTheme'};
 /// part that extends `ListTile`, `Builder` or `ValueListenableBuilder` cannot
 /// quietly drop out of the matrix. A class with no `extends` is an `Object`
 /// and never a widget.
-const _nonWidgetClasses = {'KitTokens', 'KitPageTransitionsBuilder'};
+const _nonWidgetClasses = {
+  'KitTokens',
+  'KitPageTransitionsBuilder',
+  // A pushed route (kit-KitPageRoute): it lays nothing out itself; the
+  // page it carries is the screen's.
+  'KitPageRoute',
+  // KitZoom's controller (kit-KitImage), a ChangeNotifier.
+  'KitZoomController',
+};
 
 /// Every `export` and `part` directive in a scanned file; each one must match
 /// the strict pattern below it, or the manifest reports it.
 final _exportDirective = RegExp(r'^[ \t]*export\b[^;]*;', multiLine: true);
 final _exportPattern = RegExp(
-  r"^export\s+'([^']+)'(?:\s+show\s+([\w\s,]+))?;$",
+  r"^export\s+'([^']+)'(?:\s+(show|hide)\s+([\w\s,]+))?;$",
 );
 final _partDirective = RegExp(
   r'^[ \t]*part\b(?!\s+of\b)[^;]*;',
@@ -252,7 +260,9 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
   // Returns the public names [file] contributes, filtered by [show].
   Set<String> scan(File file, Set<String>? show, Set<String> seen) {
     final path = file.absolute.uri.normalizePath().toFilePath();
-    if (!seen.add(path)) return {};
+    // Keyed by the `show` too: `export 'kit_menu.dart' show KitMenuItem;`
+    // in one file must not hide a full `export 'kit_menu.dart';` elsewhere.
+    if (!seen.add('$path|${(show?.toList()?..sort())?.join(',')}')) return {};
     final source = file.readAsStringSync();
     final texts = [source];
     for (final directive in _partDirective.allMatches(source)) {
@@ -287,7 +297,7 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
       if (m == null) {
         problems.add(
           '${shown(file)}: the manifest cannot read `$text` '
-          "(write export '<file>'; or export '<file>' show A, B;)",
+          "(write export '<file>'; or export '<file>' show|hide A, B;)",
         );
         continue;
       }
@@ -300,8 +310,15 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
         );
         continue;
       }
-      final show = m[2]?.split(',').map((n) => n.trim()).toSet();
-      names.addAll(scan(resolve(file, uri), show, seen));
+      final listed = m[3]?.split(',').map((n) => n.trim()).toSet();
+      final hidden = m[2] == 'hide' ? listed! : const <String>{};
+      names.addAll(
+        scan(
+          resolve(file, uri),
+          m[2] == 'show' ? listed : null,
+          seen,
+        ).difference(hidden),
+      );
     }
     return show == null ? names : names.intersection(show);
   }
@@ -857,7 +874,19 @@ void main() {
         isEmpty,
         reason: 'Scenes naming parts kit.dart no longer exports',
       );
-      if (parts.contains('KitSegmented')) {
+      // KIT-24's stacked form needs kit-KitChoiceList's KitChoiceRow; the
+      // check turns itself on when that part lands in the kit.
+      final choiceRowLanded = Directory(_kitDir)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .any(
+            (f) => RegExp(
+              r'^class\s+KitChoiceRow\b',
+              multiLine: true,
+            ).hasMatch(f.readAsStringSync()),
+          );
+      if (parts.contains('KitSegmented') && choiceRowLanded) {
         expect(
           kitOverflowScenes.any(
             (s) => s.parts.contains('KitSegmented') && s.labelsOverflow,
@@ -890,13 +919,17 @@ class KitListens extends ValueListenableBuilder<int> {}
 class KitData {}
 KitHandle showKitThing(BuildContext context) => KitHandle();
 ''');
+      write('hidden.dart', '''
+class KitHidden extends StatelessWidget {}
+class KitShown extends StatelessWidget {}
+''');
       final manifest = readKitManifest(kitFile: '${dir.path}/kit.dart');
-      expect(manifest.parts, {'KitFine', 'showKitThing'});
+      // `hide` is read (the hidden class drops out), unlike the forms below.
+      expect(manifest.parts, {'KitFine', 'showKitThing', 'KitShown'});
       expect(
         manifest.problems,
         unorderedEquals([
           contains('`part "fine_part.dart";`'),
-          contains("`export 'hidden.dart' hide KitHidden;`"),
           contains('`export "quoted.dart";`'),
           contains("`export 'io.dart' if (dart.library.html) 'web.dart';`"),
           contains('exports package:flutter/widgets.dart'),
