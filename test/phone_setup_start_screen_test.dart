@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
@@ -8,9 +9,12 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_sheet.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
@@ -85,11 +89,13 @@ class _Harness {
     TermuxRunningServer termux = const TermuxRunningServer.absent(),
     bool inApp = false,
     List<SetupComponent>? registry,
+    VoiceDeviceInfo? device,
   }) : engine = FakeSetupEngine(registry: registry) {
     PhoneSetup.engine = engine;
     screen = PhoneSetupStartScreen(
       termuxProbe: () async => termux,
       inAppProbe: () async => inApp,
+      deviceProbe: () async => device ?? _okDevice,
       openProgress: (_) async => progressOpened++,
     );
   }
@@ -100,6 +106,17 @@ class _Harness {
 }
 
 const _defaultIds = {'linux', 'essentials', 'python', 'node', 'opencode'};
+
+/// A device that clears every P0.8 pre-flight check: a supported ABI, well
+/// over the RAM floor, and well over the space the default registry needs
+/// (165 MB download → 330 MB required with the 2x margin).
+const _okDevice = VoiceDeviceInfo(
+  availableStorageBytes: 2000000000,
+  memoryClassMb: 256,
+  totalMemoryMb: 4096,
+  supportedAbis: ['arm64-v8a', 'armeabi-v7a'],
+  hasMicrophone: false,
+);
 
 List<ComponentProgress> _job(ComponentState node) => [
   const ComponentProgress(id: 'linux', state: ComponentState.done),
@@ -131,6 +148,20 @@ Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  setUp(() {
+    // Every _Harness pumps its own deviceProbe, but a few tests build
+    // PhoneSetupStartScreen straight from its route (no override point): the
+    // unmocked oc/voice channel must answer at once, or P0.8's pre-flight
+    // probe leaves a pending timer past the test's teardown.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('oc/voice'), (
+          call,
+        ) async {
+          if (call.method == 'getDeviceInfo') return <String, Object?>{};
+          return null;
+        });
+  });
+
   testWidgets(
     'a fresh phone gets one promise with real totals and one button',
     (tester) async {
@@ -432,6 +463,140 @@ void main() {
     ]);
   });
 
+  group('P0.8 pre-flight', () {
+    testWidgets('a 32-bit-only phone is told why before anything downloads', (
+      tester,
+    ) async {
+      final harness = _Harness(
+        device: const VoiceDeviceInfo(
+          availableStorageBytes: 2000000000,
+          memoryClassMb: 256,
+          totalMemoryMb: 4096,
+          supportedAbis: ['armeabi-v7a'],
+          hasMicrophone: false,
+        ),
+      );
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller, home: harness.screen));
+      await tester.pumpAndSettle();
+
+      expect(find.text("This phone can't run it"), findsOneWidget);
+      expect(
+        find.text(
+          "This app's Ubuntu only runs on a 64-bit Arm or Intel phone; "
+          'this one reports armeabi-v7a.',
+        ),
+        findsOneWidget,
+      );
+      final primary = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.byKey(const ValueKey('phone-setup-start-primary')),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(primary.onPressed, isNull);
+      // Nothing downloaded: Set up never ran.
+      expect(harness.engine.runs, isEmpty);
+    });
+
+    testWidgets(
+      'low space names how much to free and offers Storage settings',
+      (tester) async {
+        final harness = _Harness(
+          device: const VoiceDeviceInfo(
+            availableStorageBytes: 100000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['arm64-v8a'],
+            hasMicrophone: false,
+          ),
+        );
+        final controller = await _controller();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_app(controller, home: harness.screen));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Not enough free space'), findsOneWidget);
+        // 165 MB download → 330 MB required (2x margin) − 100 MB free.
+        expect(
+          find.text(
+            'Free about 230 MB on this phone, then come back to set this '
+            'up.',
+          ),
+          findsOneWidget,
+        );
+        final primary = tester.widget<FilledButton>(
+          find.descendant(
+            of: find.byKey(const ValueKey('phone-setup-start-primary')),
+            matching: find.byType(FilledButton),
+          ),
+        );
+        expect(primary.onPressed, isNull);
+        expect(
+          find.byKey(const ValueKey('phone-setup-start-open-storage')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a low-memory phone is told why, not left on the promise', (
+      tester,
+    ) async {
+      final harness = _Harness(
+        device: const VoiceDeviceInfo(
+          availableStorageBytes: 2000000000,
+          memoryClassMb: 256,
+          totalMemoryMb: 1024,
+          supportedAbis: ['arm64-v8a'],
+          hasMicrophone: false,
+        ),
+      );
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller, home: harness.screen));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('This phone may not have enough memory'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Setup wants a phone with at least 2048 MB of memory; this one '
+          'has 1024 MB.',
+        ),
+        findsOneWidget,
+      );
+      final primary = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.byKey(const ValueKey('phone-setup-start-primary')),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(primary.onPressed, isNull);
+    });
+
+    testWidgets('a supported phone with room keeps the plain promise', (
+      tester,
+    ) async {
+      final harness = _Harness();
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller, home: harness.screen));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Run a coding agent right here'), findsOneWidget);
+      final primary = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.byKey(const ValueKey('phone-setup-start-primary')),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(primary.onPressed, isNotNull);
+    });
+  });
+
   group('showPhoneSetupCustomize', () {
     Widget launcher({
       bool addMode = false,
@@ -560,6 +725,137 @@ void main() {
     );
   });
 
+  group('P0.8 pre-flight in Add tools', () {
+    /// The sheet on its own (not through [showPhoneSetupCustomize], which
+    /// has no override point): "Add" is the button that starts the
+    /// download here, so it is the one this group blocks.
+    Widget sheet({required VoiceDeviceInfo device, bool addMode = true}) =>
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Localizations(
+            locale: const Locale('en'),
+            delegates: AppLocalizations.localizationsDelegates,
+            child: MediaQuery(
+              data: const MediaQueryData(),
+              child: Material(
+                child: SetupCustomizeSheet(
+                  registry: installableComponents(FakeSetupEngine.fakeRegistry),
+                  addMode: addMode,
+                  selected: addMode ? const {'python'} : null,
+                  installedOptional: addMode
+                      ? Future.value(const <String>{})
+                      : null,
+                  deviceProbe: () async => device,
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('a 32-bit-only phone is told why before Add downloads', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        sheet(
+          device: const VoiceDeviceInfo(
+            availableStorageBytes: 2000000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['armeabi-v7a'],
+            hasMicrophone: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('phone-setup-customize-totals')),
+            )
+            .data,
+        "This app's Ubuntu only runs on a 64-bit Arm or Intel phone; this "
+        'one reports armeabi-v7a.',
+      );
+      final add = find.descendant(
+        of: find.byKey(const ValueKey('phone-setup-customize-done')),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.widget<FilledButton>(add).onPressed, isNull);
+    });
+
+    testWidgets('low space names how much to free and offers Storage '
+        'settings', (tester) async {
+      await tester.pumpWidget(
+        sheet(
+          device: const VoiceDeviceInfo(
+            availableStorageBytes: 250000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['arm64-v8a'],
+            hasMicrophone: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // python (30 MB) is the only tool chosen: the 300 MB floor applies
+      // (2x margin would be only 60 MB), 250 MB free.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('phone-setup-customize-totals')),
+            )
+            .data,
+        'Free about 50 MB on this phone, then come back to set this up.',
+      );
+      final add = find.descendant(
+        of: find.byKey(const ValueKey('phone-setup-customize-done')),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.widget<FilledButton>(add).onPressed, isNull);
+      expect(
+        find.byKey(const ValueKey('phone-setup-customize-open-storage')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a supported phone with room keeps the plain totals', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        sheet(
+          device: const VoiceDeviceInfo(
+            availableStorageBytes: 2000000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['arm64-v8a'],
+            hasMicrophone: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('phone-setup-customize-totals')),
+            )
+            .data,
+        'About a minute · ~30 MB',
+      );
+      final add = find.descendant(
+        of: find.byKey(const ValueKey('phone-setup-customize-done')),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.widget<FilledButton>(add).onPressed, isNotNull);
+      expect(
+        find.byKey(const ValueKey('phone-setup-customize-open-storage')),
+        findsNothing,
+      );
+    });
+  });
+
   group('small screens and big text', () {
     Future<void> useSmallPhone(WidgetTester tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -619,6 +915,44 @@ void main() {
       );
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'the unsupported-ABI and low-space pre-flight states fit 320 dp at 2.5x',
+      (tester) async {
+        await useSmallPhone(tester);
+        for (final device in [
+          const VoiceDeviceInfo(
+            availableStorageBytes: 2000000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['armeabi-v7a'],
+            hasMicrophone: false,
+          ),
+          const VoiceDeviceInfo(
+            availableStorageBytes: 100000000,
+            memoryClassMb: 256,
+            totalMemoryMb: 4096,
+            supportedAbis: ['arm64-v8a'],
+            hasMicrophone: false,
+          ),
+        ]) {
+          final harness = _Harness(device: device);
+          final controller = await _controller();
+          await tester.pumpWidget(
+            _app(controller, home: harness.screen, scale: 2.5),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          final primary = tester.getSize(
+            find.byKey(const ValueKey('phone-setup-start-primary')),
+          );
+          expect(primary.height, greaterThanOrEqualTo(48));
+          controller.dispose();
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        }
+      },
+    );
 
     testWidgets('the progress and Termux heroes fit 320 dp at 2.5x', (
       tester,

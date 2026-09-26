@@ -17881,6 +17881,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneSetupStartChecking => 'Checking what\'s installed…';
 
   @override
+  String get phoneSetupPreflightUnsupportedHeadline =>
+      'This phone can\'t run it';
+
+  @override
+  String phoneSetupPreflightUnsupportedBody(String abi) {
+    return 'This app\'s Ubuntu only runs on a 64-bit Arm or Intel phone; this one reports $abi.';
+  }
+
+  @override
+  String get phoneSetupPreflightLowMemoryHeadline =>
+      'This phone may not have enough memory';
+
+  @override
+  String phoneSetupPreflightLowMemoryBody(int minimum, int actual) {
+    return 'Setup wants a phone with at least $minimum MB of memory; this one has $actual MB.';
+  }
+
+  @override
+  String get phoneSetupPreflightLowSpaceHeadline => 'Not enough free space';
+
+  @override
+  String phoneSetupPreflightLowSpaceBody(String size) {
+    return 'Free about $size on this phone, then come back to set this up.';
+  }
+
+  @override
+  String get phoneSetupPreflightOpenStorage => 'Open Storage settings';
+
+  @override
   String phoneSetupOpenWelcomeRunning(int percent) {
     return 'Setting up OpenCode on this phone · $percent%';
   }

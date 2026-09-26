@@ -18139,6 +18139,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneSetupStartChecking => 'جارٍ التحقق مما هو مثبّت…';
 
   @override
+  String get phoneSetupPreflightUnsupportedHeadline =>
+      'هذا الهاتف لا يمكنه تشغيله';
+
+  @override
+  String phoneSetupPreflightUnsupportedBody(String abi) {
+    return 'لينكس هذا التطبيق يعمل فقط على هاتف Arm أو Intel بمعمارية 64 بت؛ هذا الهاتف يُبلّغ عن $abi.';
+  }
+
+  @override
+  String get phoneSetupPreflightLowMemoryHeadline =>
+      'قد لا تكفي ذاكرة هذا الهاتف';
+
+  @override
+  String phoneSetupPreflightLowMemoryBody(int minimum, int actual) {
+    return 'يحتاج الإعداد إلى هاتف بذاكرة $minimum ميغابايت على الأقل؛ هذا الهاتف به $actual ميغابايت.';
+  }
+
+  @override
+  String get phoneSetupPreflightLowSpaceHeadline => 'لا توجد مساحة كافية';
+
+  @override
+  String phoneSetupPreflightLowSpaceBody(String size) {
+    return 'حرّر نحو $size على هذا الهاتف، ثم عد لإكمال الإعداد.';
+  }
+
+  @override
+  String get phoneSetupPreflightOpenStorage => 'فتح إعدادات التخزين';
+
+  @override
   String phoneSetupOpenWelcomeRunning(int percent) {
     return 'جارٍ إعداد OpenCode على هذا الهاتف · $percent٪';
   }

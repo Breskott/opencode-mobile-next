@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../../../builtin/setup/preflight.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -91,6 +92,37 @@ List<String> includedToolNames(Iterable<SetupComponent> components) => [
   for (final component in components)
     if (!component.native && component.id != 'opencode') component.shortTitle,
 ];
+
+/// The headline for a pre-flight problem (P0.8): shown instead of the
+/// promise on screen A's fresh state, and instead of the totals in the
+/// Customize/Add tools sheet, before anything downloads.
+String setupPreflightHeadline(
+  AppLocalizations l10n,
+  SetupPreflightIssue issue,
+) => switch (issue) {
+  SetupPreflightIssue.unsupportedAbi =>
+    l10n.phoneSetupPreflightUnsupportedHeadline,
+  SetupPreflightIssue.lowMemory => l10n.phoneSetupPreflightLowMemoryHeadline,
+  SetupPreflightIssue.lowSpace => l10n.phoneSetupPreflightLowSpaceHeadline,
+};
+
+/// The one honest sentence for [result] (never called when it is
+/// [SetupPreflightResult.supported]): low space names how much to free.
+String setupPreflightBody(AppLocalizations l10n, SetupPreflightResult result) {
+  final issue = result.issue;
+  if (issue == null) return '';
+  return switch (issue) {
+    SetupPreflightIssue.unsupportedAbi =>
+      l10n.phoneSetupPreflightUnsupportedBody(result.reportedAbi ?? ''),
+    SetupPreflightIssue.lowMemory => l10n.phoneSetupPreflightLowMemoryBody(
+      minimumSetupMemoryMb,
+      result.totalMemoryMb ?? 0,
+    ),
+    SetupPreflightIssue.lowSpace => l10n.phoneSetupPreflightLowSpaceBody(
+      setupSizeText(l10n, result.bytesToFree),
+    ),
+  };
+}
 
 /// The components a person installs: the registry without the steps the
 /// engine runs by itself at the end of every job ("Start OpenCode"), which

@@ -19483,6 +19483,54 @@
   "@phoneSetupStartChecking": {
     "description": "While the add-mode sheet reads which tools are installed"
   },
+  "phoneSetupPreflightUnsupportedHeadline": "This phone can't run it",
+  "@phoneSetupPreflightUnsupportedHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise when the CPU has no Ubuntu rootfs to download."
+  },
+  "phoneSetupPreflightUnsupportedBody": "This app's Ubuntu only runs on a 64-bit Arm or Intel phone; this one reports {abi}.",
+  "@phoneSetupPreflightUnsupportedBody": {
+    "description": "Pre-flight (P0.8): why an unsupported CPU is blocked, before anything downloads.",
+    "placeholders": {
+      "abi": {
+        "type": "String",
+        "example": "armeabi-v7a"
+      }
+    }
+  },
+  "phoneSetupPreflightLowMemoryHeadline": "This phone may not have enough memory",
+  "@phoneSetupPreflightLowMemoryHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise when total RAM is under the floor."
+  },
+  "phoneSetupPreflightLowMemoryBody": "Setup wants a phone with at least {minimum} MB of memory; this one has {actual} MB.",
+  "@phoneSetupPreflightLowMemoryBody": {
+    "description": "Pre-flight (P0.8): why a low-memory phone is blocked, before anything downloads.",
+    "placeholders": {
+      "minimum": {
+        "type": "int"
+      },
+      "actual": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupPreflightLowSpaceHeadline": "Not enough free space",
+  "@phoneSetupPreflightLowSpaceHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise, or in Add tools, when free space is short."
+  },
+  "phoneSetupPreflightLowSpaceBody": "Free about {size} on this phone, then come back to set this up.",
+  "@phoneSetupPreflightLowSpaceBody": {
+    "description": "Pre-flight (P0.8): names how much to free, before anything downloads.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "450 MB"
+      }
+    }
+  },
+  "phoneSetupPreflightOpenStorage": "Open Storage settings",
+  "@phoneSetupPreflightOpenStorage": {
+    "description": "Pre-flight (P0.8), low space: opens Android's Storage settings."
+  },
   "phoneSetupOpenWelcomeRunning": "Setting up OpenCode on this phone · {percent}%",
   "@phoneSetupOpenWelcomeRunning": {
     "description": "On the first-run welcome while a setup job runs; tapping shows its progress",

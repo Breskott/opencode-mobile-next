@@ -250,6 +250,13 @@ class BuiltinLinux {
     'version': version,
   });
 
+  /// Opens the device's Storage settings (not this app's own App Info), so
+  /// low free space found during phone setup pre-flight (P0.8) can actually
+  /// be freed. Android's `ACTION_INTERNAL_STORAGE_SETTINGS` first, App Info
+  /// on a ROM that hides it; returns whether either opened.
+  Future<bool> openStorageSettings() async =>
+      await _invoke<bool>('openStorageSettings') ?? false;
+
   // Every call into Android is timed as `linux.<method>`; a `run` also
   // carries a label from its script (see [scriptLabel]). The status reads
   // that setup polls twice a second reach the device log only when slow.
