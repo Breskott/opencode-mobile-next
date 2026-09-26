@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&amp;family=Geist+Mono:wght@400..600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0C0E}
+.tk{--bg:#0B0C0E;--s1:#141518;--s2:#1B1C20;--s3:#26282D;--line:rgba(255,255,255,.07);--t1:#F3F3F1;--t2:#A3A5AB;--t3:#8A8D94;--warn:#FFB547;--on-acc:#03140B}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.row{width:100%;display:flex;align-items:center;gap:12px;padding:0 14px 0 12px;min-height:54px;text-align:left;box-sizing:border-box}
+.tile{width:30px;height:30px;border-radius:9px;background:var(--s3);color:var(--t1);display:grid;place-items:center;flex-shrink:0}
+.sep{height:1px;background:var(--line);margin-left:54px}
+.lbl{flex-grow:1;font-size:15.5px}
+.val{font-size:14px;color:var(--t3)}
+</style>
+</helmet>
+<div class="tk" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: var(--bg); color: var(--t1); font-family: Geist, 'Helvetica Neue', system-ui, sans-serif; --acc: {{accent}}">
+
+<div style="padding: 58px 20px 12px">
+<h1 style="margin: 0; font-size: 32px; line-height: 38px; font-weight: 650; letter-spacing: -0.025em">Settings</h1>
+</div>
+
+<div style="padding: 0 16px; display: flex; flex-direction: column; gap: 22px">
+
+<div style="display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 13px; background: var(--s1); color: var(--t3)">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+<label for="set-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Search settings</label>
+<input id="set-search" placeholder="Search, or ask the setup assistant" style="flex-grow: 1; background: none; border: 0; outline: none; color: var(--t1); font: 15px Geist, system-ui, sans-serif">
+</div>
+
+<button style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; background: rgba(255,181,71,.09); border: 1px solid rgba(255,181,71,.28); text-align: left">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/><path d="M3 3l18 18"/></svg>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 550">Android is blocking notifications</span><span style="font-size: 13px; color: var(--t2)">You won’t hear when an agent needs you</span></span>
+<span style="font-size: 14px; font-weight: 600; color: var(--warn)">Turn on</span>
+</button>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="padding: 0 4px; font-size: 13px; font-weight: 600; color: var(--t2)">Laptop</div>
+<div style="background: var(--s1); border-radius: 18px; overflow: hidden">
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 5.3L20 9l-4.4 3.8L17 19l-5-3-5 3 1.4-6.2L4 9l5.8-.7z"/></svg></span><span class="lbl">Model</span><span class="val">Claude Sonnet 4</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l3-3 3 3-3 3M10 17l-3 3-3-3 3-3M17 4l-4 4M7 20l4-4M8 8l8 8"/></svg></span><span class="lbl">Tools and MCP</span><span class="val">4 on</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/></svg></span><span class="lbl">AI Team</span><span class="val">On</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><span class="lbl">What agents may do</span><span class="val">Ask first</span></button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="padding: 0 4px; font-size: 13px; font-weight: 600; color: var(--t2)">This phone</div>
+<div style="background: var(--s1); border-radius: 18px; overflow: hidden">
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></span><span class="lbl">Linux and tools</span><span class="val">1.9 GB</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="lbl">Voice</span><span class="val">English</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></span><span class="lbl">Appearance</span><span class="val">Dark</span></button>
+</div>
+</div>
+
+<div style="background: var(--s1); border-radius: 18px; overflow: hidden">
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3v4l-4 9a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-4-9V3"/></svg></span><span class="lbl">Report a problem</span></button>
+<div class="sep"></div>
+<button class="row"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/></svg></span><span class="lbl">About</span><span class="val">1.0.44</span></button>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC8A","options":["#3DDC8A","#5AB0FF","#FF8A4C","#C7A6FF"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#3DDC8A' };
+  }
+}
+</script>
+</body>
+</html>
