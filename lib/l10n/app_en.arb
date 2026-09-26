@@ -22808,5 +22808,44 @@
         "example": "10:42"
       }
     }
+  },
+  "kitDetailsHide": "Hide details",
+  "@kitDetailsHide": {
+    "description": "KitDetailsFold: the screen-reader hint on the open Details row, saying a tap folds it away"
+  },
+  "kitCopyAll": "Copy all",
+  "@kitCopyAll": {
+    "description": "KitDetailsFold: the text action under the details that copies every value and the raw text"
+  },
+  "kitCopyValue": "Copy {label}",
+  "@kitCopyValue": {
+    "description": "KitDetailsFold: the tooltip and label of one value's copy button, e.g. 'Copy address'",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "address"
+      }
+    }
+  },
+  "kitDetailsShowAll": "{count, plural, other{Show all {count} lines}}",
+  "@kitDetailsShowAll": {
+    "description": "KitDetailsFold: the action that unfolds the rest of a long raw error in place",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDetailsValueSpoken": "{label}: {value}",
+  "@kitDetailsValueSpoken": {
+    "description": "KitDetailsFold: how a screen reader reads one technical value, e.g. 'Address: 100.64.0.3, port 4096'",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }

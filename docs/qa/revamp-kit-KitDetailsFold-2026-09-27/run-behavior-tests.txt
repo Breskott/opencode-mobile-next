@@ -1,0 +1,32 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-2/test/kit/kit_details_fold_test.dart
+00:00 +0: 1. collapsed by default; the toggle opens and closes it
+00:00 +1: 2. controlled: a tap asks the host and waits for it
+00:00 +2: 3. a value shows once, under its first label
+00:00 +3: 4. copy: one value through KitCopy; Copy all copies lines
+00:01 +4: 5. redaction: the raw text never shows or copies a secret
+00:01 +5: 5b. a value that is a key trips the debug assert
+00:01 +6: 6. paths and commit SHAs survive redaction
+00:01 +7: 7. long text shows 12 lines, then all of it in place
+00:01 +8: 8. semantics: expanded state, one node per value, copy label
+00:01 +9: 9. RTL: the value is LTR, starting where its label starts
+00:01 +10: 10. empty: no toggle at all
+00:01 +11: 11. system reduce motion: the fold settles after one pump
+00:01 +12: 11. Effects motion Off: the fold settles after one pump
+00:01 +13: 12. showKitTechnicalDetails: whole text, Copy all, closes
+00:01 +14: 13. showKitConfirm details still fold behind the toggle
+00:01 +15: adaptive: a wide window puts the label in its column
+00:01 +16: keyboard: Enter and Space toggle the focused fold
+00:01 +17: 14. no overflow 320 · 1.0 · rtl
+00:01 +18: 14. no overflow 320 · 1.0 · ltr
+00:01 +19: 14. no overflow 320 · 1.3 · rtl
+00:02 +20: 14. no overflow 320 · 1.3 · ltr
+00:02 +21: 14. no overflow 320 · 2.0 · rtl
+00:02 +22: 14. no overflow 320 · 2.0 · ltr
+00:02 +23: 14. no overflow 412 · 1.0 · rtl
+00:02 +24: 14. no overflow 412 · 1.0 · ltr
+00:02 +25: 14. no overflow 412 · 1.3 · rtl
+00:02 +26: 14. no overflow 412 · 1.3 · ltr
+00:02 +27: 14. no overflow 412 · 2.0 · rtl
+00:02 +28: 14. no overflow 412 · 2.0 · ltr
+00:02 +29: All tests passed!

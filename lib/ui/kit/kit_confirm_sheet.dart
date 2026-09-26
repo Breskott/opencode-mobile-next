@@ -30,7 +30,12 @@ enum KitConfirmKind {
 /// - [confirmLabel] is a verb naming the act ("Delete conversation"),
 ///   never OK or Yes. [cancelLabel] defaults by [kind].
 /// - [consequences] are counted facts that go with the act ("3 queued
-///   prompts will be deleted"), each an attention line.
+///   prompts will be deleted"): for a stop, delete or discard the first is
+///   marked lost and the rest info; for a neutral question every one is
+///   info.
+/// - [consequenceItems] are marked facts drawn as given, so a question can
+///   say what is kept as well as what is lost ("2 edited files are kept").
+///   When given, [consequences] must be empty.
 /// - [typedName] (heavy deletes): the confirm stays disabled, with its
 ///   reason shown, until this exact name is typed.
 /// - [alternative] is a safer path ("Export first"); choosing it closes
@@ -58,6 +63,7 @@ Future<bool> showKitConfirm(
   String? cancelLabel,
   IconData? icon,
   List<String> consequences = const [],
+  List<KitConsequence>? consequenceItems,
   String? typedName,
   KitAction? alternative,
   List<KitTechnicalValue> details = const [],
@@ -66,6 +72,10 @@ Future<bool> showKitConfirm(
   Key? sheetKey,
   Key? confirmKey,
 }) async {
+  assert(
+    consequenceItems == null || consequences.isEmpty,
+    'Pass consequences or consequenceItems, not both.',
+  );
   if (routes?.isPending == false) return false;
   final spec = _KitConfirmSpec(
     title: title,
@@ -75,6 +85,7 @@ Future<bool> showKitConfirm(
     cancelLabel: cancelLabel,
     icon: icon,
     consequences: consequences,
+    consequenceItems: consequenceItems,
     typedName: typedName,
     alternative: alternative,
     details: details,
@@ -146,6 +157,7 @@ class _KitConfirmSpec {
     this.cancelLabel,
     this.icon,
     this.consequences = const [],
+    this.consequenceItems,
     this.typedName,
     this.alternative,
     this.details = const [],
@@ -161,6 +173,7 @@ class _KitConfirmSpec {
   final String? cancelLabel;
   final IconData? icon;
   final List<String> consequences;
+  final List<KitConsequence>? consequenceItems;
   final String? typedName;
   final KitAction? alternative;
   final List<KitTechnicalValue> details;
@@ -190,6 +203,7 @@ class _KitConfirmBody extends StatelessWidget {
     cancelLabel: spec.cancelLabel,
     icon: spec.icon,
     consequences: spec.consequences,
+    consequenceItems: spec.consequenceItems,
     typedName: spec.typedName,
     alternative: spec.alternative,
     details: spec.details,
@@ -201,8 +215,9 @@ class _KitConfirmBody extends StatelessWidget {
 }
 
 /// The confirmation itself (§1.2), drawn by [showKitConfirm]; also used on
-/// its own for goldens. Start-aligned on the rails: the icon in a tonal
-/// circle, the title, the body, the consequences, the typed name, then the
+/// its own for goldens. Start-aligned on the rails: the icon on the one
+/// 44 dp header tile (neutral: `surface3`; stop, delete, discard: the danger
+/// tint), the title, the body, the consequences, the typed name, then the
 /// confirm with the cancel under it (full width), the alternative on a
 /// line of its own, and Details last.
 class KitConfirmSheet extends StatefulWidget {
@@ -217,6 +232,7 @@ class KitConfirmSheet extends StatefulWidget {
     this.cancelLabel,
     this.icon,
     this.consequences = const [],
+    this.consequenceItems,
     this.typedName,
     this.alternative,
     this.details = const [],
@@ -224,7 +240,10 @@ class KitConfirmSheet extends StatefulWidget {
     this.confirmKey,
     this.working = false,
     this.failed = false,
-  });
+  }) : assert(
+         consequenceItems == null || consequences.length == 0,
+         'Pass consequences or consequenceItems, not both.',
+       );
 
   final String title;
   final String body;
@@ -237,6 +256,10 @@ class KitConfirmSheet extends StatefulWidget {
   final String? cancelLabel;
   final IconData? icon;
   final List<String> consequences;
+
+  /// Marked facts (lost, kept, info), drawn as given. When given,
+  /// [consequences] must be empty.
+  final List<KitConsequence>? consequenceItems;
   final String? typedName;
   final KitAction? alternative;
   final List<KitTechnicalValue> details;
@@ -354,10 +377,16 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
     final tokens = KitTokens.of(context);
     final l10n = _l10n(context);
     final danger = widget.kind.isDanger;
-    final tint = danger ? tokens.danger : tokens.accent;
-    // The mark grows with the person's text size (clamped), like the words.
-    final markIcon = tokens.iconSize(context, tokens.markIconSize);
-    final mark = tokens.markSize + markIcon - tokens.markIconSize;
+    final consequences = <KitConsequence>[
+      ...?widget.consequenceItems,
+      for (final (index, fact) in widget.consequences.indexed)
+        KitConsequence(
+          fact,
+          mark: index == 0 && danger
+              ? KitConsequenceMark.lost
+              : KitConsequenceMark.info,
+        ),
+    ];
     final typedName = widget.typedName;
     final alternative = widget.alternative;
     final wide = KitLayout.modalWindowOf(context).isWide;
@@ -381,10 +410,10 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
         ? null
         : Padding(
             padding: EdgeInsets.only(top: tokens.space2),
-            child: Text(
+            child: KitText(
               l10n.kitConfirmTypeNameReason,
               key: const ValueKey('kit-confirm-reason'),
-              style: tokens.note,
+              role: KitTextRole.secondary,
             ),
           );
     return PopScope<Object?>(
@@ -406,37 +435,29 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
             children: [
               Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: Container(
-                  width: mark,
-                  height: mark,
-                  decoration: BoxDecoration(
-                    color: Color.alphaBlend(
-                      tint.withValues(alpha: tokens.markTintAlpha),
-                      tokens.sheetSurface,
-                    ),
-                    borderRadius: BorderRadius.circular(tokens.markRadius),
-                  ),
-                  child: Icon(
-                    widget.icon ?? KitConfirmSheet.iconFor(widget.kind),
-                    size: markIcon,
-                    color: tint,
-                  ),
+                // The accent is never a mark colour (LOOK-6); the danger
+                // tint only for stop, delete and discard (LOOK-5).
+                child: _KitIconTile(
+                  icon: widget.icon ?? KitConfirmSheet.iconFor(widget.kind),
+                  tone: danger ? _KitTileTone.danger : _KitTileTone.neutral,
                 ),
               ),
               SizedBox(height: tokens.space3),
               Semantics(
                 header: true,
                 namesRoute: true,
-                child: Text(widget.title, style: tokens.confirmTitle),
+                // Wraps; never cut (A11Y-8).
+                child: KitText(widget.title, role: KitTextRole.title),
               ),
               SizedBox(height: tokens.space2),
-              Text(widget.body, style: tokens.confirmBody),
-              if (widget.consequences.isNotEmpty) ...[
+              KitText(
+                widget.body,
+                role: KitTextRole.body,
+                tone: KitTextTone.secondary,
+              ),
+              if (consequences.isNotEmpty) ...[
                 SizedBox(height: tokens.space4),
-                _KitConsequences(
-                  consequences: widget.consequences,
-                  danger: danger,
-                ),
+                KitConsequences(items: consequences),
               ],
               if (typedName != null) ...[
                 SizedBox(height: tokens.space4),
@@ -451,9 +472,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   decoration: InputDecoration(
                     // The name is isolated left to right inside the
                     // sentence, so a branch or path never reorders.
-                    labelText: l10n.kitConfirmTypeName(
-                      '\u2066$typedName\u2069',
-                    ),
+                    labelText: l10n.kitConfirmTypeName(KitBidi.ltr(typedName)),
                   ),
                   onSubmitted: (_) => unawaited(_confirm()),
                 ),
@@ -513,156 +532,11 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               ],
               if (widget.details.isNotEmpty) ...[
                 SizedBox(height: tokens.space2),
-                _KitDetailsFold(values: widget.details),
+                KitDetailsFold(values: widget.details),
               ],
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// A minimal technical fold for the confirmation's [KitTechnicalValue]s,
-/// private until `KitDetailsFold` (§1.8) joins the kit: a muted "Details"
-/// row that unfolds label and mono value pairs, left to right, selectable.
-class _KitDetailsFold extends StatefulWidget {
-  const _KitDetailsFold({required this.values});
-
-  final List<KitTechnicalValue> values;
-
-  @override
-  State<_KitDetailsFold> createState() => _KitDetailsFoldState();
-}
-
-class _KitDetailsFoldState extends State<_KitDetailsFold> {
-  bool _open = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final seen = <String>{};
-    final values = [
-      for (final value in widget.values)
-        if (seen.add(value.value)) value,
-    ];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          expanded: _open,
-          child: KitInset(
-            child: TextButton.icon(
-              key: const ValueKey('kit-details-toggle'),
-              style: TextButton.styleFrom(
-                minimumSize: Size.square(tokens.minTarget),
-                foregroundColor: tokens.muted,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: KitButton.tertiaryInset,
-                ),
-              ),
-              onPressed: () => setState(() => _open = !_open),
-              iconAlignment: IconAlignment.end,
-              icon: Icon(
-                _open ? AppIconography.chevronUp : AppIconography.chevronDown,
-                size: tokens.smallIconSize,
-              ),
-              label: Text(_l10n(context).kitDetails),
-            ),
-          ),
-        ),
-        KitReveal(
-          child: !_open
-              ? null
-              : Container(
-                  padding: EdgeInsets.all(tokens.space3),
-                  decoration: BoxDecoration(
-                    color: tokens.detailsSurface,
-                    borderRadius: BorderRadius.circular(tokens.detailsRadius),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final (index, value) in values.indexed) ...[
-                        if (index > 0) SizedBox(height: tokens.space2),
-                        Text(value.label, style: tokens.note),
-                        Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: SelectableText(
-                            value.value,
-                            key: value.key,
-                            style: tokens.technicalValue,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A confirmation's consequences (visual language §5): counted facts that
-/// go with the act, as rows on one `surface1` panel with hairlines inset to
-/// the words. The first fact of a stop or delete carries the danger tone.
-class _KitConsequences extends StatelessWidget {
-  const _KitConsequences({required this.consequences, required this.danger});
-
-  final List<String> consequences;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.insetSurface,
-        borderRadius: BorderRadius.circular(tokens.detailsRadius),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < consequences.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 0,
-                thickness: 0,
-                indent: tokens.space4 + 20 + tokens.space3,
-                color: roles.hairline,
-              ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.space4,
-                vertical: tokens.space3,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Icon(
-                      i == 0 && danger
-                          ? AppIconography.warning
-                          : AppIconography.info,
-                      size: 20,
-                      color: i == 0 && danger ? roles.danger : roles.text2,
-                    ),
-                  ),
-                  SizedBox(width: tokens.space3),
-                  Expanded(
-                    child: Text(consequences[i], style: tokens.rowTitle),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
