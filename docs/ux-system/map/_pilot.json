@@ -1,78 +1,491 @@
 [
- {"pageId":"servers","area":"g-servers","title":"Servers","kind":"screen","file":"lib/ui/screens/servers_screen.dart",
-  "journey":["connect","install"],"module":"servers","chrome":"brand-header",
-  "needs":[],"whenMissing":{},
-  "personas":["remote-lead","tinkerer","phone-only","newcomer"],
-  "personaNotes":{"remote-lead":"which computer is reachable now and on which network (Tailscale); switch fast","tinkerer":"server kind, address, version; several servers side by side","phone-only":"the phone's own server first, with start/stop/restart; setup entry when absent","newcomer":"one obvious way to add the first server; the demo"},
-  "states":[{"id":"loaded-remote-only","how":"rendered:docs/qa/screen-census/g-servers/servers--loaded.png"},{"id":"password-needed","how":"rendered:docs/qa/screen-census/g-servers/servers--password-needed.png"},{"id":"phone-server-termux","how":"codeOnly:lib/ui/screens/servers_screen.dart:290"},{"id":"phone-server-builtin","how":"codeOnly:lib/ui/screens/servers_screen.dart:803"},{"id":"claude-code-on-phone","how":"codeOnly:lib/ui/screens/servers_screen.dart:265"},{"id":"first-run-no-servers","how":"codeOnly:welcome view"},{"id":"connect-failure","how":"codeOnly:servers-failure notice"}],
-  "statesMissing":["a saved server that is unreachable right now (only discovered on tap)","which server hosts the AI Team"],
-  "info":["server name","connected mark","server kind + version","address"],
-  "infoMissing":["reachability/latency before tapping","last connected","where the AI Team runs","which network (Tailscale/LAN)"],
-  "actions":["connect by tapping a row","row menu: account, connect, edit, remove","Add server","Connect OpenCode 2","On this phone setup","More setup options","Try demo"],
-  "actionsMissing":["test all servers","reorder/pin a favourite","undo remove (remove is immediate after confirm)"],
-  "entry":["settings/settings-saved-servers","root-connecting/change","home-shell/banner-update-password|token","profile-editor/save"],
-  "exit":["profile-editor","phone-setup-start","termux-setup","tailscale-setup","external-agents","demo","home-shell"],
-  "sameJobElsewhere":[{"job":"add a server","here":"servers-add","elsewhere":"servers/servers-connect-opencode2","landsOn":"profile-editor (OpenCode 2 preset)"},{"job":"set up this phone","here":"servers-termux-setup","elsewhere":"settings/settings-on-this-phone","landsOn":"phone-setup-start"},{"job":"switch server","here":"servers-profile-row","elsewhere":"home-shell/server switcher sheet","landsOn":"home-shell"}],
-  "elements":[
-   {"id":"brand-header","kind":"header","kit":"none","kitGap":"KitBrandHeader","couldBeAutomatic":"no","note":"logo + bell/info/help; other root pages use a title header"},
-   {"id":"servers-profile-row","kind":"row","kit":"KitRow+KitRowIcon+KitRowMenu","kitGap":null,"couldBeAutomatic":"no","note":"current mark = filled accent circle + 'Connected ·'"},
-   {"id":"phone-server-row","kind":"row","kit":"KitRow+custom","kitGap":null,"couldBeAutomatic":"yes: start the phone server on tap when stopped (already), restart on crash (Keep running)","note":"TermuxRunningServerEntry/LocalServerRow"},
-   {"id":"servers-connect-opencode2","kind":"row","kit":"KitRow","kitGap":null,"couldBeAutomatic":"no","note":"duplicate of Add server with a preset"},
-   {"id":"servers-more-setup","kind":"row","kit":"KitExpandRow","kitGap":null,"couldBeAutomatic":"no","note":"Tailscale, setup guide, external agents folded"},
-   {"id":"servers-add","kind":"primary-action","kit":"KitActionBlock","kitGap":null,"couldBeAutomatic":"no","note":"pinned primary"},
-   {"id":"servers-try-demo","kind":"tertiary-action","kit":"KitActionBlock","kitGap":null,"couldBeAutomatic":"no","note":""}],
-  "ledgerStale":[],
-  "proposal":"redesign",
-  "rationale":"Connect and install are mixed on one page and the same job has two entries; group by where the agent runs (this phone / my computers / cloud agents), one Add that asks which, and show reachability before a tap.",
-  "verticals":{"consistency-kit":"brand header differs from sibling root pages","honest-state":"unreachable servers look identical to reachable ones","automation-first":"could probe reachability in the background"},
-  "evidence":["lib/ui/screens/servers_screen.dart:265","lib/ui/screens/servers_screen.dart:290","lib/ui/screens/servers_screen.dart:640","lib/ui/screens/servers_screen.dart:741","lib/ui/screens/servers_screen.dart:803","lib/ui/screens/servers_screen.dart:854","docs/qa/screen-census/g-servers/servers--loaded.png"]},
-
- {"pageId":"embedded-pending-sends-strip","area":"c-chat-compose","title":"Queued messages","kind":"overlay","file":"lib/ui/screens/chat/message_view.dart",
-  "journey":["converse","recover"],"module":"chat","chrome":"composer",
-  "needs":["server.any"],"whenMissing":{"server.any":"explains (offline queue keeps them)"},
-  "personas":["remote-lead","phone-only","team-delegator"],
-  "personaNotes":{"remote-lead":"on a flaky connection several prompts pile up; needs to know what reached the server","phone-only":"server restarts drop sends; needs a clear retry"},
-  "states":[{"id":"failed","how":"rendered:docs/qa/screen-census/c-chat-compose/embedded-pending-sends-strip.png"},{"id":"delivery-unconfirmed","how":"rendered:same"},{"id":"queued","how":"codeOnly:lib/ui/screens/chat/message_view.dart:2937"},{"id":"steer-vs-queue (OC2)","how":"codeOnly:lib/ui/screens/chat/message_view.dart:3245"}],
-  "statesMissing":["more than 3 queued: the third bubble is cut by the composer","sending progress per item"],
-  "info":["message text","failure reason","unconfirmed delivery"],
-  "infoMissing":["how many are queued in total","order they will be sent in"],
-  "actions":["resend","edit","discard","flip steer/queue (OC2)","cancel"],
-  "actionsMissing":["retry all","discard all","reorder"],
-  "entry":["chat composer send while busy/offline"],"exit":["chat transcript"],
-  "sameJobElsewhere":[{"job":"see what is waiting to send","here":"strip","elsewhere":"inbox/offline queue","landsOn":"activity"}],
-  "elements":[
-   {"id":"pending-bubble","kind":"card-panel","kit":"none","kitGap":"KitQueuedMessage","couldBeAutomatic":"yes: auto-retry a provider-overloaded failure with backoff, say so","note":"outlined red box per message, right-aligned, overlaps the composer"},
-   {"id":"pending-actions","kind":"tertiary-action","kit":"none","kitGap":null,"couldBeAutomatic":"no","note":"icon-only edit/discard/resend, 48dp needed"}],
-  "ledgerStale":[],
-  "proposal":"redesign",
-  "rationale":"The owner: 'All the queued messages should be merged in one bubble with a clear CTA inside and follow the theme.' One themed 'Waiting to send · 3' group above the composer with per-item state lines and Retry all / Edit / Discard, auto-retry for transient failures.",
-  "verticals":{"consistency-kit":"hand-built, off-theme","honest-state":"'Delivery unconfirmed' needs what to do next","automation-first":"auto-retry transient failures","a11y":"icon-only actions without labels"},
-  "evidence":["lib/ui/screens/chat/message_view.dart:2937","lib/ui/screens/chat/message_view.dart:3029","lib/ui/screens/chat/message_view.dart:3245","docs/ux-system/owner-verdicts-2026-09-26.json#embedded-pending-sends-strip"]},
-
- {"pageId":"team-home","area":"i1-team-core","title":"AI Team","kind":"screen","file":"lib/ui/screens/team/team_home_screen.dart",
-  "journey":["delegate","approve"],"module":"team","chrome":"title-header",
-  "needs":["team.on"],"whenMissing":{"team.on":"offers-enable:team intro → setup per server kind"},
-  "personas":["team-delegator","remote-lead","phone-only"],
-  "personaNotes":{"team-delegator":"what the team is doing now, what needs me, what finished; one tap to give a task","phone-only":"is the team burning battery/heat; paused by the heat guard?"},
-  "states":[{"id":"loaded","how":"rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"},{"id":"empty","how":"rendered:…team-home--empty.png"},{"id":"error","how":"rendered:…team-home--error.png"},{"id":"not-answering","how":"rendered:…team-home--not-answering.png"},{"id":"paused/asleep/stuck","how":"codeOnly:lib/ui/screens/team/team_home_screen.dart:427,642,646"}],
-  "statesMissing":["paused by the heat guard (thermal) is not distinguished from paused by the person"],
-  "info":["Now line","Needs you question","tasks with step progress","done today","agents count"],
-  "infoMissing":["time/cost so far per task"],
-  "actions":["answer a question in place","open a task","open the board","open agents","Give the team a task"],
-  "actionsMissing":[],
-  "entry":["workspace/team-door|team rows","team-conversation/team page","settings AI Team row"],
-  "exit":["team-conversation","team-board","team-agents","start-run-sheet"],
-  "sameJobElsewhere":[{"job":"give the team a task","here":"team-home-start-run (showStartRunSheet, l.177)","elsewhere":"workspace/Solo·Team → TeamConversation.start; team-board/+","landsOn":"team-home stays (here) vs team-conversation (elsewhere) — INCONSISTENT"},{"job":"see tasks","here":"Tasks list","elsewhere":"team-board columns; workspace team rows","landsOn":"team-conversation"}],
-  "elements":[
-   {"id":"team-now-line","kind":"status-line","kit":"KitStatusLine+custom","kitGap":"KitNowLine","couldBeAutomatic":"no","note":"'Working on … · a reviewer checks it next' — a pattern reused by the team conversation"},
-   {"id":"needs-you","kind":"request-card","kit":"KitRequestCard","kitGap":null,"couldBeAutomatic":"no","note":"answered in place + wave illustration"},
-   {"id":"task-row","kind":"row","kit":"KitRow+KitTaskMark","kitGap":null,"couldBeAutomatic":"no","note":""},
-   {"id":"agents-row","kind":"row","kit":"KitRow","kitGap":null,"couldBeAutomatic":"yes: agents are managed by the team; the row is status, not a control centre","note":""},
-   {"id":"team-home-board","kind":"header","kit":"none","kitGap":null,"couldBeAutomatic":"no","note":"icon action in the header"},
-   {"id":"team-home-start-run","kind":"primary-action","kit":"KitButton","kitGap":null,"couldBeAutomatic":"no","note":"opens the old start sheet, not the conversation"}],
-  "ledgerStale":["team-home-segments","team-home-segments-menu","team-home-segments-menu-item","team-home-host-chip"],
-  "proposal":"redesign",
-  "rationale":"The owner: 'You decide and rethink'. With tasks as conversations and a board, the home should be the team's overview (Now, Needs you, a few tasks) whose every task and 'Give a task' land in the task conversation; one task list model shared with the board and Work tab.",
-  "verticals":{"automation-first":"agents list is a control surface; should be status","honest-state":"heat-guard pause indistinct","consistency-kit":"Now line is a new pattern — make it kit"},
-  "evidence":["lib/ui/screens/team/team_home_screen.dart:177","lib/ui/screens/team/team_home_screen.dart:270","lib/ui/screens/team/team_home_screen.dart:427","lib/ui/screens/team/team_home_screen.dart:467","docs/qa/screen-census/i1-team-core/team-home--loaded.png"]}
+ {
+  "pageId": "servers",
+  "area": "g-servers",
+  "title": "Servers",
+  "kind": "screen",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "connect",
+   "install"
+  ],
+  "module": "servers",
+  "chrome": "brand-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "phone-only",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "remote-lead": "which computer is reachable now and on which network (Tailscale); switch fast",
+   "tinkerer": "server kind, address, version; several servers side by side",
+   "phone-only": "the phone's own server first, with start/stop/restart; setup entry when absent",
+   "newcomer": "one obvious way to add the first server; the demo"
+  },
+  "states": [
+   {
+    "id": "loaded-remote-only",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers--loaded.png"
+   },
+   {
+    "id": "password-needed",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers--password-needed.png"
+   },
+   {
+    "id": "phone-server-termux",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:290"
+   },
+   {
+    "id": "phone-server-builtin",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:803"
+   },
+   {
+    "id": "claude-code-on-phone",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:265"
+   },
+   {
+    "id": "first-run-no-servers",
+    "how": "codeOnly:welcome view"
+   },
+   {
+    "id": "connect-failure",
+    "how": "codeOnly:servers-failure notice"
+   }
+  ],
+  "statesMissing": [
+   "a saved server that is unreachable right now (only discovered on tap)",
+   "which server hosts the AI Team"
+  ],
+  "info": [
+   "server name",
+   "connected mark",
+   "server kind + version",
+   "address"
+  ],
+  "infoMissing": [
+   "reachability/latency before tapping",
+   "last connected",
+   "where the AI Team runs",
+   "which network (Tailscale/LAN)"
+  ],
+  "actions": [
+   "connect by tapping a row",
+   "row menu: account, connect, edit, remove",
+   "Add server",
+   "Connect OpenCode 2",
+   "On this phone setup",
+   "More setup options",
+   "Try demo"
+  ],
+  "actionsMissing": [
+   "test all servers",
+   "reorder/pin a favourite",
+   "undo remove (remove is immediate after confirm)"
+  ],
+  "entry": [
+   "settings/settings-saved-servers",
+   "root-connecting/change",
+   "home-shell/banner-update-password|token",
+   "profile-editor/save"
+  ],
+  "exit": [
+   "profile-editor",
+   "phone-setup-start",
+   "termux-setup",
+   "tailscale-setup",
+   "external-agents",
+   "demo",
+   "home-shell"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "add a server",
+    "here": "servers-add",
+    "elsewhere": "servers/servers-connect-opencode2",
+    "landsOn": "profile-editor (OpenCode 2 preset)"
+   },
+   {
+    "job": "set up this phone",
+    "here": "servers-termux-setup",
+    "elsewhere": "settings/settings-on-this-phone",
+    "landsOn": "phone-setup-start"
+   },
+   {
+    "job": "switch server",
+    "here": "servers-profile-row",
+    "elsewhere": "home-shell/server switcher sheet",
+    "landsOn": "home-shell"
+   }
+  ],
+  "elements": [
+   {
+    "id": "brand-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitBrandHeader",
+    "couldBeAutomatic": "no",
+    "note": "logo + bell/info/help; other root pages use a title header"
+   },
+   {
+    "id": "servers-profile-row",
+    "kind": "row",
+    "kit": "KitRow+KitRowIcon+KitRowMenu",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "current mark = filled accent circle + 'Connected ·'"
+   },
+   {
+    "id": "phone-server-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: start the phone server on tap when stopped (already), restart on crash (Keep running)",
+    "note": "TermuxRunningServerEntry/LocalServerRow"
+   },
+   {
+    "id": "servers-connect-opencode2",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "duplicate of Add server with a preset"
+   },
+   {
+    "id": "servers-more-setup",
+    "kind": "row",
+    "kit": "KitExpandRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Tailscale, setup guide, external agents folded"
+   },
+   {
+    "id": "servers-add",
+    "kind": "primary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "pinned primary"
+   },
+   {
+    "id": "servers-try-demo",
+    "kind": "tertiary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Connect and install are mixed on one page and the same job has two entries; group by where the agent runs (this phone / my computers / cloud agents), one Add that asks which, and show reachability before a tap.",
+  "verticals": {
+   "consistency-kit": "brand header differs from sibling root pages",
+   "honest-state": "unreachable servers look identical to reachable ones",
+   "automation-first": "could probe reachability in the background"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:265",
+   "lib/ui/screens/servers_screen.dart:290",
+   "lib/ui/screens/servers_screen.dart:640",
+   "lib/ui/screens/servers_screen.dart:741",
+   "lib/ui/screens/servers_screen.dart:803",
+   "lib/ui/screens/servers_screen.dart:854",
+   "docs/qa/screen-census/g-servers/servers--loaded.png"
+  ]
+ },
+ {
+  "pageId": "embedded-pending-sends-strip",
+  "area": "c-chat-compose",
+  "title": "Queued messages",
+  "kind": "overlay",
+  "file": "lib/ui/screens/chat/message_view.dart",
+  "journey": [
+   "converse",
+   "recover"
+  ],
+  "module": "chat",
+  "chrome": "composer",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (offline queue keeps them)"
+  },
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "on a flaky connection several prompts pile up; needs to know what reached the server",
+   "phone-only": "server restarts drop sends; needs a clear retry"
+  },
+  "states": [
+   {
+    "id": "failed",
+    "how": "rendered:docs/qa/screen-census/c-chat-compose/embedded-pending-sends-strip.png"
+   },
+   {
+    "id": "delivery-unconfirmed",
+    "how": "rendered:same"
+   },
+   {
+    "id": "queued",
+    "how": "codeOnly:lib/ui/screens/chat/message_view.dart:2937"
+   },
+   {
+    "id": "steer-vs-queue (OC2)",
+    "how": "codeOnly:lib/ui/screens/chat/message_view.dart:3245"
+   }
+  ],
+  "statesMissing": [
+   "more than 3 queued: the third bubble is cut by the composer",
+   "sending progress per item"
+  ],
+  "info": [
+   "message text",
+   "failure reason",
+   "unconfirmed delivery"
+  ],
+  "infoMissing": [
+   "how many are queued in total",
+   "order they will be sent in"
+  ],
+  "actions": [
+   "resend",
+   "edit",
+   "discard",
+   "flip steer/queue (OC2)",
+   "cancel"
+  ],
+  "actionsMissing": [
+   "retry all",
+   "discard all",
+   "reorder"
+  ],
+  "entry": [
+   "chat composer send while busy/offline"
+  ],
+  "exit": [
+   "chat transcript"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see what is waiting to send",
+    "here": "strip",
+    "elsewhere": "inbox/offline queue",
+    "landsOn": "activity"
+   }
+  ],
+  "elements": [
+   {
+    "id": "pending-bubble",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": "KitQueuedMessage",
+    "couldBeAutomatic": "yes: auto-retry a provider-overloaded failure with backoff, say so",
+    "note": "outlined red box per message, right-aligned, overlaps the composer"
+   },
+   {
+    "id": "pending-actions",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "icon-only edit/discard/resend, 48dp needed"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "The owner: 'All the queued messages should be merged in one bubble with a clear CTA inside and follow the theme.' One themed 'Waiting to send · 3' group above the composer with per-item state lines and Retry all / Edit / Discard, auto-retry for transient failures.",
+  "verticals": {
+   "consistency-kit": "hand-built, off-theme",
+   "honest-state": "'Delivery unconfirmed' needs what to do next",
+   "automation-first": "auto-retry transient failures",
+   "a11y": "icon-only actions without labels"
+  },
+  "evidence": [
+   "lib/ui/screens/chat/message_view.dart:2937",
+   "lib/ui/screens/chat/message_view.dart:3029",
+   "lib/ui/screens/chat/message_view.dart:3245",
+   "docs/ux-system/owner-verdicts-2026-09-26.json#embedded-pending-sends-strip"
+  ]
+ },
+ {
+  "pageId": "team-home",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/team_home_screen.dart",
+  "journey": [
+   "delegate",
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "offers-enable:team intro → setup per server kind"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "team-delegator": "what the team is doing now, what needs me, what finished; one tap to give a task",
+   "phone-only": "is the team burning battery/heat; paused by the heat guard?"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:…team-home--empty.png"
+   },
+   {
+    "id": "error",
+    "how": "rendered:…team-home--error.png"
+   },
+   {
+    "id": "not-answering",
+    "how": "rendered:…team-home--not-answering.png"
+   },
+   {
+    "id": "paused/asleep/stuck",
+    "how": "codeOnly:lib/ui/screens/team/team_home_screen.dart:427,642,646"
+   }
+  ],
+  "statesMissing": [
+   "paused by the heat guard (thermal) is not distinguished from paused by the person"
+  ],
+  "info": [
+   "Now line",
+   "Needs you question",
+   "tasks with step progress",
+   "done today",
+   "agents count"
+  ],
+  "infoMissing": [
+   "time/cost so far per task"
+  ],
+  "actions": [
+   "answer a question in place",
+   "open a task",
+   "open the board",
+   "open agents",
+   "Give the team a task"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "workspace/team-door|team rows",
+   "team-conversation/team page",
+   "settings AI Team row"
+  ],
+  "exit": [
+   "team-conversation",
+   "team-board",
+   "team-agents",
+   "start-run-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "team-home-start-run (showStartRunSheet, team_home_screen.dart:177) — stays on the home",
+    "elsewhere": "workspace/Solo·Team → TeamConversation.start",
+    "landsOn": "team-conversation — INCONSISTENT with here"
+   },
+   {
+    "job": "add a task to the backlog",
+    "here": "—",
+    "elsewhere": "team-board/+ → showTeamBoardAddSheet (team_board_screen.dart:312)",
+    "landsOn": "team-board (Backlog) — a different job from 'give a task', correct as is"
+   },
+   {
+    "job": "open a task",
+    "here": "task row → _openRun → RunScreen (team_home_screen.dart:132,397)",
+    "elsewhere": "workspace team rows (workspace_screen.dart:1241) and board cards (team_board_screen.dart:59) → TeamConversation.open",
+    "landsOn": "team-run (here) vs team-conversation (elsewhere) — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-now-line",
+    "kind": "status-line",
+    "kit": "KitStatusLine+custom",
+    "kitGap": "KitNowLine",
+    "couldBeAutomatic": "no",
+    "note": "'Working on … · a reviewer checks it next' — a pattern reused by the team conversation"
+   },
+   {
+    "id": "needs-you",
+    "kind": "request-card",
+    "kit": "KitRequestCard",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "answered in place + wave illustration"
+   },
+   {
+    "id": "task-row",
+    "kind": "row",
+    "kit": "KitRow+KitTaskMark",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "agents-row",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: agents are managed by the team; the row is status, not a control centre",
+    "note": ""
+   },
+   {
+    "id": "team-home-board",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "icon action in the header"
+   },
+   {
+    "id": "team-home-start-run",
+    "kind": "primary-action",
+    "kit": "KitButton",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "opens the old start sheet, not the conversation"
+   }
+  ],
+  "ledgerStale": [
+   "team-home-segments",
+   "team-home-segments-menu",
+   "team-home-segments-menu-item",
+   "team-home-host-chip"
+  ],
+  "proposal": "redesign",
+  "rationale": "The owner: 'You decide and rethink'. With tasks as conversations and a board, the home should be the team's overview (Now, Needs you, a few tasks) whose every task and 'Give a task' land in the task conversation; one task list model shared with the board and Work tab.",
+  "verticals": {
+   "automation-first": "agents list is a control surface; should be status",
+   "honest-state": "heat-guard pause indistinct",
+   "consistency-kit": "Now line is a new pattern — make it kit"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_home_screen.dart:177",
+   "lib/ui/screens/team/team_home_screen.dart:270",
+   "lib/ui/screens/team/team_home_screen.dart:427",
+   "lib/ui/screens/team/team_home_screen.dart:467",
+   "docs/qa/screen-census/i1-team-core/team-home--loaded.png",
+   "lib/ui/screens/team/team_home_screen.dart:132",
+   "lib/ui/screens/team/team_board_screen.dart:312"
+  ]
+ }
 ]
