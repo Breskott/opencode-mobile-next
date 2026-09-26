@@ -33,6 +33,13 @@ const LANE_ORDER = CUT.chatLaneOrder || A.chatLaneOrder || []
 const PLANNED = CUT.plannedParts || A.plannedParts || []
 const GOLDENS = (CUT.goldenOwners && CUT.goldenOwners.integratorAlways) || []
 const GATES = A.gates || {}
+// Wider runs: several runs of the same wave may each take a shard of a tier
+// ({ index, count }) with integrate: false; the coordinator then integrates
+// the tier once (one integrator at a time, R01). tiers limits the run to
+// those tier numbers.
+const SHARD = A.shard || null
+const INTEGRATE = A.integrate !== false
+const ONLY_TIERS = A.tiers ? new Set(A.tiers.map(Number)) : null
 const WAVE_SETS = { '1': ['1'], '2a': ['2a'], '2b': ['2b', '2c'], '2c': ['2c'], '2d': ['2d'], '3': ['3'] }
 if (!WAVE_SETS[WAVE]) throw new Error(`unknown wave ${WAVE}`)
 const UNITS = ALL.filter((u) => WAVE_SETS[WAVE].includes(String(u.wave)))
@@ -364,14 +371,17 @@ function admit(u) {
 
 async function runTiers(units, label, goldensEach) {
   const tiers = [...new Set(units.map((u) => u.tier || 1))].sort((a, b) => a - b)
+    .filter((t) => !ONLY_TIERS || ONLY_TIERS.has(Number(t)))
   for (let i = 0; i < tiers.length; i += 1) {
     const t = tiers[i]
-    const ready = units.filter((u) => (u.tier || 1) === t).filter(admit)
-    log(`${label} tier ${t}: ${ready.length} units`)
+    const inTier = units.filter((u) => (u.tier || 1) === t && !merged.has(u.id))
+      .filter((u, n) => !SHARD || n % SHARD.count === SHARD.index)
+    const ready = inTier.filter(admit)
+    log(`${label} tier ${t}${SHARD ? ` shard ${SHARD.index + 1}/${SHARD.count}` : ''}: ${ready.length} units`)
     if (!ready.length) continue
     const done = await pipeline(ready, (u) => buildReviewFix(u))
     results.push(...done.filter(Boolean))
-    await enqueueIntegration(`${label} tier ${t}`, done, { goldens: goldensEach || i === tiers.length - 1 })
+    if (INTEGRATE) await enqueueIntegration(`${label} tier ${t}`, done, { goldens: goldensEach || i === tiers.length - 1 })
   }
 }
 

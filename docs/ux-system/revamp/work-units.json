@@ -10,7 +10,7 @@
   "test/**/*.dart"
  ],
  "cut": "v2 (cut review C01-C52, rules R01-R24)",
- "visualLanguageMerged": false,
+ "visualLanguageMerged": true,
  "maxLinesPerScreenUnit": 3200,
  "maxRawPerUnit": 150,
  "waves": {
@@ -662,12 +662,10 @@
     "KitText.mono isolates LTR (replaces Directionality outside the kit)",
     "builds on the kit_text.dart that feat/visual-language-v1 creates: runs only after that merge"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_text.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 0,
+   "lines": 277,
    "tier": 1,
    "tests": []
   },
@@ -684,7 +682,7 @@
    "part": "KitMotionParts",
    "spec": "docs/ux-system/kit-api/KitMotionParts.md",
    "specSource": "kit-v2.md cut v2 C11; §4.11",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -711,7 +709,7 @@
    "part": "KitSince",
    "spec": "docs/ux-system/kit-api/KitSince.md",
    "specSource": "kit-v2.md §4.9; cut v2 C12",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -738,7 +736,7 @@
    "part": "KitImage",
    "spec": "docs/ux-system/kit-api/KitImage.md",
    "specSource": "kit-v2.md cut v2 C13; VL §7",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -765,7 +763,7 @@
    "part": "KitSheet",
    "spec": "docs/ux-system/kit-api/KitSheet.md",
    "specSource": "kit-v2.md §1.1; VL §5 Sheets",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -775,7 +773,7 @@
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 1283,
+   "lines": 1293,
    "tier": 1,
    "tests": []
   },
@@ -793,7 +791,7 @@
    "part": "KitAskLine",
    "spec": "docs/ux-system/kit-api/KitAskLine.md",
    "specSource": "kit-v2.md VL §7 (look only)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -834,7 +832,7 @@
    "part": "KitScenes",
    "spec": "docs/ux-system/kit-api/KitScenes.md",
    "specSource": "kit-v2.md VL §2 (roles only); cut v2 C19",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -888,7 +886,7 @@
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 3007,
+   "lines": 6872,
    "tier": 1,
    "tests": []
   },
@@ -957,18 +955,16 @@
    "part": "KitSurface",
    "spec": "docs/ux-system/kit-api/KitSurface.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
     "KitPanel = KitSurface.raised (icon 18 -> 20); KitGlass stays and KitSurface.glass delegates to it"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_panel.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 104,
+   "lines": 118,
    "tier": 1,
    "tests": []
   },
@@ -985,7 +981,7 @@
    "part": "KitDivider",
    "spec": "docs/ux-system/kit-api/KitDivider.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -1061,7 +1057,7 @@
    "part": "KitTerm",
    "spec": "docs/ux-system/kit-api/KitTerm.md",
    "specSource": "kit-v2.md §1.20",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -1126,12 +1122,10 @@
     "defines KitReportHook (a static handler the app registers); an error tone shows Copy details always and 'Report this' when KitReportHook.handler != null",
     "a classifier maps SocketException and TimeoutException to Retry / Switch server; a test reaches Report within 2 taps (from P8.3)"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_notice.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 213,
+   "lines": 396,
    "tier": 1,
    "tests": [
     "test/nudge_moments_test.dart"
@@ -1157,12 +1151,10 @@
    "acceptance": [
     "disabledReason is required when onPressed is null (from P7.6); destructive stacking"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_buttons.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 423,
+   "lines": 448,
    "tier": 1,
    "tests": []
   },
@@ -1181,18 +1173,16 @@
    "part": "KitTerminalView",
    "spec": "docs/ux-system/kit-api/KitTerminalView.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "opus",
    "acceptance": [
     "terminal_view.dart becomes a @Deprecated wrapper or is git mv-ed with a re-export (R12)"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/widgets/terminal_view.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 7,
    "g1": 0,
-   "lines": 716,
+   "lines": 718,
    "tier": 1,
    "tests": [
     "test/local_terminal_screen_test.dart",
@@ -1216,7 +1206,7 @@
    "part": "KitScanner",
    "spec": "docs/ux-system/kit-api/KitScanner.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [],
@@ -1240,7 +1230,7 @@
    "part": "KitLevelMeter",
    "spec": "docs/ux-system/kit-api/KitLevelMeter.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [],
@@ -1264,7 +1254,7 @@
    "part": "KitSwatch",
    "spec": "docs/ux-system/kit-api/KitSwatch.md",
    "specSource": "kit-v2.md §9.2; cut v2 C26",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [
@@ -1290,7 +1280,7 @@
    "part": "KitQr",
    "spec": "docs/ux-system/kit-api/KitQr.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [],
    "model": "sonnet",
    "acceptance": [],
@@ -1402,7 +1392,7 @@
    "part": "KitTappable",
    "spec": "docs/ux-system/kit-api/KitTappable.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitMenu"
    ],
@@ -1432,7 +1422,7 @@
    "part": "KitDetailsFold",
    "spec": "docs/ux-system/kit-api/KitDetailsFold.md",
    "specSource": "kit-v2.md §1.8",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitIconButton-v2"
    ],
@@ -1440,12 +1430,10 @@
    "acceptance": [
     "the private _KitDetailsFold in kit_confirm_sheet.dart is replaced by the public part"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_confirm_sheet.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 608,
+   "lines": 694,
    "tier": 2,
    "tests": []
   },
@@ -1463,7 +1451,7 @@
    "part": "KitCodeBlock",
    "spec": "docs/ux-system/kit-api/KitCodeBlock.md",
    "specSource": "kit-v2.md §1.9",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitIconButton-v2"
    ],
@@ -1554,12 +1542,10 @@
     "the Now line (`next`, the KitNowLine) and escalation; replaces banners and the update/release snackbars",
     "since/onSlow with a fake clock and 'Retry / Restart / Leave it running' (from P7.6)"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_status_line.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 245,
+   "lines": 247,
    "tier": 2,
    "tests": []
   },
@@ -1576,7 +1562,7 @@
    "part": "KitWorkLine",
    "spec": "docs/ux-system/kit-api/KitWorkLine.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitChip"
    ],
@@ -1602,7 +1588,7 @@
    "part": "KitComposerChips",
    "spec": "docs/ux-system/kit-api/KitComposerChips.md",
    "specSource": "kit-v2.md cut v2 C16; §5 composer group",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitChip",
     "kit-KitMenu",
@@ -1633,7 +1619,7 @@
    "part": "KitWorkGraph",
    "spec": "docs/ux-system/kit-api/KitWorkGraph.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitStatusMark-v2"
    ],
@@ -1728,7 +1714,7 @@
    "part": "KitLogPanel",
    "spec": "docs/ux-system/kit-api/KitLogPanel.md",
    "specSource": "kit-v2.md §1.11",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitDetailsFold",
     "kit-KitJumpPill",
@@ -1786,7 +1772,7 @@
    "part": "KitMarkdown",
    "spec": "docs/ux-system/kit-api/KitMarkdown.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitCodeBlock"
    ],
@@ -1795,15 +1781,13 @@
     "KitMarkdown takes a block builder and a highlighter as parameters, so the kit imports neither agent_blocks.dart nor transcript_highlight.dart",
     "markdown.dart becomes a @Deprecated wrapper (R12)"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/widgets/markdown.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [
     "embedded-markdown-text",
     "markdown-code-reader"
    ],
    "raw": 46,
    "g1": 4,
-   "lines": 1422,
+   "lines": 1426,
    "tier": 3,
    "tests": [
     "test/chat_live_events_test.dart",
@@ -1880,12 +1864,10 @@
     "KitSwitchRow risk (KitRisk scope and until; while on, the screen's KitStatusLine says so) and locked",
     "a controlled KitExpandRow (expanded, onExpansionChanged)"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_row_parts.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 258,
+   "lines": 259,
    "tier": 3,
    "tests": []
   },
@@ -1903,7 +1885,7 @@
    "part": "KitTabSwitcher",
    "spec": "docs/ux-system/kit-api/KitTabSwitcher.md",
    "specSource": "kit-v2.md §2.10",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitNeedsYou"
    ],
@@ -1976,12 +1958,10 @@
     "glass_surface.dart becomes a @Deprecated wrapper (home_screen.dart and tool/capture import it)",
     "no KitGlass change: the visual language branch ships the rim and dim"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/widgets/glass_surface.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 27,
+   "lines": 32,
    "tier": 3,
    "tests": [
     "test/glass_surface_test.dart",
@@ -2001,7 +1981,7 @@
    "part": "KitBreadcrumb",
    "spec": "docs/ux-system/kit-api/KitBreadcrumb.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitTappable"
    ],
@@ -2028,7 +2008,7 @@
    "part": "KitTaskCard",
    "spec": "docs/ux-system/kit-api/KitTaskCard.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitNeedsYou",
     "kit-KitReceipt",
@@ -2058,7 +2038,7 @@
    "part": "KitQueuedMessage",
    "spec": "docs/ux-system/kit-api/KitQueuedMessage.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitReceipt",
     "kit-KitIconButton-v2"
@@ -2086,7 +2066,7 @@
    "part": "KitAgentStrip",
    "spec": "docs/ux-system/kit-api/KitAgentStrip.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitStatusMark-v2",
     "kit-KitNeedsYou"
@@ -2115,7 +2095,7 @@
    "part": "KitComposer",
    "spec": "docs/ux-system/kit-api/KitComposer.md",
    "specSource": "kit-v2.md §9.2 (chat parts); cut v2 C16",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitField",
     "kit-KitIconButton-v2",
@@ -2186,7 +2166,7 @@
    "part": "KitDiffView",
    "spec": "docs/ux-system/kit-api/KitDiffView.md",
    "specSource": "kit-v2.md §1.15",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitChoiceList",
     "kit-KitIconButton-v2",
@@ -2222,7 +2202,7 @@
    "part": "KitViewer",
    "spec": "docs/ux-system/kit-api/KitViewer.md",
    "specSource": "kit-v2.md §1.14",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitCodeBlock",
     "kit-KitMarkdown",
@@ -2303,12 +2283,10 @@
     "KitRow.unavailable, the server label, KitSwipeAction (always Undo, never a confirm), destructive rows last after a divider",
     "§8.2 hover, focus and right-click open KitRowMenu"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_row.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 150,
+   "lines": 293,
    "tier": 4,
    "tests": []
   },
@@ -2325,7 +2303,7 @@
    "part": "KitRequestCard",
    "spec": "docs/ux-system/kit-api/KitRequestCard.md",
    "specSource": "kit-v2.md §2.1",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitReceipt",
     "kit-KitChoiceList",
@@ -2340,12 +2318,10 @@
     "the answered collapse to a row with its receipt; the common answers in place; since escalation; §8.2 A/D/1-9 shortcuts; VL attention roles (attentionSurface, attentionLine, radius 22)",
     "from P4.1a: goldens for every kind in dark, light, RTL and 200 %; 48 dp targets; the receipt announced once; Allow once / Reject in place; an option sends with Undo; 'Something else' opens a KitField with a draft"
    ],
-   "provisional": true,
-   "provisionalReason": "feat/visual-language-v1 is not merged yet and touches lib/ui/kit/kit_request_card.dart; drop from the title and acceptance what it delivered and regenerate (R22)",
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 156,
+   "lines": 225,
    "tier": 4,
    "tests": []
   },
@@ -2362,7 +2338,7 @@
    "part": "KitBoardLane",
    "spec": "docs/ux-system/kit-api/KitBoardLane.md",
    "specSource": "kit-v2.md §9.2",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitTaskCard",
     "kit-KitTabSwitcher-v2"
@@ -2389,7 +2365,7 @@
    "part": "KitMessage",
    "spec": "docs/ux-system/kit-api/KitMessage.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitMarkdown"
    ],
@@ -2445,7 +2421,7 @@
    "part": "KitRequestSheet",
    "spec": "docs/ux-system/kit-api/KitRequestSheet.md",
    "specSource": "kit-v2.md §2.1; cut v2 C15",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitRequestCard-v2",
     "kit-KitRowParts-v2",
@@ -2475,7 +2451,7 @@
    "part": "KitToolRow",
    "spec": "docs/ux-system/kit-api/KitToolRow.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitCodeBlock",
     "kit-KitDiffView",
@@ -2504,7 +2480,7 @@
    "part": "KitTurn",
    "spec": "docs/ux-system/kit-api/KitTurn.md",
    "specSource": "kit-v2.md §9.2 (chat parts)",
-   "specFrozen": false,
+   "specFrozen": true,
    "after": [
     "kit-KitMessage",
     "kit-KitWorkLine",
@@ -2615,7 +2591,7 @@
    "pages": [],
    "raw": 0,
    "g1": 0,
-   "lines": 277,
+   "lines": 1732,
    "tier": 7,
    "tests": []
   },
@@ -2980,9 +2956,9 @@
     "external-link-dialog",
     "run-command-dialog"
    ],
-   "raw": 58,
+   "raw": 57,
    "g1": 13,
-   "lines": 843,
+   "lines": 839,
    "tier": 1,
    "tests": [
     "test/bug_report_test.dart",
@@ -3457,7 +3433,7 @@
    ],
    "raw": 147,
    "g1": 17,
-   "lines": 2283,
+   "lines": 2297,
    "tier": 1,
    "tests": [
     "test/plugins_screen_test.dart",
@@ -3928,7 +3904,7 @@
    ],
    "raw": 42,
    "g1": 5,
-   "lines": 1484,
+   "lines": 1487,
    "tier": 1,
    "tests": [
     "test/goldens/work_parts_golden_test.dart"
@@ -4083,8 +4059,7 @@
     "test/team_board_test.dart",
     "test/team_home_layout_test.dart",
     "test/team_home_stable_layout_test.dart",
-    "test/team_merge_test.dart",
-    "test/team_run_screen_test.dart"
+    "test/team_merge_test.dart"
    ]
   },
   {
@@ -4783,7 +4758,7 @@
    ],
    "raw": 175,
    "g1": 3,
-   "lines": 2604,
+   "lines": 2593,
    "tier": 3,
    "tests": [
     "test/calm_chat_disclosure_test.dart",
@@ -4848,7 +4823,7 @@
     "command-launcher-sheet",
     "team-conversation"
    ],
-   "raw": 90,
+   "raw": 87,
    "g1": 4,
    "lines": 2636,
    "tier": 4,
@@ -5383,9 +5358,9 @@
     "info-label-sheet",
     "markdown-code-reader"
    ],
-   "raw": 147,
+   "raw": 146,
    "g1": 11,
-   "lines": 5264,
+   "lines": 5273,
    "tier": 1,
    "tests": [
     "test/activity_requests_test.dart",
@@ -5642,7 +5617,7 @@
     },
     "note": "on no-go P1.6b is skipped and local_agent_onboarding.dart gets a kit-only restyle in slice-P1.5 (C33 correction)"
    },
-   "raw": 73,
+   "raw": 68,
    "g1": 3,
    "lines": 1391,
    "locks": [
@@ -7082,7 +7057,7 @@
    ],
    "raw": 0,
    "g1": 0,
-   "lines": 458,
+   "lines": 2021,
    "afterMode": "settled",
    "locks": [
     "test/kit_ratchet_test.dart"
