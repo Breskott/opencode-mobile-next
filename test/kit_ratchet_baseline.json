@@ -2904,9 +2904,6 @@
     }
   },
   "G7": {
-    "lib/ui/kit/motion/kit_refresh.dart": {
-      "Positioned(left|right:)": 1
-    },
     "lib/ui/screens/active_context_screen.dart": {
       "EdgeInsets.only(left|right:)": 1
     },
@@ -2943,9 +2940,6 @@
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "EdgeInsets.fromLTRB asymmetric": 1
     },
-    "lib/ui/screens/team/run_screen.dart": {
-      "Positioned(left|right:)": 1
-    },
     "lib/ui/screens/web_sources_screen.dart": {
       "Alignment.centerLeft": 1
     },
@@ -2981,9 +2975,6 @@
     },
     "lib/ui/widgets/run_result_view.dart": {
       "Alignment.centerLeft": 1
-    },
-    "lib/ui/widgets/tool_card.dart": {
-      "Positioned(left|right:)": 1
     }
   },
   "G15x": {
@@ -3001,6 +2992,13 @@
     }
   },
   "G17": {
+    "lib/diagnostics/app_diagnostics.dart": {
+      "Color(0x": 2
+    },
+    "lib/main.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 2
+    },
     "lib/ui/app_iconography.dart": {
       ".colorScheme": 1
     },
@@ -3665,9 +3663,26 @@
     },
     "lib/ui/widgets/work_status_line.dart": {
       "attention roles": 3
+    },
+    "lib/voice/voice_ui.dart": {
+      ".colorScheme": 23,
+      ".textTheme": 7
     }
   },
   "G21": {
+    "lib/diagnostics/app_diagnostics.dart": {
+      "EdgeInsets numeric": 1,
+      "TextStyle(": 1
+    },
+    "lib/diagnostics/perf_trace.dart": {
+      ".toUpperCase()": 1
+    },
+    "lib/main.dart": {
+      "EdgeInsets numeric": 1,
+      "SizedBox numeric": 4,
+      "icon size not 20/22/24": 1,
+      "text scale clamp": 1
+    },
     "lib/ui/desktop/context_menu.dart": {
       "Border.all(": 1,
       "SizedBox numeric": 1,
@@ -3683,7 +3698,8 @@
       "SizedBox numeric": 2
     },
     "lib/ui/kit/glass/kit_glass.dart": {
-      "Radius.circular(<n>": 1
+      "Radius.circular(<n>": 1,
+      "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_action_stack.dart": {
       "SizedBox numeric": 2
@@ -3702,7 +3718,8 @@
     },
     "lib/ui/kit/kit_panel.dart": {
       "EdgeInsets numeric": 2,
-      "SizedBox numeric": 2
+      "SizedBox numeric": 2,
+      "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_progress.dart": {
       "EdgeInsets numeric": 1,
@@ -3711,7 +3728,8 @@
     },
     "lib/ui/kit/kit_request_card.dart": {
       "EdgeInsets numeric": 6,
-      "SizedBox numeric": 2
+      "SizedBox numeric": 2,
+      "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_row.dart": {
       "EdgeInsets numeric": 1,
@@ -3737,7 +3755,11 @@
     "lib/ui/kit/kit_status_line.dart": {
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 2,
-      "metal|chrome": 2
+      "metal|chrome": 2,
+      "stroke width not KitTokens in kit": 1
+    },
+    "lib/ui/kit/kit_status_mark.dart": {
+      "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/motion/kit_tab_switcher.dart": {
       "Transform.scale|ScaleTransition in kit": 1
@@ -4684,7 +4706,147 @@
       "EdgeInsets numeric": 2,
       "SizedBox numeric": 1,
       "TextStyle(": 4
+    },
+    "lib/update/shorebird_update_notice.dart": {
+      "SizedBox numeric": 1
+    },
+    "lib/voice/notices.dart": {
+      "EdgeInsets numeric": 1,
+      "TextStyle(": 1,
+      "fontSize:": 1
+    },
+    "lib/voice/voice_ui.dart": {
+      "Border.all(": 3,
+      "BorderRadius.circular(<n>": 6,
+      "EdgeInsets numeric": 11,
+      "SizedBox numeric": 28,
+      "TextStyle(": 4,
+      "disableAnimationsOf": 1,
+      "icon size not 20/22/24": 2
     }
   },
-  "G48": {}
+  "G48": {
+    "lib/ui/screens/chat/composer.dart": {
+      "sheet multiline without draft:": 2
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/screens/chat/prompt_editor.dart": {
+      "sheet multiline without draft:": 2
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/screens/team/start_run_sheet.dart": {
+      "sheet multiline without draft:": 2
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      "sheet multiline without draft:": 1
+    },
+    "lib/voice/voice_ui.dart": {
+      "sheet multiline without draft:": 1
+    }
+  },
+  "allow": {
+    "G1/G15/G16": {
+      "_allowed": []
+    },
+    "G15x": {
+      "numeric layout width:": [
+        "lib/ui/kit/kit_layout.dart"
+      ],
+      "numeric maxWidth:": [
+        "lib/ui/kit/kit_layout.dart"
+      ],
+      "width-literal": [
+        "lib/ui/kit/kit_layout.dart"
+      ]
+    },
+    "G2": {
+      "AnimatedSize( in kit": [
+        "lib/ui/kit/kit_buttons.dart"
+      ],
+      "Clipboard.setData( in kit": [
+        "lib/ui/kit/kit_copy.dart"
+      ],
+      "Curves. in kit": [
+        "lib/ui/kit/kit_motion.dart"
+      ],
+      "HapticFeedback. in kit": [
+        "lib/ui/kit/motion/kit_haptics.dart"
+      ],
+      "duration: Duration( in kit": [
+        "lib/ui/kit/kit_motion.dart"
+      ],
+      "launchUrl(": [
+        "lib/ui/widgets/external_link.dart"
+      ]
+    },
+    "G21": {
+      "BorderRadius.circular(<n>": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "BorderSide(width: not KitTokens": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "EdgeInsets numeric": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "KitGlass(/GlassSurface(": [
+        "lib/ui/kit/chat/kit_composer.dart",
+        "lib/ui/kit/glass/",
+        "lib/ui/screens/home_screen.dart",
+        "lib/ui/widgets/glass_surface.dart"
+      ],
+      "Radius.circular(<n>": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "SizedBox numeric": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "disableAnimationsOf": [
+        "lib/ui/kit/kit_motion.dart"
+      ],
+      "fontSize: <n> in kit": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ],
+      "stroke width not KitTokens in kit": [
+        "lib/ui/kit/kit_text.dart",
+        "lib/ui/kit/kit_tokens.dart"
+      ]
+    },
+    "G7": {
+      "Alignment.centerLeft in kit": [
+        "lib/ui/kit/kit_code_block.dart",
+        "lib/ui/kit/kit_diff_view.dart",
+        "lib/ui/kit/kit_log_panel.dart",
+        "lib/ui/kit/kit_technical_value.dart"
+      ],
+      "TextAlign.left in kit": [
+        "lib/ui/kit/kit_code_block.dart",
+        "lib/ui/kit/kit_diff_view.dart",
+        "lib/ui/kit/kit_log_panel.dart",
+        "lib/ui/kit/kit_technical_value.dart"
+      ]
+    }
+  }
 }

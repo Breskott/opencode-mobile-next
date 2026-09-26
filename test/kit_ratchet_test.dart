@@ -6,8 +6,9 @@
 // test/design_standard_test.dart: a committed per-file baseline that only
 // shrinks. The test fails when a file/pattern count rises above its
 // baseline, or a file/pattern not in the baseline appears at all. When
-// counts drop it still passes, but prints the smaller baseline to commit so
-// the numbers only ever go down (see `_printBaseline` below).
+// counts drop it still passes, but prints the entries that dropped and the
+// command that commits the smaller numbers, so they only ever go down. A
+// passing run with nothing dropped prints nothing.
 //
 // G1 — modal and toast entry points live in the kit: outside lib/ui/kit/,
 // showDialog(/showModalBottomSheet(/etc. must come from the kit's
@@ -269,13 +270,16 @@ class _Rule {
   final String fix;
 
   /// Repo-relative directories scanned. `lib`/`lib/ui` read `.dart` files;
-  /// `shaders` reads every file; `assets` checks file names only.
+  /// `shaders` reads every file; `assets` checks file names only;
+  /// [_uiElsewhere] is the Flutter UI code under `lib/` outside `lib/ui/`.
   final List<String> roots;
   final _In scope;
 
   /// Exempt files, each with a reason (KIT-5). A key ending in `/` is a
-  /// directory prefix; a key without `/` is a file name inside lib/ui/kit/;
-  /// anything else is an exact repo-relative path.
+  /// directory prefix; any other key is an exact repo-relative path (no bare
+  /// file names, so a same-named file in another folder is never exempt).
+  /// The keys are frozen: each must be in the committed `allow` section of
+  /// test/kit_ratchet_baseline.json, which write mode never rewrites.
   final Map<String, String> allow;
 
   /// Absolute rows have no baseline: any hit outside [allow] fails.
@@ -295,13 +299,8 @@ bool _isThemeFile(String path) {
       (base.startsWith('theme_packs') && base.endsWith('.dart'));
 }
 
-bool _allowMatches(String key, String path) {
-  if (key.endsWith('/')) return path.startsWith(key);
-  if (!key.contains('/')) {
-    return path.startsWith(_kitDir) && path.split('/').last == key;
-  }
-  return path == key;
-}
+bool _allowMatches(String key, String path) =>
+    key.endsWith('/') ? path.startsWith(key) : path == key;
 
 bool _inScope(_In scope, String path) => switch (scope) {
   _In.outsideKit => !path.startsWith(_kitDir),
@@ -408,9 +407,6 @@ _Counter _uses(String name, {bool namedCtors = true}) {
 /// Numeric literal anywhere in an argument list (not part of a name).
 final _numericArg = RegExp(r'(?<![A-Za-z0-9_.$])\d');
 
-bool _hasNamedArg(String args, List<String> names) =>
-    names.any((n) => _namedArg(args, n) != null);
-
 bool _isNumber(String? expr) =>
     expr != null && RegExp(r'^\d+(?:\.\d+)?$').hasMatch(expr);
 
@@ -453,10 +449,22 @@ int _metalCount(String code, String path) =>
     _metalRe.allMatches(code).length +
     _metalRe.allMatches(path.split('/').last).length;
 
-/// G48: a file that opens a kit sheet and has a multiline field keeps a
-/// draft. Counts the multiline fields of an offending file.
+/// The calls that open a sheet today: the kit's `showKitSheet(` and the two
+/// entry points it replaces, so today's DATA-2 debt is baselined and only
+/// shrinks instead of hiding until a file switches to `showKitSheet(`.
+final _sheetOpeners = [
+  for (final name in [
+    'showKitSheet',
+    'showModalBottomSheet',
+    'showConfirmSheet',
+  ])
+    _uses(name, namedCtors: false),
+];
+
+/// G48: a file that opens a sheet and has a multiline field keeps a draft.
+/// Counts the multiline fields of an offending file.
 int _g48Count(String code, String path) {
-  if (_uses('showKitSheet', namedCtors: false)(code, path) == 0) return 0;
+  if (_sheetOpeners.every((opens) => opens(code, path) == 0)) return 0;
   if (RegExp(r'\bdraft:').hasMatch(code)) return 0;
   return RegExp(
     r'KitFieldKind\.multiline|\bmaxLines:\s*null\b|\bminLines:',
@@ -467,18 +475,16 @@ int _g48Count(String code, String path) {
 /// (KIT-43). Append one line per retired name; each becomes a G2 row.
 const _retiredApis = <String, String>{};
 
-/// Files outside lib/ui/kit/ allowed to construct glass (LOOK-27), plus the
-/// kit files of the navigation-layer parts (append when a part lands).
+/// The LOOK-27 files allowed to construct glass whose path is known today.
+/// Frozen (KIT-5): the floating tab bar, rail, top controls and desktop
+/// sidebar parts have no planned path yet, so the unit that lands one adds
+/// its exact path here and to the committed `allow` section of
+/// test/kit_ratchet_baseline.json, with `ratchet-tighten: G21
+/// KitGlass(/GlassSurface(` in its commit body (KIT-44).
 const _glassFiles = <String, String>{
   'lib/ui/kit/glass/': 'the glass part itself (LOOK-27)',
-  'kit_composer.dart': 'the composer is navigation-layer glass (LOOK-27)',
-  'kit_floating_tab_bar.dart':
-      'the floating tab bar and its lens are glass (LOOK-27)',
-  'kit_nav_rail.dart': 'the navigation rail from medium up (LOOK-27)',
-  'kit_top_controls.dart':
-      'the server pill and search button are glass (LOOK-27)',
-  'kit_desktop_sidebar.dart':
-      'the PC sidebar header and toolbar are glass (LOOK-27)',
+  'lib/ui/kit/chat/kit_composer.dart':
+      'the composer is navigation-layer glass (LOOK-27; planned path)',
   'lib/ui/screens/home_screen.dart':
       'shrinking allowlist until the dock moves into a kit part (LOOK-27)',
   'lib/ui/widgets/glass_surface.dart':
@@ -487,18 +493,47 @@ const _glassFiles = <String, String>{
 
 /// The forced-LTR subtrees where left alignment is correct (LAY-8).
 const _forcedLtrFiles = <String, String>{
-  'kit_technical_value.dart': 'KitTechnicalValue is a forced-LTR value',
-  'kit_code_block.dart': 'KitCodeBlock is a forced-LTR block (LAY-8)',
-  'kit_log_panel.dart': 'KitLogPanel is a forced-LTR block (LAY-8)',
-  'kit_diff_view.dart': 'KitDiffView is a forced-LTR block (LAY-8)',
+  'lib/ui/kit/kit_technical_value.dart':
+      'KitTechnicalValue is a forced-LTR value',
+  'lib/ui/kit/kit_code_block.dart':
+      'KitCodeBlock is a forced-LTR block (LAY-8)',
+  'lib/ui/kit/kit_log_panel.dart': 'KitLogPanel is a forced-LTR block (LAY-8)',
+  'lib/ui/kit/kit_diff_view.dart': 'KitDiffView is a forced-LTR block (LAY-8)',
 };
 
 const _tokenFiles = <String, String>{
-  'kit_tokens.dart': 'the token table is where the numbers live (KIT-9)',
-  'kit_text.dart': 'the type roles are where font sizes live (LOOK-12)',
+  'lib/ui/kit/kit_tokens.dart':
+      'the token table is where the numbers live (KIT-9)',
+  'lib/ui/kit/kit_text.dart':
+      'the type roles are where font sizes live (LOOK-12)',
 };
 
-const _layoutArgs = ['left', 'right'];
+/// Left and right given and textually different (a lone `left:` or
+/// `right:` counts). `left: x, right: x` is direction-neutral, the same as a
+/// symmetric `EdgeInsets.fromLTRB`.
+bool _asymmetricLeftRight(String args) {
+  final left = _namedArg(args, 'left');
+  final right = _namedArg(args, 'right');
+  if (left == null && right == null) return false;
+  if (left != null && right != null) return _squash(left) != _squash(right);
+  return true;
+}
+
+/// LOOK-21 inside the kit: a `Border.all(` or `BorderSide(` whose width is
+/// missing (the default is one logical pixel) or not read from KitTokens,
+/// and a numeric `thickness:` other than 0 (0 is the one-physical-pixel
+/// hairline).
+int _kitStrokeCount(String code, String path) {
+  final strokes = _call(r'Border\.all|BorderSide', (a) {
+    if (a.contains('BorderStyle.none')) return false;
+    final width = _namedArg(a, 'width');
+    return width == null || !width.contains('KitTokens');
+  })(code, path);
+  final thickness = RegExp(
+    r'\bthickness:\s*(\d+(?:\.\d+)?)\b',
+  ).allMatches(code).where((m) => double.parse(m.group(1)!) != 0).length;
+  return strokes + thickness;
+}
 
 final List<_Rule> _rules = [
   // G2 — kit seams: copy, haptics, links, motion, retired wrappers.
@@ -598,7 +633,10 @@ final List<_Rule> _rules = [
     scope: _In.insideKit,
     note:
         'STANDARDS says absolute; terminal_key_bar.dart vibrates directly today, so ratchet until it calls KitHaptics',
-    allow: const {'kit_haptics.dart': 'KitHaptics is the one vibration seam'},
+    allow: const {
+      'lib/ui/kit/motion/kit_haptics.dart':
+          'KitHaptics is the one vibration seam',
+    },
   ),
   _Rule(
     'G2',
@@ -608,7 +646,9 @@ final List<_Rule> _rules = [
     fix: 'call KitCopy.copy',
     scope: _In.insideKit,
     absolute: true,
-    allow: const {'kit_copy.dart': 'KitCopy is the one copy service (KIT-23)'},
+    allow: const {
+      'lib/ui/kit/kit_copy.dart': 'KitCopy is the one copy service (KIT-23)',
+    },
   ),
   _Rule(
     'G2',
@@ -618,7 +658,9 @@ final List<_Rule> _rules = [
     fix: 'name the duration in kit_motion.dart',
     scope: _In.insideKit,
     absolute: true,
-    allow: const {'kit_motion.dart': 'KitMotion owns every duration (MOT-1)'},
+    allow: const {
+      'lib/ui/kit/kit_motion.dart': 'KitMotion owns every duration (MOT-1)',
+    },
   ),
   _Rule(
     'G2',
@@ -629,7 +671,9 @@ final List<_Rule> _rules = [
     scope: _In.insideKit,
     note:
         'STANDARDS says absolute; the kit scenes shape their drawings with Curves today, so ratchet until they read KitMotion curves',
-    allow: const {'kit_motion.dart': 'KitMotion owns every curve (MOT-1)'},
+    allow: const {
+      'lib/ui/kit/kit_motion.dart': 'KitMotion owns every curve (MOT-1)',
+    },
   ),
   _Rule(
     'G2',
@@ -640,16 +684,28 @@ final List<_Rule> _rules = [
     scope: _In.insideKit,
     absolute: true,
     allow: const {
-      'kit_buttons.dart': 'the KitButton spinner slot may resize (MOT-5)',
+      'lib/ui/kit/kit_buttons.dart':
+          'the KitButton spinner slot may resize (MOT-5)',
     },
   ),
+  _Rule(
+    'G2',
+    'launchUrl( in kit',
+    _re(r'(?<![A-Za-z0-9_.$])launchUrl(?:String)?\('),
+    ids: ['SEC-1'],
+    fix: 'take the URL to openExternalLink (lib/ui/widgets/external_link.dart)',
+    scope: _In.insideKit,
+    absolute: true,
+  ),
 
-  // G7 — directional layout and bidi literals.
+  // G7 — directional layout and bidi literals. Each layout pattern is a
+  // ratchet outside the kit and absolute inside it ("zero in the kit except
+  // the allowlist", §18.2 G7), where only the forced-LTR parts may align left.
   for (final (name, counter, allow)
       in <(String, _Counter, Map<String, String>)>[
         (
           'EdgeInsets.only(left|right:)',
-          _call(r'EdgeInsets\.only', (a) => _hasNamedArg(a, _layoutArgs)),
+          _call(r'EdgeInsets\.only', _asymmetricLeftRight),
           const {},
         ),
         (
@@ -670,21 +726,23 @@ final List<_Rule> _rules = [
         ('TextAlign.right', _re(r'\bTextAlign\.right\b'), const {}),
         (
           'Positioned(left|right:)',
-          _call(r'Positioned(?:\.fill)?', (a) => _hasNamedArg(a, _layoutArgs)),
+          _call(r'Positioned(?:\.fill)?', _asymmetricLeftRight),
           const {},
         ),
       ])
-    _Rule(
-      'G7',
-      name,
-      counter,
-      ids: const ['LAY-8'],
-      roots: const ['lib'],
-      scope: _In.anywhere,
-      allow: allow,
-      fix:
-          'use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional)',
-    ),
+    for (final inKit in [false, true])
+      _Rule(
+        'G7',
+        inKit ? '$name in kit' : name,
+        counter,
+        ids: const ['LAY-8'],
+        roots: const ['lib'],
+        scope: inKit ? _In.insideKit : _In.outsideKit,
+        absolute: inKit,
+        allow: inKit ? allow : const {},
+        fix:
+            'use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional)',
+      ),
   _Rule(
     'G7',
     'bidi literal',
@@ -721,7 +779,7 @@ final List<_Rule> _rules = [
       fix:
           'name the width in KitLayout and decide layout from the window class',
       allow: const {
-        'kit_layout.dart':
+        'lib/ui/kit/kit_layout.dart':
             'KitLayout owns the breakpoints and named widths (LAY-2)',
       },
     ),
@@ -794,6 +852,7 @@ final List<_Rule> _rules = [
       counter,
       ids: ids,
       fix: fix,
+      roots: _uiRoots,
       scope: scope,
       skipThemeFiles: true,
     ),
@@ -924,7 +983,15 @@ final List<_Rule> _rules = [
           'text is opaque at rest',
         ),
       ])
-    _Rule('G21', name, counter, ids: ids, fix: fix, skipThemeFiles: true),
+    _Rule(
+      'G21',
+      name,
+      counter,
+      ids: ids,
+      fix: fix,
+      roots: _uiRoots,
+      skipThemeFiles: true,
+    ),
 
   // G21 — numbers belong to KitTokens and KitText, in and out of the kit.
   for (final (name, counter, scope, ids, fix)
@@ -978,9 +1045,17 @@ final List<_Rule> _rules = [
             final width = _namedArg(a, 'width');
             return width != null && !width.contains('KitTokens');
           }),
-          _In.anywhere,
+          _In.outsideKit,
           ['LOOK-21'],
           'use KitTokens.hairlineWidth(context) or focusRingWidth(context)',
+        ),
+        (
+          'stroke width not KitTokens in kit',
+          _kitStrokeCount,
+          _In.insideKit,
+          ['LOOK-21'],
+          'give Border.all/BorderSide width: KitTokens.hairlineWidth(context) '
+              'or focusRingWidth(context); Divider thickness: 0',
         ),
       ])
     _Rule(
@@ -989,6 +1064,7 @@ final List<_Rule> _rules = [
       counter,
       ids: ids,
       fix: fix,
+      roots: _uiRoots,
       scope: scope,
       skipThemeFiles: true,
       allow: _tokenFiles,
@@ -1001,6 +1077,7 @@ final List<_Rule> _rules = [
     (c, p) => _uses('KitGlass')(c, p) + _uses('GlassSurface')(c, p),
     ids: ['LOOK-27'],
     fix: 'glass only on the navigation layer',
+    roots: _uiRoots,
     scope: _In.anywhere,
     skipThemeFiles: true,
     note:
@@ -1013,6 +1090,7 @@ final List<_Rule> _rules = [
     _re(r'\bKitSurfaceLevel\.(?:glass|raised|tonal)\b'),
     ids: ['KIT-42'],
     fix: 'use ground or surface1-3',
+    roots: _uiRoots,
     scope: _In.anywhere,
     skipThemeFiles: true,
     absolute: true,
@@ -1023,12 +1101,13 @@ final List<_Rule> _rules = [
     _re(r'\bdisableAnimationsOf\b'),
     ids: ['MOT-8'],
     fix: 'ask KitMotion.reduced(context)',
+    roots: _uiRoots,
     scope: _In.anywhere,
     skipThemeFiles: true,
     note:
         'STANDARDS says absolute; screens read reduced motion directly today, so ratchet until they ask KitMotion.reduced',
     allow: const {
-      'kit_motion.dart':
+      'lib/ui/kit/kit_motion.dart':
           'KitMotion is the one reader of reduced motion (MOT-8)',
     },
   ),
@@ -1067,6 +1146,22 @@ final List<_Rule> _rules = [
   ),
 ];
 
+/// Pseudo-root: every `.dart` file under `lib/` outside `lib/ui/` that
+/// imports Flutter's widget layer (material, widgets or cupertino), such as
+/// lib/voice/voice_ui.dart, lib/main.dart and the error widget in
+/// lib/diagnostics/app_diagnostics.dart. LOOK-1 and the rest of G17/G21 are
+/// not limited to `lib/ui/`, so G17 and G21 scan these too (a PROC-20
+/// contract problem against the §18.2 "scans `lib/ui/` only" wording; see
+/// the QA record), baselined like every other ratchet row.
+const _uiElsewhere = 'lib/**(flutter UI outside lib/ui)';
+
+/// The roots of G17 and G21.
+const _uiRoots = ['lib/ui', _uiElsewhere];
+
+final _flutterUiImport = RegExp(
+  r'''import\s+['"]package:flutter/(?:material|widgets|cupertino)\.dart['"]''',
+);
+
 /// The gates `_rules` covers, in baseline order.
 const _ruleGates = ['G2', 'G7', 'G15x', 'G17', 'G21', 'G48'];
 
@@ -1074,6 +1169,14 @@ final _fileCache = <String, List<String>>{};
 
 /// Files under [root], sorted repo-relative POSIX paths, generated files out.
 List<String> _filesUnder(String root) => _fileCache.putIfAbsent(root, () {
+  if (root == _uiElsewhere) {
+    return [
+      for (final path in _filesUnder('lib'))
+        if (!path.startsWith('lib/ui/') &&
+            _flutterUiImport.hasMatch(File(path).readAsStringSync()))
+          path,
+    ];
+  }
   final dir = Directory(root);
   if (!dir.existsSync()) return const [];
   final files =
@@ -1183,6 +1286,63 @@ List<String> _drops(
   return drops;
 }
 
+// --- Frozen allowlists (KIT-5) --------------------------------------------
+//
+// "The exemption maps hold at most the entries in the committed baseline
+// (they never grow)." Every allowlist key is committed under `allow` in
+// test/kit_ratchet_baseline.json as gate -> pattern -> [keys], and `_allowed`
+// under "G1/G15/G16" -> "_allowed". Write mode never touches that section, so
+// adding a key means editing the JSON by hand with `ratchet-tighten: <gate>
+// <pattern>` in the commit body (KIT-44), which G31 checks against the merge
+// base. A key dropped from the code only prints a reminder to drop it from
+// the JSON too.
+
+const _allowSection = 'allow';
+const _legacyAllowGate = 'G1/G15/G16';
+
+/// Every allowlist in the code, gate -> pattern -> keys.
+Map<String, Map<String, Set<String>>> _allowlistsInCode(List<_Rule> rules) {
+  final out = <String, Map<String, Set<String>>>{
+    _legacyAllowGate: {'_allowed': _allowed.keys.toSet()},
+  };
+  for (final rule in rules.where((r) => r.allow.isNotEmpty)) {
+    (out[rule.gate] ??= {})[rule.name] = rule.allow.keys.toSet();
+  }
+  return out;
+}
+
+/// (keys in the code the committed set lacks, committed keys the code no
+/// longer has).
+(List<String>, List<String>) _allowlistDiff(
+  Map<String, Map<String, Set<String>>> inCode,
+  Map<String, dynamic> committed,
+) {
+  final grew = <String>[];
+  final shrank = <String>[];
+  for (final MapEntry(key: gate, value: patterns) in inCode.entries) {
+    final committedGate = committed[gate] as Map<String, dynamic>? ?? const {};
+    for (final MapEntry(key: pattern, value: keys) in patterns.entries) {
+      final frozen = {
+        ...(committedGate[pattern] as List<dynamic>? ?? const [])
+            .cast<String>(),
+      };
+      for (final key in keys.difference(frozen)) {
+        grew.add('$gate "$pattern" allows $key');
+      }
+    }
+  }
+  for (final MapEntry(key: gate, value: patterns) in committed.entries) {
+    for (final MapEntry(key: pattern, value: keys)
+        in (patterns as Map<String, dynamic>).entries) {
+      final now = inCode[gate]?[pattern] ?? const <String>{};
+      for (final key in (keys as List<dynamic>).cast<String>()) {
+        if (!now.contains(key)) shrank.add('$gate "$pattern" $key');
+      }
+    }
+  }
+  return (grew, shrank);
+}
+
 // --- Ratchet mechanics ----------------------------------------------------
 
 Map<String, dynamic> _loadBaseline() {
@@ -1201,14 +1361,19 @@ Map<String, Map<String, int>> _sorted(Map<String, Map<String, int>> gate) {
   };
 }
 
-void _printBaseline(Map<String, Map<String, Map<String, int>>> current) {
-  final gates = current.keys.toList()..sort();
-  final out = {for (final g in gates) g: _sorted(current[g]!)};
-  const encoder = JsonEncoder.withIndent('  ');
-  // ignore: avoid_print
-  print(
-    '--- kit_ratchet baseline (commit as test/kit_ratchet_baseline.json '
-    'if smaller) ---\n${encoder.convert(out)}\n--- end baseline ---',
+/// Prints [gate]'s dropped entries and the command that commits them. A
+/// passing run with nothing dropped prints nothing.
+void _printDrops(
+  String gate,
+  Map<String, Map<String, int>> current,
+  Map<String, dynamic> baseline,
+) {
+  final drops = _drops(current, baseline);
+  if (drops.isEmpty) return;
+  stdout.writeln(
+    '$gate: ${drops.length} baseline entries dropped — commit the '
+    'smaller numbers with KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=$gate:\n'
+    '  ${drops.join('\n  ')}',
   );
 }
 
@@ -1293,10 +1458,14 @@ void main() {
 
   if (writeMode) {
     const encoder = JsonEncoder.withIndent('  ');
+    // The frozen `allow` section (KIT-5) and any gate this file does not
+    // scan are copied as committed, never regenerated.
     final out = <String, dynamic>{
       for (final g in {...allCurrent.keys, ...baseline.keys})
-        g: writeGates == null || writeGates.contains(g)
-            ? _sorted(allCurrent[g] ?? {})
+        g:
+            allCurrent.containsKey(g) &&
+                (writeGates == null || writeGates.contains(g))
+            ? _sorted(allCurrent[g]!)
             : baseline[g],
     };
     File(
@@ -1317,7 +1486,13 @@ void main() {
             g1Current,
             baseline['G1'] as Map<String, dynamic>? ?? {},
           );
-    if (problems.isEmpty) _printBaseline(allCurrent);
+    if (problems.isEmpty && !writeMode) {
+      _printDrops(
+        'G1',
+        g1Current,
+        baseline['G1'] as Map<String, dynamic>? ?? {},
+      );
+    }
     expect(problems, isEmpty, reason: problems.join('\n'));
   });
 
@@ -1329,6 +1504,13 @@ void main() {
             g15Current,
             baseline['G15'] as Map<String, dynamic>? ?? {},
           );
+    if (problems.isEmpty && !writeMode) {
+      _printDrops(
+        'G15',
+        g15Current,
+        baseline['G15'] as Map<String, dynamic>? ?? {},
+      );
+    }
     expect(problems, isEmpty, reason: problems.join('\n'));
   });
 
@@ -1340,6 +1522,13 @@ void main() {
             g16Current,
             baseline['G16'] as Map<String, dynamic>? ?? {},
           );
+    if (problems.isEmpty && !writeMode) {
+      _printDrops(
+        'G16',
+        g16Current,
+        baseline['G16'] as Map<String, dynamic>? ?? {},
+      );
+    }
     expect(problems, isEmpty, reason: problems.join('\n'));
   });
 
@@ -1359,17 +1548,47 @@ void main() {
         if (!writeMode)
           ..._ruleProblems(gate, ruleCurrent[gate]!, gateBaseline),
       ];
-      final drops = _drops(ruleCurrent[gate]!, gateBaseline);
-      if (problems.isEmpty && drops.isNotEmpty && !writeMode) {
-        stdout.writeln(
-          '$gate: ${drops.length} baseline entries dropped — commit the '
-          'smaller numbers with KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=$gate:\n'
-          '  ${drops.join('\n  ')}',
-        );
+      if (problems.isEmpty && !writeMode) {
+        _printDrops(gate, ruleCurrent[gate]!, gateBaseline);
       }
       expect(problems, isEmpty, reason: problems.join('\n'));
     });
   }
+
+  test('allowlists never grow (KIT-5)', () {
+    final (grew, shrank) = _allowlistDiff(
+      _allowlistsInCode(_rules),
+      baseline[_allowSection] as Map<String, dynamic>? ?? const {},
+    );
+    if (grew.isEmpty && shrank.isNotEmpty) {
+      stdout.writeln(
+        'KIT-5: ${shrank.length} allowlist keys left the code — drop them '
+        'from "$_allowSection" in test/kit_ratchet_baseline.json:\n'
+        '  ${shrank.join('\n  ')}',
+      );
+    }
+    expect(
+      grew,
+      isEmpty,
+      reason: [
+        for (final g in grew)
+          'KIT-5: $g — not in the committed "$_allowSection" set of '
+              'test/kit_ratchet_baseline.json. Exemption maps never grow; fix '
+              'the file instead, or (the coordinator or the unit the rule '
+              'names) add the key to the JSON by hand with '
+              '`ratchet-tighten: <gate> <pattern>` in the commit body (KIT-44).',
+      ].join('\n'),
+    );
+  });
+
+  test('allowlist keys are exact paths or folders under lib/', () {
+    for (final keys in _allowlistsInCode(_rules).values) {
+      for (final key in keys.values.expand((k) => k)) {
+        expect(key, startsWith('lib/'), reason: key);
+        expect(key.endsWith('/') || key.endsWith('.dart'), isTrue, reason: key);
+      }
+    }
+  });
 
   test('every G2/G7/G15x/G17/G21/G48 row is named once and has a reason', () {
     for (final gate in _ruleGates) {
@@ -1546,26 +1765,67 @@ launchUrl(uri); launchUrlString('x'); openExternalLink(context, uri);
       expect(count('G2', 'launchUrl(', source), 2);
     });
 
+    test('SEC-1: launchUrl in the kit is absolute with no allowlist', () {
+      final rule = _rules.singleWhere(
+        (r) => r.gate == 'G2' && r.name == 'launchUrl( in kit',
+      );
+      expect(rule.absolute, isTrue);
+      expect(rule.allow, isEmpty);
+      expect(_inScope(rule.scope, 'lib/ui/kit/kit_link_row.dart'), isTrue);
+      expect(
+        count(
+          'G2',
+          'launchUrl( in kit',
+          'onTap: () => launchUrl(Uri.parse(value));',
+          path: 'lib/ui/kit/kit_link_row.dart',
+        ),
+        1,
+      );
+    });
+
     test('G7 counts left/right layout, not the directional forms', () {
       const source = '''
 EdgeInsets.only(left: 8, top: 4);
+EdgeInsets.only(left: 8, right: 8, top: 4);
+EdgeInsets.only(left: 8, right: 12);
 EdgeInsets.only(top: 4);
 EdgeInsetsDirectional.only(start: 8);
 EdgeInsets.fromLTRB(12, 0, 16, 0);
 EdgeInsets.fromLTRB(16, 8, 16, 0);
 EdgeInsets.fromLTRB(KitTokens.space4, 0, KitTokens.space4, 8);
 Positioned(left: 0, child: x);
+Positioned(top: 0, left: 0, right: 0, child: x);
 PositionedDirectional(start: 0, child: x);
 Alignment.centerLeft; AlignmentDirectional.centerStart;
 TextAlign.right; TextAlign.end;
 final s = 'a\\u2066b';
 ''';
-      expect(count('G7', 'EdgeInsets.only(left|right:)', source), 1);
+      expect(count('G7', 'EdgeInsets.only(left|right:)', source), 2);
       expect(count('G7', 'EdgeInsets.fromLTRB asymmetric', source), 1);
       expect(count('G7', 'Positioned(left|right:)', source), 1);
       expect(count('G7', 'Alignment.centerLeft', source), 1);
       expect(count('G7', 'TextAlign.right', source), 1);
       expect(count('G7', 'bidi literal', source), 1);
+    });
+
+    test('G7 is absolute in the kit, forced-LTR parts may align left', () {
+      for (final rule in _rules.where(
+        (r) => r.gate == 'G7' && r.name.endsWith(' in kit'),
+      )) {
+        expect(rule.absolute, isTrue, reason: rule.name);
+        expect(rule.scope, _In.insideKit, reason: rule.name);
+        final left = rule.name.contains('Left') || rule.name.contains('.left');
+        expect(
+          rule.allow.keys.toSet(),
+          left ? _forcedLtrFiles.keys.toSet() : isEmpty,
+        );
+      }
+      expect(
+        _rules
+            .where((r) => r.gate == 'G7' && r.name.endsWith(' in kit'))
+            .length,
+        7,
+      );
     });
 
     test('G15x counts breakpoints and layout widths, not guards or gaps', () {
@@ -1619,6 +1879,31 @@ label.toUpperCase();
       expect(count('G21', '.toUpperCase()', source), 1);
     });
 
+    test('G21 LOOK-21 in the kit: every stroke width comes from KitTokens', () {
+      const source = '''
+Border.all(color: c, width: 1.5);
+Border.all(color: c);
+Border(bottom: BorderSide(color: c));
+BorderSide(color: c, width: KitTokens.hairlineWidth(context));
+Border.all(color: c, width: KitTokens.focusRingWidth(context));
+BorderSide(style: BorderStyle.none);
+Divider(thickness: 1); Divider(thickness: 0); Divider(thickness: t);
+''';
+      const kit = 'lib/ui/kit/kit_fixture.dart';
+      expect(
+        count('G21', 'stroke width not KitTokens in kit', source, path: kit),
+        4,
+      );
+      final rule = _rules.singleWhere(
+        (r) => r.gate == 'G21' && r.name == 'stroke width not KitTokens in kit',
+      );
+      expect(rule.scope, _In.insideKit);
+      final outside = _rules.singleWhere(
+        (r) => r.gate == 'G21' && r.name == 'BorderSide(width: not KitTokens',
+      );
+      expect(outside.scope, _In.outsideKit);
+    });
+
     test('G21 metal/chrome reads identifiers and file names', () {
       const source = 'final chromeBar = 1; final monochrome = 2;';
       expect(count('G21', 'metal|chrome', source), 1);
@@ -1636,9 +1921,38 @@ await showKitSheet<void>(context: context, builder: (_) => KitField(maxLines: nu
 await showKitSheet<void>(context: context, builder: (_) => KitField(maxLines: null, draft: d));
 ''';
       const noSheet = 'KitField(maxLines: null);';
+      const flutterSheet = '''
+await showModalBottomSheet<void>(context: context, builder: (_) => TextField(minLines: 3, maxLines: null));
+''';
+      const confirmSheet = '''
+await showConfirmSheet(context, body: TextField(maxLines: null));
+''';
       expect(count('G48', 'sheet multiline without draft:', offending), 1);
       expect(count('G48', 'sheet multiline without draft:', kept), 0);
       expect(count('G48', 'sheet multiline without draft:', noSheet), 0);
+      expect(count('G48', 'sheet multiline without draft:', flutterSheet), 2);
+      expect(count('G48', 'sheet multiline without draft:', confirmSheet), 1);
+    });
+
+    test('G17 and G21 also scan Flutter UI code outside lib/ui/', () {
+      final elsewhere = _filesUnder(_uiElsewhere);
+      expect(
+        elsewhere,
+        containsAll([
+          'lib/voice/voice_ui.dart',
+          'lib/voice/notices.dart',
+          'lib/diagnostics/app_diagnostics.dart',
+          'lib/main.dart',
+        ]),
+      );
+      expect(elsewhere.where((p) => p.startsWith('lib/ui/')), isEmpty);
+      expect(elsewhere, isNot(contains('lib/api2/dialect.dart')));
+      for (final rule in _rules.where(
+        (r) => (r.gate == 'G17' || r.gate == 'G21') && r.scope != _In.insideKit,
+      )) {
+        if (rule.name == 'metal|chrome') continue; // scans all of lib/
+        expect(rule.roots, contains(_uiElsewhere), reason: rule.name);
+      }
     });
 
     test('theme files, allowlist keys and scopes resolve as documented', () {
@@ -1647,11 +1961,26 @@ await showKitSheet<void>(context: context, builder: (_) => KitField(maxLines: nu
       expect(_isThemeFile('lib/ui/kit/theme_roles.dart'), isTrue);
       expect(_isThemeFile('lib/ui/kit/kit_tokens.dart'), isFalse);
       expect(
-        _allowMatches('kit_motion.dart', 'lib/ui/kit/kit_motion.dart'),
+        _allowMatches('lib/ui/kit/kit_copy.dart', 'lib/ui/kit/kit_copy.dart'),
         isTrue,
       );
+      // A same-named file in a kit subfolder or outside the kit is not exempt.
       expect(
-        _allowMatches('kit_motion.dart', 'lib/ui/screens/kit_motion.dart'),
+        _allowMatches(
+          'lib/ui/kit/kit_copy.dart',
+          'lib/ui/kit/links/kit_copy.dart',
+        ),
+        isFalse,
+      );
+      expect(
+        _allowMatches(
+          'lib/ui/kit/kit_copy.dart',
+          'lib/ui/screens/kit_copy.dart',
+        ),
+        isFalse,
+      );
+      expect(
+        _allowMatches('kit_copy.dart', 'lib/ui/kit/kit_copy.dart'),
         isFalse,
       );
       expect(
@@ -1660,6 +1989,33 @@ await showKitSheet<void>(context: context, builder: (_) => KitField(maxLines: nu
       );
       expect(_inScope(_In.outsideKit, 'lib/ui/kit/kit_row.dart'), isFalse);
       expect(_inScope(_In.insideKit, 'lib/ui/kit/kit_row.dart'), isTrue);
+    });
+
+    test('KIT-5: an allowlist key the committed set lacks fails', () {
+      final rows = [
+        _Rule(
+          'G2',
+          'Clipboard.setData( in kit',
+          _re('x'),
+          ids: const ['KIT-23'],
+          fix: 'x',
+          allow: const {
+            'lib/ui/kit/kit_copy.dart': 'KitCopy is the one copy service',
+            'lib/ui/kit/links/kit_copy.dart': 'a sneaky second copy seam',
+          },
+        ),
+      ];
+      final committed = <String, dynamic>{
+        'G2': {
+          'Clipboard.setData( in kit': ['lib/ui/kit/kit_copy.dart'],
+          'Curves. in kit': ['lib/ui/kit/kit_motion.dart'],
+        },
+      };
+      final (grew, shrank) = _allowlistDiff(_allowlistsInCode(rows), committed);
+      expect(grew, [
+        'G2 "Clipboard.setData( in kit" allows lib/ui/kit/links/kit_copy.dart',
+      ]);
+      expect(shrank, ['G2 "Curves. in kit" lib/ui/kit/kit_motion.dart']);
     });
   });
 }
