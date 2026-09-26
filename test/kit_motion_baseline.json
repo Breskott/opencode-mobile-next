@@ -1,0 +1,23 @@
+{
+  "_about": "Gate G8x ratchet (STANDARDS MOT-7): samples of kit parts that predate the gate and still run a ticker after one pump() under reduced motion. Entries may only be removed, never added; a part added after G8x starts at zero. The motion test prints the lowered list when an entry starts to settle.",
+  "stillMoving": [
+    "KitActionBlock / working / effectsOff",
+    "KitActionBlock / working / system",
+    "KitButton / primary working / effectsOff",
+    "KitButton / primary working / system",
+    "KitButton / secondary working / effectsOff",
+    "KitButton / secondary working / system",
+    "KitConfirmSheet / working / effectsOff",
+    "KitConfirmSheet / working / system",
+    "KitLoadingBar / loading / effectsOff",
+    "KitLoadingBar / loading / system",
+    "KitProgressView / waiting / effectsOff",
+    "KitProgressView / waiting / system",
+    "KitScreen / loading / effectsOff",
+    "KitScreen / loading / system",
+    "KitSheet / loading / effectsOff",
+    "KitSheet / loading / system",
+    "KitStateView / working / effectsOff",
+    "KitStateView / working / system"
+  ]
+}
