@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../builtin/builtin_server.dart';
 import '../../../builtin/setup/phone_setup.dart';
+import '../../../builtin/setup/preflight.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
 import '../../../state/termux_running_server.dart';
+import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/setup_phone_scene.dart';
@@ -35,6 +37,7 @@ class PhoneSetupStartScreen extends ConsumerStatefulWidget {
     super.key,
     this.termuxProbe,
     this.inAppProbe,
+    this.deviceProbe,
     this.openProgress = _openFirstSetupProgress,
   });
 
@@ -46,6 +49,11 @@ class PhoneSetupStartScreen extends ConsumerStatefulWidget {
   /// so (it was set up before setup v2 kept a job). Defaults to a saved
   /// in-app profile plus the Linux base being there.
   final Future<bool> Function()? inAppProbe;
+
+  /// The device info the pre-flight check reads (P0.8): CPU ABI, free space
+  /// and total RAM. Defaults to [voiceDevicePlatform.getDeviceInfo], already
+  /// collected for voice; tests stand in for the `oc/voice` channel.
+  final Future<VoiceDeviceInfo> Function()? deviceProbe;
 
   /// Screen B. A parameter so tests can see the hand-over without building
   /// the progress screen.
@@ -67,6 +75,7 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   bool _restored = false;
   bool _inAppInstalled = false;
   TermuxRunningServer? _termux;
+  VoiceDeviceInfo? _device;
   bool _busy = false;
 
   /// Open is starting OpenCode and connecting, which can take a while: the
@@ -102,6 +111,31 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     setState(() => _restored = true);
     unawaited(_probeInApp());
     unawaited(_probeTermux());
+    unawaited(_probeDevice());
+  }
+
+  /// P0.8: the CPU ABI, free space and total RAM the pre-flight check reads,
+  /// before the primary button downloads anything.
+  Future<void> _probeDevice() async {
+    VoiceDeviceInfo device;
+    try {
+      device =
+          await (widget.deviceProbe ?? voiceDevicePlatform.getDeviceInfo)();
+    } catch (_) {
+      device = const VoiceDeviceInfo.unknown();
+    }
+    if (mounted) setState(() => _device = device);
+  }
+
+  /// Null while the device has not answered yet, or nothing is wrong.
+  SetupPreflightResult? _preflightFor(List<SetupComponent> install) {
+    final device = _device;
+    if (device == null) return null;
+    final result = checkSetupPreflight(
+      device,
+      downloadBytes: setupTotals(install).bytes,
+    );
+    return result.supported ? null : result;
   }
 
   Future<void> _probeInApp() async {
@@ -316,6 +350,18 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     if (mounted) unawaited(_probeTermux());
   }
 
+  /// P0.8, low space: Android's Storage settings, so freeing space is one
+  /// tap away instead of a dead end. Freeing space and coming back re-reads
+  /// it on the next build rather than polling.
+  Future<void> _openStorageSettings() async {
+    try {
+      await ref.read(builtinLinuxProvider).openStorageSettings();
+    } catch (_) {
+      // No native answer (an old build, a test): nothing else to try.
+    }
+    if (mounted) unawaited(_probeDevice());
+  }
+
   void _connectByAddress() {
     unawaited(
       Navigator.of(
@@ -396,6 +442,8 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     final includesText = included.isEmpty
         ? null
         : l10n.phoneSetupStartIncludes(joinSetupNames(l10n, included));
+    // P0.8: told why before anything downloads, never after a failed one.
+    final preflight = hero == _Hero.fresh ? _preflightFor(install) : null;
     final String headline;
     final String body;
     final String action;
@@ -410,13 +458,18 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       case _Hero.fresh:
         final totals = setupTotals(install);
         final time = setupDurationText(l10n, totals.seconds);
-        headline = l10n.phoneSetupStartHeadline;
-        body = totals.bytes > 0
-            ? l10n.phoneSetupStartPromise(
-                time,
-                setupSizeText(l10n, totals.bytes),
-              )
-            : l10n.phoneSetupStartPromiseNoSize(time);
+        if (preflight != null) {
+          headline = setupPreflightHeadline(l10n, preflight.issue!);
+          body = setupPreflightBody(l10n, preflight);
+        } else {
+          headline = l10n.phoneSetupStartHeadline;
+          body = totals.bytes > 0
+              ? l10n.phoneSetupStartPromise(
+                  time,
+                  setupSizeText(l10n, totals.bytes),
+                )
+              : l10n.phoneSetupStartPromiseNoSize(time);
+        }
         action = l10n.phoneSetupStartSetUp;
         onPressed = () => unawaited(_run(_selection));
       case _Hero.progress:
@@ -470,8 +523,14 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       body: _opening ? null : failure ?? body,
       bodyKey: failure != null && !_opening
           ? const ValueKey('phone-setup-start-failure')
+          : preflight != null
+          ? const ValueKey('phone-setup-start-preflight')
           : const ValueKey('phone-setup-start-body'),
-      bodyTone: failure != null && !_opening ? AppStatusTone.failure : null,
+      bodyTone: failure != null && !_opening
+          ? AppStatusTone.failure
+          : preflight != null
+          ? AppStatusTone.attention
+          : null,
       progress: _opening ? const KitProgress.waiting() : meter,
       // What Set up puts on the phone, next to the promise it counts.
       content: fresh && includesText != null
@@ -489,11 +548,22 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
           : KitAction(
               key: const ValueKey('phone-setup-start-primary'),
               label: action,
-              onPressed: _busy ? null : onPressed,
+              onPressed: _busy || preflight != null ? null : onPressed,
               working: _busy,
             ),
       tertiary: [
-        if (fresh && includesText != null)
+        if (preflight?.issue == SetupPreflightIssue.lowSpace)
+          KitAction(
+            key: const ValueKey('phone-setup-start-open-storage'),
+            label: l10n.phoneSetupPreflightOpenStorage,
+            onPressed: _busy ? null : _openStorageSettings,
+          ),
+        // Trimming the selection can clear low space; it changes nothing
+        // for a CPU or memory the phone simply does not have.
+        if (fresh &&
+            includesText != null &&
+            preflight?.issue != SetupPreflightIssue.unsupportedAbi &&
+            preflight?.issue != SetupPreflightIssue.lowMemory)
           KitAction(
             key: const ValueKey('phone-setup-start-customize'),
             label: l10n.phoneSetupStartCustomize,

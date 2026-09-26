@@ -17,6 +17,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../builtin/builtin_linux.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
@@ -24,6 +25,7 @@ import '../../state/local_agent_server.dart';
 import '../../termux/bridge.dart';
 import '../../termux/local_agent_runtime.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'safety_confirms.dart';
 import 'setup_terminal.dart';
 
@@ -190,6 +192,7 @@ class LocalAgentOnboardingBlock extends StatefulWidget {
     this.onOpenPhoneSetup,
     this.autoStart = false,
     this.runtime,
+    this.inAppLinuxProbe,
   });
 
   final ConnectionController connection;
@@ -207,6 +210,12 @@ class LocalAgentOnboardingBlock extends StatefulWidget {
 
   final LocalAgentRuntime? runtime;
 
+  /// Whether the app-managed in-app Linux (no Termux) is already installed,
+  /// so a missing Termux Ubuntu gets the honest "needs Termux" copy instead
+  /// of the generic "finish setup" one. Defaults to a real
+  /// [BuiltinLinux.status] read; tests inject a fake.
+  final Future<bool> Function()? inAppLinuxProbe;
+
   @override
   State<LocalAgentOnboardingBlock> createState() =>
       _LocalAgentOnboardingBlockState();
@@ -223,6 +232,10 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
   LocalAgentFailure? _failure;
   String _log = '';
   String? _notice;
+
+  /// Set once [_View.needsUbuntu] is reached: whether the in-app Linux is
+  /// already installed, so Claude Code's only path left is Termux.
+  bool _needsTermuxOnly = false;
   bool _busy = false;
   bool _connecting = false;
   bool _awaitingSignIn = false;
@@ -328,8 +341,25 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
           next = _View.steps;
       }
     }
+    if (next == _View.needsUbuntu) unawaited(_probeInAppLinuxOnly());
     if (mounted) setState(() => _view = next);
   }
+
+  Future<void> _probeInAppLinuxOnly() async {
+    bool needsTermuxOnly;
+    try {
+      needsTermuxOnly =
+          await (widget.inAppLinuxProbe ?? _defaultInAppLinuxProbe)();
+    } catch (_) {
+      // Unreadable: the generic "finish setup" copy is still true (Termux
+      // Ubuntu really is missing), just not as precise.
+      needsTermuxOnly = false;
+    }
+    if (mounted) setState(() => _needsTermuxOnly = needsTermuxOnly);
+  }
+
+  static Future<bool> _defaultInAppLinuxProbe() async =>
+      (await BuiltinLinux().status()).installed;
 
   void _startPolling() {
     _poll?.cancel();
@@ -778,31 +808,39 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
 
   Widget _needsUbuntu(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final open = widget.onOpenPhoneSetup;
+    // Never Refresh alone: the in-app Linux existing means Termux, not a
+    // second "On this phone" run, is the only door left to Claude Code.
+    final body = _needsTermuxOnly
+        ? l10n.localAgentNeedsTermuxBody
+        : l10n.localAgentNeedsUbuntuBody;
+    final openLabel = _needsTermuxOnly
+        ? l10n.localAgentSetUpWithTermux
+        : l10n.localAgentOpenSetup;
     return _card(
       context,
       key: const ValueKey('local-agent-needs-ubuntu'),
       children: [
         _title(context),
         const SizedBox(height: 6),
-        Text(
-          l10n.localAgentNeedsUbuntuBody,
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-        ),
-        _actions([
-          OutlinedButton(
-            key: const ValueKey('local-agent-needs-ubuntu-refresh'),
-            onPressed: () => unawaited(_refresh()),
-            child: Text(l10n.workRefresh),
-          ),
-          if (open != null)
-            FilledButton(
-              key: const ValueKey('local-agent-open-setup'),
-              onPressed: open,
-              child: Text(l10n.localAgentOpenSetup),
+        KitNotice(
+          message: body,
+          messageKey: const ValueKey('local-agent-needs-ubuntu-body'),
+          tone: AppStatusTone.attention,
+          actions: [
+            KitAction(
+              key: const ValueKey('local-agent-needs-ubuntu-refresh'),
+              label: l10n.workRefresh,
+              onPressed: () => unawaited(_refresh()),
             ),
-        ]),
+            if (open != null)
+              KitAction(
+                key: const ValueKey('local-agent-open-setup'),
+                label: openLabel,
+                onPressed: open,
+              ),
+          ],
+        ),
       ],
     );
   }

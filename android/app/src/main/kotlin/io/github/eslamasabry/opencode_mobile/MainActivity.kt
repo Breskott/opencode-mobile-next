@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -503,8 +504,35 @@ class MainActivity : FlutterActivity() {
                     null
                 }
             }
+            // P0.8 pre-flight, low space: the device-wide Storage settings
+            // (not this app's own App Info) is where freeing space actually
+            // happens. Falls back to App Info on a ROM that hides it.
+            "openStorageSettings" -> {
+                result.success(openStorageSettingsIntent())
+            }
             else -> result.notImplemented()
         }
+    }
+
+    private fun openStorageSettingsIntent(): Boolean {
+        val candidates = listOf(
+            Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS),
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:$packageName"),
+            ),
+        )
+        for (intent in candidates) {
+            try {
+                startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return true
+            } catch (error: ActivityNotFoundException) {
+                // The next candidate.
+            } catch (error: SecurityException) {
+                // Not exported on this build; try the next one.
+            }
+        }
+        return false
     }
 
     private fun setupSpec(raw: Map<String, Any?>): SetupRunner.Spec {

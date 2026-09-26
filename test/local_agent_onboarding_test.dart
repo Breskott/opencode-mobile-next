@@ -333,12 +333,14 @@ void main() {
     VoidCallback? onConnected,
     VoidCallback? onOpenPhoneSetup,
     bool autoStart = false,
+    Future<bool> Function()? inAppLinuxProbe,
   }) => LocalAgentOnboardingBlock(
     connection: controller,
     runtime: runtime,
     autoStart: autoStart,
     onConnected: onConnected ?? () {},
     onOpenPhoneSetup: onOpenPhoneSetup,
+    inAppLinuxProbe: inAppLinuxProbe,
   );
 
   group('the wizard block', () {
@@ -403,6 +405,35 @@ void main() {
       );
       await tapKey(tester, 'local-agent-open-setup');
       expect(opened, 2);
+      await finish(tester);
+    });
+
+    testWidgets('needs_ubuntu with the in-app Linux already installed offers '
+        'Termux, never Refresh alone', (tester) async {
+      init();
+      var opened = 0;
+      final runtime = _FakeRuntime(_status(LocalAgentPhase.needsUbuntu));
+      await tester.pumpWidget(
+        app(
+          block(
+            runtime,
+            onOpenPhoneSetup: () => opened++,
+            inAppLinuxProbe: () async => true,
+          ),
+        ),
+      );
+      await settle(tester);
+      expect(find.text(l10n.localAgentNeedsTermuxBody), findsOneWidget);
+      expect(find.text(l10n.localAgentNeedsUbuntuBody), findsNothing);
+      expect(find.text(l10n.localAgentOpenSetup), findsNothing);
+      expect(find.text(l10n.localAgentSetUpWithTermux), findsOneWidget);
+      // Refresh is never the only door: the Termux path sits beside it.
+      expect(
+        find.byKey(const ValueKey('local-agent-needs-ubuntu-refresh')),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'local-agent-open-setup');
+      expect(opened, 1);
       await finish(tester);
     });
 

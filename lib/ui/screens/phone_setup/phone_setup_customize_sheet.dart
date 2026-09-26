@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../builtin/builtin_linux.dart';
+import '../../../builtin/setup/preflight.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import 'phone_setup_selection.dart';
@@ -45,6 +48,8 @@ class SetupCustomizeSheet extends StatefulWidget {
     this.addMode = false,
     this.selected,
     this.installedOptional,
+    this.deviceProbe,
+    this.linux,
   });
 
   final List<SetupComponent> registry;
@@ -58,6 +63,15 @@ class SetupCustomizeSheet extends StatefulWidget {
   /// once and locks its switches until the answer is in.
   final Future<Set<String>>? installedOptional;
 
+  /// The device info the pre-flight check reads (P0.8): CPU ABI, free space
+  /// and total RAM. Defaults to [voiceDevicePlatform.getDeviceInfo], already
+  /// collected for voice; tests stand in for the `oc/voice` channel.
+  final Future<VoiceDeviceInfo> Function()? deviceProbe;
+
+  /// Opens Android's Storage settings for the low-space state. Defaults to
+  /// a plain [BuiltinLinux] (instances are cheap and hold no state).
+  final BuiltinLinux? linux;
+
   @override
   State<SetupCustomizeSheet> createState() => _SetupCustomizeSheetState();
 }
@@ -65,6 +79,7 @@ class SetupCustomizeSheet extends StatefulWidget {
 class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   late Set<String> _chosen;
   Set<String>? _installed;
+  VoiceDeviceInfo? _device;
 
   List<SetupComponent> get _optional => [
     for (final component in widget.registry)
@@ -74,6 +89,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   @override
   void initState() {
     super.initState();
+    unawaited(_probeDevice());
     if (widget.addMode) {
       _chosen = {...?widget.selected};
       final pending = widget.installedOptional;
@@ -104,6 +120,39 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   }
 
   bool _isInstalled(String id) => _installed?.contains(id) ?? false;
+
+  /// P0.8: the CPU ABI, free space and total RAM the pre-flight check reads,
+  /// before "Done"/"Add" starts a download.
+  Future<void> _probeDevice() async {
+    VoiceDeviceInfo device;
+    try {
+      device =
+          await (widget.deviceProbe ?? voiceDevicePlatform.getDeviceInfo)();
+    } catch (_) {
+      device = const VoiceDeviceInfo.unknown();
+    }
+    if (mounted) setState(() => _device = device);
+  }
+
+  /// Null while the device has not answered yet, or nothing is wrong.
+  SetupPreflightResult? _preflightFor(List<SetupComponent> install) {
+    final device = _device;
+    if (device == null || install.isEmpty) return null;
+    final result = checkSetupPreflight(
+      device,
+      downloadBytes: setupTotals(install).bytes,
+    );
+    return result.supported ? null : result;
+  }
+
+  Future<void> _openStorageSettings() async {
+    try {
+      await (widget.linux ?? BuiltinLinux()).openStorageSettings();
+    } catch (_) {
+      // No native answer (an old build, a test): nothing else to try.
+    }
+    if (mounted) unawaited(_probeDevice());
+  }
 
   /// Turning a tool on turns on the optional tools it needs; turning one off
   /// turns off the optional tools that need it. The switches never show a
@@ -162,11 +211,16 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     final checking = widget.addMode && _installed == null;
     final install = _willInstall;
     final totals = setupTotals(install);
+    // P0.8: told why before "Done"/"Add" starts a download, never after a
+    // failed one.
+    final preflight = checking ? null : _preflightFor(install);
     final String totalsText;
     if (checking) {
       totalsText = l10n.phoneSetupStartChecking;
     } else if (install.isEmpty) {
       totalsText = l10n.phoneSetupStartNothingChosen;
+    } else if (preflight != null) {
+      totalsText = setupPreflightBody(l10n, preflight);
     } else {
       totalsText = l10n.phoneSetupStartTotals(
         setupDurationText(l10n, totals.seconds),
@@ -207,19 +261,33 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
                   totalsText,
                   key: const ValueKey('phone-setup-customize-totals'),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.mutedOf(theme),
+                    color: preflight == null
+                        ? AppTheme.mutedOf(theme)
+                        : AppTheme.statusColor(theme, AppStatusTone.attention),
                   ),
                 ),
               ),
+              if (preflight?.issue == SetupPreflightIssue.lowSpace) ...[
+                const SizedBox(height: 8),
+                KitButton(
+                  key: const ValueKey('phone-setup-customize-open-storage'),
+                  role: KitButtonRole.secondary,
+                  label: l10n.phoneSetupPreflightOpenStorage,
+                  onPressed: _openStorageSettings,
+                ),
+              ],
               const SizedBox(height: 12),
               // The totals line right above is the reason when it is off
-              // ("Nothing chosen yet", "Checking…").
+              // ("Nothing chosen yet", "Checking…", a pre-flight problem).
               KitButton.primary(
                 key: const ValueKey('phone-setup-customize-done'),
                 label: widget.addMode
                     ? l10n.phoneSetupStartAdd
                     : l10n.phoneSetupStartDone,
-                onPressed: checking || (widget.addMode && install.isEmpty)
+                onPressed:
+                    checking ||
+                        preflight != null ||
+                        (widget.addMode && install.isEmpty)
                     ? null
                     : () => Navigator.of(context).pop(_result),
               ),

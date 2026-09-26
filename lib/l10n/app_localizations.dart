@@ -26897,6 +26897,18 @@ abstract class AppLocalizations {
   /// **'Open phone setup'**
   String get localAgentOpenSetup;
 
+  /// Claude Code block: shown when the in-app Linux is already installed but Termux, which Claude Code needs, is not.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code needs Termux for now; the in-app Linux does not run it yet. Set up Termux to use it here.'**
+  String get localAgentNeedsTermuxBody;
+
+  /// Claude Code block: opens the Termux setup wizard when only the in-app Linux exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up with Termux'**
+  String get localAgentSetUpWithTermux;
+
   /// Claude Code block, step list: installing the pinned Node.js.
   ///
   /// In en, this message translates to:
@@ -28978,6 +28990,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking what\'s installed…'**
   String get phoneSetupStartChecking;
+
+  /// Pre-flight (P0.8): shown instead of the promise when the CPU has no Ubuntu rootfs to download.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t run it'**
+  String get phoneSetupPreflightUnsupportedHeadline;
+
+  /// Pre-flight (P0.8): why an unsupported CPU is blocked, before anything downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'This app\'s Ubuntu only runs on a 64-bit Arm or Intel phone; this one reports {abi}.'**
+  String phoneSetupPreflightUnsupportedBody(String abi);
+
+  /// Pre-flight (P0.8): shown instead of the promise when total RAM is under the floor.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone may not have enough memory'**
+  String get phoneSetupPreflightLowMemoryHeadline;
+
+  /// Pre-flight (P0.8): why a low-memory phone is blocked, before anything downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup wants a phone with at least {minimum} MB of memory; this one has {actual} MB.'**
+  String phoneSetupPreflightLowMemoryBody(int minimum, int actual);
+
+  /// Pre-flight (P0.8): shown instead of the promise, or in Add tools, when free space is short.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough free space'**
+  String get phoneSetupPreflightLowSpaceHeadline;
+
+  /// Pre-flight (P0.8): names how much to free, before anything downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Free about {size} on this phone, then come back to set this up.'**
+  String phoneSetupPreflightLowSpaceBody(String size);
+
+  /// Pre-flight (P0.8), low space: opens Android's Storage settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Storage settings'**
+  String get phoneSetupPreflightOpenStorage;
 
   /// On the first-run welcome while a setup job runs; tapping shows its progress
   ///

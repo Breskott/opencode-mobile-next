@@ -17769,6 +17769,14 @@
   "@localAgentOpenSetup": {
     "description": "Claude Code block: opens the On this phone wizard when Ubuntu is missing."
   },
+  "localAgentNeedsTermuxBody": "Claude Code needs Termux for now; the in-app Linux does not run it yet. Set up Termux to use it here.",
+  "@localAgentNeedsTermuxBody": {
+    "description": "Claude Code block: shown when the in-app Linux is already installed but Termux, which Claude Code needs, is not."
+  },
+  "localAgentSetUpWithTermux": "Set up with Termux",
+  "@localAgentSetUpWithTermux": {
+    "description": "Claude Code block: opens the Termux setup wizard when only the in-app Linux exists."
+  },
   "localAgentStepNode": "Node.js",
   "@localAgentStepNode": {
     "description": "Claude Code block, step list: installing the pinned Node.js."
@@ -19521,6 +19529,54 @@
   "phoneSetupStartChecking": "Checking what's installed…",
   "@phoneSetupStartChecking": {
     "description": "While the add-mode sheet reads which tools are installed"
+  },
+  "phoneSetupPreflightUnsupportedHeadline": "This phone can't run it",
+  "@phoneSetupPreflightUnsupportedHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise when the CPU has no Ubuntu rootfs to download."
+  },
+  "phoneSetupPreflightUnsupportedBody": "This app's Ubuntu only runs on a 64-bit Arm or Intel phone; this one reports {abi}.",
+  "@phoneSetupPreflightUnsupportedBody": {
+    "description": "Pre-flight (P0.8): why an unsupported CPU is blocked, before anything downloads.",
+    "placeholders": {
+      "abi": {
+        "type": "String",
+        "example": "armeabi-v7a"
+      }
+    }
+  },
+  "phoneSetupPreflightLowMemoryHeadline": "This phone may not have enough memory",
+  "@phoneSetupPreflightLowMemoryHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise when total RAM is under the floor."
+  },
+  "phoneSetupPreflightLowMemoryBody": "Setup wants a phone with at least {minimum} MB of memory; this one has {actual} MB.",
+  "@phoneSetupPreflightLowMemoryBody": {
+    "description": "Pre-flight (P0.8): why a low-memory phone is blocked, before anything downloads.",
+    "placeholders": {
+      "minimum": {
+        "type": "int"
+      },
+      "actual": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupPreflightLowSpaceHeadline": "Not enough free space",
+  "@phoneSetupPreflightLowSpaceHeadline": {
+    "description": "Pre-flight (P0.8): shown instead of the promise, or in Add tools, when free space is short."
+  },
+  "phoneSetupPreflightLowSpaceBody": "Free about {size} on this phone, then come back to set this up.",
+  "@phoneSetupPreflightLowSpaceBody": {
+    "description": "Pre-flight (P0.8): names how much to free, before anything downloads.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "450 MB"
+      }
+    }
+  },
+  "phoneSetupPreflightOpenStorage": "Open Storage settings",
+  "@phoneSetupPreflightOpenStorage": {
+    "description": "Pre-flight (P0.8), low space: opens Android's Storage settings."
   },
   "phoneSetupOpenWelcomeRunning": "Setting up OpenCode on this phone · {percent}%",
   "@phoneSetupOpenWelcomeRunning": {
