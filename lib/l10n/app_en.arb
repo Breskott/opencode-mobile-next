@@ -23101,5 +23101,145 @@
         "type": "int"
       }
     }
+  },
+  "kitComposerField": "Message",
+  "@kitComposerField": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSend": "Send",
+  "@kitComposerSend": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSending": "Sending",
+  "@kitComposerSending": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSendOffline": "Send when back online",
+  "@kitComposerSendOffline": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSendAfter": "Send after this reply",
+  "@kitComposerSendAfter": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerAddToTurn": "Add to this turn",
+  "@kitComposerAddToTurn": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerStop": "Stop the reply",
+  "@kitComposerStop": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSendAfterShort": "Send after",
+  "@kitComposerSendAfterShort": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerAddToTurnShort": "Add to this turn",
+  "@kitComposerAddToTurnShort": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerDeliveryLabel": "When to send",
+  "@kitComposerDeliveryLabel": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerSendsAfter": "Sends after this reply",
+  "@kitComposerSendsAfter": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerCannotSendYet": "You can send when this reply finishes",
+  "@kitComposerCannotSendYet": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerOffline": "Offline · sends when you're back online",
+  "@kitComposerOffline": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerTools": "Attach and more",
+  "@kitComposerTools": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerVoice": "Talk instead of typing",
+  "@kitComposerVoice": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitComposerEditor": "Open full-screen editor",
+  "@kitComposerEditor": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceLeave": "Leave voice mode",
+  "@kitVoiceLeave": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceStarting": "Getting the microphone ready…",
+  "@kitVoiceStarting": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceListening": "Listening…",
+  "@kitVoiceListening": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceTranscribing": "Writing down what you said…",
+  "@kitVoiceTranscribing": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceWaitingReply": "Waiting for the reply…",
+  "@kitVoiceWaitingReply": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceSpeaking": "Reading the reply aloud",
+  "@kitVoiceSpeaking": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceReplyReady": "The reply is ready",
+  "@kitVoiceReplyReady": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoicePaused": "Paused · the agent needs you",
+  "@kitVoicePaused": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceMicDenied": "The microphone is off for this app",
+  "@kitVoiceMicDenied": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceFailed": "Voice stopped",
+  "@kitVoiceFailed": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceSend": "Send",
+  "@kitVoiceSend": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceDone": "Done",
+  "@kitVoiceDone": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceStopReading": "Stop reading",
+  "@kitVoiceStopReading": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceReadReply": "Read it aloud",
+  "@kitVoiceReadReply": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceListen": "Listen",
+  "@kitVoiceListen": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceReadAloud": "Read replies aloud",
+  "@kitVoiceReadAloud": {
+    "description": "KitComposer (docs/ux-system/kit-api/KitComposer.md)."
+  },
+  "kitVoiceElapsed": "{minutes}:{seconds}",
+  "@kitVoiceElapsed": {
+    "description": "KitComposer voice mode: time spent listening, e.g. 0:42.",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
   }
 }

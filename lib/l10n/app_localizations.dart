@@ -32782,6 +32782,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get kitComposerField;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitComposerSend;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get kitComposerSending;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Send when back online'**
+  String get kitComposerSendOffline;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Send after this reply'**
+  String get kitComposerSendAfter;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Add to this turn'**
+  String get kitComposerAddToTurn;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the reply'**
+  String get kitComposerStop;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Send after'**
+  String get kitComposerSendAfterShort;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Add to this turn'**
+  String get kitComposerAddToTurnShort;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'When to send'**
+  String get kitComposerDeliveryLabel;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Sends after this reply'**
+  String get kitComposerSendsAfter;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'You can send when this reply finishes'**
+  String get kitComposerCannotSendYet;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · sends when you\'re back online'**
+  String get kitComposerOffline;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Attach and more'**
+  String get kitComposerTools;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Talk instead of typing'**
+  String get kitComposerVoice;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Open full-screen editor'**
+  String get kitComposerEditor;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Leave voice mode'**
+  String get kitVoiceLeave;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Getting the microphone ready…'**
+  String get kitVoiceStarting;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get kitVoiceListening;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Writing down what you said…'**
+  String get kitVoiceTranscribing;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the reply…'**
+  String get kitVoiceWaitingReply;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the reply aloud'**
+  String get kitVoiceSpeaking;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'The reply is ready'**
+  String get kitVoiceReplyReady;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · the agent needs you'**
+  String get kitVoicePaused;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'The microphone is off for this app'**
+  String get kitVoiceMicDenied;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Voice stopped'**
+  String get kitVoiceFailed;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitVoiceSend;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitVoiceDone;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading'**
+  String get kitVoiceStopReading;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Read it aloud'**
+  String get kitVoiceReadReply;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Listen'**
+  String get kitVoiceListen;
+
+  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
+  ///
+  /// In en, this message translates to:
+  /// **'Read replies aloud'**
+  String get kitVoiceReadAloud;
+
+  /// KitComposer voice mode: time spent listening, e.g. 0:42.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}:{seconds}'**
+  String kitVoiceElapsed(String minutes, String seconds);
 }
 
 class _AppLocalizationsDelegate

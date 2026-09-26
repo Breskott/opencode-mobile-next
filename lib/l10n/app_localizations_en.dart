@@ -20536,4 +20536,106 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitComposerField => 'Message';
+
+  @override
+  String get kitComposerSend => 'Send';
+
+  @override
+  String get kitComposerSending => 'Sending';
+
+  @override
+  String get kitComposerSendOffline => 'Send when back online';
+
+  @override
+  String get kitComposerSendAfter => 'Send after this reply';
+
+  @override
+  String get kitComposerAddToTurn => 'Add to this turn';
+
+  @override
+  String get kitComposerStop => 'Stop the reply';
+
+  @override
+  String get kitComposerSendAfterShort => 'Send after';
+
+  @override
+  String get kitComposerAddToTurnShort => 'Add to this turn';
+
+  @override
+  String get kitComposerDeliveryLabel => 'When to send';
+
+  @override
+  String get kitComposerSendsAfter => 'Sends after this reply';
+
+  @override
+  String get kitComposerCannotSendYet =>
+      'You can send when this reply finishes';
+
+  @override
+  String get kitComposerOffline => 'Offline · sends when you\'re back online';
+
+  @override
+  String get kitComposerTools => 'Attach and more';
+
+  @override
+  String get kitComposerVoice => 'Talk instead of typing';
+
+  @override
+  String get kitComposerEditor => 'Open full-screen editor';
+
+  @override
+  String get kitVoiceLeave => 'Leave voice mode';
+
+  @override
+  String get kitVoiceStarting => 'Getting the microphone ready…';
+
+  @override
+  String get kitVoiceListening => 'Listening…';
+
+  @override
+  String get kitVoiceTranscribing => 'Writing down what you said…';
+
+  @override
+  String get kitVoiceWaitingReply => 'Waiting for the reply…';
+
+  @override
+  String get kitVoiceSpeaking => 'Reading the reply aloud';
+
+  @override
+  String get kitVoiceReplyReady => 'The reply is ready';
+
+  @override
+  String get kitVoicePaused => 'Paused · the agent needs you';
+
+  @override
+  String get kitVoiceMicDenied => 'The microphone is off for this app';
+
+  @override
+  String get kitVoiceFailed => 'Voice stopped';
+
+  @override
+  String get kitVoiceSend => 'Send';
+
+  @override
+  String get kitVoiceDone => 'Done';
+
+  @override
+  String get kitVoiceStopReading => 'Stop reading';
+
+  @override
+  String get kitVoiceReadReply => 'Read it aloud';
+
+  @override
+  String get kitVoiceListen => 'Listen';
+
+  @override
+  String get kitVoiceReadAloud => 'Read replies aloud';
+
+  @override
+  String kitVoiceElapsed(String minutes, String seconds) {
+    return '$minutes:$seconds';
+  }
 }
