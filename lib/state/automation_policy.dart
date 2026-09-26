@@ -1,0 +1,104 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../domain/automation_policy.dart';
+import '../ui/kit/kit_redact.dart';
+
+export '../domain/automation_policy.dart';
+
+/// One controller per profile, shared by its settings page and executors.
+/// Listen for successfully persisted changes; setters throw a safe StateError
+/// on failure. Merely constructing/listening never writes or starts work.
+class AutomationPolicyController extends ChangeNotifier {
+  AutomationPolicyController({
+    required this.profileId,
+    required SharedPreferences preferences,
+  }) : _preferences = preferences {
+    if (profileId.isEmpty || KitRedact.containsSecret(profileId)) {
+      throw ArgumentError('A non-secret server profile ID is required');
+    }
+    _value = _read();
+  }
+
+  final String profileId;
+  final SharedPreferences _preferences;
+  late AutomationPolicy _value;
+  Future<void> _pending = Future<void>.value();
+  bool _closed = false;
+
+  static String keyFor(String profileId) => 'oc.automation.$profileId';
+  AutomationPolicy get value => _value;
+
+  AutomationPolicy _read() {
+    try {
+      final raw = _preferences.getString(keyFor(profileId));
+      return raw == null
+          ? AutomationPolicy()
+          : AutomationPolicy.fromJson(jsonDecode(raw));
+    } catch (_) {
+      return AutomationPolicy.disabled();
+    }
+  }
+
+  Future<void> setBehavior(AutomationBehavior behavior, bool enabled) =>
+      _change((p) => p.withBehavior(behavior, enabled));
+
+  /// This selection is explicit consent, not a default or host-side mutation.
+  Future<void> setSupervision(AutomationSupervision supervision) =>
+      _change((p) => p.withSupervision(supervision));
+
+  Future<void> setAutoApprove(bool enabled) =>
+      _change((p) => p.withApprovals(autoApprove: enabled));
+
+  Future<void> setAutoMergeOnGreen(bool enabled) =>
+      _change((p) => p.withApprovals(autoMergeOnGreen: enabled));
+
+  Future<void> disableAll() => _change((_) => AutomationPolicy.disabled());
+
+  Future<void> _change(AutomationPolicy Function(AutomationPolicy) update) {
+    if (_closed) return Future.error(StateError('Automation policy is closed'));
+    final writing = _pending.then((_) async {
+      if (_closed) throw StateError('Automation policy is closed');
+      final next = update(_value);
+      // Only enum names and booleans are stored. Redaction is still mandatory
+      // at the persistence boundary; never save altered permission semantics.
+      final raw = jsonEncode(next.toJson());
+      final redacted = KitRedact.text(raw);
+      if (raw != redacted) {
+        throw StateError('Automation policy contains protected content');
+      }
+      try {
+        if (!await _preferences.setString(keyFor(profileId), redacted)) {
+          throw StateError('Storage refused the automation policy');
+        }
+      } catch (_) {
+        // SharedPreferences optimistically changes its cache before writing.
+        try {
+          await _preferences.reload();
+        } catch (_) {}
+        throw StateError('Could not save automation policy');
+      }
+      _value = next;
+      if (!_closed) notifyListeners();
+    });
+    // Later writes can recover from a failed write; callers still get failure.
+    _pending = writing.catchError((Object _) {});
+    return writing;
+  }
+
+  /// Stops accepting edits immediately and drains in-flight storage before
+  /// ProfileStore's deletion sweep. The controller cannot be reused afterward.
+  /// Await this BEFORE deleting a profile; dispose alone does not await I/O.
+  Future<void> prepareForDeletion() {
+    _closed = true;
+    return _pending;
+  }
+
+  @override
+  void dispose() {
+    _closed = true;
+    super.dispose();
+  }
+}

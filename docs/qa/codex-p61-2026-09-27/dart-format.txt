@@ -1,0 +1,22 @@
+Warning: Package resolution error when reading "analysis_options.yaml" file for "lib/domain/automation_policy.dart":
+Failed to resolve package URI "package:flutter_lints/flutter.yaml" in include at "/home/eslam/Storage/Code/oc_app-codex-p61/analysis_options.yaml".
+Formatted lib/domain/automation_policy.dart
+Warning: Package resolution error when reading "analysis_options.yaml" file for "lib/state/automation_policy.dart":
+Failed to resolve package URI "package:flutter_lints/flutter.yaml" in include at "/home/eslam/Storage/Code/oc_app-codex-p61/analysis_options.yaml".
+Warning: Package resolution error when reading "analysis_options.yaml" file for "test/automation_policy_test.dart":
+Failed to resolve package URI "package:flutter_lints/flutter.yaml" in include at "/home/eslam/Storage/Code/oc_app-codex-p61/analysis_options.yaml".
+Formatted 3 files (1 changed) in 0.01 seconds.
+FileSystemException: Failed to set file modification time, path = '/home/eslam/.dart-tool/dart-flutter-telemetry-session.json' (OS Error: Read-only file system, errno = 30)
+#0      _File.setLastModifiedSync (dart:io/file_impl.dart:553)
+#1      ForwardingFile.setLastModifiedSync (package:file/src/forwarding/forwarding_file.dart:65)
+#2      UserProperty.getSessionId (package:unified_analytics/src/user_property.dart:74)
+#3      UserProperty._toMap (package:unified_analytics/src/user_property.dart:153)
+#4      UserProperty.preparePayload (package:unified_analytics/src/user_property.dart:90)
+#5      generateRequestBody (package:unified_analytics/src/utils.dart:108)
+#6      AnalyticsImpl.send (package:unified_analytics/src/analytics.dart:633)
+#7      DartdevRunner.runCommand (package:dartdev/dartdev.dart:332)
+<asynchronous suspension>
+#8      runDartdev (package:dartdev/dartdev.dart:54)
+<asynchronous suspension>
+#9      main (file:///home/runner/work/_build_engine/_build_engine/flutter/engine/src/flutter/third_party/dart/pkg/dartdev/bin/dartdev.dart:13)
+<asynchronous suspension>
