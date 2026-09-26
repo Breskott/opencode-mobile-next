@@ -56,6 +56,7 @@ const reports = []
 
 const RULES = `
 Repository: ${REPO} (Flutter, Android first). Obey AGENTS.md.
+Owner decision 2026-09-27 (speed): do not spend time on tests. Write the part's behaviour tests and its gallery once, run ONLY your own new test files once (plus analyze on your files); do not re-run other suites, do not chase unrelated failures (list them), do not regenerate other units' goldens. Reviewers never run tests.
 Owner decision 2026-09-27: Arabic is DROPPED — no Arabic/RTL galleries, no Arabic ARB entries for new copy (app_en.arb only), no RTL review. Galleries: phone 412x915 and one wide size (1280x800) only, light and dark.
 Staying alive (the harness kills an agent that shows no progress for 3 minutes):
 - No single command may run longer than 2 minutes. Run tests one or two files at a time as
