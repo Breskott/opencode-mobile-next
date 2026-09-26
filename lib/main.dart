@@ -15,6 +15,7 @@ import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
+import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
@@ -1451,6 +1452,13 @@ class _RootState extends ConsumerState<_Root> {
     _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
     _attachPhoneSetup();
     _recoverFromLastExit();
+    // Pause the AI Team on this phone while Android says it is hot.
+    startThermalGuard(
+      ref.read(thermalGuardSlotProvider),
+      store: _controller.store,
+      linux: ref.read(builtinLinuxProvider),
+      diagnostics: _controller.diagnostics,
+    );
   }
 
   /// Once per process: why Android last ended the app, and bring back the

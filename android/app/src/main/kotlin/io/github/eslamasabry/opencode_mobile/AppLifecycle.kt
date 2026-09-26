@@ -42,6 +42,8 @@ object AppLifecycle {
     private var lastExitRead = false
 
     fun register(activity: Activity, messenger: BinaryMessenger, requestBatteryExemption: () -> Unit) {
+        // How hot the phone is (oc/thermal), for the AI Team's thermal guard.
+        ThermalMonitor.register(activity, messenger)
         MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
             try {
                 when (call.method) {

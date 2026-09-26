@@ -5258,5 +5258,10 @@
   "keepRunningThisPhone": "الهاتف",
   "teamAgentLastStep": "آخر خطوة: {step}",
   "teamAgentLastActive": "آخر نشاط قبل {elapsed}",
-  "teamChatLeadEarlier": "{count, plural, =1{تحديث سابق واحد} other{{count} تحديثات سابقة}}"
+  "teamChatLeadEarlier": "{count, plural, =1{تحديث سابق واحد} other{{count} تحديثات سابقة}}",
+  "thermalPausedNotice": "هاتفك ساخن — أوقفنا فريق الذكاء الاصطناعي مؤقتًا ليبرد. سيستأنف عمله من تلقاء نفسه.",
+  "thermalStoppedNotice": "هاتفك ساخن جدًا — أوقفنا فريق الذكاء الاصطناعي لحمايته. عمله محفوظ، وسيبدأ من جديد عندما يبرد الهاتف.",
+  "thermalResumedNotice": "استأنف فريق الذكاء الاصطناعي عمله — لقد برد هاتفك.",
+  "thermalGuardSetting": "إيقاف فريق الذكاء الاصطناعي مؤقتًا عندما يسخن الهاتف",
+  "thermalGuardSettingDetail": "يتوقف الفريق مؤقتًا مع حفظ عمله ويستأنف من تلقاء نفسه عندما يبرد الهاتف."
 }

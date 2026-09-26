@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../builtin/app_exit_recovery.dart' show appLifecycleBridgeProvider;
+import '../../builtin/thermal_guard.dart';
+import '../../builtin/thermal_guard_teams.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/app_exit.dart';
 import '../../platform/keep_alive_advice.dart';
@@ -160,6 +162,7 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
                   const SizedBox(height: 8),
                   for (final step in keepAliveSteps(maker))
                     _stepRow(context, l10n, step, maker, info),
+                  _ThermalGuardRow(l10n: l10n),
                   const SizedBox(height: 16),
                   rails(Text(l10n.keepRunningFootnote, style: muted)),
                 ],
@@ -216,6 +219,37 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
             )
           : null,
       onTap: opens ? () => unawaited(_open(setting)) : null,
+    );
+  }
+}
+
+/// "Pause the AI Team when the phone is hot" (on by default): Android keeps
+/// a hot phone running but slow, so the guard pauses the team instead and
+/// resumes it once the phone has cooled. Only where the guard runs.
+class _ThermalGuardRow extends ConsumerWidget {
+  const _ThermalGuardRow({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ValueListenableBuilder<ThermalGuard?>(
+      valueListenable: ref.watch(thermalGuardSlotProvider),
+      builder: (context, guard, _) {
+        if (guard == null) return const SizedBox.shrink();
+        return ListenableBuilder(
+          listenable: guard,
+          builder: (context, _) => KitSwitchRow(
+            key: const ValueKey('keep-running-thermal'),
+            switchKey: const ValueKey('keep-running-thermal-switch'),
+            leading: KitRow.icon(context, AppIconography.pause),
+            title: l10n.thermalGuardSetting,
+            supporting: l10n.thermalGuardSettingDetail,
+            value: guard.enabled,
+            onChanged: (value) => unawaited(guard.setEnabled(value)),
+          ),
+        );
+      },
     );
   }
 }

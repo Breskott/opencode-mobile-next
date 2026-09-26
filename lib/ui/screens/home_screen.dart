@@ -23,6 +23,7 @@ import '../widgets/glass_surface.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
+import '../widgets/thermal_notice.dart';
 import 'activity_screen.dart';
 import 'servers_screen.dart' show ServersRouteRequest;
 import 'project_hub_screen.dart';
@@ -363,6 +364,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 // OpenCode ran in it (force stop, memory): what stopped and
                 // that it is coming back.
                 const AppExitNoticeLine(),
+                // The phone is hot: the AI Team paused, then resumed.
+                const ThermalNoticeLine(),
                 Expanded(
                   child: KitTabSwitcher(
                     index: activeTab,

@@ -19932,4 +19932,24 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get thermalPausedNotice =>
+      'هاتفك ساخن — أوقفنا فريق الذكاء الاصطناعي مؤقتًا ليبرد. سيستأنف عمله من تلقاء نفسه.';
+
+  @override
+  String get thermalStoppedNotice =>
+      'هاتفك ساخن جدًا — أوقفنا فريق الذكاء الاصطناعي لحمايته. عمله محفوظ، وسيبدأ من جديد عندما يبرد الهاتف.';
+
+  @override
+  String get thermalResumedNotice =>
+      'استأنف فريق الذكاء الاصطناعي عمله — لقد برد هاتفك.';
+
+  @override
+  String get thermalGuardSetting =>
+      'إيقاف فريق الذكاء الاصطناعي مؤقتًا عندما يسخن الهاتف';
+
+  @override
+  String get thermalGuardSettingDetail =>
+      'يتوقف الفريق مؤقتًا مع حفظ عمله ويستأنف من تلقاء نفسه عندما يبرد الهاتف.';
 }
