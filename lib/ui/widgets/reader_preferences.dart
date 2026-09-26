@@ -3,6 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/reader_preferences.dart';
+import '../app_iconography.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_layout.dart';
+import 'product_states.dart' show showProductError;
 
 /// Place above the Navigator so every reader, including a pushed snapshot,
 /// shares the current profile's display preferences.
@@ -79,12 +83,14 @@ Future<void> saveReaderPreferences(
     return;
   }
   final strings = lookupAppLocalizations(Localizations.localeOf(context));
-  ScaffoldMessenger.maybeOf(
-    context,
-  )?.showSnackBar(SnackBar(content: Text(strings.readerUiSaveFailed)));
+  // The app's one mutation-failure outlet (product_states.dart); a host
+  // without a messenger (an isolated preview) has nowhere to say it.
+  if (ScaffoldMessenger.maybeOf(context) == null) return;
+  showProductError(context, strings.readerUiSaveFailed);
 }
 
 /// Reuse the existing reader action area instead of adding a settings bar.
+/// Kit only (shared-shell-1): a [KitIconButton] toggle.
 class ReaderWrapButton extends StatelessWidget {
   const ReaderWrapButton({super.key, this.fallbackWrap});
 
@@ -95,22 +101,18 @@ class ReaderWrapButton extends StatelessWidget {
     final store = ReaderPreferencesScope.maybeOf(context);
     if (store == null) return const SizedBox.shrink();
     final strings = lookupAppLocalizations(Localizations.localeOf(context));
+    // Wrapping is the default on a compact window (KitLayout, LAY-2).
     final wrap =
         store.value.wrapCode ??
         fallbackWrap ??
-        MediaQuery.sizeOf(context).width < 600;
-    return Semantics(
-      toggled: wrap,
-      child: IconButton(
-        tooltip: wrap ? strings.markdownScrollCode : strings.markdownWrapCode,
-        isSelected: wrap,
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          visualDensity: VisualDensity.standard,
-        ),
-        icon: const Icon(Icons.wrap_text_rounded),
-        onPressed: () => saveReaderPreferences(context, wrapCode: !wrap),
-      ),
+        KitLayout.windowOf(context) == KitWindow.compact;
+    // A toggle: the kit's icon button carries the toggled semantics and the
+    // 48 dp target (KIT-22).
+    return KitIconButton(
+      icon: AppIconography.wrapText,
+      tooltip: wrap ? strings.markdownScrollCode : strings.markdownWrapCode,
+      selected: wrap,
+      onPressed: () => saveReaderPreferences(context, wrapCode: !wrap),
     );
   }
 }

@@ -20536,4 +20536,25 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get safetyDisconnectBody =>
+      'Live updates stop and you return to the server list. The server keeps running and nothing on it changes.';
+
+  @override
+  String get safetyDisconnectBodyPhone =>
+      'Live updates stop and you return to the server list. OpenCode keeps running on this phone, using battery, until you stop it.';
+
+  @override
+  String safetyDisconnectWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count messages waiting to send stay on this phone until you connect again.',
+      one:
+          '1 message waiting to send stays on this phone until you connect again.',
+    );
+    return '$_temp0';
+  }
 }

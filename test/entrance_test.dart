@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/motion/kit_reveal.dart';
 import 'package:opencode_mobile/ui/widgets/entrance.dart';
 
 Widget _host(Widget child, {bool disableAnimations = false}) => MaterialApp(
@@ -25,7 +26,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(EntranceReveal),
-        matching: find.byType(Opacity),
+        matching: find.byType(FadeTransition),
       ),
       findsNothing,
     );
@@ -36,29 +37,28 @@ void main() {
       _host(const EntranceReveal(index: 8, child: Text('row'))),
     );
 
-    await tester.pump(const Duration(milliseconds: 60));
-    final midOpacity = tester
-        .widget<Opacity>(
+    // The kit's one entrance (KitEntrance), not a hand-built fade.
+    expect(
+      find.descendant(
+        of: find.byType(EntranceReveal),
+        matching: find.byType(KitEntrance),
+      ),
+      findsOneWidget,
+    );
+    double opacity() => tester
+        .widget<FadeTransition>(
           find.descendant(
             of: find.byType(EntranceReveal),
-            matching: find.byType(Opacity),
+            matching: find.byType(FadeTransition),
           ),
         )
-        .opacity;
-    expect(midOpacity, lessThan(1));
+        .opacity
+        .value;
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(opacity(), lessThan(1));
 
     await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<Opacity>(
-            find.descendant(
-              of: find.byType(EntranceReveal),
-              matching: find.byType(Opacity),
-            ),
-          )
-          .opacity,
-      1,
-    );
+    expect(opacity(), 1);
   });
 
   testWidgets('rows scrolled into view appear at once, not faded in', (
@@ -78,8 +78,13 @@ void main() {
         ),
       ),
     );
-    Finder revealOpacity(String label) =>
-        find.ancestor(of: find.text(label), matching: find.byType(Opacity));
+    Finder revealOpacity(String label) => find.descendant(
+      of: find.ancestor(
+        of: find.text(label),
+        matching: find.byType(EntranceReveal),
+      ),
+      matching: find.byType(FadeTransition),
+    );
     // The first screenful at rest still gets its entrance.
     expect(revealOpacity('row 0'), findsOneWidget);
     await tester.pumpAndSettle();

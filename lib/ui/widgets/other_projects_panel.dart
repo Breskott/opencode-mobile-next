@@ -1,13 +1,18 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../domain/server_gateway.dart' show ProductException;
 import '../../domain/workspace_paths.dart' show managedProjectsDirectory;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_menu.dart';
+import '../kit/kit_needs_you.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/kit_text.dart';
 import 'product_states.dart' show showProductError;
 import 'relative_time.dart';
 import 'session_title.dart';
@@ -264,11 +269,11 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
     if (rows.isEmpty) return const SizedBox.shrink();
     final shown = rows.take(widget.maxShown).toList();
     final onAll = widget.onAllProjects;
-    return Column(
+    // One panel of rows under its section name (KIT-27, VL §5).
+    return KitRowGroup(
       key: const Key('other-projects-panel'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      label: strings.workOtherProjects,
       children: [
-        SectionLabel(strings.workOtherProjects),
         for (final entry in shown)
           _OtherProjectTile(
             key: ValueKey('other-project-${entry.directory}'),
@@ -285,10 +290,7 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
             key: const ValueKey('other-projects-all'),
             leading: KitRow.icon(context, AppIconography.folders),
             title: strings.workAllProjects,
-            trailing: const SizedBox.square(
-              dimension: 48,
-              child: Icon(AppIconography.chevronRight, size: 20),
-            ),
+            trailing: const KitChevron(),
             onTap: onAll,
           ),
       ],
@@ -296,6 +298,11 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
   }
 }
 
+/// One other project as a [KitRow] (kit only, shared-shell-1). A project
+/// that needs the person leads with the one needs-you mark and word
+/// ([KitNeedsYou], LOOK-24); running and unreviewed are said in words
+/// (STATE-9), never by colour alone. Long-press or right-click opens the
+/// row's menu (KIT-28): Remove from recent projects, which deletes nothing.
 class _OtherProjectTile extends StatelessWidget {
   const _OtherProjectTile({
     super.key,
@@ -318,19 +325,18 @@ class _OtherProjectTile extends StatelessWidget {
   final VoidCallback? onOpenLive;
   final VoidCallback onForget;
 
+  /// The needs-you word without its trailing separator, for a row whose
+  /// supporting line has nothing after it.
+  static TextSpan _needsYouAlone(BuildContext context) {
+    final span = KitNeedsYou.span(context);
+    return TextSpan(
+      text: span.text?.replaceFirst(RegExp(r'\s*·\s*$'), ''),
+      style: span.style,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
-    final muted = AppTheme.mutedOf(theme);
-    // Needs you outranks running outranks unreviewed: the first is stuck.
-    final (String? status, Color statusColor) = entry.waiting > 0
-        ? (strings.otherProjectsNeedsYou, attention)
-        : entry.running > 0
-        ? (strings.workRunningCount(entry.running), theme.colorScheme.primary)
-        : entry.unreviewed
-        ? (strings.workUnreviewed, theme.colorScheme.primary)
-        : (null, muted);
     final when = entry.lastActivity == null
         ? null
         : relativeTimeLabel(entry.lastActivity!, l10n: strings);
@@ -343,67 +349,65 @@ class _OtherProjectTile extends StatelessWidget {
             l10n: strings,
           );
     final rest = liveTitle ?? when;
+    final waiting = entry.waiting > 0;
+    // Needs you outranks running outranks unreviewed: the first is stuck.
+    final String? word = waiting
+        ? null
+        : entry.running > 0
+        ? strings.workRunningCount(entry.running)
+        : entry.unreviewed
+        ? strings.workUnreviewed
+        : null;
+    final wordStyle = KitText.styleOf(
+      context,
+      KitTextRole.label,
+      tone: KitTextTone.primary,
+    );
+    final InlineSpan? supporting = waiting
+        ? TextSpan(
+            children: [
+              if (rest == null)
+                _needsYouAlone(context)
+              else ...[
+                KitNeedsYou.span(context),
+                TextSpan(text: rest),
+              ],
+            ],
+          )
+        : word == null && rest == null
+        ? null
+        : TextSpan(
+            children: [
+              if (word != null) TextSpan(text: word, style: wordStyle),
+              if (word != null && rest != null) const TextSpan(text: ' · '),
+              if (rest != null) TextSpan(text: rest),
+            ],
+          );
     // Switching or opening shows on the screen's one loading bar (the
     // folder is loading), so the row itself stays still.
     return KitRow(
       title: name,
-      leading: KitRow.icon(
-        context,
-        AppIconography.files,
-        color: status == null ? null : statusColor,
-      ),
-      supporting: status == null && rest == null
-          ? null
-          : TextSpan(
-              children: [
-                if (status != null)
-                  TextSpan(
-                    text: status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                if (status != null && rest != null) const TextSpan(text: ' · '),
-                if (rest != null) TextSpan(text: rest),
-              ],
-            ),
+      leading: waiting
+          ? KitNeedsYou.mark()
+          : KitRow.icon(context, AppIconography.files),
+      supporting: supporting,
       trailing: onOpenLive == null
           ? null
-          : IconButton(
+          : KitIconButton(
               key: ValueKey('other-project-open-${entry.directory}'),
+              icon: AppIconography.chevronRight,
+              size: 20,
               tooltip: strings.workOpenLiveConversation(liveTitle!),
               onPressed: busy ? null : onOpenLive,
-              icon: const Icon(AppIconography.chevronRight, size: 20),
             ),
       onTap: busy ? null : onTap,
       // Long-press takes a project off the list; nothing is deleted.
-      onLongPress: () async {
-        final forget = await showMenu<bool>(
-          context: context,
-          position: _menuPosition(context),
-          items: [
-            PopupMenuItem(
-              value: true,
-              child: Text(strings.otherProjectsForget),
-            ),
-          ],
-        );
-        if (forget == true) onForget();
-      },
-    );
-  }
-
-  static RelativeRect _menuPosition(BuildContext context) {
-    final box = context.findRenderObject()! as RenderBox;
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
-    return RelativeRect.fromLTRB(
-      origin.dx,
-      origin.dy + box.size.height,
-      overlay.size.width - origin.dx - box.size.width,
-      0,
+      onLongPress: () => showKitMenu(
+        context,
+        items: [
+          KitMenuItem(label: strings.otherProjectsForget, onSelected: onForget),
+        ],
+      ),
     );
   }
 }

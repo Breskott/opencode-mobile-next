@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
-
-import 'package:flutter/services.dart';
-
-import '../app_theme.dart';
+import '../app_iconography.dart';
+import '../kit/kit_copy.dart';
+import '../kit/kit_icon.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
 AppLocalizations _chatL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -14,6 +18,9 @@ AppLocalizations _chatL10n(BuildContext context) =>
 /// `command` (case-insensitive) and renders these widgets instead of a code
 /// block, so a model can offer tappable options, show progress, or hand the
 /// user a command to run locally without any new wire format.
+///
+/// Kit only (shared-shell-1): rows, icons, text and the copy service all
+/// come from lib/ui/kit.
 abstract final class AgentBlockKinds {
   static const choices = 'choices';
   static const checklist = 'checklist';
@@ -45,9 +52,13 @@ class AgentChoiceScope extends InheritedWidget {
       onChoice != oldWidget.onChoice;
 }
 
-/// ```choices — one option per non-empty line, rendered as tappable outlined
-/// cards. Tapping hands the option text to the nearest [AgentChoiceScope];
-/// without one the text is copied so the user can paste it into the composer.
+/// ```choices — one option per non-empty line, rendered as one panel of
+/// tappable rows. Tapping hands the option text to the nearest
+/// [AgentChoiceScope]; without one the text is copied through the kit's copy
+/// service, which announces that it can be pasted into the composer.
+///
+/// Follow-up (P4.1b): this becomes `KitChoiceList` inside
+/// `KitRequestCard(kind: choice)` once KitChoiceList is in the kit.
 class AgentChoicesBlock extends StatelessWidget {
   const AgentChoicesBlock({super.key, required this.options});
 
@@ -69,70 +80,39 @@ class AgentChoicesBlock extends StatelessWidget {
       onChoice(option);
       return;
     }
-    await Clipboard.setData(ClipboardData(text: option));
-    if (!context.mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(_chatL10n(context).chatUiCopiedPasteItIntoTheComposer),
-        duration: Duration(seconds: 2),
-      ),
+    // The agent's own words: copied verbatim, never redacted.
+    await KitCopy.copy(
+      context,
+      option,
+      announcement: _chatL10n(context).chatUiCopiedPasteItIntoTheComposer,
+      redact: false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (options.isEmpty) return const SizedBox.shrink();
-    return Column(
+    final l10n = _chatL10n(context);
+    return KitRowGroup(
       key: const Key('agent-choices-block'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      leadingIcons: false,
+      margin: EdgeInsets.zero,
       children: [
         for (var index = 0; index < options.length; index++)
-          Padding(
-            padding: EdgeInsets.only(top: index == 0 ? 0 : 6),
-            child: Semantics(
-              button: true,
-              label: _chatL10n(context).chatUiChooseOption(options[index]),
-              excludeSemantics: true,
-              child: Material(
-                color: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-                  side: BorderSide(
-                    color: theme.colorScheme.primary.withValues(alpha: .45),
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  key: Key('agent-choice-$index'),
-                  onTap: () => _select(context, options[index]),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              options[index],
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            AppIconography.forward,
-                            size: 18,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+          Semantics(
+            button: true,
+            label: l10n.chatUiChooseOption(options[index]),
+            excludeSemantics: true,
+            child: KitRow(
+              key: Key('agent-choice-$index'),
+              title: options[index],
+              titleMaxLines: 4,
+              trailing: const KitIcon(
+                AppIconography.forward,
+                size: KitIconSize.small,
+                tone: KitTextTone.secondary,
               ),
+              onTap: () => _select(context, options[index]),
             ),
           ),
       ],
@@ -150,7 +130,8 @@ class AgentChecklistItem {
 
 /// ```checklist — lines starting with `[ ]` or `[x]` render as a read-only
 /// checklist. Done items are muted; nothing is struck through so the text
-/// stays legible at large text sizes.
+/// stays legible at large text sizes. The mark says done or to do together
+/// with the spoken word (STATE-9).
 class AgentChecklistBlock extends StatelessWidget {
   const AgentChecklistBlock({super.key, required this.items});
 
@@ -180,43 +161,46 @@ class AgentChecklistBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
     if (items.isEmpty) return const SizedBox.shrink();
+    final tokens = KitTokens.of(context);
+    final l10n = _chatL10n(context);
     return Column(
       key: const Key('agent-checklist-block'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final item in items)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
+            padding: EdgeInsetsDirectional.only(
+              top: tokens.space1,
+              bottom: tokens.space1,
+            ),
             child: Semantics(
               label:
-                  '${item.done ? _chatL10n(context).modelChoiceDone : _chatL10n(context).chatUiTodo}: ${item.label}',
+                  '${item.done ? l10n.modelChoiceDone : l10n.chatUiTodo}: ${item.label}',
               excludeSemantics: true,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Icon(
-                      item.done
-                          ? AppIconography.checkCircle
-                          : AppIconography.radioEmpty,
-                      key: Key(
-                        item.done ? 'agent-check-done' : 'agent-check-open',
-                      ),
-                      size: 18,
-                      color: item.done ? AppTheme.successOf(theme) : muted,
+                  KitIcon(
+                    item.done
+                        ? AppIconography.checkCircle
+                        : AppIconography.radioEmpty,
+                    key: Key(
+                      item.done ? 'agent-check-done' : 'agent-check-open',
                     ),
+                    size: KitIconSize.small,
+                    tone: item.done
+                        ? KitTextTone.success
+                        : KitTextTone.tertiary,
+                    growsWithText: true,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.space2),
                   Expanded(
-                    child: Text(
+                    child: KitText(
                       item.label,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: item.done ? muted : null,
-                      ),
+                      tone: item.done
+                          ? KitTextTone.secondary
+                          : KitTextTone.primary,
                     ),
                   ),
                 ],
@@ -231,6 +215,11 @@ class AgentChecklistBlock extends StatelessWidget {
 /// ```command — each line is a shell command for the user to run on their
 /// own machine, in mono with a 48dp copy button. Headed "Run on your
 /// computer" so it never reads as something the agent already ran.
+///
+/// Kit only: a `surface2` block with the code shape, each command as
+/// [KitText.mono] (left to right, wrapping at any character), and
+/// [KitIconButton.copy], which copies through the kit's copy service and
+/// shows a check in place instead of a snackbar (KIT-23).
 class AgentCommandBlock extends StatelessWidget {
   const AgentCommandBlock({super.key, required this.commands});
 
@@ -242,48 +231,37 @@ class AgentCommandBlock extends StatelessWidget {
       .where((line) => line.trim().isNotEmpty)
       .toList();
 
-  Future<void> _copy(BuildContext context, String command) async {
-    await Clipboard.setData(ClipboardData(text: command));
-    if (!context.mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(_chatL10n(context).termuxGuideCopied),
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
     if (commands.isEmpty) return const SizedBox.shrink();
-    return Container(
+    final tokens = KitTokens.of(context);
+    final l10n = _chatL10n(context);
+    return KitSurface(
       key: const Key('agent-command-block'),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? Colors.black.withValues(alpha: .45)
-            : Colors.black.withValues(alpha: .05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.hairline(theme)),
-      ),
+      level: KitSurfaceLevel.surface2,
+      shape: KitShape.code,
+      padding: KitSurfacePadding.none,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 2),
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.space3,
+              top: tokens.space2,
+              end: tokens.space3,
+            ),
             child: Row(
               children: [
-                Icon(AppIconography.terminal, size: 14, color: muted),
-                const SizedBox(width: 6),
+                const KitIcon(
+                  AppIconography.terminal,
+                  size: KitIconSize.small,
+                  tone: KitTextTone.secondary,
+                ),
+                SizedBox(width: tokens.space2),
                 Expanded(
-                  child: Text(
-                    _chatL10n(context).chatUiRunOnYourComputer,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: muted,
-                      letterSpacing: .3,
-                    ),
+                  child: KitText(
+                    l10n.chatUiRunOnYourComputer,
+                    role: KitTextRole.caption,
                   ),
                 ),
               ],
@@ -291,37 +269,25 @@ class AgentCommandBlock extends StatelessWidget {
           ),
           for (var index = 0; index < commands.length; index++)
             Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 4, 0),
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.space3,
+                end: tokens.space1,
+              ),
               child: Row(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SelectableText(
-                        commands[index],
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
+                    child: KitText.mono(commands[index], selectable: true),
                   ),
-                  IconButton(
+                  KitIconButton.copy(
                     key: Key('agent-command-copy-$index'),
-                    tooltip: _chatL10n(context).handoffCopyCommand,
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    iconSize: 18,
-                    icon: Icon(AppIcons.copy, color: muted),
-                    onPressed: () => _copy(context, commands[index]),
+                    text: () => commands[index],
+                    tooltip: l10n.handoffCopyCommand,
+                    size: 20,
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.space1),
         ],
       ),
     );

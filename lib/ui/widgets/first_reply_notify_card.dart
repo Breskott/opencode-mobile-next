@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_ask_line.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_notice.dart';
 
 /// "Get told when it's done?" — the one time the app asks for notifications
 /// (UX plan 5.6 step 6).
@@ -57,6 +59,11 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
   /// preferences has finished.
   bool _answered = false;
 
+  /// Why turning notifications on failed, said in place of the question
+  /// (§4.8: a failure is a notice where the thing is, never a snackbar).
+  /// The question is answered either way; dismissing clears the notice.
+  String? _failure;
+
   FirstRun get _firstRun => FirstRun(widget.controller.store.prefs);
 
   bool get _due {
@@ -77,7 +84,6 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     if (_working) return;
     setState(() => _working = true);
     final controller = widget.controller;
-    final messenger = ScaffoldMessenger.maybeOf(context);
     final failed = lookupAppLocalizations(
       Localizations.localeOf(context),
     ).e7SettingsUi22;
@@ -87,12 +93,11 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     final enabled = await controller.setKeepLiveInBackground(true);
     // Asked once: a refusal at Android's own prompt is an answer too.
     await _firstRun.answerNotifyAsk();
-    if (!enabled) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text(controller.backgroundLive.lastError ?? failed)),
-      );
-    }
-    if (mounted) setState(() => _answered = true);
+    if (!mounted) return;
+    setState(() {
+      _answered = true;
+      if (!enabled) _failure = controller.backgroundLive.lastError ?? failed;
+    });
   }
 
   Future<void> _decline() async {
@@ -102,6 +107,20 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
 
   @override
   Widget build(BuildContext context) {
+    final failure = _failure;
+    if (failure != null) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: KitNotice(
+            key: const ValueKey('first-reply-notify-failed'),
+            tone: AppStatusTone.failure,
+            message: failure,
+            onDismiss: () => setState(() => _failure = null),
+          ),
+        ),
+      );
+    }
     if (!_due) return const SizedBox.shrink();
     // Already on (turned on in Settings between the reply and now): the
     // question has been answered elsewhere, so it is not asked.

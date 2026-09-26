@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../kit/kit_text.dart';
 
 /// Read acknowledgement is owned by a visible transcript, never its inventory.
 class SessionViewObserver extends StatefulWidget {
@@ -127,7 +128,8 @@ class _SessionViewObserverState extends State<SessionViewObserver>
   }
 }
 
-/// Text provides both a visible and spoken status, independent of color.
+/// Text provides both a visible and spoken status, independent of color
+/// (kit only, shared-shell-1: a [KitText] in the label role).
 class SessionUnreadBadge extends StatelessWidget {
   const SessionUnreadBadge({
     super.key,
@@ -145,13 +147,12 @@ class SessionUnreadBadge extends StatelessWidget {
       final l10n =
           Localizations.of<AppLocalizations>(context, AppLocalizations) ??
           lookupAppLocalizations(Localizations.localeOf(context));
-      return Text(
+      // The word carries the state (STATE-9), in the label role; no
+      // accent (LOOK-6: accent is not a status colour).
+      return KitText(
         l10n.sessionUnread,
         key: ValueKey('session-unread-${session.id}'),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w700,
-        ),
+        role: KitTextRole.label,
       );
     },
   );

@@ -25,7 +25,6 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import 'confirm_sheet.dart';
 import 'connection_status_banner.dart' show showConnectionDetailsSheet;
 import 'grace_timer.dart';
 
@@ -81,7 +80,7 @@ class WorkRunawayNotice {
   WorkStatus status(AppLocalizations l10n) => WorkStatus(
     id: 'runaway',
     icon: AppIconography.processor,
-    tone: AppStatusTone.attention,
+    tone: AppStatusTone.neutral,
     message: project == null
         ? l10n.workRunaway(busyFor)
         : l10n.workRunawayInProject(project!, busyFor),
@@ -146,7 +145,7 @@ class WorkStatusLine extends StatelessWidget {
       return WorkStatus(
         id: 'server',
         icon: AppIconography.cloudOff,
-        tone: AppStatusTone.attention,
+        tone: AppStatusTone.failure,
         message: l10n.workServerNotAnsweringPhone,
         action: KitAction(
           key: const ValueKey('work-status-restart'),
@@ -159,7 +158,7 @@ class WorkStatusLine extends StatelessWidget {
     return WorkStatus(
       id: 'server',
       icon: AppIconography.cloudOff,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.failure,
       message: serverOnThisPhone
           ? l10n.workServerNotAnsweringPhone
           : l10n.workServerNotAnswering(controller.profile?.name ?? 'OpenCode'),
@@ -225,15 +224,15 @@ class WorkStatusLine extends StatelessWidget {
 }
 
 /// Asks before restarting the phone's server: a turn in progress stops.
+/// Neutral (LOOK-5): a restart is not a loss; the cancel word is "Cancel".
 Future<bool> confirmPhoneServerRestart(BuildContext context) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-  return showConfirmSheet(
+  return showKitConfirm(
     context,
     icon: AppIconography.retry,
     title: l10n.workServerRestartTitle,
-    message: l10n.workServerRestartBody,
+    body: l10n.workServerRestartBody,
     confirmLabel: l10n.workServerRestart,
-    cancelLabel: l10n.projectFolderCancel,
     confirmKey: const ValueKey('work-server-restart-confirm'),
   );
 }

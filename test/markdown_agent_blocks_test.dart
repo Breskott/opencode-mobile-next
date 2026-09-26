@@ -74,12 +74,17 @@ void main() {
   ) async {
     final copies = _captureClipboard(tester);
     await _pump(tester, '```CHOICES\nShip it\n```');
+    tester.takeAnnouncements();
 
     await tester.tap(find.byKey(const Key('agent-choice-0')));
     await tester.pumpAndSettle();
 
     expect(copies, ['Ship it']);
-    expect(find.text('Copied. Paste it into the composer'), findsOneWidget);
+    // Said once through the kit's copy service, never a snackbar (KIT-23).
+    expect(tester.takeAnnouncements().map((a) => a.message), [
+      'Copied. Paste it into the composer',
+    ]);
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('```checklist renders read-only items with done state', (
@@ -119,6 +124,8 @@ void main() {
     await tester.tap(copy);
     await tester.pumpAndSettle();
     expect(copies, ['flutter test']);
+    // The copy button confirms in place (KIT-23): no snackbar.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('unknown fences keep the plain code block', (tester) async {

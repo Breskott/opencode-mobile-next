@@ -32782,6 +32782,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// Body of the Disconnect from server confirmation for a server that is not on this phone. Two sentences at most.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. The server keeps running and nothing on it changes.'**
+  String get safetyDisconnectBody;
+
+  /// Body of the Disconnect from server confirmation when the server runs on this phone: says it stays running and keeps using battery.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. OpenCode keeps running on this phone, using battery, until you stop it.'**
+  String get safetyDisconnectBodyPhone;
+
+  /// One consequence line on the Disconnect confirmation, shown only when queued prompts or unsent drafts exist for this server. count is their total.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message waiting to send stays on this phone until you connect again.} other{{count} messages waiting to send stay on this phone until you connect again.}}'**
+  String safetyDisconnectWaiting(int count);
 }
 
 class _AppLocalizationsDelegate
