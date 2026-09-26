@@ -22436,6 +22436,37 @@
   "@kitTaskStopped": {
     "description": "Kit task mark: the default word for a task that was stopped before it finished"
   },
+  "kitAgentStripLabel": "Agents on this task",
+  "@kitAgentStripLabel": {
+    "description": "KitAgentStrip: the semantics name of the row of agents (lead, workers, reviewers) working on a team task"
+  },
+  "kitAgentOpen": "Open {name}'s conversation",
+  "@kitAgentOpen": {
+    "description": "KitAgentStrip: the screen-reader hint on an agent chip that opens that agent's own conversation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kitAgentLabel": "{hasRole, select, yes{{name}, {role}, {state}} other{{name}, {state}}}",
+  "@kitAgentLabel": {
+    "description": "KitAgentStrip: an agent chip's semantics label and tooltip: its name, its role (Lead, Worker, Reviewer; left out when it has none) and its state word (Working, Waiting, Needs you, ...). hasRole is yes or no.",
+    "placeholders": {
+      "hasRole": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "kitSwatchInUse": "In use",
   "@kitSwatchInUse": {
     "description": "KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now"

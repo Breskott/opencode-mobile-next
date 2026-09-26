@@ -32171,6 +32171,24 @@ abstract class AppLocalizations {
   /// **'Stopped'**
   String get kitTaskStopped;
 
+  /// KitAgentStrip: the semantics name of the row of agents (lead, workers, reviewers) working on a team task
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this task'**
+  String get kitAgentStripLabel;
+
+  /// KitAgentStrip: the screen-reader hint on an agent chip that opens that agent's own conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}\'s conversation'**
+  String kitAgentOpen(String name);
+
+  /// KitAgentStrip: an agent chip's semantics label and tooltip: its name, its role (Lead, Worker, Reviewer; left out when it has none) and its state word (Working, Waiting, Needs you, ...). hasRole is yes or no.
+  ///
+  /// In en, this message translates to:
+  /// **'{hasRole, select, yes{{name}, {role}, {state}} other{{name}, {state}}}'**
+  String kitAgentLabel(String hasRole, String name, String role, String state);
+
   /// KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now
   ///
   /// In en, this message translates to:
