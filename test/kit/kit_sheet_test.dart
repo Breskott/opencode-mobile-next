@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
@@ -251,6 +252,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Close'), findsNothing);
     expect(find.byType(KitIconButton), findsNothing);
+    // The grabber is still drawn, but offers no "Dismiss" (KIT-18).
+    final semantics = tester.ensureSemantics();
+    final grabber = tester.getSemantics(
+      find.byKey(const ValueKey('kit-sheet-handle')),
+    );
+    expect(
+      grabber.getSemanticsData().hasAction(SemanticsAction.dismiss),
+      isFalse,
+    );
+    semantics.dispose();
+    // Esc does nothing (§8.3).
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Installing'), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.tapAt(const Offset(200, 40));
     await tester.pumpAndSettle();
@@ -280,8 +295,10 @@ void main() {
   group('adapts to the window (§8.2)', () {
     for (final (size, height, expected) in [
       (const Size(360, 800), KitSheetHeight.content, 'bottom'),
+      (const Size(412, 915), KitSheetHeight.content, 'bottom'),
       (const Size(800, 1280), KitSheetHeight.content, 'bottom'),
       (const Size(1280, 800), KitSheetHeight.content, 'panel'),
+      (const Size(1280, 800), KitSheetHeight.full, 'side'),
       (const Size(1600, 1000), KitSheetHeight.content, 'panel'),
       (const Size(1600, 1000), KitSheetHeight.full, 'side'),
       (const Size(915, 412), KitSheetHeight.content, 'bottom'),
@@ -431,14 +448,32 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    const keyboard = 300.0;
+    tester.view.viewInsets = const FakeViewPadding(bottom: keyboard);
     addTearDown(tester.view.resetViewInsets);
     await tester.pumpAndSettle();
     final windowHeight =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    final primaryRect = tester.getRect(find.text('Use English'));
-    expect(primaryRect.bottom, lessThanOrEqualTo(windowHeight));
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    // What the person can see: the window above the keyboard.
+    final visibleBottom = windowHeight - keyboard;
+    final primary = find.text('Use English');
+    final before = tester.getRect(primary);
+    expect(before.top, greaterThanOrEqualTo(0));
+    expect(before.bottom, lessThanOrEqualTo(visibleBottom));
+
+    // The body scrolls inside the frame: the last row starts out of view
+    // (under the pinned actions or the keyboard), a drag on the body brings
+    // it into the visible rect, and the primary does not move.
+    final last = find.text('Row 19');
+    expect(tester.getRect(last).bottom, greaterThan(before.top));
+    await tester.drag(find.text('Row 2'), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    final lastRect = tester.getRect(last);
+    expect(lastRect.top, greaterThanOrEqualTo(0));
+    expect(lastRect.bottom, lessThanOrEqualTo(before.top));
+    final after = tester.getRect(primary);
+    expect(after, before);
+    expect(after.bottom, lessThanOrEqualTo(visibleBottom));
   });
 
   group('stacked actions (§5 Sheets)', () {

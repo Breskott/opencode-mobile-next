@@ -5,7 +5,7 @@
 // tablets in landscape and PCs, and an end-side sheet for a full-height
 // sheet there.
 //
-// The 800/1280/1600 with-icon and full shots stack KitActionBlock's actions
+// The 1280x800 with-icon and full shots stack KitActionBlock's actions
 // (today's part rows only at maxWidth >= 600, which the 560 dp panel never
 // reaches): the integrator regenerates them once kit-KitAction-v2 merges
 // (README.md decision D4, R07). Everything else here is final.
@@ -25,22 +25,16 @@ import 'kit_gallery.dart';
 
 const _phone = Size(412, 915);
 
-List<(IconData, String, String)> _rows(bool arabic) => arabic
-    ? const [
-        (AppIconography.check, 'العربية', 'لغة الهاتف'),
-        (AppIconography.info, 'English', 'الإنجليزية'),
-        (AppIconography.info, 'Deutsch', 'الألمانية'),
-      ]
-    : const [
-        (AppIconography.check, 'English', 'The phone’s language'),
-        (AppIconography.info, 'العربية', 'Arabic'),
-        (AppIconography.info, 'Deutsch', 'German'),
-      ];
+const _rows = [
+  (AppIconography.check, 'English', 'The phone’s language'),
+  (AppIconography.info, 'العربية', 'Arabic'),
+  (AppIconography.info, 'Deutsch', 'German'),
+];
 
-Widget _body(BuildContext context, {bool arabic = false}) => Column(
+Widget _body(BuildContext context) => Column(
   crossAxisAlignment: CrossAxisAlignment.stretch,
   children: [
-    for (final (icon, title, supporting) in _rows(arabic))
+    for (final (icon, title, supporting) in _rows)
       KitRow(
         padding: const EdgeInsets.symmetric(vertical: 8),
         leading: KitRowIcon(icon, current: icon == AppIconography.check),
@@ -53,7 +47,6 @@ Widget _body(BuildContext context, {bool arabic = false}) => Column(
 
 Future<void> _language(
   BuildContext context, {
-  bool arabic = false,
   KitSheetHeight height = KitSheetHeight.content,
   ValueListenable<bool>? loading,
   bool disabled = false,
@@ -63,26 +56,18 @@ Future<void> _language(
   KitSheetTone tone = KitSheetTone.neutral,
 }) => showKitSheet<void>(
   context,
-  title: arabic ? 'اللغة' : 'Language',
-  subtitle: arabic ? 'الكلمات في كل التطبيق' : 'Words across the app',
+  title: 'Language',
+  subtitle: 'Words across the app',
   height: height,
   loading: loading,
   dirty: dirty,
   dismissible: dismissible,
   icon: icon,
   tone: tone,
-  body: (inner) => _body(inner, arabic: arabic),
-  primary: KitAction(
-    label: arabic ? 'استخدام العربية' : 'Use English',
-    onPressed: disabled ? null : () {},
-  ),
-  secondary: KitAction(
-    label: arabic ? 'إبقاء الحالية' : 'Keep current',
-    onPressed: () {},
-  ),
-  tertiary: [
-    KitAction(label: arabic ? 'لغات أخرى' : 'More languages', onPressed: () {}),
-  ],
+  body: _body,
+  primary: KitAction(label: 'Use English', onPressed: disabled ? null : () {}),
+  secondary: KitAction(label: 'Keep current', onPressed: () {}),
+  tertiary: [KitAction(label: 'More languages', onPressed: () {})],
 );
 
 /// The visual language's consequences panel (§5), shown inside a sheet body
@@ -139,26 +124,23 @@ void main() {
       );
     });
 
-    // The LAY-4 sizes, with the short landscape phone swapped in for the
-    // usual portrait one (LAY-3: a short window keeps the compact sheet).
-    for (final size in [
-      for (final size in kitGallerySizes)
-        if (size == const Size(412, 915)) const Size(915, 412) else size,
-    ]) {
-      final at = kitGallerySize(size);
-      testWidgets('kit_sheet with_icon · $at · $mode', (tester) async {
-        await kitGalleryShot(
-          tester,
-          name: kitGalleryName('kit_sheet_with_icon', size, light: light),
-          size: size,
-          light: light,
-          open: (context) => _language(context, icon: AppIconography.globe),
-        );
-      });
-    }
-
+    // Owner decision 2026-09-27 (STANDARDS.md header, harness RULES): no
+    // Arabic/RTL galleries, and galleries at the phone (412x915) and one
+    // wide size (1280x800) only. kitGalleryScaledSizes is exactly that
+    // pair; 412x915 is the with_icon shot above.
     for (final size in kitGalleryScaledSizes) {
       final at = kitGallerySize(size);
+      if (size != _phone) {
+        testWidgets('kit_sheet with_icon · $at · $mode', (tester) async {
+          await kitGalleryShot(
+            tester,
+            name: kitGalleryName('kit_sheet_with_icon', size, light: light),
+            size: size,
+            light: light,
+            open: (context) => _language(context, icon: AppIconography.globe),
+          );
+        });
+      }
       testWidgets('kit_sheet with_icon · 2.0 text · $at · $mode', (
         tester,
       ) async {
@@ -174,23 +156,6 @@ void main() {
           light: light,
           textScale: 2,
           open: (context) => _language(context, icon: AppIconography.globe),
-        );
-      });
-      testWidgets('kit_sheet with_icon · ar · $at · $mode', (tester) async {
-        await kitGalleryShot(
-          tester,
-          name: kitGalleryName(
-            'kit_sheet_with_icon',
-            size,
-            light: light,
-            ar: true,
-          ),
-          size: size,
-          light: light,
-          locale: const Locale('ar'),
-          textScale: 1.3,
-          open: (context) =>
-              _language(context, arabic: true, icon: AppIconography.globe),
         );
       });
     }

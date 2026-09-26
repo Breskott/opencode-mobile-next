@@ -1,19 +1,13 @@
-/// The visual language's consequences panel (docs/design/visual-language-
-/// 2026-09-26.md §5 "Sheets"): counted facts that go with an act, on one
-/// `surface1` (or, in light, `ground`) panel with hairlines inset to the
-/// words. A sheet body places it where the facts belong ("3 queued prompts
-/// will be deleted"); `showKitConfirm` draws its own `consequences` with
-/// the private, pre-v2 `_KitConsequences` until kit-KitDetailsFold moves it
-/// here.
-///
-/// States: none — a static list of the facts the caller gives it.
-library;
-
-import 'package:flutter/material.dart';
-
-import '../app_theme.dart';
-import 'kit_text.dart';
-import 'kit_tokens.dart';
+// The visual language's consequences panel (docs/design/visual-language-
+// 2026-09-26.md §5 "Sheets"): counted facts that go with an act, on one
+// `surface1` (or, in light, `ground`) panel with hairlines inset to the
+// words.
+//
+// A part of the kit_sheet.dart library (KitSheet.md "Public API",
+// KitConfirmSheet.md: "the same library"), so the confirm part
+// (kit_confirm_sheet.dart) names KitConsequences with no import, while the
+// class still lives in its own NAME-1 file, kit_consequences.dart.
+part of 'kit_sheet.dart';
 
 /// What a fact in a [KitConsequences] panel says about the thing (§5
 /// Sheets).

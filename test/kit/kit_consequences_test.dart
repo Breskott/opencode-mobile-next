@@ -51,18 +51,33 @@ void main() {
     },
   );
 
-  testWidgets('the separator is one hairline, inset to the text start', (
+  testWidgets('the separator is one physical pixel, inset to the text start', (
     tester,
   ) async {
+    // DPR 3 (TEST-9): one physical pixel is 1/3 dp (LOOK-21).
+    tester.view.physicalSize = const Size(412 * 3, 915 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(_host(KitConsequences(items: _items())));
     await tester.pumpAndSettle();
-    final dividers = tester.widgetList<Divider>(find.byType(Divider));
-    expect(dividers, hasLength(2));
-    final hairline = KitTokens.hairlineWidth(
-      tester.element(find.byType(KitConsequences)),
-    );
-    for (final divider in dividers) {
-      expect(divider.thickness, moreOrLessEquals(hairline));
+    final dividers = find.byType(Divider);
+    expect(dividers, findsNWidgets(2));
+    for (final divider in tester.widgetList<Divider>(dividers)) {
+      expect(divider.thickness, moreOrLessEquals(1 / 3));
+    }
+    // LTR: each separator starts where the words of the facts start, not
+    // under the glyph (VL §4 "separators are inset to the text start").
+    final textStarts = {
+      for (final item in _items()) tester.getRect(find.text(item.text)).left,
+    };
+    expect(textStarts, hasLength(1));
+    for (final divider in dividers.evaluate()) {
+      final line = find.descendant(
+        of: find.byWidget(divider.widget),
+        matching: find.byType(DecoratedBox),
+      );
+      final start = tester.getRect(line).left;
+      expect(start, moreOrLessEquals(textStarts.single, epsilon: 0.01));
     }
   });
 
@@ -84,12 +99,24 @@ void main() {
     handle.dispose();
   });
 
-  test('an icon override replaces the mark\'s own glyph', () {
-    const consequence = KitConsequence(
-      'the test run',
-      mark: KitConsequenceMark.info,
-      icon: AppIconography.terminal,
+  testWidgets('an icon override replaces the mark\'s own glyph', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        KitConsequences(
+          items: const [
+            KitConsequence(
+              'The test run is cancelled',
+              mark: KitConsequenceMark.info,
+              icon: AppIconography.terminal,
+            ),
+          ],
+        ),
+      ),
     );
-    expect(consequence.icon, AppIconography.terminal);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(AppIconography.terminal), findsOneWidget);
+    expect(find.byIcon(AppIconography.info), findsNothing);
   });
 }

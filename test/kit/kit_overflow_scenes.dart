@@ -996,32 +996,4 @@ final kitOverflowScenes = <KitOverflowScene>[
       ],
     ),
   ),
-  // kit_sheet.dart: KitConsequences, the visual language's consequences
-  // panel (a sheet body places it where the facts belong).
-  KitOverflowScene(
-    const ['KitConsequences'],
-    'default',
-    build: (_, c) => KitConsequences(
-      items: [
-        KitConsequence(
-          c.t(
-            '3 queued prompts will be deleted',
-            'سيتم حذف 3 مطالبات قيد الانتظار',
-          ),
-          mark: KitConsequenceMark.lost,
-        ),
-        KitConsequence(
-          c.t(
-            'The exported transcript is kept',
-            'يتم الاحتفاظ بالنسخة المصدَّرة',
-          ),
-          mark: KitConsequenceMark.kept,
-        ),
-        KitConsequence(
-          c.t('This runs in the background', 'يعمل هذا في الخلفية'),
-          mark: KitConsequenceMark.info,
-        ),
-      ],
-    ),
-  ),
 ];

@@ -30,9 +30,8 @@ import 'kit_tokens.dart';
 import 'motion/kit_haptics.dart';
 import 'motion/kit_reveal.dart';
 
-export 'kit_consequences.dart';
-
 part 'kit_confirm_sheet.dart';
+part 'kit_consequences.dart';
 
 AppLocalizations _l10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -423,10 +422,12 @@ class _KitIconTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    // The glyph grows with the person's text size (clamped), like the tile
-    // around it, so it never crowds or clips.
+    // The tile stays the one 44 dp square at every text size, so its edge
+    // always lands on whole physical pixels (VL §7); only the glyph grows
+    // with the person's text size, clamped at maxIconScale (22 → 33 dp at
+    // most, still inside the 44 dp tile).
     final glyphSize = tokens.iconSize(context, tokens.markIconSize);
-    final tileSize = tokens.markSize + glyphSize - tokens.markIconSize;
+    final tileSize = tokens.markSize;
     final (Color background, Color glyph) = switch (tone) {
       _KitTileTone.neutral => (roles.surface3, roles.text1),
       _KitTileTone.attention => (
