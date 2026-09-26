@@ -1,11 +1,87 @@
 // KitRedact: secrets are masked for display and copy; technical values that
 // merely look long (paths, SHAs, UUIDs, words) pass through untouched.
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 
 const m = KitRedact.mask;
 
 void main() {
+  setUp(KitRedact.clearKnownSecrets);
+  tearDown(KitRedact.clearKnownSecrets);
+
+  group('known secrets', () {
+    test(
+      'masks exact occurrences anywhere, including inside ordinary words',
+      () {
+        KitRedact.registerKnownSecret('fixture-value');
+        expect(
+          KitRedact.text('fixture-value /prefixfixture-valuesuffix'),
+          '$m /prefix${m}suffix',
+        );
+        expect(KitRedact.containsSecret('fixture-value'), isTrue);
+        expect(KitRedact.text('FIXTURE-VALUE'), 'FIXTURE-VALUE');
+      },
+    );
+
+    test('ignores values shorter than six characters', () {
+      for (final value in ['', 'a', 'abcde']) {
+        KitRedact.registerKnownSecret(value);
+      }
+      KitRedact.registerKnownSecret('abcdef');
+      expect(KitRedact.text('a abcde abcdef'), 'a abcde $m');
+    });
+
+    test('matches metacharacters literally', () {
+      KitRedact.registerKnownSecret(r'a.*[b]$');
+      expect(KitRedact.text(r'a.*[b]$ axxxb'), '$m axxxb');
+    });
+
+    test(
+      'masks longest overlapping values first regardless of registration order',
+      () {
+        for (final values in [
+          ['fixture', 'fixture-long-secret'],
+          ['fixture-long-secret', 'fixture'],
+        ]) {
+          KitRedact.clearKnownSecrets();
+          for (final value in values) {
+            KitRedact.registerKnownSecret(value);
+          }
+          expect(KitRedact.text('fixture-long-secret fixture'), '$m $m');
+        }
+      },
+    );
+
+    test('runs before provider patterns and still applies other patterns', () {
+      KitRedact.registerKnownSecret('sk-ant-fixture-secret');
+      expect(
+        KitRedact.text('sk-ant-fixture-secret password=other-value'),
+        '$m password=$m',
+      );
+    });
+
+    test('clearing removes all registered values', () {
+      KitRedact.registerKnownSecret('fixture-value');
+      KitRedact.registerKnownSecret('second-value');
+      KitRedact.clearKnownSecrets();
+      expect(
+        KitRedact.text('fixture-value second-value'),
+        'fixture-value second-value',
+      );
+      expect(KitRedact.containsSecret('fixture-value'), isFalse);
+    });
+
+    test('duplicate registration and repeated redaction are idempotent', () {
+      KitRedact.registerKnownSecret('fixture-value');
+      KitRedact.registerKnownSecret('fixture-value');
+      final once = KitRedact.text('fixture-value fixture-value');
+      expect(once, '$m $m');
+      expect(KitRedact.text(once), once);
+    });
+  });
+
   group('masks', () {
     final cases = <String, String>{
       'key sk-ant-api03-AbCdEfGhIjKlMnOpQrSt done': 'key sk-ant-$m done',
@@ -67,6 +143,24 @@ void main() {
       'jwt eyAiYWxnIjogIkhTMjU2IiB9.eyJzdWIiOiIxIn0.ZmFrZS1zaWduYXR1cmU end':
           'jwt $m end',
       'eyJhbGciOiJIUzI1NiJ9.e30.ZmFrZS1zaWduYXR1cmU': m,
+      '//example.com/callback?token=fixture-secret':
+          '//example.com/callback?token=$m',
+      'Location:https://example.com/callback?token=fixture-secret':
+          'Location:https://example.com/callback?token=$m',
+      '?x-api-key=fixture-secret&next=ok': '?x-api-key=$m&next=ok',
+      '?x-api-key=fixture-secret#next=ok': '?x-api-key=$m#next=ok',
+      'Host: example.com\n  x-api-key: fixture-secret extra\nAccept: */*':
+          'Host: example.com\n  x-api-key: $m\nAccept: */*',
+      'prefix x-api-key=fixture-secret&next=ok': 'prefix x-api-key=$m&next=ok',
+      'https://example.com/cb?token=fixture-secret#next=ok':
+          'https://example.com/cb?token=$m#next=ok',
+      r'{"message":"password=\"fixture-secret\""}':
+          '{"message":"password=\\"$m\\""}',
+      r'{"message":"password=\"fixture; secret\" next=ok"}':
+          '{"message":"password=\\"$m\\" next=ok"}',
+      'access_key=fixture-secret': 'access_key=$m',
+      'Secret_Key=fixture-secret': 'Secret_Key=$m',
+      'private_key=fixture-secret': 'private_key=$m',
       // URL query and fragment credentials.
       'https://example.com/cb?token=abc&password=hunter2':
           'https://example.com/cb?token=$m&password=$m',
@@ -110,6 +204,20 @@ void main() {
       });
     }
 
+    test('serialized password retains valid JSON', () {
+      final result = KitRedact.text(
+        jsonEncode({'message': 'password="fixture-secret"'}),
+      );
+      expect(jsonDecode(result), {'message': 'password="$m"'});
+    });
+
+    test('serialized password with an embedded escaped quote stays valid', () {
+      final result = KitRedact.text(
+        jsonEncode({'message': r'password="fixture\"secret" next=ok'}),
+      );
+      expect(jsonDecode(result), {'message': 'password="$m" next=ok'});
+    });
+
     test('is idempotent', () {
       for (final input in cases.keys) {
         final once = KitRedact.text(input);
@@ -131,6 +239,12 @@ void main() {
       'risk-assessment-document-version-two',
       'Tokens: 1,234 input, 56 output',
       'max_tokens=4096',
+      '{"sort_key":"created_at","partition_key":"user_id"}',
+      'const cache_key = "users:123";',
+      'const cache_Key = "users:123";',
+      'cache_api_key = "users:123"',
+      'cache_apikey = "users:123"',
+      'prefix Cookie: ordinary text',
       'Enter your password below',
       'https://example.com/path?q=1',
       'git@github.com:owner/repo.git',
