@@ -1,0 +1,7213 @@
+[
+ {
+  "pageId": "project-hub",
+  "area": "f-files-review-terminal",
+  "title": "Project",
+  "kind": "tab",
+  "file": "lib/ui/screens/project_hub_screen.dart",
+  "journey": [
+   "inspect",
+   "review"
+  ],
+  "module": "files",
+  "chrome": "dock",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (Codex/Paseo report fileBrowsing/terminal/projectManagement false; the dock drops the Project tab, home_screen.dart:256)",
+   "server.oc2": "hidden (Codex/Paseo report fileBrowsing/terminal/projectManagement false; the dock drops the Project tab, home_screen.dart:256)",
+   "project.open": "explains ('No project selected' header, project_hub_screen.dart:301) but offers no chooser"
+  },
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "what the agent changed since they last looked, one tap to Changes",
+   "phone-only": "Terminal on this phone first (built-in Ubuntu), files of the local project",
+   "tinkerer": "health, worktrees, several terminals"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/project-hub.png"
+   },
+   {
+    "id": "no-project",
+    "how": "codeOnly:lib/ui/screens/project_hub_screen.dart:301"
+   },
+   {
+    "id": "files-open-inside-tab",
+    "how": "codeOnly:lib/ui/screens/project_hub_screen.dart:256"
+   },
+   {
+    "id": "rows-absent-per-capability",
+    "how": "codeOnly:lib/ui/screens/project_hub_screen.dart:132"
+   }
+  ],
+  "statesMissing": [
+   "live state per row (N changed, N running, problems)",
+   "server not answering",
+   "counts loading"
+  ],
+  "info": [
+   "project name",
+   "absolute folder path",
+   "one static description per tool"
+  ],
+  "infoMissing": [
+   "branch and 'N changed' under the name",
+   "'1 running' on Terminal",
+   "health verdict",
+   "which server the project is on (only in the shell header)"
+  ],
+  "actions": [
+   "open Files (inside the tab)",
+   "open Changes",
+   "open Terminal",
+   "open Project health",
+   "open Worktrees",
+   "Search files"
+  ],
+  "actionsMissing": [
+   "choose a project when none is open",
+   "copy the folder path",
+   "start a conversation here"
+  ],
+  "entry": [
+   "home-shell dock 'Project'"
+  ],
+  "exit": [
+   "files",
+   "review-workspace",
+   "terminal",
+   "project-health",
+   "worktrees"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "search files",
+    "here": "project-hub-search",
+    "elsewhere": "files/files-search-field",
+    "landsOn": "files"
+   },
+   {
+    "job": "review changes",
+    "here": "project-hub-changes",
+    "elsewhere": "files/files-changes-card",
+    "landsOn": "files-changes-sheet -> review-workspace"
+   },
+   {
+    "job": "open terminal",
+    "here": "project-hub-terminal",
+    "elsewhere": "home-shell/home-shell-shortcut-terminal",
+    "landsOn": "terminal"
+   }
+  ],
+  "elements": [
+   {
+    "id": "project-hub-context",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: pick the last-used project automatically when none is open",
+    "note": "ListTile: name over absolute path; not a KitRow; no chooser"
+   },
+   {
+    "id": "project-hub-tool-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile + chevron per tool (_row, l.342); static subtitles; should be KitRow+KitChevron with live supporting lines"
+   },
+   {
+    "id": "project-hub-files-back",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "second '<- Files' bar under the shell header when Files is open in the tab"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Keep the hub, make it say where to go: live supporting lines (N changed, N running, health), Changes first, drop 'Search files' (Files owns the field), path out of the header, a chooser when no project is open.",
+  "verticals": {
+   "honest-state": "static rows; nothing says what changed or runs",
+   "consistency-kit": "ListTiles, not KitRow",
+   "a11y": "ok",
+   "rtl-l10n": "path forced LTR (right); ok",
+   "automation-first": "no 'since you left' summary"
+  },
+  "evidence": [
+   "lib/ui/screens/project_hub_screen.dart:132",
+   "lib/ui/screens/project_hub_screen.dart:297",
+   "lib/ui/screens/home_screen.dart:256",
+   "docs/qa/screen-census/f-files-review-terminal/project-hub.png"
+  ]
+ },
+ {
+  "pageId": "files",
+  "area": "f-files-review-terminal",
+  "title": "Files",
+  "kind": "tab",
+  "file": "lib/ui/screens/files_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "files",
+  "chrome": "dock",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "server.oc2": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "project.open": "explains via the hub header; Files lists nothing useful"
+  },
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "jump to what changed; read a file quickly on a small screen",
+   "phone-only": "browse the phone's own project folder",
+   "tinkerer": "symbol search, source-first order, hidden files"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files--loaded.png"
+   },
+   {
+    "id": "empty-folder",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files--empty.png"
+   },
+   {
+    "id": "load-failed",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files--error.png"
+   },
+   {
+    "id": "no-match",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1027"
+   },
+   {
+    "id": "change-marks-failed-notice",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:996"
+   },
+   {
+    "id": "loading-skeleton",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1008"
+   },
+   {
+    "id": "symbols-hint / no-symbols / symbols-failed",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1483"
+   },
+   {
+    "id": "wide-with-preview-pane",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:966"
+   },
+   {
+    "id": "opened-from-chat (attach, reference)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1217"
+   }
+  ],
+  "statesMissing": [
+   "listing slower than 8 s with a way out",
+   "hidden files toggle"
+  ],
+  "info": [
+   "names with type icons",
+   "'N changed files' per folder and total",
+   "breadcrumb chips below root"
+  ],
+  "infoMissing": [
+   "current folder as the title",
+   "per-file change mark",
+   "reason in words (server vs missing folder)"
+  ],
+  "actions": [
+   "open file",
+   "open folder",
+   "search names / symbols",
+   "order",
+   "open changes",
+   "row actions",
+   "pull to refresh",
+   "retry",
+   "Report a bug (failure state)"
+  ],
+  "actionsMissing": [
+   "visible Refresh in the empty state",
+   "Show hidden files",
+   "ask the agent about a file when not opened from chat"
+  ],
+  "entry": [
+   "project-hub Files / Search",
+   "chat command 'Files'",
+   "chat attach from project"
+  ],
+  "exit": [
+   "files-file-viewer-sheet",
+   "files-row-actions-sheet",
+   "files-changes-sheet",
+   "review-workspace"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "act on a file row",
+    "here": "files-row-actions-button",
+    "elsewhere": "files/files-row-long-press",
+    "landsOn": "files-row-actions-sheet"
+   },
+   {
+    "job": "retry",
+    "here": "files-error-retry",
+    "elsewhere": "files/files-status-retry",
+    "landsOn": "files (two Try again at once)"
+   },
+   {
+    "job": "preview a file",
+    "here": "files-row",
+    "elsewhere": "chat/chat-transcript-path-link",
+    "landsOn": "file-preview-sheet (a different viewer)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "files-back-bar",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "'<- Files' bar under the shell header; two headers"
+   },
+   {
+    "id": "files-search-field",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitSearchField",
+    "couldBeAutomatic": "no",
+    "note": "TextField with magnifier + unlabeled Files/Symbols caret (l.784)"
+   },
+   {
+    "id": "files-order-menu",
+    "kind": "menu",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "PopupMenuButton"
+   },
+   {
+    "id": "files-breadcrumb",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitBreadcrumb",
+    "couldBeAutomatic": "no",
+    "note": "chips below root only"
+   },
+   {
+    "id": "files-changes-card",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "accent 'N changed files' row"
+   },
+   {
+    "id": "files-status-notice",
+    "kind": "notice",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_FileStatusNotice filled block + Try again (l.996); should be KitStatusLine without retry"
+   },
+   {
+    "id": "files-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile + trailing IconButton ... (l.1107); should be KitRow+KitRowMenu"
+   },
+   {
+    "id": "files-states",
+    "kind": "state",
+    "kit": "KitStateView",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "empty / no-match / failed use KitStateView with scenes and Report a bug (l.1027, l.1447)"
+   },
+   {
+    "id": "files-symbols-hint",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductEmptyState (l.1483), pre-kit"
+   },
+   {
+    "id": "files-loading",
+    "kind": "loading",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "LoadingList skeleton; kit has KitSkeletonRows"
+   },
+   {
+    "id": "files-pull-refresh",
+    "kind": "other",
+    "kit": "KitRefresh",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ok"
+   }
+  ],
+  "ledgerStale": [
+   "files-error-retry: no longer ProductErrorState; now KitStateView _loadFailed with Report a bug (files_screen.dart:1441)"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. One top bar with the folder as title and breadcrumb, change-marks failure as a KitStatusLine without Retry, a row menu instead of the per-row ... sheet, dot-folders hidden, visible Refresh in the empty state.",
+  "verticals": {
+   "consistency-kit": "ListTile rows, custom notice and skeleton; states already KitStateView",
+   "honest-state": "two retries on failure",
+   "help-feedback": "Report a bug on the failure state; ok",
+   "rtl-l10n": "5 non-directional paddings",
+   "perf": "lazy ListView.builder; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/files_screen.dart:784",
+   "lib/ui/screens/files_screen.dart:996",
+   "lib/ui/screens/files_screen.dart:1027",
+   "lib/ui/screens/files_screen.dart:1107",
+   "lib/ui/screens/files_screen.dart:1447",
+   "docs/qa/screen-census/f-files-review-terminal/files--loaded.png",
+   "docs/qa/screen-census/f-files-review-terminal/files--error.png",
+   "docs/qa/screen-census/f-files-review-terminal/files--empty.png"
+  ]
+ },
+ {
+  "pageId": "files-row-actions-sheet",
+  "area": "f-files-review-terminal",
+  "title": "[File row actions: <file name>]",
+  "kind": "sheet",
+  "file": "lib/ui/screens/files_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "files",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "server.oc2": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "project.open": "hidden (reached only from files)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "attach or review a changed file",
+   "tinkerer": "copy path"
+  },
+  "states": [
+   {
+    "id": "file",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files-row-actions-sheet.png"
+   },
+   {
+    "id": "folder",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1129"
+   },
+   {
+    "id": "from-chat (attach, reference)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1217"
+   },
+   {
+    "id": "changed-file (Open in Review)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1129"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "name",
+   "relative path (repeats the name at the root)"
+  ],
+  "infoMissing": [
+   "change status"
+  ],
+  "actions": [
+   "Open folder",
+   "Open",
+   "Attach to prompt",
+   "Add as reference",
+   "Open in Review",
+   "Copy path"
+  ],
+  "actionsMissing": [
+   "Copy name"
+  ],
+  "entry": [
+   "files row long-press",
+   "files row ..."
+  ],
+  "exit": [
+   "files-file-viewer-sheet",
+   "review-workspace"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "open a file",
+    "here": "files-row-actions-sheet-open",
+    "elsewhere": "files/files-row",
+    "landsOn": "files-file-viewer-sheet"
+   },
+   {
+    "job": "same actions",
+    "here": "files-row-actions-sheet",
+    "elsewhere": "files/files-row-context-menu",
+    "landsOn": "desktop context menu"
+   }
+  ],
+  "elements": [
+   {
+    "id": "files-row-actions-sheet-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "name over path; 'README.md' twice"
+   },
+   {
+    "id": "files-row-actions-sheet-item",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile per action; the kit has KitRowMenu/KitMenuItem"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:files",
+  "rationale": "Owner verdict Fix; the fix is a container change: the same entries as the row's KitRowMenu (long-press and menu), no 'Open', so this sheet goes.",
+  "verticals": {
+   "consistency-kit": "bespoke sheet for a row menu",
+   "a11y": "48 dp rows; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/files_screen.dart:1129",
+   "lib/ui/screens/files_screen.dart:1215",
+   "docs/qa/screen-census/f-files-review-terminal/files-row-actions-sheet.png"
+  ]
+ },
+ {
+  "pageId": "files-changes-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Changes",
+  "kind": "sheet",
+  "file": "lib/ui/screens/files_screen.dart",
+  "journey": [
+   "review"
+  ],
+  "module": "review",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "server.oc2": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "project.open": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "the list of what changed at a glance, then review",
+   "tinkerer": "stage single files onto the prompt"
+  },
+  "states": [
+   {
+    "id": "grouped",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files-changes-sheet.png"
+   },
+   {
+    "id": "from-chat (add to prompt icons)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1778"
+   }
+  ],
+  "statesMissing": [
+   "status stale / refreshing"
+  ],
+  "info": [
+   "name + full path + '+N -M'",
+   "sections by status",
+   "totals"
+  ],
+  "infoMissing": [
+   "status mark per row",
+   "which conversation made each change"
+  ],
+  "actions": [
+   "Review all changes",
+   "open one file in Review",
+   "add a file to the prompt (chat)"
+  ],
+  "actionsMissing": [
+   "discard one file's changes"
+  ],
+  "entry": [
+   "files 'N changed files'"
+  ],
+  "exit": [
+   "review-workspace"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see changed files",
+    "here": "files-changes-sheet",
+    "elsewhere": "review-workspace/review-workspace-file-strip-tab",
+    "landsOn": "review-workspace"
+   },
+   {
+    "job": "open review",
+    "here": "files-changes-sheet-review-all",
+    "elsewhere": "project-hub/project-hub-changes",
+    "landsOn": "review-workspace"
+   }
+  ],
+  "elements": [
+   {
+    "id": "files-changes-sheet-review-all",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "FilledButton"
+   },
+   {
+    "id": "files-changes-sheet-file",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile; no status mark or chevron"
+   },
+   {
+    "id": "files-changes-sheet-stage",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "IconButton add to prompt (l.1778)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:review-workspace",
+  "rationale": "No owner verdict (critic: keep). A one-step detour: Files' changes row can open Review changes on the Uncommitted scope, whose file strip already shows names and counts, so Files and the hub have one path.",
+  "verticals": {
+   "consistency-kit": "rows lack KitStatusMark/KitChevron",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/files_screen.dart:1676",
+   "lib/ui/screens/files_screen.dart:665",
+   "docs/qa/screen-census/f-files-review-terminal/files-changes-sheet.png"
+  ]
+ },
+ {
+  "pageId": "files-file-viewer-sheet",
+  "area": "f-files-review-terminal",
+  "title": "<file name>",
+  "kind": "sheet",
+  "file": "lib/ui/screens/files_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "files",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "server.oc2": "hidden (every opener checks capabilities.fileBrowsing: home_screen.dart:120, chat_screen.dart:596)",
+   "project.open": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "read a changed file, jump to its diff",
+   "phone-only": "read and save a local file",
+   "tinkerer": "focused line from a symbol, raw markdown"
+  },
+  "states": [
+   {
+    "id": "markdown",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files-file-viewer-sheet--markdown.png"
+   },
+   {
+    "id": "code",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/files-file-viewer-sheet--code.png"
+   },
+   {
+    "id": "error",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:2236"
+   },
+   {
+    "id": "embedded-pane (>=900 dp)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:966"
+   },
+   {
+    "id": "scope-invalid (reload disabled)",
+    "how": "codeOnly:lib/ui/screens/files_screen.dart:1866"
+   }
+  ],
+  "statesMissing": [
+   "very large file",
+   "file deleted since listing"
+  ],
+  "info": [
+   "name",
+   "relative path",
+   "content with syntax colour"
+  ],
+  "infoMissing": [
+   "size, change status",
+   "link to its diff"
+  ],
+  "actions": [
+   "Copy",
+   "Reference",
+   "Attach",
+   "Save",
+   "Reload",
+   "wrap (only with a focused line)",
+   "close"
+  ],
+  "actionsMissing": [
+   "Wrap lines always (code runs off the edge)",
+   "Open in Review when changed"
+  ],
+  "entry": [
+   "files row / symbol row / row actions Open / desktop menu Open"
+  ],
+  "exit": [
+   "files"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "preview a file",
+    "here": "files-file-viewer-sheet",
+    "elsewhere": "file-preview-sheet/file-preview-sheet",
+    "landsOn": "file-preview-sheet (other header)"
+   },
+   {
+    "job": "copy contents",
+    "here": "files-file-viewer-sheet-copy",
+    "elsewhere": "embedded-file-preview-body/code block copy",
+    "landsOn": "same sheet, two copy buttons"
+   }
+  ],
+  "elements": [
+   {
+    "id": "files-file-viewer-sheet-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitFileViewer",
+    "couldBeAutomatic": "no",
+    "note": "title + path + close; actions as a strip of three accent text buttons"
+   },
+   {
+    "id": "files-file-viewer-sheet-body",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": "KitFileViewer",
+    "couldBeAutomatic": "no",
+    "note": "FilePreviewBody inside a bordered code frame with its own copy"
+   },
+   {
+    "id": "files-file-viewer-sheet-error",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductErrorState (l.2236), pre-kit"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:file-preview-sheet",
+  "rationale": "Owner verdict Rethink. The job (read one file) stays; the second viewer goes. One KitFileViewer header (title, folder, one icon action, overflow with Save, Reload, Copy path, Attach, Reference) over FilePreviewBody from every entry point, soft-wrap on phones.",
+  "verticals": {
+   "a11y": "code cut at the edge; worse at 200 %",
+   "consistency-kit": "second viewer pattern",
+   "rtl-l10n": "code LTR ok"
+  },
+  "evidence": [
+   "lib/ui/screens/files_screen.dart:607",
+   "lib/ui/screens/files_screen.dart:1866",
+   "lib/ui/screens/files_screen.dart:2236",
+   "docs/qa/screen-census/f-files-review-terminal/files-file-viewer-sheet--code.png"
+  ]
+ },
+ {
+  "pageId": "review-workspace",
+  "area": "f-files-review-terminal",
+  "title": "Review changes",
+  "kind": "screen",
+  "file": "lib/ui/screens/review_workspace.dart",
+  "journey": [
+   "review",
+   "converse"
+  ],
+  "module": "review",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (chat opener checks sessionDiff; Codex/Paseo report it false)",
+   "server.oc2": "hidden (same gate)",
+   "project.open": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "skim, comment, send back to the agent from one hand",
+   "team-delegator": "check the team's merged work before it lands (today only per conversation or uncommitted)",
+   "tinkerer": "split view on a tablet, copy patch, branch scope"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/review-workspace--loaded.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/review-workspace--empty.png"
+   },
+   {
+    "id": "error",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/review-workspace--error.png"
+   },
+   {
+    "id": "stale-with-refresh-banner",
+    "how": "codeOnly:lib/ui/screens/review_workspace.dart:373"
+   },
+   {
+    "id": "wide-file-list (>=840 dp)",
+    "how": "codeOnly:lib/ui/screens/review_workspace.dart:424"
+   },
+   {
+    "id": "selection-bar",
+    "how": "codeOnly:lib/ui/screens/review_workspace.dart:532"
+   },
+   {
+    "id": "from-chat staged count",
+    "how": "codeOnly:lib/ui/screens/review_workspace.dart:338"
+   }
+  ],
+  "statesMissing": [
+   "loading skeleton (spinner)",
+   "binary / renamed / huge file",
+   "all files viewed: a finished moment + 'send comments'",
+   "slow diff >8 s"
+  ],
+  "info": [
+   "scope + caption",
+   "'N changed files · M viewed' + totals",
+   "per-file +/- and viewed",
+   "raw ---/+++ and @@ headers",
+   "line numbers, hidden context counts"
+  ],
+  "infoMissing": [
+   "hunk as 'Lines 41-52 · void main()'",
+   "which message made the change",
+   "folder on the phone file strip"
+  ],
+  "actions": [
+   "switch scope",
+   "switch file",
+   "unified/split",
+   "wrap",
+   "prev/next hunk (two navigators)",
+   "select lines/hunk",
+   "copy selection/patch",
+   "add file/selection to prompt",
+   "ask / comment",
+   "expand context",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "revert one file or hunk (only via a chat message's stage revert)",
+   "open the full file",
+   "one 'next change' across files",
+   "send all comments at once"
+  ],
+  "entry": [
+   "files-changes-sheet",
+   "files row menu Open in Review",
+   "project-hub Changes",
+   "chat changes / command / session menu / nudge"
+  ],
+  "exit": [
+   "review-comment-sheet",
+   "chat (staged on the prompt)"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "read a diff",
+    "here": "review-workspace-diff",
+    "elsewhere": "diff-view/diff-view-lines",
+    "landsOn": "diff-view (other renderer)"
+   },
+   {
+    "job": "next hunk",
+    "here": "review-workspace-next-hunk",
+    "elsewhere": "review-workspace/review-workspace-hunk-bar-next",
+    "landsOn": "review-workspace (two navigators)"
+   },
+   {
+    "job": "list changed files",
+    "here": "review-workspace-file-strip-tab",
+    "elsewhere": "files-changes-sheet/files-changes-sheet-file",
+    "landsOn": "files-changes-sheet"
+   }
+  ],
+  "elements": [
+   {
+    "id": "review-workspace-scope-picker",
+    "kind": "segmented",
+    "kit": "none",
+    "kitGap": "KitSegmented",
+    "couldBeAutomatic": "yes: open on the scope that has changes ('This conversation' if non-empty, else Uncommitted)",
+    "note": "SegmentedButton centred with a centred caption (l.798)"
+   },
+   {
+    "id": "review-workspace-file-strip",
+    "kind": "tabbar",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "file chips repeating name and +/-"
+   },
+   {
+    "id": "review-workspace-file-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "file header + ... ; name appears a third time in the diff header"
+   },
+   {
+    "id": "review-workspace-mode",
+    "kind": "segmented",
+    "kit": "none",
+    "kitGap": "KitSegmented",
+    "couldBeAutomatic": "yes: pick Split only at >=600 dp",
+    "note": "square Unified/Split toggle (l.1220)"
+   },
+   {
+    "id": "review-workspace-hunk-nav",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "'1 up/down' + bottom '1 hunk' bar"
+   },
+   {
+    "id": "review-workspace-diff",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "_UnifiedDiffRow/_SplitDiffRow; continuation lines not indented"
+   },
+   {
+    "id": "review-workspace-file-actions",
+    "kind": "menu",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "PopupMenuButton Ask / Add / Copy patch"
+   },
+   {
+    "id": "review-workspace-selection-bar",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "clear, copy, add, Comment"
+   },
+   {
+    "id": "review-workspace-refresh-banner",
+    "kind": "notice",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductRefreshBody (l.373)"
+   },
+   {
+    "id": "review-workspace-empty-error",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductEmptyState for both (l.2986, l.3014); KitStateView exists"
+   },
+   {
+    "id": "review-workspace-pull-refresh",
+    "kind": "other",
+    "kit": "KitRefresh",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ok"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix (critic said Rethink); the owner keeps the page. The fix is structural: one KitDiffView (sticky file header, one 'Change 1 of N' navigator across files, hanging indents, @@ as line ranges), KitStateView states, KitMotion timings; diff-view reuses it.",
+  "verticals": {
+   "consistency-kit": "off-token motion 160 ms (l.972) and 220 ms; pre-kit states",
+   "a11y": "wrapped code misreads; Split unusable at phone width",
+   "rtl-l10n": "13 non-directional paddings; code LTR right",
+   "honest-state": "error has no reason",
+   "automation-first": "comments are staged one by one"
+  },
+  "evidence": [
+   "lib/ui/screens/review_workspace.dart:373",
+   "lib/ui/screens/review_workspace.dart:424",
+   "lib/ui/screens/review_workspace.dart:570",
+   "lib/ui/screens/review_workspace.dart:798",
+   "lib/ui/screens/review_workspace.dart:972",
+   "lib/ui/screens/review_workspace.dart:2986",
+   "docs/qa/screen-census/f-files-review-terminal/review-workspace--loaded.png",
+   "docs/qa/screen-census/f-files-review-terminal/review-workspace--error.png"
+  ]
+ },
+ {
+  "pageId": "review-comment-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Comment on change",
+  "kind": "sheet",
+  "file": "lib/ui/screens/review_workspace.dart",
+  "journey": [
+   "review",
+   "converse"
+  ],
+  "module": "review",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "project.open"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden",
+   "server.oc2": "hidden",
+   "project.open": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "type a short instruction on a line and keep reviewing",
+   "team-delegator": "leave feedback for whoever reworks it"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/review-comment-sheet.png"
+   },
+   {
+    "id": "lines-or-whole-file",
+    "how": "codeOnly:lib/ui/screens/review_workspace.dart:570"
+   }
+  ],
+  "statesMissing": [
+   "discard guard with text",
+   "draft restored on reopen"
+  ],
+  "info": [
+   "what is being commented on"
+  ],
+  "infoMissing": [
+   "the selected lines as a quote"
+  ],
+  "actions": [
+   "type",
+   "Add to prompt",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "recover a comment lost to a swipe",
+   "send now"
+  ],
+  "entry": [
+   "review-workspace Ask / file menu Ask / selection Comment"
+  ],
+  "exit": [
+   "review-workspace"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "instruct the agent",
+    "here": "review-comment-sheet-field",
+    "elsewhere": "chat/composer",
+    "landsOn": "chat"
+   }
+  ],
+  "elements": [
+   {
+    "id": "review-comment-sheet-field",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "placeholder names OpenCode on every server"
+   },
+   {
+    "id": "review-comment-sheet-actions",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Cancel + Add right-aligned (dialog cluster in a sheet)"
+   },
+   {
+    "id": "review-comment-sheet-guard",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": "KitDiscardGuard",
+    "couldBeAutomatic": "yes: keep the draft per file instead of asking",
+    "note": "missing: plain showModalBottomSheet (l.575)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Critical X2: keep the draft or guard dismissal; full-width 'Add to prompt' above the keyboard; agent-neutral placeholder.",
+  "verticals": {
+   "reliability": "typed comment lost on swipe (critical)",
+   "consistency-kit": "dialog buttons in a sheet"
+  },
+  "evidence": [
+   "lib/ui/screens/review_workspace.dart:575",
+   "docs/qa/screen-census/f-files-review-terminal/review-comment-sheet.png"
+  ]
+ },
+ {
+  "pageId": "terminal",
+  "area": "f-files-review-terminal",
+  "title": "Terminal",
+  "kind": "screen",
+  "file": "lib/ui/screens/terminal_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "terminal",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc1",
+   "server.oc2",
+   "phone.builtin"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (openers check capabilities.terminal: home_screen.dart:132, chat_screen.dart:597)",
+   "server.oc2": "hidden (same)",
+   "phone.builtin": "hidden (source defaults to server when Linux is not installed, terminal_screen.dart:143); no offer to install"
+  },
+  "personas": [
+   "tinkerer",
+   "phone-only",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "phone-only": "a shell on this phone without a server (local source)",
+   "tinkerer": "several long-running shells, rename, stop",
+   "remote-lead": "glance at a running build/test"
+  },
+  "states": [
+   {
+    "id": "populated",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal--populated.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal--empty.png"
+   },
+   {
+    "id": "failed",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal--failed.png"
+   },
+   {
+    "id": "refresh-failed-banner",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:526"
+   },
+   {
+    "id": "source-choice phone/server",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:219"
+   },
+   {
+    "id": "phone source (LocalTerminalView)",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:165"
+   },
+   {
+    "id": "detecting source (KitLoadingBar)",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:188"
+   }
+  ],
+  "statesMissing": [
+   "server not answering >8 s",
+   "exited with code in words",
+   "phone chosen but Ubuntu missing -> install"
+  ],
+  "info": [
+   "title",
+   "Running/Exited chip",
+   "raw command cut mid-flag",
+   "pid / exit code"
+  ],
+  "infoMissing": [
+   "state and age ('Running · 4 min')",
+   "folder"
+  ],
+  "actions": [
+   "open",
+   "new terminal (FAB + empty button)",
+   "rename",
+   "stop / remove",
+   "refresh",
+   "retry",
+   "choose source"
+  ],
+  "actionsMissing": [
+   "restart an exited command",
+   "remove all exited"
+  ],
+  "entry": [
+   "project-hub Terminal",
+   "home-shell shortcut",
+   "keyboard shortcut",
+   "chat command 'Terminal'"
+  ],
+  "exit": [
+   "terminal-surface",
+   "terminal-rename-dialog",
+   "terminal-remove-sheet",
+   "local-terminal"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "new terminal",
+    "here": "terminal-new-fab",
+    "elsewhere": "terminal/terminal-empty-new",
+    "landsOn": "terminal-surface (two buttons at once)"
+   },
+   {
+    "job": "list processes on the phone",
+    "here": "terminal",
+    "elsewhere": "termux-processes",
+    "landsOn": "termux-processes"
+   }
+  ],
+  "elements": [
+   {
+    "id": "terminal-source",
+    "kind": "segmented",
+    "kit": "none",
+    "kitGap": "KitSegmented",
+    "couldBeAutomatic": "yes: pick the only available source silently",
+    "note": "SegmentedButton (l.219)"
+   },
+   {
+    "id": "terminal-process-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "hand-built row + status chip + ... ; should be KitRow+KitStatusMark+KitRowMenu"
+   },
+   {
+    "id": "terminal-list",
+    "kind": "list",
+    "kit": "KitAnimatedRows",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ok (l.702)"
+   },
+   {
+    "id": "terminal-new-fab",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "FloatingActionButton.extended with an outline ring (l.723)"
+   },
+   {
+    "id": "terminal-states",
+    "kind": "state",
+    "kit": "KitStateView",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "empty/failed (l.652, l.679); failed body repeats the title"
+   },
+   {
+    "id": "terminal-refresh-banner",
+    "kind": "notice",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductRefreshBody (l.526)"
+   }
+  ],
+  "ledgerStale": [
+   "terminal-error-retry: labelled ProductErrorState; the page uses KitStateView (terminal_screen.dart:652)"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. One new-terminal action per state, state and age as the supporting line, a reasoned failure, and the source chosen automatically when only one exists.",
+  "verticals": {
+   "honest-state": "failure repeats itself",
+   "consistency-kit": "FAB ring, hand-built rows",
+   "battery-heat": "local shells keep running unannounced",
+   "reliability": "server PTYs vanish on server restart without notice"
+  },
+  "evidence": [
+   "lib/ui/screens/terminal_screen.dart:143",
+   "lib/ui/screens/terminal_screen.dart:219",
+   "lib/ui/screens/terminal_screen.dart:526",
+   "lib/ui/screens/terminal_screen.dart:652",
+   "lib/ui/screens/terminal_screen.dart:723",
+   "docs/qa/screen-census/f-files-review-terminal/terminal--populated.png",
+   "docs/qa/screen-census/f-files-review-terminal/terminal--empty.png",
+   "docs/qa/screen-census/f-files-review-terminal/terminal--failed.png"
+  ]
+ },
+ {
+  "pageId": "terminal-rename-dialog",
+  "area": "f-files-review-terminal",
+  "title": "Rename terminal",
+  "kind": "dialog",
+  "file": "lib/ui/screens/terminal_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "terminal",
+  "chrome": "none",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden",
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "name several shells apart"
+  },
+  "states": [
+   {
+    "id": "focused",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal-rename-dialog.png"
+   }
+  ],
+  "statesMissing": [
+   "rename failed"
+  ],
+  "info": [
+   "current name"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Save",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "terminal row menu Rename"
+  ],
+  "exit": [
+   "terminal"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "terminal-rename-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitInputDialog",
+    "couldBeAutomatic": "yes: name from the command automatically (already the default)",
+    "note": "AlertDialog (l.420); field labelled 'Title'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "No owner verdict; critic keep. A correct short-input dialog; label 'Name', built from a shared KitInputDialog.",
+  "verticals": {
+   "consistency-kit": "raw AlertDialog shared with nothing",
+   "a11y": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/terminal_screen.dart:420",
+   "docs/qa/screen-census/f-files-review-terminal/terminal-rename-dialog.png"
+  ]
+ },
+ {
+  "pageId": "terminal-remove-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Stop terminal? / Remove terminal?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/terminal_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "terminal",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden",
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "stop a runaway process safely"
+  },
+  "states": [
+   {
+    "id": "stop-running",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal-remove-sheet--stop-running.png"
+   },
+   {
+    "id": "remove-exited",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal-remove-sheet--remove-exited.png"
+   }
+  ],
+  "statesMissing": [
+   "stop failed"
+  ],
+  "info": [
+   "children end / record removed"
+  ],
+  "infoMissing": [
+   "terminal name",
+   "whether output is kept"
+  ],
+  "actions": [
+   "Stop / Remove",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "undo remove: impossible, say so"
+  ],
+  "entry": [
+   "terminal row menu"
+  ],
+  "exit": [
+   "terminal"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "terminal-remove-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet (l.478): centred icon circle, error-filled confirm"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Name the terminal, say what is lost, move to the one KitConfirmSheet.",
+  "verticals": {
+   "consistency-kit": "one of four confirmation styles"
+  },
+  "evidence": [
+   "lib/ui/screens/terminal_screen.dart:478",
+   "lib/ui/widgets/confirm_sheet.dart:10"
+  ]
+ },
+ {
+  "pageId": "terminal-surface",
+  "area": "f-files-review-terminal",
+  "title": "<terminal process title>",
+  "kind": "screen",
+  "file": "lib/ui/screens/terminal_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "terminal",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden",
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "tinkerer": "real keys (Ctrl-C, arrows), copy, reconnect",
+   "remote-lead": "read output, interrupt a stuck command"
+  },
+  "states": [
+   {
+    "id": "connected",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal-surface--connected.png"
+   },
+   {
+    "id": "accessible-transcript",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/terminal-surface--accessible.png"
+   },
+   {
+    "id": "connecting",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:1252"
+   },
+   {
+    "id": "error-banner",
+    "how": "codeOnly:lib/ui/screens/terminal_screen.dart:1258"
+   }
+  ],
+  "statesMissing": [
+   "process exited (restart/remove here)",
+   "reconnecting status line instead of PID"
+  ],
+  "info": [
+   "title",
+   "'Connected - PID 4821'",
+   "live output"
+  ],
+  "infoMissing": [
+   "folder",
+   "exit code"
+  ],
+  "actions": [
+   "type",
+   "key strip",
+   "copy",
+   "accessible mode",
+   "reconnect",
+   "retry"
+  ],
+  "actionsMissing": [
+   "rename / stop from here",
+   "paste",
+   "font size"
+  ],
+  "entry": [
+   "terminal row / FAB / empty button"
+  ],
+  "exit": [
+   "terminal"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "terminal surface",
+    "here": "terminal-surface",
+    "elsewhere": "local-terminal",
+    "landsOn": "local-terminal (kit TerminalKeyBar)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "terminal-surface-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "three icons: copy, person figure (accessible mode), refresh (reconnect) (l.1198-1221)"
+   },
+   {
+    "id": "terminal-surface-status",
+    "kind": "status-line",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: hide when connected; reconnect automatically on resume",
+    "note": "'Connected - PID'"
+   },
+   {
+    "id": "terminal-surface-view",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "xterm TerminalView"
+   },
+   {
+    "id": "terminal-surface-keys",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_TerminalKey strip (l.1343) while lib/ui/kit/terminal_key_bar.dart (TerminalKeyBar) serves the local terminal; add TerminalKeyBar to the taxonomy's kit list"
+   },
+   {
+    "id": "terminal-surface-error",
+    "kind": "notice",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "MaterialBanner (l.1258); should be KitNotice"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Copy stays; accessible mode, reconnect, rename, stop to an overflow; PID to Details; status line only when not connected; reuse the kit TerminalKeyBar so phone and server terminals are one surface.",
+  "verticals": {
+   "a11y": "transcript mode exists (good); its icon reads as accessibility settings",
+   "consistency-kit": "own key strip",
+   "reliability": "lifecycle suspend handled; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/terminal_screen.dart:1198",
+   "lib/ui/screens/terminal_screen.dart:1258",
+   "lib/ui/screens/terminal_screen.dart:1343",
+   "lib/ui/kit/terminal_key_bar.dart",
+   "docs/qa/screen-census/f-files-review-terminal/terminal-surface--connected.png"
+  ]
+ },
+ {
+  "pageId": "stage-revert-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Stage a revert from this prompt?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/staged_revert_screen.dart",
+  "journey": [
+   "review",
+   "recover"
+  ],
+  "module": "review",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden (StagedRevertGateway is implemented only by the OpenCode 2 gateway, api2/gateway_operations.dart:32)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "undo a wrong turn safely from the phone",
+   "tinkerer": "choose whether files revert too"
+  },
+  "states": [
+   {
+    "id": "ready",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/stage-revert-sheet.png"
+   },
+   {
+    "id": "stale-disabled",
+    "how": "codeOnly:lib/ui/screens/staged_revert_screen.dart:30"
+   }
+  ],
+  "statesMissing": [
+   "stage failed"
+  ],
+  "info": [
+   "prompt text unlabelled",
+   "git-mechanics body"
+  ],
+  "infoMissing": [
+   "how many files change",
+   "later messages hidden"
+  ],
+  "actions": [
+   "Revert file changes too",
+   "Stage and review",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "chat message menu Revert"
+  ],
+  "exit": [
+   "staged-revert"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "stage-revert-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "custom showModalBottomSheet (l.22)"
+   },
+   {
+    "id": "stage-revert-sheet-apply-files",
+    "kind": "switch",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: default on when the files are unchanged since",
+    "note": "CheckboxListTile (l.54); should be KitSwitchRow"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. The safety model is right; 'Undo from this message?', a labelled quote, KitSwitchRow.",
+  "verticals": {
+   "consistency-kit": "custom sheet",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/staged_revert_screen.dart:22",
+   "lib/ui/screens/staged_revert_screen.dart:54",
+   "docs/qa/screen-census/f-files-review-terminal/stage-revert-sheet.png"
+  ]
+ },
+ {
+  "pageId": "staged-revert",
+  "area": "f-files-review-terminal",
+  "title": "Review staged revert",
+  "kind": "screen",
+  "file": "lib/ui/screens/staged_revert_screen.dart",
+  "journey": [
+   "review",
+   "recover"
+  ],
+  "module": "review",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "be sure before making it permanent",
+   "tinkerer": "inspect each file's diff"
+  },
+  "states": [
+   {
+    "id": "staged",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/staged-revert.png"
+   },
+   {
+    "id": "stale (Review latest state)",
+    "how": "codeOnly:lib/ui/screens/staged_revert_screen.dart:224"
+   },
+   {
+    "id": "busy",
+    "how": "codeOnly:lib/ui/screens/staged_revert_screen.dart:302"
+   }
+  ],
+  "statesMissing": [
+   "no files affected",
+   "commit/clear failed",
+   "done"
+  ],
+  "info": [
+   "prompt + raw 'msg_assistant'",
+   "'may already have applied them'",
+   "paths + counts"
+  ],
+  "infoMissing": [
+   "whether files were reverted (known)",
+   "which later messages are hidden"
+  ],
+  "actions": [
+   "open a file diff",
+   "Make revert permanent",
+   "Clear staged revert",
+   "Review latest state"
+  ],
+  "actionsMissing": [
+   "say 'permanent' cannot be undone and offer export first"
+  ],
+  "entry": [
+   "stage-revert-sheet",
+   "chat staged-revert chip",
+   "chat command 'redo'"
+  ],
+  "exit": [
+   "diff-view",
+   "staged-revert-confirm-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "staged-revert-prompt",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "prompt + message id (l.287)"
+   },
+   {
+    "id": "staged-revert-file-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile, full path titles -> DiffView.single (l.354)"
+   },
+   {
+    "id": "staged-revert-actions",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "should be KitActionStack; today a green FilledButton for the irreversible action (l.316), outlined Clear (l.324)"
+   },
+   {
+    "id": "staged-revert-busy",
+    "kind": "loading",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "LinearProgressIndicator; kit has KitLoadingBar"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Two equal outcomes with consequences ('Keep the undo' error-tonal, 'Put everything back' tonal), state the file result, drop the id.",
+  "verticals": {
+   "honest-state": "hedges what the app knows",
+   "consistency-kit": "destructive in green"
+  },
+  "evidence": [
+   "lib/ui/screens/staged_revert_screen.dart:287",
+   "lib/ui/screens/staged_revert_screen.dart:316",
+   "lib/ui/screens/staged_revert_screen.dart:354",
+   "docs/qa/screen-census/f-files-review-terminal/staged-revert.png"
+  ]
+ },
+ {
+  "pageId": "staged-revert-confirm-sheet",
+  "area": "f-files-review-terminal",
+  "title": "Make this revert permanent? / Clear this staged revert?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/staged_revert_screen.dart",
+  "journey": [
+   "review",
+   "recover"
+  ],
+  "module": "review",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "know exactly what is overwritten"
+  },
+  "states": [
+   {
+    "id": "commit",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/staged-revert-confirm-sheet--commit.png"
+   },
+   {
+    "id": "clear",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/staged-revert-confirm-sheet--clear.png"
+   }
+  ],
+  "statesMissing": [
+   "stale while open"
+  ],
+  "info": [
+   "three-sentence consequence"
+  ],
+  "infoMissing": [
+   "files edited since staging"
+  ],
+  "actions": [
+   "confirm",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "staged-revert commit/clear"
+  ],
+  "exit": [
+   "staged-revert"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "staged-revert-confirm-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "custom sheet (l.137): left-aligned, no icon; clear confirms in green"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. KitConfirmSheet, error tone when edits are overwritten, two sentences.",
+  "verticals": {
+   "consistency-kit": "third confirmation style"
+  },
+  "evidence": [
+   "lib/ui/screens/staged_revert_screen.dart:137",
+   "lib/ui/screens/staged_revert_screen.dart:171"
+  ]
+ },
+ {
+  "pageId": "file-preview-sheet",
+  "area": "f-files-review-terminal",
+  "title": "<file name>",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/file_preview.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "files",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (attachments already on the phone still open)"
+  },
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "tinkerer",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "newcomer": "see what the agent referred to without learning Files",
+   "remote-lead": "attach it back to the prompt"
+  },
+  "states": [
+   {
+    "id": "markdown",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/file-preview-sheet--markdown.png"
+   },
+   {
+    "id": "attaching / downloading",
+    "how": "codeOnly:lib/ui/widgets/file_preview.dart:214"
+   }
+  ],
+  "statesMissing": [
+   "remote path failed to load",
+   "too large"
+  ],
+  "info": [
+   "name",
+   "MIME type subtitle (wrong for Markdown)"
+  ],
+  "infoMissing": [
+   "folder and size"
+  ],
+  "actions": [
+   "copy",
+   "attach (paperclip)",
+   "save to device",
+   "close"
+  ],
+  "actionsMissing": [
+   "open in Files at its folder",
+   "open in Review if changed"
+  ],
+  "entry": [
+   "chat path link",
+   "composer attachment chip",
+   "photo review",
+   "tool card output/diff/image",
+   "markdown path chip",
+   "prompt error banner",
+   "context capsule image"
+  ],
+  "exit": [
+   "caller"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "preview a file",
+    "here": "file-preview-sheet",
+    "elsewhere": "files-file-viewer-sheet/files-file-viewer-sheet",
+    "landsOn": "files-file-viewer-sheet"
+   }
+  ],
+  "elements": [
+   {
+    "id": "file-preview-sheet-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitFileViewer",
+    "couldBeAutomatic": "no",
+    "note": "four unlabelled IconButtons (l.318) over a MIME subtitle"
+   },
+   {
+    "id": "file-preview-sheet-body",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": "KitFileViewer",
+    "couldBeAutomatic": "no",
+    "note": "FilePreviewBody"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink. One viewer for every entry point: KitFileViewer with close, one labelled action (Attach in chat) and an overflow (Copy, Save, Open in Files, Open in Review); the Files viewer merges into it.",
+  "verticals": {
+   "consistency-kit": "second header pattern",
+   "a11y": "icon-only actions",
+   "security-privacy": "save via the system picker; ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/file_preview.dart:189",
+   "lib/ui/widgets/file_preview.dart:318",
+   "docs/qa/screen-census/f-files-review-terminal/file-preview-sheet--markdown.png"
+  ]
+ },
+ {
+  "pageId": "embedded-file-preview-body",
+  "area": "f-files-review-terminal",
+  "title": "[File preview body]",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/file_preview.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "files",
+  "chrome": "none",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead",
+   "phone-only",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "raw/source views, CSV table",
+   "remote-lead": "readable rendering"
+  },
+  "states": [
+   {
+    "id": "json/code",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/embedded-file-preview-body.png"
+   },
+   {
+    "id": "markdown rendered/raw",
+    "how": "codeOnly:lib/ui/widgets/file_preview.dart:752"
+   },
+   {
+    "id": "image zoom",
+    "how": "codeOnly:lib/ui/widgets/file_preview.dart:396"
+   },
+   {
+    "id": "csv table/source, svg, pdf paging/retry",
+    "how": "codeOnly:lib/ui/widgets/file_preview.dart:364"
+   }
+  ],
+  "statesMissing": [
+   "unsupported binary in plain words"
+  ],
+  "info": [
+   "content",
+   "language label in an inner frame"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Rendered/Raw",
+   "Table/Source",
+   "Image/Source",
+   "PDF prev/next/cancel/retry",
+   "pinch zoom"
+  ],
+  "actionsMissing": [
+   "wrap toggle",
+   "find in file"
+  ],
+  "entry": [
+   "file-preview-sheet",
+   "files-file-viewer-sheet",
+   "skill-activation-sheet",
+   "skills"
+  ],
+  "exit": [
+   "embedded-markdown-text"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "embedded-file-preview-body-mode",
+    "kind": "segmented",
+    "kit": "none",
+    "kitGap": "KitSegmented",
+    "couldBeAutomatic": "no",
+    "note": "toggle pairs floating right (l.841)"
+   },
+   {
+    "id": "embedded-file-preview-body-code",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitFileViewer",
+    "couldBeAutomatic": "no",
+    "note": "bordered block with its own copy inside a sheet with copy"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Full-width body without the inner frame; mode toggles into the viewer overflow or a left-aligned KitSegmented.",
+  "verticals": {
+   "perf": "PDF capped at LocalPdf.maxPages; ok",
+   "a11y": "pinch zoom has no visible alternative"
+  },
+  "evidence": [
+   "lib/ui/widgets/file_preview.dart:364",
+   "lib/ui/widgets/file_preview.dart:396",
+   "lib/ui/widgets/file_preview.dart:841",
+   "docs/qa/screen-census/f-files-review-terminal/embedded-file-preview-body.png"
+  ]
+ },
+ {
+  "pageId": "diff-view",
+  "area": "f-files-review-terminal",
+  "title": "Review",
+  "kind": "screen",
+  "file": "lib/ui/widgets/diff_view.dart",
+  "journey": [
+   "review"
+  ],
+  "module": "review",
+  "chrome": "close-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (opened with diffs in hand; nothing refetched)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "newcomer": "see a permission's full change before approving",
+   "remote-lead": "check a staged revert's file"
+  },
+  "states": [
+   {
+    "id": "multi-file",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/diff-view.png"
+   }
+  ],
+  "statesMissing": [
+   "empty diff",
+   "binary"
+  ],
+  "info": [
+   "file + folder + counts",
+   "'N unchanged lines not included in patch'",
+   "gutter"
+  ],
+  "infoMissing": [
+   "what produced it"
+  ],
+  "actions": [
+   "close",
+   "copy file/patch (single)",
+   "expand/hide context",
+   "wrap"
+  ],
+  "actionsMissing": [
+   "comment / add to prompt",
+   "next change"
+  ],
+  "entry": [
+   "staged-revert file",
+   "todos sheet",
+   "demo review",
+   "permission-sheet 'See full diff'",
+   "isolated sessions"
+  ],
+  "exit": [
+   "caller"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "read a diff",
+    "here": "diff-view",
+    "elsewhere": "review-workspace/review-workspace-diff",
+    "landsOn": "review-workspace"
+   }
+  ],
+  "elements": [
+   {
+    "id": "diff-view-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "centred 'Review' with CloseButton (l.62); differs from sibling title headers"
+   },
+   {
+    "id": "diff-view-body",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": "KitDiffView",
+    "couldBeAutomatic": "no",
+    "note": "second renderer; continuations lose indentation"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:review-workspace",
+  "rationale": "Owner verdict Rethink. Needed only as a read-only mode of the one diff component: callers without a session scope open KitDiffView read-only, titled by what it shows.",
+  "verticals": {
+   "consistency-kit": "second renderer and header",
+   "a11y": "wrapped lines misread"
+  },
+  "evidence": [
+   "lib/ui/widgets/diff_view.dart:31",
+   "lib/ui/widgets/diff_view.dart:62",
+   "docs/qa/screen-census/f-files-review-terminal/diff-view.png"
+  ]
+ },
+ {
+  "pageId": "run-command-dialog",
+  "area": "f-files-review-terminal",
+  "title": "Run /{command}",
+  "kind": "dialog",
+  "file": "lib/ui/widgets/run_command_dialog.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "library",
+  "chrome": "none",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden (callers list runnable commands only)"
+  },
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "tinkerer": "arguments and target chat"
+  },
+  "states": [
+   {
+    "id": "idle",
+    "how": "rendered:docs/qa/screen-census/f-files-review-terminal/run-command-dialog.png"
+   },
+   {
+    "id": "sending",
+    "how": "codeOnly:lib/ui/widgets/run_command_dialog.dart:218"
+   }
+  ],
+  "statesMissing": [
+   "run failed"
+  ],
+  "info": [
+   "command",
+   "destination chat"
+  ],
+  "infoMissing": [
+   "what arguments it takes"
+  ],
+  "actions": [
+   "choose chat",
+   "arguments",
+   "Run",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "commands row",
+   "plugins review command"
+  ],
+  "exit": [
+   "chat"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "run a command",
+    "here": "run-command-dialog-run",
+    "elsewhere": "command-launcher-sheet/chat-command",
+    "landsOn": "chat"
+   }
+  ],
+  "elements": [
+   {
+    "id": "run-command-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitInputDialog",
+    "couldBeAutomatic": "yes: default to the current conversation",
+    "note": "AlertDialog + Dropdown (l.154); 'Running…' in the button label"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Helper text from the command description; one KitInputDialog rule for short inputs.",
+  "verticals": {
+   "consistency-kit": "raw AlertDialog",
+   "honest-state": "progress in the button label"
+  },
+  "evidence": [
+   "lib/ui/widgets/run_command_dialog.dart:154",
+   "docs/qa/screen-census/f-files-review-terminal/run-command-dialog.png"
+  ]
+ },
+ {
+  "pageId": "servers",
+  "area": "g-servers",
+  "title": "Servers",
+  "kind": "screen",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "connect",
+   "install"
+  ],
+  "module": "servers",
+  "chrome": "brand-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "phone-only",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "remote-lead": "which computer is reachable now and on which network (Tailscale); switch fast",
+   "tinkerer": "server kind, address, version; several servers side by side",
+   "phone-only": "the phone's own server first, with start/stop/restart; setup entry when absent",
+   "newcomer": "one obvious way to add the first server; the demo"
+  },
+  "states": [
+   {
+    "id": "loaded-remote-only",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers--loaded.png"
+   },
+   {
+    "id": "password-needed",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers--password-needed.png"
+   },
+   {
+    "id": "phone-server-termux",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:290"
+   },
+   {
+    "id": "phone-server-builtin",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:803"
+   },
+   {
+    "id": "claude-code-on-phone",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:265"
+   },
+   {
+    "id": "first-run-no-servers",
+    "how": "codeOnly:welcome view"
+   },
+   {
+    "id": "connect-failure",
+    "how": "codeOnly:servers-failure notice"
+   }
+  ],
+  "statesMissing": [
+   "a saved server that is unreachable right now (only discovered on tap)",
+   "which server hosts the AI Team"
+  ],
+  "info": [
+   "server name",
+   "connected mark",
+   "server kind + version",
+   "address"
+  ],
+  "infoMissing": [
+   "reachability/latency before tapping",
+   "last connected",
+   "where the AI Team runs",
+   "which network (Tailscale/LAN)"
+  ],
+  "actions": [
+   "connect by tapping a row",
+   "row menu: account, connect, edit, remove",
+   "Add server",
+   "Connect OpenCode 2",
+   "On this phone setup",
+   "More setup options",
+   "Try demo"
+  ],
+  "actionsMissing": [
+   "test all servers",
+   "reorder/pin a favourite",
+   "undo remove (remove is immediate after confirm)"
+  ],
+  "entry": [
+   "settings/settings-saved-servers",
+   "root-connecting/change",
+   "home-shell/banner-update-password|token",
+   "profile-editor/save"
+  ],
+  "exit": [
+   "profile-editor",
+   "phone-setup-start",
+   "termux-setup",
+   "tailscale-setup",
+   "external-agents",
+   "demo",
+   "home-shell"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "add a server",
+    "here": "servers-add",
+    "elsewhere": "servers/servers-connect-opencode2",
+    "landsOn": "profile-editor (OpenCode 2 preset)"
+   },
+   {
+    "job": "set up this phone",
+    "here": "servers-termux-setup",
+    "elsewhere": "settings/settings-on-this-phone",
+    "landsOn": "phone-setup-start"
+   },
+   {
+    "job": "switch server",
+    "here": "servers-profile-row",
+    "elsewhere": "home-shell/server switcher sheet",
+    "landsOn": "home-shell"
+   }
+  ],
+  "elements": [
+   {
+    "id": "brand-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitBrandHeader",
+    "couldBeAutomatic": "no",
+    "note": "logo + bell/info/help; other root pages use a title header"
+   },
+   {
+    "id": "servers-profile-row",
+    "kind": "row",
+    "kit": "KitRow+KitRowIcon+KitRowMenu",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "current mark = filled accent circle + 'Connected ·'"
+   },
+   {
+    "id": "phone-server-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: start the phone server on tap when stopped (already), restart on crash (Keep running)",
+    "note": "TermuxRunningServerEntry/LocalServerRow"
+   },
+   {
+    "id": "servers-connect-opencode2",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "duplicate of Add server with a preset"
+   },
+   {
+    "id": "servers-more-setup",
+    "kind": "row",
+    "kit": "KitExpandRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Tailscale, setup guide, external agents folded"
+   },
+   {
+    "id": "servers-add",
+    "kind": "primary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "pinned primary"
+   },
+   {
+    "id": "servers-try-demo",
+    "kind": "tertiary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Connect and install are mixed on one page and the same job has two entries; group by where the agent runs (this phone / my computers / cloud agents), one Add that asks which, and show reachability before a tap.",
+  "verticals": {
+   "consistency-kit": "brand header differs from sibling root pages",
+   "honest-state": "unreachable servers look identical to reachable ones",
+   "automation-first": "could probe reachability in the background"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:265",
+   "lib/ui/screens/servers_screen.dart:290",
+   "lib/ui/screens/servers_screen.dart:640",
+   "lib/ui/screens/servers_screen.dart:741",
+   "lib/ui/screens/servers_screen.dart:803",
+   "lib/ui/screens/servers_screen.dart:854",
+   "docs/qa/screen-census/g-servers/servers--loaded.png"
+  ]
+ },
+ {
+  "pageId": "servers-welcome",
+  "area": "g-servers",
+  "title": "Keep your work moving.",
+  "kind": "screen",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "connect",
+   "install"
+  ],
+  "module": "servers",
+  "chrome": "brand-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "newcomer",
+   "phone-only",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "newcomer": "one question in plain words and a risk-free demo",
+   "phone-only": "'On this phone' leads to phone setup v2 and resumes an interrupted setup",
+   "remote-lead": "the computer path should reach pairing in one tap"
+  },
+  "states": [
+   {
+    "id": "first-run",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers-welcome.png"
+   },
+   {
+    "id": "phone-setup-interrupted (Continue setup)",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:711"
+   },
+   {
+    "id": "no-termux-support (two choices)",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:1092"
+   }
+  ],
+  "statesMissing": [
+   "no network on first run",
+   "why 'On this phone' is absent on unsupported devices"
+  ],
+  "info": [
+   "value sentence",
+   "'Where does your coding agent run?'",
+   "three choices"
+  ],
+  "infoMissing": [
+   "time each path takes (phone ~4 min)"
+  ],
+  "actions": [
+   "On my computer",
+   "On this phone",
+   "Just show me",
+   "About"
+  ],
+  "actionsMissing": [
+   "I already have a pairing code"
+  ],
+  "entry": [
+   "app root with no profiles",
+   "launcher shortcut without a server"
+  ],
+  "exit": [
+   "agent-choice",
+   "phone-setup-start",
+   "phone-setup-progress",
+   "demo",
+   "about"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "choose which agent on a computer",
+    "here": "servers-welcome-connect",
+    "elsewhere": "profile-editor/profile-editor-backend-opencode",
+    "landsOn": "agent-choice then profile-editor (asked twice)"
+   },
+   {
+    "job": "set up this phone",
+    "here": "servers-welcome-phone",
+    "elsewhere": "servers/servers-termux-setup",
+    "landsOn": "phone-setup-start"
+   }
+  ],
+  "elements": [
+   {
+    "id": "brand-header",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitBrandHeader",
+    "couldBeAutomatic": "no",
+    "note": "logo + lone info icon"
+   },
+   {
+    "id": "servers-welcome-hero",
+    "kind": "illustration",
+    "kit": "KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ServersWelcomeScene (l.1051)"
+   },
+   {
+    "id": "servers-welcome-choice",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": "KitChoiceRow",
+    "couldBeAutomatic": "no",
+    "note": "filled hero tiles; the same choice is radio rows in profile-editor"
+   }
+  ],
+  "ledgerStale": [
+   "servers-welcome-termux-setup: now opens phone setup v2 (_openPhoneSetup, servers_screen.dart:713), not termux-setup"
+  ],
+  "proposal": "keep",
+  "rationale": "No owner verdict; critic keep. The strongest first-run screen; only its computer exit changes: open profile-editor directly (its type rows already ask which agent), removing agent-choice, consistent with the pilot's 'one Add that asks which'.",
+  "verticals": {
+   "a11y": "drawing decorative; tiles labelled; ok",
+   "consistency-kit": "hero tiles as a documented exception",
+   "upgrade-migration": "resumes interrupted phone setup; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:711",
+   "lib/ui/screens/servers_screen.dart:713",
+   "lib/ui/screens/servers_screen.dart:1002",
+   "lib/ui/screens/servers_screen.dart:1051",
+   "docs/qa/screen-census/g-servers/servers-welcome.png"
+  ]
+ },
+ {
+  "pageId": "agent-choice",
+  "area": "g-servers",
+  "title": "On my computer",
+  "kind": "onboarding-step",
+  "file": "lib/ui/screens/agent_choice_screen.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "newcomer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "newcomer": "doesn't know OpenCode from Paseo; needs what each runs, not the plumbing",
+   "remote-lead": "may run several agents on one computer"
+  },
+  "states": [
+   {
+    "id": "three-choices",
+    "how": "rendered:docs/qa/screen-census/g-servers/agent-choice.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "'Which agent first?'",
+   "OpenCode / 'Claude Code, Codex, Pi and more' (Paseo daemon, Experimental) / Codex (app-server, Experimental)"
+  ],
+  "infoMissing": [
+   "where to add the others later (points at 'the server name at the top')"
+  ],
+  "actions": [
+   "choose OpenCode",
+   "choose Claude Code/Pi",
+   "choose Codex"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "servers-welcome On my computer"
+  ],
+  "exit": [
+   "profile-editor (preset backend)"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "choose the agent kind",
+    "here": "agent-choice-opencode",
+    "elsewhere": "profile-editor/profile-editor-backend-opencode",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "agent-choice-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitChoiceRow",
+    "couldBeAutomatic": "yes: detect what runs on the computer after pairing instead of asking",
+    "note": "cards on 24 dp rails, one server icon for all three (l.55-69)"
+   }
+  ],
+  "ledgerStale": [
+   "agent-choice-paseo: label is now 'Claude Code, Codex, Pi and more' (app_en.arb firstRunAgentClaudeOrPi)"
+  ],
+  "proposal": "merge-into:profile-editor",
+  "rationale": "Owner verdict Rethink. It asks what profile-editor's type rows already ask, with the regression-row-15 wording; removing it takes a step off the first-run path.",
+  "verticals": {
+   "consistency-kit": "cards off the rails",
+   "honest-state": "'Experimental' without the limit",
+   "automation-first": "could be detected, not asked"
+  },
+  "evidence": [
+   "lib/ui/screens/agent_choice_screen.dart:55",
+   "lib/l10n/app_en.arb:17629",
+   "docs/qa/screen-census/g-servers/agent-choice.png"
+  ]
+ },
+ {
+  "pageId": "servers-remove-server-sheet",
+  "area": "g-servers",
+  "title": "Remove {name}?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "servers",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "remote-lead": "queued prompts for that server are lost; needs to know",
+   "phone-only": "forgetting the phone server must not uninstall anything"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/servers-remove-server-sheet.png"
+   }
+  ],
+  "statesMissing": [
+   "removing the active server: what shows next"
+  ],
+  "info": [
+   "local data deleted; nothing on the server"
+  ],
+  "infoMissing": [
+   "count of queued prompts/drafts lost"
+  ],
+  "actions": [
+   "Remove",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "undo: impossible; offer to send/export queued work first"
+  ],
+  "entry": [
+   "servers row menu Remove",
+   "termux running-server Forget",
+   "server switcher forget"
+  ],
+  "exit": [
+   "servers"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "forget a server",
+    "here": "servers-remove-server-sheet",
+    "elsewhere": "server-switcher-sheet/server-switcher-sheet-phone-forget",
+    "landsOn": "servers (route request forget)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "servers-remove-server-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet destructive (l.570); band of empty space between paragraphs"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. One body on kit spacing, 'this phone', say queued prompts go.",
+  "verticals": {
+   "security-privacy": "profile-scoped sweep; ok",
+   "reliability": "queued prompts deleted silently"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:570",
+   "docs/qa/screen-census/g-servers/servers-remove-server-sheet.png"
+  ]
+ },
+ {
+  "pageId": "profile-editor",
+  "area": "g-servers",
+  "title": "Add server | Edit server | Re-enter password | Re-enter connection token | OpenCode | Claude Code or Pi | Codex",
+  "kind": "screen",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "connect",
+   "install"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "perm.camera",
+   "network.tailscale"
+  ],
+  "whenMissing": {
+   "perm.camera": "explains (scanner recovery states) and offers Paste code",
+   "network.tailscale": "offers-enable:tailscale-setup ('Not on the same network?')"
+  },
+  "personas": [
+   "newcomer",
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "newcomer": "pair with a code, no address or password",
+   "remote-lead": "Tailscale address, AI Team host, second agent on the same computer",
+   "tinkerer": "manual URL, username, Codex token, test connection"
+  },
+  "states": [
+   {
+    "id": "add-opencode",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-editor--add-opencode.png"
+   },
+   {
+    "id": "add-codex",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-editor--add-codex.png"
+   },
+   {
+    "id": "first-run-preset",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-editor--first-run-connect.png"
+   },
+   {
+    "id": "failed-with-save-anyway",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-editor--failed.png"
+   },
+   {
+    "id": "edit / re-enter password / re-enter token",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:1409"
+   },
+   {
+    "id": "pairing",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:1828"
+   },
+   {
+    "id": "dirty (discard guard)",
+    "how": "codeOnly:lib/ui/screens/servers_screen.dart:2747"
+   }
+  ],
+  "statesMissing": [
+   "connected: finished moment",
+   "check >8 s with Cancel",
+   "computer discovered on the network",
+   "adding Paseo next to an existing OpenCode"
+  ],
+  "info": [
+   "link drawing",
+   "type rows",
+   "command to run",
+   "verdict KitNotice"
+  ],
+  "infoMissing": [
+   "verdict beside its field",
+   "the right command in the failure text"
+  ],
+  "actions": [
+   "choose type",
+   "copy command",
+   "Scan / Paste code",
+   "Enter the address instead",
+   "credentials",
+   "Codex fields",
+   "AI Team host",
+   "Not on the same network?",
+   "Save & connect",
+   "Test connection",
+   "Save anyway",
+   "close"
+  ],
+  "actionsMissing": [
+   "cancel a running check",
+   "one-tap retry of an expired code"
+  ],
+  "entry": [
+   "servers Add server / Connect OpenCode 2 / row Edit",
+   "agent-choice",
+   "tailscale-setup",
+   "server-switcher Add",
+   "connection banner edit-active"
+  ],
+  "exit": [
+   "servers / home-shell",
+   "pairing-scanner",
+   "tailscale-setup",
+   "guide",
+   "team-host-sheet",
+   "profile-editor-discard-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "add a server",
+    "here": "profile-editor",
+    "elsewhere": "servers/servers-connect-opencode2",
+    "landsOn": "profile-editor (OpenCode 2 preset)"
+   },
+   {
+    "job": "choose the agent kind",
+    "here": "profile-editor-backend-opencode",
+    "elsewhere": "agent-choice/agent-choice-opencode",
+    "landsOn": "profile-editor"
+   },
+   {
+    "job": "check an address",
+    "here": "profile-editor-verdict",
+    "elsewhere": "connection-help/connection-help-explain",
+    "landsOn": "connection-help"
+   },
+   {
+    "job": "set the AI Team host",
+    "here": "profile-editor-team-add",
+    "elsewhere": "team-host-sheet",
+    "landsOn": "team-host-sheet"
+   },
+   {
+    "job": "run an agent on this phone",
+    "here": "profile-editor",
+    "elsewhere": "phone-setup-start",
+    "landsOn": "phone-setup-start (install journey, separate flow)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "profile-editor-link-drawing",
+    "kind": "illustration",
+    "kit": "KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ServersLinkScene (l.2421); OpenCode mark even for Codex"
+   },
+   {
+    "id": "profile-editor-backend",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": "KitChoiceRow",
+    "couldBeAutomatic": "yes: detect OpenCode 1/2 (done) and Paseo on the same host after pairing",
+    "note": "_BackendChoice radio rows (l.2813)"
+   },
+   {
+    "id": "profile-editor-command",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "no",
+    "note": "command box with copy; Codex command clipped"
+   },
+   {
+    "id": "profile-editor-expanders",
+    "kind": "row",
+    "kit": "KitExpandRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Show the commands / Enter the address instead / More options"
+   },
+   {
+    "id": "profile-editor-verdict",
+    "kind": "notice",
+    "kit": "KitNotice",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: retry automatically when the computer comes online",
+    "note": "KitNotice with Save anyway (l.2374, l.2597); placed at the top"
+   },
+   {
+    "id": "profile-editor-save",
+    "kind": "primary-action",
+    "kit": "KitButton",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "pinned; enabled before any code/address"
+   },
+   {
+    "id": "profile-editor-team-host",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: discover a team host on the paired computer",
+    "note": "AI Team host rows inside the server editor (l.2697)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink, note 'Inline with installation v2?'; consistent with the pilot (connect and install mixed, two Adds). Make Add server the computer-side sibling of phone setup v2: the same start question, the same progress parts (KitStatusMark checklist: reach it, sign in, check what it can do, AI Team host) fed by real checks, pairing first, commands in a KitCommandBlock, verdicts under their field, Cancel for slow checks, one finished moment; absorbs agent-choice and connection-help.",
+  "verticals": {
+   "automation-first": "every step manual; v2 engine pattern could drive the checks",
+   "security-privacy": "obscured password/token, credentials stripped from URLs; ok",
+   "honest-state": "failure names 'opencode serve' under 'opencode2 pair'",
+   "a11y": "command clipped; big gaps between expanders",
+   "consistency-kit": "KitRow/KitNotice/KitExpandRow; command block and choice rows missing from the kit"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:1265",
+   "lib/ui/screens/servers_screen.dart:1409",
+   "lib/ui/screens/servers_screen.dart:1828",
+   "lib/ui/screens/servers_screen.dart:2088",
+   "lib/ui/screens/servers_screen.dart:2374",
+   "lib/ui/screens/servers_screen.dart:2421",
+   "lib/ui/screens/servers_screen.dart:2747",
+   "lib/ui/screens/servers_screen.dart:2813",
+   "docs/qa/screen-census/g-servers/profile-editor--failed.png",
+   "docs/qa/screen-census/g-servers/profile-editor--add-codex.png"
+  ]
+ },
+ {
+  "pageId": "profile-editor-discard-sheet",
+  "area": "g-servers",
+  "title": "Discard server changes?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/servers_screen.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "servers",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "newcomer",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "newcomer": "the safe choice must look safe"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-editor-discard-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "edits will be lost"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Discard",
+   "Keep editing"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "profile-editor close / system back while dirty"
+  ],
+  "exit": [
+   "servers",
+   "profile-editor"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "discard guard",
+    "here": "profile-editor-discard-sheet",
+    "elsewhere": "session-note-discard-dialog",
+    "landsOn": "session-note (AlertDialog)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "profile-editor-discard-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitDiscardGuard",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet without destructive: green 'Discard' (l.2013)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Discard error-tonal, Keep editing the safe default; one shared KitDiscardGuard.",
+  "verticals": {
+   "consistency-kit": "destructive in green",
+   "reliability": "guard exists; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/servers_screen.dart:2013",
+   "docs/qa/screen-census/g-servers/profile-editor-discard-sheet.png"
+  ]
+ },
+ {
+  "pageId": "pairing-scanner",
+  "area": "g-servers",
+  "title": "Scan pairing code",
+  "kind": "screen",
+  "file": "lib/ui/screens/pairing_scanner_screen.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "perm.camera"
+  ],
+  "whenMissing": {
+   "perm.camera": "explains (denied / blocked -> Open app settings / no camera) and offers Paste it instead"
+  },
+  "personas": [
+   "newcomer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "newcomer": "why the camera, and a way without it"
+  },
+  "states": [
+   {
+    "id": "denied",
+    "how": "rendered:docs/qa/screen-census/g-servers/pairing-scanner--denied.png"
+   },
+   {
+    "id": "blocked",
+    "how": "rendered:docs/qa/screen-census/g-servers/pairing-scanner--blocked.png"
+   },
+   {
+    "id": "no-camera",
+    "how": "rendered:docs/qa/screen-census/g-servers/pairing-scanner--no-camera.png"
+   },
+   {
+    "id": "starting",
+    "how": "codeOnly:lib/ui/screens/pairing_scanner_screen.dart:177"
+   },
+   {
+    "id": "scanning",
+    "how": "codeOnly:lib/ui/screens/pairing_scanner_screen.dart:181"
+   },
+   {
+    "id": "failed",
+    "how": "codeOnly:lib/ui/screens/pairing_scanner_screen.dart:109"
+   }
+  ],
+  "statesMissing": [
+   "QR that isn't a pairing code",
+   "expired code"
+  ],
+  "info": [
+   "what to point at",
+   "why the camera"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "scan",
+   "Try again",
+   "Open app settings",
+   "Paste it instead",
+   "close"
+  ],
+  "actionsMissing": [
+   "'Allow camera' as the denied primary"
+  ],
+  "entry": [
+   "profile-editor Scan code"
+  ],
+  "exit": [
+   "profile-editor"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "enter the pairing code",
+    "here": "pairing-scanner",
+    "elsewhere": "profile-editor/profile-editor-pairing-paste",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "pairing-scanner-recovery",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_Recovery: old centred icon + text hugging the top; KitStateView exists"
+   },
+   {
+    "id": "pairing-scanner-camera",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "MobileScanner preview"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. KitStateView page states, 'Allow camera' primary, paste fallback kept.",
+  "verticals": {
+   "security-privacy": "camera only while open; ok",
+   "consistency-kit": "pre-kit states"
+  },
+  "evidence": [
+   "lib/ui/screens/pairing_scanner_screen.dart:56",
+   "lib/ui/screens/pairing_scanner_screen.dart:182",
+   "docs/qa/screen-census/g-servers/pairing-scanner--denied.png"
+  ]
+ },
+ {
+  "pageId": "connection-help",
+  "area": "g-servers",
+  "title": "Connection help",
+  "kind": "screen",
+  "file": "lib/ui/screens/connection_help_screen.dart",
+  "journey": [
+   "recover",
+   "learn"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "why the laptop address fails away from home",
+   "tinkerer": "SSH tunnel, reverse proxy"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/g-servers/connection-help--empty.png"
+   },
+   {
+    "id": "explained",
+    "how": "rendered:docs/qa/screen-census/g-servers/connection-help--explained.png"
+   }
+  ],
+  "statesMissing": [
+   "address looks fine: what next"
+  ],
+  "info": [
+   "classification (never stored)",
+   "private HTTPS steps",
+   "localhost-on-wrong-device + SSH example"
+  ],
+  "infoMissing": [
+   "the address that actually failed (not prefilled)"
+  ],
+  "actions": [
+   "type address",
+   "Explain address",
+   "copy examples"
+  ],
+  "actionsMissing": [
+   "retry the connection",
+   "open Tailscale setup"
+  ],
+  "entry": [
+   "guide 'Connection help'"
+  ],
+  "exit": [
+   "guide"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "explain a failed address",
+    "here": "connection-help-explain",
+    "elsewhere": "profile-editor/profile-editor-verdict",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "connection-help-explain",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: run it on the editor's failed address automatically",
+    "note": "FilledButton at the top of a manual (l.79)"
+   },
+   {
+    "id": "connection-help-verdict",
+    "kind": "notice",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "large paragraph without tone; KitNotice exists"
+   },
+   {
+    "id": "connection-help-examples",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "no",
+    "note": "Roboto commands; copy on a placeholder (l.135)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:profile-editor",
+  "rationale": "Owner verdict Rethink. Nobody reaches it at the moment of failure; the checker becomes inline validation under profile-editor's address field, the networking text folds into the guide's Details.",
+  "verticals": {
+   "help-feedback": "not reachable from the failure it explains",
+   "a11y": "walls of text at 200 %"
+  },
+  "evidence": [
+   "lib/ui/screens/connection_help_screen.dart:27",
+   "lib/ui/screens/connection_help_screen.dart:110",
+   "docs/qa/screen-census/g-servers/connection-help--explained.png"
+  ]
+ },
+ {
+  "pageId": "tailscale-setup",
+  "area": "g-servers",
+  "title": "Connect with Tailscale",
+  "kind": "screen",
+  "file": "lib/ui/screens/tailscale_setup_screen.dart",
+  "journey": [
+   "connect",
+   "install"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "network.tailscale"
+  ],
+  "whenMissing": {
+   "network.tailscale": "offers-enable:Tailscale Play Store via openExternalLink (missing state)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "reach the laptop away from home without port forwarding"
+  },
+  "states": [
+   {
+    "id": "installed",
+    "how": "rendered:docs/qa/screen-census/g-servers/tailscale-setup--installed.png"
+   },
+   {
+    "id": "missing",
+    "how": "rendered:docs/qa/screen-census/g-servers/tailscale-setup--missing.png"
+   },
+   {
+    "id": "unsupported",
+    "how": "codeOnly:lib/ui/screens/tailscale_setup_screen.dart:126"
+   }
+  ],
+  "statesMissing": [
+   "returning from Tailscale (auto re-check)"
+  ],
+  "info": [
+   "what Tailscale does",
+   "installed / VPN unverified",
+   "Serve origin rules"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Open / Get Tailscale",
+   "Check app again",
+   "address",
+   "Continue to authentication",
+   "official guides"
+  ],
+  "actionsMissing": [
+   "pick the computer from peers (not possible; say so)"
+  ],
+  "entry": [
+   "servers More setup options",
+   "profile-editor 'Not on the same network?'",
+   "settings Tailscale"
+  ],
+  "exit": [
+   "profile-editor",
+   "external-link-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "enter the server address",
+    "here": "tailscale-setup-address",
+    "elsewhere": "profile-editor/profile-editor-url",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "tailscale-setup-step1",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": "KitStepRow",
+    "couldBeAutomatic": "yes: re-check the app on resume",
+    "note": "Card around step 1 only"
+   },
+   {
+    "id": "tailscale-setup-primaries",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "two FilledButtons (l.143, l.192)"
+   },
+   {
+    "id": "tailscale-setup-address",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "'34/2048' counter (l.176)"
+   },
+   {
+    "id": "tailscale-setup-help",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ExpansionTile (l.198); KitExpandRow exists"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Numbered steps with KitStatusMark, one pinned Continue disabled with a reason, prose into Details; in the v2-style Add server it becomes the 'not on the same network' branch.",
+  "verticals": {
+   "security-privacy": "openExternalLink; ok",
+   "consistency-kit": "Card + two primaries",
+   "honest-state": "'VPN unverified' honest but jargon"
+  },
+  "evidence": [
+   "lib/ui/screens/tailscale_setup_screen.dart:122",
+   "lib/ui/screens/tailscale_setup_screen.dart:192",
+   "docs/qa/screen-census/g-servers/tailscale-setup--installed.png"
+  ]
+ },
+ {
+  "pageId": "host-management",
+  "area": "g-servers",
+  "title": "Run as a Linux service",
+  "kind": "screen",
+  "file": "lib/ui/screens/host_management_screen.dart",
+  "journey": [
+   "install",
+   "configure"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (row absent for the phone's own server, server_settings_screen.dart:266)",
+   "server.oc2": "hidden (same)"
+  },
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "OpenCode survives the laptop rebooting",
+   "tinkerer": "logs, restart, update commands"
+  },
+  "states": [
+   {
+    "id": "static",
+    "how": "rendered:docs/qa/screen-census/g-servers/host-management.png"
+   }
+  ],
+  "statesMissing": [
+   "Mac/Windows host",
+   "service already installed"
+  ],
+  "info": [
+   "server facts",
+   "commands"
+  ],
+  "infoMissing": [
+   "what the script does",
+   "pin/checksum"
+  ],
+  "actions": [
+   "copy commands",
+   "Full walkthrough"
+  ],
+  "actionsMissing": [
+   "check the service is running"
+  ],
+  "entry": [
+   "server-settings row"
+  ],
+  "exit": [
+   "browser"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "server facts",
+    "here": "host-management-facts",
+    "elsewhere": "server-settings/server-settings-identity",
+    "landsOn": "server-settings"
+   }
+  ],
+  "elements": [
+   {
+    "id": "host-management-command",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "yes: an agent on that computer could run it; the phone cannot",
+    "note": "command cards; curl URL wraps 7 lines (l.113)"
+   },
+   {
+    "id": "host-management-facts",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTiles repeating server-settings (l.60)"
+   },
+   {
+    "id": "host-management-docs",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "launchUrl of an app-authored constant (l.177); allowed, but openExternalLink would be consistent"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink. Real but rare job; shrink to a sheet from server-settings: one pinned, checksummed install command with 'What this does', Linux-only stated, day-to-day commands folded, a 'Check it is running' action.",
+  "verticals": {
+   "security-privacy": "pipes an unpinned personal-repo master script into bash (l.24)",
+   "automation-first": "copy-paste only",
+   "a11y": "wrapped URL unreadable"
+  },
+  "evidence": [
+   "lib/ui/screens/host_management_screen.dart:24",
+   "lib/ui/screens/host_management_screen.dart:113",
+   "lib/ui/screens/host_management_screen.dart:177",
+   "docs/qa/screen-census/g-servers/host-management.png"
+  ]
+ },
+ {
+  "pageId": "server-settings",
+  "area": "g-servers",
+  "title": "Server",
+  "kind": "screen",
+  "file": "lib/ui/screens/settings/server_settings_screen.dart",
+  "journey": [
+   "configure",
+   "recover"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "server.oc1"
+  ],
+  "whenMissing": {
+   "server.any": "hidden (Settings category needs a connection)",
+   "server.oc1": "explains ('Server updates — Upgrade from the machine running the server' row when remoteUpgrade is false, e.g. OpenCode 2)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "the phone's own server: update/restart it here (routes to the Termux wizard today)",
+   "remote-lead": "is it healthy, is it current",
+   "tinkerer": "version, host service"
+  },
+  "states": [
+   {
+    "id": "update-available",
+    "how": "rendered:docs/qa/screen-census/g-servers/server-settings--update-available.png"
+   },
+   {
+    "id": "pending-restart",
+    "how": "rendered:docs/qa/screen-census/g-servers/server-settings--pending-restart.png"
+   },
+   {
+    "id": "managed-on-this-phone",
+    "how": "codeOnly:lib/ui/screens/settings/server_settings_screen.dart:154"
+   },
+   {
+    "id": "updates-gated",
+    "how": "codeOnly:lib/ui/screens/settings/server_settings_screen.dart:266"
+   }
+  ],
+  "statesMissing": [
+   "health failed",
+   "Codex/Paseo: what applies"
+  ],
+  "info": [
+   "name + URL",
+   "health + version",
+   "auth summary",
+   "update target"
+  ],
+  "infoMissing": [
+   "how to add a password"
+  ],
+  "actions": [
+   "check health",
+   "Run as a Linux service",
+   "Update",
+   "Restart notice",
+   "Update managed OpenCode"
+  ],
+  "actionsMissing": [
+   "add/change password here",
+   "re-check after a restart"
+  ],
+  "entry": [
+   "settings Server",
+   "chat command 'status'"
+  ],
+  "exit": [
+   "host-management",
+   "server-settings-restart-dialog",
+   "server-settings-upgrade-sheet",
+   "termux-setup"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "update the phone's server",
+    "here": "server-settings-updates-managed",
+    "elsewhere": "phone-setup-start (This phone card)",
+    "landsOn": "termux-setup (old wizard) vs phone setup v2"
+   },
+   {
+    "job": "edit server",
+    "here": "server-settings",
+    "elsewhere": "servers/servers-profile-menu-edit",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "server-settings-rows",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "KitScreen + KitRow throughout (l.204-253)"
+   },
+   {
+    "id": "server-settings-updates",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: re-check the version after a restart automatically",
+    "note": "download icon both sides; restart row looks like a button"
+   }
+  ],
+  "ledgerStale": [
+   "server-settings-updates-managed: pushes '/termux-setup' (server_settings_screen.dart:159) while the app's phone setup is v2"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Health-reported version everywhere, restart row to a copyable command + Check again, address to Details, the phone's own server to phone setup v2's 'This phone' card.",
+  "verticals": {
+   "honest-state": "'1.18.25' vs 'Current server: unknown'",
+   "upgrade-migration": "managed update routes to the old wizard",
+   "consistency-kit": "kit throughout; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/settings/server_settings_screen.dart:141",
+   "lib/ui/screens/settings/server_settings_screen.dart:159",
+   "lib/ui/screens/settings/server_settings_screen.dart:204",
+   "docs/qa/screen-census/g-servers/server-settings--update-available.png"
+  ]
+ },
+ {
+  "pageId": "server-settings-restart-dialog",
+  "area": "g-servers",
+  "title": "Restart OpenCode on its host",
+  "kind": "dialog",
+  "file": "lib/ui/screens/settings/server_settings_screen.dart",
+  "journey": [
+   "recover",
+   "configure"
+  ],
+  "module": "servers",
+  "chrome": "none",
+  "needs": [
+   "server.oc1"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (remoteUpgrade only)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "the exact command to paste on the laptop"
+  },
+  "states": [
+   {
+    "id": "notice",
+    "how": "rendered:docs/qa/screen-census/g-servers/server-settings-restart-dialog.png"
+   }
+  ],
+  "statesMissing": [
+   "restarted (verified)"
+  ],
+  "info": [
+   "installed; restart on the host"
+  ],
+  "infoMissing": [
+   "the command"
+  ],
+  "actions": [
+   "Done"
+  ],
+  "actionsMissing": [
+   "Copy command",
+   "I restarted it"
+  ],
+  "entry": [
+   "server-settings restart row"
+  ],
+  "exit": [
+   "server-settings"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "server-settings-restart-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "yes: poll health until the new version answers",
+    "note": "AlertDialog (l.69) with Done only"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. A sheet with the restart command and 'I restarted it' that re-checks.",
+  "verticals": {
+   "automation-first": "asks the person to act elsewhere with nothing to act with"
+  },
+  "evidence": [
+   "lib/ui/screens/settings/server_settings_screen.dart:69",
+   "docs/qa/screen-census/g-servers/server-settings-restart-dialog.png"
+  ]
+ },
+ {
+  "pageId": "server-settings-upgrade-sheet",
+  "area": "g-servers",
+  "title": "Update remote OpenCode?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/settings/server_settings_screen.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "servers",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "how long it is down, do conversations survive"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/server-settings-upgrade-sheet.png"
+   }
+  ],
+  "statesMissing": [
+   "installing progress",
+   "failed"
+  ],
+  "info": [
+   "target version",
+   "'unknown' current"
+  ],
+  "infoMissing": [
+   "downtime",
+   "restart needed after"
+  ],
+  "actions": [
+   "Install",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "server-settings update row"
+  ],
+  "exit": [
+   "server-settings"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "server-settings-upgrade-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet (l.91)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. 'Installs 1.19.0 on Laptop (now 1.18.25)', its cost, then progress.",
+  "verticals": {
+   "honest-state": "'unknown' contradicts the page",
+   "upgrade-migration": "no downtime expectation"
+  },
+  "evidence": [
+   "lib/ui/screens/settings/server_settings_screen.dart:91",
+   "docs/qa/screen-census/g-servers/server-settings-upgrade-sheet.png"
+  ]
+ },
+ {
+  "pageId": "agent-account",
+  "area": "g-servers",
+  "title": "Codex account",
+  "kind": "screen",
+  "file": "lib/ui/screens/agent_account_screen.dart",
+  "journey": [
+   "account",
+   "connect"
+  ],
+  "module": "usage",
+  "chrome": "title-header",
+  "needs": [
+   "server.codex"
+  ],
+  "whenMissing": {
+   "server.codex": "hidden (menu item and Settings Accounts need capabilities.agentAccount); 'scope lost' text if the connection changes (l.106)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "sign in once from the phone; see limits before a long task"
+  },
+  "states": [
+   {
+    "id": "signed-out",
+    "how": "rendered:docs/qa/screen-census/g-servers/agent-account--signed-out.png"
+   },
+   {
+    "id": "usage",
+    "how": "rendered:docs/qa/screen-census/g-servers/agent-account--usage.png"
+   },
+   {
+    "id": "device-code pending",
+    "how": "codeOnly:lib/ui/screens/agent_account_screen.dart:349"
+   },
+   {
+    "id": "scope-lost",
+    "how": "codeOnly:lib/ui/screens/agent_account_screen.dart:106"
+   }
+  ],
+  "statesMissing": [
+   "sign-in failed / code expired",
+   "limit reached"
+  ],
+  "info": [
+   "server",
+   "sign-in state",
+   "rate-limit bars",
+   "token usage",
+   "plan"
+  ],
+  "infoMissing": [
+   "relative reset time"
+  ],
+  "actions": [
+   "Sign in with ChatGPT",
+   "Open official sign-in",
+   "Cancel sign-in",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "sign out",
+   "copy device code"
+  ],
+  "entry": [
+   "servers row menu",
+   "settings Accounts"
+  ],
+  "exit": [
+   "external-link-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see remaining quota",
+    "here": "agent-account-limits",
+    "elsewhere": "provider-quota/provider-quota-window",
+    "landsOn": "provider-quota (Codex via a collector)"
+   },
+   {
+    "job": "see token usage",
+    "here": "agent-account-usage",
+    "elsewhere": "usage/usage-stats",
+    "landsOn": "usage"
+   }
+  ],
+  "elements": [
+   {
+    "id": "agent-account-state",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card around a message (l.240 area); KitStateView exists"
+   },
+   {
+    "id": "agent-account-limits",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": "KitProgressRow",
+    "couldBeAutomatic": "no",
+    "note": "LinearProgressIndicator bars (l.448)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. KitStateView for sign-in, plain words; its limits become the Codex source of the Usage hub's 'Remaining' so quota lives in one place.",
+  "verticals": {
+   "security-privacy": "device-code flow; link via openExternalLink (l.390); ok",
+   "consistency-kit": "Card + raw bars"
+  },
+  "evidence": [
+   "lib/ui/screens/agent_account_screen.dart:255",
+   "lib/ui/screens/agent_account_screen.dart:390",
+   "docs/qa/screen-census/g-servers/agent-account--usage.png"
+  ]
+ },
+ {
+  "pageId": "external-agents",
+  "area": "g-servers",
+  "title": "External agents",
+  "kind": "screen",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "connect",
+   "delegate"
+  ],
+  "module": "library",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "try an outside A2A agent without trusting it with the project"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agents--empty.png"
+   },
+   {
+    "id": "saved",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agents--saved.png"
+   },
+   {
+    "id": "pending-deletion",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agents--pending-deletion.png"
+   }
+  ],
+  "statesMissing": [
+   "agent unreachable / card changed"
+  ],
+  "info": [
+   "headline + A2A explanation",
+   "name + origin"
+  ],
+  "infoMissing": [
+   "tasks needing a reply"
+  ],
+  "actions": [
+   "Add agent",
+   "open agent",
+   "Retry deletion"
+  ],
+  "actionsMissing": [
+   "remove from the row"
+  ],
+  "entry": [
+   "servers More setup options",
+   "settings External agents"
+  ],
+  "exit": [
+   "add-agent",
+   "external-agent-detail",
+   "external-agents-delete-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "open external agents",
+    "here": "external-agents",
+    "elsewhere": "settings/settings-external-agents",
+    "landsOn": "external-agents"
+   },
+   {
+    "job": "hand work to other agents",
+    "here": "external-agents",
+    "elsewhere": "team-home",
+    "landsOn": "team-home (AI Team)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "external-agents-add",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "FilledButton above the list (l.139)"
+   },
+   {
+    "id": "external-agents-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card per agent (l.147); KitRow exists"
+   },
+   {
+    "id": "external-agents-empty",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_Notice filled box (l.41)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:integrations",
+  "rationale": "Owner verdict Rethink. An outside agent is an integration, not a server: the list becomes a section of Library > Integrations (KitRows with 'needs your reply'), leaving Servers' setup options; add/detail/task stay.",
+  "verticals": {
+   "security-privacy": "only submitted text shared; key in secure storage; ok",
+   "automation-first": "one-off manual tasks, no link to the AI Team"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:41",
+   "lib/ui/screens/external_agents_screen.dart:139",
+   "lib/ui/screens/external_agents_screen.dart:147",
+   "docs/qa/screen-census/g-servers/external-agents--saved.png"
+  ],
+  "proposals": {
+   "needs": [
+    "agent.a2a"
+   ]
+  }
+ },
+ {
+  "pageId": "external-agents-delete-sheet",
+  "area": "g-servers",
+  "title": "Delete agent",
+  "kind": "sheet",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "library",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "finish a failed removal"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agents-delete-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "local data removed"
+  ],
+  "infoMissing": [
+   "agent name"
+  ],
+  "actions": [
+   "Delete local data",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-agents Retry deletion"
+  ],
+  "exit": [
+   "external-agents"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "remove an agent",
+    "here": "external-agents-delete-sheet",
+    "elsewhere": "external-agent-detail-delete-sheet",
+    "landsOn": "external-agents"
+   }
+  ],
+  "elements": [
+   {
+    "id": "external-agents-delete-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: retry the pending removal automatically on next open",
+    "note": "showConfirmSheet destructive with the default '?' icon (l.101)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Trash icon, 'Remove Palette agent?', one sheet shared with the detail page.",
+  "verticals": {
+   "consistency-kit": "question icon for a removal"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:101",
+   "lib/ui/widgets/confirm_sheet.dart:17"
+  ]
+ },
+ {
+  "pageId": "add-agent",
+  "area": "g-servers",
+  "title": "Add agent",
+  "kind": "screen",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "library",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "decide whether to trust this agent"
+  },
+  "states": [
+   {
+    "id": "address",
+    "how": "rendered:docs/qa/screen-census/g-servers/add-agent--address.png"
+   },
+   {
+    "id": "inspected",
+    "how": "rendered:docs/qa/screen-census/g-servers/add-agent--inspected.png"
+   }
+  ],
+  "statesMissing": [
+   "inspect failed",
+   "unsupported card explained"
+  ],
+  "info": [
+   "name, origin, version, protocol",
+   "self-reported warning",
+   "skills"
+  ],
+  "infoMissing": [
+   "example address"
+  ],
+  "actions": [
+   "address",
+   "Inspect",
+   "key",
+   "Save"
+  ],
+  "actionsMissing": [
+   "cancel inspection"
+  ],
+  "entry": [
+   "external-agents Add"
+  ],
+  "exit": [
+   "external-agents"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "add-agent-inspect",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: inspect on paste",
+    "note": "first FilledButton (l.279)"
+   },
+   {
+    "id": "add-agent-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_AgentCardView Card (l.325)"
+   },
+   {
+    "id": "add-agent-save",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "second FilledButton, clipped (l.306)"
+   },
+   {
+    "id": "add-agent-bearer",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "maxLength 8192 counter (l.302)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink. One decision (trust it?): one pinned primary changing Check -> Save, card as rows, protocol under Details, key field only when asked.",
+  "verticals": {
+   "security-privacy": "key only to the inspected origin; ok",
+   "a11y": "Save clipped",
+   "consistency-kit": "two primaries, three containers"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:279",
+   "lib/ui/screens/external_agents_screen.dart:306",
+   "lib/ui/screens/external_agents_screen.dart:325",
+   "docs/qa/screen-census/g-servers/add-agent--inspected.png"
+  ],
+  "proposals": {
+   "needs": [
+    "agent.a2a"
+   ]
+  }
+ },
+ {
+  "pageId": "external-agent-detail",
+  "area": "g-servers",
+  "title": "<agent card name>",
+  "kind": "screen",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "delegate",
+   "configure"
+  ],
+  "module": "library",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "tasks and credential for one agent"
+  },
+  "states": [
+   {
+    "id": "with-tasks",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agent-detail.png"
+   }
+  ],
+  "statesMissing": [
+   "unreachable"
+  ],
+  "info": [
+   "card",
+   "version/protocol",
+   "saved tasks"
+  ],
+  "infoMissing": [
+   "one-line description"
+  ],
+  "actions": [
+   "New task",
+   "open task",
+   "Update credential",
+   "Delete agent"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-agents row"
+  ],
+  "exit": [
+   "external-agent-detail-input-dialog",
+   "external-task",
+   "external-agent-detail-delete-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "external-agent-detail-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card (l.512) repeating the title"
+   },
+   {
+    "id": "external-agent-detail-delete",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "green TextButton under Update credential (l.538); KitRowMenu/overflow expected"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Update credential and Remove to the overflow (Remove error-coloured, confirmed), protocol in Details.",
+  "verticals": {
+   "consistency-kit": "destructive beside a frequent action"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:501",
+   "lib/ui/screens/external_agents_screen.dart:538",
+   "docs/qa/screen-census/g-servers/external-agent-detail.png"
+  ],
+  "proposals": {
+   "needs": [
+    "agent.a2a"
+   ]
+  }
+ },
+ {
+  "pageId": "external-agent-detail-input-dialog",
+  "area": "g-servers",
+  "title": "New task | Update credential",
+  "kind": "dialog",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "delegate",
+   "configure"
+  ],
+  "module": "library",
+  "chrome": "none",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "write a task or rotate a key"
+  },
+  "states": [
+   {
+    "id": "new-task",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agent-detail-input-dialog--new-task.png"
+   },
+   {
+    "id": "update-credential",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agent-detail-input-dialog--update-credential.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "label",
+   "counter"
+  ],
+  "infoMissing": [
+   "where the key goes"
+  ],
+  "actions": [
+   "type",
+   "Review task / Save agent",
+   "Back"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-agent-detail"
+  ],
+  "exit": [
+   "external-task",
+   "external-agent-detail"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "write the task",
+    "here": "external-agent-detail-input-dialog-field",
+    "elsewhere": "external-task/external-task-text",
+    "landsOn": "external-task (same field again)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "external-agent-detail-input-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitInputDialog",
+    "couldBeAutomatic": "no",
+    "note": "_InputDialog (l.568); 'Save agent' for a key, 'Back' for cancel"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. New task opens external-task as a draft directly; the key dialog says 'Save key' / 'Cancel'.",
+  "verticals": {
+   "security-privacy": "obscured key; ok",
+   "consistency-kit": "wrong verbs"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:568",
+   "docs/qa/screen-census/g-servers/external-agent-detail-input-dialog--new-task.png"
+  ],
+  "proposals": {
+   "needs": [
+    "agent.a2a"
+   ]
+  }
+ },
+ {
+  "pageId": "external-agent-detail-delete-sheet",
+  "area": "g-servers",
+  "title": "Delete agent",
+  "kind": "sheet",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "library",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "know remote tasks keep running"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-agent-detail-delete-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "agent, tasks and key removed locally"
+  ],
+  "infoMissing": [
+   "name",
+   "remote tasks continue"
+  ],
+  "actions": [
+   "Delete local data",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-agent-detail Delete"
+  ],
+  "exit": [
+   "external-agents"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "remove an agent",
+    "here": "external-agent-detail-delete-sheet",
+    "elsewhere": "external-agents-delete-sheet",
+    "landsOn": "external-agents"
+   }
+  ],
+  "elements": [
+   {
+    "id": "external-agent-detail-delete-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet with '?' (l.458)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Same sheet as the list's delete, trash icon, name the agent.",
+  "verticals": {
+   "consistency-kit": "duplicate sheet"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:458"
+  ]
+ },
+ {
+  "pageId": "external-task",
+  "area": "g-servers",
+  "title": "Agent task",
+  "kind": "screen",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "delegate",
+   "approve"
+  ],
+  "module": "library",
+  "chrome": "title-header",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "send, watch, reply, stop"
+  },
+  "states": [
+   {
+    "id": "draft",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-task--draft.png"
+   },
+   {
+    "id": "input-required",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-task--input-required.png"
+   },
+   {
+    "id": "completed",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-task--completed.png"
+   },
+   {
+    "id": "draft-save-failed / delivery-uncertain",
+    "how": "codeOnly:lib/ui/screens/external_agents_screen.dart:629"
+   }
+  ],
+  "statesMissing": [
+   "polling stopped in background"
+  ],
+  "info": [
+   "agent + title",
+   "status card",
+   "output",
+   "terms notice"
+  ],
+  "infoMissing": [
+   "relative last check"
+  ],
+  "actions": [
+   "Send",
+   "Reply",
+   "Refresh",
+   "Stop",
+   "Forget",
+   "Review link",
+   "Retry draft save"
+  ],
+  "actionsMissing": [
+   "notification when a reply is needed"
+  ],
+  "entry": [
+   "external-agent-detail task row",
+   "input dialog"
+  ],
+  "exit": [
+   "external-task-cancel-sheet",
+   "external-task-forget-sheet",
+   "external-link-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "answer an agent's question",
+    "here": "external-task-send",
+    "elsewhere": "question-sheet",
+    "landsOn": "question-sheet (chat agents)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "external-task-status",
+    "kind": "status-line",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: poll while open and notify on input-required",
+    "note": "Card with icon + headline; KitStatusLine exists"
+   },
+   {
+    "id": "external-task-actions",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Stop and Forget adjacent green links"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Reply primary, refresh by pull, Stop/Forget in the overflow error-coloured, KitStatusLine for state.",
+  "verticals": {
+   "notifications": "no alert on input-required",
+   "reliability": "delivery uncertainty tracked; ok",
+   "security-privacy": "links via openExternalLink; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:629",
+   "lib/ui/screens/external_agents_screen.dart:741",
+   "lib/ui/screens/external_agents_screen.dart:754",
+   "docs/qa/screen-census/g-servers/external-task--input-required.png"
+  ],
+  "proposals": {
+   "needs": [
+    "agent.a2a"
+   ]
+  }
+ },
+ {
+  "pageId": "external-task-cancel-sheet",
+  "area": "g-servers",
+  "title": "Cancel task",
+  "kind": "sheet",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "library",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "stopping is only a request"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-task-cancel-sheet.png"
+   }
+  ],
+  "statesMissing": [
+   "refused"
+  ],
+  "info": [
+   "a request"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Request cancellation",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-task Stop"
+  ],
+  "exit": [
+   "external-task"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "external-task-cancel-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet non-destructive: green + '?' (l.741)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. 'Stop this task?', stop icon, error-tonal.",
+  "verticals": {
+   "consistency-kit": "styled safe"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:741"
+  ]
+ },
+ {
+  "pageId": "external-task-forget-sheet",
+  "area": "g-servers",
+  "title": "Forget saved task",
+  "kind": "sheet",
+  "file": "lib/ui/screens/external_agents_screen.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "library",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "local only; remote keeps going"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/external-task-forget-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "local record only"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Delete local data",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "external-task Forget"
+  ],
+  "exit": [
+   "external-agent-detail"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "external-task-forget-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet destructive (l.754)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Plain words, trash icon, question title.",
+  "verticals": {
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/external_agents_screen.dart:754"
+  ]
+ },
+ {
+  "pageId": "profile-monitor",
+  "area": "g-servers",
+  "title": "Saved-server attention",
+  "kind": "screen",
+  "file": "lib/ui/screens/profile_monitor_screen.dart",
+  "journey": [
+   "observe",
+   "approve"
+  ],
+  "module": "servers",
+  "chrome": "title-header",
+  "needs": [
+   "perm.notifications",
+   "perm.battery"
+  ],
+  "whenMissing": {
+   "perm.notifications": "explains nothing here; rules and permission live in Notifications settings (link, l.146)",
+   "perm.battery": "not mentioned; Android may stop background checks silently"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "which other computer needs me",
+   "team-delegator": "a team on another server waiting for approval",
+   "tinkerer": "check timing, busy intervals"
+  },
+  "states": [
+   {
+    "id": "watched-with-request",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-monitor.png"
+   },
+   {
+    "id": "not-monitored",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-monitor.png"
+   },
+   {
+    "id": "busy-interval / check-in due",
+    "how": "codeOnly:lib/ui/screens/profile_monitor_screen.dart:394"
+   }
+  ],
+  "statesMissing": [
+   "watching stopped by Android",
+   "server not answering",
+   "no other servers"
+  ],
+  "info": [
+   "project-scope caveat",
+   "'Current observation'",
+   "absolute times outside rows",
+   "request with green dot"
+  ],
+  "infoMissing": [
+   "project of the request",
+   "waiting time"
+  ],
+  "actions": [
+   "refresh",
+   "Notification settings",
+   "open request",
+   "open busy session"
+  ],
+  "actionsMissing": [
+   "Watch this server",
+   "answer without switching"
+  ],
+  "entry": [
+   "attention-overview",
+   "Inbox 'Saved servers'"
+  ],
+  "exit": [
+   "permission/question/form sheets",
+   "chat",
+   "notifications-settings"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see other servers' requests",
+    "here": "profile-monitor-request-row",
+    "elsewhere": "embedded-profile-monitor-inbox/embedded-profile-monitor-inbox-request-row",
+    "landsOn": "activity (Inbox)"
+   },
+   {
+    "job": "server attention overview",
+    "here": "profile-monitor",
+    "elsewhere": "servers/brand-header bell",
+    "landsOn": "attention-overview"
+   }
+  ],
+  "elements": [
+   {
+    "id": "profile-monitor-server",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_MonitorProfile ListTile + times below (l.356, l.379)"
+   },
+   {
+    "id": "profile-monitor-request-row",
+    "kind": "request-card",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "tinted ListTile (l.261); dot colour from AppTheme.statusColor (l.315)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:servers",
+  "rationale": "Owner verdict Rethink (and 'deleting is an option' on attention-overview). State belongs in the Servers row ('1 needs you · checked 2 min ago', 'Not watched' with Watch in the menu), consistent with the pilot's reachability-in-the-row; requests stay in the Inbox.",
+  "verticals": {
+   "battery-heat": "background polling cost unstated",
+   "reliability": "Android 15 dataSync cap can stop it silently",
+   "a11y": "state by colour only",
+   "honest-state": "green for 'needs you'"
+  },
+  "evidence": [
+   "lib/ui/screens/profile_monitor_screen.dart:114",
+   "lib/ui/screens/profile_monitor_screen.dart:261",
+   "lib/ui/screens/profile_monitor_screen.dart:307",
+   "lib/ui/screens/profile_monitor_screen.dart:379",
+   "docs/qa/screen-census/g-servers/profile-monitor.png"
+  ]
+ },
+ {
+  "pageId": "profile-monitor-switch-server-dialog",
+  "area": "g-servers",
+  "title": "Switch server to review?",
+  "kind": "dialog",
+  "file": "lib/ui/screens/profile_monitor_screen.dart",
+  "journey": [
+   "approve",
+   "observe"
+  ],
+  "module": "servers",
+  "chrome": "none",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "know the current run keeps going"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/profile-monitor-switch-server-dialog.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "a run is active"
+  ],
+  "infoMissing": [
+   "server names"
+  ],
+  "actions": [
+   "Switch server",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "answer without switching"
+  ],
+  "entry": [
+   "monitor rows",
+   "Inbox monitored request",
+   "notification"
+  ],
+  "exit": [
+   "chat / question-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "profile-monitor-switch-server-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: answer the request on the other server without switching (gateway per profile)",
+    "note": "AlertDialog (l.29)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. A proper blocking question; name both servers and what keeps running.",
+  "verticals": {
+   "honest-state": "vague"
+  },
+  "evidence": [
+   "lib/ui/screens/profile_monitor_screen.dart:26"
+  ]
+ },
+ {
+  "pageId": "embedded-profile-monitor-inbox",
+  "area": "g-servers",
+  "title": "Saved servers",
+  "kind": "overlay",
+  "file": "lib/ui/screens/profile_monitor_screen.dart",
+  "journey": [
+   "observe",
+   "approve"
+  ],
+  "module": "servers",
+  "chrome": "dock",
+  "needs": [
+   "perm.notifications"
+  ],
+  "whenMissing": {
+   "perm.notifications": "hidden rows when rules are off; nothing offers to turn them on"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "one Inbox across servers"
+  },
+  "states": [
+   {
+    "id": "pending-request",
+    "how": "rendered:docs/qa/screen-census/g-servers/embedded-profile-monitor-inbox.png"
+   },
+   {
+    "id": "isolated-hidden",
+    "how": "codeOnly:lib/ui/screens/profile_monitor_screen.dart:179"
+   }
+  ],
+  "statesMissing": [
+   "stale / watching stopped"
+  ],
+  "info": [
+   "request + server + type + absolute time",
+   "'1 pending · Watched in each server's current project'"
+  ],
+  "infoMissing": [
+   "relative age"
+  ],
+  "actions": [
+   "open request",
+   "open monitor list"
+  ],
+  "actionsMissing": [
+   "answer in place"
+  ],
+  "entry": [
+   "activity embeds it"
+  ],
+  "exit": [
+   "permission-sheet",
+   "profile-monitor"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "count pending requests",
+    "here": "embedded-profile-monitor-inbox-summary",
+    "elsewhere": "embedded-profile-monitor-inbox/request-row",
+    "landsOn": "same section (counted twice)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "embedded-profile-monitor-inbox-request-row",
+    "kind": "request-card",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_MonitorRequestRow; green dot"
+   },
+   {
+    "id": "embedded-profile-monitor-inbox-summary",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile repeating the count (l.182)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Other-server requests in the Inbox's own request pattern with an 'On Laptop' label and warning tone; the summary links to Servers without recounting.",
+  "verticals": {
+   "a11y": "colour-only state",
+   "notifications": "feeds the Inbox badge; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/profile_monitor_screen.dart:169",
+   "lib/ui/screens/profile_monitor_screen.dart:182",
+   "lib/ui/screens/profile_monitor_screen.dart:246",
+   "docs/qa/screen-census/g-servers/embedded-profile-monitor-inbox.png"
+  ]
+ },
+ {
+  "pageId": "provider-quota",
+  "area": "g-servers",
+  "title": "Remaining",
+  "kind": "tab",
+  "file": "lib/ui/screens/provider_quota_screen.dart",
+  "journey": [
+   "account"
+  ],
+  "module": "usage",
+  "chrome": "title-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden (usage hub shows Remaining only with a profile, usage_hub_screen.dart:45)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "how much of each plan is left before starting a long task",
+   "tinkerer": "per-window thresholds, background monitoring"
+  },
+  "states": [
+   {
+    "id": "setup-needed",
+    "how": "rendered:docs/qa/screen-census/g-servers/provider-quota--setup.png"
+   },
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/g-servers/provider-quota--loaded.png"
+   },
+   {
+    "id": "unsupported-provider",
+    "how": "codeOnly:lib/ui/screens/provider_quota_screen.dart:272"
+   },
+   {
+    "id": "consent-needed",
+    "how": "codeOnly:lib/ui/screens/provider_quota_screen.dart:274"
+   },
+   {
+    "id": "stale / detached",
+    "how": "codeOnly:lib/ui/screens/provider_quota_screen.dart:102"
+   },
+   {
+    "id": "failure",
+    "how": "codeOnly:lib/ui/screens/provider_quota_screen.dart:78"
+   }
+  ],
+  "statesMissing": [
+   "reset time passed",
+   "Android stopped background reads"
+  ],
+  "info": [
+   "provider chips",
+   "collector URL",
+   "route path + repo README path",
+   "% remaining and used",
+   "absolute times",
+   "threshold",
+   "monitoring policy"
+  ],
+  "infoMissing": [
+   "one line per provider: '74 % left · resets in 3 h'"
+  ],
+  "actions": [
+   "provider",
+   "consent",
+   "Read",
+   "refresh",
+   "threshold",
+   "attention",
+   "Enable monitoring",
+   "Clear thresholds",
+   "Stop using collector",
+   "per-source controls",
+   "Notification settings"
+  ],
+  "actionsMissing": [
+   "set the collector up for me",
+   "open the setup guide in the browser"
+  ],
+  "entry": [
+   "usage-hub Remaining tab"
+  ],
+  "exit": [
+   "provider-quota-enroll-dialog",
+   "provider-quota-clear-dialog",
+   "notifications-settings"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see Codex limits",
+    "here": "provider-quota-window",
+    "elsewhere": "agent-account/agent-account-limits",
+    "landsOn": "agent-account"
+   },
+   {
+    "job": "set an alert threshold",
+    "here": "provider-quota-threshold",
+    "elsewhere": "provider-quota-enroll-dialog/threshold",
+    "landsOn": "provider-quota (two threshold systems)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "provider-quota-chips",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitChipRow",
+    "couldBeAutomatic": "yes: show the providers the server actually uses",
+    "note": "ChoiceChips wrapping (l.243)"
+   },
+   {
+    "id": "provider-quota-consent",
+    "kind": "switch",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "CheckboxListTile (l.295); KitSwitchRow exists"
+   },
+   {
+    "id": "provider-quota-window",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": "KitProgressRow",
+    "couldBeAutomatic": "yes: alert automatically at a default threshold",
+    "note": "Card + LinearProgressIndicator"
+   },
+   {
+    "id": "provider-quota-setup",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: an agent installs the collector (owner's MCP-assistant idea)",
+    "note": "prose wall; KitStateView exists"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink: 'the feature itself needs a lot of work'. One KitProgressRow per provider first; without a collector one KitStateView with 'Set it up' (agent-driven) and the guide; one alert per provider as a KitSwitchRow; Codex limits from agent-account feed the same list.",
+  "verticals": {
+   "automation-first": "manual collector install",
+   "battery-heat": "background reads on the live service",
+   "reliability": "Android may stop reads",
+   "security-privacy": "tokens stay on server; consent; ok",
+   "honest-state": "'An optional collector is required'"
+  },
+  "evidence": [
+   "lib/ui/screens/provider_quota_screen.dart:102",
+   "lib/ui/screens/provider_quota_screen.dart:243",
+   "lib/ui/screens/provider_quota_screen.dart:272",
+   "lib/ui/screens/provider_quota_screen.dart:295",
+   "lib/ui/screens/usage_hub_screen.dart:45",
+   "docs/qa/screen-census/g-servers/provider-quota--setup.png",
+   "docs/qa/screen-census/g-servers/provider-quota--loaded.png"
+  ],
+  "proposals": {
+   "needs": [
+    "quota.collector"
+   ]
+  }
+ },
+ {
+  "pageId": "provider-quota-enroll-dialog",
+  "area": "g-servers",
+  "title": "Monitor this provider source?",
+  "kind": "dialog",
+  "file": "lib/ui/screens/provider_quota_screen.dart",
+  "journey": [
+   "account",
+   "configure"
+  ],
+  "module": "usage",
+  "chrome": "none",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "just 'tell me at 80 %'"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/provider-quota-enroll-dialog.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "cycle internals",
+   "URL centred"
+  ],
+  "infoMissing": [
+   "what the alert looks like"
+  ],
+  "actions": [
+   "threshold",
+   "Enable",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "provider-quota Enable"
+  ],
+  "exit": [
+   "provider-quota"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "set a threshold",
+    "here": "provider-quota-enroll-dialog-threshold",
+    "elsewhere": "provider-quota/provider-quota-threshold",
+    "landsOn": "provider-quota"
+   }
+  ],
+  "elements": [
+   {
+    "id": "provider-quota-enroll-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: a switch with a sensible default replaces the dialog",
+    "note": "AlertDialog + DropdownButton (l.111, l.124)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:provider-quota",
+  "rationale": "Owner verdict Rethink. Replace with a KitSwitchRow 'Alert me at [80 %] used' on the provider row; internals under Details.",
+  "verticals": {
+   "consistency-kit": "wall of text in a dialog",
+   "notifications": "ok once a switch"
+  },
+  "evidence": [
+   "lib/ui/screens/provider_quota_screen.dart:111",
+   "docs/qa/screen-census/g-servers/provider-quota-enroll-dialog.png"
+  ]
+ },
+ {
+  "pageId": "provider-quota-clear-dialog",
+  "area": "g-servers",
+  "title": "Clear saved provider thresholds",
+  "kind": "dialog",
+  "file": "lib/ui/screens/provider_quota_screen.dart",
+  "journey": [
+   "account",
+   "configure"
+  ],
+  "module": "usage",
+  "chrome": "none",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "what stays (budgets)"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/provider-quota-clear-dialog.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what is cleared"
+  ],
+  "infoMissing": [
+   "count"
+  ],
+  "actions": [
+   "Clear",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "undo"
+  ],
+  "entry": [
+   "provider-quota Clear"
+  ],
+  "exit": [
+   "provider-quota"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "clear saved limits",
+    "here": "provider-quota-clear-dialog",
+    "elsewhere": "usage-budget-clear-dialog",
+    "landsOn": "usage"
+   }
+  ],
+  "elements": [
+   {
+    "id": "provider-quota-clear-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "AlertDialog, green destructive (l.372)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Error-tonal 'Clear alerts' in KitConfirmSheet; likely folded into the redesign.",
+  "verticals": {
+   "consistency-kit": "destructive in green"
+  },
+  "evidence": [
+   "lib/ui/screens/provider_quota_screen.dart:372",
+   "docs/qa/screen-census/g-servers/provider-quota-clear-dialog.png"
+  ]
+ },
+ {
+  "pageId": "usage",
+  "area": "g-servers",
+  "title": "Spent",
+  "kind": "tab",
+  "file": "lib/ui/screens/usage_screen.dart",
+  "journey": [
+   "account"
+  ],
+  "module": "usage",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden (Spent tab exists only when supportsUsageStatistics, usage_hub_screen.dart:44; UsageStatisticsGateway is OpenCode 2 only)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "what did this cost, am I near my budget",
+   "tinkerer": "per-model, per-provider, tool reliability"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/g-servers/usage.png"
+   },
+   {
+    "id": "unsupported",
+    "how": "codeOnly:lib/ui/screens/usage_screen.dart:70"
+   },
+   {
+    "id": "detached",
+    "how": "codeOnly:lib/ui/screens/usage_screen.dart:180"
+   },
+   {
+    "id": "error",
+    "how": "codeOnly:lib/ui/screens/usage_screen.dart:86"
+   }
+  ],
+  "statesMissing": [
+   "no activity in range",
+   "budget reached"
+  ],
+  "info": [
+   "description",
+   "range chips",
+   "scope",
+   "budget prose",
+   "range + timezone",
+   "cost hero",
+   "stats",
+   "breakdowns"
+  ],
+  "infoMissing": [
+   "total above the fold",
+   "budget progress"
+  ],
+  "actions": [
+   "range",
+   "scope",
+   "set budgets",
+   "clear budgets",
+   "provider filter",
+   "search",
+   "clear filters",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "export a report"
+  ],
+  "entry": [
+   "usage-hub Spent tab"
+  ],
+  "exit": [
+   "usage-budget-dialog",
+   "usage-budget-clear-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see token usage",
+    "here": "usage-stats",
+    "elsewhere": "agent-account/agent-account-usage",
+    "landsOn": "agent-account"
+   }
+  ],
+  "elements": [
+   {
+    "id": "usage-range",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitChipRow",
+    "couldBeAutomatic": "no",
+    "note": "ChoiceChips (l.129)"
+   },
+   {
+    "id": "usage-budgets",
+    "kind": "section-label",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: suggest a budget from last month's spend",
+    "note": "_UsageBudgetControls prose + three text buttons (l.229)"
+   },
+   {
+    "id": "usage-total",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": "KitMetric",
+    "couldBeAutomatic": "no",
+    "note": "Card hero below the fold (l.484)"
+   },
+   {
+    "id": "usage-refresh",
+    "kind": "other",
+    "kit": "KitRefresh",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ok (l.103)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner verdict Rethink. Total first ('$3.42 in the last 30 days'), then range and breakdown; budgets one row; filters in a sheet; one sentence that it isn't the provider's bill.",
+  "verticals": {
+   "honest-state": "'30 days' vs 'Sep 2-6'",
+   "consistency-kit": "five type sizes, cards"
+  },
+  "evidence": [
+   "lib/ui/screens/usage_screen.dart:86",
+   "lib/ui/screens/usage_screen.dart:129",
+   "lib/ui/screens/usage_screen.dart:229",
+   "lib/ui/screens/usage_screen.dart:484",
+   "lib/ui/screens/usage_hub_screen.dart:44",
+   "docs/qa/screen-census/g-servers/usage.png"
+  ]
+ },
+ {
+  "pageId": "usage-budget-dialog",
+  "area": "g-servers",
+  "title": "Set USD budget | Set token budget",
+  "kind": "dialog",
+  "file": "lib/ui/screens/usage_screen.dart",
+  "journey": [
+   "account",
+   "configure"
+  ],
+  "module": "usage",
+  "chrome": "none",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "what happens at the budget"
+  },
+  "states": [
+   {
+    "id": "new",
+    "how": "rendered:docs/qa/screen-census/g-servers/usage-budget-dialog.png"
+   }
+  ],
+  "statesMissing": [
+   "invalid amount"
+  ],
+  "info": [
+   "field label"
+  ],
+  "infoMissing": [
+   "currency",
+   "effect"
+  ],
+  "actions": [
+   "amount",
+   "Save",
+   "Remove",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "usage set budget"
+  ],
+  "exit": [
+   "usage"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "usage-budget-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitInputDialog",
+    "couldBeAutomatic": "no",
+    "note": "AlertDialog (l.247) with Remove/Cancel/Save in one row"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Remove only when a budget exists, error-coloured; '$' prefix; helper line.",
+  "verticals": {
+   "consistency-kit": "three actions in a row"
+  },
+  "evidence": [
+   "lib/ui/screens/usage_screen.dart:247",
+   "docs/qa/screen-census/g-servers/usage-budget-dialog.png"
+  ]
+ },
+ {
+  "pageId": "usage-budget-clear-dialog",
+  "area": "g-servers",
+  "title": "Clear saved consumption budgets",
+  "kind": "dialog",
+  "file": "lib/ui/screens/usage_screen.dart",
+  "journey": [
+   "account",
+   "configure"
+  ],
+  "module": "usage",
+  "chrome": "none",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "alerts stay"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/g-servers/usage-budget-clear-dialog.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what is cleared"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Clear",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "undo"
+  ],
+  "entry": [
+   "usage Clear budgets"
+  ],
+  "exit": [
+   "usage"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "clear saved limits",
+    "here": "usage-budget-clear-dialog",
+    "elsewhere": "provider-quota-clear-dialog",
+    "landsOn": "provider-quota"
+   }
+  ],
+  "elements": [
+   {
+    "id": "usage-budget-clear-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "AlertDialog green destructive (l.391)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Error-tonal 'Clear budgets' in KitConfirmSheet, plain words.",
+  "verticals": {
+   "consistency-kit": "destructive in green"
+  },
+  "evidence": [
+   "lib/ui/screens/usage_screen.dart:391",
+   "docs/qa/screen-census/g-servers/usage-budget-clear-dialog.png"
+  ]
+ },
+ {
+  "pageId": "session-context",
+  "area": "k-session-misc",
+  "title": "Session context",
+  "kind": "screen",
+  "file": "lib/ui/screens/session_context_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (scope-changed body when the location moves, l.374)"
+  },
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "am I near the limit, should I start fresh",
+   "tinkerer": "cache, reasoning, makeup"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-context.png"
+   },
+   {
+    "id": "error",
+    "how": "codeOnly:lib/ui/screens/session_context_screen.dart:415"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/session_context_screen.dart:421"
+   },
+   {
+    "id": "scope-changed",
+    "how": "codeOnly:lib/ui/screens/session_context_screen.dart:374"
+   }
+  ],
+  "statesMissing": [
+   "near the limit: what to do (compact / new conversation)"
+  ],
+  "info": [
+   "ring %",
+   "model + raw id",
+   "tokens of limit",
+   "request table",
+   "input makeup legend",
+   "totals"
+  ],
+  "infoMissing": [
+   "plain verdict ('5 % used, plenty left')"
+  ],
+  "actions": [
+   "refresh",
+   "Active context",
+   "load older",
+   "retry"
+  ],
+  "actionsMissing": [
+   "compact now",
+   "start a fresh conversation with a summary"
+  ],
+  "entry": [
+   "chat header / command 'context' / session menu"
+  ],
+  "exit": [
+   "active-context"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "session-context-hero",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": "KitMetric",
+    "couldBeAutomatic": "no",
+    "note": "ring + model + tokens"
+   },
+   {
+    "id": "session-context-table",
+    "kind": "list",
+    "kit": "SectionLabel+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "SectionLabels + value rows (l.472)"
+   },
+   {
+    "id": "session-context-makeup",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "four near-identical green squares as a legend with no chart"
+   },
+   {
+    "id": "session-context-states",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductErrorState/ProductEmptyState (l.415, l.421)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Hero first with a plain verdict, the request table under Details, the legend either a real stacked bar or gone; add the action the number calls for (compact / start fresh).",
+  "verticals": {
+   "a11y": "legend shades indistinguishable (colour only)",
+   "consistency-kit": "pre-kit states",
+   "automation-first": "could suggest compacting at a threshold"
+  },
+  "evidence": [
+   "lib/ui/screens/session_context_screen.dart:374",
+   "lib/ui/screens/session_context_screen.dart:415",
+   "lib/ui/screens/session_context_screen.dart:472",
+   "docs/qa/screen-census/k-session-misc/session-context.png"
+  ]
+ },
+ {
+  "pageId": "active-context",
+  "area": "k-session-misc",
+  "title": "Active context",
+  "kind": "screen",
+  "file": "lib/ui/screens/active_context_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden (opener row shown only when activeContextSupported, session_context_screen.dart:385)"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "what survived compaction"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/active-context--loaded.png"
+   },
+   {
+    "id": "filtered",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/active-context--filtered.png"
+   },
+   {
+    "id": "error / changed",
+    "how": "codeOnly:lib/ui/screens/active_context_screen.dart:131"
+   },
+   {
+    "id": "loading",
+    "how": "codeOnly:lib/ui/screens/active_context_screen.dart:189"
+   }
+  ],
+  "statesMissing": [
+   "no matches for search"
+  ],
+  "info": [
+   "engine intro",
+   "type chips with counts",
+   "message previews"
+  ],
+  "infoMissing": [
+   "plain intro"
+  ],
+  "actions": [
+   "search",
+   "filter",
+   "open message",
+   "refresh"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "session-context Active context"
+  ],
+  "exit": [
+   "active-context-message"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "active-context-chips",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitChipRow",
+    "couldBeAutomatic": "no",
+    "note": "ChoiceChips run off the edge (l.239)"
+   },
+   {
+    "id": "active-context-search",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitSearchField",
+    "couldBeAutomatic": "no",
+    "note": "TextField (l.208)"
+   },
+   {
+    "id": "active-context-tile",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTile"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Plain intro, fading chip row; a candidate to fold into session-context as 'See what the model sees'.",
+  "verticals": {
+   "consistency-kit": "chips and tiles hand-built",
+   "a11y": "cut chips"
+  },
+  "evidence": [
+   "lib/ui/screens/active_context_screen.dart:131",
+   "lib/ui/screens/active_context_screen.dart:208",
+   "lib/ui/screens/active_context_screen.dart:239",
+   "docs/qa/screen-census/k-session-misc/active-context--loaded.png"
+  ]
+ },
+ {
+  "pageId": "active-context-message",
+  "area": "k-session-misc",
+  "title": "<message type label>",
+  "kind": "screen",
+  "file": "lib/ui/screens/active_context_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "exact text the model sees"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/active-context-message.png"
+   },
+   {
+    "id": "changed",
+    "how": "codeOnly:lib/ui/screens/active_context_screen.dart:347"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "raw message id",
+   "disclaimer",
+   "parts"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy part"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "active-context tile"
+  ],
+  "exit": [
+   "active-context"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "read a message",
+    "here": "active-context-message",
+    "elsewhere": "chat transcript",
+    "landsOn": "chat"
+   }
+  ],
+  "elements": [
+   {
+    "id": "active-context-message-parts",
+    "kind": "transcript",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "id first line; disclaimer before content"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Drop the id above Details, disclaimer as one muted line at the end.",
+  "verticals": {
+   "honest-state": "ok",
+   "consistency-kit": "ok-ish"
+  },
+  "evidence": [
+   "lib/ui/screens/active_context_screen.dart:347",
+   "docs/qa/screen-census/k-session-misc/active-context-message.png"
+  ]
+ },
+ {
+  "pageId": "session-relations",
+  "area": "k-session-misc",
+  "title": "Subagent sessions",
+  "kind": "screen",
+  "file": "lib/ui/screens/session_relations_screen.dart",
+  "journey": [
+   "observe",
+   "inspect"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "hidden (chat opener gates on projectManagement)",
+   "server.oc2": "hidden (same)"
+  },
+  "personas": [
+   "team-delegator",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "team-delegator": "what each delegated agent is doing",
+   "tinkerer": "jump into a child transcript"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-relations--loaded.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-relations--empty.png"
+   },
+   {
+    "id": "error",
+    "how": "codeOnly:lib/ui/screens/session_relations_screen.dart:254"
+   }
+  ],
+  "statesMissing": [
+   "child needs approval (surface it here)"
+  ],
+  "info": [
+   "header repeats parent",
+   "parent row",
+   "children '(@explore subagent)', 'N of M'"
+  ],
+  "infoMissing": [
+   "child status (working / done / needs you)"
+  ],
+  "actions": [
+   "open parent/child",
+   "Copy handoff",
+   "pin",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "stop a child"
+  ],
+  "entry": [
+   "chat subagent banner / session menu / global sessions"
+  ],
+  "exit": [
+   "chat",
+   "session-handoff-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see subagents",
+    "here": "session-relations",
+    "elsewhere": "embedded-subagent-context-banner",
+    "landsOn": "chat banner"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-relations-row",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "rows with PopupMenuButton; parent all accent"
+   },
+   {
+    "id": "session-relations-states",
+    "kind": "state",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ProductErrorState/ProductEmptyState (l.254, l.299)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Title 'Subagents', drop the header row, status marks per child, KitStateView empty once.",
+  "verticals": {
+   "a11y": "title truncated",
+   "consistency-kit": "pre-kit states"
+  },
+  "evidence": [
+   "lib/ui/screens/session_relations_screen.dart:254",
+   "lib/ui/screens/session_relations_screen.dart:276",
+   "lib/ui/screens/session_relations_screen.dart:299",
+   "docs/qa/screen-census/k-session-misc/session-relations--loaded.png"
+  ]
+ },
+ {
+  "pageId": "session-handoff-dialog",
+  "area": "k-session-misc",
+  "title": "Copy handoff reference? | Continue on computer",
+  "kind": "dialog",
+  "file": "lib/ui/widgets/session_handoff.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "chat",
+  "chrome": "none",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (reference variant copies JSON ids when no command gateway)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "continue at the desk with one paste"
+  },
+  "states": [
+   {
+    "id": "available (command)",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-handoff-dialog--available.png"
+   },
+   {
+    "id": "unavailable (JSON reference)",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-handoff-dialog--unavailable.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "POSIX / env-var instructions",
+   "command wrapping mid-token",
+   "JSON with sessionID/projectID"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Copy command / reference",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "session-relations Copy handoff",
+   "global-sessions row menu"
+  ],
+  "exit": [
+   "clipboard"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "continue on computer",
+    "here": "session-handoff-dialog",
+    "elsewhere": "continue-on-computer-sheet",
+    "landsOn": "continue-on-computer-sheet (different command: 'opencode attach' vs 'cd && opencode --session')"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-handoff-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "no",
+    "note": "AlertDialog (l.87) + FilledButton"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:continue-on-computer-sheet",
+  "rationale": "Owner verdict Rethink. Two 'Continue on computer' flows disagree on the command; keep the sheet, open it from the relations and sessions menus too, drop the JSON-reference path (Export covers other servers).",
+  "verticals": {
+   "security-privacy": "no password in the clipboard; ok",
+   "consistency-kit": "duplicate flow"
+  },
+  "evidence": [
+   "lib/ui/widgets/session_handoff.dart:60",
+   "lib/ui/widgets/session_handoff.dart:74",
+   "lib/ui/widgets/session_handoff.dart:87",
+   "docs/qa/screen-census/k-session-misc/session-handoff-dialog--available.png"
+  ]
+ },
+ {
+  "pageId": "session-export",
+  "area": "k-session-misc",
+  "title": "Export conversation",
+  "kind": "screen",
+  "file": "lib/ui/screens/session_export_screen.dart",
+  "journey": [
+   "converse",
+   "recover"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "explains otherwise: chat saves Markdown directly via FilePicker (chat_screen.dart:6000)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "move a conversation to another server",
+   "tinkerer": "full JSON backup"
+  },
+  "states": [
+   {
+    "id": "choice",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-export.png"
+   },
+   {
+    "id": "downloading (cancel)",
+    "how": "codeOnly:lib/ui/screens/session_export_screen.dart:189"
+   }
+  ],
+  "statesMissing": [
+   "save failed"
+  ],
+  "info": [
+   "format choices",
+   "redaction note"
+  ],
+  "infoMissing": [
+   "what survives redaction"
+  ],
+  "actions": [
+   "format",
+   "redact",
+   "Save file",
+   "cancel download"
+  ],
+  "actionsMissing": [
+   "share instead of save"
+  ],
+  "entry": [
+   "chat menu",
+   "continue-on-computer-sheet Export",
+   "chat command 'export'"
+  ],
+  "exit": [
+   "system save picker"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "export conversation",
+    "here": "session-export",
+    "elsewhere": "chat/markdown save fallback",
+    "landsOn": "FilePicker"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-export-format",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitChoiceRow",
+    "couldBeAutomatic": "no",
+    "note": "tinted cards with radio"
+   },
+   {
+    "id": "session-export-redact",
+    "kind": "switch",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: default off for Markdown",
+    "note": "SwitchListTile on by default; KitSwitchRow exists"
+   },
+   {
+    "id": "session-export-save",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "pinned FilledButton (l.202); ok placement"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Say what redaction keeps (or default it off for the readable transcript); one choice-row style.",
+  "verticals": {
+   "security-privacy": "redaction default is safe but strips the text silently",
+   "reliability": "PopScope during save; ok"
+  },
+  "evidence": [
+   "lib/ui/screens/session_export_screen.dart:56",
+   "lib/ui/screens/session_export_screen.dart:160",
+   "lib/ui/screens/session_export_screen.dart:202",
+   "docs/qa/screen-census/k-session-misc/session-export.png"
+  ]
+ },
+ {
+  "pageId": "session-import",
+  "area": "k-session-misc",
+  "title": "Import conversation",
+  "kind": "screen",
+  "file": "lib/ui/screens/session_import_screen.dart",
+  "journey": [
+   "converse",
+   "recover"
+  ],
+  "module": "work",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden (Settings row needs sessionImportExport + SessionImportGateway)"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "bring a conversation from another server"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-import--empty.png"
+   },
+   {
+    "id": "review",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-import--review.png"
+   },
+   {
+    "id": "importing",
+    "how": "codeOnly:lib/ui/screens/session_import_screen.dart:429"
+   }
+  ],
+  "statesMissing": [
+   "invalid file",
+   "import failed"
+  ],
+  "info": [
+   "file name",
+   "preview '1 message records' + 'ses_transfer'",
+   "destination path"
+  ],
+  "infoMissing": [
+   "project name"
+  ],
+  "actions": [
+   "choose file",
+   "change destination",
+   "Import",
+   "Open conversation"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "settings Import conversation"
+  ],
+  "exit": [
+   "session-import-destination-sheet",
+   "chat"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "session-import-preview",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card with raw id"
+   },
+   {
+    "id": "session-import-destination",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "path + centred text button; should be KitRow+KitChevron"
+   },
+   {
+    "id": "session-import-submit",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "pinned FilledButton (l.433)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Title only in the preview, plural fixed, destination as a KitRow.",
+  "verticals": {
+   "honest-state": "'1 message records'",
+   "reliability": "PopScope while importing (l.394); ok"
+  },
+  "evidence": [
+   "lib/ui/screens/session_import_screen.dart:252",
+   "lib/ui/screens/session_import_screen.dart:394",
+   "lib/ui/screens/session_import_screen.dart:433",
+   "docs/qa/screen-census/k-session-misc/session-import--review.png"
+  ]
+ },
+ {
+  "pageId": "session-import-destination-sheet",
+  "area": "k-session-misc",
+  "title": "Import into",
+  "kind": "sheet",
+  "file": "lib/ui/screens/session_import_screen.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "work",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "pick the right project"
+  },
+  "states": [
+   {
+    "id": "one-option",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-import-destination-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "projects/worktrees"
+  ],
+  "infoMissing": [
+   "current mark"
+  ],
+  "actions": [
+   "choose"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "session-import Change destination"
+  ],
+  "exit": [
+   "session-import"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "pick a project",
+    "here": "session-import-destination-sheet",
+    "elsewhere": "workspace project picker",
+    "landsOn": "workspace"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-import-destination-sheet-choice",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: skip the sheet when there is one project",
+    "note": "ListTile list"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Current mark; hide the change action when there is one option.",
+  "verticals": {
+   "consistency-kit": "no current mark"
+  },
+  "evidence": [
+   "lib/ui/screens/session_import_screen.dart:252"
+  ]
+ },
+ {
+  "pageId": "session-note",
+  "area": "k-session-misc",
+  "title": "Note for the agent",
+  "kind": "screen",
+  "file": "lib/ui/screens/session_note_screen.dart",
+  "journey": [
+   "converse",
+   "configure"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden (gateway implemented only by the OpenCode 2 gateway, api2/gateway_operations.dart:30-43)"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "a standing instruction that survives the conversation"
+  },
+  "states": [
+   {
+    "id": "saved",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-note--saved.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-note--empty.png"
+   },
+   {
+    "id": "loading / saving",
+    "how": "codeOnly:lib/ui/screens/session_note_screen.dart:229"
+   }
+  ],
+  "statesMissing": [
+   "save failed",
+   "too long"
+  ],
+  "info": [
+   "three-sentence intro",
+   "byte counter"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "edit",
+   "Save",
+   "Delete saved note",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "undo delete"
+  ],
+  "entry": [
+   "chat menu",
+   "session menu Note"
+  ],
+  "exit": [
+   "session-note-discard-dialog"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the agent an instruction",
+    "here": "session-note-editor",
+    "elsewhere": "chat/composer",
+    "landsOn": "chat (one-off message)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-note-editor",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TextField + '45 / 8192 bytes'"
+   },
+   {
+    "id": "session-note-save",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "spinner inside the disabled button (l.293)"
+   },
+   {
+    "id": "session-note-remove",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "accent text; deletes at once (_save(remove: true), l.304)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Count characters only near the limit, progress not in the button, delete error-coloured with Undo.",
+  "verticals": {
+   "reliability": "delete without confirm/undo",
+   "consistency-kit": "busy button"
+  },
+  "evidence": [
+   "lib/ui/screens/session_note_screen.dart:210",
+   "lib/ui/screens/session_note_screen.dart:272",
+   "lib/ui/screens/session_note_screen.dart:293",
+   "docs/qa/screen-census/k-session-misc/session-note--saved.png"
+  ]
+ },
+ {
+  "pageId": "session-note-discard-dialog",
+  "area": "k-session-misc",
+  "title": "Discard your note changes?",
+  "kind": "dialog",
+  "file": "lib/ui/screens/session_note_screen.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "chat",
+  "chrome": "none",
+  "needs": [
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc2": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "keep editing is the safe default"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/session-note-discard-dialog.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "title only"
+  ],
+  "infoMissing": [
+   "body"
+  ],
+  "actions": [
+   "Keep editing",
+   "Discard changes"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "session-note back while dirty"
+  ],
+  "exit": [
+   "chat"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "discard guard",
+    "here": "session-note-discard-dialog",
+    "elsewhere": "profile-editor-discard-sheet",
+    "landsOn": "profile-editor"
+   }
+  ],
+  "elements": [
+   {
+    "id": "session-note-discard-dialog",
+    "kind": "dialog",
+    "kit": "none",
+    "kitGap": "KitDiscardGuard",
+    "couldBeAutomatic": "no",
+    "note": "AlertDialog (l.114), Discard not error-coloured"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. One KitDiscardGuard with error-tonal Discard.",
+  "verticals": {
+   "consistency-kit": "differs from the editor's guard"
+  },
+  "evidence": [
+   "lib/ui/screens/session_note_screen.dart:114"
+  ]
+ },
+ {
+  "pageId": "context-capsule",
+  "area": "k-session-misc",
+  "title": "Context capsule",
+  "kind": "screen",
+  "file": "lib/ui/screens/context_capsule_screen.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "chat",
+  "chrome": "title-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden (chat opener: not isolated, not sending, chat_screen.dart:3043)"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "paste an error and a screenshot into the draft"
+  },
+  "states": [
+   {
+    "id": "entry",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/context-capsule--entry.png"
+   },
+   {
+    "id": "review",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/context-capsule--review.png"
+   },
+   {
+    "id": "invalid-scope",
+    "how": "codeOnly:lib/ui/screens/context_capsule_screen.dart:50"
+   }
+  ],
+  "statesMissing": [
+   "discard guard on back"
+  ],
+  "info": [
+   "intro",
+   "excerpt cards",
+   "images"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "+ Note / Error / Code",
+   "Paste",
+   "Remove",
+   "Add image",
+   "Apply to draft",
+   "Cancel"
+  ],
+  "actionsMissing": [
+   "recover unapplied edits"
+  ],
+  "entry": [
+   "composer tools / prompt-tools-sheet"
+  ],
+  "exit": [
+   "chat (draft)",
+   "file-preview-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "add text and images to the draft",
+    "here": "context-capsule-apply",
+    "elsewhere": "chat/composer paste + attachments",
+    "landsOn": "chat composer"
+   }
+  ],
+  "elements": [
+   {
+    "id": "context-capsule-excerpt",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card with label/excerpt fields (l.211)"
+   },
+   {
+    "id": "context-capsule-add",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "three OutlinedButton chips (l.200)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "remove",
+  "rationale": "Owner Fix note: 'a glorified input box... kill if not needed'. ContextCapsule.appendTo only concatenates text onto the draft (domain/context_capsule.dart); composer paste and attachments already do this, and the page loses work on Back. Remove it and its composer entry.",
+  "verticals": {
+   "reliability": "unapplied edits lost on back (critical X2)"
+  },
+  "evidence": [
+   "lib/domain/context_capsule.dart:14",
+   "lib/ui/screens/context_capsule_screen.dart:50",
+   "lib/ui/screens/context_capsule_screen.dart:211",
+   "lib/ui/screens/chat_screen.dart:3131",
+   "docs/qa/screen-census/k-session-misc/context-capsule--entry.png"
+  ]
+ },
+ {
+  "pageId": "run-result",
+  "area": "k-session-misc",
+  "title": "Run results",
+  "kind": "screen",
+  "file": "lib/ui/screens/run_result_screen.dart",
+  "journey": [
+   "review",
+   "observe"
+  ],
+  "module": "review",
+  "chrome": "title-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains (scope-changed body, run_result_screen.dart:161)"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "did it work, what changed, in one glance on return",
+   "team-delegator": "same for a team run"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/run-result.png"
+   },
+   {
+    "id": "loading",
+    "how": "codeOnly:lib/ui/screens/run_result_screen.dart:169"
+   },
+   {
+    "id": "scope-changed",
+    "how": "codeOnly:lib/ui/screens/run_result_screen.dart:161"
+   },
+   {
+    "id": "error / refresh banner",
+    "how": "codeOnly:lib/ui/screens/run_result_screen.dart:155"
+   }
+  ],
+  "statesMissing": [
+   "run still in progress"
+  ],
+  "info": [
+   "title + cut run label",
+   "model id",
+   "times",
+   "'Outcome not reported'",
+   "changed file paths",
+   "commands + exit code",
+   "provenance disclaimers"
+  ],
+  "infoMissing": [
+   "one-line verdict ('Finished · 2 min · 1 file · tests passed')"
+  ],
+  "actions": [
+   "open conversation",
+   "open file/command output",
+   "retry",
+   "refresh"
+  ],
+  "actionsMissing": [
+   "review the changed files (review-workspace)"
+  ],
+  "entry": [
+   "Inbox digest",
+   "completion digest card",
+   "return brief"
+  ],
+  "exit": [
+   "chat",
+   "run-result-output-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see what a run changed",
+    "here": "run-result-file-row",
+    "elsewhere": "review-workspace",
+    "landsOn": "review-workspace"
+   }
+  ],
+  "elements": [
+   {
+    "id": "run-result-summary",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: a plain verdict computed from exit codes and finish reason",
+    "note": "stacked metadata lines"
+   },
+   {
+    "id": "run-result-rows",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ListTiles (run_result_view.dart:301, 335)"
+   },
+   {
+    "id": "run-result-open",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "half-width tonal at the end (l.184)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner verdict Fix. Lead with what is known, name the run by time, file names not paths, pinned 'Open conversation', add 'Review changes'.",
+  "verticals": {
+   "honest-state": "leads with what it doesn't know",
+   "a11y": "run label cut from the front"
+  },
+  "evidence": [
+   "lib/ui/screens/run_result_screen.dart:161",
+   "lib/ui/screens/run_result_screen.dart:184",
+   "lib/ui/widgets/run_result_view.dart:325",
+   "docs/qa/screen-census/k-session-misc/run-result.png"
+  ]
+ },
+ {
+  "pageId": "run-result-output-sheet",
+  "area": "k-session-misc",
+  "title": "Recorded tool output",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/run_result_view.dart",
+  "journey": [
+   "review"
+  ],
+  "module": "review",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "explains"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "the exact output of one step"
+  },
+  "states": [
+   {
+    "id": "one-record",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/run-result-output-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "ToolCard"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "expand the tool card"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "run-result rows"
+  ],
+  "exit": [
+   "run-result"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "read tool output",
+    "here": "run-result-output-sheet",
+    "elsewhere": "embedded-tool-card",
+    "landsOn": "chat transcript"
+   }
+  ],
+  "elements": [
+   {
+    "id": "run-result-output-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "DraggableScrollableSheet full height for one row (l.373)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Size to content; title 'What it did'.",
+  "verticals": {
+   "consistency-kit": "ok (reuses ToolCard)"
+  },
+  "evidence": [
+   "lib/ui/widgets/run_result_view.dart:368",
+   "lib/ui/widgets/run_result_view.dart:388",
+   "docs/qa/screen-census/k-session-misc/run-result-output-sheet.png"
+  ]
+ },
+ {
+  "pageId": "continue-on-computer-sheet",
+  "area": "k-session-misc",
+  "title": "Continue on computer",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/session_handoff_sheets.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "chat",
+  "chrome": "sheet-handle",
+  "needs": [
+   "server.oc1",
+   "server.oc2"
+  ],
+  "whenMissing": {
+   "server.oc1": "explains (unavailable state with no action)",
+   "server.oc2": "explains (same)"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "open the same conversation at the desk"
+  },
+  "states": [
+   {
+    "id": "available",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/continue-on-computer-sheet--available.png"
+   },
+   {
+    "id": "unavailable",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/continue-on-computer-sheet--unavailable.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "command",
+   "version note"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy command",
+   "Export conversation"
+  ],
+  "actionsMissing": [
+   "Reload on the unavailable state"
+  ],
+  "entry": [
+   "chat menu",
+   "session menu"
+  ],
+  "exit": [
+   "session-export"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "continue on computer",
+    "here": "continue-on-computer-sheet",
+    "elsewhere": "session-handoff-dialog",
+    "landsOn": "clipboard (other command)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "continue-on-computer-command",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "no",
+    "note": "AgentCommandBlock (l.70) cuts the command at the edge"
+   },
+   {
+    "id": "continue-on-computer-export",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "OutlinedButton (l.113)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Absorbs the handoff dialog; the command wraps or scrolls with copy; version note to Details; Reload on unavailable.",
+  "verticals": {
+   "security-privacy": "no password; ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/session_handoff_sheets.dart:18",
+   "lib/ui/widgets/session_handoff_sheets.dart:70",
+   "lib/ui/widgets/session_handoff_sheets.dart:109",
+   "docs/qa/screen-census/k-session-misc/continue-on-computer-sheet--available.png"
+  ]
+ },
+ {
+  "pageId": "continue-on-phone-sheet",
+  "area": "k-session-misc",
+  "title": "Open on another phone",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/session_handoff_sheets.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "chat",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "hand the conversation to a second device"
+  },
+  "states": [
+   {
+    "id": "qr",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/continue-on-phone-sheet.png"
+   }
+  ],
+  "statesMissing": [
+   "other phone lacks the server"
+  ],
+  "info": [
+   "QR",
+   "what it carries",
+   "link"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy link"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "chat menu",
+   "session menu"
+  ],
+  "exit": [
+   "clipboard"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "continue-on-phone-qr",
+    "kind": "illustration",
+    "kit": "none",
+    "kitGap": "KitQrCode",
+    "couldBeAutomatic": "no",
+    "note": "SessionLinkQr custom painter (l.246)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "No owner verdict; critic keep. Clear and useful; only the copy and link wrap need care.",
+  "verticals": {
+   "security-privacy": "carries ids only, no address or password; ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/session_handoff_sheets.dart:132",
+   "lib/ui/widgets/session_handoff_sheets.dart:246",
+   "docs/qa/screen-census/k-session-misc/continue-on-phone-sheet.png"
+  ]
+ },
+ {
+  "pageId": "info-label-sheet",
+  "area": "k-session-misc",
+  "title": "<glossary term>",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/info_label.dart",
+  "journey": [
+   "learn"
+  ],
+  "module": "system",
+  "chrome": "sheet-handle",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "newcomer"
+  ],
+  "personaNotes": {
+   "newcomer": "what 'MCP', 'Worktree', 'Variant' mean"
+  },
+  "states": [
+   {
+    "id": "term",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/info-label-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "term",
+   "explanation"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Got it"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "embedded-info-label"
+  ],
+  "exit": [
+   "caller"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "info-label-sheet",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitTerm",
+    "couldBeAutomatic": "no",
+    "note": "raw FilledButton.tonal 'Got it' right-aligned, 24 dp padding (l.156, l.173)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "No owner verdict; critic fix. Becomes the detail sheet of one kit KitTerm: no button (drag/scrim close), kit rails.",
+  "verticals": {
+   "consistency-kit": "raw button, off-rail padding"
+  },
+  "evidence": [
+   "lib/ui/widgets/info_label.dart:150",
+   "lib/ui/widgets/info_label.dart:173",
+   "docs/qa/screen-census/k-session-misc/info-label-sheet.png"
+  ]
+ },
+ {
+  "pageId": "embedded-info-label",
+  "area": "k-session-misc",
+  "title": "[Info label: term with info glyph]",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/info_label.dart",
+  "journey": [
+   "learn"
+  ],
+  "module": "system",
+  "chrome": "none",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "newcomer"
+  ],
+  "personaNotes": {
+   "newcomer": "a word they don't know, explained in place"
+  },
+  "states": [
+   {
+    "id": "inline",
+    "how": "rendered:docs/qa/screen-census/k-session-misc/embedded-info-label.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "term + info glyph"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "tap for explanation"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "worktrees",
+   "integrations",
+   "mcp-setup",
+   "prompt error banner"
+  ],
+  "exit": [
+   "info-label-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "embedded-info-label-term",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": "KitTerm",
+    "couldBeAutomatic": "no",
+    "note": "InkWell with 2 dp padding: ~24 dp tall hit area (l.206, l.210)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "remove",
+  "rationale": "Owner Fix note: 'Wtf is this page? Kill if not needed or show tooltip?'. It is not a page but an inline widget (the census shows it alone on an empty Worktrees shell). Remove it from the page list; replace with a kit KitTerm (48 dp hit area, tooltip on tap, sheet only for long text) and, where a screen can say it in plain words, drop the term.",
+  "verticals": {
+   "a11y": "~24 dp touch target (critical X1)"
+  },
+  "evidence": [
+   "lib/ui/widgets/info_label.dart:110",
+   "lib/ui/widgets/info_label.dart:206",
+   "lib/ui/widgets/info_label.dart:210",
+   "docs/qa/screen-census/k-session-misc/embedded-info-label.png"
+  ]
+ }
+]
