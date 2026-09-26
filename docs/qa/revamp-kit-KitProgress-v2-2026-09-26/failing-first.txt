@@ -1,0 +1,184 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart
+00:00 +0: KitProgress.staged line joins the step, the label and the eta with " · "
+00:00 +1: KitProgress.staged line uses the caption ahead of the eta when both are given
+00:00 +2: KitProgress.staged line uses the locale plural forms in Arabic
+00:00 +3: KitProgress.staged line value is (step - 1 + stepValue) / of, or (step - 1) / of
+00:00 +4: KitProgress.staged line asserts step within 1..of and of at least 1
+00:00 +5: KitProgress.staged line asserts stepValue within 0..1
+00:00 +5 -1: KitProgress.staged line asserts stepValue within 0..1 [E]
+  Expected: throws <Instance of 'AssertionError'>
+    Actual: <Closure: () => KitProgress>
+     Which: returned <Instance of 'KitProgress'>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit/kit_progress_test.dart 150:7               main.<fn>.<fn>
+  
+00:00 +5 -1: KitProgress.known value asserts value within 0..1
+00:00 +5 -2: KitProgress.known value asserts value within 0..1 [E]
+  Expected: throws <Instance of 'AssertionError'>
+    Actual: <Closure: () => KitProgress>
+     Which: returned <Instance of 'KitProgress'>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit/kit_progress_test.dart 173:7               main.<fn>.<fn>
+  
+00:00 +5 -2: KitProgressView never goes backwards within a job (debug) the same step and label dropping its value asserts
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <Instance of 'AssertionError'>
+  Actual: <null>
+   Which: is not an instance of 'AssertionError'
+
+When the exception was thrown, this was the stack:
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart line 194
+The test description was:
+  the same step and label dropping its value asserts
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +5 -3: KitProgressView never goes backwards within a job (debug) the same step and label dropping its value asserts [E]
+  Test failed. See exception logs above.
+  The test description was: the same step and label dropping its value asserts
+  
+00:00 +5 -3: KitProgressView never goes backwards within a job (debug) moving forward, or holding, is fine
+00:00 +6 -3: KitProgressView never goes backwards within a job (debug) the step going back may lower the bar
+00:00 +7 -3: KitProgressView never goes backwards within a job (debug) a different job (another "of") starts over
+00:00 +8 -3: KitProgressView never goes backwards within a job (debug) known has no job identity: a host may start a new job lower (SetupProgressView re-runs on the same bar)
+00:00 +9 -3: KitProgress.known line and eta rounding joins the caption and the eta words
+00:00 +10 -3: KitProgress.known line and eta rounding an eta of zero or less is never shown
+00:00 +11 -3: KitProgress.known line and eta rounding under a minute rounds up to the nearest 10 s
+00:00 +12 -3: KitProgress.known line and eta rounding under an hour rounds whole minutes up
+00:01 +13 -3: KitProgress.known line and eta rounding an hour or more rounds whole hours up, never down
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'about 3 h left'
+  Actual: 'about 2 h left'
+   Which: is different.
+          Expected: about 3 h left
+            Actual: about 2 h left
+                          ^
+           Differ at offset 6
+
+When the exception was thrown, this was the stack:
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart line 293
+The test description was:
+  an hour or more rounds whole hours up, never down
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +13 -4: KitProgress.known line and eta rounding an hour or more rounds whole hours up, never down [E]
+  Test failed. See exception logs above.
+  The test description was: an hour or more rounds whole hours up, never down
+  
+00:01 +13 -4: KitProgressView semantics carries the line and the percentage for known
+00:01 +14 -4: KitProgressView semantics the line is read once: the bar and its words are one node
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _PredicateSemanticsFinder:<Found 2 matching semantics predicate: [
+            SemanticsNode#4(Rect.fromLTRB(0.0, 284.0, 800.0, 288.0), label: "Setup progress, 29 of
+30 MB", value: "62", textDirection: ltr, role: progressBar, minValue: "0", maxValue: "100"),
+            SemanticsNode#5(Rect.fromLTRB(0.0, 296.0, 800.0, 316.0), label: "29 of 30 MB",
+textDirection: ltr),
+          ]>
+   Which: is too many
+
+When the exception was thrown, this was the stack:
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart line 344
+The test description was:
+  the line is read once: the bar and its words are one node
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +14 -5: KitProgressView semantics the line is read once: the bar and its words are one node [E]
+  Test failed. See exception logs above.
+  The test description was: the line is read once: the bar and its words are one node
+  
+00:01 +14 -5: KitProgressView semantics inside a KitStateView the bar stays its own node: the title is not folded into it, the line is not read twice
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: '29 of 30 MB'
+  Actual: 'Downloading the base\n'
+            'Keep the app open.\n'
+            '29 of 30 MB\n'
+            '29 of 30 MB'
+   Which: is different.
+          Expected: 29 of 30 M ...
+            Actual: Downloadin ...
+                    ^
+           Differ at offset 0
+
+When the exception was thrown, this was the stack:
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart line 392
+The test description was:
+  inside a KitStateView the bar stays its own node: the title is not folded into it, the line is not
+  read twice
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +14 -6: KitProgressView semantics inside a KitStateView the bar stays its own node: the title is not folded into it, the line is not read twice [E]
+  Test failed. See exception logs above.
+  The test description was: inside a KitStateView the bar stays its own node: the title is not folded into it, the line is not read twice
+  
+00:01 +14 -6: KitProgressView semantics carries the line for staged; the framework still adds its own percentage to any determinate bar
+00:01 +15 -6: KitProgressView semantics carries the semanticsLabel for waiting
+00:01 +16 -6: KitProgressView semantics waiting under reduced motion is still indeterminate: no value and no percentage, the same as with motion
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: '30'
+
+When the exception was thrown, this was the stack:
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart line 443
+The test description was:
+  waiting under reduced motion is still indeterminate: no value and no percentage, the same as with
+  motion
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +16 -7: KitProgressView semantics waiting under reduced motion is still indeterminate: no value and no percentage, the same as with motion [E]
+  Test failed. See exception logs above.
+  The test description was: waiting under reduced motion is still indeterminate: no value and no percentage, the same as with motion
+  
+00:01 +16 -7: KitProgressView motion (MOT-5, G8) an indeterminate bar settles after one pump() under reduced motion, as a still 30 % segment at the start
+00:01 +17 -7: KitProgressView motion (MOT-5, G8) without reduced motion the waiting bar keeps moving
+00:01 +18 -7: KitProgressView motion (MOT-5, G8) a determinate change applies immediately under reduced motion
+00:01 +19 -7: KitProgressView motion (MOT-5, G8) a determinate change eases there with motion
+00:01 +20 -7: KitProgress existing API keeps compiling (KIT-43) waiting renders an indeterminate bar with its caption
+00:01 +21 -7: KitProgress existing API keeps compiling (KIT-43) known renders a determinate bar with its caption
+00:01 +22 -7: KitProgressView tone (LOOK-5 interim) running is the accent; stopped (neutral) and failed paint text3 and text1, not the danger role
+00:01 +23 -7: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart: KitProgress.known line and eta rounding an hour or more rounds whole hours up, never down
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart: KitProgress.known value asserts value within 0..1
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart: KitProgress.staged line asserts stepValue within 0..1
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_ce49045b-395-5/test/kit/kit_progress_test.dart: KitProgressView never goes backwards within a job (debug) the same step and label dropping its value asserts
+  ... and 3 more

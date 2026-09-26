@@ -22246,12 +22246,48 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitCopyDetails": "Copy details",
-  "@kitCopyDetails": {
-    "description": "Kit notice and state view: the label of the icon button that copies an error's technical details (redacted) to the clipboard"
+  "kitProgressStep": "Step {step} of {of}",
+  "@kitProgressStep": {
+    "description": "KitProgress: the current stage of a staged job, before its label (\"Step 3 of 5\")",
+    "placeholders": {
+      "step": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "of": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   },
-  "kitReportProblem": "Report a problem",
-  "@kitReportProblem": {
-    "description": "Kit notice and state view: the action on an error that opens the app's problem report, prefilled with that error and previewed before anything is sent"
+  "kitProgressEtaSeconds": "{seconds, plural, other{about {seconds} s left}}",
+  "@kitProgressEtaSeconds": {
+    "description": "KitProgress: time left under a minute, rounded up to the nearest 10 s",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressEtaMinutes": "{minutes, plural, other{about {minutes} min left}}",
+  "@kitProgressEtaMinutes": {
+    "description": "KitProgress: time left under an hour, whole minutes rounded up",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitProgressEtaHours": "{hours, plural, other{about {hours} h left}}",
+  "@kitProgressEtaHours": {
+    "description": "KitProgress: time left of an hour or more, whole hours with the decimal dropped",
+    "placeholders": {
+      "hours": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }
