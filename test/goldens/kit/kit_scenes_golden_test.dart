@@ -2,14 +2,18 @@
 // of the 24 scenes' finished frames, grouped as the spec's §"Galleries
 // required" lists them, plus the default page state (KitPortalScene above a
 // title and a primary button) at every LAY-4 gallery size, in Arabic (the
-// mirrored scenes' sheet and the default page) and at 2.0 text.
+// mirrored scenes' sheet and the default page) and at 2.0 text. The default
+// page is built from kit parts (KitText, KitButton) on KitTokens spacing, and
+// its Arabic shots carry Arabic copy, so they show the page right to left.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_scenes_golden_test.dart
 // and look at every changed image before committing it.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_illustration.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/scenes/folders_open_scene.dart';
 import 'package:opencode_mobile/ui/kit/scenes/portal_scene.dart';
@@ -92,37 +96,75 @@ const _mirrored = <(KitScene, double)>[
   (TeamDiscoverRelayScene(), 170),
 ];
 
-Widget _contactSheet(List<(KitScene, double)> scenes) => Wrap(
-  alignment: WrapAlignment.center,
-  runAlignment: WrapAlignment.center,
-  crossAxisAlignment: WrapCrossAlignment.center,
-  spacing: 16,
-  runSpacing: 16,
-  children: [
-    for (final (scene, width) in scenes)
-      KitIllustration(scene: scene, width: width),
-  ],
+Widget _contactSheet(List<(KitScene, double)> scenes) => Builder(
+  builder: (context) {
+    final gap = KitTokens.of(context).space4;
+    return Wrap(
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: gap,
+      runSpacing: gap,
+      children: [
+        for (final (scene, width) in scenes)
+          KitIllustration(scene: scene, width: width),
+      ],
+    );
+  },
 );
 
-/// The default page state: `KitPortalScene` above a title and the one
-/// primary action, as a host would show it while connecting.
-Widget _defaultPage(BuildContext context) => Column(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    const KitIllustration(
-      scene: KitPortalScene(),
-      width: KitTokens.illustrationPage,
-      ambient: true,
-    ),
-    const SizedBox(height: 24),
-    Text(
-      'Connecting to your server',
-      style: Theme.of(context).textTheme.titleLarge,
-      textAlign: TextAlign.center,
-    ),
-    const SizedBox(height: 24),
-    FilledButton(onPressed: () {}, child: const Text('Cancel')),
-  ],
+/// The default page's words, in English and in Arabic (test-only dressing:
+/// scenes have no words of their own).
+class _Copy {
+  const _Copy({required this.title, required this.body, required this.action});
+
+  final String title;
+  final String body;
+  final String action;
+}
+
+const _en = _Copy(
+  title: 'No projects yet',
+  body: 'Open a folder on studio-pc to start working with an agent.',
+  action: 'Open a project',
+);
+
+const _ar = _Copy(
+  title: 'لا توجد مشاريع بعد',
+  body: 'افتح مجلدًا على studio-pc لتبدأ العمل مع وكيل.',
+  action: 'افتح مشروعًا',
+);
+
+/// The default page state: `KitPortalScene` at `illustrationPage` above a
+/// title and the one primary action, laid out from the start edge as a
+/// page state is (so the Arabic shots mirror it).
+Widget _defaultPage(_Copy copy) => Builder(
+  builder: (context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitIllustration(
+              scene: KitPortalScene(),
+              width: KitTokens.illustrationPage,
+              ambient: true,
+            ),
+          ),
+          SizedBox(height: tokens.space5),
+          KitText(copy.title, role: KitTextRole.title),
+          SizedBox(height: tokens.space2),
+          KitText(copy.body, tone: KitTextTone.secondary),
+          SizedBox(height: tokens.space6),
+          KitButton.primary(label: copy.action, onPressed: () {}),
+        ],
+      ),
+    );
+  },
 );
 
 void main() {
@@ -180,7 +222,7 @@ void main() {
             name: name,
             size: size,
             light: light,
-            child: Builder(builder: _defaultPage),
+            child: _defaultPage(_en),
           );
         });
       }
@@ -201,7 +243,7 @@ void main() {
             size: size,
             light: false,
             locale: const Locale('ar'),
-            child: Builder(builder: _defaultPage),
+            child: _defaultPage(_ar),
           );
         });
       }
@@ -222,7 +264,7 @@ void main() {
             size: size,
             light: false,
             textScale: 2,
-            child: Builder(builder: _defaultPage),
+            child: _defaultPage(_en),
           );
         });
       }

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_tokens.dart';
 import 'setup_cast.dart';
 
 /// A server that is not answering (design standard §10): the app's plug
@@ -39,12 +40,13 @@ class SetupUnpluggedScene extends KitScene {
     final t = frame.entrance;
     final reach = frame.looping ? KitDraw.wave(frame.loop) : 0.0;
 
-    // A quiet wash behind the portal.
+    // A quiet neutral wash behind the portal, no louder than an accent wash
+    // (LOOK-36).
     final wash = KitDraw.interval(t, 0, .4);
     canvas.drawCircle(
       _portal,
       34 * (.7 + .3 * wash),
-      KitDraw.fill(KitDraw.fade(p.line, .35 * wash)),
+      KitDraw.fill(KitDraw.fade(p.line, KitTokens.sceneWashAlpha * wash)),
     );
 
     // The portal: grey, open, waiting.

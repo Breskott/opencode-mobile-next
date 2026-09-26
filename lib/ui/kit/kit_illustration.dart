@@ -236,7 +236,7 @@ class KitIllustration extends StatefulWidget {
   const KitIllustration({
     super.key,
     required this.scene,
-    this.width = 160,
+    this.width = KitTokens.illustrationPage,
     this.ambient = false,
     this.loopPeriod = KitMotion.breath,
     this.animateEntrance = true,

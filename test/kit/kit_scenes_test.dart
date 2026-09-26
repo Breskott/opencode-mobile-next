@@ -63,8 +63,10 @@ const _scenes = <String, KitScene>{
   'TeamIdleScene': TeamIdleScene(),
 };
 
-/// The failed/halted variants KitScenes.md's test 2 also scans.
-const _failureVariants = <String, KitScene>{
+/// The failed, halted and stopped variants groups 2 and 3 also scan: a
+/// failed or quiet moment is where a scene reaches for red, amber or a
+/// neutral wash instead of the accent.
+const _variants = <String, KitScene>{
   'ServersLinkScene(failed)': ServersLinkScene(ServersLinkState.failed),
   'SetupStepsScene(halted: failed)': SetupStepsScene(
     stage: SetupSceneStage.download,
@@ -80,6 +82,14 @@ const _failureVariants = <String, KitScene>{
     fraction: .6,
     halted: SetupSceneHalt.paused,
   ),
+  // The install and start stages also wash the phone's screen.
+  'SetupStepsScene(install, halted: failed)': SetupStepsScene(
+    stage: SetupSceneStage.install,
+    done: 4,
+    total: 6,
+    halted: SetupSceneHalt.failed,
+  ),
+  'SetupPhoneScene(stopped)': SetupPhoneScene(mood: SetupPhoneMood.stopped),
 };
 
 /// Scenes allowed to paint the attention amber ("needs you", LOOK-4). Empty:
@@ -100,33 +110,56 @@ KitSceneFrame _finished(ThemeRoles roles) => KitSceneFrame(
   palette: KitPalette.fromRoles(roles),
 );
 
-/// Records every paint colour a scene draws with (and every fill-style
-/// paint, for the alpha check), without needing real canvas geometry.
+/// Records every paint colour a scene draws with, and every fill-style paint
+/// with the bounds it covers in scene units (the canvas transform applied,
+/// so a unit-space sparkle scaled to its radius measures its real size),
+/// without needing a real canvas.
 class _PaintRecorder implements Canvas {
   final colors = <Color>[];
-  final fills = <Paint>[];
+  final fills = <({Color color, Rect bounds})>[];
   final flags = <String>[];
+  final _transforms = <Matrix4>[Matrix4.identity()];
 
-  void _capture(Paint paint) {
+  void _capture(Paint paint, Rect local) {
     colors.add(paint.color);
-    if (paint.style == PaintingStyle.fill) fills.add(paint);
+    if (paint.style == PaintingStyle.fill) {
+      fills.add((
+        color: paint.color,
+        bounds: MatrixUtils.transformRect(_transforms.last, local),
+      ));
+    }
     if (paint.shader != null) flags.add('shader');
     if (paint.maskFilter != null) flags.add('maskFilter');
     if (paint.imageFilter != null) flags.add('imageFilter');
   }
 
   @override
-  void drawPath(Path path, Paint paint) => _capture(paint);
+  void save() => _transforms.add(_transforms.last.clone());
   @override
-  void drawCircle(Offset c, double radius, Paint paint) => _capture(paint);
+  void restore() => _transforms.removeLast();
   @override
-  void drawLine(Offset p1, Offset p2, Paint paint) => _capture(paint);
+  void translate(double dx, double dy) =>
+      _transforms.last.translateByDouble(dx, dy, 0, 1);
   @override
-  void drawRRect(RRect rrect, Paint paint) => _capture(paint);
+  void scale(double sx, [double? sy]) =>
+      _transforms.last.scaleByDouble(sx, sy ?? sx, 1, 1);
   @override
-  void drawRect(Rect rect, Paint paint) => _capture(paint);
+  void rotate(double radians) => _transforms.last.rotateZ(radians);
+
   @override
-  void drawOval(Rect rect, Paint paint) => _capture(paint);
+  void drawPath(Path path, Paint paint) => _capture(paint, path.getBounds());
+  @override
+  void drawCircle(Offset c, double radius, Paint paint) =>
+      _capture(paint, Rect.fromCircle(center: c, radius: radius));
+  @override
+  void drawLine(Offset p1, Offset p2, Paint paint) =>
+      _capture(paint, Rect.fromPoints(p1, p2));
+  @override
+  void drawRRect(RRect rrect, Paint paint) => _capture(paint, rrect.outerRect);
+  @override
+  void drawRect(Rect rect, Paint paint) => _capture(paint, rect);
+  @override
+  void drawOval(Rect rect, Paint paint) => _capture(paint, rect);
   @override
   void drawArc(
     Rect rect,
@@ -134,7 +167,7 @@ class _PaintRecorder implements Canvas {
     double sweepAngle,
     bool useCenter,
     Paint paint,
-  ) => _capture(paint);
+  ) => _capture(paint, rect);
   @override
   void drawShadow(
     Path path,
@@ -147,9 +180,27 @@ class _PaintRecorder implements Canvas {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-/// True when [a] and [b] share the same hue (their RGB channels match,
-/// whatever their alpha): a wash or a fade of a colour still counts.
-bool _sameHue(Color a, Color b) => a.r == b.r && a.g == b.g && a.b == b.b;
+/// True when [a] and [b] share the same hue (their 8-bit RGB channels match,
+/// whatever their alpha): a wash or a fade of a colour still counts. A
+/// [Paint] keeps its colour in 32-bit floats, so a painted colour read back
+/// is never bit-equal to the role's 64-bit channels; compare what reaches
+/// the screen instead.
+bool _sameHue(Color a, Color b) {
+  int byte(double channel) => (channel * 255).round();
+  return byte(a.r) == byte(b.r) &&
+      byte(a.g) == byte(b.g) &&
+      byte(a.b) == byte(b.b);
+}
+
+/// The largest fill that is a mark rather than a wash, in scene units: four
+/// standard strokes square. The drawings' dots, sparkles and the stopped
+/// phone's moon fit inside it and are drawn like a faded stroke (a half
+/// tone is detail, not a fill behind shapes); every other translucent fill
+/// is a wash (LOOK-36).
+const _markSize = 4 * KitDraw.stroke;
+
+bool _isMark(Rect bounds) =>
+    bounds.width <= _markSize + 1e-6 && bounds.height <= _markSize + 1e-6;
 
 Widget _host(Widget child, {bool reduce = false}) => MaterialApp(
   theme: AppTheme.dark(),
@@ -277,7 +328,7 @@ void main() {
     for (final MapEntry(key: packName, value: roles) in _packs.entries) {
       for (final MapEntry(key: name, value: scene) in {
         ..._scenes,
-        ..._failureVariants,
+        ..._variants,
       }.entries) {
         test('$name, $packName', () {
           final recorder = _PaintRecorder();
@@ -302,27 +353,76 @@ void main() {
   });
 
   group('3. Flat, light fills (LOOK-36)', () {
+    test('the hue check sees a painted role (not vacuous)', () {
+      final recorder = _PaintRecorder();
+      const KitPortalScene().paint(recorder, _finished(graphiteDark));
+      expect(
+        recorder.colors.any((c) => _sameHue(c, graphiteDark.accent)),
+        isTrue,
+        reason:
+            'the portal paints the accent; a hue check that never '
+            'matches a painted colour would let any scene through',
+      );
+      final variant = _PaintRecorder();
+      _variants['SetupPhoneScene(stopped)']!.paint(
+        variant,
+        _finished(graphiteDark),
+      );
+      expect(
+        variant.fills.any(
+          (f) => _sameHue(f.color, graphiteDark.text3) && !_isMark(f.bounds),
+        ),
+        isTrue,
+        reason: 'the stopped phone washes its disc in `line` (text3)',
+      );
+    });
+
     for (final MapEntry(key: packName, value: roles) in _packs.entries) {
-      for (final MapEntry(key: name, value: scene) in _scenes.entries) {
+      for (final MapEntry(key: name, value: scene) in {
+        ..._scenes,
+        ..._variants,
+      }.entries) {
         test('$name, $packName', () {
-          final recorder = _PaintRecorder();
-          scene.paint(recorder, _finished(roles));
-          expect(
-            recorder.flags,
-            isEmpty,
-            reason:
-                '$name ($packName): no Shader, MaskFilter, ImageFilter or '
-                'shadow in a scene paint',
-          );
-          for (final paint in recorder.fills) {
-            final c = paint.color;
-            if (_sameHue(c, roles.accent) && c.a < 1.0) {
+          // The finished frame, and two points of the breath (a wash swells
+          // with it).
+          for (final frame in [
+            _finished(roles),
+            KitSceneFrame(
+              entrance: 1,
+              loop: .25,
+              looping: true,
+              palette: KitPalette.fromRoles(roles),
+            ),
+            KitSceneFrame(
+              entrance: 1,
+              loop: .5,
+              looping: true,
+              palette: KitPalette.fromRoles(roles),
+            ),
+          ]) {
+            final recorder = _PaintRecorder();
+            scene.paint(recorder, frame);
+            expect(
+              recorder.flags,
+              isEmpty,
+              reason:
+                  '$name ($packName): no Shader, MaskFilter, ImageFilter or '
+                  'shadow in a scene paint',
+            );
+            for (final fill in recorder.fills) {
+              final c = fill.color;
+              // An opaque fill is a shape's body (a phone's screen, a card,
+              // a dot); a mark may be half-toned. Every other fill is a wash,
+              // in the accent or a neutral role alike.
+              if (c.a >= 1 || _isMark(fill.bounds)) continue;
               expect(
                 c.a,
                 lessThanOrEqualTo(KitTokens.sceneWashAlpha + 1e-6),
                 reason:
-                    '$name ($packName): an accent wash must stay at or '
-                    'under KitTokens.sceneWashAlpha (${KitTokens.sceneWashAlpha})',
+                    '$name ($packName, loop ${frame.loop}): a translucent '
+                    'fill over ${fill.bounds.size} scene units is a wash and '
+                    'must stay at or under KitTokens.sceneWashAlpha '
+                    '(${KitTokens.sceneWashAlpha}); it is $c',
               );
             }
           }
