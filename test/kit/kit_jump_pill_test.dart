@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
 import 'package:opencode_mobile/ui/kit/kit_jump_pill.dart';
 
 /// Pumps [child] as a screen's body, with the real test window sized to
