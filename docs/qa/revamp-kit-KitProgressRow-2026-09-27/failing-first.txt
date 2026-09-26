@@ -1,36 +1,9 @@
-$F test -j 1 --plain-name "regression" test/kit/kit_progress_row_test.dart
-(with lib/ui/kit/kit_progress_row.dart's _SegmentsBar Row missing
-`crossAxisAlignment: CrossAxisAlignment.stretch` — the state before the fix)
+Review-fix round (2026-09-27): the new/rewritten tests in
+test/kit/kit_progress_row_test.dart run against the PRE-FIX
+lib/ui/kit/kit_progress_row.dart (git show HEAD~0 before amend). All three
+fail as expected; with the fix they pass (run-kit-progress-row-test.txt).
 
-00:00 +0: KitProgressRow.segments the stacked bar actually paints at its full height, not a Row cross-axis collapse (regression: a childless DecoratedBox in a Row needs CrossAxisAlignment.stretch)
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following TestFailure was thrown running a test:
-Expected: contains <4.0>
-  Actual: [78.0, 0.0, 12.0]
-   Which: does not contain <4.0>
-
-When the exception was thrown, this was the stack:
-#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/kit/kit_progress_row_test.dart:248:7)
-<asynchronous suspension>
-#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided one frame from package:stack_trace)
-
-This was caught by the test expectation on the following line:
-  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/kit/kit_progress_row_test.dart line 248
-The test description was:
-  the stacked bar actually paints at its full height, not a Row cross-axis collapse (regression: a
-  childless DecoratedBox in a Row needs CrossAxisAlignment.stretch)
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:00 +0 -1: KitProgressRow.segments the stacked bar actually paints at its full height, not a Row cross-axis collapse (regression: a childless DecoratedBox in a Row needs CrossAxisAlignment.stretch) [E]
-  Test failed. See exception logs above.
-
-Actual: [78.0, 0.0, 12.0] — the middle 0.0 is the bar's Row child height
-collapsing to zero (Row's default CrossAxisAlignment.center gives a
-childless DecoratedBox loose height, and it takes the smallest allowed
-size). Confirmed visually first: test/goldens/kit/kit_progress_row_segments_light.png
-rendered with no visible bar between the value label and the legend
-before this fix (kept out of the commit; the fixed golden is what ships).
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/kit/kit_progress_row_test.dart: KitProgressRow adaptive on a phone a short title and value still stack
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/kit/kit_progress_row_test.dart: KitProgressRow.segments a single full segment fills the whole bar, at the bar height, in the accent
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/kit/kit_progress_row_test.dart: KitProgressRow.segments a surface3 slice marks its end against the track with a hairline, so the bar does not read short

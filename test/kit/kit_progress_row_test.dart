@@ -38,6 +38,27 @@ Future<void> _pumpRow(
   ),
 );
 
+/// The bar: the one painted box under the title exactly
+/// [KitTokens.progressBarHeight] tall.
+RenderBox _bar(WidgetTester tester) => tester
+    .renderObjectList<RenderBox>(
+      find.descendant(
+        of: find.byKey(_rowKey),
+        matching: find.byType(CustomPaint),
+      ),
+    )
+    .singleWhere((box) => box.size.height == KitTokens.progressBarHeight);
+
+/// Paints a rectangle in [color] (compared as 32-bit ARGB, as painted)
+/// whose bounds pass [where].
+PaintPattern _paintsRect(Color color, bool Function(Rect rect) where) =>
+    paints..something((method, arguments) {
+      if (method != #drawRect) return false;
+      final paint = arguments[1] as Paint;
+      return paint.color.toARGB32() == color.toARGB32() &&
+          where(arguments[0] as Rect);
+    });
+
 SemanticsData _rowSemantics(WidgetTester tester, [Key key = _rowKey]) =>
     tester.getSemantics(find.byKey(key)).getSemanticsData();
 
@@ -228,9 +249,8 @@ void main() {
       expect(data.label, contains('Other'));
     });
 
-    testWidgets('the stacked bar actually paints at its full height, not a '
-        "Row cross-axis collapse (regression: a childless DecoratedBox in a "
-        "Row needs CrossAxisAlignment.stretch)", (tester) async {
+    testWidgets('a single full segment fills the whole bar, at the bar '
+        'height, in the accent', (tester) async {
       await _pumpRow(
         tester,
         const KitProgressRow.segments(
@@ -241,11 +261,47 @@ void main() {
         reduced: true,
       );
       await tester.pump();
-      final heights = tester
-          .renderObjectList<RenderBox>(find.byType(DecoratedBox))
-          .map((r) => r.size.height)
-          .toList();
-      expect(heights, contains(KitTokens.progressBarHeight));
+      final bar = _bar(tester);
+      final size = bar.size;
+      expect(size.height, KitTokens.progressBarHeight);
+      expect(
+        bar,
+        _paintsRect(
+          AppTheme.rolesOf(_theme).accent,
+          (rect) => rect == Offset.zero & size,
+        ),
+      );
+    });
+
+    testWidgets('a surface3 slice marks its end against the track with a '
+        'hairline, so the bar does not read short', (tester) async {
+      await _pumpRow(
+        tester,
+        const KitProgressRow.segments(
+          key: _rowKey,
+          title: 'Context used',
+          segments: [
+            KitProgressSegment(label: 'Conversation', value: 0.5),
+            KitProgressSegment(label: 'System prompt', value: 0.1),
+            KitProgressSegment(label: 'Tools', value: 0.1),
+            KitProgressSegment(label: 'History', value: 0.1),
+          ],
+        ),
+        reduced: true,
+      );
+      await tester.pump();
+      final bar = _bar(tester);
+      final end = bar.size.width * 0.8;
+      final hairline = AppTheme.rolesOf(_theme).hairline;
+      expect(
+        bar,
+        _paintsRect(
+          hairline,
+          (rect) =>
+              (rect.center.dx - end).abs() <= 1 &&
+              rect.height == KitTokens.progressBarHeight,
+        ),
+      );
     });
 
     testWidgets('segments summing over 1 assert in debug', (tester) async {
@@ -341,6 +397,42 @@ void main() {
       expect(tester.hasRunningAnimations, isTrue);
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.hasRunningAnimations, isFalse);
+    });
+  });
+
+  group('KitProgressRow adaptive', () {
+    Future<void> pumpAt(WidgetTester tester, Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _pumpRow(
+        tester,
+        const KitProgressRow(
+          key: _rowKey,
+          title: 'Usage',
+          value: 0.1,
+          valueLabel: '10 %',
+        ),
+        reduced: true,
+      );
+      await tester.pump();
+    }
+
+    testWidgets('on a phone a short title and value still stack', (
+      tester,
+    ) async {
+      await pumpAt(tester, const Size(412, 915));
+      final title = tester.getRect(find.text('Usage'));
+      final value = tester.getRect(find.text('10 %'));
+      expect(value.top, greaterThanOrEqualTo(title.bottom));
+    });
+
+    testWidgets('at 1280 they share the title line', (tester) async {
+      await pumpAt(tester, const Size(1280, 800));
+      final title = tester.getRect(find.text('Usage'));
+      final value = tester.getRect(find.text('10 %'));
+      expect(value.center.dy, closeTo(title.center.dy, 4));
+      expect(value.left, greaterThan(title.right));
     });
   });
 }

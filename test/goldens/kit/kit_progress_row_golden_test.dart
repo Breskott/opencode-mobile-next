@@ -26,6 +26,8 @@ const _contextSegments = [
   ),
   KitProgressSegment(label: 'Tools', value: 0.09, valueLabel: '9k tokens'),
   KitProgressSegment(label: 'History', value: 0.09, valueLabel: '9k tokens'),
+  // The fifth folds into "Other" (the "4 + Other" gallery state).
+  KitProgressSegment(label: 'Cache', value: 0.05, valueLabel: '5k tokens'),
 ];
 
 const _loaded = KitProgressRow(
@@ -57,7 +59,7 @@ Map<String, Widget> _states() => {
   'segments': const KitProgressRow.segments(
     title: 'Context used',
     segments: _contextSegments,
-    valueLabel: '71 % of 200k tokens',
+    valueLabel: '76 % of 200k tokens',
   ),
   'empty': const KitProgressRow(
     title: 'Usage',

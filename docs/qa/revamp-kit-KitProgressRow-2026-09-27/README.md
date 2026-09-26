@@ -14,20 +14,21 @@
   file changed) and no chart beyond one stacked bar.
 - Files changed (write set, R08/R09):
   - `lib/ui/kit/kit_progress_row.dart` (new: `KitProgressRow`,
-    `KitProgressSegment`, and three private helpers —
-    `_ScalarBar`, `_SegmentsBar`, `_Legend`, `_CrossFadeLine`).
-  - `test/kit/kit_progress_row_test.dart` (new, 14 tests).
+    `KitProgressSegment`, and private helpers — `_AnimatedBar` /
+    `_BarPainter` (one paint-only renderer for every bar state),
+    `_BarFill(s)` / `_BarFillsTween`, `_Legend`, `_CrossFadeLine`).
+  - `test/kit/kit_progress_row_test.dart` (new, 16 tests).
   - `test/goldens/kit/kit_progress_row_golden_test.dart` (new, 16 shots)
     plus its 16 PNGs, all opened and reviewed (TEST-6).
   - `lib/l10n/app_en.arb` (six new keys, prefixed `kitProgressRow*`:
     `kitProgressRowLoading`, `kitProgressRowPercent`,
     `kitProgressRowNearLimit`, `kitProgressRowAtLimit`,
     `kitProgressRowAsOf`, `kitProgressRowOther`); `flutter gen-l10n` run
-    once at the end. `app_ar.arb` is **not** touched — owner decision
+    locally. `app_ar.arb` is **not** touched — owner decision
     2026-09-27 drops Arabic for the revamp (see Contract problems below).
-  - `lib/l10n/app_localizations.dart`, `app_localizations_en.dart`,
-    `app_localizations_ar.dart`: mechanical `gen-l10n` output from the
-    `app_en.arb` edit above (no hand edits).
+  - The generated `lib/l10n/app_localizations*.dart` are **not** in the
+    diff (PROC-13, G30): run `flutter gen-l10n` locally before the tests;
+    the integrator regenerates them after the merge.
 - Pages (map ids): none directly — this is a `kit-part` unit
   (non-goal: no screen adoption). `docs/ux-system/kit-api/KitProgressRow.md`
   "Replaces" names six page elements (`agent-account-limits`,
@@ -84,11 +85,35 @@
      *named* segment and a following "Other") stay legible next to each
      other. Resolution in this unit: at most 4 real segments keep their
      own name and colour (`segmentFills[0..3]`); segment 5 onward always
-     folds into one trailing "Other" using `surface3`, with a 1 physical
-     px hairline start-edge (`KitTokens.hairlineWidth`) exactly where two
-     `surface3` slices could sit side by side. Evidence: the "segments"
-     gallery shot and the "fifth segment folds into Other" test. Blocks:
-     false.
+     folds into one trailing "Other" using `surface3`; every `surface3`
+     slice carries a 1 physical px `hairline` on both edges it shares
+     with the rest of the bar (`KitTokens.hairlineWidth`), and a
+     `surface3` legend swatch gets the same hairline outline. Evidence:
+     the "segments" gallery shot (4 + Other) and the tests "a surface3
+     slice marks its end against the track with a hairline …" and "the
+     fifth segment folds into Other". Blocks: false.
+  4. **The frozen `surface3` 4th fill is unworkable on a `surface3`
+     track (STATE-9 / STATE-18).** `KitProgressRow.md` "Tokens" and
+     `_new-tokens.md` freeze `segmentFills[3]` and "Other" as `surface3`
+     "with a 1 physical px hairline edge", and the same spec freezes the
+     track as `surface3`. Built exactly to that (hairline on both edges,
+     review finding 3), the 4th segment and "Other" still cannot be told
+     apart from the unfilled remainder: the `hairline` role is
+     rgba(0,0,0,.08) light / rgba(255,255,255,.07) dark, so a 1 physical
+     px line over `surface3` moves the pixel by about 6/255 (measured on
+     `kit_progress_row_segments_light.png`: track (233,233,230), hairline
+     column (227,227,224); dark (38,40,45) vs (43,45,50)). The 76 % bar
+     in the gallery still reads as ending at about 62 %, and the legend's
+     History/Other swatches are near-invisible — the bar understates the
+     amount used, which STATE-9/18 forbid. Not worked around (R16): the
+     fill stays the frozen `surface3`. Proposed contract change (for the
+     coordinator): give the 4th/"Other" fills a colour distinct from the
+     track, e.g. a translucent `text1` or a hatch, or draw the track in a
+     role distinct from every fill (for example `surface2`), and let
+     `segmentFills` stay derived from existing roles. Blocks: false for
+     merging the part (the words carry the amount, STATE-9: legend and
+     value label always present); blocks adoption on
+     `session-context-makeup` until the fill is changed.
 - New kit parts (KIT-3): `KitProgressRow`, `KitProgressSegment` (this
   unit, per the frozen freeze — not a new, unplanned part).
 - Map items (EVID-11): n/a — no page record (see Pages above; wave-2
@@ -101,7 +126,7 @@
 
 - Branch `revamp/kit-KitProgressRow`, base `dcf05c5efbf82781bcfb97b629f5cda86ead2382`
   (`feat/phone-setup-v2` tip at branch time), code head: this branch's
-  first (and only) commit.
+  single commit, amended for the review-fix round (2026-09-27).
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
@@ -112,20 +137,17 @@ None: tests, goldens and renders only. Device proof is coordinator work.
 
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
-| 1 | Fix-round test, `_SegmentsBar`'s `Row` reverted to no `crossAxisAlignment` (the state before the fix) | fails with an assertion, not a crash | failed: `Expected: contains <4.0> Actual: [78.0, 0.0, 12.0]` — `failing-first.txt` | PASS |
-| 2 | `test/kit/kit_progress_row_test.dart` (14 tests) | passes | 14 passed — `run-kit-progress-row-test.txt` | PASS |
-| 3 | `test/goldens/kit/kit_progress_row_golden_test.dart` (16 shots, `--update-goldens`; every PNG opened and looked at) | passes; G5 accessibility checks (androidTapTarget, labeledTapTarget, textContrast, reading order) pass in both themes for every shot with no new baseline entry | 16 passed — `run-kit-progress-row-golden-test.txt` | PASS |
-| 4 | `test/kit_ratchet_test.dart`, `test/design_standard_test.dart`, `test/l10n_coverage_test.dart` | pass; ratchet counts for the new file are 0 (no baseline needed) | 50 passed — `run-ratchet-design-l10n.txt` | PASS |
-| 5 | `flutter analyze lib/ui/kit/kit_progress_row.dart test/kit/kit_progress_row_test.dart test/goldens/kit/kit_progress_row_golden_test.dart` | no issues | No issues found! — `run-analyze.txt` | PASS |
-| 6 | `flutter analyze` (whole worktree) | no *new* errors/warnings/infos in this unit's changed paths | 6 pre-existing issues, all in `lib/ui/kit/kit_since.dart`, `test/kit/kit_image_test.dart`, `test/kit/kit_since_test.dart` — none in this unit's files | PASS |
-| 7 | `dart format --language-version=3.10` on every changed `.dart` file | no diff after formatting | no further diff | PASS |
+| 1 | Review-fix tests (adaptive stack on a phone, full bar painted at bar height, surface3 end hairline) against the pre-fix part | fail with assertions, not a crash | 3 failed — `failing-first.txt` | PASS |
+| 2 | `test/kit/kit_progress_row_test.dart` (16 tests) | passes | 16 passed — `run-kit-progress-row-test.txt` | PASS |
+| 3 | `test/goldens/kit/kit_progress_row_golden_test.dart` (16 shots; regenerated with `--update-goldens`, then run again to compare; every changed PNG opened) | passes; G5 checks pass in both themes | 16 passed — `run-kit-progress-row-golden-test.txt` | PASS |
+| 4 | `test/kit_ratchet_test.dart`, `test/design_standard_test.dart`, then `test/l10n_coverage_test.dart` | pass; ratchet counts for the new file are 0 | 48 + 2 passed — `run-ratchet-design-l10n.txt` | PASS |
+| 5 | `flutter analyze` on the three changed Dart files | no issues | No issues found! — `run-analyze.txt` | PASS |
+| 6 | `dart format --language-version=3.10` on every changed `.dart` file | no diff after formatting | no further diff | PASS |
 
 ## 5. Evidence
 
-- `failing-first.txt`: run 1 — the segments-bar cross-axis-collapse fix's
-  test, failing on the pre-fix code with an assertion (not a compile
-  error), found first by looking at the "segments" golden image (a blank
-  gap where the bar should be) before any test caught it.
+- `failing-first.txt`: run 1 — the review-fix round's three new
+  behaviour tests failing on the pre-fix part with assertions.
 - `run-kit-progress-row-test.txt`: run 2.
 - `run-kit-progress-row-golden-test.txt`: run 3.
 - `run-ratchet-design-l10n.txt`: run 4.
@@ -144,11 +166,23 @@ None: tests, goldens and renders only. Device proof is coordinator work.
   | Data safety: segments summing over 1 assert in debug | "segments summing over 1 assert in debug" | `run-kit-progress-row-test.txt` |
   | `onTap`: the whole row is one ≥48 dp target, called once; no button semantics without it | "the whole row is one target and tapping calls it once" / "without onTap there is no button semantics" | `run-kit-progress-row-test.txt` |
   | MOT-5/G8: a value change settles after one `pump()` under reduced motion; keeps animating briefly otherwise | "a value change settles after one pump() under reduced motion" / "without reduced motion a value change keeps animating briefly" | `run-kit-progress-row-test.txt` |
-  | Regression: a childless `DecoratedBox` in a `Row` needs `CrossAxisAlignment.stretch` | "the stacked bar actually paints at its full height, …" | `run-kit-progress-row-test.txt`; fails on the pre-fix code: `failing-first.txt` |
+  | The stacked bar paints its fill at `progressBarHeight` and full width (painted, not a widget query) | "a single full segment fills the whole bar, at the bar height, in the accent" | `run-kit-progress-row-test.txt`; `failing-first.txt` |
+  | `surface3` slice end marked by a 1 physical px hairline | "a surface3 slice marks its end against the track with a hairline, …" | `run-kit-progress-row-test.txt`; `failing-first.txt` |
+  | Adaptive: compact/medium always stack; expanded/large trail only when the whole line (value label + limit word + as-of) fits | "on a phone a short title and value still stack" / "at 1280 they share the title line" | `run-kit-progress-row-test.txt`; `failing-first.txt` |
   | Galleries: seven declared states × dark/light at 412×915; default (loaded) at 1280×800 (owner-narrowed scope, Contract problem 1) | `test/goldens/kit/kit_progress_row_golden_test.dart` (16 shots) | `run-kit-progress-row-golden-test.txt` |
 
-- Changed test expectations (TEST-19): none — every test in this unit's
-  write set is new.
+- Changed test expectations (TEST-19): the review round dropped the
+  DecoratedBox-height query (it pinned the widget choice, not behaviour)
+  for a paint assertion on the bar's fill; still all within this unit's
+  own new test file.
+- Review-fix round (2026-09-27): the bar is now one `CustomPainter` for
+  every state, so a value change only repaints (MOT-5); segment shares
+  tween on the same `KitMotion.standard` / `enter` curve (instant under
+  reduced motion); the trailing value layout is allowed only on expanded
+  and large windows and measures the whole value line in its own styles,
+  inside the space between the leading and the chevron (no hard-coded
+  chevron width); the legend switches to two columns only when each
+  column is at least `readingWidth / 2`.
 - Goldens changed (all new; every PNG opened and looked at before
   committing, TEST-6):
   - `kit_progress_row_loading_{dark,light}.png`: title only, skeleton bar
@@ -163,17 +197,16 @@ None: tests, goldens and renders only. Device proof is coordinator work.
   - `kit_progress_row_at_limit_{dark,light}.png`: 100 %, bar filled in
     `text1` (never the danger role), "Limit reached".
   - `kit_progress_row_stale_{dark,light}.png`: "40 % used · as of 10:42"
-    in `text3` after the value label.
-  - `kit_progress_row_segments_{dark,light}.png`: a 4-segment stacked bar
-    (`accent`/`text2`/`text3`/`surface3`+hairline) and its legend, one row
-    per segment with a colour swatch, name and value label. **Caught by
-    looking at this exact image** (TEST-6): the first render had no
-    visible bar at all — see "Regression" in Contract-adjacent evidence
-    above and `failing-first.txt`.
+    in `text3` after the value label, stacked under the title (compact).
+  - `kit_progress_row_segments_{dark,light}.png`: 4 named segments + a
+    fifth folded into "Other" (the spec's "4 + Other" state; 76 % of
+    200k tokens), `accent`/`text2`/`text3`/`surface3`+hairline, and the
+    legend. Looking at it shows Contract problem 4: History and Other are
+    indistinguishable from the track.
   - `kit_progress_row_empty_{dark,light}.png`: `value: 0`, "Nothing used
-    yet" (title and the caller's own words for the empty state fit on one
-    line at 412 too — a short value label plus a short title both clear
-    the trailing-fit measurement).
+    yet" stacked under the title, as every compact row now is.
+  - `kit_progress_row_loaded_1280x800_{dark,light}.png`: the value label
+    now sits at the trailing end of the title's line.
   - No approved visual-language canvas render exists for this part
     (EVID-12: none — `KitProgressRow.md` is the frozen spec and predates
     a canvas render for it).
@@ -228,6 +261,9 @@ $F analyze lib/ui/kit/kit_progress_row.dart test/kit/kit_progress_row_test.dart 
 - No screen adopts `KitProgressRow` yet (non-goal); the six page elements
   and `session-context-makeup` (C26, `.segments`) `KitProgressRow.md`
   names as replacing are wave-2 work for another unit.
+- The `surface3` 4th/"Other" fill does not read against the track
+  (Contract problem 4); the words carry the amount until the contract
+  changes.
 - The "Other" legend entry's value label is left blank by design
   (Contract problem 2); a caller wanting a summed number must format it
   itself until the spec says otherwise.

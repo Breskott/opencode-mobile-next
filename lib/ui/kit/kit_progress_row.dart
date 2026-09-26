@@ -3,8 +3,11 @@
 // a budget. A title, a determinate bar, the amount in words and, when the
 // data is old, its age. [KitProgressRow.segments] shows a stacked bar with a
 // worded legend, for example what fills a conversation's context.
+import 'dart:ui' show lerpDouble;
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
@@ -175,25 +178,21 @@ class KitProgressRow extends StatelessWidget {
             tabular: true,
           );
 
-    final Widget bar;
+    // One paint-only renderer for every state (MOT-5): the loading
+    // skeleton is the track with no fill, a scalar bar one fill, a stacked
+    // bar one fill per slice.
+    final List<_BarFill> fills;
     if (isLoading) {
-      bar = SizedBox(
-        width: double.infinity,
-        height: KitTokens.progressBarHeight,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: roles.surface3,
-            borderRadius: BorderRadius.circular(KitTokens.progressBarRadius),
-          ),
-        ),
-      );
+      fills = const [];
     } else if (_isSegments) {
-      bar = _SegmentsBar(
-        slices: slices,
-        scale: scale,
-        colorFor: colorFor,
-        roles: roles,
-      );
+      fills = [
+        for (var i = 0; i < slices.length; i++)
+          _BarFill(
+            fraction: (slices[i].value * scale).clamp(0.0, 1.0),
+            color: colorFor(i),
+            edged: colorFor(i) == roles.surface3,
+          ),
+      ];
     } else {
       final color = switch (tone) {
         AppStatusTone.neutral => roles.text3,
@@ -202,20 +201,38 @@ class KitProgressRow extends StatelessWidget {
         AppStatusTone.progress => roles.accent,
         _ => _atLimit ? roles.text1 : roles.accent,
       };
-      bar = _ScalarBar(
-        value: (value ?? 0).clamp(0.0, 1.0),
-        color: color,
-        roles: roles,
-        reduceMotion: reduceMotion,
-      );
+      fills = [
+        _BarFill(
+          fraction: (value ?? 0).clamp(0.0, 1.0),
+          color: color,
+          edged: false,
+        ),
+      ];
     }
+    final bar = _AnimatedBar(
+      fills: fills,
+      track: roles.surface3,
+      hairline: roles.hairline,
+      reduceMotion: reduceMotion,
+    );
 
-    final content = LayoutBuilder(
+    final line = topLine == null
+        ? null
+        : _CrossFadeLine(
+            reduceMotion: reduceMotion,
+            contentKey: ValueKey((_nearLimit, _atLimit)),
+            child: topLine,
+          );
+    // KitProgressRow.md "Adaptive": compact and medium always stack the
+    // value line under the title; only an expanded or large window may
+    // move it to the title's line, and only when both fit whole.
+    final mayTrail =
+        !_isSegments && line != null && KitLayout.windowOf(context).isWide;
+    final words = LayoutBuilder(
       builder: (context, constraints) {
         final trailingFits =
-            !_isSegments &&
-            topLine != null &&
-            _fitsTrailing(context, constraints.maxWidth, tokens);
+            mayTrail &&
+            _fitsTrailing(context, constraints.maxWidth, wordsSpans, tokens);
         final titleText = KitText(
           title,
           key: titleKey,
@@ -223,59 +240,61 @@ class KitProgressRow extends StatelessWidget {
           maxLines: trailingFits ? 1 : 2,
           overflow: TextOverflow.ellipsis,
         );
-        final line = topLine == null
-            ? null
-            : _CrossFadeLine(
-                reduceMotion: reduceMotion,
-                contentKey: ValueKey((_nearLimit, _atLimit)),
-                child: topLine,
-              );
-        return Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            tokens.gutter,
-            tokens.space2,
-            _tappable ? tokens.space1 : tokens.gutter,
-            tokens.space2,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+        if (trailingFits) {
+          return Row(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (leading case final leading?) ...[
-                    leading,
-                    SizedBox(width: tokens.space3),
-                  ],
-                  Expanded(
-                    child: trailingFits
-                        ? Row(
-                            children: [
-                              Flexible(child: titleText),
-                              SizedBox(width: tokens.space2),
-                              line!,
-                            ],
-                          )
-                        : titleText,
-                  ),
-                  if (_tappable) const KitChevron(),
-                ],
-              ),
-              if (!trailingFits && line != null) ...[
-                SizedBox(height: tokens.space1),
-                line,
-              ],
-              SizedBox(height: tokens.space2),
-              bar,
-              if (_isSegments) ...[
-                SizedBox(height: tokens.space2),
-                _Legend(slices: slices, colorFor: colorFor, tokens: tokens),
-              ],
+              Expanded(child: titleText),
+              SizedBox(width: tokens.space2),
+              line,
             ],
-          ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            titleText,
+            if (line != null) ...[SizedBox(height: tokens.space1), line],
+          ],
         );
       },
+    );
+
+    final content = Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space2,
+        _tappable ? tokens.space1 : tokens.gutter,
+        tokens.space2,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (leading case final leading?) ...[
+                leading,
+                SizedBox(width: tokens.space3),
+              ],
+              Expanded(child: words),
+              if (_tappable) const KitChevron(),
+            ],
+          ),
+          SizedBox(height: tokens.space2),
+          bar,
+          if (_isSegments) ...[
+            SizedBox(height: tokens.space2),
+            _Legend(
+              slices: slices,
+              colorFor: colorFor,
+              tokens: tokens,
+              roles: roles,
+            ),
+          ],
+        ],
+      ),
     );
 
     final panel = ConstrainedBox(
@@ -305,15 +324,22 @@ class KitProgressRow extends StatelessWidget {
   }
 
   /// KitStatusLine's `_stacks` measurement, applied to the title and the
-  /// value line instead: whether both fit on the title's row (expanded /
-  /// large, KitProgressRow.md "Adaptive"). Never at 1.3x text and above
-  /// (Accessibility: the trailing layout falls back to stacked).
-  bool _fitsTrailing(BuildContext context, double width, KitTokens tokens) {
+  /// whole value line (value label, limit word and as-of, each in its own
+  /// style) instead: whether both fit whole in [width], the space between
+  /// the leading and the chevron (KitProgressRow.md "Adaptive"). Never at
+  /// 1.3x text and above (Accessibility: the trailing layout falls back to
+  /// stacked).
+  bool _fitsTrailing(
+    BuildContext context,
+    double width,
+    List<InlineSpan> wordsSpans,
+    KitTokens tokens,
+  ) {
     final scaler = MediaQuery.textScalerOf(context);
     if (scaler.scale(100) / 100 >= 1.3) return false;
-    double measure(String text, TextStyle style) {
+    double measure(InlineSpan span) {
       final painter = TextPainter(
-        text: TextSpan(text: text, style: style),
+        text: span,
         textDirection: Directionality.of(context),
         textScaler: scaler,
         maxLines: 1,
@@ -323,18 +349,23 @@ class KitProgressRow extends StatelessWidget {
       return result;
     }
 
-    final titleWidth = measure(title, KitText.styleFor(KitTextRole.rowTitle));
-    final lineWidth = measure(
-      valueLabel ?? '',
-      KitText.styleFor(KitTextRole.secondary),
+    const tabular = [FontFeature.tabularFigures()];
+    final titleWidth = measure(
+      TextSpan(
+        text: title,
+        style: KitText.styleOf(context, KitTextRole.rowTitle),
+      ),
     );
-    final reserved =
-        tokens.gutter +
-        (_tappable ? tokens.space1 : tokens.gutter) +
-        (leading == null ? 0 : tokens.iconTileSize + tokens.space3) +
-        (_tappable ? 48 : 0) +
-        tokens.space2 * 2;
-    return titleWidth + lineWidth + reserved <= width;
+    final lineWidth = measure(
+      TextSpan(
+        style: KitText.styleOf(
+          context,
+          KitTextRole.secondary,
+        ).copyWith(fontFeatures: tabular),
+        children: wordsSpans,
+      ),
+    );
+    return titleWidth + tokens.space2 + lineWidth <= width;
   }
 
   List<InlineSpan> _wordsSpans(
@@ -430,122 +461,192 @@ class _CrossFadeLine extends StatelessWidget {
   );
 }
 
-/// A single determinate bar (KitProgressRow.md "loaded"/"near
-/// limit"/"at limit"/"stale"/"empty"): a track and a fill that animates to
-/// its new value on [KitMotion.standard], jumping under reduced motion.
-class _ScalarBar extends StatelessWidget {
-  const _ScalarBar({
-    required this.value,
+/// One fill of a bar: a share of the track, from the start, in [color].
+/// An [edged] fill (`surface3`, the 4th named segment or "Other") carries
+/// a 1 physical px hairline on the edges it shares with the rest of the bar,
+/// so its end is marked against the unfilled track (`_new-tokens.md`,
+/// STATE-9/18: the bar never reads short).
+@immutable
+class _BarFill {
+  const _BarFill({
+    required this.fraction,
     required this.color,
-    required this.roles,
+    required this.edged,
+  });
+
+  final double fraction;
+  final Color color;
+  final bool edged;
+
+  _BarFill withFraction(double f) =>
+      _BarFill(fraction: f, color: color, edged: edged);
+
+  @override
+  bool operator ==(Object other) =>
+      other is _BarFill &&
+      other.fraction == fraction &&
+      other.color == color &&
+      other.edged == edged;
+
+  @override
+  int get hashCode => Object.hash(fraction, color, edged);
+}
+
+/// The fills of one bar, compared by value so an unchanged bar does not
+/// restart its tween on every rebuild.
+@immutable
+class _BarFills {
+  const _BarFills(this.fills);
+
+  final List<_BarFill> fills;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _BarFills && listEquals(other.fills, fills);
+
+  @override
+  int get hashCode => Object.hashAll(fills);
+}
+
+/// Tweens every fill's share at once; a fill that appears grows from zero
+/// and one that goes shrinks to zero. Colours are the target's.
+class _BarFillsTween extends Tween<_BarFills> {
+  _BarFillsTween({super.end});
+
+  @override
+  _BarFills lerp(double t) {
+    final from = begin?.fills ?? const <_BarFill>[];
+    final to = end?.fills ?? const <_BarFill>[];
+    final count = to.length > from.length ? to.length : from.length;
+    return _BarFills([
+      for (var i = 0; i < count; i++)
+        (i < to.length ? to[i] : from[i]).withFraction(
+          lerpDouble(
+            i < from.length ? from[i].fraction : 0,
+            i < to.length ? to[i].fraction : 0,
+            t,
+          )!,
+        ),
+    ]);
+  }
+}
+
+/// The bar of every state (KitProgressRow.md): a `surface3` track and its
+/// fills, drawn by one painter at [KitTokens.progressBarHeight]. A value
+/// change tweens the shares on [KitMotion.standard] / [KitMotion.enter] and
+/// only repaints (MOT-5); under reduced motion it jumps straight there.
+class _AnimatedBar extends StatelessWidget {
+  const _AnimatedBar({
+    required this.fills,
+    required this.track,
+    required this.hairline,
     required this.reduceMotion,
   });
 
-  final double value;
-  final Color color;
-  final ThemeRoles roles;
+  final List<_BarFill> fills;
+  final Color track;
+  final Color hairline;
   final bool reduceMotion;
 
   @override
   Widget build(BuildContext context) {
-    Widget track(double v) => SizedBox(
-      width: double.infinity,
-      height: KitTokens.progressBarHeight,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(KitTokens.progressBarRadius),
-        child: Stack(
-          children: [
-            Positioned.fill(child: ColoredBox(color: roles.surface3)),
-            FractionallySizedBox(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: v,
-              heightFactor: 1,
-              child: ColoredBox(color: color),
-            ),
-          ],
-        ),
+    final direction = Directionality.of(context);
+    final hairlineWidth = KitTokens.hairlineWidth(context);
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    Widget paint(_BarFills shown) => CustomPaint(
+      size: const Size(double.infinity, KitTokens.progressBarHeight),
+      painter: _BarPainter(
+        fills: shown,
+        track: track,
+        hairline: hairline,
+        hairlineWidth: hairlineWidth,
+        pixelRatio: pixelRatio,
+        direction: direction,
       ),
     );
-    if (reduceMotion) return track(value);
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: value),
-      duration: KitMotion.standard,
-      curve: KitMotion.enter,
-      builder: (context, v, _) => track(v),
+    final target = _BarFills(fills);
+    return SizedBox(
+      width: double.infinity,
+      height: KitTokens.progressBarHeight,
+      child: reduceMotion
+          ? paint(target)
+          : TweenAnimationBuilder<_BarFills>(
+              tween: _BarFillsTween(end: target),
+              duration: KitMotion.standard,
+              curve: KitMotion.enter,
+              builder: (context, shown, _) => paint(shown),
+            ),
     );
   }
 }
 
-/// The stacked bar for [KitProgressRow.segments]: up to 4 named shares plus
-/// the unfilled remainder, each an [Expanded] slice so the proportions stay
-/// exact regardless of width. A slice coloured `surface3` (the 4th named
-/// segment, or "Other") carries a 1 physical px hairline edge so two such
-/// slices next to each other stay legible (`_new-tokens.md`).
-class _SegmentsBar extends StatelessWidget {
-  const _SegmentsBar({
-    required this.slices,
-    required this.scale,
-    required this.colorFor,
-    required this.roles,
+class _BarPainter extends CustomPainter {
+  const _BarPainter({
+    required this.fills,
+    required this.track,
+    required this.hairline,
+    required this.hairlineWidth,
+    required this.pixelRatio,
+    required this.direction,
   });
 
-  final List<_Slice> slices;
-  final double scale;
-  final Color Function(int index) colorFor;
-  final ThemeRoles roles;
-
-  static const _flexUnit = 100000;
+  final _BarFills fills;
+  final Color track;
+  final Color hairline;
+  final double hairlineWidth;
+  final double pixelRatio;
+  final TextDirection direction;
 
   @override
-  Widget build(BuildContext context) {
-    final children = <Widget>[];
-    var used = 0;
-    for (var i = 0; i < slices.length; i++) {
-      final flex = ((slices[i].value * scale) * _flexUnit).round();
-      if (flex <= 0) continue;
-      used += flex;
-      final color = colorFor(i);
-      final muted = color == roles.surface3;
-      children.add(
-        Expanded(
-          flex: flex,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: color,
-              border: muted
-                  ? BorderDirectional(
-                      start: BorderSide(
-                        color: roles.hairline,
-                        width: KitTokens.hairlineWidth(context),
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      );
-    }
-    final leftover = _flexUnit - used;
-    if (leftover > 0) {
-      children.add(
-        Expanded(
-          flex: leftover,
-          child: ColoredBox(color: roles.surface3),
-        ),
-      );
-    }
-    return SizedBox(
-      width: double.infinity,
-      height: KitTokens.progressBarHeight,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(KitTokens.progressBarRadius),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        ),
+  void paint(Canvas canvas, Size size) {
+    final whole = Offset.zero & size;
+    final rtl = direction == TextDirection.rtl;
+    // From the start (it mirrors): [from, to) measured along the bar.
+    Rect span(double from, double to) => rtl
+        ? Rect.fromLTRB(size.width - to, 0, size.width - from, size.height)
+        : Rect.fromLTRB(from, 0, to, size.height);
+
+    canvas.save();
+    canvas.clipRRect(
+      RRect.fromRectAndRadius(
+        whole,
+        const Radius.circular(KitTokens.progressBarRadius),
       ),
     );
+    canvas.drawRect(whole, Paint()..color = track);
+    final edges = <double>{};
+    var at = 0.0;
+    for (final fill in fills.fills) {
+      final width = fill.fraction * size.width;
+      if (width <= 0) continue;
+      final to = (at + width).clamp(0.0, size.width);
+      canvas.drawRect(span(at, to), Paint()..color = fill.color);
+      if (fill.edged) edges.addAll([at, to]);
+      at = to;
+    }
+    // The hairline edges, snapped to whole physical pixels; the bar's own
+    // two ends need none.
+    final line = Paint()..color = hairline;
+    for (final edge in edges) {
+      if (edge <= 0 || edge >= size.width) continue;
+      final snapped = (edge * pixelRatio).roundToDouble() / pixelRatio;
+      final from = (snapped - hairlineWidth / 2).clamp(
+        0.0,
+        size.width - hairlineWidth,
+      );
+      canvas.drawRect(span(from, from + hairlineWidth), line);
+    }
+    canvas.restore();
   }
+
+  @override
+  bool shouldRepaint(_BarPainter old) =>
+      old.fills != fills ||
+      old.track != track ||
+      old.hairline != hairline ||
+      old.hairlineWidth != hairlineWidth ||
+      old.pixelRatio != pixelRatio ||
+      old.direction != direction;
 }
 
 /// The legend under a segments bar: one row per segment (mark swatch,
@@ -557,21 +658,25 @@ class _Legend extends StatelessWidget {
     required this.slices,
     required this.colorFor,
     required this.tokens,
+    required this.roles,
   });
 
   final List<_Slice> slices;
   final Color Function(int index) colorFor;
   final KitTokens tokens;
+  final ThemeRoles roles;
 
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[
-      for (var i = 0; i < slices.length; i++) _row(slices[i], colorFor(i)),
+      for (var i = 0; i < slices.length; i++)
+        _row(context, slices[i], colorFor(i)),
     ];
     return LayoutBuilder(
       builder: (context, constraints) {
+        final columnWidth = (constraints.maxWidth - tokens.space3) / 2;
         final twoColumns =
-            rows.length >= 3 && constraints.maxWidth >= KitLayout.readingWidth;
+            rows.length >= 3 && columnWidth >= KitLayout.readingWidth / 2;
         if (!twoColumns) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,7 +689,6 @@ class _Legend extends StatelessWidget {
             ],
           );
         }
-        final columnWidth = (constraints.maxWidth - tokens.space3) / 2;
         return Wrap(
           spacing: tokens.space3,
           runSpacing: tokens.space1,
@@ -596,10 +700,21 @@ class _Legend extends StatelessWidget {
     );
   }
 
-  Widget _row(_Slice slice, Color color) => Row(
+  Widget _row(BuildContext context, _Slice slice, Color color) => Row(
     children: [
       DecoratedBox(
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        // A `surface3` swatch gets the bar's hairline edge, or it vanishes
+        // on the `surface1` panel.
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: color == roles.surface3
+              ? Border.all(
+                  color: roles.hairline,
+                  width: KitTokens.hairlineWidth(context),
+                )
+              : null,
+        ),
         child: const SizedBox.square(dimension: KitTokens.swatchDot),
       ),
       SizedBox(width: tokens.space2),
