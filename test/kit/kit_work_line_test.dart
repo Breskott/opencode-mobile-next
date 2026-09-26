@@ -8,7 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_work_line.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_chip.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 const _lineKey = ValueKey('work-group-header');
 const _stepsKey = ValueKey('work-group-steps');
@@ -20,9 +23,10 @@ Future<void> _pump(
   bool reduceMotion = true,
   Size size = const Size(412, 915),
   TextDirection? direction,
+  double devicePixelRatio = 1,
 }) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size * devicePixelRatio;
+  tester.view.devicePixelRatio = devicePixelRatio;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
@@ -99,6 +103,46 @@ Future<String> _summary(WidgetTester tester, KitWorkCounts counts) async {
 final _chipNode = find
     .ancestor(of: find.byKey(_lineKey), matching: find.byType(Semantics))
     .first;
+
+/// Whether the kit part [owner] paints its keyboard focus ring: a stroke in
+/// the theme's `accent` role (LOOK-21). Nothing else in a chip or a
+/// tertiary button paints in accent, so this reads the drawn ring, not the
+/// widget shape that draws it.
+bool _ringShows(WidgetTester tester, Finder owner) {
+  final accent = KitTokens.of(tester.element(owner)).roles.accent;
+  return _paintCalls(tester, owner).any(
+    (args) =>
+        args.any((a) => a is Paint && a.color.toARGB32() == accent.toARGB32()),
+  );
+}
+
+/// The positional arguments of every canvas call [owner]'s subtree makes.
+List<List<Object?>> _paintCalls(WidgetTester tester, Finder owner) {
+  final canvas = TestRecordingCanvas();
+  final context = TestRecordingPaintingContext(canvas);
+  tester.renderObject(owner).paint(context, Offset.zero);
+  context.dispose();
+  return [
+    for (final call in canvas.invocations) call.invocation.positionalArguments,
+  ];
+}
+
+/// Long enough for a Material-backed button's focus side to ease in.
+const _ringSettles = Duration(milliseconds: 300);
+
+/// The kit part (a chip or a button) that holds primary focus, if any.
+Finder? _focusOwner(WidgetTester tester) {
+  final focused = FocusManager.instance.primaryFocus?.context;
+  if (focused == null) return null;
+  for (final type in [KitChip, KitButton]) {
+    final owner = find.ancestor(
+      of: find.byElementPredicate((e) => e == focused),
+      matching: find.byType(type),
+    );
+    if (owner.evaluate().isNotEmpty) return owner.first;
+  }
+  return null;
+}
 
 void main() {
   group('summaryOf (1)', () {
@@ -359,6 +403,75 @@ void main() {
     expect(holdsStep, isTrue);
   });
 
+  testWidgets('keyboard reveal: focus lands on the first revealed step\'s '
+      'own control, and no later Tab stop lacks a visible ring (G14)', (
+    tester,
+  ) async {
+    final buttons = [
+      for (var i = 0; i < 30; i++)
+        KitButton.tertiary(
+          key: ValueKey('step-$i'),
+          label: 'Step $i',
+          onPressed: () {},
+        ),
+    ];
+    await _pump(tester, _line(expanded: true, steps: buttons));
+    // Tab to "Show 5 earlier steps" (after the chip) and press it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(
+      tester.widget(_focusOwner(tester)!),
+      tester.widget(
+        find.ancestor(
+          of: find.text('Show 5 earlier steps'),
+          matching: find.byType(KitButton),
+        ),
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    // Reveal, then the post-frame focus request, then the button's ring
+    // (its Material eases the side in over the theme-change duration).
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(_ringSettles);
+
+    final step0 = find.byKey(const ValueKey('step-0'));
+    expect(tester.widget(_focusOwner(tester)!), tester.widget(step0));
+    expect(_ringShows(tester, step0), isTrue);
+
+    // Two full passes: chip + 30 steps, each stop a part with its ring.
+    for (var n = 0; n < 62; n++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.pump(_ringSettles);
+      final owner = _focusOwner(tester);
+      expect(owner, isNotNull, reason: 'Tab stop $n has no kit part');
+      expect(_ringShows(tester, owner!), isTrue, reason: 'Tab stop $n');
+    }
+  });
+
+  testWidgets('prose steps: focus holds the first revealed step once, then '
+      'it is never a Tab stop again (G14)', (tester) async {
+    await _pump(tester, _line(expanded: true, steps: _steps(30)));
+    await tester.tap(find.text('Show 5 earlier steps'));
+    await tester.pump();
+    await tester.pump();
+    final revealed = FocusManager.instance.primaryFocus;
+    expect(revealed, isNotNull);
+    expect(_focusOwner(tester), isNull);
+    for (var n = 0; n < 4; n++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(FocusManager.instance.primaryFocus, isNot(same(revealed)));
+      expect(
+        tester.widget(_focusOwner(tester)!),
+        tester.widget(find.byKey(_lineKey)),
+      );
+    }
+  });
+
   group('motion (7, G8x)', () {
     testWidgets('no size or layout animation in the subtree', (tester) async {
       await _pump(
@@ -478,26 +591,20 @@ void main() {
         steps: [TextButton(onPressed: () {}, child: const Text('Step button'))],
       ),
     );
+    final chip = find.byKey(_lineKey);
+    expect(_ringShows(tester, chip), isFalse);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
-    final ring = find.byWidgetPredicate(
-      (w) =>
-          w is DecoratedBox &&
-          w.position == DecorationPosition.foreground &&
-          w.decoration is ShapeDecoration,
-    );
-    expect(
-      find.descendant(of: find.byKey(_lineKey), matching: ring),
-      findsOneWidget,
-    );
+    // Primary focus sits within the chip, and the chip draws its ring.
+    expect(_focusOwner(tester), isNotNull);
+    expect(tester.widget(_focusOwner(tester)!), tester.widget(chip));
+    expect(_ringShows(tester, chip), isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(find.byKey(_stepsKey), findsOneWidget);
     // Focus stays on the chip; Tab continues into the steps.
-    expect(
-      find.descendant(of: find.byKey(_lineKey), matching: ring),
-      findsOneWidget,
-    );
+    expect(tester.widget(_focusOwner(tester)!), tester.widget(chip));
+    expect(_ringShows(tester, chip), isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     final focused = FocusManager.instance.primaryFocus?.context;
@@ -549,20 +656,28 @@ void main() {
   });
 
   testWidgets('the steps stroke is one physical pixel at '
-      'the start edge', (tester) async {
-    await _pump(tester, _line(expanded: true));
-    final box = tester.widget<DecoratedBox>(
-      find
-          .descendant(
-            of: find.byKey(_stepsKey),
-            matching: find.byType(DecoratedBox),
-          )
-          .first,
-    );
-    final border =
-        (box.decoration as BoxDecoration).border! as BorderDirectional;
-    expect(border.start.width, 1.0);
-    expect(border.end, BorderSide.none);
-    expect(border.top, BorderSide.none);
+      'the start edge (DPR 3)', (tester) async {
+    await _pump(tester, _line(expanded: true), devicePixelRatio: 3);
+    final steps = find.byKey(_stepsKey);
+    final hairline = KitTokens.of(tester.element(steps)).roles.hairline;
+    // Every shape painted in the hairline role: its drawn thickness is
+    // 1/3 dp, one physical pixel at DPR 3, and it sits on the start edge.
+    final strokes = <Rect>[
+      for (final args in _paintCalls(tester, steps))
+        if (args.any(
+          (a) => a is Paint && a.color.toARGB32() == hairline.toARGB32(),
+        ))
+          switch (args.first) {
+            final Path p => p.getBounds(),
+            final Rect r => r,
+            final RRect r => r.outerRect,
+            _ => Rect.zero,
+          },
+    ];
+    expect(strokes, hasLength(1));
+    final stepsBox = tester.getRect(steps);
+    expect(strokes.single.width, closeTo(1 / 3, 1e-6));
+    expect(strokes.single.left, closeTo(0, 1e-6));
+    expect(strokes.single.height, closeTo(stepsBox.height, 1e-6));
   });
 }

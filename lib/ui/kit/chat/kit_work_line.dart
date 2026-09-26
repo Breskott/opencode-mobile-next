@@ -128,11 +128,8 @@ class KitWorkCounts {
 /// turn's work and the prose between steps, oldest first; step boundaries
 /// are never drawn.
 ///
-/// States: none — no loading, empty, disabled or error state of its own.
-///
-/// The work's state is the host's input ([KitWorkState]: running,
-/// waitingForYou, done, endedFailed, stopped), each folded or expanded
-/// (KIT-12, KitWorkLine.md "States").
+/// States: running, waitingForYou, done, endedFailed, stopped; folded or
+/// expanded (KIT-12).
 class KitWorkLine extends StatefulWidget {
   const KitWorkLine({
     super.key,
@@ -223,8 +220,15 @@ class _KitWorkLineState extends State<KitWorkLine>
   /// "Show earlier steps" was pressed.
   bool _showAll = false;
 
-  /// Holds the first revealed step, so focus lands there (Accessibility).
-  final _firstRevealed = FocusNode(debugLabel: 'kit-work-line-first-step');
+  /// Wraps the first revealed step so focus can land there (Accessibility).
+  /// Never a Tab stop: it takes focus itself only once, when that step has
+  /// no control of its own, and gives the ability up as focus moves on
+  /// (LAY-10, G14).
+  final _firstRevealed = FocusNode(
+    debugLabel: 'kit-work-line-first-step',
+    skipTraversal: true,
+    canRequestFocus: false,
+  );
 
   /// The steps' fade-in on opening (paint only, MOT-5).
   late final AnimationController _fade = AnimationController(
@@ -283,8 +287,22 @@ class _KitWorkLineState extends State<KitWorkLine>
   void _revealEarlier() {
     setState(() => _showAll = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _firstRevealed.requestFocus();
+      if (!mounted) return;
+      // The step's own first control takes focus, so its ring shows.
+      final own = _firstRevealed.traversalDescendants.firstOrNull;
+      if (own != null) {
+        own.requestFocus();
+        return;
+      }
+      // A step with no control (prose): the wrapper holds focus this once,
+      // so reading continues from there; Tab moves on in order.
+      _firstRevealed.canRequestFocus = true;
+      _firstRevealed.requestFocus();
     });
+  }
+
+  void _onFirstRevealedFocus(bool hasFocus) {
+    if (!hasFocus) _firstRevealed.canRequestFocus = false;
   }
 
   @override
@@ -386,7 +404,11 @@ class _KitWorkLineState extends State<KitWorkLine>
         ),
       for (var i = hidden; i < steps.length; i++)
         if (i == 0 && _showAll)
-          Focus(focusNode: _firstRevealed, child: steps[i])
+          Focus(
+            focusNode: _firstRevealed,
+            onFocusChange: _onFirstRevealedFocus,
+            child: steps[i],
+          )
         else
           steps[i],
     ];
