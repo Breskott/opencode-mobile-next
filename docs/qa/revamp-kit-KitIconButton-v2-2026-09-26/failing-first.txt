@@ -1,0 +1,23 @@
+# test/kit/kit_icon_button_test.dart (fix commit's tests) run against lib/ui/kit/kit_icon_button.dart at bdbec9f4 (before the fix)
+# command: flutter test -j 1 test/kit/kit_icon_button_test.dart
+
+Expected: 'Read-only connection'
+  Actual: 'Remove header'
+          Expected: Read-only co ...
+            Actual: Remove heade ...
+#4      main.<anonymous closure> (file://test/kit/kit_icon_button_test.dart:309:7)
+Expected: true
+  Actual: <false>
+#4      main.<anonymous closure> (file://test/kit/kit_icon_button_test.dart:716:7)
+Expected: true
+  Actual: <false>
+#4      main.<anonymous closure> (file://test/kit/kit_icon_button_test.dart:767:7)
+Expected: true
+  Actual: <false>
+#4      main.<anonymous closure> (file://test/kit/kit_icon_button_test.dart:803:7)
+00:01 +20 -4: Some tests failed.
+Failing tests:
+  test/kit/kit_icon_button_test.dart: a disabled button tooltip says why: the label span, then the reason
+  test/kit/kit_icon_button_test.dart: after a focusable neighbour, exactly two Tabs reach it, and the ring goes when focus moves on
+  test/kit/kit_icon_button_test.dart: focused and hovered, the ring paints above the hover fill (§8.3)
+  test/kit/kit_icon_button_test.dart: one Tab reaches it and it keeps focus: the ring shows, Enter and Space activate it
