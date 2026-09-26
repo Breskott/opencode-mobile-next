@@ -1,0 +1,37 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart
+00:00 +0: G26: no new analyzer suppression comments (PROC-3)
+00:00 +0 -1: G26: no new analyzer suppression comments (PROC-3) [E]
+  Expected: empty
+    Actual: [
+              'lib/g26_violation_probe.dart has 1 suppression comment(s), baseline 0:\n'
+                '  lib/g26_violation_probe.dart:1: // ignore_for_file: unused_element',
+              'test/search_index_test.dart has 2 suppression comment(s), baseline 1:\n'
+                '  test/search_index_test.dart:252: // ignore: avoid_print\n'
+                '  test/search_index_test.dart:741: // ignore: avoid_print'
+            ]
+  PROC-3: no new analyzer suppression. Fix the diagnostic instead of silencing it. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/analyzer_suppressions_test.dart 212:5          main.<fn>
+  
+00:00 +0 -1: G26: no new analysis_options.yaml suppression (PROC-3)
+00:00 +0 -2: G26: no new analysis_options.yaml suppression (PROC-3) [E]
+  Expected: empty
+    Actual: [
+              'analysis_options.yaml analyzer.exclude gained "lib/g26_probe/**"',
+              'analysis_options.yaml linter.rules.disabled gained "avoid_print"',
+              'test/analysis_options.yaml: a nested analysis options file can silence a directory'
+            ]
+  PROC-3: no new exclude:, errors: ignore or disabled lint rule. The baseline (test/analyzer_suppressions_baseline.json) only shrinks.
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/analyzer_suppressions_test.dart 237:5          main.<fn>
+  
+00:00 +0 -2: (tearDownAll)
+00:00 +0 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analysis_options.yaml suppression (PROC-3)
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart: G26: no new analyzer suppression comments (PROC-3)

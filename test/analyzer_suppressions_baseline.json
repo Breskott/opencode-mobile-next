@@ -1,0 +1,43 @@
+{
+  "suppressionComments": {
+    "lib/api/opencode_api.dart": 1,
+    "lib/l10n/app_localizations.dart": 1,
+    "lib/l10n/app_localizations_ar.dart": 2,
+    "lib/l10n/app_localizations_en.dart": 2,
+    "test/chat_states_standard_test.dart": 1,
+    "test/goldens/chat_states_golden_test.dart": 1,
+    "test/kit_ratchet_test.dart": 2,
+    "test/l10n_coverage_test.dart": 2,
+    "test/search_index_test.dart": 1,
+    "tool/capture/capture_test.dart": 1,
+    "tool/capture/census/areas/a_shell.dart": 1,
+    "tool/capture/census/areas/c_chat_compose.dart": 1,
+    "tool/capture/census/areas/d_chat_sheets.dart": 1,
+    "tool/capture/census/areas/e_workspace.dart": 1,
+    "tool/capture/census/areas/h_termux.dart": 1,
+    "tool/capture/census/areas/i1_team_core.dart": 1,
+    "tool/capture/census/areas/i2_team_sheets.dart": 1,
+    "tool/capture/census/census_core.dart": 1,
+    "tool/capture/census/support/e_workspace_fakes.dart": 1,
+    "tool/capture/census/support/i1_team_core_world.dart": 1,
+    "tool/capture/chat_states_test.dart": 1,
+    "tool/capture/isolated_task_test.dart": 1,
+    "tool/capture/motion_states_test.dart": 1,
+    "tool/qa/oc2_live_proof_test.dart": 1,
+    "tool/qa/paseo_live_proof_test.dart": 1
+  },
+  "analysisOptions": {
+    "analyzer.exclude": [
+      "android/**",
+      "build/**",
+      "ios/**",
+      "linux/**",
+      "macos/**",
+      "tool/sdk/runtime/**",
+      "web/**",
+      "windows/**"
+    ],
+    "analyzer.errors.ignore": [],
+    "linter.rules.disabled": []
+  }
+}
