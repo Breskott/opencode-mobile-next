@@ -1,0 +1,24 @@
+{
+  "KitActionBlock/default": [
+    "800x1280 text 2.0 ltr",
+    "800x1280 text 2.0 rtl",
+    "840x1180 text 2.0 ltr",
+    "915x412 text 2.0 ltr"
+  ],
+  "KitSheet/default": [
+    "800x1280 text 2.0 ltr",
+    "915x412 text 2.0 ltr"
+  ],
+  "KitSheet/disabled": [
+    "800x1280 text 2.0 ltr",
+    "915x412 text 2.0 ltr"
+  ],
+  "KitSheet/full": [
+    "800x1280 text 2.0 ltr",
+    "915x412 text 2.0 ltr"
+  ],
+  "KitSheet/loading": [
+    "800x1280 text 2.0 ltr",
+    "915x412 text 2.0 ltr"
+  ]
+}
