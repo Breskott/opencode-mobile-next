@@ -22246,8 +22246,34 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitQrTooLong": "This is too long for a QR code. Copy the link instead.",
-  "@kitQrTooLong": {
-    "description": "Kit QR code: shown in place of the code when the data does not fit a QR code at any size"
+  "kitSinceStillWaiting": "Still waiting after {seconds} s",
+  "@kitSinceStillWaiting": {
+    "description": "KitSince: a wait's words once it escalates at KitMotion.escalateAfter",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitSinceWaitingFor": "{minutes, plural, =0{Waiting less than a minute} =1{Waiting 1 min} other{Waiting {minutes} min}}",
+  "@kitSinceWaitingFor": {
+    "description": "KitSince: a slow wait's words once minute ticks are on (KitSinceTicks.minutes)",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitSinceAge": "{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}",
+  "@kitSinceAge": {
+    "description": "KitSince: the age alone, for a host that places it mid-line (\"waiting {age}\")",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }
