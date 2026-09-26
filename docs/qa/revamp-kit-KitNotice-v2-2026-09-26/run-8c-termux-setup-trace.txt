@@ -1,0 +1,24 @@
+# Run 8c: the cause. The failing case was instrumented temporarily (not committed) to print, after
+# fixture.mount and before openOtherVersions: the view size, whether find.byKey('other-runtime-versions')
+# finds the row (default finder, skipOffstage: true), each KitNotice's top and height, and the row's top.
+# Command: tool/qa/machine_lock.sh test -- $F test -j 1 test/termux_setup_screen_test.dart \
+#   --plain-name "missing prior profile refuses switch without mutating setup"
+
+## Base notice (b67e3276): passes
+DEBUG view=Size(800.0, 600.0) tile built=1
+DEBUG notice top=463.0 h=88.0 msg=A local server exists, but its saved credential is unavailable. Run setup again to replace it safely.
+DEBUG tile top=599.0
+00:01 +1: All tests passed!
+
+## This branch (KitNotice v2): fails
+DEBUG view=Size(800.0, 600.0) tile built=0
+DEBUG notice top=463.0 h=104.0 msg=A local server exists, but its saved credential is unavailable. Run setup again to replace it safely.
+00:01 +0 -1: Some tests failed.
+
+# Reading: the failure notice's message moved from bodyMedium 14/20 to KitText body 16/24
+# (KitNotice.md §Tokens line 210, LOOK-12). Four lines grow 4 dp each: 88 -> 104 dp. The
+# "Other OpenCode versions" row was 1 dp inside the 600 dp view (top 599); it is now at 615,
+# below the fold. openOtherVersions (test/termux_setup_screen_test.dart:452) finds the row with
+# the default onstage finder and returns silently when it is not found (line 454), so the fold
+# never opens and the tap on "Try OpenCode 2" finds nothing. No overflow, no exception from the
+# screen: the row is reachable by scrolling, as before.

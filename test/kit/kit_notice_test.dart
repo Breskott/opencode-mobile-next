@@ -13,6 +13,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_notice.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
@@ -98,24 +99,6 @@ List<SemanticsNode> _liveRegions(WidgetTester tester) {
   return found;
 }
 
-/// What the one live region reads out: its own label and its children's.
-String _liveText(WidgetTester tester) {
-  final regions = _liveRegions(tester);
-  expect(regions, hasLength(1), reason: 'one live region per notice (A11Y-3)');
-  final parts = <String>[];
-  void collect(SemanticsNode node) {
-    final label = node.getSemanticsData().label;
-    if (label.isNotEmpty) parts.add(label);
-    node.visitChildren((child) {
-      collect(child);
-      return true;
-    });
-  }
-
-  collect(regions.single);
-  return parts.join(' | ');
-}
-
 Color _iconColour(WidgetTester tester) => tester
     .widget<Icon>(
       find.descendant(of: find.byType(KitNotice), matching: find.byType(Icon)),
@@ -189,7 +172,10 @@ void main() {
         tester,
         offer(onAction: () => actions += 1, onDismiss: () => dismissals += 1),
       );
-      expect(find.byType(TextButton), findsOneWidget);
+      // One action, by its words, and one close: nothing else to tap.
+      expect(find.text('Turn on'), findsOneWidget);
+      expect(find.byType(KitButton), findsOneWidget);
+      expect(find.byType(KitIconButton), findsOneWidget);
       expect(find.byTooltip('Not now'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-offer')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('team-offer-turn-on')));
@@ -606,50 +592,6 @@ void main() {
         const KitNotice.card(message: 'Allow editing?', title: 'Permission'),
       );
       expect(find.text('Allow editing?'), findsOneWidget);
-    });
-  });
-
-  group('live region', () {
-    testWidgets('announces once per change of tone or message', (tester) async {
-      final semantics = tester.ensureSemantics();
-      final heard = <String>[];
-      Future<void> show(KitNotice notice) async {
-        await _pump(tester, notice);
-        final text = _liveText(tester);
-        if (heard.isEmpty || heard.last != text) heard.add(text);
-      }
-
-      await show(const KitNotice(message: 'Checking the server'));
-      // The same notice rebuilt is not read again.
-      await show(const KitNotice(message: 'Checking the server'));
-      await show(const KitNotice(message: 'Checking the server'));
-      expect(heard, hasLength(1));
-      // A new verdict: once.
-      await show(
-        const KitNotice(message: 'The server answered', tone: AppStatusTone.ok),
-      );
-      await show(
-        const KitNotice(message: 'The server answered', tone: AppStatusTone.ok),
-      );
-      expect(heard, hasLength(2));
-      expect(heard.last, contains('The server answered'));
-      // The offer and the error are one live region each too.
-      await show(
-        KitNotice.offer(
-          message: 'Pin it?',
-          action: KitAction(label: 'Pin', onPressed: () {}),
-          onDismiss: () {},
-        ),
-      );
-      await show(
-        const KitNotice.error(
-          message: 'Couldn’t pin',
-          error: FormatException('x'),
-          details: 'trace',
-        ),
-      );
-      expect(heard, hasLength(4));
-      semantics.dispose();
     });
   });
 

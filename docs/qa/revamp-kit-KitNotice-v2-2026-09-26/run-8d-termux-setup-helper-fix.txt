@@ -1,0 +1,59 @@
+# Run 8d: the proposed integrator fix, tried temporarily and reverted (the file is outside this unit's write set):
+# test/termux_setup_screen_test.dart:453  find.byKey(const Key('other-runtime-versions'))  ->  find.byKey(const Key('other-runtime-versions'), skipOffstage: false)
+# (ensureVisible on the next line then scrolls the row into view). Whole file:
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-6/test/termux_setup_screen_test.dart
+00:00 +0: late version save cannot replace a newer same-profile connection
+00:01 +1: cancel owns transport before active profile persistence completes
+00:01 +2: cancel preserves a newer connection to the same phone profile
+00:01 +3: cancel releases monitoring before old storage work completes
+00:02 +4: ready server replaces setup log while waiting for storage
+00:02 +5: cancel during storage retains ready server and ignores completion
+00:03 +6: ready server replaces setup log while waiting for connection
+00:03 +7: cancel during connection retains ready server and ignores completion
+00:03 +8: client failure keeps the ready server and offers connection retry
+00:03 +9: managed switch is visible first, preserves profiles and returns at scale 1.0
+00:04 +10: managed switch is visible first, preserves profiles and returns at scale 2.0
+00:04 +11: failed beta switch offers return without connecting unavailable beta
+00:04 +12: missing prior profile refuses switch without mutating setup
+00:05 +13: existing beta default data has no invented OC1 return
+00:05 +14: inspect and switch local runtime leave active remote connection selected
+00:05 +15: paste guide is inspectable at width 800.0, text scale 1.0
+00:05 +16: paste guide is inspectable at width 390.0, text scale 1.0
+00:05 +17: paste guide is inspectable at width 390.0, text scale 2.0
+00:05 +18: permission precedes copy and open, return verifies without installing
+00:05 +19: permission denial leaves clipboard alone and settings and retry usable
+00:06 +20: copy/open failure is recoverable: open false
+00:06 +21: copy/open failure is recoverable: open exception
+00:06 +22: copy/open failure is recoverable: clipboard exception
+00:06 +23: late permission resume does not verify before Termux backgrounds and returns
+00:06 +24: early return verifies after open completes and failed verification can retry
+00:06 +25: new switch hides prior elapsed clock until accepted and resumes durable timing
+00:07 +26: elapsed uses persisted start across background and route recreation
+00:07 +27: elapsed hides legacy total and follows authoritative operation timestamps
+00:07 +28: install shows immediate progress throughout slow native startup
+00:07 +29: prelaunch bridge failure stops waiting and offers a working retry
+00:07 +30: resuming during launch preserves progress and avoids stale polling
+00:07 +31: setup uses phone space without overflow at text scale 1.0
+00:08 +32: setup uses phone space without overflow at text scale 2.0
+00:08 +33: setup uses phone space without overflow at text scale 2.5
+00:08 +34: existing server stays reachable without Termux
+00:08 +35: existing server stays reachable without permission
+00:08 +36: desktop setup offers existing server with large text
+00:08 +37: failed inventory requires reviewed Ubuntu choice before launch
+00:08 +38: checks the environment before enabling installation
+00:08 +39: first installation asks and saves the selected beta before launch
+00:08 +40: choosing Claude Code still installs the default OpenCode runtime
+00:09 +41: legacy stopped state does not override the visible beta choice
+00:09 +42: fresh beta remains installed after ready and Stop on the same route
+00:09 +43: existing opencode1 retains its runtime on repair
+00:09 +44: existing opencode2 retains its runtime on repair
+00:09 +45: beta start reuses its saved profile without installing or selecting a generation
+00:10 +46: runtime choice wraps at 320 pixels with large text
+00:10 +47: starts the detected installation without downloading packages
+00:10 +48: reinstalling a detected version requires replacement review
+00:10 +49: checking Termux does not mark the download step complete
+00:10 +50: successful setup exposes controls and stops despite recovery cleanup failure
+00:11 +51: restart timeout does not accept a previous ready operation
+00:11 +52: restart timeout follows matching preflight until completion
+00:12 +53: launch timeout recovers the persisted phase and root cause
+00:12 +54: All tests passed!
