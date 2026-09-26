@@ -3598,12 +3598,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorDisable => 'Disable quota monitoring';
 
   @override
-  String get quotaMonitorThreshold => 'Alert when used reaches';
-
-  @override
-  String get quotaMonitorSaving => 'Saving…';
-
-  @override
   String get setupChooseServerTitle => 'Choose your server setup';
 
   @override
@@ -20945,4 +20939,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitRiskTurnOff => 'Turn off';
+
+  @override
+  String get safetyDisconnectBody =>
+      'Live updates stop and you return to the server list. The server keeps running and nothing on it changes.';
+
+  @override
+  String get safetyDisconnectBodyPhone =>
+      'Live updates stop and you return to the server list. OpenCode keeps running on this phone, using battery, until you stop it.';
+
+  @override
+  String safetyDisconnectWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count messages waiting to send stay on this phone until you connect again.',
+      one:
+          '1 message waiting to send stays on this phone until you connect again.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get quotaMonitorThreshold => 'Alert when used reaches';
+
+  @override
+  String get quotaMonitorSaving => 'Saving…';
+
+  @override
+  String get folderBrowserSlowTitle => 'Still reading this folder';
+
+  @override
+  String get folderBrowserSlowBody =>
+      'Folders on this phone can take up to 15 seconds to list.';
+
+  @override
+  String get folderBrowserFirstProject => 'Name your first project';
 }
