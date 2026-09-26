@@ -31684,6 +31684,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'phone'**
   String get keepRunningThisPhone;
+
+  /// Shell notice: the thermal guard paused the AI Team because Android reported the phone hot (also a notification when the app is in the background)
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone is hot — paused the AI Team to cool down. It resumes by itself.'**
+  String get thermalPausedNotice;
+
+  /// Shell notice: Android reported the phone critically hot and the guard stopped the AI Team
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone is very hot — stopped the AI Team to protect it. Its work is kept, and it starts again once the phone has cooled down.'**
+  String get thermalStoppedNotice;
+
+  /// Shell notice: the guard resumed the AI Team it paused, after the phone stayed cool for two minutes
+  ///
+  /// In en, this message translates to:
+  /// **'Resumed the AI Team — your phone has cooled down.'**
+  String get thermalResumedNotice;
+
+  /// Keep running screen: switch title for the thermal guard (on by default)
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the AI Team when the phone is hot'**
+  String get thermalGuardSetting;
+
+  /// Keep running screen: one line under the thermal guard switch
+  ///
+  /// In en, this message translates to:
+  /// **'The team pauses with its work kept and resumes by itself once the phone cools.'**
+  String get thermalGuardSettingDetail;
 }
 
 class _AppLocalizationsDelegate

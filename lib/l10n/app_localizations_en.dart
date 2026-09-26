@@ -19642,4 +19642,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keepRunningThisPhone => 'phone';
+
+  @override
+  String get thermalPausedNotice =>
+      'Your phone is hot — paused the AI Team to cool down. It resumes by itself.';
+
+  @override
+  String get thermalStoppedNotice =>
+      'Your phone is very hot — stopped the AI Team to protect it. Its work is kept, and it starts again once the phone has cooled down.';
+
+  @override
+  String get thermalResumedNotice =>
+      'Resumed the AI Team — your phone has cooled down.';
+
+  @override
+  String get thermalGuardSetting => 'Pause the AI Team when the phone is hot';
+
+  @override
+  String get thermalGuardSettingDetail =>
+      'The team pauses with its work kept and resumes by itself once the phone cools.';
 }

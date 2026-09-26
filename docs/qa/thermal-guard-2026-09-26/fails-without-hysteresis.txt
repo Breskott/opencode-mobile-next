@@ -1,0 +1,58 @@
+# ThermalPolicy.decide with the two-minute wait removed (>= Duration.zero)
+00:00 +0: loading test/thermal_guard_test.dart
+00:00 +0: ThermalPolicy pauses at SEVERE, stops at CRITICAL and above
+00:00 +1: ThermalPolicy an early forecast (headroom >= 0.95) pauses before SEVERE
+00:00 +2: ThermalPolicy a paused team escalates to a stop at CRITICAL
+00:00 +3: ThermalPolicy resumes only after two cool minutes; heat restarts the wait
+00:00 +3 -1: ThermalPolicy resumes only after two cool minutes; heat restarts the wait [E]
+  Expected: ThermalAction:<ThermalAction.none>
+    Actual: ThermalAction:<ThermalAction.resume>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/thermal_guard_test.dart 149:7                  main.<fn>.<fn>
+  
+00:00 +3 -1: ThermalPolicy turned off: starts nothing, but still gives back what it holds
+00:00 +4 -1: ThermalGuard SEVERE pauses the phone's team once, keeps it, tells once
+00:00 +5 -1: ThermalGuard CRITICAL stops it (paused first); one notification per episode
+00:00 +5 -2: ThermalGuard CRITICAL stops it (paused first); one notification per episode [E]
+  Expected: 'stop phone'
+    Actual: 'resume phone gc-7 +service'
+     Which: is different.
+            Expected: stop phone ...
+              Actual: resume pho ...
+                      ^
+             Differ at offset 0
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/thermal_guard_test.dart 268:9                  main.<fn>.<fn>
+  
+00:00 +5 -2: ThermalGuard no notification while the app is on screen
+00:00 +6 -2: ThermalGuard acts only when a team works on this phone
+00:00 +7 -2: ThermalGuard switched off: no action at all
+00:00 +8 -2: ThermalGuard an unreachable team is tried again after another cool wait
+00:00 +9 -2: ThermalGuard a pause survives the app dying: the next process resumes it
+00:00 +9 -3: ThermalGuard a pause survives the app dying: the next process resumes it [E]
+  Expected: ThermalHold:<ThermalHold.paused>
+    Actual: ThermalHold:<ThermalHold.none>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/thermal_guard_test.dart 343:9                  main.<fn>.<fn>
+  
+00:00 +9 -3: GasCityThermalTeams (the supervisor API) only loopback teams count as on this phone
+00:00 +10 -3: GasCityThermalTeams (the supervisor API) pause suspends the city and the running sessions only; resume gives back exactly those
+00:00 +11 -3: GasCityThermalTeams (the supervisor API) a city the person suspended is left alone
+00:00 +12 -3: GasCityThermalTeams (the supervisor API) a team the person turned off meanwhile is not started again
+00:00 +13 -3: oc/thermal (the Kotlin half, faked) ThermalMonitor.kt words map onto the statuses
+00:00 +14 -3: oc/thermal (the Kotlin half, faked) events arrive as readings; a missing channel is safe
+00:00 +15 -3: oc/thermal (the Kotlin half, faked) notify passes the words only
+00:00 +16 -3: the shell line and the setting paused once, then resumed; dismissed stays away
+00:00 +17 -3: the shell line and the setting the Keep running screen has the switch, on by default
+00:00 +18 -3: Some tests failed.
+
+Failing tests:
+  test/thermal_guard_test.dart: ThermalGuard CRITICAL stops it (paused first); one notification per episode
+  test/thermal_guard_test.dart: ThermalGuard a pause survives the app dying: the next process resumes it
+  test/thermal_guard_test.dart: ThermalPolicy resumes only after two cool minutes; heat restarts the wait
