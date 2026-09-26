@@ -20536,4 +20536,28 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitChoiceCurrent => 'Current';
+
+  @override
+  String get kitChoiceRecommended => 'Recommended';
+
+  @override
+  String get kitChoiceOther => 'Something else';
+
+  @override
+  String get kitChoiceOtherSend => 'Send answer';
+
+  @override
+  String kitChoiceSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+      zero: 'None selected',
+    );
+    return '$_temp0';
+  }
 }

@@ -2,7 +2,8 @@ import '../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/server_gateway.dart' show PendingQuestion, QuestionChoice;
-import '../app_theme.dart';
+import '../kit/kit_choice_list.dart';
+import '../kit/kit_field.dart';
 
 /// True when [question] is too big to answer inline above the composer and
 /// the chat should show a compact card whose Answer button opens the full
@@ -17,9 +18,12 @@ bool questionPrefersSheet(PendingQuestion question) =>
     );
 
 /// One selectable choice of a question prompt, rendered identically by the
-/// Activity sheet and the inline chat card: a 48 dp tappable row with the
-/// label, the description as a subtitle, a radio or checkbox affordance, and
-/// an optional "Recommended" mark.
+/// Activity sheet and the inline chat card.
+///
+/// Retired by kit-KitChoiceList: use KitChoiceRow / KitField. A thin
+/// forwarding wrapper that builds a [KitChoiceRow]; the kit never imports
+/// domain types, so this file stays here (R12).
+@Deprecated('Retired by kit-KitChoiceList: use KitChoiceRow / KitField')
 class QuestionOptionRow extends StatelessWidget {
   const QuestionOptionRow({
     super.key,
@@ -41,96 +45,26 @@ class QuestionOptionRow extends StatelessWidget {
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tint = enabled ? scheme.primary : AppTheme.mutedOf(theme);
-    final icon = multiple
-        ? (selected
-              ? AppIconography.checkboxChecked
-              : AppIconography.checkboxEmpty)
-        : (selected ? AppIconography.radioSelected : AppIconography.radioEmpty);
-    return Semantics(
-      button: true,
-      selected: selected,
-      enabled: enabled,
-      child: InkWell(
-        key: ValueKey('question-option-${choice.label}'),
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(10),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: selected ? tint : AppTheme.mutedOf(theme),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        choice.label,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
-                      ),
-                      if (choice.description.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 1),
-                          child: Text(
-                            choice.description,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppTheme.mutedOf(theme),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (recommended)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Container(
-                      key: ValueKey('question-recommended-${choice.label}'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: scheme.primary.withValues(alpha: .5),
-                        ),
-                      ),
-                      child: Text(
-                        _sharedCopy(context).e7SharedRecommended,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => KitChoiceRow<String>(
+    rowKey: ValueKey('question-option-${choice.label}'),
+    choice: KitChoice<String>(
+      value: choice.label,
+      title: choice.label,
+      supporting: choice.description.isEmpty ? null : choice.description,
+      recommended: recommended,
+    ),
+    selected: selected,
+    mark: multiple ? KitChoiceMark.check : KitChoiceMark.radio,
+    onTap: enabled ? onTap : null,
+  );
 }
 
 /// The free-text answer field shown when a prompt accepts a custom answer;
 /// shared so the sheet and the card ask in the same words.
+///
+/// Retired by kit-KitChoiceList: use KitChoiceRow / KitField. Forwards to
+/// `KitField(kind: multiline)`.
+@Deprecated('Retired by kit-KitChoiceList: use KitChoiceRow / KitField')
 class QuestionCustomAnswerField extends StatelessWidget {
   const QuestionCustomAnswerField({
     super.key,
@@ -148,19 +82,16 @@ class QuestionCustomAnswerField extends StatelessWidget {
   final ValueChanged<String>? onSubmitted;
 
   @override
-  Widget build(BuildContext context) => TextField(
+  Widget build(BuildContext context) => KitField(
+    label: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7SharedYourAnswer,
+    kind: KitFieldKind.multiline,
     controller: controller,
     enabled: enabled,
-    minLines: 1,
+    disabledReason: enabled ? null : '',
     maxLines: maxLines,
     onChanged: onChanged,
     onSubmitted: onSubmitted,
-    decoration: InputDecoration(
-      labelText: _sharedCopy(context).e7SharedYourAnswer,
-      border: OutlineInputBorder(),
-    ),
   );
 }
-
-AppLocalizations _sharedCopy(BuildContext context) =>
-    lookupAppLocalizations(Localizations.localeOf(context));

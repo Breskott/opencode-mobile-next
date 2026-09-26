@@ -32782,6 +32782,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// Kit choice list: first word of the supporting line of the value in use now (a picker or setting)
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get kitChoiceCurrent;
+
+  /// Kit choice list: added to a recommended choice's supporting line (words, not colour)
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get kitChoiceRecommended;
+
+  /// Kit choice list: the row under the options that opens a free answer field
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get kitChoiceOther;
+
+  /// Kit choice list: the button that sends the typed free answer
+  ///
+  /// In en, this message translates to:
+  /// **'Send answer'**
+  String get kitChoiceOtherSend;
+
+  /// Kit choice list: how many choices of a multiple choice are checked
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None selected} =1{1 selected} other{{count} selected}}'**
+  String kitChoiceSelectedCount(int count);
 }
 
 class _AppLocalizationsDelegate
