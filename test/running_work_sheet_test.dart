@@ -249,7 +249,7 @@ void main() {
       conn.notifyListeners();
       await tester.pump(const Duration(seconds: 2));
       expect(repo.outputReads, coveredReads);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
@@ -344,7 +344,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
     await tester.pumpAndSettle();
     expect(repo.stopCalls, 0);
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Keep running'));
     await tester.pumpAndSettle();
     expect(repo.stopCalls, 0);
     await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
@@ -400,7 +400,7 @@ void main() {
       final covered = repo.outputReads;
       await tester.pump(const Duration(seconds: 6));
       expect(repo.outputReads, covered);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);

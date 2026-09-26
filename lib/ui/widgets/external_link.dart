@@ -2,6 +2,7 @@ import '../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app_iconography.dart';
+import '../kit/kit.dart';
 import 'product_states.dart';
 
 /// What [openExternalLink] did, so callers can react without re-deriving it.
@@ -65,50 +66,20 @@ Future<ExternalLinkOutcome> openExternalLink(
   }
   final insecure = uri.scheme == 'http';
 
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      icon: Icon(
-        insecure ? AppIconography.warning : AppIconography.externalLink,
-      ),
-      title: Text(
-        insecure
-            ? _sharedCopy(context).e7SharedOpenInsecureHTTPLink
-            : _sharedCopy(context).e7SharedOpenExternalLink,
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(_sharedCopy(context).e7SharedHost),
-          const SizedBox(height: 4),
-          SelectableText(
-            externalLinkHost(uri),
-            style: const TextStyle(fontFamily: 'AppMono'),
-          ),
-          if (insecure) ...[
-            const SizedBox(height: 12),
-            Text(_sharedCopy(context).e7SharedHTTPIsNotEncryptedOtherDevicesOn),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(_sharedCopy(context).projectFolderCancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(
-            insecure
-                ? _sharedCopy(context).e7SharedOpenHTTPLink
-                : _sharedCopy(context).e7SharedOpenLink,
-          ),
-        ),
-      ],
-    ),
+  // The destination host stays in sight (not folded under Details): it is
+  // what the person checks before anything opens.
+  final copy = _sharedCopy(context);
+  final confirmed = await showKitConfirm(
+    context,
+    title: insecure
+        ? copy.e7SharedOpenInsecureHTTPLink
+        : copy.e7SharedOpenExternalLink,
+    body: externalLinkHost(uri),
+    confirmLabel: insecure ? copy.e7SharedOpenHTTPLink : copy.e7SharedOpenLink,
+    icon: insecure ? AppIconography.warning : AppIconography.externalLink,
+    consequences: [if (insecure) copy.e7SharedHTTPIsNotEncryptedOtherDevicesOn],
   );
-  if (confirmed != true) return ExternalLinkOutcome.cancelled;
+  if (!confirmed) return ExternalLinkOutcome.cancelled;
   if (!context.mounted) return ExternalLinkOutcome.cancelled;
 
   try {

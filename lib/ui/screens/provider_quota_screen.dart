@@ -9,6 +9,7 @@ import '../../state/connection.dart';
 import '../../state/provider_quota_overview.dart';
 import '../../state/provider_quota_budgets.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../widgets/quota_monitor_section.dart';
 import 'settings_screen.dart' show NotificationsSettingsScreen;
 
@@ -366,28 +367,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                       onPressed: _overview.budgets.saving
                           ? null
                           : () async {
-                              final clear = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text(l10n.quotaBudgetClearAll),
-                                  content: Text(
-                                    l10n.quotaBudgetClearDescription,
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: Text(l10n.workCancel),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text(l10n.quotaBudgetClearAll),
-                                    ),
-                                  ],
-                                ),
+                              final clear = await showKitConfirm(
+                                context,
+                                title: l10n.quotaBudgetClearTitle,
+                                body: l10n.quotaBudgetClearDescription,
+                                confirmLabel: l10n.quotaBudgetClearAll,
+                                kind: KitConfirmKind.destructive,
                               );
-                              if (clear == true) {
+                              if (clear) {
                                 await _overview.budgets.clearAll();
                               }
                             },

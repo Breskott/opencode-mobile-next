@@ -1526,6 +1526,12 @@ abstract class AppLocalizations {
   /// **'Discard changes'**
   String get sessionNoteDiscardAction;
 
+  /// No description provided for @sessionNoteDiscardDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The edits you made to this note will be lost. This can\'t be undone.'**
+  String get sessionNoteDiscardDetail;
+
   /// No description provided for @sessionNoteBytes.
   ///
   /// In en, this message translates to:
@@ -5294,6 +5300,12 @@ abstract class AppLocalizations {
   /// **'Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.'**
   String get usageBudgetClearDescription;
 
+  /// No description provided for @usageBudgetClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear consumption budgets?'**
+  String get usageBudgetClearTitle;
+
   /// No description provided for @monitorTitle.
   ///
   /// In en, this message translates to:
@@ -5586,6 +5598,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove all provider thresholds and attention settings for this saved server, including previous accounts? Consumption budgets are kept.'**
   String get quotaBudgetClearDescription;
+
+  /// No description provided for @quotaBudgetClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear provider thresholds?'**
+  String get quotaBudgetClearTitle;
 
   /// No description provided for @managedStorageSummary.
   ///

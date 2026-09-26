@@ -700,8 +700,10 @@ void main() {
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.text('Discard your note changes?'), findsOneWidget);
+      await tester.ensureVisible(find.text('Keep editing'));
       await tester.tap(find.text('Keep editing'));
       await tester.pumpAndSettle();
+      expect(find.text('Discard your note changes?'), findsNothing);
       expect(find.byKey(const ValueKey('session-note-editor')), findsOneWidget);
       expect(h.notes.writes, isEmpty);
     },

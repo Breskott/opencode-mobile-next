@@ -833,6 +833,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sessionNoteDiscardAction => 'تجاهل التغييرات';
 
   @override
+  String get sessionNoteDiscardDetail =>
+      'ستضيع التعديلات التي أجريتها على هذه الملاحظة. لا يمكن التراجع عن ذلك.';
+
+  @override
   String sessionNoteBytes(int used, int limit) {
     return '$used / $limit بايت';
   }
@@ -3212,6 +3216,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل تريد إزالة جميع ميزانيات الاستهلاك الحالية والسابقة لهذا الخادم المحفوظ؟ ستبقى حدود مزوّدي الخدمة.';
 
   @override
+  String get usageBudgetClearTitle => 'مسح ميزانيات الاستهلاك؟';
+
+  @override
   String get monitorTitle => 'ما يحتاج إلى انتباه في الخوادم المحفوظة';
 
   @override
@@ -3391,6 +3398,9 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaBudgetClearDescription =>
       'هل تريد إزالة جميع حدود مزوّدي الخدمة وإعدادات الانتباه لهذا الخادم المحفوظ، بما فيها الحسابات السابقة؟ ستبقى ميزانيات الاستهلاك.';
+
+  @override
+  String get quotaBudgetClearTitle => 'مسح حدود مزوّدي الخدمة؟';
 
   @override
   String managedStorageSummary(String available, String total) {

@@ -7,7 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../api/product_repository.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 
 class ProjectHealthScreen extends StatefulWidget {
   final ServerOperationsGateway repository;
@@ -90,25 +90,14 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   Future<void> _initializeGit() async {
     final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_initializingGit) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(actionL10n.e7LibraryInitializeGitRepository),
-        content: Text(actionL10n.e7LibraryOpenCodeWillRunGitInitInThe),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(actionL10n.projectFolderCancel),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-git-initialization'),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(actionL10n.e7LibraryInitializeGit),
-          ),
-        ],
-      ),
+    final confirmed = await showKitConfirm(
+      context,
+      title: actionL10n.e7LibraryInitializeGitRepository,
+      body: actionL10n.e7LibraryOpenCodeWillRunGitInitInThe,
+      confirmLabel: actionL10n.e7LibraryInitializeGit,
+      confirmKey: const ValueKey('confirm-git-initialization'),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() {
       _initializingGit = true;
       _gitInitializationError = null;

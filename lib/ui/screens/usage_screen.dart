@@ -11,7 +11,7 @@ import '../../state/usage_overview.dart';
 import '../../state/usage_budgets.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -386,24 +386,14 @@ class _UsageBudgetControls extends StatelessWidget {
             onPressed: budgets.saving
                 ? null
                 : () async {
-                    final clear = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(l10n.usageBudgetClearAll),
-                        content: Text(l10n.usageBudgetClearDescription),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text(l10n.workCancel),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text(l10n.usageBudgetClearAll),
-                          ),
-                        ],
-                      ),
+                    final clear = await showKitConfirm(
+                      context,
+                      title: l10n.usageBudgetClearTitle,
+                      body: l10n.usageBudgetClearDescription,
+                      confirmLabel: l10n.usageBudgetClearAll,
+                      kind: KitConfirmKind.destructive,
                     );
-                    if (clear == true) await budgets.clearAll();
+                    if (clear) await budgets.clearAll();
                   },
             child: Text(l10n.usageBudgetClearAll),
           ),

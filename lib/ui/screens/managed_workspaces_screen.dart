@@ -9,7 +9,7 @@ import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 
 class ManagedWorkspacesScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -173,11 +173,16 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
   Future<void> _remove(WorkspaceInfo workspace) async {
     final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_busyWorkspaceID != null || _creating || _syncing) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => _RemoveWorkspaceDialog(workspace: workspace),
+    final confirmed = await showKitConfirm(
+      context,
+      title: actionL10n.e7LibraryRemove(workspace.name),
+      body: actionL10n.e7LibraryTheServerAdapterMayPermanentlyDeleteThe,
+      confirmLabel: actionL10n.e7LibraryRemovePermanently,
+      kind: KitConfirmKind.destructive,
+      typedName: workspace.name,
+      confirmKey: const ValueKey('confirm-remove-managed-workspace'),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() => _busyWorkspaceID = workspace.id);
     try {
       if (widget.controller.workspace == workspace.id) {
@@ -673,82 +678,6 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
   @override
   void dispose() {
     _branch.dispose();
-    super.dispose();
-  }
-}
-
-class _RemoveWorkspaceDialog extends StatefulWidget {
-  final WorkspaceInfo workspace;
-
-  const _RemoveWorkspaceDialog({required this.workspace});
-
-  @override
-  State<_RemoveWorkspaceDialog> createState() => _RemoveWorkspaceDialogState();
-}
-
-class _RemoveWorkspaceDialogState extends State<_RemoveWorkspaceDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryRemove((widget.workspace.name).toString()),
-    ),
-    content: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryTheServerAdapterMayPermanentlyDeleteThe,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            key: const ValueKey('remove-managed-workspace-confirmation'),
-            controller: _controller,
-            decoration: InputDecoration(
-              labelText: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryTypeToConfirm((widget.workspace.name).toString()),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).projectFolderCancel,
-        ),
-      ),
-      FilledButton(
-        key: const ValueKey('confirm-remove-managed-workspace'),
-        style: FilledButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-        onPressed: _controller.text == widget.workspace.name
-            ? () => Navigator.pop(context, true)
-            : null,
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryRemovePermanently,
-        ),
-      ),
-    ],
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 }

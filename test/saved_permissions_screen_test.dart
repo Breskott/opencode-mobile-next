@@ -6,6 +6,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,8 +111,23 @@ void main() {
     await tester.tap(revoke);
     await tester.pumpAndSettle();
     expect(find.text('Revoke access?'), findsOneWidget);
-    expect(find.text('Edit a file'), findsWidgets);
-    expect(find.text('lib/**'), findsWidgets);
+    // The confirmation names the grant it revokes, under Details.
+    final sheet = find.byType(KitConfirmSheet);
+    await tester.tap(
+      find.descendant(
+        of: sheet,
+        matching: find.byKey(const ValueKey('kit-details-toggle')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: sheet, matching: find.text('Edit a file')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('lib/**')),
+      findsOneWidget,
+    );
     expect(repository.removeCalls, isEmpty);
 
     await tester.tap(find.text('Revoke access'));
@@ -372,7 +388,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Revoke access?'), findsOneWidget);
-    expect(find.text('Keep access'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Revoke access'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

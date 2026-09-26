@@ -11,7 +11,7 @@ import '../desktop/context_menu.dart';
 import '../widgets/info_label.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 
 class WorktreesScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -340,69 +340,47 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     }
   }
 
+  /// The changed files a reset or removal loses, as the confirmation's
+  /// counted fact; nothing when the worktree is clean.
+  List<String> _changeConsequences(List<VersionControlFile> changes) => [
+    if (changes.isNotEmpty)
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryChangedFilesDetected(changes.length),
+  ];
+
   Future<bool> _confirmReset(
     WorktreeInfo worktree,
     List<VersionControlFile> changes,
-  ) async =>
-      (await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryReset((worktree.name).toString()),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ChangeWarning(changes: changes),
-                const SizedBox(height: 12),
-                Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryThisPermanentlyDiscardsTrackedChangesAndDeletes,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).projectFolderCancel,
-              ),
-            ),
-            FilledButton(
-              key: const ValueKey('confirm-reset-worktree'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryResetWorktree,
-              ),
-            ),
-          ],
-        ),
-      )) ??
-      false;
+  ) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return showKitConfirm(
+      context,
+      title: l10n.e7LibraryReset(worktree.name),
+      body: l10n.e7LibraryThisPermanentlyDiscardsTrackedChangesAndDeletes,
+      confirmLabel: l10n.e7LibraryResetWorktree,
+      kind: KitConfirmKind.destructive,
+      consequences: _changeConsequences(changes),
+      confirmKey: const ValueKey('confirm-reset-worktree'),
+    );
+  }
 
   Future<bool> _confirmRemove(
     WorktreeInfo worktree,
     List<VersionControlFile> changes,
-  ) async =>
-      (await showDialog<bool>(
-        context: context,
-        builder: (context) =>
-            _RemoveWorktreeDialog(worktree: worktree, changes: changes),
-      )) ??
-      false;
+  ) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return showKitConfirm(
+      context,
+      title: l10n.e7LibraryRemove(worktree.name),
+      body: l10n.e7LibraryTheWorktreeDirectoryAndItsGitBranch,
+      confirmLabel: l10n.e7LibraryRemovePermanently,
+      kind: KitConfirmKind.destructive,
+      consequences: _changeConsequences(changes),
+      typedName: worktree.name,
+      confirmKey: const ValueKey('confirm-remove-worktree'),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -797,38 +775,6 @@ class _WorktreeTile extends StatelessWidget {
   }
 }
 
-class _ChangeWarning extends StatelessWidget {
-  final List<VersionControlFile> changes;
-
-  const _ChangeWarning({required this.changes});
-
-  @override
-  Widget build(BuildContext context) {
-    final clean = changes.isEmpty;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          clean ? AppIconography.checkCircle : AppIconography.warning,
-          color: clean ? null : Theme.of(context).colorScheme.error,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            clean
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryNoChangedFilesWereDetected
-                : lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryChangedFilesDetected(changes.length),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _CreateWorktreeDialog extends StatefulWidget {
   const _CreateWorktreeDialog();
 
@@ -895,85 +841,6 @@ class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
           lookupAppLocalizations(
             Localizations.localeOf(context),
           ).projectFolderCreateAction,
-        ),
-      ),
-    ],
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-}
-
-class _RemoveWorktreeDialog extends StatefulWidget {
-  final WorktreeInfo worktree;
-  final List<VersionControlFile> changes;
-
-  const _RemoveWorktreeDialog({required this.worktree, required this.changes});
-
-  @override
-  State<_RemoveWorktreeDialog> createState() => _RemoveWorktreeDialogState();
-}
-
-class _RemoveWorktreeDialogState extends State<_RemoveWorktreeDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryRemove((widget.worktree.name).toString()),
-    ),
-    content: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ChangeWarning(changes: widget.changes),
-          const SizedBox(height: 12),
-          Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryTheWorktreeDirectoryAndItsGitBranch,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            key: const ValueKey('remove-worktree-confirmation'),
-            controller: _controller,
-            decoration: InputDecoration(
-              labelText: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryTypeToConfirm((widget.worktree.name).toString()),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).projectFolderCancel,
-        ),
-      ),
-      FilledButton(
-        key: const ValueKey('confirm-remove-worktree'),
-        style: FilledButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-        onPressed: _controller.text == widget.worktree.name
-            ? () => Navigator.pop(context, true)
-            : null,
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryRemovePermanently,
         ),
       ),
     ],
