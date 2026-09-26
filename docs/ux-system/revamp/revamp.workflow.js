@@ -56,6 +56,14 @@ const reports = []
 
 const RULES = `
 Repository: ${REPO} (Flutter, Android first). Obey AGENTS.md.
+Staying alive (the harness kills an agent that shows no progress for 3 minutes):
+- No single command may run longer than 2 minutes. Run tests one or two files at a time as
+  "timeout 150 tool/qa/machine_lock.sh test -- $F test -j 1 <files>" (F = the pinned flutter below); if it times out
+  waiting for a slot, run it again. Never run a whole directory of goldens in one command.
+- Read only what you need: your spec docs/ux-system/kit-api/<Part>.md (or your unit's pages in map/all.json), the specs of
+  the parts you depend on, and the STANDARDS.md sections your task names — never the whole of STANDARDS.md, kit-v2.md or
+  all.json at once (use grep and sed -n ranges).
+- If "pub get" stalls, use "$F pub get --offline".
 The one rulebook is docs/ux-system/revamp/STANDARDS.md (§1 definition of done, §15 tests and goldens, §16 evidence
 template, §17 reviewer checklist, §18 gates). Where it and this list disagree, stop and report; do not work around it.
 Contracts, in authority order (R15): owner decisions dated later win; docs/design/visual-language-2026-09-26.md (§6 glass
