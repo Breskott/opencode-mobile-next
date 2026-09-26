@@ -9,6 +9,7 @@ import '../../state/profiles.dart'
         OrchestrationHostKind,
         OrchestrationHostMode,
         OrchestrationProvider;
+import '../../ui/kit/kit_redact.dart';
 import '../builtin_linux.dart';
 import '../setup/aiteam_scripts.dart';
 
@@ -46,6 +47,30 @@ class BuiltinTeam {
   final Duration pollInterval;
 
   static const serviceName = 'aiteam';
+
+  /// Runtime-wide intent, outside the team's removable state. No credential
+  /// or profile data is stored here. Removing Ubuntu also removes this marker.
+  static const disabledFile = '/root/.oc-builtin/aiteam.disabled';
+  static const disableScript =
+      'set -eu\nmkdir -p /root/.oc-builtin\n: > $disabledFile\n';
+  static const enableScript = 'set -eu\nrm -f $disabledFile\n';
+  static const disabledCheckScript =
+      'set -eu\n'
+      'if [ -e /root/.oc-builtin ]; then\n'
+      '  [ -d /root/.oc-builtin ] && [ -r /root/.oc-builtin ] '
+      '&& [ -x /root/.oc-builtin ] || exit 1\n'
+      'fi\n'
+      '[ ! -e $disabledFile ] && [ ! -L $disabledFile ] || exit 42\n';
+
+  // Every instance controls the same native service. Keep explicit starts,
+  // background recovery and removals from resurrecting one another mid-flight.
+  static Future<void> _operation = Future<void>.value();
+
+  static Future<void> _exclusive(Future<void> Function() work) {
+    final next = _operation.then((_) => work());
+    _operation = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
 
   /// Not Termux's 8372: the two runtimes can both be on one phone.
   static const port = 8472;
@@ -562,6 +587,7 @@ exit 0
   /// agents it started.
   static String get serviceScript =>
       'set -eu\n'
+      '[ ! -e $disabledFile ] || exit 0\n'
       '$_env'
       // The agents' own `opencode` first (AiTeamScripts.agentWrapperScript).
       'export PATH=${AiTeamScripts.agentBin}:\$PATH\n'
@@ -657,12 +683,8 @@ exit 0
     required String notice,
     void Function(BuiltinTeamStage stage)? onStage,
     Duration healthTimeout = const Duration(minutes: 6),
-  }) async {
+  }) => _exclusive(() async {
     onStage?.call(BuiltinTeamStage.preparing);
-    // A store [prepare] is making: wait for it rather than make a second
-    // one beside it. Made, the script below finds it and returns at once.
-    final preparing = _preparing;
-    if (preparing != null) await preparing;
     await _script(
       BuiltinTeamStage.preparing,
       cityScript,
@@ -674,8 +696,12 @@ exit 0
       rigScript(path, rigName(path)),
       const Duration(minutes: 6),
     );
-    await start(notice: notice, onStage: onStage, healthTimeout: healthTimeout);
-  }
+    await _start(
+      notice: notice,
+      onStage: onStage,
+      healthTimeout: healthTimeout,
+    );
+  });
 
   Future<void>? _preparing;
 
@@ -685,8 +711,9 @@ exit 0
   /// time; [turnOn] waits for it. A failure is left for [turnOn] to meet
   /// again, with its own retries and its own message. The store is not the
   /// team: nothing is started or registered, and nothing keeps running.
-  Future<void> prepare() => _preparing ??= () async {
+  Future<void> prepare() => _preparing ??= _exclusive(() async {
     try {
+      if (await isTurnedOff()) return;
       await _script(
         BuiltinTeamStage.preparing,
         cityScript,
@@ -697,7 +724,7 @@ exit 0
     } finally {
       _preparing = null;
     }
-  }();
+  });
 
   /// Starts the supervisor unless it runs, registers the team and waits for
   /// it to answer. A supervisor that runs but does not answer is restarted
@@ -706,7 +733,17 @@ exit 0
     required String notice,
     void Function(BuiltinTeamStage stage)? onStage,
     Duration healthTimeout = const Duration(minutes: 6),
+  }) => _exclusive(
+    () =>
+        _start(notice: notice, onStage: onStage, healthTimeout: healthTimeout),
+  );
+
+  Future<void> _start({
+    required String notice,
+    void Function(BuiltinTeamStage stage)? onStage,
+    required Duration healthTimeout,
   }) async {
+    await _manageScript('enable', enableScript);
     onStage?.call(BuiltinTeamStage.starting);
     final linux = await _linux.status();
     if (!linux.serviceRunning(serviceName) || !await supervisorAnswers()) {
@@ -734,10 +771,11 @@ exit 0
   /// Starts the supervisor when it is not running, without waiting: for the
   /// app coming back after Android stopped it. The team answers a little
   /// later, and the Team card shows it as reconnecting meanwhile.
-  Future<void> ensureRunning({required String notice}) async {
+  Future<void> ensureRunning({required String notice}) => _exclusive(() async {
     try {
       final linux = await _linux.status();
       if (!linux.installed || linux.serviceRunning(serviceName)) return;
+      if (await isTurnedOff()) return;
       await _linux.startService(
         serviceName,
         serviceScript,
@@ -747,9 +785,73 @@ exit 0
     } on BuiltinLinuxException {
       // The next open of the team says what is wrong.
     }
+  });
+
+  /// Temporarily stops the service. Recovery may restart it; use [turnOff]
+  /// for a durable user choice.
+  Future<void> stop() => _exclusive(() => _linux.stopService(serviceName));
+
+  /// Whether automatic recovery is disabled. Errors fail closed: callers must
+  /// not interpret a failed marker read as permission to start the team.
+  Future<bool> isTurnedOff() async {
+    try {
+      final result = await _linux.run(disabledCheckScript);
+      if (result.exitCode == 42) return true;
+      if (result.ok) return false;
+    } on BuiltinLinuxException {
+      // Do not expose native error details from the marker read.
+    }
+    throw const BuiltinLinuxException(
+      'Could not read AI Team enabled state.',
+      code: 'team_state_unavailable',
+    );
   }
 
-  Future<void> stop() => _linux.stopService(serviceName);
+  /// Disables recovery durably, then stops AI Team. Programs, team state and
+  /// projects survive. Explicit [start] or [turnOn] enables recovery again.
+  ///
+  /// The UI also clears each built-in profile's orchestration config through
+  /// ProfileStore.upsert, then calls ConnectionController.syncOrchestration.
+  /// The runtime marker prevents stale profile copies from restarting it.
+  Future<void> turnOff() => _exclusive(_turnOff);
+
+  Future<void> _turnOff() async {
+    await _manageScript('disable', disableScript);
+    try {
+      await _linux.stopService(serviceName);
+    } on BuiltinLinuxException catch (error) {
+      throw BuiltinLinuxException(
+        KitRedact.text(error.message),
+        code: error.code,
+      );
+    }
+  }
+
+  /// Turns off the service and executes the setup component's remove script.
+  /// Projects survive. Team tasks/settings and phone-side bare origins under
+  /// /root/aiteam do not; projects may retain an origin URL into that folder.
+  /// No files are removed when disabling or stopping the service fails.
+  Future<void> remove() => _exclusive(() async {
+    await _turnOff();
+    await _manageScript('remove', AiTeamScripts.removeScript);
+  });
+
+  Future<void> _manageScript(String operation, String script) async {
+    try {
+      final result = await _linux.run(script);
+      if (!result.ok) {
+        throw BuiltinLinuxException(
+          'AI Team $operation failed (exit ${result.exitCode}).',
+          code: 'team_$operation',
+        );
+      }
+    } on BuiltinLinuxException catch (error) {
+      throw BuiltinLinuxException(
+        KitRedact.text(error.message),
+        code: error.code,
+      );
+    }
+  }
 
   /// Brings the team's merged work into the project at [path] now, on the
   /// same terms as the origin's hook ([originHook]); null when the script
