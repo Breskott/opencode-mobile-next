@@ -72,6 +72,36 @@ void main() {
           'https://example.com/cb?token=$m&password=$m',
       'https://example.com/cb#access_token=abc123&x=1':
           'https://example.com/cb#access_token=$m&x=1',
+      // Adversarial copy/diagnostic regressions (all credentials are fixtures).
+      '{"password":\n"hunter2"}': '{"password":\n"$m"}',
+      '{"Authorization":\n"Basic dXNlcjpwYXNz"}': '{"Authorization":\n"$m"}',
+      '//password=hunter2': '//password=$m',
+      '/*password=hunter2*/': '/*password=$m*/',
+      'prefix.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.ZmFrZS1zaWduYXR1cmU':
+          'prefix.$m',
+      'AWS_SECRET_ACCESS_KEY=fixture-access-secret': 'AWS_SECRET_ACCESS_KEY=$m',
+      'OPENAI_API_KEY=sk-fixture-only': 'OPENAI_API_KEY=$m',
+      'GITHUB_TOKEN=fixture-token': 'GITHUB_TOKEN=$m',
+      'SERVICE_KEY=fixture-key': 'SERVICE_KEY=$m',
+      'SERVICE_SECRET=fixture-secret': 'SERVICE_SECRET=$m',
+      'SERVICE_PASSWORD=fixture-password': 'SERVICE_PASSWORD=$m',
+      'Set-Cookie: session=abc123; HttpOnly': 'Set-Cookie: $m',
+      'Cookie: session=abc123': 'Cookie: $m',
+      'x-api-key: fixture-key': 'x-api-key: $m',
+      'postgres://user:pass@host': 'postgres://$m@host',
+      'url=https://example.com/cb?token=abc&password=hunter2':
+          'url=https://example.com/cb?token=$m&password=$m',
+      'password=abc(def)': 'password=$m',
+      for (final label in [
+        'PRIVATE KEY',
+        'RSA PRIVATE KEY',
+        'EC PRIVATE KEY',
+        'ENCRYPTED PRIVATE KEY',
+        'OPENSSH PRIVATE KEY',
+      ])
+        'before\n-----BEGIN $label-----\nfixture-private-key\n'
+                'second-line\n-----END $label-----\nafter':
+            'before\n$m\nafter',
     };
     for (final e in cases.entries) {
       test(e.key, () {
@@ -115,6 +145,13 @@ void main() {
       r'C:\temp\token=cache\out.log',
       'open lib.ui.kit and pubspec.yaml.lock',
       'password=""',
+      '/tmp/Authorization=cache/output.log',
+      '/tmp/cache&token=output.log',
+      'const token = await getToken();',
+      'const token = getToken();',
+      '/tmp/cache?token=output.log',
+      '/tmp/cache#token=output.log',
+      '-----BEGIN PUBLIC KEY-----\nfixture-public-key\n-----END PUBLIC KEY-----',
     ];
     for (final s in untouched) {
       test(s.isEmpty ? '(empty)' : s, () {
