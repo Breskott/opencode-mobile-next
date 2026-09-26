@@ -70,7 +70,7 @@ it.
 
 <!-- census-counts:start -->
 
-335 of 347 ledger pages rendered, 533 images; 12 not rendered (reasons in `manifest.json`).
+334 of 349 ledger pages rendered, 529 images; 15 not rendered (reasons in `manifest.json`).
 
 | Area | Rendered | Not rendered |
 |---|---:|---:|
@@ -83,7 +83,7 @@ it.
 | `f-files-review-terminal` | 18 | 0 |
 | `g-servers` | 32 | 0 |
 | `h-termux` | 44 | 1 |
-| `i1-team-core` | 24 | 0 |
+| `i1-team-core` | 23 | 3 |
 | `i2-team-sheets` | 27 | 0 |
 | `j1-settings-more` | 35 | 0 |
 | `j2-library` | 21 | 4 |
@@ -93,8 +93,8 @@ it.
 |---|---:|---:|
 | dialog | 47 | 3 |
 | onboarding-step | 15 | 0 |
-| overlay | 44 | 6 |
-| screen | 79 | 0 |
+| overlay | 43 | 8 |
+| screen | 79 | 1 |
 | sheet | 134 | 3 |
 | tab | 16 | 0 |
 

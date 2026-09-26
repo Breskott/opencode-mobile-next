@@ -1,6 +1,6 @@
 {
  "area": "i1-team-core",
- "renderedAt": "2026-09-25T21:21:47.819275Z",
+ "renderedAt": "2026-09-26T02:56:06.805249Z",
  "declaredShots": [
   {
    "page": "team-home",
@@ -456,25 +456,25 @@
   {
    "page": "embedded-team-card",
    "state": "loaded",
-   "image": "i1-team-core/embedded-team-card--loaded.png",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
    "note": "Host: the Workspace, scrolled to the AI Team card."
   },
   {
    "page": "embedded-team-card",
    "state": "idle",
-   "image": "i1-team-core/embedded-team-card--idle.png",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
    "note": "Host: the Workspace. Nothing running: the idle line."
   },
   {
    "page": "embedded-team-card",
    "state": "on-phone",
-   "image": "i1-team-core/embedded-team-card--on-phone.png",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
    "note": "Host: the Workspace. The team hosted on this phone."
   },
   {
    "page": "embedded-team-card",
    "state": "error",
-   "image": "i1-team-core/embedded-team-card--error.png",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
    "note": "Host: the Workspace. The host cannot be reached."
   },
   {

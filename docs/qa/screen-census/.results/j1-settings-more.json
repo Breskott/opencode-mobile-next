@@ -1,6 +1,6 @@
 {
  "area": "j1-settings-more",
- "renderedAt": "2026-09-25T21:22:29.461915Z",
+ "renderedAt": "2026-09-26T02:56:06.805867Z",
  "declaredShots": [
   {
    "page": "settings",
@@ -257,6 +257,12 @@
    "note": "top of the screen: build identity, then the Privacy document"
   },
   {
+   "page": "about-privacy-tab",
+   "state": "default",
+   "image": "j1-settings-more/about-privacy-tab.png",
+   "note": "the Privacy tab scrolled into the document"
+  },
+  {
    "page": "about-open-source-tab",
    "state": "default",
    "image": "j1-settings-more/about-open-source-tab.png"
@@ -335,12 +341,6 @@
    "page": "server-capabilities",
    "state": "default",
    "image": "j1-settings-more/server-capabilities.png"
-  },
-  {
-   "page": "about-privacy-tab",
-   "state": "default",
-   "image": "j1-settings-more/about-privacy-tab.png",
-   "note": "the Privacy tab scrolled into the document"
   }
  ]
 }

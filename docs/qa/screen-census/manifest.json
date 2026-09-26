@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-25T21:22:29.524787Z",
-  "ledgerGeneratedFrom": "ca3951e0cfcb78b9e8d290e506945c0e62f48d8b",
+  "generatedAt": "2026-09-26T02:56:06.857975Z",
+  "ledgerGeneratedFrom": "81fa7fd99c19e414a6e9df5bc109c074b3cd96db",
   "viewport": {
     "width": 412.0,
     "height": 915.0,
@@ -8,10 +8,10 @@
     "theme": "dark"
   },
   "totals": {
-    "pages": 347,
-    "rendered": 335,
-    "notRendered": 12,
-    "images": 533
+    "pages": 349,
+    "rendered": 334,
+    "notRendered": 15,
+    "images": 529
   },
   "byArea": {
     "a-shell": {
@@ -55,8 +55,8 @@
       "notRendered": 1
     },
     "i1-team-core": {
-      "rendered": 24,
-      "notRendered": 0
+      "rendered": 23,
+      "notRendered": 3
     },
     "i2-team-sheets": {
       "rendered": 27,
@@ -73,12 +73,12 @@
   },
   "byKind": {
     "overlay": {
-      "rendered": 44,
-      "notRendered": 6
+      "rendered": 43,
+      "notRendered": 8
     },
     "screen": {
       "rendered": 79,
-      "notRendered": 0
+      "notRendered": 1
     },
     "dialog": {
       "rendered": 47,
@@ -7541,6 +7541,10 @@
         {
           "page": "system",
           "element": "system-entry-team-link-run"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-team-task-row"
         }
       ],
       "states": [
@@ -7844,6 +7848,10 @@
           "element": "workspace-team-card"
         },
         {
+          "page": "workspace",
+          "element": "workspace-team-door"
+        },
+        {
           "page": "embedded-team-card",
           "element": "embedded-team-card-run-row"
         },
@@ -7965,6 +7973,30 @@
       ]
     },
     {
+      "id": "team-intro",
+      "area": "i1-team-core",
+      "ledgerArea": "team",
+      "kind": "screen",
+      "title": "AI Team",
+      "file": "lib/ui/screens/team/team_intro_screen.dart",
+      "widget": "TeamIntroScreen",
+      "reachedFrom": [
+        {
+          "page": "embedded-team-discover",
+          "element": "embedded-team-discover-open"
+        },
+        {
+          "page": "embedded-team-discover",
+          "element": "embedded-team-discover-row"
+        },
+        {
+          "page": "settings",
+          "element": "settings-ai-team"
+        }
+      ],
+      "notRendered": "no census scene yet"
+    },
+    {
       "id": "embedded-work-graph",
       "area": "i2-team-sheets",
       "ledgerArea": "team",
@@ -8070,28 +8102,25 @@
           "via": "embedded"
         }
       ],
-      "states": [
+      "failedStates": [
         {
           "state": "loaded",
-          "image": "i1-team-core/embedded-team-card--loaded.png",
-          "note": "Host: the Workspace, scrolled to the AI Team card."
+          "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen"
         },
         {
           "state": "idle",
-          "image": "i1-team-core/embedded-team-card--idle.png",
-          "note": "Host: the Workspace. Nothing running: the idle line."
+          "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen"
         },
         {
           "state": "on-phone",
-          "image": "i1-team-core/embedded-team-card--on-phone.png",
-          "note": "Host: the Workspace. The team hosted on this phone."
+          "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen"
         },
         {
           "state": "error",
-          "image": "i1-team-core/embedded-team-card--error.png",
-          "note": "Host: the Workspace. The host cannot be reached."
+          "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen"
         }
-      ]
+      ],
+      "notRendered": "render failed: CensusMismatch: expected widget with key [<'team-card'>] on screen"
     },
     {
       "id": "team-cycle-how-sheet",
@@ -8177,6 +8206,23 @@
       ]
     },
     {
+      "id": "embedded-team-discover",
+      "area": "i1-team-core",
+      "ledgerArea": "team",
+      "kind": "overlay",
+      "title": "AI Team (off)",
+      "file": "lib/ui/widgets/team_discover.dart",
+      "widget": "TeamDiscoverEntry",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": null,
+          "via": "embedded"
+        }
+      ],
+      "notRendered": "no census scene yet"
+    },
+    {
       "id": "embedded-team-discovery-card",
       "area": "i2-team-sheets",
       "ledgerArea": "team",
@@ -8216,6 +8262,10 @@
         {
           "page": "profile-editor",
           "element": "profile-editor-team-add"
+        },
+        {
+          "page": "team-intro",
+          "element": "team-intro-address"
         },
         {
           "page": "team-plugin-sheet",
@@ -8263,6 +8313,10 @@
         {
           "page": "profile-editor",
           "element": "profile-editor-team-learn"
+        },
+        {
+          "page": "team-intro",
+          "element": "team-intro-on-computer"
         },
         {
           "page": "team-plugin-sheet",
@@ -9699,6 +9753,10 @@
         {
           "page": "settings",
           "element": "settings-category-plugins"
+        },
+        {
+          "page": "team-intro",
+          "element": "team-intro-set-up"
         }
       ],
       "states": [
@@ -9720,6 +9778,10 @@
         {
           "page": "plugins-settings",
           "element": "plugins-settings-ai-team-row"
+        },
+        {
+          "page": "plugins-settings",
+          "element": "plugins-team-other"
         }
       ],
       "states": [
