@@ -1,0 +1,20 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-3/test/goldens/kit/kit_progress_row_golden_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: loading · 412x915 · dark
+00:01 +1: loaded · 412x915 · dark
+00:01 +2: near_limit · 412x915 · dark
+00:01 +3: at_limit · 412x915 · dark
+00:01 +4: stale · 412x915 · dark
+00:01 +5: segments · 412x915 · dark
+00:01 +6: empty · 412x915 · dark
+00:01 +7: loaded · 1280x800 · dark
+00:01 +8: loading · 412x915 · light
+00:01 +9: loaded · 412x915 · light
+00:01 +10: near_limit · 412x915 · light
+00:02 +11: at_limit · 412x915 · light
+00:02 +12: stale · 412x915 · light
+00:02 +13: segments · 412x915 · light
+00:02 +14: empty · 412x915 · light
+00:02 +15: loaded · 1280x800 · light
+00:02 +16: (tearDownAll)
+00:02 +16: All tests passed!
