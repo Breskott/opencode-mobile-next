@@ -56,6 +56,7 @@ const reports = []
 
 const RULES = `
 Repository: ${REPO} (Flutter, Android first). Obey AGENTS.md.
+Owner decision 2026-09-27: Arabic is DROPPED — no Arabic/RTL galleries, no Arabic ARB entries for new copy (app_en.arb only), no RTL review. Galleries: phone 412x915 and one wide size (1280x800) only, light and dark.
 Staying alive (the harness kills an agent that shows no progress for 3 minutes):
 - No single command may run longer than 2 minutes. Run tests one or two files at a time as
   "timeout 150 tool/qa/machine_lock.sh test -- $F test -j 1 <files>" (F = the pinned flutter below); if it times out

@@ -1,5 +1,7 @@
 # Revamp standards: the one rulebook (2026-09-26)
 
+> **Owner decision 2026-09-27: Arabic is dropped from the revamp.** Builders do not render Arabic or RTL galleries, do not add Arabic translations for new copy (new ARB keys go only in `app_en.arb`), and reviewers do not check RTL. Any rule below that requires `_ar_` goldens, Arabic copy or RTL checks is suspended for revamp units. Existing Arabic strings are left as they are.
+
 The owner's instruction: "Make sure all rules and standards are established before agents."
 
 This file is that rulebook for the whole-app revamp (`PLAN.md`, `work-units.json`). It is written for the builder agents (about 160 units) and for their reviewers. Every rule here was taken from a committed source, deduplicated, and given a stable id. Where the sources disagreed, the conflict was resolved by the order of authority in §0, and the resolution is listed in Appendix A. Questions only the owner can answer are in Appendix B, each with the rule that applies until he answers.
