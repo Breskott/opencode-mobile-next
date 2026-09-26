@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
+import 'support/voice_device_channel.dart';
 
 // Open point 1 of phone setup v2: the first-run welcome knows about a setup
 // on this phone. Someone who left a setup part way comes back to the welcome
@@ -83,6 +84,9 @@ void main() {
   setUp(() {
     engine = FakeSetupEngine();
     PhoneSetup.engine = engine;
+    // The welcome's phone choice opens phone setup, whose pre-flight reads
+    // the device.
+    answerVoiceDeviceProbe();
   });
 
   testWidgets('no job: nothing extra, and the three choices stay', (

@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/fake_setup_engine.dart';
 import 'support/first_run_path.dart';
 import 'support/server_editor.dart';
+import 'support/voice_device_channel.dart';
 
 Future<(ProfileStore, ConnectionController)> _state() async {
   SharedPreferences.setMockInitialValues({});
@@ -188,6 +189,8 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     PhoneSetup.engine = FakeSetupEngine();
+    // "On this phone" opens phone setup, whose pre-flight reads the device.
+    answerVoiceDeviceProbe();
     await tester.pumpWidget(
       _app(
         store,

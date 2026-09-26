@@ -6,7 +6,8 @@
 // under Details; a formula run's stages are its steps; the Timeline is scoped to the run, newest
 // first, filters reduce its rows and events that arrive while scrolled
 // away wait behind a jump-to-latest pill; the missing, stale, loading and
-// error states; the home's run row pushes the screen.
+// error states; from the home's run row the screen is the task
+// conversation's Task details (P0.3: the row opens the conversation).
 
 import 'dart:async';
 import 'dart:convert';
@@ -25,10 +26,13 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/team_chat_fixture.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -1311,17 +1315,35 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the home’s run row pushes the run detail', (tester) async {
+    // P0.3 (docs/ux-system/programmes.json, "A team task opens one page from
+    // every door"): the home's row opens the task's conversation, and this
+    // screen is that conversation's Task details. The row's landing itself
+    // is team_one_page_test.dart's; this is the way on to the run detail.
+    testWidgets('the home’s run row opens the task, whose Task details '
+        'pushes the run detail', (tester) async {
       final (controller, _) = await boot();
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      final connection = await teamConnection(
+        api: TeamChatApi(const {}),
+        repository: TeamChatRepository(const []),
+      );
       await tester.pumpWidget(
-        app(TeamHomeScreen(controller: controller, now: () => clock)),
+        teamChatApp(
+          connection,
+          TeamHomeScreen(controller: controller, now: () => clock),
+        ),
       );
       await tester.pump();
       await tester.tap(key('team-home-run-oc-xru'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TeamConversationScreen), findsOneWidget);
+      expect(key('team-run'), findsNothing);
+      await tester.tap(key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-conversation-details'));
       await tester.pumpAndSettle();
       expect(key('team-run'), findsOneWidget);
       // The task it opened, by its title; the Gas City term is in
