@@ -10,6 +10,13 @@ const notAnsweringGrace = Duration(seconds: 8);
 /// Builds with `overdue == true` once [waiting] has stayed true for
 /// [grace]. Any stretch where [waiting] is false resets the clock, and so
 /// does a change of [restartKey] (for example a new connect attempt).
+///
+/// It draws nothing (revamp unit shared-work-1): the host builds its words
+/// from kit parts. New code that knows when a wait began uses the kit's one
+/// wait timer, `KitSince` (lib/ui/kit/kit_since.dart), which escalates at
+/// the same 8 s ([notAnsweringGrace] equals `KitMotion.escalateAfter`); this
+/// one stays for hosts that only know whether they are waiting, or need
+/// another [grace].
 class GraceTimer extends StatefulWidget {
   const GraceTimer({
     super.key,

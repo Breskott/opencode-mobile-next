@@ -23694,5 +23694,17 @@
   "quotaMonitorSaving": "Saving…",
   "@quotaMonitorSaving": {
     "description": "Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved."
+  },
+  "folderBrowserSlowTitle": "Still reading this folder",
+  "@folderBrowserSlowTitle": {
+    "description": "Folder browser: title shown once listing a folder has taken 8 seconds"
+  },
+  "folderBrowserSlowBody": "Folders on this phone can take up to 15 seconds to list.",
+  "@folderBrowserSlowBody": {
+    "description": "Folder browser: says why listing a folder is slow (a Termux read may take up to 15 seconds)"
+  },
+  "folderBrowserFirstProject": "Name your first project",
+  "@folderBrowserFirstProject": {
+    "description": "Folder browser: the empty projects folder's first step; puts the cursor in the project name field"
   }
 }

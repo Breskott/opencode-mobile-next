@@ -13,6 +13,10 @@
 ///   team does and what it needs on this kind of server, and hands over to
 ///   that kind's own set-up.
 ///
+/// Built from kit parts only (revamp unit shared-work-1): each state is a
+/// flat [KitRow] (the first time under a [SectionLabel]); "Not now" is a
+/// [KitIconButton].
+///
 /// The folded state is one global preference ([TeamDiscoverMemory]): it is
 /// about the person knowing the team exists, not about a server, so it is
 /// not an `oc.<what>.<profileId>` key and outlives a deleted server.
@@ -20,7 +24,7 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../builtin/setup/components.dart' show SetupComponentIds;
@@ -30,12 +34,17 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../termux/team_runtime.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_illustration.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/motion/kit_animated_rows.dart';
 import '../kit/scenes/team_discover_scenes.dart';
 import '../screens/settings/plugins_screen.dart'
     show teamPhoneProfile, teamRowSubtitle;
 import '../screens/team/team_intro_screen.dart';
 import 'builtin_team_section.dart' show BuiltinTeamSection;
+import 'product_states.dart' show SectionLabel;
 import 'team_discovery_card.dart' show TeamDiscovery;
 import 'team_host_form.dart' show TeamHostProbe;
 import 'team_phone_onboarding.dart' show teamPhoneRuntime;
@@ -229,60 +238,55 @@ class _TeamDiscoverEntryState extends State<TeamDiscoverEntry> {
     final l10n = _copy(context);
     final folded = TeamDiscoverMemory.folded(_prefs);
     // The full entry folds away where it was and the quiet row unfolds in
-    // its place (design standard §10). A transparent ink surface of its own,
-    // like the TeamCard, so its rows splash wherever it is placed.
-    return Material(
-      type: MaterialType.transparency,
-      child: KitAnimatedRows(
-        children: [
-          if (folded)
-            KitRow(
-              key: const ValueKey('team-discover-row'),
-              leading: KitRow.icon(context, AppIconography.agent),
-              title: l10n.teamUiHomeTitle,
-              supporting: TextSpan(text: l10n.teamDiscoverRowLine),
-              supportingKey: const ValueKey('team-discover-row-line'),
-              trailing: const KitChevron(),
-              onTap: _open,
-            )
-          else
-            Column(
-              key: const ValueKey('team-discover-card'),
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SectionLabel(l10n.teamUiHomeTitle),
-                Semantics(
-                  button: true,
-                  child: KitRow(
-                    key: const ValueKey('team-discover-open'),
-                    // Three agents, one holding up a task: a small drawing
-                    // that plays once, never loops (a resting screen).
-                    leading: const KitIllustration(
-                      key: ValueKey('team-discover-drawing'),
-                      scene: TeamDiscoverTeaserScene(),
-                      width: 60,
-                    ),
-                    title: l10n.teamDiscoverEntryTitle,
-                    titleMaxLines: 2,
-                    supporting: TextSpan(text: l10n.teamDiscoverEntryBody),
-                    supportingMaxLines: 2,
-                    trailing: IconButton(
-                      key: const ValueKey('team-discover-hide'),
-                      tooltip: l10n.teamUiDiscoveryNotNow,
-                      onPressed: _hide,
-                      icon: Icon(
-                        AppIconography.close,
-                        size: 20,
-                        color: AppTheme.mutedOf(Theme.of(context)),
-                      ),
-                    ),
-                    onTap: _open,
+    // its place (design standard §10). Both are flat rows like the
+    // person's conversations above them and the team's own door when it is
+    // on; the Work list's surface is the ink their rows splash on.
+    return KitAnimatedRows(
+      children: [
+        if (folded)
+          KitRow(
+            key: const ValueKey('team-discover-row'),
+            leading: KitRow.icon(context, AppIconography.agent),
+            title: l10n.teamUiHomeTitle,
+            supporting: TextSpan(text: l10n.teamDiscoverRowLine),
+            supportingKey: const ValueKey('team-discover-row-line'),
+            trailing: const KitChevron(),
+            onTap: _open,
+          )
+        else
+          Column(
+            key: const ValueKey('team-discover-card'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SectionLabel(l10n.teamUiHomeTitle),
+              Semantics(
+                button: true,
+                child: KitRow(
+                  key: const ValueKey('team-discover-open'),
+                  // Three agents, one holding up a task: a small drawing
+                  // that plays once, never loops (a resting screen).
+                  leading: const KitIllustration(
+                    key: ValueKey('team-discover-drawing'),
+                    scene: TeamDiscoverTeaserScene(),
+                    width: 60,
                   ),
+                  title: l10n.teamDiscoverEntryTitle,
+                  titleMaxLines: 2,
+                  supporting: TextSpan(text: l10n.teamDiscoverEntryBody),
+                  supportingMaxLines: 3,
+                  trailing: KitIconButton(
+                    key: const ValueKey('team-discover-hide'),
+                    icon: AppIconography.close,
+                    size: 20,
+                    tooltip: l10n.teamUiDiscoveryNotNow,
+                    onPressed: _hide,
+                  ),
+                  onTap: _open,
                 ),
-              ],
-            ),
-        ],
-      ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }

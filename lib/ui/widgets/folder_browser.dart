@@ -1,13 +1,28 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 import '../../builtin/builtin_folders.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_bidi.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_motion.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_since.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import '../kit/scenes/folders_open_scene.dart';
+import 'product_states.dart' show SectionLabel;
 
 /// Lists the folders directly inside an absolute path.
 typedef FolderLister = Future<List<FolderEntry>> Function(String path);
@@ -37,16 +52,35 @@ final class FolderBrowserEnterPath extends FolderBrowserChoice {
 
 /// "Open a project" for a server on this phone (OpenCode inside the app, or
 /// the one this app runs in Termux): the folders of its Ubuntu, browsed from
-/// the projects folder; [list] says how they are read. The list is the content: a project
-/// (a git repository, a project OpenCode knows, or any folder straight in
-/// the projects folder) opens with a tap, and its chevron shows what is in
-/// it; any other folder is gone into with a tap. "Up one folder" goes back
-/// up to `/`. Below, one primary opens the folder being shown, then "New
-/// project" makes one inside it, then "Enter a path".
+/// the projects folder; [list] says how they are read.
+///
+/// Built from kit parts only (revamp unit shared-work-1): the one sheet
+/// frame ([KitSheet]) with its title, a scrolling body and pinned actions.
+/// The body is the folder being shown (left to right, mono), then the
+/// folders on one panel of [KitRow]s, then "New project" ([KitField] and
+/// Create). A project (a git repository, a project OpenCode knows, or any
+/// folder straight in the projects folder) opens with a tap, and its
+/// chevron shows what is in it; any other folder is gone into with a tap.
+/// "Up one folder" goes back up to `/`. Pinned below: "Open `<folder>`" for
+/// the folder being shown, and "Enter a path".
+///
+/// States (project-folder-browser map record):
+/// - loading: skeleton rows once a listing is slower than a touch answer;
+///   after [KitMotion.escalateAfter] a word says the phone is still reading
+///   (a Termux read may take up to 15 s), through [KitSince];
+/// - empty: an empty folder says so; an empty projects folder (first run)
+///   offers its first step, "New project", which puts the cursor in the
+///   name field;
+/// - error: what went wrong, "Try again", and "Up one folder" when there is
+///   a folder above (a permission error is left by going up);
+/// - disabled: the rows do nothing while a listing runs.
 ///
 /// The home folder and `/` are never offered as a project
 /// (`workspace_paths.dart`); the projects folder itself is where projects
 /// live, so it is not offered either.
+///
+/// Not here yet: cloning a repository needs a gateway call (wave 3), and
+/// recent projects first needs their order from the server.
 class FolderBrowserSheet extends StatefulWidget {
   const FolderBrowserSheet({
     super.key,
@@ -69,10 +103,14 @@ class FolderBrowserSheet extends StatefulWidget {
 
 class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
   final _name = TextEditingController();
+  final _nameFocus = FocusNode(debugLabel: 'folder-browser-name');
   late String _path = BuiltinRootfsFolders.normalize(widget.start) ?? '/';
   List<FolderEntry>? _entries;
   Object? _error;
   bool _loading = true;
+
+  /// When the listing now running began; null when none runs.
+  DateTime? _loadingSince;
 
   /// Skeleton rows only once a listing takes longer than a touch answer,
   /// so going into a folder does not flash.
@@ -93,6 +131,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
   void dispose() {
     _skeletonTimer?.cancel();
     _name.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
@@ -112,6 +151,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
     _skeletonTimer?.cancel();
     setState(() {
       _loading = true;
+      _loadingSince = clock.now();
       if (_entries == null && _error == null) _showSkeleton = true;
     });
     _skeletonTimer = Timer(KitMotion.quick, () {
@@ -133,6 +173,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
       _entries = entries;
       _error = error;
       _loading = false;
+      _loadingSince = null;
       _showSkeleton = false;
       _problem = null;
     });
@@ -157,6 +198,8 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
       !isProtectedWorkspaceDirectory(_path) &&
       _path != managedProjectsDirectory;
 
+  bool get _settled => !_loading && _error == null && _entries != null;
+
   void _create() {
     final name = _name.text.trim();
     final path = _join(_path, name);
@@ -168,133 +211,180 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
     }
     // A name that is already a folder here simply opens it.
     final exists = _entries?.any((entry) => entry.name == name) ?? false;
-    Navigator.of(
+    KitSheet.close<FolderBrowserChoice>(
       context,
-    ).pop(exists ? FolderBrowserOpen(path) : FolderBrowserCreate(path));
+      exists ? FolderBrowserOpen(path) : FolderBrowserCreate(path),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final media = MediaQuery.of(context);
     final maxHeight =
         (media.size.height - media.viewInsets.bottom - media.padding.top) * .9;
     // While the name is typed the keyboard leaves little room: the folders
-    // step aside for the field. Only flex factors change, so the field keeps
-    // its place in the tree (and its focus).
+    // step aside for the field, which keeps its place in the tree (and its
+    // focus).
     final typing = media.viewInsets.bottom > 0;
+    final canOpen = _settled && _canOpenHere;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        padding: EdgeInsetsDirectional.only(bottom: media.viewInsets.bottom),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Column(
+          child: KitSheet(
             key: const ValueKey('in-app-projects'),
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _header(theme, l10n),
-              // The folders and the actions share the height; each scrolls
-              // on its own when it needs more.
-              Flexible(
-                flex: typing ? 0 : 1,
-                child: typing ? const SizedBox.shrink() : _folders(theme, l10n),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: SingleChildScrollView(child: _actions(theme, l10n)),
+            title: l10n.projectFolderInAppTitle,
+            // The route this sheet opens in draws the drag handle.
+            handle: false,
+            onClose: () => KitSheet.close<FolderBrowserChoice>(context),
+            loading: _loading && !_showSkeleton,
+            primary: canOpen
+                ? KitAction(
+                    key: const ValueKey('folder-browser-open'),
+                    label: l10n.folderBrowserOpen(_nameOf(_path)),
+                    icon: AppIconography.folderOpen,
+                    onPressed: () => KitSheet.close<FolderBrowserChoice>(
+                      context,
+                      FolderBrowserOpen(_path),
+                    ),
+                  )
+                : null,
+            tertiary: [
+              KitAction(
+                key: const ValueKey('in-app-enter-path'),
+                label: l10n.projectFolderEnterPath,
+                onPressed: () => KitSheet.close<FolderBrowserChoice>(
+                  context,
+                  FolderBrowserEnterPath(_path),
+                ),
               ),
             ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _where(context, l10n, canOpen: canOpen),
+                if (!typing) _folders(context, l10n),
+                _newProject(context, l10n),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _header(ThemeData theme, AppLocalizations l10n) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.projectFolderInAppTitle, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 4),
-        Semantics(
-          label: l10n.folderBrowserCurrent(_path),
-          excludeSemantics: true,
-          child: Text(
+  /// The folder being shown, and why it cannot be opened when it cannot.
+  Widget _where(
+    BuildContext context,
+    AppLocalizations l10n, {
+    required bool canOpen,
+  }) {
+    final tokens = KitTokens.of(context);
+    final entries = _entries;
+    final String? note = canOpen || !_settled || entries!.isEmpty
+        ? null
+        : isProtectedWorkspaceDirectory(_path)
+        ? l10n.folderBrowserHomeHere
+        : _path == managedProjectsDirectory
+        ? l10n.folderBrowserProjectsHere
+        : null;
+    return Padding(
+      padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitText.mono(
             _path,
             key: const ValueKey('folder-browser-path'),
-            // A path reads left to right in every language.
-            textDirection: TextDirection.ltr,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: AppTheme.monoFamily,
-              color: AppTheme.mutedOf(theme),
-            ),
+            // One line that keeps the root and the folder's own name.
+            cut: KitMonoCut.middle,
+            tone: KitTextTone.secondary,
+            semanticsLabel: l10n.folderBrowserCurrent(_path),
           ),
-        ),
-      ],
-    ),
-  );
+          if (note != null) ...[
+            SizedBox(height: tokens.space2),
+            KitText(
+              note,
+              key: const ValueKey('folder-browser-note'),
+              role: KitTextRole.secondary,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-  Widget _folders(ThemeData theme, AppLocalizations l10n) {
+  /// "Up one folder", the folders on one panel, and the state of the
+  /// listing (loading, slow, empty, error).
+  Widget _folders(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
     final parent = BuiltinRootfsFolders.parentOf(_path);
     final entries = _entries;
     final error = _error;
     final Widget? state;
     if (_loading && _showSkeleton) {
-      state = const KitSkeletonRows(count: 4);
+      state = _loadingState(l10n);
     } else if (error != null) {
-      state = _errorState(l10n, error);
+      state = _errorState(l10n, error, parent);
     } else if (entries != null && entries.isEmpty) {
-      final projects = _path == managedProjectsDirectory;
-      state = KitStateView(
-        size: KitStateSize.inline,
-        icon: AppIconography.folderOpen,
-        illustration: const KitFoldersOpenScene(),
-        title: projects
-            ? l10n.folderBrowserNoProjectsTitle
-            : l10n.folderBrowserEmptyTitle,
-        body: projects
-            ? l10n.folderBrowserNoProjectsBody
-            : l10n.folderBrowserEmptyBody,
-      );
+      state = _emptyState(l10n);
     } else {
       state = null;
     }
     final rows = state != null ? const <FolderEntry>[] : entries ?? const [];
-    final count = (parent != null ? 1 : 0) + (state != null ? 1 : rows.length);
-    return ListView.builder(
+    // After an error the state itself offers the way up, next to its
+    // words; the row would say it twice.
+    final up = error == null ? parent : null;
+    return KeyedSubtree(
       key: const ValueKey('folder-browser-list'),
-      shrinkWrap: true,
-      itemCount: count,
-      itemBuilder: (context, index) {
-        if (parent != null) {
-          if (index == 0) return _upRow(theme, l10n, parent);
-          index--;
-        }
-        if (state != null) return state;
-        return _folderRow(theme, l10n, rows[index]);
-      },
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(bottom: tokens.space4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (up != null || rows.isNotEmpty)
+              KitRowGroup(
+                margin: EdgeInsetsDirectional.zero,
+                children: [
+                  if (up != null) _upRow(context, l10n, up),
+                  for (final entry in rows) _folderRow(context, l10n, entry),
+                ],
+              ),
+            if (state != null) ...[
+              if (up != null) SizedBox(height: tokens.space3),
+              state,
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _upRow(ThemeData theme, AppLocalizations l10n, String parent) =>
+  Widget _upRow(BuildContext context, AppLocalizations l10n, String parent) =>
       KitRow(
         key: const ValueKey('folder-browser-up'),
         leading: KitRow.icon(context, AppIconography.chevronUp),
         title: l10n.folderBrowserUp,
-        // Isolated left to right, so `/root` does not read `root/` in Arabic.
+        // Isolated left to right, so `/root` never reads `root/` in a
+        // right-to-left sentence.
         supporting: TextSpan(
-          text: '\u2066$parent\u2069',
-          style: const TextStyle(fontFamily: AppTheme.monoFamily),
+          text: KitBidi.ltr(parent),
+          style: KitText.styleFor(KitTextRole.mono),
         ),
-        onTap: _loading ? null : () => _load(parent),
+        enabled: !_loading,
+        onTap: () => _load(parent),
       );
 
-  Widget _folderRow(ThemeData theme, AppLocalizations l10n, FolderEntry entry) {
+  Widget _folderRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    FolderEntry entry,
+  ) {
     final project = _isProject(entry);
     final known =
         _known.contains(entry.path) &&
@@ -317,32 +407,79 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
       title: entry.name,
       supporting: mark == null ? null : TextSpan(text: mark),
       trailing: project
-          ? IconButton(
+          ? KitIconButton(
               key: ValueKey('folder-browse-${entry.name}'),
+              icon: AppIconography.chevronRight,
+              size: 20,
               tooltip: l10n.folderBrowserShowInside(entry.name),
               onPressed: _loading ? null : () => _load(entry.path),
-              icon: Icon(
-                AppIconography.chevronRight,
-                size: 20,
-                color: AppTheme.mutedOf(theme),
-              ),
             )
           : const KitChevron(),
-      onTap: _loading
-          ? null
-          : project
-          ? () => Navigator.of(context).pop(FolderBrowserOpen(entry.path))
+      enabled: !_loading,
+      onTap: project
+          ? () => KitSheet.close<FolderBrowserChoice>(
+              context,
+              FolderBrowserOpen(entry.path),
+            )
           : () => _load(entry.path),
     );
   }
 
-  Widget _errorState(AppLocalizations l10n, Object error) {
+  /// Skeleton rows; once the read has taken [KitMotion.escalateAfter], one
+  /// word that it is still going (a Termux read may take up to 15 s).
+  Widget _loadingState(AppLocalizations l10n) => KitSince(
+    since: _loadingSince,
+    builder: (context, status) => Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (status.isSlow) ...[
+          KitNotice(
+            key: const ValueKey('folder-browser-slow'),
+            icon: AppIconography.clock,
+            title: l10n.folderBrowserSlowTitle,
+            message: l10n.folderBrowserSlowBody,
+          ),
+          SizedBox(height: KitTokens.of(context).space3),
+        ],
+        const KitSkeletonRows(count: 4),
+      ],
+    ),
+  );
+
+  Widget _emptyState(AppLocalizations l10n) {
+    final projects = _path == managedProjectsDirectory;
+    return KitStateView(
+      key: const ValueKey('folder-browser-empty'),
+      size: KitStateSize.inline,
+      icon: AppIconography.folderOpen,
+      illustration: const KitFoldersOpenScene(),
+      title: projects
+          ? l10n.folderBrowserNoProjectsTitle
+          : l10n.folderBrowserEmptyTitle,
+      body: projects
+          ? l10n.folderBrowserNoProjectsBody
+          : l10n.folderBrowserEmptyBody,
+      // The first run's first step: the cursor goes to the name.
+      primary: projects
+          ? KitAction(
+              key: const ValueKey('folder-browser-first-project'),
+              label: l10n.folderBrowserFirstProject,
+              icon: AppIconography.folderAdd,
+              onPressed: _nameFocus.requestFocus,
+            )
+          : null,
+    );
+  }
+
+  Widget _errorState(AppLocalizations l10n, Object error, String? parent) {
     final problem = error is FolderListException ? error.problem : null;
     return KitStateView(
       key: const ValueKey('folder-browser-error'),
       size: KitStateSize.inline,
       icon: AppIconography.warning,
-      tone: AppStatusTone.attention,
+      // A neutral glyph with the words, never the danger colour (LOOK-5).
+      tone: AppStatusTone.neutral,
       title: l10n.folderBrowserErrorTitle,
       body: switch (problem) {
         FolderListProblem.notInstalled => l10n.folderBrowserErrorNotInstalled,
@@ -358,105 +495,54 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
         icon: AppIconography.retry,
         onPressed: () => _load(_path),
       ),
+      // A folder the app may not read is left by going up.
+      tertiary: [
+        if (parent != null)
+          KitAction(
+            key: const ValueKey('folder-browser-error-up'),
+            label: l10n.folderBrowserUp,
+            icon: AppIconography.chevronUp,
+            onPressed: () => _load(parent),
+          ),
+      ],
       details: error.toString(),
     );
   }
 
-  Widget _actions(ThemeData theme, AppLocalizations l10n) {
-    final entries = _entries;
-    final settled = !_loading && _error == null && entries != null;
-    final String? note = !settled || entries.isEmpty
-        ? null
-        : isProtectedWorkspaceDirectory(_path)
-        ? l10n.folderBrowserHomeHere
-        : _path == managedProjectsDirectory
-        ? l10n.folderBrowserProjectsHere
-        : null;
-    final field = TextField(
-      key: const ValueKey('in-app-new-project-name'),
-      controller: _name,
-      autocorrect: false,
-      textInputAction: TextInputAction.done,
-      onChanged: (_) {
-        if (_problem != null) setState(() => _problem = null);
-      },
-      onSubmitted: (_) => _create(),
-      decoration: InputDecoration(
-        labelText: l10n.projectFolderProjectNameLabel,
-        hintText: l10n.projectFolderNameHint,
-        // The path isolated left to right inside the sentence (Arabic).
-        helperText: l10n.projectFolderNewProjectHelp('\u2066$_path\u2069'),
-        helperMaxLines: 3,
-        errorText: _problem,
-        errorMaxLines: 3,
-      ),
-    );
-    final create = KitButton.secondary(
-      key: const ValueKey('in-app-new-project-create'),
-      label: l10n.projectFolderCreateAction,
-      icon: AppIconography.folderAdd,
-      expand: false,
-      onPressed: _create,
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (settled && _canOpenHere) ...[
-            KitButton.primary(
-              key: const ValueKey('folder-browser-open'),
-              label: l10n.folderBrowserOpen(_nameOf(_path)),
-              icon: AppIconography.folderOpen,
-              onPressed: () =>
-                  Navigator.of(context).pop(FolderBrowserOpen(_path)),
-            ),
-            const SizedBox(height: 16),
-          ] else if (note != null) ...[
-            Text(
-              note,
-              key: const ValueKey('folder-browser-note'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          SectionLabel.inline(l10n.projectFolderNewProject),
-          LayoutBuilder(
-            builder: (context, constraints) => constraints.maxWidth < 340
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [field, const SizedBox(height: 8), create],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: field),
-                      const SizedBox(width: 12),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: create,
-                      ),
-                    ],
-                  ),
+  /// "New project": a name, made inside the folder being shown.
+  Widget _newProject(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionLabel.inline(l10n.projectFolderNewProject),
+        KitField(
+          key: const ValueKey('in-app-new-project-name'),
+          controller: _name,
+          focusNode: _nameFocus,
+          label: l10n.projectFolderProjectNameLabel,
+          hint: l10n.projectFolderNameHint,
+          helper: l10n.projectFolderNewProjectHelp(KitBidi.ltr(_path)),
+          error: _problem,
+          textInputAction: TextInputAction.done,
+          onChanged: (_) {
+            if (_problem != null) setState(() => _problem = null);
+          },
+          onSubmitted: (_) => _create(),
+        ),
+        SizedBox(height: tokens.space2),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: KitButton.secondary(
+            key: const ValueKey('in-app-new-project-create'),
+            label: l10n.projectFolderCreateAction,
+            icon: AppIconography.folderAdd,
+            expand: false,
+            onPressed: _create,
           ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: KitInset(
-              child: KitButton.tertiary(
-                key: const ValueKey('in-app-enter-path'),
-                label: l10n.projectFolderEnterPath,
-                onPressed: () =>
-                    Navigator.of(context).pop(FolderBrowserEnterPath(_path)),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
