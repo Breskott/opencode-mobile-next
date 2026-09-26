@@ -8,6 +8,7 @@
 // and look at every changed image before committing it.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/kit/kit_surface.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
@@ -110,7 +111,7 @@ Widget _panel(_Copy copy) => Column(
   children: [
     KitSurface.panel(
       title: copy.cardTitle,
-      icon: Icons.terminal,
+      icon: AppIconography.terminal,
       child: KitText(copy.cardMeta, role: KitTextRole.secondary),
     ),
     const SizedBox(height: 16),
@@ -137,16 +138,16 @@ Widget _inset(_Copy copy) => KitSurface(
 Widget _tiles(_Copy copy) => Row(
   mainAxisSize: MainAxisSize.min,
   children: [
-    KitSurface.tile(Icons.terminal, semanticsLabel: copy.terminal),
+    KitSurface.tile(AppIconography.terminal, semanticsLabel: copy.terminal),
     const SizedBox(width: 12),
     KitSurface.tile(
-      Icons.warning,
+      AppIconography.warning,
       tone: KitTextTone.danger,
       semanticsLabel: copy.warning,
     ),
     const SizedBox(width: 12),
     KitSurface.tile(
-      Icons.check_circle,
+      AppIconography.check,
       tone: KitTextTone.success,
       semanticsLabel: copy.done,
     ),

@@ -206,7 +206,7 @@ void main() {
                 width: 200,
                 child: KitSurface.panel(
                   title: title,
-                  icon: Icons.star,
+                  icon: AppIconography.star,
                   child: const SizedBox(height: 10),
                 ),
               ),
@@ -216,7 +216,7 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       final tokens = KitTokens.of(tester.element(find.byType(KitSurface)));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(AppIconography.star));
       expect(icon.size, tokens.smallIconSize);
       expect(icon.color, tokens.roles.text2);
       final text = tester.widget<Text>(find.text(title));
@@ -255,7 +255,9 @@ void main() {
   testWidgets(
     'KitSurface.tile is 30x30 surface3 with 9 dp corners and a 20 dp glyph',
     (tester) async {
-      await tester.pumpWidget(_host(const KitSurface.tile(Icons.star)));
+      await tester.pumpWidget(
+        _host(const KitSurface.tile(AppIconography.star)),
+      );
       final tokens = KitTokens.of(tester.element(find.byType(KitSurface)));
       expect(
         tester.getSize(find.byType(KitSurface)),
@@ -264,7 +266,7 @@ void main() {
       final material = _materialOf<KitSurface>(tester);
       expect(material.color, tokens.roles.surface3);
       expect(material.shape, tokens.shapeOf(KitShape.tile));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(AppIconography.star));
       expect(icon.size, tokens.smallIconSize);
     },
   );
@@ -280,12 +282,12 @@ void main() {
       // the rebuild.
       final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
-        _host(KitSurface.tile(Icons.star, semanticsLabel: 'Terminal')),
+        _host(KitSurface.tile(AppIconography.star, semanticsLabel: 'Terminal')),
       );
       final labeled = tester.getSemantics(find.bySemanticsLabel('Terminal'));
       expect(labeled.flagsCollection.isImage, isTrue);
 
-      await tester.pumpWidget(_host(KitSurface.tile(Icons.star)));
+      await tester.pumpWidget(_host(KitSurface.tile(AppIconography.star)));
       expect(find.bySemanticsLabel('Terminal'), findsNothing);
       final unlabeled = tester.getSemantics(find.byType(KitSurface));
       expect(unlabeled.flagsCollection.isImage, isFalse);
@@ -298,10 +300,15 @@ void main() {
     'KitSurface.tile: a tone other than the text1 default paints that tone',
     (tester) async {
       await tester.pumpWidget(
-        _host(const KitSurface.tile(Icons.star, tone: KitTextTone.attention)),
+        _host(
+          const KitSurface.tile(
+            AppIconography.star,
+            tone: KitTextTone.attention,
+          ),
+        ),
       );
       final tokens = KitTokens.of(tester.element(find.byType(KitSurface)));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+      final icon = tester.widget<Icon>(find.byIcon(AppIconography.star));
       expect(
         icon.color,
         KitText.toneColor(tokens.roles, KitTextTone.attention),
@@ -316,7 +323,7 @@ void main() {
           KitPanel(
             key: const ValueKey('panel'),
             tone: AppStatusTone.neutral,
-            icon: Icons.star,
+            icon: AppIconography.star,
             title: 'Title',
             titleKey: const ValueKey('title'),
             padding: const EdgeInsets.all(8),
@@ -335,7 +342,7 @@ void main() {
         await tester.pumpWidget(
           _host(
             KitPanel(
-              icon: Icons.star,
+              icon: AppIconography.star,
               title: 'Same look',
               child: const SizedBox(width: 10, height: 10),
             ),
@@ -345,7 +352,7 @@ void main() {
         expect(surface.level, KitSurfaceLevel.surface1);
         expect(surface.shape, KitShape.panel);
         final tokens = KitTokens.of(tester.element(find.byType(KitSurface)));
-        final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+        final icon = tester.widget<Icon>(find.byIcon(AppIconography.star));
         expect(icon.size, tokens.smallIconSize);
         expect(find.text('Same look'), findsOneWidget);
       },
@@ -400,6 +407,96 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    for (final tone in [AppStatusTone.neutral, AppStatusTone.attention]) {
+      testWidgets(
+        'tone: ${tone.name}, a tap inside the padding band still fires onTap',
+        (tester) async {
+          var tapped = 0;
+          await tester.pumpWidget(
+            _host(
+              KitPanel(
+                tone: tone,
+                padding: const EdgeInsets.all(16),
+                onTap: () => tapped++,
+                child: const SizedBox(width: 120, height: 40),
+              ),
+            ),
+          );
+          final topLeft = tester.getTopLeft(find.byType(KitPanel));
+          // Left band, and top band (inside the 16 dp padding, outside the
+          // child), away from the rounded corner.
+          await tester.tapAt(topLeft + const Offset(4, 20));
+          await tester.tapAt(topLeft + const Offset(40, 4));
+          expect(tapped, 2);
+        },
+      );
+    }
+
+    testWidgets(
+      'a tappable neutral panel inks the whole panel, padding included',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            KitPanel(
+              padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 4, 10),
+              onTap: () {},
+              child: const SizedBox(width: 120, height: 40),
+            ),
+          ),
+        );
+        final ink = find.descendant(
+          of: find.byType(KitPanel),
+          matching: find.byType(InkWell),
+        );
+        expect(ink, findsOneWidget);
+        expect(tester.getRect(ink), tester.getRect(find.byType(KitPanel)));
+      },
+    );
+
+    testWidgets(
+      'a custom-padding panel draws the same header as KitSurface.panel',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            KitPanel(
+              icon: AppIconography.terminal,
+              title: 'Header',
+              padding: const EdgeInsets.all(8),
+              child: const SizedBox(width: 10, height: 10),
+            ),
+          ),
+        );
+        final tokens = KitTokens.of(tester.element(find.byType(KitPanel)));
+        final icon = tester.widget<Icon>(find.byIcon(AppIconography.terminal));
+        expect(icon.size, tokens.smallIconSize);
+        expect(icon.color, tokens.roles.text2);
+        final title = tester.widget<KitText>(
+          find.ancestor(
+            of: find.text('Header'),
+            matching: find.byType(KitText),
+          ),
+        );
+        expect(title.role, KitTextRole.headline);
+      },
+    );
+
+    testWidgets('tone: attention draws its border as a hairline', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        _host(
+          KitPanel(
+            tone: AppStatusTone.attention,
+            child: const SizedBox(width: 10, height: 10),
+          ),
+        ),
+      );
+      final shape = _materialOf<KitPanel>(tester).shape!;
+      expect((shape as RoundedRectangleBorder).side.width, 1 / 3);
+    });
+
     testWidgets(
       'a custom padding still gets the panel fill and shape from KitSurface',
       (tester) async {
@@ -437,14 +534,14 @@ void main() {
           width: 220,
           child: KitSurface.panel(
             title: 'Title',
-            icon: Icons.star,
+            icon: AppIconography.star,
             child: const SizedBox(height: 4),
           ),
         ),
         direction: TextDirection.rtl,
       ),
     );
-    final iconLeft = tester.getTopLeft(find.byIcon(Icons.star)).dx;
+    final iconLeft = tester.getTopLeft(find.byIcon(AppIconography.star)).dx;
     final titleLeft = tester.getTopLeft(find.text('Title')).dx;
     expect(iconLeft, greaterThan(titleLeft));
   });
@@ -456,7 +553,7 @@ void main() {
         _host(
           KitSurface.panel(
             title: 'T',
-            icon: Icons.star,
+            icon: AppIconography.star,
             child: const SizedBox(height: 4),
           ),
         ),
@@ -496,15 +593,18 @@ void main() {
             title:
                 'A title long enough to test wrapping under every width '
                 'and text scale in the matrix',
-            icon: Icons.star,
+            icon: AppIconography.star,
             child: const SizedBox(height: 4),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              KitSurface.tile(Icons.terminal, tone: KitTextTone.accent),
+              KitSurface.tile(
+                AppIconography.terminal,
+                tone: KitTextTone.accent,
+              ),
               const SizedBox(width: 8),
-              KitSurface.tile(Icons.warning, tone: KitTextTone.danger),
+              KitSurface.tile(AppIconography.warning, tone: KitTextTone.danger),
             ],
           ),
           const SizedBox(height: 12),

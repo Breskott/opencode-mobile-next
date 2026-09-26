@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 import 'kit_surface.dart';
-import 'kit_text.dart';
 import 'kit_tokens.dart';
 
 /// A block of content the person works with (design standard §3: "cards
@@ -39,6 +38,8 @@ class KitPanel extends StatelessWidget {
   static const EdgeInsets _defaultPadding = EdgeInsets.all(16);
 
   final Widget child;
+
+  /// Retired by kit-KitSurface: attention look is KitNeedsYou/KitRequestCard (LOOK-24)
   final AppStatusTone tone;
   final IconData? icon;
   final String? title;
@@ -68,11 +69,10 @@ class KitPanel extends StatelessWidget {
   /// `tone: neutral` is `KitSurface.panel`'s look (KIT-43). The default
   /// padding and no [onTap] forward to it directly; a custom inset or an
   /// interactive panel still gets the panel fill and shape from
-  /// `KitSurface`, with the header rebuilt here so the caller's exact
-  /// [padding] and `InkWell` still work (`KitSurface` itself takes neither).
+  /// `KitSurface` and the header from the shared `kitPanelBody`, so the
+  /// caller's exact [padding] and `InkWell` still work (`KitSurface` itself
+  /// takes neither).
   Widget _buildNeutral(BuildContext context) {
-    final title = this.title;
-    final icon = this.icon;
     if (onTap == null && padding == _defaultPadding) {
       return KitSurface.panel(
         title: title,
@@ -81,49 +81,31 @@ class KitPanel extends StatelessWidget {
         child: child,
       );
     }
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
-    final hasHeader = title != null || icon != null;
-    final Widget body = !hasHeader
-        ? child
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: tokens.smallIconSize, color: roles.text2),
-                    SizedBox(width: tokens.labelGap),
-                  ],
-                  if (title != null)
-                    Expanded(
-                      child: KitText(
-                        title,
-                        key: titleKey,
-                        role: KitTextRole.headline,
-                      ),
-                    ),
-                ],
-              ),
-              SizedBox(height: tokens.labelGap),
-              child,
-            ],
-          );
+    final body = Padding(
+      padding: padding,
+      child: kitPanelBody(
+        KitTokens.of(context),
+        title: title,
+        icon: icon,
+        titleKey: titleKey,
+        child: child,
+      ),
+    );
+    // The InkWell sits outside the caller's padding, so the whole panel —
+    // padding band included — takes the tap, and the ripple fills the panel
+    // shape (KitSurface clips to it).
     return KitSurface(
       shape: KitShape.panel,
       padding: KitSurfacePadding.none,
-      child: Padding(
-        padding: padding,
-        child: onTap == null ? body : InkWell(onTap: onTap, child: body),
-      ),
+      child: onTap == null ? body : InkWell(onTap: onTap, child: body),
     );
   }
 
-  /// Retired: today's tinted-border, tonal-wash look, unchanged except the
-  /// header icon (18 → 20, VL §7) and the border now sized from
-  /// `KitTokens.hairlineWidth` instead of the platform default.
+  /// Retired: today's tinted-border, tonal-wash look, with two intended
+  /// visual changes: the header icon (18 → 20, VL §7) and the border, now a
+  /// hairline of exactly one physical pixel (`KitTokens.hairlineWidth`,
+  /// LOOK-21) instead of the old one logical pixel (about 3× thinner at
+  /// DPR 3).
   Widget _buildRetired(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = KitTokens.of(context);

@@ -1,0 +1,12 @@
+00:00 +4 -1: KitPanel tone: neutral, a tap inside the padding band still fires onTap [E]
+  Test failed. See exception logs above.
+00:00 +4 -1: KitPanel tone: attention, a tap inside the padding band still fires onTap
+00:00 +5 -1: KitPanel a tappable neutral panel inks the whole panel, padding included
+Expected: Rect:<Rect.fromLTRB(334.0, 271.0, 466.0, 329.0)>
+  Actual: Rect:<Rect.fromLTRB(342.0, 279.0, 462.0, 319.0)>
+00:00 +5 -2: KitPanel a tappable neutral panel inks the whole panel, padding included [E]
+  Test failed. See exception logs above.
+00:00 +5 -2: KitPanel a custom-padding panel draws the same header as KitSurface.panel
+00:00 +6 -2: KitPanel tone: attention draws its border as a hairline
+00:00 +7 -2: KitPanel a custom padding still gets the panel fill and shape from KitSurface
+00:00 +8 -2: Some tests failed.

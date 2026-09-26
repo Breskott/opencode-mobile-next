@@ -163,46 +163,20 @@ class KitSurface extends StatelessWidget {
       elevation: 0,
       shape: resolvedShape,
       clipBehavior: clip ? Clip.antiAlias : Clip.none,
-      child: _content(tokens, roles),
+      child: _content(tokens),
     );
   }
 
-  Widget _content(KitTokens tokens, ThemeRoles roles) {
-    final pad = _paddingOf(tokens, padding);
-    final title = _panelTitle;
-    final icon = _panelIcon;
-    if (title == null && icon == null) {
-      return Padding(padding: pad, child: child);
-    }
-    return Padding(
-      padding: pad,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: tokens.smallIconSize, color: roles.text2),
-                SizedBox(width: tokens.labelGap),
-              ],
-              if (title != null)
-                Expanded(
-                  child: KitText(
-                    title,
-                    key: _panelTitleKey,
-                    role: KitTextRole.headline,
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: tokens.labelGap),
-          child,
-        ],
-      ),
-    );
-  }
+  Widget _content(KitTokens tokens) => Padding(
+    padding: _paddingOf(tokens, padding),
+    child: kitPanelBody(
+      tokens,
+      title: _panelTitle,
+      icon: _panelIcon,
+      titleKey: _panelTitleKey,
+      child: child,
+    ),
+  );
 
   Widget _buildTile(KitTokens tokens, ThemeRoles roles, IconData icon) {
     final color = KitText.toneColor(roles, _tileTone ?? KitTextTone.primary);
@@ -229,4 +203,42 @@ class KitSurface extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Kit-internal, not part of `KitSurface`'s frozen API: the panel header — a
+/// [KitTokens.smallIconSize] [icon] in `text2` at the start and a headline
+/// [title] — a [KitTokens.labelGap] above [child]; just [child] when there is
+/// neither. It is the one source of truth for that header, shared by
+/// `KitSurface.panel` and `KitPanel`'s custom-padding / `onTap` path, so a
+/// change to the header (such as the planned `Icon` → `KitIcon` swap)
+/// reaches both. Screens name `KitSurface.panel`, never this.
+Widget kitPanelBody(
+  KitTokens tokens, {
+  required Widget child,
+  String? title,
+  IconData? icon,
+  Key? titleKey,
+}) {
+  if (title == null && icon == null) return child;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: tokens.smallIconSize, color: tokens.roles.text2),
+            SizedBox(width: tokens.labelGap),
+          ],
+          if (title != null)
+            Expanded(
+              child: KitText(title, key: titleKey, role: KitTextRole.headline),
+            ),
+        ],
+      ),
+      SizedBox(height: tokens.labelGap),
+      child,
+    ],
+  );
 }
