@@ -7,8 +7,8 @@
 // duplicated; KIT-43) from `lib/ui/app_iconography.dart`, which now
 // re-exports them so every existing import keeps compiling.
 //
-// Contract problem (PROC-20, docs/qa/revamp-kit-KitIcon/README.md): KitIcon.md
-// names a shared `KitTokens.toneFor` / `toneColor(AppStatusTone)` as an
+// Contract problem (PROC-20, docs/qa/revamp-kit-KitIcon-2026-09-26/README.md):
+// KitIcon.md names a shared `KitTokens.toneFor` / `toneColor(AppStatusTone)` as an
 // already-available pre-wave seam ("Open questions: None"). It is not one:
 // `docs/ux-system/kit-api/_new-tokens.md`'s own "Not added here" section
 // says the D12 table it needs was never written, and
@@ -23,6 +23,7 @@
 // coordinator adds `KitTokens.toneFor`, `_statusTone` should be deleted in
 // its favour.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../app_theme.dart';
@@ -82,6 +83,12 @@ IconData? _backgroundOf(IconData icon) =>
 /// primary, failure → primary. Attention's amber belongs only to the
 /// needs-you parts (LOOK-4, LOOK-24); a failure is said in words and a
 /// neutral error glyph, not in red (LOOK-5, B2 interim).
+///
+/// Open PROC-20 item: this is a stopgap, not a seam. No other part copies
+/// it (KitNotice, KitStatusLine, KitStatusMark and the rest wait for the
+/// shared `KitTokens.toneFor`); once the coordinator adds that token to
+/// `_new-tokens.md` and STANDARDS §0.5 step 2, this function is deleted in
+/// its favour.
 KitTextTone _statusTone(AppStatusTone status) => switch (status) {
   AppStatusTone.neutral => KitTextTone.secondary,
   AppStatusTone.progress => KitTextTone.accent,
@@ -97,12 +104,13 @@ KitTextTone _statusTone(AppStatusTone status) => switch (status) {
 /// ([KitIconSize]), in an opaque colour role, aligned to whole physical
 /// pixels, decorative by default.
 ///
-/// States: KitIcon has no loading, empty, error or working state (those
-/// belong to the host); a disabled icon is the host passing
-/// `tone: KitTextTone.tertiary` (no opacity, LOOK-14); [KitIcon.status]
-/// covers neutral, progress, ok, attention and failure; a duotone glyph
-/// (the navigation `…Selected` glyphs) is selected, drawn automatically
-/// when [icon] has a registered background layer.
+/// States: none — loading, empty, error and working belong to the host.
+///
+/// A disabled icon is the host passing `tone: KitTextTone.tertiary` (no
+/// opacity, LOOK-14); [KitIcon.status] covers neutral, progress, ok,
+/// attention and failure; a duotone glyph (the navigation `…Selected`
+/// glyphs) is selected, drawn automatically when [icon] has a registered
+/// background layer.
 ///
 /// Motion and haptics: none (LOOK-33, R23; a rotating chevron is
 /// `KitSpin.chevron`, a glyph swap is `KitSwap`).
@@ -161,7 +169,12 @@ class KitIcon extends StatelessWidget {
     if (status != null) return KitText.toneColor(roles, _statusTone(status));
     final explicit = tone;
     if (explicit != null) return KitText.toneColor(roles, explicit);
-    return IconTheme.of(context).color ??
+    // The ambient colour is made opaque: a translucent one (a Material
+    // disabled IconTheme, for example) would draw the glyph at partial
+    // opacity, which LOOK-14 forbids. A disabled icon is the host passing
+    // `tone: KitTextTone.tertiary`.
+    final ambient = IconTheme.of(context).color;
+    return ambient?.withValues(alpha: 1) ??
         KitText.toneColor(roles, KitTextTone.primary);
   }
 
@@ -185,24 +198,120 @@ class KitIcon extends StatelessWidget {
     final color = _resolveColor(context, roles);
     final dimension = _resolveDimension(context);
     final background = _backgroundOf(icon);
+    // A fresh IconTheme, not a merge: the framework Icon multiplies its
+    // colour by the ambient `opacity` and inherits the ambient shadows,
+    // fill, weight and text scaling. KitIcon pins them, so the glyph is
+    // always opaque, unshadowed and exactly [dimension] (LOOK-14, VL §7).
     final glyph = ExcludeSemantics(
-      child: background == null || MediaQuery.highContrastOf(context)
-          ? Icon(icon, size: dimension, color: color)
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                Opacity(
-                  opacity: KitTokens.duotoneWash,
-                  child: Icon(background, size: dimension, color: color),
-                ),
-                Icon(icon, size: dimension, color: color),
-              ],
-            ),
+      child: IconTheme(
+        data: IconThemeData(
+          color: color,
+          size: dimension,
+          opacity: 1,
+          shadows: const [],
+          fill: 0,
+          weight: 400,
+          grade: 0,
+          opticalSize: 48,
+          applyTextScaling: false,
+        ),
+        child: background == null || MediaQuery.highContrastOf(context)
+            ? Icon(icon, size: dimension, color: color)
+            : Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(
+                    opacity: KitTokens.duotoneWash,
+                    child: Icon(background, size: dimension, color: color),
+                  ),
+                  Icon(icon, size: dimension, color: color),
+                ],
+              ),
+      ),
     );
     final label = semanticsLabel;
-    return label == null
-        ? glyph
-        : Semantics(label: label, image: true, child: glyph);
+    return _KitPixelSnap(
+      child: label == null
+          ? glyph
+          : Semantics(label: label, image: true, child: glyph),
+    );
+  }
+}
+
+/// Paints [child] with its origin on a whole physical pixel (VL §7: icons
+/// "aligned to whole pixels"; a half-pixel offset is a bug). Layout is
+/// untouched, so a KitIcon never moves its neighbours: at paint time the
+/// child is shifted by less than one physical pixel, from wherever the
+/// layout put it to the nearest pixel corner. With a whole-pixel size (every
+/// designed size at DPR 3, and every grown size), all four edges are then
+/// whole pixels. The shift is part of the paint transform, so hit testing,
+/// semantics and `localToGlobal` see the painted position.
+class _KitPixelSnap extends SingleChildRenderObjectWidget {
+  const _KitPixelSnap({required super.child});
+
+  @override
+  _RenderKitPixelSnap createRenderObject(BuildContext context) =>
+      _RenderKitPixelSnap(MediaQuery.devicePixelRatioOf(context));
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderKitPixelSnap renderObject,
+  ) {
+    renderObject.devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+  }
+}
+
+class _RenderKitPixelSnap extends RenderProxyBox {
+  _RenderKitPixelSnap(this._devicePixelRatio);
+
+  double _devicePixelRatio;
+  set devicePixelRatio(double value) {
+    if (value == _devicePixelRatio) return;
+    _devicePixelRatio = value;
+    markNeedsPaint();
+  }
+
+  /// The local shift that puts this box's origin on the nearest whole
+  /// physical pixel of the view.
+  Offset get _snap {
+    final dpr = _devicePixelRatio;
+    if (!attached || !hasSize || dpr <= 0) return Offset.zero;
+    final toGlobal = getTransformTo(null);
+    final origin = MatrixUtils.transformPoint(toGlobal, Offset.zero);
+    final snapped = Offset(
+      (origin.dx * dpr).roundToDouble() / dpr,
+      (origin.dy * dpr).roundToDouble() / dpr,
+    );
+    if (snapped == origin) return Offset.zero;
+    final toLocal = Matrix4.tryInvert(toGlobal);
+    return toLocal == null
+        ? Offset.zero
+        : MatrixUtils.transformPoint(toLocal, snapped);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final child = this.child;
+    if (child != null) context.paintChild(child, offset + _snap);
+  }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    final snap = _snap;
+    transform.translateByDouble(snap.dx, snap.dy, 0, 1);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    final child = this.child;
+    if (child == null) return false;
+    return result.addWithPaintOffset(
+      offset: _snap,
+      position: position,
+      hitTest: (result, transformed) =>
+          child.hitTest(result, position: transformed),
+    );
   }
 }
 
@@ -212,7 +321,9 @@ enum KitBrandMarkSize { tile, mark }
 
 /// The open-portal mark (the retired [AppBrandMark]'s job). Decorative
 /// unless labelled. It is drawn from `assets/branding/open-portal/mark.svg`
-/// in the accent.
+/// in the accent, with its origin on a whole physical pixel.
+///
+/// States: none — a static decorative mark.
 class KitBrandMark extends StatelessWidget {
   const KitBrandMark({
     super.key,
@@ -237,9 +348,11 @@ class KitBrandMark extends StatelessWidget {
       excludeFromSemantics: true,
     );
     final label = semanticsLabel;
-    return label == null
-        ? mark
-        : Semantics(label: label, image: true, child: mark);
+    return _KitPixelSnap(
+      child: label == null
+          ? mark
+          : Semantics(label: label, image: true, child: mark),
+    );
   }
 }
 

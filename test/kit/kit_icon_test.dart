@@ -1,8 +1,9 @@
 // KitIcon (docs/ux-system/kit-api/KitIcon.md, wave 1, tier 1a): the one
 // way to draw a glyph. See lib/ui/kit/kit_icon.dart's header for the PROC-20
 // contract problem this unit recorded (KitTokens.toneFor missing) and
-// docs/qa/revamp-kit-KitIcon/README.md for the evidence.
+// docs/qa/revamp-kit-KitIcon-2026-09-26/README.md for the evidence.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
@@ -104,6 +105,69 @@ void main() {
     );
   });
 
+  group('pixel alignment (VL §7: aligned to whole pixels)', () {
+    testWidgets(
+      'a KitIcon laid out at a fractional offset paints on whole physical '
+      'pixels without moving its layout box',
+      (tester) async {
+        for (final (dpr, icon) in [
+          (3.0, const KitIcon(AppIconography.check, size: KitIconSize.medium)),
+          (
+            2.625,
+            const KitIcon(
+              AppIconography.check,
+              size: KitIconSize.small,
+              growsWithText: true,
+            ),
+          ),
+          (3.0, const KitBrandMark()),
+        ]) {
+          tester.view.devicePixelRatio = dpr;
+          addTearDown(tester.view.reset);
+          await tester.pumpWidget(
+            _host(
+              Align(
+                alignment: AlignmentDirectional.topStart,
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    start: 10.3,
+                    top: 7.45,
+                  ),
+                  child: icon,
+                ),
+              ),
+              textScale: 1.3,
+            ),
+          );
+          final layout = tester.getTopLeft(find.byWidget(icon));
+          expect(layout.dx, closeTo(10.3, 1e-9), reason: 'layout unchanged');
+          final painted = find
+              .descendant(
+                of: find.byWidget(icon),
+                matching: find.byWidgetPredicate(
+                  (w) => w is Icon || w is SvgPicture,
+                ),
+              )
+              .first;
+          final rect = tester.getRect(painted);
+          for (final edge in [rect.left, rect.top, rect.right, rect.bottom]) {
+            final physical = edge * dpr;
+            expect(
+              physical,
+              closeTo(physical.roundToDouble(), 1e-6),
+              reason: '$icon at dpr $dpr: $rect',
+            );
+          }
+          expect(
+            (rect.topLeft - layout).distance,
+            lessThanOrEqualTo(1 / dpr),
+            reason: 'the shift is under one physical pixel',
+          );
+        }
+      },
+    );
+  });
+
   group('the app icon set (KitIcon.md "Replaces")', () {
     testWidgets(
       'the debug assert rejects Icons.add and passes AppIconography.add '
@@ -129,14 +193,42 @@ void main() {
       // the flutter_test binding's own end-of-test invariant check, which
       // would still see the handle as active.
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(_host(const KitIcon(AppIconography.check)));
-      expect(find.bySemanticsLabel('Offline'), findsNothing);
+      final host = find.byKey(const ValueKey('host'));
+      // The host is a bare semantics container: its node is the one an
+      // icon that adds nothing reports as its own nearest node.
+      Widget hosted(Widget icon) => _host(
+        Semantics(
+          key: const ValueKey('host'),
+          container: true,
+          explicitChildNodes: true,
+          child: icon,
+        ),
+      );
 
+      // Unlabelled: the icon's nearest semantics node is its host's, so it
+      // adds no node, and nothing under the host is an image or has a label.
+      await tester.pumpWidget(hosted(const KitIcon(AppIconography.check)));
+      final hostNode = tester.getSemantics(host);
+      expect(tester.getSemantics(find.byType(KitIcon)), same(hostNode));
+      expect(hostNode.childrenCount, 0);
+      expect(_imageOrLabelledNodes(hostNode), isEmpty);
+
+      // Labelled: exactly one node of its own, an image with that label.
       await tester.pumpWidget(
-        _host(
+        hosted(
           const KitIcon(AppIconography.cloudOff, semanticsLabel: 'Offline'),
         ),
       );
+      final labelledHost = tester.getSemantics(host);
+      expect(labelledHost.childrenCount, 1);
+      late final SemanticsNode labelled;
+      labelledHost.visitChildren((child) {
+        labelled = child;
+        return false;
+      });
+      expect(labelled.label, 'Offline');
+      expect(labelled.getSemanticsData().flagsCollection.isImage, isTrue);
+      expect(_imageOrLabelledNodes(labelled), [labelled]);
       expect(find.bySemanticsLabel('Offline'), findsOneWidget);
       handle.dispose();
     });
@@ -245,12 +337,68 @@ void main() {
   });
 
   group('tone colours (§7: no text or icon at partial opacity)', () {
-    testWidgets('every KitTextTone colour is fully opaque', (tester) async {
-      final roles = ThemeRoles.resolve(AppTheme.dark());
-      for (final tone in KitTextTone.values) {
-        expect(KitText.toneColor(roles, tone).a, 1.0, reason: '$tone');
-      }
-    });
+    testWidgets(
+      'the rendered glyph is opaque and unshadowed under a translucent, '
+      'half-opacity, shadowed ambient IconTheme',
+      (tester) async {
+        final theme = AppTheme.dark();
+        const ambient = IconThemeData(
+          color: Color(0x61FF0000),
+          opacity: .5,
+          shadows: [Shadow(blurRadius: 4)],
+          applyTextScaling: true,
+        );
+        final icons = <String, Widget>{
+          'ambient': const KitIcon(AppIconography.check),
+          for (final tone in KitTextTone.values)
+            '$tone': KitIcon(AppIconography.check, tone: tone),
+          for (final status in AppStatusTone.values)
+            '$status': KitIcon.status(AppIconography.info, status),
+          'duotone': const KitIcon(AppIconography.workspaceSelected),
+        };
+        for (final MapEntry(key: name, value: icon) in icons.entries) {
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2)),
+                child: child!,
+              ),
+              home: Center(
+                child: IconTheme(data: ambient, child: icon),
+              ),
+            ),
+          );
+          final glyphs = tester
+              .widgetList<RichText>(
+                find.descendant(
+                  of: find.byType(KitIcon),
+                  matching: find.byType(RichText),
+                ),
+              )
+              .toList();
+          expect(glyphs, isNotEmpty, reason: name);
+          for (final glyph in glyphs) {
+            final style = (glyph.text as TextSpan).style!;
+            expect(style.color!.a, 1.0, reason: '$name: colour alpha 255');
+            expect(style.shadows ?? const [], isEmpty, reason: name);
+          }
+          if (name == 'ambient') {
+            expect(
+              glyphs.single.text.style!.color,
+              const Color(0xFFFF0000),
+              reason: 'the ambient colour, made opaque',
+            );
+          }
+          // The ambient applyTextScaling does not double a fixed size.
+          if (!name.startsWith('AppStatusTone')) {
+            expect(tester.getSize(find.byType(KitIcon)), const Size(24, 24));
+          }
+        }
+      },
+    );
 
     testWidgets('an explicit tone overrides the ambient icon colour', (
       tester,
@@ -378,4 +526,18 @@ void main() {
       handle.dispose();
     });
   });
+}
+
+/// The nodes under (and including) [root] that are images or carry a label.
+List<SemanticsNode> _imageOrLabelledNodes(SemanticsNode root) {
+  final found = <SemanticsNode>[];
+  bool visit(SemanticsNode node) {
+    final data = node.getSemanticsData();
+    if (data.flagsCollection.isImage || data.label.isNotEmpty) found.add(node);
+    node.visitChildren(visit);
+    return true;
+  }
+
+  visit(root);
+  return found;
 }
