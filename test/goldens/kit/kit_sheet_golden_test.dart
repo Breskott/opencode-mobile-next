@@ -82,7 +82,7 @@ void main() {
       testWidgets('kit_sheet default · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_sheet_default_${at}_$mode',
+          name: kitGalleryName('kit_sheet_default', size, light: light),
           size: size,
           light: light,
           open: _language,
@@ -95,7 +95,12 @@ void main() {
       testWidgets('kit_sheet · 2.0 text · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_sheet_text2_${at}_$mode',
+          name: kitGalleryName(
+            'kit_sheet_default',
+            size,
+            light: light,
+            text2: true,
+          ),
           size: size,
           light: light,
           textScale: 2,
@@ -105,7 +110,12 @@ void main() {
       testWidgets('kit_sheet · ar · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_sheet_ar_${at}_$mode',
+          name: kitGalleryName(
+            'kit_sheet_default',
+            size,
+            light: light,
+            ar: true,
+          ),
           size: size,
           light: light,
           locale: const Locale('ar'),
@@ -121,7 +131,7 @@ void main() {
       addTearDown(loading.dispose);
       await kitGalleryShot(
         tester,
-        name: 'kit_sheet_loading_$mode',
+        name: kitGalleryName('kit_sheet_loading', phone, light: light),
         size: phone,
         light: light,
         // The loading bar never settles; one frame shows it.
@@ -141,7 +151,7 @@ void main() {
     testWidgets('kit_sheet disabled primary · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_sheet_disabled_$mode',
+        name: kitGalleryName('kit_sheet_disabled', phone, light: light),
         size: phone,
         light: light,
         open: (context) => _language(context, disabled: true),
@@ -153,7 +163,7 @@ void main() {
       addTearDown(dirty.dispose);
       await kitGalleryShot(
         tester,
-        name: 'kit_sheet_discard_$mode',
+        name: kitGalleryName('kit_sheet_discard', phone, light: light),
         size: phone,
         light: light,
         open: (context) => _language(context, dirty: dirty),
@@ -166,7 +176,7 @@ void main() {
     testWidgets('kit_sheet half · $mode', (tester) async {
       await kitGalleryShot(
         tester,
-        name: 'kit_sheet_half_$mode',
+        name: kitGalleryName('kit_sheet_half', phone, light: light),
         size: phone,
         light: light,
         open: (context) => _language(context, height: KitSheetHeight.half),
@@ -178,7 +188,7 @@ void main() {
       testWidgets('kit_sheet full · $at · $mode', (tester) async {
         await kitGalleryShot(
           tester,
-          name: 'kit_sheet_full_${at}_$mode',
+          name: kitGalleryName('kit_sheet_full', size, light: light),
           size: size,
           light: light,
           open: (context) => _language(context, height: KitSheetHeight.full),

@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,18 +17,31 @@ import '../../../tool/capture/fixtures.dart'
 
 const _arabicFallback = 'KitGalleryNotoSansArabic';
 
-/// The capture fonts plus the Arabic fallback family.
+/// The capture fonts plus the Arabic fallback family, and the families
+/// AppTheme.forLocale names for Arabic ('sans-serif', which is Roboto on
+/// Android, and 'Noto Sans Arabic'), so a screen rendered through it reads
+/// like the device (TEST-8, gate G23).
 Future<void> loadKitGalleryFonts() async {
   await loadCaptureFonts();
-  final arabic = FontLoader(_arabicFallback);
-  for (final weight in ['Regular', 'Bold']) {
-    arabic.addFont(
-      File(
-        'test/fixtures/fonts/NotoSansArabic-$weight.ttf',
-      ).readAsBytes().then(ByteData.sublistView),
-    );
+  Future<void> load(String family, List<String> paths) async {
+    final loader = FontLoader(family);
+    for (final path in paths) {
+      loader.addFont(File(path).readAsBytes().then(ByteData.sublistView));
+    }
+    await loader.load();
   }
-  await arabic.load();
+
+  const noto = [
+    'test/fixtures/fonts/NotoSansArabic-Regular.ttf',
+    'test/fixtures/fonts/NotoSansArabic-Bold.ttf',
+  ];
+  await load(_arabicFallback, noto);
+  await load('Noto Sans Arabic', noto);
+  await load('sans-serif', const [
+    'tool/capture/fonts/Roboto-Regular.ttf',
+    'tool/capture/fonts/Roboto-Medium.ttf',
+    'tool/capture/fonts/Roboto-Bold.ttf',
+  ]);
 }
 
 /// The capture theme with Arabic falling back to Noto, like a device.
@@ -82,6 +96,29 @@ const kitGalleryScaledSizes = <Size>[Size(412, 915), Size(1280, 800)];
 String kitGallerySize(Size size) =>
     '${size.width.toInt()}x${size.height.toInt()}';
 
+/// The TEST-20 golden name for a gallery shot:
+/// `<shot>[_ar][_text2][_<W>x<H>]_<dark|light>`, where [shot] is
+/// `kit_<part>_<state>` and the size is left out for 412x915. Gate G23
+/// (test/golden_harness_test.dart) rejects any other kit golden name.
+String kitGalleryName(
+  String shot,
+  Size size, {
+  required bool light,
+  bool ar = false,
+  bool text2 = false,
+}) {
+  if (!RegExp(r'^kit_[a-z0-9]+(_[a-z0-9]+)+$').hasMatch(shot)) {
+    throw ArgumentError.value(shot, 'shot', 'must be kit_<part>_<state>');
+  }
+  return [
+    shot,
+    if (ar) 'ar',
+    if (text2) 'text2',
+    if (size != const Size(412, 915)) kitGallerySize(size),
+    light ? 'light' : 'dark',
+  ].join('_');
+}
+
 /// Pumps an empty screen at [size], runs [open] against a context under the
 /// navigator (it opens the modal part), settles, and compares the whole
 /// window with `goldens/kit/<name>.png`.
@@ -96,44 +133,52 @@ Future<void> kitGalleryShot(
   double textScale = 1,
   bool settleAfterThen = true,
 }) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
+  // TEST-9: DPR 3.0, [size] in logical pixels.
+  tester.view.physicalSize = size * 3.0;
+  tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
   late BuildContext context;
-  await tester.pumpWidget(
-    RepaintBoundary(
-      key: boundary,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: _theme(light: light),
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            disableAnimations: true,
-            textScaler: TextScaler.linear(textScale),
+  // ARCH-11: rendered as Android. Cleared in the finally: flutter_test checks
+  // it before tear-downs run, also when a caller catches a failed shot.
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  try {
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundary,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: _theme(light: light),
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              disableAnimations: true,
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: child!,
           ),
-          child: child!,
-        ),
-        home: Scaffold(
-          body: Builder(
-            builder: (inner) {
-              context = inner;
-              return const SizedBox.expand();
-            },
+          home: Scaffold(
+            body: Builder(
+              builder: (inner) {
+                context = inner;
+                return const SizedBox.expand();
+              },
+            ),
           ),
         ),
       ),
-    ),
-  );
-  unawaited(Future.sync(() => open(context)));
-  await tester.pumpAndSettle();
-  if (then != null) {
-    await then(tester);
-    if (settleAfterThen) await tester.pumpAndSettle();
+    );
+    unawaited(Future.sync(() => open(context)));
+    await tester.pumpAndSettle();
+    if (then != null) {
+      await then(tester);
+      if (settleAfterThen) await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
   }
-  expect(tester.takeException(), isNull);
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }
