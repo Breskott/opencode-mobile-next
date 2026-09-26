@@ -31984,54 +31984,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied'**
   String get kitCopied;
-
-  /// KitImage: shown next to the broken-image glyph when a source fails to decode, from 120dp wide
-  ///
-  /// In en, this message translates to:
-  /// **'Can\'t show this image'**
-  String get kitImageUnavailable;
-
-  /// KitZoom: the zoom-in control's label and tooltip, and its custom semantic action
-  ///
-  /// In en, this message translates to:
-  /// **'Zoom in'**
-  String get kitZoomIn;
-
-  /// KitZoom: the zoom-out control's label and tooltip, and its custom semantic action
-  ///
-  /// In en, this message translates to:
-  /// **'Zoom out'**
-  String get kitZoomOut;
-
-  /// KitZoom: the reset control's label in fit mode, once zoomed in
-  ///
-  /// In en, this message translates to:
-  /// **'Reset zoom'**
-  String get kitZoomReset;
-
-  /// KitZoom: the reset control's label in canvas mode (a work graph, a page)
-  ///
-  /// In en, this message translates to:
-  /// **'Fit to screen'**
-  String get kitZoomFit;
-
-  /// KitZoom: the reset control's label, and its disabled reason, at 1x in fit mode
-  ///
-  /// In en, this message translates to:
-  /// **'Already at full view'**
-  String get kitZoomAtStart;
-
-  /// KitZoom: the zoom-in control's label, and its disabled reason, at the largest zoom
-  ///
-  /// In en, this message translates to:
-  /// **'Largest zoom'**
-  String get kitZoomAtMax;
-
-  /// KitZoom: the spoken zoom level value, e.g. 200 %
-  ///
-  /// In en, this message translates to:
-  /// **'{percent} %'**
-  String kitZoomLevel(String percent);
 }
 
 class _AppLocalizationsDelegate

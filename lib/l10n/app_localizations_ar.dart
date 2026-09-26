@@ -20096,30 +20096,4 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCopied => 'تم النسخ';
-
-  @override
-  String get kitImageUnavailable => 'يتعذر عرض هذه الصورة';
-
-  @override
-  String get kitZoomIn => 'تكبير';
-
-  @override
-  String get kitZoomOut => 'تصغير';
-
-  @override
-  String get kitZoomReset => 'إعادة ضبط التكبير';
-
-  @override
-  String get kitZoomFit => 'ملائمة الشاشة';
-
-  @override
-  String get kitZoomAtStart => 'في العرض الكامل بالفعل';
-
-  @override
-  String get kitZoomAtMax => 'أقصى تكبير';
-
-  @override
-  String kitZoomLevel(String percent) {
-    return '$percent٪';
-  }
 }

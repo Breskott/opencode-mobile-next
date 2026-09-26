@@ -19826,30 +19826,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitCopied => 'Copied';
-
-  @override
-  String get kitImageUnavailable => 'Can\'t show this image';
-
-  @override
-  String get kitZoomIn => 'Zoom in';
-
-  @override
-  String get kitZoomOut => 'Zoom out';
-
-  @override
-  String get kitZoomReset => 'Reset zoom';
-
-  @override
-  String get kitZoomFit => 'Fit to screen';
-
-  @override
-  String get kitZoomAtStart => 'Already at full view';
-
-  @override
-  String get kitZoomAtMax => 'Largest zoom';
-
-  @override
-  String kitZoomLevel(String percent) {
-    return '$percent %';
-  }
 }
