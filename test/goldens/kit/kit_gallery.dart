@@ -7,9 +7,11 @@
 // Gate G5 (docs/ux-system/revamp/STANDARDS.md §18, absolute): every shot
 // also runs androidTapTargetGuideline, labeledTapTargetGuideline and
 // textContrastGuideline, and checks that the screen-reader traversal reads
-// top to bottom, then start to end (A11Y-1, A11Y-4, A11Y-6, LAY-9). The
-// galleries render each shot in light and dark, so both themes are checked.
-// There is no opt-out: fix the part, not the shot.
+// top to bottom, then start to end (A11Y-1, A11Y-4, A11Y-6, LAY-9), in
+// light and in dark whichever theme the gallery asked for. There is no
+// opt-out: fix the part, not the shot. The one baseline entry is capped by
+// kitGalleryG5Ceiling below; the gate's own tests are
+// kit_gallery_g5_test.dart.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -96,6 +98,13 @@ String kitGallerySize(Size size) =>
 /// navigator (it opens the modal part), settles, runs the G5 accessibility
 /// checks ([expectKitGalleryAccessible]) and compares the whole window with
 /// `goldens/kit/<name>.png`.
+///
+/// G5 checks every shot in both themes (A11Y-6), whatever the gallery
+/// renders: the shot is first pumped in the other theme and checked there
+/// (no golden), then in its own theme, checked and compared. [name] must end
+/// in `_light` or `_dark` to match [light]; the other theme is checked under
+/// the partner name, so a baseline entry means the same frame from either
+/// gallery loop.
 Future<void> kitGalleryShot(
   WidgetTester tester, {
   required String name,
@@ -107,58 +116,75 @@ Future<void> kitGalleryShot(
   double textScale = 1,
   bool settleAfterThen = true,
 }) async {
+  final own = _themeName(light);
+  if (!name.endsWith('_$own')) {
+    throw ArgumentError.value(
+      name,
+      'name',
+      'G5 (STANDARDS.md §18, A11Y-6): a gallery shot name ends in "_$own" '
+          'when light is $light',
+    );
+  }
+  final stem = name.substring(0, name.length - own.length - 1);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
-  late BuildContext context;
   // Released before the test ends; a tear-down runs too late for the check.
   final semantics = tester.ensureSemantics();
   try {
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: boundary,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: _theme(light: light),
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              disableAnimations: true,
-              textScaler: TextScaler.linear(textScale),
+    // The other theme first (checks only), then the shot's own theme.
+    for (final pass in [!light, light]) {
+      late BuildContext context;
+      // A fresh tree, so nothing the other pass opened carries over.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: boundary,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: _theme(light: pass),
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: child!,
             ),
-            child: child!,
-          ),
-          home: Scaffold(
-            body: Builder(
-              builder: (inner) {
-                context = inner;
-                return const SizedBox.expand();
-              },
+            home: Scaffold(
+              body: Builder(
+                builder: (inner) {
+                  context = inner;
+                  return const SizedBox.expand();
+                },
+              ),
             ),
           ),
         ),
-      ),
-    );
-    unawaited(Future.sync(() => open(context)));
-    await tester.pumpAndSettle();
-    if (then != null) {
-      await then(tester);
-      if (settleAfterThen) await tester.pumpAndSettle();
+      );
+      unawaited(Future.sync(() => open(context)));
+      await tester.pumpAndSettle();
+      if (then != null) {
+        await then(tester);
+        if (settleAfterThen) await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+      await expectKitGalleryAccessible(
+        tester,
+        shot: '${stem}_${_themeName(pass)}',
+        direction: Directionality.of(context),
+      );
     }
-    expect(tester.takeException(), isNull);
-    await expectKitGalleryAccessible(
-      tester,
-      shot: name,
-      direction: Directionality.of(context),
-    );
   } finally {
     semantics.dispose();
   }
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }
+
+String _themeName(bool light) => light ? 'light' : 'dark';
 
 /// The G5 checks by the name the baseline uses.
 const _guidelines = <String, AccessibilityGuideline>{
@@ -168,72 +194,167 @@ const _guidelines = <String, AccessibilityGuideline>{
 };
 const _readingOrder = 'readingOrder';
 
-/// Shots that failed a G5 check when the gate was built, by golden name. It
-/// may only shrink: a shot or check not listed here fails, and a listed one
-/// that passes prints the smaller entry to commit.
+/// A G5 baseline: shot (golden name, theme included) → check → the labels
+/// of the semantics nodes that may still fail that check in that shot.
+typedef KitGalleryG5Baseline = Map<String, Map<String, Set<String>>>;
+
+/// The hard ceiling on the G5 baseline. G5 is absolute (STANDARDS.md
+/// §18.2); this one entry is today's code, recorded when the gate was built
+/// (docs/qa/gate-G5-2026-09-26/README.md). The JSON baseline may hold only
+/// entries from this set, so adding a shot, a check or a node there fails
+/// every shot. Kit units never edit this harness (§0.5 step 3, PROC-13);
+/// nobody raises this set.
+const kitGalleryG5Ceiling = <String, Map<String, Set<String>>>{
+  'kit_confirm_destructive_text2_1280x800_light': {
+    'textContrast': {'Cancel'},
+  },
+};
+
+/// Where the shrinking G5 baseline lives. An entry leaves it as soon as its
+/// node passes: a listed failure that no longer happens fails the shot, so
+/// a stale entry cannot hide a later regression.
 const kitGalleryG5BaselinePath =
     'test/goldens/kit/kit_gallery_g5_baseline.json';
 
-Map<String, Set<String>> _loadBaseline() {
-  final file = File(kitGalleryG5BaselinePath);
-  if (!file.existsSync()) return const {};
+/// Reads the committed baseline ({"shots": {shot: {check: [label]}}}).
+KitGalleryG5Baseline readKitGalleryG5Baseline([
+  String path = kitGalleryG5BaselinePath,
+]) {
+  final file = File(path);
+  if (!file.existsSync()) return {};
   final raw = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
   final shots = raw['shots'] as Map<String, dynamic>? ?? const {};
   return {
-    for (final MapEntry(:key, :value) in shots.entries)
-      key: {for (final check in value as List<dynamic>) check as String},
+    for (final MapEntry(key: shot, value: checks) in shots.entries)
+      shot: {
+        for (final MapEntry(key: check, value: labels)
+            in (checks as Map<String, dynamic>).entries)
+          check: {for (final label in labels as List<dynamic>) label as String},
+      },
   };
 }
 
+/// Every (shot, check, node) in [baseline] that [kitGalleryG5Ceiling] does
+/// not hold.
+List<String> kitGalleryG5OverCeiling(KitGalleryG5Baseline baseline) => [
+  for (final MapEntry(key: shot, value: checks) in baseline.entries)
+    for (final MapEntry(key: check, value: labels) in checks.entries)
+      for (final label in labels)
+        if (!(kitGalleryG5Ceiling[shot]?[check]?.contains(label) ?? false))
+          '$shot [$check] "$label"',
+];
+
+/// One G5 failure: the check, the failing node's label (its identity in the
+/// baseline) and the reason.
+typedef _G5Failure = ({String check, String node, String reason});
+
 /// Gate G5 on what is on screen now: the three platform guidelines and the
-/// reading order (A11Y-1, A11Y-4, A11Y-6, LAY-9), less the checks that
-/// [shot] still has in the baseline. Semantics must be on
-/// ([WidgetTester.ensureSemantics]).
+/// reading order (A11Y-1, A11Y-4, A11Y-6, LAY-9), less the (check, node)
+/// pairs that [shot] still has in the baseline. Semantics must be on
+/// ([WidgetTester.ensureSemantics]). [baseline] replaces the committed file
+/// in the gate's own tests; it is held to the same ceiling.
 Future<void> expectKitGalleryAccessible(
   WidgetTester tester, {
   required String shot,
   required TextDirection direction,
+  @visibleForTesting KitGalleryG5Baseline? baseline,
 }) async {
-  final failures = <String, String>{};
+  final entries = baseline ?? readKitGalleryG5Baseline();
+  final over = kitGalleryG5OverCeiling(entries);
+  if (over.isNotEmpty) {
+    fail(
+      'G5 (STANDARDS.md §18) is absolute: $kitGalleryG5BaselinePath may '
+      'only shrink, and these entries are outside kitGalleryG5Ceiling in '
+      'test/goldens/kit/kit_gallery.dart:\n${over.join('\n')}\n'
+      'Fix the part instead.',
+    );
+  }
+
+  final failures = <_G5Failure>[];
   for (final MapEntry(key: check, value: guideline) in _guidelines.entries) {
     final result = await guideline.evaluate(tester);
     if (!result.passed) {
-      failures[check] = result.reason ?? guideline.description;
+      failures.addAll(
+        _splitGuidelineReason(check, result.reason ?? guideline.description),
+      );
     }
   }
-  final problems = kitReadingOrderProblems(
+  for (final (node, problem) in _readingOrderProblems(
     tester.semantics.simulatedAccessibilityTraversal(),
     direction: direction,
     view: tester.view,
     ignore: _barrierNodeIds(),
-  );
-  if (problems.isNotEmpty) {
-    failures[_readingOrder] =
-        'The screen reader must read top to bottom, then start to end '
-        '(A11Y-4). Fix the part\'s widget order or its semantics sort keys:\n'
-        '${problems.join('\n')}';
+  )) {
+    failures.add((
+      check: _readingOrder,
+      node: node,
+      reason:
+          'The screen reader must read top to bottom, then start to end '
+          '(A11Y-4). Fix the part\'s widget order or its semantics sort '
+          'keys: $problem',
+    ));
   }
 
-  final allowed = _loadBaseline()[shot] ?? const <String>{};
-  final fixed = allowed.difference(failures.keys.toSet());
-  if (fixed.isNotEmpty) {
-    final left = allowed.difference(fixed).toList()..sort();
-    debugPrint(
-      'G5 ratchet: $shot now passes ${fixed.join(', ')}. Commit the smaller '
-      'baseline in $kitGalleryG5BaselinePath: '
-      '${left.isEmpty ? 'remove "$shot"' : '"$shot": ${jsonEncode(left)}'}',
-    );
+  final allowed = entries[shot] ?? const {};
+  final seen = <(String, String)>{};
+  final fresh = <_G5Failure>[];
+  for (final failure in failures) {
+    if (allowed[failure.check]?.contains(failure.node) ?? false) {
+      seen.add((failure.check, failure.node));
+    } else {
+      fresh.add(failure);
+    }
   }
-  final fresh = {
-    for (final MapEntry(:key, :value) in failures.entries)
-      if (!allowed.contains(key)) key: value,
-  };
-  if (fresh.isNotEmpty) {
+  final stale = [
+    for (final MapEntry(key: check, value: labels) in allowed.entries)
+      for (final label in labels)
+        if (!seen.contains((check, label))) '[$check] "$label"',
+  ];
+  final messages = [
+    for (final failure in fresh)
+      '[${failure.check}] node "${failure.node}": ${failure.reason}',
+    if (stale.isNotEmpty)
+      'Stale baseline: $shot now passes ${stale.join(', ')}. Delete '
+          '${stale.length == 1 ? 'that entry' : 'those entries'} from '
+          '$kitGalleryG5BaselinePath (it only shrinks; a stale entry would '
+          'hide a later regression).',
+  ];
+  if (messages.isNotEmpty) {
     fail(
       'G5 (docs/ux-system/revamp/STANDARDS.md §18) failed for $shot:\n'
-      '${[for (final MapEntry(:key, :value) in fresh.entries) '[$key] $value'].join('\n\n')}',
+      '${messages.join('\n\n')}',
     );
   }
+}
+
+/// Splits a guideline's reason, which joins one paragraph per failing node
+/// (each starting with that node's `SemanticsNode#…` description), into
+/// failures keyed by the node's label (or tooltip; empty when it has none).
+List<_G5Failure> _splitGuidelineReason(String check, String reason) {
+  final starts = [
+    for (final match in RegExp(
+      r'^SemanticsNode#\d+\(',
+      multiLine: true,
+    ).allMatches(reason))
+      match.start,
+  ];
+  if (starts.isEmpty) return [(check: check, node: '', reason: reason)];
+  if (starts.first != 0) starts.insert(0, 0);
+  return [
+    for (var i = 0; i < starts.length; i++)
+      () {
+        final part = reason
+            .substring(
+              starts[i],
+              i + 1 < starts.length ? starts[i + 1] : reason.length,
+            )
+            .trim();
+        final name =
+            RegExp(r'\blabel: "((?:[^"\\]|\\.)*)"').firstMatch(part) ??
+            RegExp(r'\btooltip: "((?:[^"\\]|\\.)*)"').firstMatch(part);
+        return (check: check, node: name?.group(1) ?? '', reason: part);
+      }(),
+  ];
 }
 
 /// Semantics nodes of modal barriers. The framework sorts a dismissible
@@ -266,6 +387,22 @@ List<String> kitReadingOrderProblems(
   required TextDirection direction,
   required FlutterView view,
   Set<int> ignore = const {},
+}) => [
+  for (final (_, problem) in _readingOrderProblems(
+    traversal,
+    direction: direction,
+    view: view,
+    ignore: ignore,
+  ))
+    problem,
+];
+
+/// [kitReadingOrderProblems] with the label of each node read out of order.
+List<(String, String)> _readingOrderProblems(
+  Iterable<SemanticsNode> traversal, {
+  required TextDirection direction,
+  required FlutterView view,
+  Set<int> ignore = const {},
 }) {
   const slack = 1.0;
   final screen = Offset.zero & (view.physicalSize / view.devicePixelRatio);
@@ -277,7 +414,7 @@ List<String> kitReadingOrderProblems(
     nodes.add((node, rect));
   }
 
-  final problems = <String>[];
+  final problems = <(String, String)>[];
   for (var i = 1; i < nodes.length; i++) {
     final (before, a) = nodes[i - 1];
     final (after, b) = nodes[i];
@@ -298,21 +435,26 @@ List<String> kitReadingOrderProblems(
       why = null;
     }
     if (why != null) {
-      problems.add(
+      problems.add((
+        _text(after),
         '${_describe(after, b)} is read after ${_describe(before, a)}: $why',
-      );
+      ));
     }
   }
   return problems;
 }
 
-String _describe(SemanticsNode node, Rect rect) {
+String _text(SemanticsNode node) {
   final data = node.getSemanticsData();
-  final text = [
+  return [
     data.label,
     data.value,
     data.tooltip,
   ].where((part) => part.isNotEmpty).join(' / ').replaceAll('\n', ' ');
+}
+
+String _describe(SemanticsNode node, Rect rect) {
+  final text = _text(node);
   return '#${node.id} "$text" at (${rect.left.round()}, ${rect.top.round()}, '
       '${rect.right.round()}, ${rect.bottom.round()})';
 }
