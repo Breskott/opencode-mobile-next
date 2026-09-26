@@ -433,9 +433,16 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               Text(widget.body, style: tokens.confirmBody),
               if (widget.consequences.isNotEmpty) ...[
                 SizedBox(height: tokens.space4),
-                _KitConsequences(
-                  consequences: widget.consequences,
-                  danger: danger,
+                KitConsequences(
+                  items: [
+                    for (final (index, fact) in widget.consequences.indexed)
+                      KitConsequence(
+                        fact,
+                        mark: index == 0 && danger
+                            ? KitConsequenceMark.lost
+                            : KitConsequenceMark.info,
+                      ),
+                  ],
                 ),
               ],
               if (typedName != null) ...[
@@ -513,156 +520,11 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               ],
               if (widget.details.isNotEmpty) ...[
                 SizedBox(height: tokens.space2),
-                _KitDetailsFold(values: widget.details),
+                KitDetailsFold(values: widget.details),
               ],
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// A minimal technical fold for the confirmation's [KitTechnicalValue]s,
-/// private until `KitDetailsFold` (§1.8) joins the kit: a muted "Details"
-/// row that unfolds label and mono value pairs, left to right, selectable.
-class _KitDetailsFold extends StatefulWidget {
-  const _KitDetailsFold({required this.values});
-
-  final List<KitTechnicalValue> values;
-
-  @override
-  State<_KitDetailsFold> createState() => _KitDetailsFoldState();
-}
-
-class _KitDetailsFoldState extends State<_KitDetailsFold> {
-  bool _open = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final seen = <String>{};
-    final values = [
-      for (final value in widget.values)
-        if (seen.add(value.value)) value,
-    ];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          expanded: _open,
-          child: KitInset(
-            child: TextButton.icon(
-              key: const ValueKey('kit-details-toggle'),
-              style: TextButton.styleFrom(
-                minimumSize: Size.square(tokens.minTarget),
-                foregroundColor: tokens.muted,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: KitButton.tertiaryInset,
-                ),
-              ),
-              onPressed: () => setState(() => _open = !_open),
-              iconAlignment: IconAlignment.end,
-              icon: Icon(
-                _open ? AppIconography.chevronUp : AppIconography.chevronDown,
-                size: tokens.smallIconSize,
-              ),
-              label: Text(_l10n(context).kitDetails),
-            ),
-          ),
-        ),
-        KitReveal(
-          child: !_open
-              ? null
-              : Container(
-                  padding: EdgeInsets.all(tokens.space3),
-                  decoration: BoxDecoration(
-                    color: tokens.detailsSurface,
-                    borderRadius: BorderRadius.circular(tokens.detailsRadius),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final (index, value) in values.indexed) ...[
-                        if (index > 0) SizedBox(height: tokens.space2),
-                        Text(value.label, style: tokens.note),
-                        Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: SelectableText(
-                            value.value,
-                            key: value.key,
-                            style: tokens.technicalValue,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A confirmation's consequences (visual language §5): counted facts that
-/// go with the act, as rows on one `surface1` panel with hairlines inset to
-/// the words. The first fact of a stop or delete carries the danger tone.
-class _KitConsequences extends StatelessWidget {
-  const _KitConsequences({required this.consequences, required this.danger});
-
-  final List<String> consequences;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.insetSurface,
-        borderRadius: BorderRadius.circular(tokens.detailsRadius),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < consequences.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 0,
-                thickness: 0,
-                indent: tokens.space4 + 20 + tokens.space3,
-                color: roles.hairline,
-              ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.space4,
-                vertical: tokens.space3,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Icon(
-                      i == 0 && danger
-                          ? AppIconography.warning
-                          : AppIconography.info,
-                      size: 20,
-                      color: i == 0 && danger ? roles.danger : roles.text2,
-                    ),
-                  ),
-                  SizedBox(width: tokens.space3),
-                  Expanded(
-                    child: Text(consequences[i], style: tokens.rowTitle),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
