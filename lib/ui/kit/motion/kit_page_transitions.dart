@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme_roles.dart';
 import '../kit_motion.dart';
 
 /// The app's one page transition (design standard §10): Material 3's shared
@@ -220,7 +221,7 @@ class _KitCoveredPageState extends State<_KitCoveredPage> {
     if (!opaque) return moving;
     return ColoredBox(
       color: widget.secondaryAnimation.isAnimating
-          ? Theme.of(context).scaffoldBackgroundColor
+          ? ThemeRoles.of(context).ground
           : Colors.transparent,
       child: moving,
     );

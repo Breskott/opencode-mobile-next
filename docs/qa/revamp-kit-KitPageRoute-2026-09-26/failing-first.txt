@@ -1,0 +1,92 @@
+# Failing-first runs for the review fixes (2026-09-27)
+
+Each run temporarily undoes one fix in the working tree, runs the test that guards it, and restores the fix. All three tests pass with the fixes in place (README run table).
+
+## A. Test 4 (one pump under disableAnimations) without KitPageRoute's offstage override
+$ flutter test -j 1 test/kit/kit_page_route_test.dart --plain-name 'after one pump'
+00:00 +0: loading test/kit/kit_page_route_test.dart
+00:00 +0: under disableAnimations the new page is opaque and in place after one pump (G8x)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "B": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file://test/kit/kit_page_route_test.dart:131:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit/kit_page_route_test.dart line 131
+The test description was:
+  under disableAnimations the new page is opaque and in place after one pump (G8x)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: under disableAnimations the new page is opaque and in place after one pump (G8x) [E]
+  Test failed. See exception logs above.
+  The test description was: under disableAnimations the new page is opaque and in place after one pump (G8x)
+  
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/kit/kit_page_route_test.dart: under disableAnimations the new page is opaque and in place after one pump (G8x)
+
+## B. Test 8 (draft in widget state) with KitPageRoute's maintainState default flipped to false
+$ flutter test -j 1 test/kit/kit_page_route_test.dart --plain-name 'a draft in a page underneath'
+00:00 +0: loading test/kit/kit_page_route_test.dart
+00:00 +0: a draft in a page underneath survives push, pop and a reduced-motion toggle while the page above is open
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "draft text": []>
+   Which: means none were found but one was expected
+page A is covered but kept (maintainState)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file://test/kit/kit_page_route_test.dart:239:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit/kit_page_route_test.dart line 239
+The test description was:
+  a draft in a page underneath survives push, pop and a reduced-motion toggle while the page above
+  is open
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: a draft in a page underneath survives push, pop and a reduced-motion toggle while the page above is open [E]
+  Test failed. See exception logs above.
+  The test description was: a draft in a page underneath survives push, pop and a reduced-motion toggle while the page above is open
+  
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/kit/kit_page_route_test.dart: a draft in a page underneath survives push, pop and a reduced-motion toggle while the page above is open
+
+## C. Test 10 (KIT-7 guard) with G16's route counting removed (the previous commit's state: routes not counted)
+$ flutter test -j 1 test/kit_ratchet_test.dart --plain-name 'KIT-7'
+00:00 +0: loading test/kit_ratchet_test.dart
+00:00 +0: counters on fixture strings (proves the regexes, not just files) KIT-7: a new MaterialPageRoute( in a file with no baseline entry fails G16, in lib/ui and in UI code elsewhere under lib/
+00:00 +0 -1: counters on fixture strings (proves the regexes, not just files) KIT-7: a new MaterialPageRoute( in a file with no baseline entry fails G16, in lib/ui and in UI code elsewhere under lib/ [E]
+  Expected: {'MaterialPageRoute': 1, 'PageRouteBuilder': 1}
+    Actual: {}
+     Which: has different length and is missing map key 'MaterialPageRoute'
+  lib/ui/screens/kit7_fixture_only.dart
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit_ratchet_test.dart 1774:11                  main.<fn>.<fn>
+  
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/kit_ratchet_test.dart: counters on fixture strings (proves the regexes, not just files) KIT-7: a new MaterialPageRoute( in a file with no baseline entry fails G16, in lib/ui and in UI code elsewhere under lib/
