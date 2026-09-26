@@ -3,12 +3,12 @@
 ## 1. Scope
 
 - Unit: `kit-KitTerminalView` (wave 1, tier 1a, kit-part). Finish line: `KitTerminalView` exists in `lib/ui/kit/kit_terminal_view.dart` with its frozen API (live and output forms, `themeOf`, `selectedText`, `KitTerminalText`), the key bar has the kit look, 48 dp keys and the two server keys, the old `TerminalView` forwards to it, and the galleries and behaviour tests exist. Non-goal: no new terminal behaviour (no font size, paste, rename, stop, reconnect or exited state), no call site outside the kit changes, `kit.dart` untouched (R06).
-- Files changed (code head `ea832084`):
+- Files changed (code head `8a7fb01b`: feature `306ff1ef`, review fixes `8a7fb01b`):
   - `lib/ui/kit/kit_terminal_view.dart` (new part: `KitTerminalView`, `KitTerminalText`);
   - `lib/ui/kit/terminal_key_bar.dart` (kit look, 48 dp caps, `interrupt`/`endOfInput`, `extraRow`, `interruptKeys`, `disabledReason`, `KitTerminalKeyBar` typedef, no haptics);
   - `lib/ui/widgets/terminal_view.dart` (forwarding wrapper, "Retired by kit-KitTerminalView");
-  - `lib/l10n/app_en.arb`, `lib/l10n/app_ar.arb` and the generated `app_localizations*.dart`;
-  - `test/kit/kit_terminal_view_test.dart` (new), `test/goldens/kit/kit_terminal_view_golden_test.dart` (new) and 34 PNGs;
+  - `lib/l10n/app_en.arb`, `lib/l10n/app_ar.arb` (the generated `app_localizations*.dart` are not part of the unit: the integrator regenerates them after the merge, PROC-13);
+  - `test/kit/kit_terminal_view_test.dart` (new), `test/goldens/kit/kit_terminal_view_golden_test.dart` (new) and 34 PNGs (four re-rendered by the review fixes: `kit_terminal_view_live_800x1280_{dark,light}`, `_live_ar_1280x800_dark`, `_live_text2_1280x800_dark`);
   - `test/terminal_key_bar_test.dart`, `test/terminal_view_test.dart` (changed expectations, TEST-19, listed in §5).
 - Pages (map ids): `terminal-surface` (elements `terminal-surface-view`, `terminal-surface-keys`), through the part only; no screen was migrated.
 - Specs followed: `docs/ux-system/kit-api/KitTerminalView.md`; STANDARDS rules KIT-1, KIT-3, KIT-9, KIT-12, KIT-22, KIT-23, KIT-32, KIT-43, LOOK-1, LOOK-4, LOOK-5, LOOK-6, LOOK-8, LOOK-12, LOOK-16, LOOK-21, LAY-4, LAY-8, LAY-9, LAY-10, MOT-5, MOT-11, COPY-1, COPY-30, SEC-2, SEC-4, A11Y-1, A11Y-2, A11Y-8, TEST-5, TEST-9, TEST-15, TEST-19, TEST-20; kit-v2 §8.2, §8.4, §9.2; visual-language §3.
@@ -38,7 +38,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitTerminalView`, base `b67e3276` (feat/phone-setup-v2 when the branch was cut), code head `ea832084`.
+- Branch `revamp/kit-KitTerminalView`, base `b67e3276` (feat/phone-setup-v2 when the branch was cut), code head `8a7fb01b`. The first build commit was `ea832084`; it was rewritten as `306ff1ef` to drop the generated l10n files (review finding 1), with no other change, so the step 1-8 runs below still describe it.
 - No APK (unit agents do not build).
 
 ## 3. Devices
@@ -57,6 +57,9 @@ None: tests, goldens and renders only. Device proof is in the wave 1 checkpoint 
 | 6 | `test/kit/kit_manifest_test.dart` (G4) | only the integrator's `kit.dart` rows missing (R06) | fails on "exported" and "docRow" for KitTerminalView only: `run-manifest.txt`; with the two rows added locally all 181 manifest and motion tests pass (reverted) | PASS (expected until integration) |
 | 7 | Other `TerminalView` callers' tests: `tool_card_test`, `chat_transcript_lens_test`, `run_result_screen_test`, `release_blockers_test`, `product_ui_regression_test`, `motion_states_test` | pass unchanged | all passed (console runs, not saved) | PASS |
 | 8 | `dart analyze lib`, `dart analyze test` | no issues | No issues found (both) | PASS |
+| 9 | Review fixes (`8a7fb01b`): `test/kit/kit_terminal_view_test.dart` and the gallery, compare after the four re-rendered shots were looked at | pass | 110 passed: `run-review-fixes.txt` | PASS |
+| 10 | Review fixes: the new cases fail on the old code (split-colour secrets, the 2,500-line count) | fail without the fix | "10. too long with nowhere to open", "11. secrets are masked …", "11. a value coloured apart from its name …" failed with the `kit_terminal_view.dart` fix reverted (console run) | PASS |
+| 11 | Review fixes: `terminal_key_bar_test`, `terminal_view_test`, `local_terminal_screen_test`, `local_terminal_test`, `phone_server_card_test`, `phone_setup_progress_screen_test`, `kit_ratchet_test`, `design_standard_test`; `flutter analyze` on the five changed files | pass, no issues | all passed; No issues found (console runs, not saved) | PASS |
 
 ## 5. Evidence
 
@@ -72,13 +75,13 @@ None: tests, goldens and renders only. Device proof is in the wave 1 checkpoint 
   | A11Y-1, STATE-8 | "5. disabled keys ignore taps and say why" | `run-part-tests.txt` |
   | behaviour kept | "6. in application cursor mode the up arrow sends ESC O A" | `run-part-tests.txt` |
   | LAY-10, G14 | "7. Tab reaches the shell; Ctrl+Tab leaves the terminal", "7. a PC window: hardware keys only, and no key bar" | `run-part-tests.txt` |
-  | kit-v2 §8.2 | "adaptive: the bar is capped and centred on a medium window", "adaptive: one row only when the room above the keyboard is short" | `run-part-tests.txt` |
+  | kit-v2 §8.2, LOOK-21 | "adaptive: the bar is capped and centred on a medium window" (keys a whole 86 dp at 800 dp; at 430 dp and DPR 3 every cap edge is on a whole physical pixel), "adaptive: one row only when the room above the keyboard is short" | `run-part-tests.txt` |
   | honest state | "8. read-only drops typed input and disables the keys" | `run-part-tests.txt` |
   | A11Y-1 | "the view is one labelled node; the grid is not read" | `run-part-tests.txt` |
   | KIT-23 | "selectedText returns only the selection" | `run-part-tests.txt` |
   | LOOK-1, LOOK-6 | "9. the palette …" (themeOf, painted-colour scan of the live and output scenes, dark and light) | `run-part-tests.txt` |
-  | spec states | "10. the tail first …", "10. too long: …", "10. too long with nowhere to open …", "empty: only the command, or nothing at all" | `run-part-tests.txt` |
-  | SEC-2, SEC-4 | "11. secrets are masked on screen and in the full text" | `run-part-tests.txt` |
+  | spec states, COPY-17 | "10. the tail first …", "10. too long: …", "10. too long with nowhere to open …" (2,500 lines, tail 40: "Show 1,960 earlier lines", the lines the tap reveals), "empty: only the command, or nothing at all" | `run-part-tests.txt` |
+  | SEC-2, SEC-4 | "11. secrets are masked on screen and in the full text" (with jq-style `"password":"…"` and `Bearer` + coloured token lines), "11. a value coloured apart from its name is still masked" | `run-part-tests.txt` |
   | LOOK-4, LOOK-5 | "12. tints: errors text1 semibold, warnings not amber, ANSI red" | `run-part-tests.txt` |
   | COPY-30, KIT-32 | "13. in Arabic the block stays left to right, buttons at start" | `run-part-tests.txt` |
   | R12, KIT-43 | "14. the old TerminalView forwards to KitTerminalView.output" | `run-part-tests.txt` |
@@ -92,14 +95,14 @@ None: tests, goldens and renders only. Device proof is in the wave 1 checkpoint 
   - `test/terminal_key_bar_test.dart` "has every key the spec lists" and "every key is at least 44 by 48 on a phone": iterate `TerminalBarKey.rows` instead of `TerminalBarKey.values` (the new `extraRow` keys show only with `interruptKeys`; they are covered in the new test file).
 - Goldens added (each opened and looked at), all under `test/goldens/kit/`:
   - declared states, dark and light: `kit_terminal_view_live`, `_disabled`, `_keys_latched` (a server bar: ^C and ^D lead, Ctrl latched in accent), `_keys_compact_915x412` (one row above a 200 dp keyboard), `_output_tail`, `_output_all`, `_output_too_long` (last 2,000 lines, "Open all 2,500 lines"), `_empty` (the command alone);
-  - `live` dark and light at 360×800 (the rows scroll: PgUp/PgDn one swipe away), 915×412, 800×1280 (bar capped at 720 and centred), 1280×800 and 1600×1000 (desktop: no key bar);
+  - `live` dark and light at 360×800 (the rows scroll: PgUp/PgDn one swipe away), 915×412, 800×1280 (bar capped at 720 dp of room, eight whole 86 dp keys, centred), 1280×800 and 1600×1000 (desktop: no key bar);
   - `live` and `output_tail` at text 2.0 and in Arabic, dark, at 412×915 and 1280×800 (Arabic: the sheet mirrors, "Show earlier" at the start (right) edge, the block stays LTR; the key bar stays LTR; a touch tablet at 1280 keeps its keys).
   - Approved VL canvas render (EVID-12): none exists for the terminal.
 - Before and after (EVID-10):
   - `before-terminal-surface-connected.png` (base census `docs/qa/screen-census/f-files-review-terminal/terminal-surface--connected.png`: literal `#0A0C0F` ground, 8 outlined keys with Material glyph boxes for the arrows) → `after-terminal-surface-keys.png` and `after-terminal-surface-live.png` (the part; the screen itself moves in screen-terminal-1).
   - `before-phone-setup-progress-details-open.png` (base census of a `TerminalView` caller) → `after-output-tail.png` (the output form in the gallery). The census is re-rendered by the coordinator (TEST-17).
 - Accessibility: the live view is one node labelled `semanticsLabel` with the grid excluded; the bar is one container "Terminal keys"; each key is a button with a spoken name (new: "Slash key", "Dash key", "Pipe key", "Tilde key", "Home key", "End key"; new keys "Interrupt, Control C", "End of input, Control D"), Ctrl and Alt toggled, disabled keys carry the reason as hint; caps are at least 48 × 48 dp with no overlap; caps clamp at 1.3× text, the terminal face at 2.0×; the selectable output block is at least 48 dp tall; the output buttons are Tab stops; focus ring 2 physical px in accent. G5 (tap targets, labels, text contrast, reading order) passed for every gallery shot in both themes.
-- Privacy and security: output lines and the command pass through `KitRedact.text` before display and before `onOpenFull` (tested with a fake provider key and a bearer header); the live shell is not redacted and never copied by the kit (`selectedText` returns the selection to the host). No stored data, links or notifications changed.
+- Privacy and security: output lines and the command pass through `KitRedact.text` before display and before `onOpenFull` (tested with a fake provider key and a bearer header). Secrets are looked for in the line with its ANSI escapes removed, so a value coloured apart from its name (`jq -C`, httpie, `Bearer \x1b[1mTOKEN`) is found; such a line loses its colours and shows the masked text, tinted like plain output; the live shell is not redacted and never copied by the kit (`selectedText` returns the selection to the host). No stored data, links or notifications changed.
 - Migration: n/a, no stored format changed.
 
 ## 6. How to reproduce
@@ -133,6 +136,6 @@ $F test -j 1 test/kit/kit_manifest_test.dart   # passes once kit.dart exports th
 | Implemented | Yes | `revamp/kit-KitTerminalView` |
 | Enabled | Partly: the key bar's new look reaches `LocalTerminalView` and the output form reaches every `TerminalView` caller through the wrapper; `KitTerminalView.live` has no caller until wave 2 | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `ea832084` |
+| Committed | Yes | code head `8a7fb01b` |
 | Deployed | No | |
 | Released | No | |
