@@ -1,0 +1,5 @@
+Full render (gallery + behaviour tests, --update-goldens):
+00:12 +70 -2: Some tests failed.
+  (the 2 failures: kit_composer voice_listening dark/light, G5 textContrast on "Listening…"; fixed by the body role)
+Voice shots re-rendered after the fix (--plain-name "voice_"):
+00:01 +6: All tests passed!
