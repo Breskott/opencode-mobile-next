@@ -22436,6 +22436,69 @@
   "@kitTaskStopped": {
     "description": "Kit task mark: the default word for a task that was stopped before it finished"
   },
+  "kitNeedsYouReasonDecision": "Needs your decision",
+  "@kitNeedsYouReasonDecision": {
+    "description": "KitNeedsYou.reasonWord: only the person can decide (a permission, a question or form, a gate, a merge)"
+  },
+  "kitNeedsYouReasonBlocked": "Stuck: needs you",
+  "@kitNeedsYouReasonBlocked": {
+    "description": "KitNeedsYou.reasonWord: work cannot continue (credentials rejected, a limit, storage full, a step still failing)"
+  },
+  "kitNeedsYouReasonConsent": "Needs your OK",
+  "@kitNeedsYouReasonConsent": {
+    "description": "KitNeedsYou.reasonWord: a first-time consent at the moment it becomes relevant"
+  },
+  "kitNeedsYouSpan": "{count, plural, =1{Needs you · } other{{count} need you · }}",
+  "@kitNeedsYouSpan": {
+    "description": "KitNeedsYou.span: the start of a row's supporting line, in the attention tone",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitNeedsYouBadgeSuffix": "{count, plural, =1{, 1 need you} other{, {count} need you}}",
+  "@kitNeedsYouBadgeSuffix": {
+    "description": "KitNeedsYou.badge: appended to the host's own semantics label so the count is read once, never by the badge itself",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitNeedsYouWaiting": "waiting {age}",
+  "@kitNeedsYouWaiting": {
+    "description": "KitNeedsYou.row: composed with KitSince.ageLabel, mid-sentence (\"waiting 4 min\")",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "kitNeedsYouWaitingSpoken": "{minutes, plural, =0{waiting less than a minute} =1{waiting 1 minute} other{waiting {minutes} minutes}}",
+  "@kitNeedsYouWaitingSpoken": {
+    "description": "KitNeedsYou.row: the row's age for a screen reader, unabbreviated and mid-sentence (\"waiting 4 minutes\"); the visible line uses kitNeedsYouWaiting",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitNeedsYouWhoOnServer": "{who} on {server}",
+  "@kitNeedsYouWhoOnServer": {
+    "description": "KitNeedsYou.row: the agent and the server it ran on, when both are given",
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
   "kitSwatchInUse": "In use",
   "@kitSwatchInUse": {
     "description": "KitSwatch: the selected value announced by a screen reader for a swatch that is the theme or accent in use now"
