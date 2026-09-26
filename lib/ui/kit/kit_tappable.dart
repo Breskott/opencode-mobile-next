@@ -85,8 +85,9 @@ class _KitTappableFocusRingPainter extends CustomPainter {
 /// own size. It always has a keyboard focus ring and, on a fine pointer, a
 /// hover fill and the click cursor; a pressed fill replaces the ripple. With
 /// a non-empty [menu], right-click, long-press, Shift+F10 and the Menu key
-/// all open the same `showKitMenu` popup, and each item is also a semantic
-/// custom action.
+/// all open the same `showKitMenu` popup; to a screen reader the semantic
+/// long-press is "Show actions" (it opens the same popup) and each item is
+/// also a custom action. A disabled tappable offers no menu on any path.
 ///
 /// States: enabled, hovered, pressed, focused, disabled ([onTap] null, which
 /// requires [disabledReason]), selected (semantics only) and menu-open
@@ -180,6 +181,10 @@ class KitTappable extends StatefulWidget {
 class _KitTappableState extends State<KitTappable> {
   late FocusNode _focusNode;
   final _tooltipKey = GlobalKey<TooltipState>();
+  // Keeps the focus/gesture/child subtree (and so the child's own state: a
+  // scroll offset, a field's text) alive when the Tooltip wrapper comes or
+  // goes with [KitTappable.tooltip].
+  final _subtreeKey = GlobalKey(debugLabel: 'KitTappable subtree');
   bool _ownsFocusNode = false;
   bool _hovered = false;
   bool _pressed = false;
@@ -299,6 +304,10 @@ class _KitTappableState extends State<KitTappable> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    // Only keys aimed at this tappable itself: a key bubbling up from a
+    // focused descendant (a nested button, a text field) belongs to that
+    // descendant and to the app's Shortcuts above us, never to the row.
+    if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final isActivate =
         key == LogicalKeyboardKey.enter ||
@@ -362,22 +371,27 @@ class _KitTappableState extends State<KitTappable> {
       child: Center(widthFactor: 1, heightFactor: 1, child: widget.child),
     );
 
-    final decoration = ShapeDecoration(color: fill, shape: shapeBorder);
-    final Widget filled = reduced
-        ? DecoratedBox(decoration: decoration, child: sized)
-        : AnimatedContainer(
-            duration: KitMotion.quick,
-            curve: KitMotion.enter,
-            decoration: decoration,
-            child: sized,
-          );
+    // One widget in every mode (the child subtree never remounts when
+    // Effects Off toggles): under reduced motion the duration is zero, so
+    // the fill changes at once and no ticker starts. A fill that appears or
+    // deepens eases in on `enter`; one that clears eases out on `exit`.
+    final Widget filled = AnimatedContainer(
+      duration: reduced ? Duration.zero : KitMotion.quick,
+      curve: fill.a == 0 ? KitMotion.exit : KitMotion.enter,
+      decoration: ShapeDecoration(color: fill, shape: shapeBorder),
+      child: sized,
+    );
 
     final ringed = Stack(
       fit: StackFit.passthrough,
       children: [
         filled,
         if (_focusRingVisible)
-          Positioned.fill(
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            top: 0,
+            bottom: 0,
             child: IgnorePointer(
               child: CustomPaint(
                 painter: _KitTappableFocusRingPainter(
@@ -412,11 +426,14 @@ class _KitTappableState extends State<KitTappable> {
       ),
     );
 
-    final focused = Focus(
-      focusNode: _focusNode,
-      autofocus: widget.autofocus,
-      onKeyEvent: disabled ? null : _handleKeyEvent,
-      child: gestured,
+    final focused = KeyedSubtree(
+      key: _subtreeKey,
+      child: Focus(
+        focusNode: _focusNode,
+        autofocus: widget.autofocus,
+        onKeyEvent: disabled ? null : _handleKeyEvent,
+        child: gestured,
+      ),
     );
 
     final tooltip = widget.tooltip;
@@ -438,14 +455,23 @@ class _KitTappableState extends State<KitTappable> {
       );
     }
 
-    final hasMenu = widget.menu.isNotEmpty;
+    // A disabled tappable offers no menu to anyone: pointer and keyboard
+    // get none (their handlers are null above), so neither does a screen
+    // reader (A11Y-5, gesture-twin parity).
+    final hasMenu = !disabled && widget.menu.isNotEmpty;
     final customActions = <CustomSemanticsAction, VoidCallback>{
       if (hasMenu)
-        CustomSemanticsAction(label: l10n.kitTappableShowActions): () =>
-            _openMenu(null),
-      for (final item in widget.menu.where((item) => item.enabled))
-        CustomSemanticsAction(label: item.label): () => _invokeMenuItem(item),
+        for (final item in widget.menu.where((item) => item.enabled))
+          CustomSemanticsAction(label: item.label): () => _invokeMenuItem(item),
     };
+    // The semantic long-press is the menu's twin, named "Show actions"
+    // (KitTappable.md Accessibility); without a menu it is the KitRow
+    // compatibility hook, if any.
+    final VoidCallback? semanticLongPress = disabled
+        ? null
+        : hasMenu
+        ? () => _openMenu(null)
+        : widget.onLongPress;
 
     return Semantics(
       button: widget.role == KitTappableRole.button,
@@ -456,7 +482,8 @@ class _KitTappableState extends State<KitTappable> {
       hint: disabled ? widget.disabledReason : null,
       excludeSemantics: widget.label != null,
       onTap: disabled ? null : widget.onTap,
-      onLongPress: disabled ? null : widget.onLongPress,
+      onLongPress: semanticLongPress,
+      onLongPressHint: hasMenu ? l10n.kitTappableShowActions : null,
       customSemanticsActions: customActions.isEmpty ? null : customActions,
       child: tipped,
     );

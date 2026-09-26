@@ -108,27 +108,70 @@ bool _near(Color a, Color b) =>
     ((a.g - b.g) * 255).abs() <= 2 &&
     ((a.b - b.b) * 255).abs() <= 2;
 
-/// The custom semantics actions KitTappable's outer [Semantics] node
-/// declares, by label.
-Map<String, VoidCallback> _customActions(WidgetTester tester) {
-  final semantics = tester
-      .widgetList<Semantics>(
-        find.descendant(
-          of: find.byType(KitTappable),
-          matching: find.byType(Semantics),
-        ),
-      )
-      .first;
-  final actions = semantics.properties.customSemanticsActions;
-  if (actions == null) return const {};
-  return {for (final e in actions.entries) e.key.label ?? '': e.value};
+/// KitTappable's node in the semantics tree (what a screen reader sees).
+SemanticsNode _node(WidgetTester tester) =>
+    tester.getSemantics(find.byType(KitTappable));
+
+/// The custom actions published on [node], by label, as action ids (hint
+/// overrides, which travel in the same list, left out).
+Map<String, int> _customActionIds(SemanticsNode node) => {
+  for (final id in node.getSemanticsData().customSemanticsActionIds ?? [])
+    if (CustomSemanticsAction.getAction(id)!.action == null)
+      CustomSemanticsAction.getAction(id)!.label ?? '': id,
+};
+
+/// The hint a screen reader speaks for [node]'s long-press action, if it is
+/// overridden (e.g. "Double-tap and hold to Show actions").
+String? _longPressHint(SemanticsNode node) {
+  for (final id in node.getSemanticsData().customSemanticsActionIds ?? []) {
+    final action = CustomSemanticsAction.getAction(id)!;
+    if (action.action == SemanticsAction.longPress) return action.hint;
+  }
+  return null;
 }
+
+/// Performs [action] on [node] the way the platform's screen reader does:
+/// through the semantics owner, not through a widget's callback.
+Future<void> _perform(
+  WidgetTester tester,
+  SemanticsNode node,
+  SemanticsAction action, [
+  Object? arguments,
+]) async {
+  node.owner!.performAction(node.id, action, arguments);
+  await tester.pumpAndSettle();
+}
+
+/// The cursor the mouse at device 1 (the first mouse [TestGesture]) shows.
+MouseCursor _cursor() =>
+    RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1)!;
 
 /// The focus ring is the only [CustomPaint] KitTappable ever builds.
 Finder get _ring => find.descendant(
   of: find.byType(KitTappable),
   matching: find.byType(CustomPaint),
 );
+
+/// A child with state of its own, to prove KitTappable never remounts it.
+class _Counted extends StatefulWidget {
+  const _Counted({required this.onInit});
+
+  final VoidCallback onInit;
+
+  @override
+  State<_Counted> createState() => _CountedState();
+}
+
+class _CountedState extends State<_Counted> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('Row');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -234,6 +277,7 @@ void main() {
         focusNode: focusNode,
         child: const Text('Delete'),
       ),
+      background: _surfaceColor(false, KitSurfaceLevel.surface1),
     );
 
     final semantics = tester.getSemantics(find.byType(KitTappable));
@@ -245,15 +289,24 @@ void main() {
     await tester.pump();
     expect(focusNode.hasFocus, isFalse);
 
-    final region = tester.widget<MouseRegion>(
-      find
-          .descendant(
-            of: find.byType(KitTappable),
-            matching: find.byType(MouseRegion),
-          )
-          .first,
+    // A fine pointer over it: the basic cursor and no hover fill.
+    final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+    final rect = tester.getRect(find.byType(KitTappable));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(rect.center);
+    await tester.pumpAndSettle();
+    expect(_cursor(), SystemMouseCursors.basic);
+    final shot = await _Shot.take(tester);
+    expect(
+      _near(
+        shot.at(rect.topLeft + const Offset(4, 4)),
+        tokens.fillOf(KitSurfaceLevel.surface1),
+      ),
+      isTrue,
+      reason: 'no hover fill: the surface it sits on shows through',
     );
-    expect(region.cursor, MouseCursor.defer);
     handle.dispose();
   });
 
@@ -330,6 +383,7 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await tester.pumpAndSettle();
       expect(find.byType(KitMenuPanel), findsOneWidget);
+      _expectAnchored(tester);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
     });
@@ -351,6 +405,53 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
       await tester.pumpAndSettle();
       expect(find.byType(KitMenuPanel), findsOneWidget);
+      _expectAnchored(tester);
+    });
+
+    testWidgets('keys from a focused child belong to the child, not the row', (
+      tester,
+    ) async {
+      var rowTaps = 0;
+      var childPresses = 0;
+      final childFocus = FocusNode(debugLabel: 'nested button');
+      addTearDown(childFocus.dispose);
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: () => rowTaps++,
+          menu: [KitMenuItem(label: 'Archive', onSelected: () {})],
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: TextButton(
+              focusNode: childFocus,
+              onPressed: () => childPresses++,
+              child: const Text('Retry'),
+            ),
+          ),
+        ),
+      );
+      childFocus.requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(childPresses, 1, reason: "Enter reaches the child's action");
+      expect(rowTaps, 0, reason: "the row's onTap does not fire");
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(childPresses, 2, reason: "Space reaches the child's action");
+      expect(rowTaps, 0);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(KitMenuPanel),
+        findsNothing,
+        reason: 'Shift+F10 inside a child does not open the row menu',
+      );
     });
 
     testWidgets('onLongPress: a long-press calls it and opens no menu', (
@@ -372,26 +473,88 @@ void main() {
     });
   });
 
-  testWidgets('5. menu items are custom semantics actions', (tester) async {
-    // Disposed inline, not via addTearDown: the end-of-test leak check runs
-    // before addTearDown callbacks.
-    final handle = tester.ensureSemantics();
-    var archived = false;
-    await _pump(
+  group('5. screen reader: the menu as semantic actions', () {
+    testWidgets('each enabled item is a custom action that runs it', (
       tester,
-      KitTappable(
-        onTap: () {},
-        menu: [
-          KitMenuItem(label: 'Archive', onSelected: () => archived = true),
-        ],
-        child: const Text('Row'),
-      ),
-    );
-    final actions = _customActions(tester);
-    expect(actions.keys, containsAll(['Show actions', 'Archive']));
-    actions['Archive']!();
-    expect(archived, isTrue);
-    handle.dispose();
+    ) async {
+      // Disposed inline, not via addTearDown: the end-of-test leak check
+      // runs before addTearDown callbacks.
+      final handle = tester.ensureSemantics();
+      var archived = 0;
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: () {},
+          menu: [
+            KitMenuItem(label: 'Rename', onSelected: () {}),
+            KitMenuItem(label: 'Archive', onSelected: () => archived++),
+          ],
+          child: const Text('Row'),
+        ),
+      );
+      final node = _node(tester);
+      final ids = _customActionIds(node);
+      expect(ids.keys, unorderedEquals(['Rename', 'Archive']));
+      await _perform(
+        tester,
+        node,
+        SemanticsAction.customAction,
+        ids['Archive'],
+      );
+      expect(archived, 1);
+      expect(find.byType(KitMenuPanel), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('the long-press action is "Show actions" and opens the menu', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: () {},
+          menu: [KitMenuItem(label: 'Archive', onSelected: () {})],
+          child: const Text('Row'),
+        ),
+      );
+      final node = _node(tester);
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isTrue,
+      );
+      expect(_longPressHint(node), 'Show actions');
+      expect(_customActionIds(node).keys, ['Archive']);
+      await _perform(tester, node, SemanticsAction.longPress);
+      expect(find.byType(KitMenuPanel), findsOneWidget);
+      _expectAnchored(tester);
+      handle.dispose();
+    });
+
+    testWidgets('disabled with a menu: no custom actions, no long-press', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: null,
+          disabledReason: 'Needs a connection',
+          menu: [KitMenuItem(label: 'Archive', onSelected: () {})],
+          child: const Text('Row'),
+        ),
+      );
+      final node = _node(tester);
+      final data = node.getSemanticsData();
+      expect(
+        data.customSemanticsActionIds ?? const <int>[],
+        isEmpty,
+        reason: 'no menu items and no "Show actions" hint',
+      );
+      expect(data.hasAction(SemanticsAction.longPress), isFalse);
+      expect(_longPressHint(node), isNull);
+      handle.dispose();
+    });
   });
 
   testWidgets('6. empty menu: long-press shows the tooltip, opens nothing', (
@@ -437,6 +600,7 @@ void main() {
       addTearDown(() => mouse.removePointer());
       await mouse.moveTo(rect.center);
       await tester.pumpAndSettle();
+      expect(_cursor(), SystemMouseCursors.click, reason: 'fine pointer');
       shot = await _Shot.take(tester);
       expect(_near(shot.at(probePoint), tokens.fillOf(expectHover)), isTrue);
 
@@ -511,14 +675,32 @@ void main() {
     addTearDown(focusNode.dispose);
     await _pump(
       tester,
-      KitTappable(onTap: () {}, focusNode: focusNode, child: const Text('Row')),
+      KitTappable(
+        onTap: () {},
+        focusNode: focusNode,
+        child: const SizedBox(width: 20, height: 20),
+      ),
+      background: _surfaceColor(false, KitSurfaceLevel.surface1),
     );
     expect(_ring, findsNothing);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     expect(focusNode.hasFocus, isTrue, reason: 'Tab moved focus onto it');
-    expect(_ring, findsOneWidget);
+    // DPR 1 here, so 2 physical px is 2 logical px: the two outermost
+    // columns on each side are accent, the third is the surface again.
+    final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+    final accent = tokens.roles.accent;
+    final surface = tokens.fillOf(KitSurfaceLevel.surface1);
+    final rect = tester.getRect(find.byType(KitTappable));
+    final shot = await _Shot.take(tester);
+    Color column(double dx) => shot.at(Offset(rect.left + dx, rect.center.dy));
+    expect(_near(column(0), accent), isTrue, reason: 'ring, start edge');
+    expect(_near(column(1), accent), isTrue, reason: 'ring, 2nd px');
+    expect(_near(column(2), surface), isTrue, reason: 'exactly 2 px wide');
+    expect(_near(column(rect.width - 1), accent), isTrue, reason: 'end edge');
+    expect(_near(column(rect.width - 2), accent), isTrue);
+    expect(_near(column(rect.width - 3), surface), isTrue);
 
     focusNode.unfocus();
     // FocusNode's own change notification can lag a frame behind unfocus()
@@ -585,6 +767,38 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  testWidgets('the child keeps its state across Effects Off and tooltip', (
+    tester,
+  ) async {
+    var inits = 0;
+    final config = ValueNotifier<(bool, String?)>((false, null));
+    addTearDown(config.dispose);
+    await _pump(
+      tester,
+      ValueListenableBuilder<(bool, String?)>(
+        valueListenable: config,
+        builder: (context, value, _) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: value.$1),
+          child: KitTappable(
+            onTap: () {},
+            tooltip: value.$2,
+            child: _Counted(onInit: () => inits++),
+          ),
+        ),
+      ),
+    );
+    expect(inits, 1);
+    config.value = (true, null); // Effects Off
+    await tester.pumpAndSettle();
+    config.value = (true, 'More info'); // a tooltip appears
+    await tester.pumpAndSettle();
+    config.value = (false, 'More info'); // Effects back on
+    await tester.pumpAndSettle();
+    config.value = (false, null); // the tooltip goes away
+    await tester.pumpAndSettle();
+    expect(inits, 1, reason: 'the child subtree was never remounted');
+  });
+
   testWidgets('12. selected exposes isSelected in semantics', (tester) async {
     // Disposed inline, not via addTearDown: the end-of-test leak check runs
     // before addTearDown callbacks.
@@ -623,3 +837,23 @@ void main() {
 }
 
 void _noop() {}
+
+/// A keyboard- or screen-reader-opened menu is anchored to the tappable
+/// (`position: null`), not to a pointer: KitMenu's anchoring rule puts it
+/// below the widget, aligned to its end edge (the right, in LTR).
+void _expectAnchored(WidgetTester tester) {
+  final own = tester.getRect(find.byType(KitTappable));
+  final panel = tester.getRect(find.byType(KitMenuPanel));
+  // KitMenu snaps its origin to a device pixel (DPR 1 here), so allow half
+  // a pixel either way.
+  expect(
+    panel.top,
+    closeTo(own.bottom, 0.5),
+    reason: 'directly below the widget',
+  );
+  expect(
+    panel.right,
+    closeTo(own.right, 0.5),
+    reason: "aligned to the widget's end edge",
+  );
+}
