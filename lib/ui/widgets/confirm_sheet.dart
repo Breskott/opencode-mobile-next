@@ -1,59 +1,36 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import 'request_routes.dart';
 import '../app_iconography.dart';
-import '../kit/kit_sheet.dart';
+import '../kit/kit_icon.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
-/// The older name of [showKitConfirm] (docs/ux-system/kit-v2.md §2.14):
-/// deprecated, kept as a thin wrapper so its call sites get the kit's
-/// confirmation at once. New code calls [showKitConfirm] with a [kind];
-/// this wrapper is deleted once every call site passes one.
+// The retired confirmation wrapper moved into the kit (R12, KIT-38); this
+// re-export keeps every `import 'confirm_sheet.dart'` compiling.
+export '../kit/kit_confirm_retired.dart' show showConfirmSheet;
+
+/// The end-swipe reveal behind a list row: a `surface2` field with the
+/// delete glyph at its end, in the danger tone (LOOK-5: the act loses data).
 ///
-/// [message] is the body. [destructive] maps to [KitConfirmKind.destructive]
-/// unless [kind] says otherwise (a stop is [KitConfirmKind.stop]). The old
-/// default "?" icon and the English "Cancel" give way to the kind's own
-/// icon and cancel word. Returns true only when the confirming action is
-/// chosen.
-Future<bool> showConfirmSheet(
-  BuildContext context, {
-  required String title,
-  required String message,
-  required String confirmLabel,
-  String? cancelLabel,
-  IconData? icon,
-  bool destructive = false,
-  KitConfirmKind? kind,
-  Key? sheetKey,
-  Key? confirmKey,
-  RequestRoutes? routes,
-}) => showKitConfirm(
-  context,
-  title: title,
-  body: message,
-  confirmLabel: confirmLabel,
-  kind:
-      kind ??
-      (destructive ? KitConfirmKind.destructive : KitConfirmKind.neutral),
-  cancelLabel: cancelLabel == 'Cancel' ? null : cancelLabel,
-  icon: icon == AppIconography.question ? null : icon,
-  sheetKey: sheetKey,
-  confirmKey: confirmKey,
-  routes: routes,
-);
-
-/// End-swipe reveal behind list rows whose swipe leads into the destructive
-/// confirm flow above: a destructive field with a trailing delete glyph.
+/// Kit only (shared-shell-1). When `KitSwipeAction` (kit-KitRow-v2) lands,
+/// this becomes a forwarding wrapper over its background (C37); until then
+/// it draws the same field from kit parts. A swipe is only an accelerator
+/// (KIT-29): the act it leads to is also in the row's menu.
 class SwipeDeleteBackground extends StatelessWidget {
   const SwipeDeleteBackground({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.errorContainer,
+  Widget build(BuildContext context) => KitSurface(
+    level: KitSurfaceLevel.surface2,
+    shape: KitShape.square,
+    padding: KitSurfacePadding.none,
+    child: Align(
       alignment: AlignmentDirectional.centerEnd,
-      padding: const EdgeInsetsDirectional.only(end: 24),
-      child: Icon(AppIconography.delete, color: scheme.onErrorContainer),
-    );
-  }
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(end: KitTokens.of(context).space6),
+        child: const KitIcon(AppIconography.delete, tone: KitTextTone.danger),
+      ),
+    ),
+  );
 }

@@ -1,21 +1,28 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-/// A one-shot staggered list entrance: items fade in and rise slightly, with
-/// the stagger capped so long lists settle as fast as short ones.
+import '../kit/kit_motion.dart';
+import '../kit/motion/kit_reveal.dart';
+
+/// Retired by shared-shell-1: use [KitEntrance].
 ///
-/// Purely ticker-driven ([TweenAnimationBuilder]), so it is safe when a test
-/// disposes the tree mid-flight, and it renders the final state immediately
-/// when animations are disabled.
+/// A list row arriving: it fades in and rises into place through the kit's
+/// one entrance ([KitEntrance], `KitMotion.standard`, `KitMotion.enter`), so
+/// every row in the app moves the same way (MOT-1). The old per-index
+/// stagger is gone: the kit owns durations and curves, and a list settles in
+/// one standard beat. [index] is kept so call sites still compile.
+///
+/// It renders the final state at once when motion is reduced, and rows that
+/// scroll into view later are not animated (see [_listAtRest]).
 class EntranceReveal extends StatefulWidget {
   const EntranceReveal({super.key, required this.index, required this.child});
 
-  /// Position in the list; delays are capped at [staggerCap] items.
+  /// Position in the list. Kept for existing call sites; the kit entrance
+  /// does not stagger.
   final int index;
   final Widget child;
 
+  /// Kept for existing readers; there is no stagger any more.
   static const staggerCap = 8;
-  static const _stepMs = 28;
-  static const _revealMs = 190;
 
   @override
   State<EntranceReveal> createState() => _EntranceRevealState();
@@ -28,38 +35,15 @@ class _EntranceRevealState extends State<EntranceReveal> {
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
+    if (KitMotion.reduced(context)) return widget.child;
     if (!(_reveal ??= _listAtRest(context))) return widget.child;
-    final delayMs =
-        widget.index.clamp(0, EntranceReveal.staggerCap) *
-        EntranceReveal._stepMs;
-    final totalMs = delayMs + EntranceReveal._revealMs;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: totalMs),
-      builder: (context, t, child) {
-        final elapsedMs = t * totalMs;
-        final raw = ((elapsedMs - delayMs) / EntranceReveal._revealMs).clamp(
-          0.0,
-          1.0,
-        );
-        final eased = Curves.easeOutCubic.transform(raw);
-        return Opacity(
-          opacity: eased,
-          child: Transform.translate(
-            offset: Offset(0, (1 - eased) * 8),
-            child: child,
-          ),
-        );
-      },
-      child: widget.child,
-    );
+    return KitEntrance(child: widget.child);
   }
 
   /// Lazy lists build rows as they scroll into view. Those rows are not
-  /// arriving, and fading each one in (invisible through its stagger delay)
-  /// costs a composited layer per row mid-fling, so only rows mounted while
-  /// the list rests at its start get the entrance.
+  /// arriving, and fading each one in costs a composited layer per row
+  /// mid-fling, so only rows mounted while the list rests at its start get
+  /// the entrance.
   static bool _listAtRest(BuildContext context) {
     final position = Scrollable.maybeOf(context)?.position;
     // No content dimensions yet means the list's very first layout.
