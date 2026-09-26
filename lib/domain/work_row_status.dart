@@ -159,12 +159,23 @@ class WorkRowStatus {
     if (!isFresh) {
       text = l10n.workStatusElapsed(
         text,
-        l10n.kitProgressRowAsOf(
-          DateFormat.yMd(l10n.localeName).add_Hm().format(observedAt.toLocal()),
-        ),
+        l10n.kitProgressRowAsOf(_asOf(l10n, observedAt)),
       );
     }
     return text;
+  }
+
+  /// intl's per-locale date data is loaded by the app's localization
+  /// delegates, not by [AppLocalizations]. This source must also render
+  /// outside a widget tree (tests, notification copy), so a missing locale
+  /// table falls back to a fixed numeric pattern instead of throwing.
+  static String _asOf(AppLocalizations l10n, DateTime at) {
+    final local = at.toLocal();
+    try {
+      return DateFormat.yMd(l10n.localeName).add_Hm().format(local);
+    } on Exception {
+      return DateFormat('yyyy-MM-dd HH:mm', 'en_US').format(local);
+    }
   }
 
   static Duration _age(DateTime now, DateTime then) {

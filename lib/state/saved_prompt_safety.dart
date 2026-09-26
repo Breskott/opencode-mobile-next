@@ -41,8 +41,14 @@ Object? _safe(Object? value, [String? key]) {
           mime == 'application/json' ||
           mime == 'application/xml' ||
           mime == 'application/javascript') {
+        final text = utf8.decode(data.contentAsBytes());
+        final safe = KitRedact.text(text);
+        // Re-encoding normalizes the URL (it drops an explicit text/plain),
+        // so only rewrite a payload that redaction actually changed: a clean
+        // attachment must round-trip unchanged.
+        if (safe == text) return savedPromptIdentity(value);
         return Uri.dataFromString(
-          KitRedact.text(utf8.decode(data.contentAsBytes())),
+          safe,
           mimeType: mime,
           encoding: utf8,
           base64: true,
