@@ -4,6 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_motion.dart';
 import 'kit_row.dart';
+import 'kit_tokens.dart';
 import 'motion/kit_reveal.dart';
 
 /// A [KitRow]'s leading icon with an optional current mark (design
@@ -24,17 +25,17 @@ class KitRowIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (!current) return KitRow.icon(context, icon, color: color);
+    final tokens = KitTokens.of(context);
     return Container(
       key: const ValueKey('kit-row-current-mark'),
-      width: 32,
-      height: 32,
+      width: tokens.iconTileSize,
+      height: tokens.iconTileSize,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
-        shape: BoxShape.circle,
+        color: tokens.roles.accent,
+        borderRadius: BorderRadius.circular(tokens.iconTileRadius),
       ),
-      child: Icon(icon, size: 18, color: theme.colorScheme.onPrimary),
+      child: Icon(icon, size: 20, color: tokens.roles.onAccent),
     );
   }
 }
@@ -44,7 +45,7 @@ class KitRowIcon extends StatelessWidget {
 TextSpan kitCurrentSpan(BuildContext context, String word) => TextSpan(
   text: '$word · ',
   style: TextStyle(
-    color: Theme.of(context).colorScheme.primary,
+    color: KitTokens.of(context).roles.accent,
     fontWeight: FontWeight.w600,
   ),
 );
@@ -122,7 +123,7 @@ class KitChevron extends StatelessWidget {
     child: Icon(
       AppIconography.chevronRight,
       size: 20,
-      color: AppTheme.mutedOf(Theme.of(context)),
+      color: KitTokens.of(context).roles.text3,
     ),
   );
 }

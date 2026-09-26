@@ -93,7 +93,8 @@ void main() {
       expect(_look(tester), KitGlassLook.solid);
       expect(find.byType(BackdropFilter), findsNothing);
       expect(find.byType(LiquidGlassFilter), findsNothing);
-      expect(_fills(tester).single.color!.a, 1);
+      // Visual language §6: glass off is a solid surface2 at 94 %.
+      expect(_fills(tester).single.color!.a, closeTo(.94, .001));
     });
 
     for (final media in <String, MediaQueryData>{

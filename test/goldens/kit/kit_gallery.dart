@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import '../../../tool/capture/fixtures.dart'
     show captureTheme, loadCaptureFonts;
@@ -46,8 +48,14 @@ ThemeData _theme({required bool light}) {
     );
   }
 
+  final text = theme.textTheme.apply(fontFamilyFallback: fallback);
   return theme.copyWith(
-    textTheme: theme.textTheme.apply(fontFamilyFallback: fallback),
+    // The kit's own styles carry the fallback too.
+    extensions: [
+      ...theme.extensions.values,
+      KitTokens.fromRoles(ThemeRoles.resolve(theme), text),
+    ],
+    textTheme: text,
     primaryTextTheme: theme.primaryTextTheme.apply(
       fontFamilyFallback: fallback,
     ),
@@ -79,6 +87,15 @@ const kitGallerySizes = <Size>[
 /// Where 2.0 text and Arabic are rendered.
 const kitGalleryScaledSizes = <Size>[Size(412, 915), Size(1280, 800)];
 
+/// The device pixel ratio a window of [size] renders at (visual language
+/// §7: goldens at the device's ratio, so a soft edge or a doubled hairline
+/// shows): 3.0 for a phone, 2.0 for a tablet, 1.0 for a PC window.
+double kitGalleryPixelRatio(Size size) => size.width < 600
+    ? 3
+    : size.shortestSide < 900 && size.width < 1200
+    ? 2
+    : 1;
+
 String kitGallerySize(Size size) =>
     '${size.width.toInt()}x${size.height.toInt()}';
 
@@ -96,8 +113,9 @@ Future<void> kitGalleryShot(
   double textScale = 1,
   bool settleAfterThen = true,
 }) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
+  final dpr = kitGalleryPixelRatio(size);
+  tester.view.physicalSize = size * dpr;
+  tester.view.devicePixelRatio = dpr;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
   late BuildContext context;
@@ -134,6 +152,60 @@ Future<void> kitGalleryShot(
     await then(tester);
     if (settleAfterThen) await tester.pumpAndSettle();
   }
+  expect(tester.takeException(), isNull);
+  await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
+}
+
+/// Pumps [child] as a screen's body at [size] (a part that is not a modal:
+/// rows, buttons, cards, type), settles, and compares the whole window with
+/// `goldens/kit/<name>.png`.
+Future<void> kitGalleryPart(
+  WidgetTester tester, {
+  required String name,
+  required Size size,
+  required bool light,
+  required Widget child,
+  Locale locale = const Locale('en'),
+  double textScale = 1,
+}) async {
+  final dpr = kitGalleryPixelRatio(size);
+  tester.view.physicalSize = size * dpr;
+  tester.view.devicePixelRatio = dpr;
+  addTearDown(tester.view.reset);
+  final boundary = GlobalKey();
+  await tester.pumpWidget(
+    RepaintBoundary(
+      key: boundary,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: _theme(light: light),
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            disableAnimations: true,
+            textScaler: TextScaler.linear(textScale),
+          ),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
   expect(tester.takeException(), isNull);
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }

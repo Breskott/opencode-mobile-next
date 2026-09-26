@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_motion.dart';
+import 'kit_tokens.dart';
 
 /// One action a kit part can show: a label, what it does, and optionally an
 /// icon. Where it appears (primary, secondary, tertiary) is decided by the
@@ -37,8 +38,11 @@ class KitAction {
 
 enum KitButtonRole { primary, secondary, tertiary }
 
-/// The only buttons a migrated screen uses: primary (filled), secondary
-/// (tonal) and tertiary (text), all at least 48 dp tall.
+/// The only buttons a migrated screen uses (visual language §5): primary
+/// (accent filled, `onAccent` words), secondary (`surface3`) and tertiary
+/// (words in `text2`), all at least 48 dp tall, 50 dp at full width, with
+/// 14 dp corners. A destructive primary is the one `dangerFill` button,
+/// used only inside a confirmation.
 ///
 /// [working] swaps the icon for a small spinner while the button's own tap
 /// is in flight (a second or two, e.g. creating a conversation): the icon
@@ -122,8 +126,6 @@ class KitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final error = theme.colorScheme.error;
     final text = Text(
       label,
       maxLines: maxLines,
@@ -179,15 +181,28 @@ class KitButton extends StatelessWidget {
     } else if (icon != null) {
       leading = Icon(icon, size: 19);
     }
-    final minimum = expand ? const Size.fromHeight(48) : const Size(48, 48);
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final minimum = expand
+        ? Size.fromHeight(tokens.buttonHeight)
+        : Size(tokens.minTarget, tokens.minTarget);
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(tokens.buttonRadius),
+    );
+    // Opaque colours only (§7): a disabled button is a quiet surface with
+    // tertiary words, never the same button at partial opacity.
     switch (role) {
       case KitButtonRole.primary:
         // Destructive is primary only where the whole sheet or screen is
-        // that one confirmed act (design standard §2).
+        // that one confirmed act (design standard §2): the one red fill.
         final style = FilledButton.styleFrom(
           minimumSize: minimum,
-          backgroundColor: destructive ? error : null,
-          foregroundColor: destructive ? theme.colorScheme.onError : null,
+          shape: shape,
+          elevation: 0,
+          backgroundColor: destructive ? roles.dangerFill : roles.accent,
+          foregroundColor: destructive ? roles.onDangerFill : roles.onAccent,
+          disabledBackgroundColor: roles.surface3,
+          disabledForegroundColor: roles.text3,
         );
         return leading == null
             ? FilledButton(onPressed: onPressed, style: style, child: child)
@@ -200,7 +215,12 @@ class KitButton extends StatelessWidget {
       case KitButtonRole.secondary:
         final style = FilledButton.styleFrom(
           minimumSize: minimum,
-          foregroundColor: destructive ? error : null,
+          shape: shape,
+          elevation: 0,
+          backgroundColor: roles.surface3,
+          foregroundColor: destructive ? roles.danger : roles.text1,
+          disabledBackgroundColor: roles.surface3,
+          disabledForegroundColor: roles.text3,
         );
         return leading == null
             ? FilledButton.tonal(
@@ -217,8 +237,10 @@ class KitButton extends StatelessWidget {
       case KitButtonRole.tertiary:
         final style = TextButton.styleFrom(
           minimumSize: minimum,
+          shape: shape,
           padding: const EdgeInsets.symmetric(horizontal: tertiaryInset),
-          foregroundColor: destructive ? error : null,
+          foregroundColor: destructive ? roles.danger : roles.text2,
+          disabledForegroundColor: roles.text3,
         );
         return leading == null
             ? TextButton(onPressed: onPressed, style: style, child: text)

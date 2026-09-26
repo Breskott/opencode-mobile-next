@@ -154,7 +154,9 @@ class KitStatusLine extends StatelessWidget {
       liveRegion: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppTheme.hairline(theme))),
+          border: Border(
+            bottom: BorderSide(color: AppTheme.hairline(theme), width: 0),
+          ),
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 52),
@@ -167,7 +169,7 @@ class KitStatusLine extends StatelessWidget {
               children: [
                 Padding(
                   padding: EdgeInsets.only(top: stacked ? 15 : 0),
-                  child: Icon(icon, size: 18, color: tint),
+                  child: Icon(icon, size: 20, color: tint),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

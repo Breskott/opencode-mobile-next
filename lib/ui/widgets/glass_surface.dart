@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../kit/glass/kit_glass.dart';
+import '../kit/kit_tokens.dart';
 
-/// The bottom dock's glass: a [KitGlass] with the dock's 24 dp corners.
+/// The bottom dock's glass: a [KitGlass] with the floating tab bar's 22 dp
+/// corners (visual language §4).
 ///
 /// The shell extends scrolling content beneath it. Liquid glass where the
 /// phone runs the shader, the frosted blur where it cannot, solid when the
@@ -23,5 +25,8 @@ class GlassSurface extends StatelessWidget {
       KitGlass.reduceEffects(context);
 
   @override
-  Widget build(BuildContext context) => KitGlass(child: child);
+  Widget build(BuildContext context) => KitGlass(
+    borderRadius: BorderRadius.circular(KitTokens.of(context).navRadius),
+    child: child,
+  );
 }

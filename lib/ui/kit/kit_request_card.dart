@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
 import 'kit_buttons.dart';
+import 'kit_tokens.dart';
 
 /// Something the agent asks of the person, which they answer here: a
 /// permission, a question, a form, or a wait they should know about
@@ -18,8 +19,9 @@ import 'kit_buttons.dart';
 /// 6. actions in the one hierarchy (§2): [primary] full width, [secondary]
 ///    under it, [tertiary] start-aligned.
 ///
-/// It floats over the conversation above the composer, so it keeps the
-/// raised shadow ([AppTheme.raised]) the design reserves for such surfaces.
+/// It is the needs-you card of the transcript (visual language §5): solid,
+/// no shadow (§7), 22 dp corners, amber surface and line when its [tone]
+/// is attention.
 class KitRequestCard extends StatelessWidget {
   const KitRequestCard({
     super.key,
@@ -58,6 +60,8 @@ class KitRequestCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tone = this.tone;
+    final tokens = KitTokens.of(context);
+    final attention = tone == AppStatusTone.attention;
     final tint = tone == null
         ? scheme.primary
         : AppTheme.statusColor(theme, tone);
@@ -75,12 +79,23 @@ class KitRequestCard extends StatelessWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 4),
           child: Container(
             key: const ValueKey('kit-request-card'),
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 12),
+            padding: EdgeInsets.all(tokens.space4),
+            // A request is content (no shadow, §7): a 22 dp card whose
+            // needs-you tone is the amber surface and line (§3).
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              border: Border.all(color: tint.withValues(alpha: .4)),
-              boxShadow: AppTheme.raised(theme),
+              color: Color.alphaBlend(
+                attention
+                    ? tokens.roles.attentionSurface
+                    : tint.withValues(alpha: .06),
+                tokens.roles.surface1,
+              ),
+              borderRadius: BorderRadius.circular(tokens.cardRadius),
+              border: Border.all(
+                color: attention
+                    ? tokens.roles.attentionLine
+                    : tint.withValues(alpha: .35),
+                width: 0,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -89,11 +104,19 @@ class KitRequestCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: Icon(icon, size: 20, color: tint),
+                    SizedBox.square(
+                      dimension: tokens.markSize - 8,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: tint.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(
+                            tokens.markRadius - 2,
+                          ),
+                        ),
+                        child: Center(child: Icon(icon, size: 20, color: tint)),
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: tokens.space3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,20 +131,31 @@ class KitRequestCard extends StatelessWidget {
                               key: titleKey,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall,
+                              style: tokens.cardTitle,
                             ),
                           ),
                           if (summary != null && summary.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                summary,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: AppTheme.monoFamily,
-                                  fontSize: AppTheme.codeFontSize,
-                                  height: 1.35,
+                              padding: const EdgeInsets.only(top: 8),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: tokens.roles.ground,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: tokens.space3,
+                                    vertical: tokens.space2,
+                                  ),
+                                  // A command or a path reads left to right
+                                  // inside any language.
+                                  child: Text(
+                                    summary,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textDirection: TextDirection.ltr,
+                                    style: tokens.technicalValue,
+                                  ),
                                 ),
                               ),
                             ),
@@ -132,10 +166,7 @@ class KitRequestCard extends StatelessWidget {
                                 detail,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.mutedOf(theme),
-                                  height: 1.35,
-                                ),
+                                style: tokens.rowSupporting,
                               ),
                             ),
                         ],

@@ -121,17 +121,18 @@ void main() {
           tabs++;
         }
         expect(_focusedOn(tester, 'Delete conversation'), isTrue);
+        // On a PC the answers sit in one row in reading order, the confirm
+        // last (visual language §5): Shift+Tab from it reaches the cancel.
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
         await tester.pump();
         expect(
           _focusedOn(tester, KitConfirmSheet.cancelFor(context, kind)),
           isTrue,
         );
-        // Shift+Tab back to the confirm: Enter on the focused button
-        // activates it.
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+        // Tab back to the confirm: Enter on the focused button activates it.
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
         await tester.pump();
         expect(_focusedOn(tester, 'Delete conversation'), isTrue);
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
