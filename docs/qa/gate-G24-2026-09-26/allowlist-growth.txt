@@ -1,3 +1,4 @@
+Waiting for another flutter command to release the startup lock...
 Resolving dependencies...
 Downloading packages...
   android_file_picker 1.1.0 (2.0.0 available)
@@ -65,7 +66,8 @@ Try `flutter pub outdated` for more information.
 00:00 +4: G24 scanner names the declaration that encloses each use
 00:00 +5: G24 scanner ARCH-10 counts every form of the channel and methods
 00:00 +6: G24 architecture boundaries ARCH-1: lib/ui never imports lib/api/ or lib/api2/
-Shell: ARCH-1 counts dropped. Commit the smaller baseline (ARCH_BOUNDARIES_WRITE=1 regenerates test/architecture_boundaries_baseline.json):
+00:00 +7: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor
+Shell: ARCH-2 counts dropped. Commit the smaller baseline (ARCH_BOUNDARIES_WRITE=1 regenerates test/architecture_boundaries_baseline.json):
 Shell: {
 Shell:   "ARCH-1": {
 Shell:     "lib/ui/agent_error_words.dart": {
@@ -218,7 +220,11 @@ Shell:     }
 Shell:   },
 Shell:   "ARCH-10 calls": {
 Shell:     "lib/state/connection.dart": {
-Shell:       "publishLiveStatus": 1
+Shell:       "publishLiveStatus": 1,
+Shell:       "showCodingAlert": 5
+Shell:     },
+Shell:     "lib/ui/screens/settings/notifications_settings_screen.dart": {
+Shell:       "sendTestNotification": 1
 Shell:     }
 Shell:   },
 Shell:   "ARCH-10 wire": {
@@ -241,8 +247,8 @@ Shell:       ".flavor ==": 1,
 Shell:       "ServerFlavor.": 1
 Shell:     },
 Shell:     "lib/ui/screens/servers_screen.dart": {
-Shell:       ".flavor ==": 4,
-Shell:       "ServerFlavor.": 6
+Shell:       ".flavor ==": 3,
+Shell:       "ServerFlavor.": 5
 Shell:     },
 Shell:     "lib/ui/screens/termux_setup_screen.dart": {
 Shell:       ".flavor ==": 2,
@@ -270,6 +276,9 @@ Shell:       ],
 Shell:       "_ProfileEditorScreenState._save": [
 Shell:         "The profile editor stores the flavour on the profile: the probed one, or OpenCode 1 when the endpoint changed and nothing was probed."
 Shell:       ],
+Shell:       "_ProfileEditorScreenState._testConnection": [
+Shell:         "Probe: a unit allowlists a behaviour gate by adding only a reason."
+Shell:       ],
 Shell:       "_ServersScreenState._enterPhoneCredentials": [
 Shell:         "Creates the phone server profile from its credentials sheet and sets its flavour (OpenCode 1 or 2) from the runtime the sheet was opened for."
 Shell:       ],
@@ -295,6 +304,8 @@ Shell:       "_ProbeVerdict.build: .flavor ==": 3,
 Shell:       "_ProbeVerdict.build: ServerFlavor.": 3,
 Shell:       "_ProfileEditorScreenState._save: .flavor ==": 1,
 Shell:       "_ProfileEditorScreenState._save: ServerFlavor.": 3,
+Shell:       "_ProfileEditorScreenState._testConnection: .flavor ==": 1,
+Shell:       "_ProfileEditorScreenState._testConnection: ServerFlavor.": 1,
 Shell:       "_ServersScreenState._enterPhoneCredentials: ServerFlavor.": 2,
 Shell:       "_knownOpenCodeGeneration: ServerFlavor.": 2,
 Shell:       "_knownOpenCodeGeneration: switch (flavor)": 1
@@ -308,24 +319,36 @@ Shell:     }
 Shell:   }
 Shell: }
 Shell: 
-00:00 +7: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor
 00:00 +8: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink
-00:00 +9: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason
-00:00 +10: G24 architecture boundaries ARCH-10: the oc/background wire names stay with their owners
-00:00 +11: G24 architecture boundaries ARCH-10: notifications have one posting path
-00:00 +11 -1: G24 architecture boundaries ARCH-10: notifications have one posting path [E]
+00:00 +8 -1: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink [E]
   Expected: empty
     Actual: [
-              'lib/state/connection.dart: uses .showCodingAlert directly; only lib/background/zz_router_probe.dart (NotificationRouter) may post an alert',
-              'lib/ui/screens/settings/notifications_settings_screen.dart: uses .sendTestNotification directly; only lib/background/zz_router_probe.dart (NotificationRouter) may post an alert'
+              'ARCH-2 allowlisted lib/ui/screens/servers_screen.dart: "_ProfileEditorScreenState._testConnection: ServerFlavor." x1 (baseline 0)',
+              'ARCH-2 allowlisted lib/ui/screens/servers_screen.dart: "_ProfileEditorScreenState._testConnection: .flavor ==" x1 (baseline 0)'
             ]
-  ARCH-10 (G24, from slice-P6.7)
+  ARCH-2 allowlisted: an allowlisted profile-editor member gained flavour uses, or a new member was allowlisted. The allowlist only shrinks; gate the feature on a ServerCapabilities flag.
   
   package:matcher                                     expect
   package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/architecture_boundaries_test.dart 930:9        main.<fn>.<fn>
+  test/architecture_boundaries_test.dart 855:7        main.<fn>.check
+  test/architecture_boundaries_test.dart 868:7        main.<fn>.<fn>
   
-00:00 +11 -1: Some tests failed.
+00:00 +8 -1: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason
+00:00 +8 -2: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason [E]
+  Expected: empty
+    Actual: [
+              'lib/ui/screens/termux_setup_screen.dart "_TermuxSetupScreenState._localProfile: ServerFlavor.": counted as allowlisted but "_TermuxSetupScreenState._localProfile" has no reason in "ARCH-2 allowlist"'
+            ]
+  ARCH-2 allowlist (G24)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/architecture_boundaries_test.dart 907:7        main.<fn>.<fn>
+  
+00:00 +8 -2: G24 architecture boundaries ARCH-10: the oc/background wire names stay with their owners
+00:00 +9 -2: G24 architecture boundaries ARCH-10: notifications have one posting path
+00:00 +10 -2: Some tests failed.
 
 Failing tests:
-  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-10: notifications have one posting path
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-2: allowlisted profile-editor uses only shrink
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-2: every allowlisted member exists and gives a reason
