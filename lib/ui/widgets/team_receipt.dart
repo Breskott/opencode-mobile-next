@@ -10,6 +10,7 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../app_theme.dart';
+import '../kit/kit_receipt.dart';
 
 /// The newest record answering [gate] from this device that no retry
 /// superseded: the `respond` on the gate's own id, or — for a failed run —
@@ -95,9 +96,23 @@ String? teamReceiptChipLabel(AppLocalizations l10n, MutationRecord record) =>
       MutationStatus.rejected => (AppIconography.error, AppStatusTone.failure),
     };
 
-/// The trailing chip of a needs-you row: "Sent", "Unconfirmed" (tap to
-/// open the sheet and retry) or "Not accepted". Absent for confirmed and
-/// for a gate never answered from here.
+/// The trailing receipt of a needs-you row: "Sent", "Not confirmed yet"
+/// (tap to open the sheet and retry) or "Not accepted". Absent for
+/// confirmed and for a gate never answered from here, so screens do not
+/// grow "Done" words before their own units adopt [KitReceipt].
+///
+/// Its call sites put it in a row's trailing slot (`KitRow.trailing`,
+/// `ListTile.trailing`), which gives it unbounded width. So it stays one
+/// compact tap target, as the chip was: the receipt with `onTap: onOpen` and
+/// no separate Try again (the sheet it opens is where the retry lives), at
+/// most [maxWidthFraction] of the screen wide so its words wrap instead of
+/// squeezing the row's title or overflowing (KitReceipt.md "The wrapper
+/// keeps meaning" asks for `onRetry: onOpen`; that is a PROC-20 contract
+/// problem in docs/qa/revamp-kit-KitReceipt-2026-09-27/README.md).
+///
+/// Retired by kit-KitReceipt: use [KitReceipt]. A thin forwarding wrapper
+/// (KitReceipt.md, C24; STANDARDS KIT-43 forbids `@Deprecated`, which would
+/// put infos into every caller's analyze); slice-P4.1c deletes it.
 class TeamReceiptChip extends StatelessWidget {
   const TeamReceiptChip({
     super.key,
@@ -110,25 +125,34 @@ class TeamReceiptChip extends StatelessWidget {
   /// Opens the Gate sheet, where the retry lives.
   final VoidCallback onOpen;
 
+  /// The share of the screen width the trailing receipt may take.
+  static const double maxWidthFraction = .4;
+
   @override
   Widget build(BuildContext context) {
+    final state = switch (record.status) {
+      MutationStatus.sent => KitReceiptState.sent,
+      MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
+      MutationStatus.rejected => KitReceiptState.refused,
+      MutationStatus.confirmed => null,
+    };
+    if (state == null) return const SizedBox.shrink();
+    final maxWidth = (MediaQuery.sizeOf(context).width * maxWidthFraction)
+        .floorToDouble();
+    final Widget receipt = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: KitReceipt(state: state, onTap: onOpen),
+    );
+    if (state != KitReceiptState.notConfirmed) return receipt;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final label = teamReceiptChipLabel(l10n, record);
-    if (label == null) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    final (icon, tone) = teamReceiptGlyph(record.status);
-    final color = AppTheme.statusColor(theme, tone);
-    final retry = record.status == MutationStatus.unconfirmed;
+    // The chip's retry label is kept (KitReceipt.md, "The wrapper keeps
+    // meaning"): one button that opens the sheet where the retry lives.
     return Semantics(
-      label: retry ? l10n.teamUiGateAnswerChipUnconfirmedSemantics : null,
+      label: l10n.teamUiGateAnswerChipUnconfirmedSemantics,
       button: true,
-      child: ActionChip(
-        avatar: Icon(icon, size: 16, color: color),
-        label: Text(label, style: TextStyle(color: color)),
-        side: BorderSide(color: color.withValues(alpha: .5)),
-        visualDensity: VisualDensity.compact,
-        onPressed: onOpen,
-      ),
+      onTap: onOpen,
+      excludeSemantics: true,
+      child: receipt,
     );
   }
 }
