@@ -1032,9 +1032,11 @@ class _PathCodeChipState extends State<_PathCodeChip> {
         style: widget.base.copyWith(
           fontFamily: AppTheme.monoFamily,
           fontSize: widget.base.fontSize ?? 14,
+          // A file link in the accent; other code in primary text (amber
+          // only ever means "needs you").
           color: _readable
               ? theme.colorScheme.primary
-              : theme.colorScheme.tertiary,
+              : theme.colorScheme.onSurface,
         ),
       ),
     );
@@ -1068,8 +1070,10 @@ InlineSpan _codeSpan(
       style: base.copyWith(
         fontFamily: AppTheme.monoFamily,
         fontSize: (base.fontSize ?? 14) * .92,
-        color: scheme.tertiary,
-        backgroundColor: scheme.surfaceContainerHighest.withValues(alpha: .7),
+        // Primary text on the chip surface (visual language §5); amber is
+        // reserved for "needs you".
+        color: scheme.onSurface,
+        backgroundColor: scheme.surfaceContainerHighest,
       ),
     ),
   );

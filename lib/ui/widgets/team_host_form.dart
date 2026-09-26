@@ -361,7 +361,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
                   _failureDetail!,
                   key: const ValueKey('team-host-verdict-detail'),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: 'monospace',
+                    fontFamily: AppTheme.monoFamily,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),

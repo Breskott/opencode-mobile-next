@@ -137,7 +137,7 @@ Future<EController> _chat(
 Future<void> _shellOutput(CensusKit kit) async {
   await kit.tester.runAsync(() async {
     final bytes = File(
-      'assets/fonts/JetBrainsMono-Regular.ttf',
+      'assets/fonts/geist/GeistMono-Variable.ttf',
     ).readAsBytesSync();
     final loader = FontLoader('monospace')
       ..addFont(Future.value(ByteData.sublistView(bytes)));

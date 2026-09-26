@@ -53,7 +53,8 @@ String? _sdkRootFromExecutable() {
   return index < 0 ? null : executable.substring(0, index);
 }
 
-/// Loads the bundled display/mono faces, Roboto (for Android body text) and
+/// Loads the bundled faces (Geist, Geist Mono), Roboto (for text that names
+/// the platform face) and
 /// the Material icon font so `flutter test` renders real glyphs instead of
 /// the Ahem box font.
 Future<void> loadCaptureFonts() async {
@@ -67,17 +68,12 @@ Future<void> loadCaptureFonts() async {
   }
 
   await load(AppTheme.monoFamily, const [
-    'assets/fonts/JetBrainsMono-Regular.ttf',
-    'assets/fonts/JetBrainsMono-Medium.ttf',
-    'assets/fonts/JetBrainsMono-SemiBold.ttf',
-    'assets/fonts/JetBrainsMono-Bold.ttf',
-    'assets/fonts/JetBrainsMono-Italic.ttf',
+    'assets/fonts/geist/GeistMono-Variable.ttf',
+    'assets/fonts/geist/GeistMono-Italic-Variable.ttf',
   ]);
-  await load(AppTheme.displayFamily, const [
-    'assets/fonts/SpaceGrotesk-Regular.ttf',
-    'assets/fonts/SpaceGrotesk-Medium.ttf',
-    'assets/fonts/SpaceGrotesk-SemiBold.ttf',
-    'assets/fonts/SpaceGrotesk-Bold.ttf',
+  await load(AppTheme.sansFamily, const [
+    'assets/fonts/geist/Geist-Variable.ttf',
+    'assets/fonts/geist/Geist-Italic-Variable.ttf',
   ]);
   await load('Roboto', const [
     'tool/capture/fonts/Roboto-Regular.ttf',
@@ -138,9 +134,10 @@ const captionHeight = 44.0;
 /// The theme the captures use: the app's own palette on the Android path so
 /// body text lands on Roboto.
 ThemeData captureTheme({bool light = false}) =>
-    (light ? AppTheme.light() : AppTheme.dark()).copyWith(
-      platform: TargetPlatform.android,
-    );
+    (light || const bool.fromEnvironment('CENSUS_LIGHT')
+            ? AppTheme.light()
+            : AppTheme.dark())
+        .copyWith(platform: TargetPlatform.android);
 
 /// Wraps [home] the way main.dart does (theme, localisation, chat route) under
 /// a [RepaintBoundary] so a frame can be rasterised. When [caption] is given,

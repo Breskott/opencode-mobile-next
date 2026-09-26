@@ -163,29 +163,19 @@ other Termux code (the app, its extra-keys view, `termux-shared`) is used:
 the key bar and the screen are this app's own. The upstream library ships
 no NOTICE file of its own. See also `NOTICE`.
 
-### JetBrains Mono
+### Geist and Geist Mono
 
-- Component: JetBrains Mono font files bundled under `assets/fonts/`
-- Version: distributed TTF builds from the upstream repository
-- Project: https://github.com/JetBrains/JetBrainsMono
-- Copyright: 2020 The JetBrains Mono Project Authors
-- License: SIL Open Font License 1.1; see
-  `LICENSES/OFL-1.1-JetBrains-Mono.txt`
+- Component: Geist and Geist Mono variable font files bundled under
+  `assets/fonts/geist/`
+- Version: v1.7.2, the `variable/` TTFs of the official release archive
+  https://github.com/vercel/geist-font/releases/download/v1.7.2/geist-font-v1.7.2.zip
+- Project: https://github.com/vercel/geist-font
+- Copyright: 2024 The Geist Project Authors
+- License: SIL Open Font License 1.1; see `LICENSES/OFL-1.1-Geist.txt`
+  (also `assets/fonts/geist/OFL.txt`)
 
-These font files render code, terminal output, paths, and other monospace
-content throughout the application.
-
-### Space Grotesk
-
-- Component: Space Grotesk font files bundled under `assets/fonts/`
-- Version: static TTF instances as served by Google Fonts
-- Project: https://github.com/floriankarsten/space-grotesk
-- Copyright: 2020 The Space Grotesk Project Authors
-- License: SIL Open Font License 1.1; see
-  `LICENSES/OFL-1.1-Space-Grotesk.txt`
-
-These font files render headlines and titles: the one display face the
-product uses beyond the platform default.
+Geist renders every word of the interface; Geist Mono renders code,
+terminal output, commands, paths and other monospace content.
 
 ### Flutter SDK
 

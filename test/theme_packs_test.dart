@@ -19,23 +19,22 @@ void main() {
 
   tearDown(() => harvestedDynamicPack.value = null);
 
-  test('the default OpenCode pack preserves identity and semantic colors', () {
+  test('the default pack is Graphite, the visual language palette', () {
     final dark = AppTheme.dark();
-    expect(dark.colorScheme.primary, const Color(0xFF83CDAA));
-    expect(dark.colorScheme.onPrimary, const Color(0xFF052117));
-    expect(dark.colorScheme.surface, const Color(0xFF151A17));
-    expect(dark.colorScheme.onSurface, const Color(0xFFE3E8E4));
-    expect(dark.colorScheme.surfaceContainerLow, const Color(0xFF171C19));
-    expect(dark.colorScheme.error, const Color(0xFFFFB4AB));
-    expect(dark.scaffoldBackgroundColor, const Color(0xFF101310));
-    expect(AppTheme.successOf(dark), const Color(0xFF86D8A5));
+    expect(dark.colorScheme.primary, const Color(0xFF3DDC8A));
+    expect(dark.colorScheme.onPrimary, const Color(0xFF03140B));
+    expect(dark.colorScheme.surface, const Color(0xFF0B0C0E));
+    expect(dark.colorScheme.onSurface, const Color(0xFFF3F3F1));
+    expect(dark.colorScheme.surfaceContainerLow, const Color(0xFF141518));
+    expect(dark.colorScheme.error, const Color(0xFFFF7A7A));
+    expect(dark.scaffoldBackgroundColor, const Color(0xFF0B0C0E));
+    expect(AppTheme.successOf(dark), const Color(0xFF3DDC8A));
 
     final light = AppTheme.light();
-    expect(light.colorScheme.primary, const Color(0xFF176B4B));
-    expect(light.colorScheme.surface, const Color(0xFFFFFFFF));
-    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFF0F5F1));
-    expect(light.scaffoldBackgroundColor, const Color(0xFFF6F9F6));
-    expect(AppTheme.successOf(light), const Color(0xFF1E7A44));
+    expect(light.colorScheme.primary, const Color(0xFF087F43));
+    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFFFFFFF));
+    expect(light.scaffoldBackgroundColor, const Color(0xFFF3F3F1));
+    expect(AppTheme.successOf(light), const Color(0xFF087F43));
   });
 
   test('every static pack has complete, distinct dark and light palettes', () {
@@ -46,10 +45,11 @@ void main() {
       expect(pack.dark.scheme.brightness, Brightness.dark, reason: '$id');
       expect(pack.light.scheme.brightness, Brightness.light, reason: '$id');
       expect(pack.dark.background, isNot(pack.light.background), reason: '$id');
-      // Pack-owned success reaches the ThemeData extension.
+      // The pack's success, held to its floor, reaches the ThemeData
+      // extension.
       expect(
         AppTheme.successOf(AppTheme.dark(pack)),
-        pack.dark.success,
+        pack.dark.themeRoles.success,
         reason: '$id',
       );
     }
@@ -162,7 +162,7 @@ void main() {
       ),
     );
     BuildContext context = tester.element(find.text('themed'));
-    expect(Theme.of(context).colorScheme.primary, const Color(0xFF83CDAA));
+    expect(Theme.of(context).colorScheme.primary, const Color(0xFF3DDC8A));
 
     await controller.setThemePack(ThemePackId.gruvbox);
     await tester.pumpAndSettle();

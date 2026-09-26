@@ -76,15 +76,12 @@ void main() {
     }
   });
 
-  test('headlines carry the display face, body stays on the platform face', () {
+  test('every role carries Geist; floating glass has one tight shadow', () {
     for (final theme in [AppTheme.dark(), AppTheme.light()]) {
-      expect(theme.textTheme.headlineSmall?.fontFamily, AppTheme.displayFamily);
-      expect(theme.textTheme.titleLarge?.fontFamily, AppTheme.displayFamily);
-      expect(
-        theme.textTheme.bodyMedium?.fontFamily,
-        isNot(AppTheme.displayFamily),
-      );
-      expect(AppTheme.raised(theme), hasLength(2));
+      expect(theme.textTheme.headlineSmall?.fontFamily, AppTheme.sansFamily);
+      expect(theme.textTheme.titleLarge?.fontFamily, AppTheme.sansFamily);
+      expect(theme.textTheme.bodyMedium?.fontFamily, AppTheme.sansFamily);
+      expect(AppTheme.raised(theme), hasLength(1));
       expect(AppTheme.liveTint(theme).a, closeTo(.06, .001));
     }
   });

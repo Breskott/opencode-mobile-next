@@ -220,8 +220,8 @@ void main() {
     if (captureDir != null) {
       await tester.runAsync(() async {
         for (final entry in {
-          'AppMono': 'assets/fonts/JetBrainsMono-Regular.ttf',
-          'AppDisplay': 'assets/fonts/SpaceGrotesk-Regular.ttf',
+          'AppMono': 'assets/fonts/geist/GeistMono-Variable.ttf',
+          'AppSans': 'assets/fonts/geist/Geist-Variable.ttf',
         }.entries) {
           await (FontLoader(
             entry.key,

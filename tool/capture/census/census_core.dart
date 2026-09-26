@@ -37,7 +37,14 @@ import '../fixtures.dart';
 // Constants
 // ---------------------------------------------------------------------------
 
-const censusRoot = 'docs/qa/screen-census';
+/// `--dart-define=CENSUS_OUT=<dir>` writes the images (and a manifest of
+/// just that run) somewhere else, e.g. a before/after comparison;
+/// `--dart-define=CENSUS_LIGHT=true` draws the light theme.
+const censusRoot = String.fromEnvironment(
+  'CENSUS_OUT',
+  defaultValue: 'docs/qa/screen-census',
+);
+const censusLight = bool.fromEnvironment('CENSUS_LIGHT');
 const censusResultsDir = '$censusRoot/.results';
 const censusLedgerPath = 'docs/design/ui-ledger/ledger.json';
 const censusPartsDir = 'docs/design/ui-ledger/parts';
@@ -481,14 +488,12 @@ void runCensus(List<CensusArea> areas) {
     await loadCaptureFonts();
     // Some widgets ask for the generic `monospace` family, which a phone
     // resolves to its system mono; flutter_test has none, so lend it the
-    // app's JetBrains Mono instead of drawing boxes.
+    // app's Geist Mono instead of drawing boxes.
     final mono = FontLoader('monospace');
-    for (final weight in const ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-      final bytes = File(
-        'assets/fonts/JetBrainsMono-$weight.ttf',
-      ).readAsBytesSync();
-      mono.addFont(Future.value(ByteData.sublistView(bytes)));
-    }
+    final bytes = File(
+      'assets/fonts/geist/GeistMono-Variable.ttf',
+    ).readAsBytesSync();
+    mono.addFont(Future.value(ByteData.sublistView(bytes)));
     await mono.load();
     ProviderLogo.imageProviderOverride = (_) => null;
     KitMotion.loops = false;
@@ -540,7 +545,9 @@ Future<void> _renderShot(
   _setPhoneView(tester);
   // Surfaces that follow the system theme (the bootstrap gate, OcApp on
   // "system") draw dark like the rest of the census.
-  tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  tester.platformDispatcher.platformBrightnessTestValue = censusLight
+      ? Brightness.light
+      : Brightness.dark;
   final list = _results.putIfAbsent(area.id, () => []);
   // Recorded up front so a shot the timeout cuts off still shows up in the
   // manifest; replaced by the real result when the shot finishes.
@@ -743,7 +750,7 @@ void writeCensusManifest() {
       'width': censusLogicalSize.width,
       'height': censusLogicalSize.height,
       'devicePixelRatio': censusPixelRatio,
-      'theme': 'dark',
+      'theme': censusLight ? 'light' : 'dark',
     },
     'totals': {
       'pages': pages.length,

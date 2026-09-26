@@ -154,7 +154,7 @@ class _Palette {
       muted: AppTheme.mutedOf(theme),
       program: scheme.primary,
       flag: scheme.secondary,
-      string: scheme.tertiary,
+      string: AppTheme.rolesOf(theme).codeString,
       error: scheme.error,
       warning: warning,
       success: success,

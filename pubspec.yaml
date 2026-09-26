@@ -139,27 +139,19 @@ flutter:
     - family: AppPhosphorFill
       fonts:
         - asset: assets/fonts/phosphor/Phosphor-Fill.ttf
-    # Bundled Space Grotesk for headlines and titles: the one display face that
-    # gives the product an identity beyond the platform default. Body text
-    # stays on the platform face for legibility.
-    - family: AppDisplay
+    # Geist and Geist Mono (SIL OFL 1.1, assets/fonts/geist/OFL.txt): the
+    # visual language's one face for every word, and its mono for code,
+    # commands and paths (docs/design/visual-language-2026-09-26.md §2).
+    # Variable fonts: the engine maps FontWeight onto the wght axis, so the
+    # fractional weights (550, 650) are real.
+    - family: AppSans
       fonts:
-        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
-        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/geist/Geist-Variable.ttf
+        - asset: assets/fonts/geist/Geist-Italic-Variable.ttf
+          style: italic
     - family: AppMono
       fonts:
-        - asset: assets/fonts/JetBrainsMono-Regular.ttf
-        - asset: assets/fonts/JetBrainsMono-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/JetBrainsMono-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/JetBrainsMono-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/JetBrainsMono-Italic.ttf
+        - asset: assets/fonts/geist/GeistMono-Variable.ttf
+        - asset: assets/fonts/geist/GeistMono-Italic-Variable.ttf
           style: italic
   uses-material-design: true

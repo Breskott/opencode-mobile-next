@@ -460,7 +460,7 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
             SelectableText(
               detail,
               style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
+                fontFamily: AppTheme.monoFamily,
               ),
             ),
           );
