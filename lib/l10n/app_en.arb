@@ -22245,5 +22245,13 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitCopy": "Copy",
+  "@kitCopy": {
+    "description": "Kit icon button: the default tooltip and semantic label of a copy icon button when the caller gives none"
+  },
+  "kitWorking": "Working",
+  "@kitWorking": {
+    "description": "Kit icon button: the accessibility hint while a button's own tap is in flight"
   }
 }
