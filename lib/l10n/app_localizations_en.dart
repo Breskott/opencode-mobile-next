@@ -19873,6 +19873,33 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get kitWorkGraph => 'Work graph';
+
+  @override
+  String get kitWorkGraphEmpty => 'No work items yet';
+
+  @override
+  String kitWorkGraphNode(String title, String state) {
+    return '$title, $state';
+  }
+
+  @override
+  String kitWorkGraphNeeds(String title) {
+    return 'needs $title';
+  }
+
+  @override
+  String kitWorkGraphNeedsMore(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count',
+      one: '1',
+    );
+    return 'needs $title and $_temp0 more';
+  }
+
+  @override
   String get kitMenu => 'Menu';
 
   @override

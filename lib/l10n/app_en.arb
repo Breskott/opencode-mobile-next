@@ -22318,6 +22318,47 @@
       }
     }
   },
+  "kitWorkGraph": "Work graph",
+  "@kitWorkGraph": {
+    "description": "KitWorkGraph: the viewer's accessibility label, and (in layers) KitZoom's zoom-level announcement subject"
+  },
+  "kitWorkGraphEmpty": "No work items yet",
+  "@kitWorkGraphEmpty": {
+    "description": "KitWorkGraph: the inline empty state's title when the caller gives no emptyText"
+  },
+  "kitWorkGraphNode": "{title}, {state}",
+  "@kitWorkGraphNode": {
+    "description": "KitWorkGraph: one node's accessibility label, the item's title and its state word",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "kitWorkGraphNeeds": "needs {title}",
+  "@kitWorkGraphNeeds": {
+    "description": "KitWorkGraph: a row's supporting line and a node's accessibility hint, naming the one item it needs",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "kitWorkGraphNeedsMore": "needs {title} and {count, plural, =1{1} other{{count}}} more",
+  "@kitWorkGraphNeedsMore": {
+    "description": "KitWorkGraph: a row's supporting line and a node's accessibility hint when it needs more than one item, naming the first and counting the rest",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kitMenu": "Menu",
   "@kitMenu": {
     "description": "Kit menu: the popup menu's default name for a screen reader, when the caller gives none"
