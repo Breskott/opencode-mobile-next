@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_buttons.dart';
+import 'kit_tokens.dart';
 import 'motion/kit_reveal.dart';
 
 /// A message that belongs to one part of a form or a list (design standard
@@ -81,7 +82,13 @@ class KitNotice extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 1),
-                child: Icon(icon ?? _iconFor(tone), size: 20, color: tint),
+                // Grows with the person's text size (clamped), so the mark
+                // keeps up with the words beside it.
+                child: Icon(
+                  icon ?? _iconFor(tone),
+                  size: KitTokens.of(context).iconSize(context, 20),
+                  color: tint,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
-import '../../../tool/capture/fixtures.dart' show loadCaptureFonts;
 import 'kit_gallery.dart';
 
 /// The heaviest confirmation: a delete with its consequences, a typed name,
@@ -43,7 +42,7 @@ Future<bool> _destructive(BuildContext context, {bool arabic = false}) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(loadCaptureFonts);
+  setUpAll(loadKitGalleryFonts);
 
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';

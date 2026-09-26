@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
-import '../../../tool/capture/fixtures.dart' show loadCaptureFonts;
 import 'kit_gallery.dart';
 
 List<(IconData, String, String)> _rows(bool arabic) => arabic
@@ -73,7 +72,7 @@ Future<void> _language(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(loadCaptureFonts);
+  setUpAll(loadKitGalleryFonts);
 
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';

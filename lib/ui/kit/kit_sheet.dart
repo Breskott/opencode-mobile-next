@@ -24,6 +24,7 @@ import 'kit_motion.dart';
 import 'kit_notice.dart';
 import 'kit_progress.dart';
 import 'kit_technical_value.dart';
+import 'kit_tokens.dart';
 import 'motion/kit_haptics.dart';
 import 'motion/kit_reveal.dart';
 
@@ -240,7 +241,7 @@ class KitSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final l10n = _l10n(context);
     final subtitle = this.subtitle;
     final hasActions =
@@ -251,13 +252,21 @@ class KitSheet extends StatelessWidget {
       children: [
         if (handle) _KitHandle(onDismiss: onClose),
         Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(20, handle ? 0 : 12, 8, 4),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            tokens.rail,
+            handle ? 0 : tokens.space3,
+            tokens.space2,
+            tokens.space1,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.only(top: 10, end: 8),
+                  padding: EdgeInsetsDirectional.only(
+                    top: tokens.space3,
+                    end: tokens.space2,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -269,18 +278,16 @@ class KitSheet extends StatelessWidget {
                           title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge,
+                          style: tokens.sheetTitle,
                         ),
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 2),
+                        SizedBox(height: tokens.space1 / 2),
                         Text(
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.mutedOf(theme),
-                          ),
+                          style: tokens.sheetSubtitle,
                         ),
                       ],
                     ],
@@ -303,7 +310,12 @@ class KitSheet extends StatelessWidget {
       top = _PullDown(onPullDown: pull, child: top);
     }
     final scroll = SingleChildScrollView(
-      padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, hasActions ? 8 : 20),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.rail,
+        tokens.space2,
+        tokens.rail,
+        hasActions ? tokens.space2 : tokens.rail,
+      ),
       child: child,
     );
     return Column(
@@ -316,7 +328,12 @@ class KitSheet extends StatelessWidget {
         if (hasActions)
           Padding(
             key: const ValueKey('kit-sheet-actions'),
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.rail,
+              tokens.space2,
+              tokens.rail,
+              tokens.space4,
+            ),
             child: KitActionBlock(
               primary: primary,
               secondary: secondary,
@@ -336,20 +353,20 @@ class _KitHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     return Semantics(
       label: onDismiss == null ? null : _l10n(context).kitSheetDismiss,
       onDismiss: onDismiss,
       child: SizedBox(
-        height: 20,
+        height: tokens.handleHeight,
         child: Center(
           child: Container(
             key: const ValueKey('kit-sheet-handle'),
-            width: 32,
-            height: 4,
+            width: tokens.handleSize.width,
+            height: tokens.handleSize.height,
             decoration: BoxDecoration(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: .4),
-              borderRadius: BorderRadius.circular(2),
+              color: tokens.handleColor,
+              borderRadius: BorderRadius.circular(tokens.handleSize.height / 2),
             ),
           ),
         ),
@@ -370,6 +387,10 @@ class _PullDown extends StatefulWidget {
 }
 
 class _PullDownState extends State<_PullDown> {
+  /// How far or how fast a pull must go to count (behaviour, not look).
+  static const _distance = 48.0;
+  static const _velocity = 700.0;
+
   double _pulled = 0;
 
   @override
@@ -378,7 +399,7 @@ class _PullDownState extends State<_PullDown> {
     onVerticalDragStart: (_) => _pulled = 0,
     onVerticalDragUpdate: (details) => _pulled += details.delta.dy,
     onVerticalDragEnd: (details) {
-      if (_pulled > 48 || (details.primaryVelocity ?? 0) > 700) {
+      if (_pulled > _distance || (details.primaryVelocity ?? 0) > _velocity) {
         widget.onPullDown();
       }
       _pulled = 0;
@@ -401,6 +422,7 @@ Future<T?> _presentKitModal<T>(
   required WidgetBuilder builder,
 }) {
   final reduced = KitMotion.reduced(context);
+  final tokens = KitTokens.of(context);
   final style = reduced
       ? AnimationStyle.noAnimation
       : AnimationStyle(
@@ -418,6 +440,14 @@ Future<T?> _presentKitModal<T>(
         isDismissible: dismissible,
         enableDrag: dismissible && enableDrag,
         showDragHandle: false,
+        backgroundColor: tokens.sheetSurface,
+        barrierColor: tokens.scrim,
+        elevation: tokens.sheetElevation,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(tokens.sheetRadius),
+          ),
+        ),
         constraints: BoxConstraints(maxWidth: maxWidth),
         sheetAnimationStyle: style,
         builder: builder,
@@ -427,14 +457,22 @@ Future<T?> _presentKitModal<T>(
         context: context,
         useRootNavigator: false,
         barrierDismissible: dismissible,
+        barrierColor: tokens.scrim,
         animationStyle: style,
         builder: (dialogContext) => Dialog(
-          insetPadding: const EdgeInsets.all(24),
+          insetPadding: EdgeInsets.all(tokens.panelInset),
+          backgroundColor: tokens.panelSurface,
+          elevation: tokens.panelElevation,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.panelRadius),
+          ),
           clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: maxWidth,
-              maxHeight: MediaQuery.sizeOf(dialogContext).height * .9,
+              maxHeight:
+                  MediaQuery.sizeOf(dialogContext).height *
+                  KitLayout.modalMaxHeight,
             ),
             child: builder(dialogContext),
           ),
@@ -448,22 +486,24 @@ Future<T?> _presentKitModal<T>(
         barrierLabel: MaterialLocalizations.of(
           context,
         ).modalBarrierDismissLabel,
-        barrierColor: Colors.black54,
+        barrierColor: tokens.scrim,
         transitionDuration: reduced ? Duration.zero : KitMotion.standard,
         pageBuilder: (dialogContext, _, _) {
-          final width = (MediaQuery.sizeOf(dialogContext).width * .4).clamp(
-            KitLayout.sideSheetMinWidth,
-            KitLayout.sideSheetMaxWidth,
-          );
-          final theme = Theme.of(dialogContext);
+          final width =
+              (MediaQuery.sizeOf(dialogContext).width *
+                      KitLayout.sideSheetShare)
+                  .clamp(
+                    KitLayout.sideSheetMinWidth,
+                    KitLayout.sideSheetMaxWidth,
+                  );
           return Align(
             alignment: AlignmentDirectional.centerEnd,
             child: SizedBox(
               width: width,
               height: double.infinity,
               child: Material(
-                color: theme.colorScheme.surfaceContainerLow,
-                elevation: 1,
+                color: tokens.sideSheetSurface,
+                elevation: tokens.sideSheetElevation,
                 child: SafeArea(child: builder(dialogContext)),
               ),
             ),
@@ -716,15 +756,18 @@ class _KitSheetHostState extends State<_KitSheetHost> {
     final maxHeight = size.height;
     final double? fixed = switch ((shape, widget.height)) {
       (_KitModalShape.side, _) => null,
-      (_, KitSheetHeight.half) => maxHeight * .5,
-      (_KitModalShape.bottom, KitSheetHeight.full) => maxHeight * .95,
-      (_, KitSheetHeight.full) => maxHeight * .9,
+      (_, KitSheetHeight.half) => maxHeight * KitLayout.sheetHalfHeight,
+      (_KitModalShape.bottom, KitSheetHeight.full) =>
+        maxHeight * KitLayout.sheetFullHeight,
+      (_, KitSheetHeight.full) => maxHeight * KitLayout.modalMaxHeight,
       _ => null,
     };
     content = fixed != null
         ? SizedBox(height: fixed, child: content)
         : ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight * .9),
+            constraints: BoxConstraints(
+              maxHeight: maxHeight * KitLayout.modalMaxHeight,
+            ),
             child: content,
           );
     if (bottom) {

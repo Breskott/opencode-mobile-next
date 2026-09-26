@@ -1,16 +1,70 @@
 // Shared frame for the kit part galleries (gate G4, docs/ux-system/kit-v2.md
 // §7 and §8.4): every part at the five window sizes in light and dark, and
 // at 412 and 1280 wide with 2.0 text and in Arabic (right to left). The
-// app's real fonts come from tool/capture; Arabic glyphs have no bundled
-// font, so the Arabic renders check direction and layout, as the folder
-// browser's Arabic golden does.
+// app's real fonts come from tool/capture; Arabic falls back to Noto Sans
+// Arabic (test/fixtures/fonts, OFL), as it does on an Android device.
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 
-import '../../../tool/capture/fixtures.dart' show captureTheme;
+import '../../../tool/capture/fixtures.dart'
+    show captureTheme, loadCaptureFonts;
+
+const _arabicFallback = 'KitGalleryNotoSansArabic';
+
+/// The capture fonts plus the Arabic fallback family.
+Future<void> loadKitGalleryFonts() async {
+  await loadCaptureFonts();
+  final arabic = FontLoader(_arabicFallback);
+  for (final weight in ['Regular', 'Bold']) {
+    arabic.addFont(
+      File(
+        'test/fixtures/fonts/NotoSansArabic-$weight.ttf',
+      ).readAsBytes().then(ByteData.sublistView),
+    );
+  }
+  await arabic.load();
+}
+
+/// The capture theme with Arabic falling back to Noto, like a device.
+ThemeData _theme({required bool light}) {
+  final theme = captureTheme(light: light);
+  const fallback = [_arabicFallback];
+  // Buttons carry their own text styles in the app theme.
+  ButtonStyle? withFallback(ButtonStyle? style) {
+    final text = style?.textStyle;
+    if (style == null || text == null) return style;
+    return style.copyWith(
+      textStyle: WidgetStateProperty.resolveWith(
+        (states) =>
+            text.resolve(states)?.copyWith(fontFamilyFallback: fallback),
+      ),
+    );
+  }
+
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(fontFamilyFallback: fallback),
+    primaryTextTheme: theme.primaryTextTheme.apply(
+      fontFamilyFallback: fallback,
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: withFallback(theme.filledButtonTheme.style),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: withFallback(theme.textButtonTheme.style),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: withFallback(theme.outlinedButtonTheme.style),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: withFallback(theme.elevatedButtonTheme.style),
+    ),
+  );
+}
 
 /// The §8.4 sizes: phone, the census phone, tablet portrait, tablet
 /// landscape or PC, large PC.
@@ -52,7 +106,7 @@ Future<void> kitGalleryShot(
       key: boundary,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: captureTheme(light: light),
+        theme: _theme(light: light),
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,

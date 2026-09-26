@@ -107,7 +107,7 @@ Future<bool> showKitConfirm(
       if (shape != _KitModalShape.bottom) {
         // A panel has no handle above the icon: the same air instead.
         return SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 12),
+          padding: EdgeInsets.only(top: KitTokens.of(sheetContext).space3),
           child: question,
         );
       }
@@ -351,11 +351,13 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final l10n = _l10n(context);
     final danger = widget.kind.isDanger;
-    final tint = danger ? theme.colorScheme.error : theme.colorScheme.primary;
-    final muted = AppTheme.mutedOf(theme);
+    final tint = danger ? tokens.danger : tokens.accent;
+    // The mark grows with the person's text size (clamped), like the words.
+    final markIcon = tokens.iconSize(context, tokens.markIconSize);
+    final mark = tokens.markSize + markIcon - tokens.markIconSize;
     final typedName = widget.typedName;
     final alternative = widget.alternative;
     return PopScope<Object?>(
@@ -365,7 +367,12 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
         autofocus: true,
         onKeyEvent: _onKey,
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 16),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            tokens.rail,
+            tokens.space3,
+            tokens.rail,
+            tokens.space4,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -373,35 +380,29 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Container(
-                  width: 44,
-                  height: 44,
+                  width: mark,
+                  height: mark,
                   decoration: BoxDecoration(
-                    color: tint.withValues(alpha: .14),
+                    color: tint.withValues(alpha: tokens.markTintAlpha),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     widget.icon ?? KitConfirmSheet.iconFor(widget.kind),
-                    size: 24,
+                    size: markIcon,
                     color: tint,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: tokens.space3),
               Semantics(
                 header: true,
                 namesRoute: true,
-                child: Text(widget.title, style: theme.textTheme.titleLarge),
+                child: Text(widget.title, style: tokens.confirmTitle),
               ),
-              const SizedBox(height: 6),
-              Text(
-                widget.body,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: muted,
-                  height: 1.4,
-                ),
-              ),
+              SizedBox(height: tokens.space2),
+              Text(widget.body, style: tokens.confirmBody),
               for (final consequence in widget.consequences) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.space2),
                 KitNotice(
                   message: consequence,
                   tone: AppStatusTone.attention,
@@ -409,7 +410,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 ),
               ],
               if (typedName != null) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: tokens.space4),
                 TextField(
                   key: const ValueKey('kit-confirm-typed-name'),
                   controller: _typed,
@@ -417,9 +418,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   autocorrect: false,
                   enableSuggestions: false,
                   textDirection: TextDirection.ltr,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontFamily: AppTheme.monoFamily,
-                  ),
+                  style: tokens.typedName,
                   decoration: InputDecoration(
                     // The name is isolated left to right inside the
                     // sentence, so a branch or path never reorders.
@@ -431,7 +430,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 ),
               ],
               if (_failed) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: tokens.space3),
                 KitNotice(
                   key: const ValueKey('kit-confirm-failed'),
                   message: l10n.kitConfirmFailed,
@@ -444,7 +443,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   ],
                 ),
               ],
-              const SizedBox(height: 20),
+              SizedBox(height: tokens.space5),
               KitButton.primary(
                 key: widget.confirmKey,
                 label: widget.confirmLabel,
@@ -454,14 +453,14 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 onPressed: _nameMatches ? () => unawaited(_confirm()) : null,
               ),
               if (!_nameMatches) ...[
-                const SizedBox(height: 6),
+                SizedBox(height: tokens.space2),
                 Text(
                   l10n.kitConfirmTypeNameReason,
                   key: const ValueKey('kit-confirm-reason'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  style: tokens.note,
                 ),
               ],
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.space2),
               KitButton.secondary(
                 key: const ValueKey('kit-confirm-cancel'),
                 label:
@@ -470,7 +469,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 onPressed: _working ? null : _cancel,
               ),
               if (alternative != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: tokens.space1),
                 KitInset(
                   child: KitButton.fromAction(
                     KitAction(
@@ -489,7 +488,7 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 ),
               ],
               if (widget.details.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.space2),
                 _KitDetailsFold(values: widget.details),
               ],
             ],
@@ -517,8 +516,7 @@ class _KitDetailsFoldState extends State<_KitDetailsFold> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final seen = <String>{};
     final values = [
       for (final value in widget.values)
@@ -534,8 +532,8 @@ class _KitDetailsFoldState extends State<_KitDetailsFold> {
             child: TextButton.icon(
               key: const ValueKey('kit-details-toggle'),
               style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: muted,
+                minimumSize: Size.square(tokens.minTarget),
+                foregroundColor: tokens.muted,
                 padding: const EdgeInsets.symmetric(
                   horizontal: KitButton.tertiaryInset,
                 ),
@@ -544,7 +542,7 @@ class _KitDetailsFoldState extends State<_KitDetailsFold> {
               iconAlignment: IconAlignment.end,
               icon: Icon(
                 _open ? AppIconography.chevronUp : AppIconography.chevronDown,
-                size: 18,
+                size: tokens.smallIconSize,
               ),
               label: Text(_l10n(context).kitDetails),
             ),
@@ -554,31 +552,24 @@ class _KitDetailsFoldState extends State<_KitDetailsFold> {
           child: !_open
               ? null
               : Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(tokens.space3),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
+                    color: tokens.detailsSurface,
+                    borderRadius: BorderRadius.circular(tokens.detailsRadius),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       for (final (index, value) in values.indexed) ...[
-                        if (index > 0) const SizedBox(height: 8),
-                        Text(
-                          value.label,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: muted,
-                          ),
-                        ),
+                        if (index > 0) SizedBox(height: tokens.space2),
+                        Text(value.label, style: tokens.note),
                         Directionality(
                           textDirection: TextDirection.ltr,
                           child: SelectableText(
                             value.value,
                             key: value.key,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontFamily: AppTheme.monoFamily,
-                            ),
+                            style: tokens.technicalValue,
                           ),
                         ),
                       ],

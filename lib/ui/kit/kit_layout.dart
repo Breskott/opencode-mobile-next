@@ -54,6 +54,18 @@ abstract final class KitLayout {
   static const double sideSheetMinWidth = 400;
   static const double sideSheetMaxWidth = 480;
 
+  /// A modal part is at most this share of the window's height.
+  static const double modalMaxHeight = .9;
+
+  /// A half-height sheet; a full-height bottom sheet (the scrim
+  /// still shows above it).
+  static const double sheetHalfHeight = .5;
+  static const double sheetFullHeight = .95;
+
+  /// An end-side sheet's share of the window's width, within its min and
+  /// max.
+  static const double sideSheetShare = .4;
+
   /// The class for a window [width] dp wide.
   static KitWindow windowFor(double width) {
     if (width >= largeFrom) return KitWindow.large;
