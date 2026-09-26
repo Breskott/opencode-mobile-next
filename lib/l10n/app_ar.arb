@@ -5306,7 +5306,11 @@
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
   "kitCopied": "تم النسخ",
-  "kitSinceStillWaiting": "لا يزال الانتظار مستمرًا بعد {seconds} ث",
-  "kitSinceWaitingFor": "{minutes, plural, zero{جارٍ الانتظار منذ أقل من دقيقة} one{جارٍ الانتظار منذ دقيقة واحدة} two{جارٍ الانتظار منذ دقيقتين} few{جارٍ الانتظار منذ {minutes} دقائق} many{جارٍ الانتظار منذ {minutes} دقيقة} other{جارٍ الانتظار منذ {minutes} دقيقة}}",
-  "kitSinceAge": "{minutes, plural, zero{أقل من دقيقة} one{دقيقة واحدة} two{دقيقتين} few{{minutes} دقائق} many{{minutes} دقيقة} other{{minutes} دقيقة}}"
+  "kitMarkWaiting": "بانتظار",
+  "kitMarkWorking": "يعمل",
+  "kitMarkDone": "انتهى",
+  "kitMarkFailed": "فشل",
+  "kitMarkPaused": "متوقف مؤقتًا",
+  "kitTaskNeedsYou": "يحتاجك",
+  "kitTaskStopped": "متوقف"
 }

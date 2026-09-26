@@ -22246,34 +22246,32 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitSinceStillWaiting": "Still waiting after {seconds} s",
-  "@kitSinceStillWaiting": {
-    "description": "KitSince: a wait's words once it escalates at KitMotion.escalateAfter",
-    "placeholders": {
-      "seconds": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
+  "kitMarkWaiting": "Waiting",
+  "@kitMarkWaiting": {
+    "description": "Kit status mark: the default word for the waiting state, in semantics and beside the mark"
   },
-  "kitSinceWaitingFor": "{minutes, plural, =0{Waiting less than a minute} =1{Waiting 1 min} other{Waiting {minutes} min}}",
-  "@kitSinceWaitingFor": {
-    "description": "KitSince: a slow wait's words once minute ticks are on (KitSinceTicks.minutes)",
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
+  "kitMarkWorking": "Working",
+  "@kitMarkWorking": {
+    "description": "Kit status mark: the default word for the working state, in semantics and beside the mark"
   },
-  "kitSinceAge": "{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}",
-  "@kitSinceAge": {
-    "description": "KitSince: the age alone, for a host that places it mid-line (\"waiting {age}\")",
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
+  "kitMarkDone": "Done",
+  "@kitMarkDone": {
+    "description": "Kit status mark: the default word for the done state, in semantics and beside the mark"
+  },
+  "kitMarkFailed": "Failed",
+  "@kitMarkFailed": {
+    "description": "Kit status mark: the default word for the failed state, in semantics and beside the mark"
+  },
+  "kitMarkPaused": "Paused",
+  "@kitMarkPaused": {
+    "description": "Kit status mark: the default word when a waiting or working mark is paused, in semantics and beside the mark"
+  },
+  "kitTaskNeedsYou": "Needs you",
+  "@kitTaskNeedsYou": {
+    "description": "Kit task mark: the default word for a task that needs the person; also the word KitNeedsYou's own mark uses"
+  },
+  "kitTaskStopped": "Stopped",
+  "@kitTaskStopped": {
+    "description": "Kit task mark: the default word for a task that was stopped before it finished"
   }
 }
