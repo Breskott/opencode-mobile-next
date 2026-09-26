@@ -23706,5 +23706,33 @@
   "folderBrowserFirstProject": "Name your first project",
   "@folderBrowserFirstProject": {
     "description": "Folder browser: the empty projects folder's first step; puts the cursor in the project name field"
+  },
+  "kitChecklistNext": "next: {step}",
+  "@kitChecklistNext": {
+    "description": "KitChecklist compact line: the next step's words after the current one, as in 'Step 3 of 7 · Reviewing · next: merge'",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "example": "merge"
+      }
+    }
+  },
+  "kitChecklistNeedsYou": "needs you, {action}",
+  "@kitChecklistNeedsYou": {
+    "description": "KitChecklist: spoken after a step only the person can do, naming the button that does it ('needs you, Allow')",
+    "placeholders": {
+      "action": {
+        "type": "String",
+        "example": "Allow"
+      }
+    }
+  },
+  "kitChecklistShowSteps": "Show steps",
+  "@kitChecklistShowSteps": {
+    "description": "KitChecklist compact line: tooltip and hint of the folded one-line form; unfolds the full list of steps"
+  },
+  "kitChecklistHideSteps": "Hide steps",
+  "@kitChecklistHideSteps": {
+    "description": "KitChecklist compact line: tooltip and hint once the list of steps is unfolded; folds it back to one line"
   }
 }

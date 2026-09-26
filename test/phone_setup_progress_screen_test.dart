@@ -5,7 +5,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/widgets/setup_progress_view.dart';
-import 'package:opencode_mobile/ui/widgets/terminal_view.dart';
 
 import 'support/fake_setup_engine.dart';
 
@@ -244,8 +243,9 @@ void main() {
         find.byKey(const Key('setup-progress-overall')),
       );
       final theme = Theme.of(tester.element(find.text('Node.js')));
-      // The failure tone of the design kit (standard §3).
-      expect(bar.color, AppTheme.statusColor(theme, AppStatusTone.failure));
+      // KitProgress's failure tone: the bar stops in text1, and the failed
+      // row says why in words (TEST-19: was the red status colour).
+      expect(bar.color, AppTheme.rolesOf(theme).text1);
       expect(find.byKey(const Key('setup-progress-cancel')), findsNothing);
       expect(find.text('Details'), findsOneWidget);
 
@@ -480,11 +480,13 @@ void main() {
         log: 'Get:1 http://ports.ubuntu.com noble InRelease\n',
       ),
     );
-    expect(find.byType(TerminalView), findsNothing);
+    const log = Key('setup-progress-log');
+    expect(find.byKey(log), findsNothing);
     // The kit's collapsed Details row (standard §3).
     await _tapVisible(tester, find.text('Details'));
     await _settle(tester);
-    expect(find.byType(TerminalView), findsOneWidget);
+    // KitLogPanel (TEST-19: was TerminalView).
+    expect(find.byKey(log), findsOneWidget);
     expect(find.textContaining('noble InRelease'), findsOneWidget);
 
     final lines = [for (var i = 0; i < 80; i++) 'line $i'].join('\n');
@@ -494,9 +496,11 @@ void main() {
     expect(find.textContaining('line 79'), findsOneWidget);
     expect(find.textContaining('line 0\n'), findsNothing);
 
-    await _tapVisible(tester, find.text('Hide details'));
+    // The fold's toggle keeps its words and folds back (TEST-19: its
+    // visible label was "Hide details").
+    await _tapVisible(tester, find.byKey(const Key('setup-progress-details')));
     await _settle(tester);
-    expect(find.byType(TerminalView), findsNothing);
+    expect(find.byKey(log), findsNothing);
   });
 
   group('layout', () {
@@ -559,19 +563,27 @@ void main() {
       });
     }
 
-    testWidgets('RTL puts the detail on the leading-left side', (tester) async {
-      await _pump(tester, rtl: true, initial: _job(current: _nodeDownloading));
-      final title = tester.getRect(find.text('Node.js'));
-      final detail = tester.getRect(find.text('Downloading · 18 of 30 MB'));
-      expect(detail.right, lessThan(title.left));
-    });
-
-    testWidgets('LTR puts the detail on the right', (tester) async {
-      await _pump(tester, initial: _job(current: _nodeDownloading));
-      final title = tester.getRect(find.text('Node.js'));
-      final detail = tester.getRect(find.text('Downloading · 18 of 30 MB'));
-      expect(detail.left, greaterThan(title.right));
-    });
+    // KitChecklist rows (TEST-19): the detail is the supporting line under
+    // the title, from the start side, in both directions.
+    for (final rtl in [false, true]) {
+      testWidgets('the detail sits under the title (${rtl ? 'RTL' : 'LTR'})', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          rtl: rtl,
+          initial: _job(current: _nodeDownloading),
+        );
+        final title = tester.getRect(find.text('Node.js'));
+        final detail = tester.getRect(find.text('Downloading · 18 of 30 MB'));
+        expect(detail.top, greaterThanOrEqualTo(title.bottom));
+        if (rtl) {
+          expect(detail.right, closeTo(title.right, 1));
+        } else {
+          expect(detail.left, closeTo(title.left, 1));
+        }
+      });
+    }
 
     testWidgets('Arabic at 2.5x on 320dp', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -619,7 +631,10 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('the running row is a live region labelled by its stage', (
+  // KitChecklist (A11Y-3, TEST-19): each row is one node read as "Step n of
+  // N, title, state, detail"; the job's summary is the live region, not the
+  // rows, so a byte tick is never announced.
+  testWidgets('each row is one node; the job summary is the live region', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -629,16 +644,19 @@ void main() {
         find.byKey(const ValueKey('setup-progress-row-node')),
       ),
       isSemantics(
-        label: 'Node.js, in progress, Downloading',
-        value: '18 of 30 MB',
-        isLiveRegion: true,
+        label: 'Step 4 of 5, Node.js, Working, Downloading · 18 of 30 MB',
+        isLiveRegion: false,
       ),
     );
     expect(
       tester.getSemantics(
         find.byKey(const ValueKey('setup-progress-row-linux')),
       ),
-      isSemantics(label: 'Linux base, waiting'),
+      isSemantics(label: 'Step 1 of 5, Linux base, Waiting'),
+    );
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('kit-checklist-summary'))),
+      isSemantics(label: 'Step 4 of 5, Node.js, Working', isLiveRegion: true),
     );
     semantics.dispose();
   });
