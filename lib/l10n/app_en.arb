@@ -23101,5 +23101,61 @@
         "type": "int"
       }
     }
+  },
+  "kitSearchClear": "Clear search",
+  "@kitSearchClear": {
+    "description": "KitSearchField: the clear button's label and the no-match state's action"
+  },
+  "kitSearchFilter": "Filter",
+  "@kitSearchFilter": {
+    "description": "KitSearchField: the filter menu button"
+  },
+  "kitSearchFilterActive": "Filter: {name}",
+  "@kitSearchFilterActive": {
+    "description": "KitSearchField: the filter button's name while a filter is active",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kitSearchResults": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
+  "@kitSearchResults": {
+    "description": "KitSearchField: the result count line, announced once typing settles",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitSearchPartial": "{count} loaded · searching the server…",
+  "@kitSearchPartial": {
+    "description": "KitSearchField: the count line while results are still coming",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitSearchNoMatch": "Nothing matches {query}",
+  "@kitSearchNoMatch": {
+    "description": "KitSearchNoMatch title; the query arrives quoted and isolated",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "kitSearchNoMatchIn": "Nothing in {what} matches {query}",
+  "@kitSearchNoMatchIn": {
+    "description": "KitSearchNoMatch title naming what is searched (models)",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "query": {
+        "type": "String"
+      }
+    }
   }
 }

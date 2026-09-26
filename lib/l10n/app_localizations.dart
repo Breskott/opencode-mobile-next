@@ -32782,6 +32782,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// KitSearchField: the clear button's label and the no-match state's action
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get kitSearchClear;
+
+  /// KitSearchField: the filter menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get kitSearchFilter;
+
+  /// KitSearchField: the filter button's name while a filter is active
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {name}'**
+  String kitSearchFilterActive(String name);
+
+  /// KitSearchField: the result count line, announced once typing settles
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No results} =1{1 result} other{{count} results}}'**
+  String kitSearchResults(int count);
+
+  /// KitSearchField: the count line while results are still coming
+  ///
+  /// In en, this message translates to:
+  /// **'{count} loaded · searching the server…'**
+  String kitSearchPartial(int count);
+
+  /// KitSearchNoMatch title; the query arrives quoted and isolated
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches {query}'**
+  String kitSearchNoMatch(String query);
+
+  /// KitSearchNoMatch title naming what is searched (models)
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in {what} matches {query}'**
+  String kitSearchNoMatchIn(String what, String query);
 }
 
 class _AppLocalizationsDelegate

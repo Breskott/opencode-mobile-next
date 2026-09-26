@@ -20827,4 +20827,42 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitSearchClear => 'Clear search';
+
+  @override
+  String get kitSearchFilter => 'Filter';
+
+  @override
+  String kitSearchFilterActive(String name) {
+    return 'Filter: $name';
+  }
+
+  @override
+  String kitSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: 'No results',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitSearchPartial(int count) {
+    return '$count loaded · searching the server…';
+  }
+
+  @override
+  String kitSearchNoMatch(String query) {
+    return 'Nothing matches $query';
+  }
+
+  @override
+  String kitSearchNoMatchIn(String what, String query) {
+    return 'Nothing in $what matches $query';
+  }
 }
