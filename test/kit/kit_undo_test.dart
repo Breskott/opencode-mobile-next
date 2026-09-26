@@ -16,6 +16,7 @@ import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 /// A host with an optional [KitBottomInset] ancestor, for the placement
 /// tests: `pumpKitHost` (test/kit/kit_harness.dart) has no publisher above
@@ -766,4 +767,37 @@ void main() {
       expect(KitBottomInset.of(context).bottom, 58.0);
     });
   });
+
+  // G8x (gate, test/kit_motion_test.dart's manifest): showKitUndo does not
+  // push a route (KIT-11, the one exception), so it registers through
+  // `changes:` rather than `opens:`, which expects a pushed route.
+  //
+  // No "Undo tapped, working" sample here: KitButton's own working spinner
+  // (`_Spinner`, `kit_buttons.dart`, not this unit's file) is a bare
+  // `CircularProgressIndicator` that keeps ticking under stillness — an
+  // existing, shared gap already baselined for KitButton, KitConfirmSheet,
+  // KitActionBlock and KitStateView (test/kit_motion_baseline.json). G8x's
+  // own rule is that a part added after the gate is never added to that
+  // baseline, so this unit does not add showKitUndo to it either; the gap
+  // is recorded under NOT proven in the unit's QA record (PROC-20) for the
+  // coordinator to fix at the shared `_Spinner`.
+  kitMotionStillTests(
+    'showKitUndo',
+    builds: {'nothing pending': () => const SizedBox.shrink()},
+    changes: {
+      'shows, then commits and closes': KitMotionChange(
+        build: () => const SizedBox.expand(),
+        act: (tester, stage) async {
+          showKitUndo(
+            stage.context,
+            message: 'Archived "Fix login"',
+            onUndo: () {},
+          );
+          await tester.pump();
+          KitUndo.commitPending();
+        },
+        hides: 'Archived "Fix login"',
+      ),
+    },
+  );
 }

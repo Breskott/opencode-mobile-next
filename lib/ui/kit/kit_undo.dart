@@ -593,7 +593,8 @@ class _KitUndoBar extends StatelessWidget {
     final actionWidth =
         measure(actionLabel, KitText.styleFor(KitTextRole.button)) +
         2 * KitButton.tertiaryInset;
-    final chrome = tokens.space3 + (hasDismiss ? tokens.space2 + 48 : 0);
-    return messageWidth + actionWidth + chrome > width;
+    final reserved =
+        tokens.space3 + (hasDismiss ? tokens.space2 + tokens.minTarget : 0);
+    return messageWidth + actionWidth + reserved > width;
   }
 }
