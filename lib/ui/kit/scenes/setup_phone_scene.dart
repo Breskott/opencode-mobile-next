@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_tokens.dart';
 import 'setup_cast.dart';
 
 /// What the phone in [SetupPhoneScene] is doing.
@@ -65,17 +66,18 @@ class SetupPhoneScene extends KitScene {
     final breath = frame.looping ? KitDraw.wave(frame.loop) : 0.0;
     final stopped = mood == SetupPhoneMood.stopped;
 
-    // The wash behind the phone grows in, and swells with each breath.
+    // The wash behind the phone grows in, and swells with each breath. A
+    // stopped phone's wash is the quiet neutral at the accent wash's own
+    // strength (LOOK-36).
     final wash = KitDraw.interval(t, 0, .4);
     if (wash > 0) {
       canvas.drawCircle(
         _center,
         (50 + 3 * breath) * (.7 + .3 * wash),
         KitDraw.fill(
-          KitDraw.fade(
-            stopped ? p.line : p.accentSoft,
-            (stopped ? .35 : 1) * wash,
-          ),
+          stopped
+              ? KitDraw.fade(p.line, KitTokens.sceneWashAlpha * wash)
+              : KitDraw.fade(p.accentSoft, wash),
         ),
       );
     }

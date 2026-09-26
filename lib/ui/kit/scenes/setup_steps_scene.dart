@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_tokens.dart';
 import 'setup_cast.dart';
 
 /// The part of setup that is happening now, as the drawing shows it.
@@ -41,6 +42,11 @@ class SetupStepsScene extends KitScene {
 
   @override
   Size get box => const Size(240, 100);
+
+  /// The step strip shows progress along a line (LAY-8): it mirrors under
+  /// RTL so the finished stop stays at the reading direction's end.
+  @override
+  bool get mirrorsInRtl => true;
 
   @override
   bool differs(covariant SetupStepsScene old) =>
@@ -95,7 +101,12 @@ class SetupStepsScene extends KitScene {
         : halt == SetupSceneHalt.paused
         ? p.muted
         : p.accent;
-    final soft = halt == null ? p.accentSoft : KitDraw.fade(p.line, .5);
+    // A halted strip washes in the quiet neutral, never louder than the
+    // accent's own wash (LOOK-36: flat fills at no more than
+    // KitTokens.sceneWashAlpha).
+    final soft = halt == null
+        ? p.accentSoft
+        : KitDraw.fade(p.line, KitTokens.sceneWashAlpha);
     final loop = frame.looping && halt == null;
     final breath = loop ? KitDraw.wave(frame.loop) : 0.0;
     final measured = (fraction ?? .5).clamp(0.0, 1.0);
