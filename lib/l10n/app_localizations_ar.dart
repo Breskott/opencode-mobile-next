@@ -20101,6 +20101,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get kitMore => 'المزيد';
 
   @override
+  String get kitUntilOff => 'Until I turn it off';
+
+  @override
+  String get kitUntilConversation => 'For this conversation';
+
+  @override
+  String get kitUntilHour => 'For an hour';
+
+  @override
+  String get kitRiskTurnOn => 'Turn on';
+
+  @override
+  String get kitRiskNotNow => 'Not now';
+
+  @override
+  String get kitRiskTurnOff => 'Turn off';
+
+  @override
   String kitChipRemove(String label) {
     return 'إزالة $label';
   }

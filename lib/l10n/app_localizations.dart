@@ -31991,6 +31991,42 @@ abstract class AppLocalizations {
   /// **'More'**
   String get kitMore;
 
+  /// KitSwitchRow risk step: a duration choice for a risky setting; it stays on until the person turns it off
+  ///
+  /// In en, this message translates to:
+  /// **'Until I turn it off'**
+  String get kitUntilOff;
+
+  /// KitSwitchRow risk step: a duration choice for a risky setting; it ends with the current conversation
+  ///
+  /// In en, this message translates to:
+  /// **'For this conversation'**
+  String get kitUntilConversation;
+
+  /// KitSwitchRow risk step: a duration choice for a risky setting; it ends after one hour
+  ///
+  /// In en, this message translates to:
+  /// **'For an hour'**
+  String get kitUntilHour;
+
+  /// KitSwitchRow risk step: the button that turns a risky setting on when there is only one duration
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get kitRiskTurnOn;
+
+  /// KitSwitchRow risk step: folds the step back and leaves the risky setting off
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get kitRiskNotNow;
+
+  /// KitSwitchRow: the status-line action that turns a risky setting off while it is on
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get kitRiskTurnOff;
+
   /// KitChip: the semantic label and tooltip of a removable chip's × control
   ///
   /// In en, this message translates to:
