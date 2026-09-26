@@ -1,0 +1,41 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart
+00:00 +0: G24 scanner strips comments but keeps strings
+00:00 +1: G24 scanner resolves relative and package imports
+00:00 +2: G24 scanner counts flavour gating
+00:00 +3: G24 architecture boundaries ARCH-1: lib/ui never imports lib/api/ or lib/api2/
+00:00 +3 -1: G24 architecture boundaries ARCH-1: lib/ui never imports lib/api/ or lib/api2/ [E]
+  Expected: empty
+    Actual: [
+              'ARCH-1 lib/ui/zz_g24_probe.dart: "lib/api/" x1 (baseline 0)',
+              'ARCH-1 lib/ui/zz_g24_probe.dart: "lib/api2/" x1 (baseline 0)'
+            ]
+  ARCH-1: a lib/ui file gained a forbidden use (new files start at zero). Talk to lib/domain (ServerGateway, ServerOperationsGateway, ServerCapabilities) instead of lib/api or lib/api2.
+  test/architecture_boundaries_test.dart 375:7        main.<fn>.check
+  test/architecture_boundaries_test.dart 386:7        main.<fn>.<fn>
+00:00 +3 -1: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor
+00:00 +3 -2: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor [E]
+  Expected: empty
+    Actual: [
+              'ARCH-2 lib/ui/zz_g24_probe.dart: "ServerFlavor." x1 (baseline 0)',
+              'ARCH-2 lib/ui/zz_g24_probe.dart: ".flavor ==" x1 (baseline 0)'
+            ]
+  ARCH-2: a lib/ui file gained a forbidden use (new files start at zero). Gate the feature on a ServerCapabilities flag or host kind, not on ServerFlavor.
+  test/architecture_boundaries_test.dart 375:7        main.<fn>.check
+  test/architecture_boundaries_test.dart 390:7        main.<fn>.<fn>
+00:00 +3 -2: G24 architecture boundaries ARCH-2: every flavour allowlist entry exists and gives a reason
+00:00 +4 -2: G24 architecture boundaries ARCH-10: notifications have one posting path
+00:00 +4 -3: G24 architecture boundaries ARCH-10: notifications have one posting path [E]
+  Expected: empty
+    Actual: [
+              'lib/ui/zz_g24_probe.dart: constructs the oc/background channel; only lib/background/live_background.dart, lib/background/widget_snapshot.dart may',
+              'lib/ui/zz_g24_probe.dart: names the notification method \'showCodingAlert\'; only lib/background/live_background.dart may',
+              'lib/ui/zz_g24_probe.dart: posts a notification directly; no unit adds a notification path before slice-P6.7 (allowed: lib/state/connection.dart, lib/ui/screens/settings/notifications_settings_screen.dart)'
+            ]
+  ARCH-10 (G24)
+  test/architecture_boundaries_test.dart 449:7        main.<fn>.<fn>
+00:00 +4 -3: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-10: notifications have one posting path
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-1: lib/ui never imports lib/api/ or lib/api2/
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-4/test/architecture_boundaries_test.dart: G24 architecture boundaries ARCH-2: lib/ui never gates on ServerFlavor
