@@ -22529,5 +22529,9 @@
   "kitUndoWorking": "Undoing",
   "@kitUndoWorking": {
     "description": "Kit undo: spoken to a screen reader on the Undo action while the undo is still running (the action ignores taps until it finishes)"
+  },
+  "kitTappableShowActions": "Show actions",
+  "@kitTappableShowActions": {
+    "description": "Kit tappable: the custom accessibility action that opens the tappable's menu, distinct from each menu item's own action (KIT-28)"
   }
 }
