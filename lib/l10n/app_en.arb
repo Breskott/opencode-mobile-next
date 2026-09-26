@@ -22617,5 +22617,9 @@
   "kitFieldErrorLabel": "Error",
   "@kitFieldErrorLabel": {
     "description": "KitField: spoken before a field's error message, e.g. 'Error: Enter a port number'"
+  },
+  "kitTappableShowActions": "Show actions",
+  "@kitTappableShowActions": {
+    "description": "Kit tappable: the custom accessibility action that opens the tappable's menu, distinct from each menu item's own action (KIT-28)"
   }
 }
