@@ -167,13 +167,12 @@ class _Gallery extends StatelessWidget {
               color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
               border: Border.all(color: AppTheme.hairline(theme)),
-              boxShadow: AppTheme.raised(theme),
             ),
             child: Row(
               children: [
                 Icon(AppIconography.shield, color: scheme.primary),
                 const SizedBox(width: 10),
-                const Expanded(child: Text('Raised surface with shadow')),
+                const Expanded(child: Text('Panel on surface1, no shadow')),
               ],
             ),
           ),

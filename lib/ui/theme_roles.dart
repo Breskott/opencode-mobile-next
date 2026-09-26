@@ -39,6 +39,9 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
     required this.codeKeyword,
     required this.codeString,
     required this.codeType,
+    required this.glassRimLight,
+    required this.glassRimDark,
+    required this.glassShadow,
     this.ambient = const [],
   });
 
@@ -107,6 +110,14 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
   final Color codeString;
   final Color codeType;
 
+  /// Floating glass (visual language §6, §7; LOOK-20, LOOK-21): the rim's
+  /// one-physical-pixel light line along the top edge, its darker line
+  /// along the bottom edge (never a glow), and the one shadow under the
+  /// glass (30 % black in both brightnesses).
+  final Color glassRimLight;
+  final Color glassRimDark;
+  final Color glassShadow;
+
   /// Soft colour fields a theme may lay on the ground behind content, so
   /// glass has something to bend (§6). Empty is valid: no fields.
   final List<Color> ambient;
@@ -164,6 +175,9 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
     Color? codeKeyword,
     Color? codeString,
     Color? codeType,
+    Color? glassRimLight,
+    Color? glassRimDark,
+    Color? glassShadow,
     List<Color>? ambient,
   }) => ThemeRoles(
     brightness: brightness,
@@ -190,6 +204,9 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
     codeKeyword: codeKeyword ?? this.codeKeyword,
     codeString: codeString ?? this.codeString,
     codeType: codeType ?? this.codeType,
+    glassRimLight: glassRimLight ?? this.glassRimLight,
+    glassRimDark: glassRimDark ?? this.glassRimDark,
+    glassShadow: glassShadow ?? this.glassShadow,
     ambient: ambient ?? this.ambient,
   );
 
@@ -222,6 +239,9 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
       codeKeyword: c(codeKeyword, other.codeKeyword),
       codeString: c(codeString, other.codeString),
       codeType: c(codeType, other.codeType),
+      glassRimLight: c(glassRimLight, other.glassRimLight),
+      glassRimDark: c(glassRimDark, other.glassRimDark),
+      glassShadow: c(glassShadow, other.glassShadow),
       ambient: t < .5 ? ambient : other.ambient,
     );
   }
@@ -260,6 +280,9 @@ const graphiteDark = ThemeRoles(
   codeKeyword: Color(0xFFC7A6FF),
   codeString: Color(0xFFFFB88A),
   codeType: Color(0xFF7FD1FF),
+  glassRimLight: Color(0x33FFFFFF), // white .20
+  glassRimDark: Color(0x80000000), // black .50
+  glassShadow: Color(0x4D000000), // black .30
   ambient: [Color(0x143DDC8A), Color(0x0F5AB0FF)],
 );
 
@@ -291,16 +314,26 @@ const graphiteLight = ThemeRoles(
   codeKeyword: Color(0xFF6D4AFF),
   codeString: Color(0xFFB4480B),
   codeType: Color(0xFF0B6BA8),
+  glassRimLight: Color(0xE6FFFFFF), // white .90
+  glassRimDark: Color(0x1A000000), // black .10
+  glassShadow: Color(0x4D000000), // black .30 (LOOK-20: both brightnesses)
   ambient: [Color(0x0F0B8A4A)],
 );
 
 /// The accents the canvas offers for Graphite, dark and light (§3, theme
-/// packs): green (the default), blue, orange, violet. For a later accent
+/// packs): green (the default), blue, teal, violet. For a later accent
 /// picker: `graphiteDark.withAccent(graphiteAccents[1].dark)`.
+///
+/// Teal replaced orange (owner decision B15): amber means only "needs
+/// you", so no accent may sit near it (LOOK-39: at least 30° of hue and a
+/// CIEDE2000 ΔE of 20 from attention and danger). Teal is hue 180–182°,
+/// carries its on-colour at 5.6:1 or more and reads on the ground and
+/// surface1 at 5:1 or more in both brightnesses (LOOK-8;
+/// test/theme_roles_test.dart).
 const graphiteAccents = <({String name, Color dark, Color light})>[
   (name: 'green', dark: Color(0xFF3DDC8A), light: Color(0xFF087F43)),
   (name: 'blue', dark: Color(0xFF5AB0FF), light: Color(0xFF1F6FEB)),
-  (name: 'orange', dark: Color(0xFFFF8A4C), light: Color(0xFFC2410C)),
+  (name: 'teal', dark: Color(0xFF3CCFCF), light: Color(0xFF0D7377)),
   (name: 'violet', dark: Color(0xFFC7A6FF), light: Color(0xFF6D4AFF)),
 ];
 
@@ -464,6 +497,11 @@ ThemeRoles deriveRoles({
     codeKeyword: code(defaults.codeKeyword),
     codeString: code(defaults.codeString),
     codeType: code(defaults.codeType),
+    // The glass's rim and shadow are neutral light and shade, the same in
+    // every theme of a brightness: they describe the material, not a hue.
+    glassRimLight: defaults.glassRimLight,
+    glassRimDark: defaults.glassRimDark,
+    glassShadow: defaults.glassShadow,
     ambient: ambient ?? [a.withValues(alpha: dark ? .08 : .06)],
   );
 }

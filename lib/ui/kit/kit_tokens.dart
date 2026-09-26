@@ -144,7 +144,8 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// A technical value (path, host): mono.
   final TextStyle technicalValue;
 
-  /// The typed-name field's text: mono.
+  /// The typed-name field's text: the mono role (13), like every other
+  /// technical value.
   final TextStyle typedName;
 
   /// The tone of a neutral question's mark.
@@ -194,7 +195,8 @@ class KitTokens extends ThemeExtension<KitTokens> {
   final double navHeight;
   final double navRadius;
 
-  /// A row's title, its second line and its trailing value.
+  /// A row's title ([KitTextRole.rowTitle]), its second line and its
+  /// trailing value ([KitTextRole.secondary], the value in `text3`).
   final TextStyle rowTitle;
   final TextStyle rowSupporting;
   final TextStyle rowValue;
@@ -205,6 +207,18 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// A needs-you card's caption ("Needs you · 40 s ago") and its title.
   final TextStyle cardCaption;
   final TextStyle cardTitle;
+
+  /// The one shadow in the app (visual language §4, §7; LOOK-20): under
+  /// floating glass only, one tight drop (y 6, blur 16) in the theme's
+  /// `glassShadow` role (30 % black in both brightnesses). Content, cards
+  /// and sheets get none.
+  List<BoxShadow> get glassShadows => [
+    BoxShadow(
+      color: roles.glassShadow,
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
 
   /// A panel set into a sheet or a dialog (a confirmation's consequences):
   /// one step below the sheet's `surface2`, which in light is the ground.
@@ -281,7 +295,7 @@ class KitTokens extends ThemeExtension<KitTokens> {
       confirmBody: role(KitTextRole.body, r.text2),
       note: role(KitTextRole.secondary, r.text2),
       technicalValue: role(KitTextRole.mono, r.text1),
-      typedName: role(KitTextRole.mono, r.text1).copyWith(fontSize: 16),
+      typedName: role(KitTextRole.mono, r.text1),
       accent: r.accent,
       danger: r.danger,
       minTarget: 48,
@@ -304,7 +318,7 @@ class KitTokens extends ThemeExtension<KitTokens> {
       navRadius: 22,
       rowTitle: role(KitTextRole.rowTitle, r.text1),
       rowSupporting: role(KitTextRole.secondary, r.text2),
-      rowValue: role(KitTextRole.secondary, r.text3).copyWith(fontSize: 15),
+      rowValue: role(KitTextRole.secondary, r.text3),
       sectionLabel: role(KitTextRole.label, r.text2),
       cardCaption: role(KitTextRole.caption, r.attention),
       cardTitle: role(KitTextRole.headline, r.text1),

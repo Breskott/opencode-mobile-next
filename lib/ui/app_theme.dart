@@ -183,28 +183,6 @@ abstract final class AppTheme {
   static Color liveTint(ThemeData theme, {double alpha = .06}) =>
       theme.colorScheme.primary.withValues(alpha: alpha);
 
-  /// The one shadow (§7): floating glass only (the composer, the dock), one
-  /// tight drop so it separates without a halo. Content gets none.
-  static List<BoxShadow> raised(ThemeData theme) => [
-    BoxShadow(
-      color: Colors.black.withValues(
-        alpha: theme.brightness == Brightness.dark ? .30 : .12,
-      ),
-      blurRadius: 16,
-      offset: const Offset(0, 6),
-    ),
-  ];
-
-  /// A crisp ring of [color] (§4: the needs-you ring, 4 px at 6 %), for a
-  /// control that has just changed state or is asking for attention. No
-  /// soft halo (§7). [strength] .35 is the full ring.
-  static List<BoxShadow> glow(Color color, {double strength = .35}) => [
-    BoxShadow(
-      color: color.withValues(alpha: (.06 * strength / .35).clamp(0, 1)),
-      spreadRadius: 4,
-    ),
-  ];
-
   /// True once the text scale makes side-by-side action buttons too narrow
   /// to hold their labels; action bars stack vertically past this point
   /// instead of wrapping every label into a four-line block.
@@ -302,11 +280,9 @@ abstract final class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         toolbarHeight: 64,
-        titleTextStyle: text.titleMedium?.copyWith(
-          fontSize: 20,
-          height: 26 / 20,
-          fontWeight: const FontWeight(650),
-          letterSpacing: -0.3,
+        // The top bar's title is the headline role (LOOK-17: no 20/26).
+        titleTextStyle: text.titleMedium?.merge(
+          KitText.styleFor(KitTextRole.headline),
         ),
         systemOverlayStyle: overlayStyle,
       ),

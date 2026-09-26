@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 
 void main() {
   test('dark theme keeps the app coherent, legible, and touch friendly', () {
@@ -76,13 +77,46 @@ void main() {
     }
   });
 
-  test('every role carries Geist; floating glass has one tight shadow', () {
+  test('every role carries Geist; the one shadow is the glass shadow', () {
     for (final theme in [AppTheme.dark(), AppTheme.light()]) {
       expect(theme.textTheme.headlineSmall?.fontFamily, AppTheme.sansFamily);
       expect(theme.textTheme.titleLarge?.fontFamily, AppTheme.sansFamily);
       expect(theme.textTheme.bodyMedium?.fontFamily, AppTheme.sansFamily);
-      expect(AppTheme.raised(theme), hasLength(1));
       expect(AppTheme.liveTint(theme).a, closeTo(.06, .001));
+      // LOOK-20: one shadow, under floating glass only: y 6, blur 16, the
+      // glassShadow role at 30 % black in both brightnesses.
+      final shadows = theme.extension<KitTokens>()!.glassShadows;
+      expect(shadows, hasLength(1));
+      expect(shadows.single.color, const Color(0x4D000000));
+      expect(shadows.single.offset, const Offset(0, 6));
+      expect(shadows.single.blurRadius, 16);
+      expect(shadows.single.spreadRadius, 0);
+    }
+  });
+
+  test('no theme elevation lifts content (LOOK-20)', () {
+    for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+      expect(theme.dialogTheme.elevation, 0);
+      expect(theme.bottomSheetTheme.elevation, 0);
+      expect(theme.bottomSheetTheme.modalElevation, 0);
+      expect(theme.snackBarTheme.elevation, 0);
+      expect(theme.cardTheme.elevation, 0);
+      expect(theme.popupMenuTheme.elevation, 0);
+      expect(theme.floatingActionButtonTheme.elevation, 0);
+      expect(theme.appBarTheme.elevation, 0);
+      expect(theme.appBarTheme.scrolledUnderElevation, 0);
+    }
+  });
+
+  test('the top bar title is the headline role (LOOK-17)', () {
+    final headline = KitText.styleFor(KitTextRole.headline);
+    for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+      final title = theme.appBarTheme.titleTextStyle!;
+      expect(title.fontSize, headline.fontSize);
+      expect(title.height, headline.height);
+      expect(title.fontWeight, headline.fontWeight);
+      expect(title.fontFamily, AppTheme.sansFamily);
+      expect(title.color, ThemeRoles.resolve(theme).text1);
     }
   });
 }

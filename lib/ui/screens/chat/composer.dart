@@ -247,9 +247,9 @@ class _ChatComposer extends StatelessWidget {
             final restingBorder = focused
                 ? scheme.primary.withValues(alpha: .8)
                 : scheme.outlineVariant.withValues(alpha: .65);
-            // While a run is active the activity ring paints the border
-            // and breathes the glow, so the surface underneath keeps only
-            // a faint primary base line for the sweep to travel over.
+            // While a run is active the activity ring paints the border,
+            // so the surface underneath keeps only a faint primary base
+            // line for the sweep to travel over.
             return _ComposerActivity(
               active: busy,
               radius: radius,
@@ -1764,18 +1764,18 @@ class _ContextMeterLine extends StatelessWidget {
 }
 
 /// The composer's "alive" treatment while a run is active: a lit primary
-/// ring on the rounded border with a soft glow underneath, so the surface
-/// that holds Stop is the one thing on screen saying the assistant is
-/// working — the transcript carries no row for it.
+/// ring on the rounded border, so the surface that holds Stop is the one
+/// thing on screen saying the assistant is working — the transcript carries
+/// no row for it. No glow under it: depth is surface steps and the one
+/// glass shadow (LOOK-20).
 ///
 /// The ring is still. The movement is the drawn mark beside Stop
 /// ([_WorkingMark]), so the screen has one ambient loop (design standard
 /// §10), and it runs on [KitMotion]'s breath.
 ///
 /// The tree shape is identical whether or not [active] is set: the ring is
-/// an extra overlay in a [Stack] and the glow decoration is always present
-/// (empty when idle), so toggling busy never re-parents the prompt field
-/// and never drops the keyboard.
+/// an extra overlay in a [Stack], so toggling busy never re-parents the
+/// prompt field and never drops the keyboard.
 class _ComposerActivity extends StatelessWidget {
   const _ComposerActivity({
     required this.active,
@@ -1787,45 +1787,34 @@ class _ComposerActivity extends StatelessWidget {
   final BorderRadius radius;
   final Widget child;
 
-  /// The glow's strength while lit.
-  static const _glow = .25;
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: active
-            ? AppTheme.glow(scheme.primary, strength: _glow)
-            : const [],
-      ),
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          child,
-          // The ring is its own semantics node so the announcement the
-          // transcript blip used to make survives, without merging into
-          // the prompt field's or the context meter's labels.
-          if (active)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Semantics(
-                  container: true,
-                  liveRegion: true,
-                  label: _chatL10n(context).chatUiAssistantIsWorking,
-                  child: CustomPaint(
-                    key: const ValueKey('composer-activity'),
-                    painter: _ActivityRingPainter(
-                      radius: radius,
-                      color: scheme.primary,
-                    ),
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        child,
+        // The ring is its own semantics node so the announcement the
+        // transcript blip used to make survives, without merging into
+        // the prompt field's or the context meter's labels.
+        if (active)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                label: _chatL10n(context).chatUiAssistantIsWorking,
+                child: CustomPaint(
+                  key: const ValueKey('composer-activity'),
+                  painter: _ActivityRingPainter(
+                    radius: radius,
+                    color: scheme.primary,
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

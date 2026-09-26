@@ -29,8 +29,7 @@ enum KitTextRole {
   /// 12/16, 600, +0.02 em: "Needs you · 40 s ago".
   caption,
 
-  /// 15/20, 600: buttons (the spec's 15–16; 15 keeps two labelled
-  /// actions side by side on a 390 dp phone).
+  /// 16/20, 600: buttons (LOOK-12).
   button,
 
   /// 13/19, Geist Mono: code, commands, paths (isolated left to right).
@@ -149,8 +148,8 @@ class KitText extends StatelessWidget {
       letterSpacing: 0.24,
     ),
     KitTextRole.button => const TextStyle(
-      fontSize: 15,
-      height: 20 / 15,
+      fontSize: 16,
+      height: 20 / 16,
       fontWeight: FontWeight.w600,
       letterSpacing: 0,
     ),
@@ -206,102 +205,44 @@ class KitText extends StatelessWidget {
     return style.copyWith(color: toneColor(roles, tone ?? defaultTone(role)));
   }
 
-  /// Material's type scale said in the kit's roles, so a `Text` styled
-  /// with `theme.textTheme.x` reads the same as its kit counterpart:
-  /// headlineLarge is [KitTextRole.largeTitle], titleLarge [KitTextRole.title],
-  /// bodyLarge [KitTextRole.body],
-  /// bodySmall [KitTextRole.secondary], labelMedium [KitTextRole.label],
-  /// labelSmall [KitTextRole.caption]. Every colour is the opaque `text1`.
+  /// Material's type scale said in the kit's roles (LOOK-12, LOOK-17):
+  /// every slot is exactly one role, so no text in the app, kit or not,
+  /// takes a size outside the role table.
+  ///
+  /// | Slot | Role |
+  /// |---|---|
+  /// | displayLarge, displayMedium, displaySmall, headlineLarge | [KitTextRole.largeTitle] 32 |
+  /// | headlineMedium, headlineSmall, titleLarge | [KitTextRole.title] 24 |
+  /// | titleMedium | [KitTextRole.rowTitle] 16 |
+  /// | titleSmall, labelLarge, labelMedium | [KitTextRole.label] 13 |
+  /// | bodyLarge | [KitTextRole.body] 16 |
+  /// | bodyMedium, bodySmall | [KitTextRole.secondary] 14 |
+  /// | labelSmall | [KitTextRole.caption] 12 |
+  ///
+  /// bodyMedium is the ambient text of every Material widget, so the
+  /// screens not yet on [KitText] read at the secondary role's 14/20; a
+  /// button's text is [KitTextRole.button], set by the button themes.
+  /// Every colour is the opaque `text1`.
   static TextTheme textTheme(TextTheme base, ThemeRoles roles) {
-    TextStyle? role(TextStyle? slot, TextStyle metrics) => slot
-        ?.merge(metrics)
+    TextStyle? role(TextStyle? slot, KitTextRole role) => slot
+        ?.merge(styleFor(role))
         .copyWith(color: roles.text1, decorationColor: roles.text1);
-    const display = FontWeight(650);
     return base.copyWith(
-      displayLarge: role(
-        base.displayLarge,
-        const TextStyle(
-          fontSize: 57,
-          height: 64 / 57,
-          fontWeight: display,
-          letterSpacing: -1.4,
-        ),
-      ),
-      displayMedium: role(
-        base.displayMedium,
-        const TextStyle(
-          fontSize: 45,
-          height: 52 / 45,
-          fontWeight: display,
-          letterSpacing: -1.1,
-        ),
-      ),
-      displaySmall: role(
-        base.displaySmall,
-        const TextStyle(
-          fontSize: 36,
-          height: 44 / 36,
-          fontWeight: display,
-          letterSpacing: -0.9,
-        ),
-      ),
-      headlineLarge: role(base.headlineLarge, styleFor(KitTextRole.largeTitle)),
-      headlineMedium: role(
-        base.headlineMedium,
-        const TextStyle(
-          fontSize: 28,
-          height: 34 / 28,
-          fontWeight: display,
-          letterSpacing: -0.6,
-        ),
-      ),
-      headlineSmall: role(base.headlineSmall, styleFor(KitTextRole.title)),
-      titleLarge: role(base.titleLarge, styleFor(KitTextRole.title)),
-      // titleMedium keeps the app's 16/22: screens not yet on KitText wrap
-      // their headings on it. The kit's headline role is 17.
-      titleMedium: role(
-        base.titleMedium,
-        const TextStyle(
-          fontSize: 16,
-          height: 22 / 16,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.16,
-        ),
-      ),
-      titleSmall: role(
-        base.titleSmall,
-        const TextStyle(
-          fontSize: 14,
-          height: 20 / 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-        ),
-      ),
-      bodyLarge: role(base.bodyLarge, styleFor(KitTextRole.body)),
-      // bodyMedium (the ambient text of every Material widget), titleSmall
-      // and labelLarge keep Material's 14/20: screens not yet on KitText
-      // were laid out on it. The kit's roles carry the larger sizes.
-      bodyMedium: role(
-        base.bodyMedium,
-        const TextStyle(
-          fontSize: 14,
-          height: 20 / 14,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0,
-        ),
-      ),
-      bodySmall: role(base.bodySmall, styleFor(KitTextRole.secondary)),
-      labelLarge: role(
-        base.labelLarge,
-        const TextStyle(
-          fontSize: 14,
-          height: 20 / 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-        ),
-      ),
-      labelMedium: role(base.labelMedium, styleFor(KitTextRole.label)),
-      labelSmall: role(base.labelSmall, styleFor(KitTextRole.caption)),
+      displayLarge: role(base.displayLarge, KitTextRole.largeTitle),
+      displayMedium: role(base.displayMedium, KitTextRole.largeTitle),
+      displaySmall: role(base.displaySmall, KitTextRole.largeTitle),
+      headlineLarge: role(base.headlineLarge, KitTextRole.largeTitle),
+      headlineMedium: role(base.headlineMedium, KitTextRole.title),
+      headlineSmall: role(base.headlineSmall, KitTextRole.title),
+      titleLarge: role(base.titleLarge, KitTextRole.title),
+      titleMedium: role(base.titleMedium, KitTextRole.rowTitle),
+      titleSmall: role(base.titleSmall, KitTextRole.label),
+      bodyLarge: role(base.bodyLarge, KitTextRole.body),
+      bodyMedium: role(base.bodyMedium, KitTextRole.secondary),
+      bodySmall: role(base.bodySmall, KitTextRole.secondary),
+      labelLarge: role(base.labelLarge, KitTextRole.label),
+      labelMedium: role(base.labelMedium, KitTextRole.label),
+      labelSmall: role(base.labelSmall, KitTextRole.caption),
     );
   }
 

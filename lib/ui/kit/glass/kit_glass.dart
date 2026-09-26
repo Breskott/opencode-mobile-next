@@ -2,8 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../app_theme.dart';
 import '../kit_effects.dart';
+import '../kit_tokens.dart';
 import 'liquid_glass_filter.dart';
 
 /// How a [KitGlass] draws, decided per frame from the phone and the person.
@@ -87,7 +87,7 @@ class KitGlass extends StatelessWidget {
   const KitGlass({
     super.key,
     required this.child,
-    this.borderRadius = const BorderRadius.all(Radius.circular(22)),
+    this.borderRadius,
     this.shadow = true,
     this.dim = true,
   });
@@ -95,10 +95,12 @@ class KitGlass extends StatelessWidget {
   final Widget child;
 
   /// The glass's corners. The shader bends with the largest corner radius;
-  /// the clip follows each corner exactly.
-  final BorderRadius borderRadius;
+  /// the clip follows each corner exactly. Null takes the floating tab
+  /// bar's corners ([KitTokens.navRadius], 22).
+  final BorderRadius? borderRadius;
 
-  /// The one tight shadow of floating glass (§7; never when solid).
+  /// The one tight shadow of floating glass ([KitTokens.glassShadows]:
+  /// y 6, blur 16, the `glassShadow` role; LOOK-20), never when solid.
   final bool shadow;
 
   /// Glass that holds words (labels, a text field) dims what passes behind
@@ -143,7 +145,10 @@ class KitGlass extends StatelessWidget {
 
   Widget _build(BuildContext context, ui.FragmentProgram? program) {
     final theme = Theme.of(context);
-    final roles = ThemeRoles.resolve(theme);
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final borderRadius =
+        this.borderRadius ?? BorderRadius.circular(tokens.navRadius);
     final look = lookOf(context);
     final solid = look == KitGlassLook.solid;
     final dark = theme.brightness == Brightness.dark;
@@ -169,16 +174,17 @@ class KitGlass extends StatelessWidget {
         borderRadius: borderRadius,
         border: solid ? Border.all(color: roles.hairline, width: 0) : null,
       ),
-      // The rim (§7): one physical pixel, light along the top edge and
-      // darker along the bottom, never a soft glow.
+      // The rim (§7, LOOK-21): one physical pixel, the `glassRimLight` role
+      // along the top edge and `glassRimDark` along the bottom, never a
+      // soft glow.
       child: solid
           ? child
           : CustomPaint(
               foregroundPainter: _GlassRimPainter(
                 radius: borderRadius,
                 devicePixelRatio: dpr,
-                light: Colors.white.withValues(alpha: dark ? .20 : .90),
-                dark: Colors.black.withValues(alpha: dark ? .50 : .10),
+                light: roles.glassRimLight,
+                dark: roles.glassRimDark,
               ),
               child: child,
             ),
@@ -194,7 +200,7 @@ class KitGlass extends StatelessWidget {
       ),
       KitGlassLook.liquid => LiquidGlassFilter(
         program: program!,
-        radius: _largestRadius,
+        radius: _largestRadius(borderRadius),
         devicePixelRatio: dpr,
         tint: fill,
         rim: dark ? .7 : 1,
@@ -206,13 +212,13 @@ class KitGlass extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        boxShadow: solid || !shadow ? const [] : AppTheme.raised(theme),
+        boxShadow: solid || !shadow ? const [] : tokens.glassShadows,
       ),
       child: ClipRRect(borderRadius: borderRadius, child: glass),
     );
   }
 
-  double get _largestRadius => [
+  static double _largestRadius(BorderRadius borderRadius) => [
     borderRadius.topLeft.x,
     borderRadius.topRight.x,
     borderRadius.bottomLeft.x,

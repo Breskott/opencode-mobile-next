@@ -2,6 +2,8 @@
 // §3): Graphite is the default theme, every pack supplies the whole role
 // set, and deriveRoles (the seam for a custom theme) keeps the contrast
 // floors for any accent and ground.
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
@@ -60,6 +62,105 @@ List<String> _floors(String tag, ThemeRoles r) {
   }
   return failures;
 }
+
+/// CIE L*a*b* (D65) of an opaque sRGB colour.
+List<double> _lab(Color c) {
+  double lin(double v) =>
+      v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+  final r = lin(c.r), g = lin(c.g), b = lin(c.b);
+  final x = (r * .4124564 + g * .3575761 + b * .1804375) / .95047;
+  final y = r * .2126729 + g * .7151522 + b * .0721750;
+  final z = (r * .0193339 + g * .1191920 + b * .9503041) / 1.08883;
+  double f(double t) =>
+      t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : 7.787 * t + 16 / 116;
+  final fx = f(x), fy = f(y), fz = f(z);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/// CIEDE2000 colour difference of two opaque sRGB colours, for LOOK-39.
+double _deltaE2000(Color c1, Color c2) => _deltaE2000Lab(_lab(c1), _lab(c2));
+
+/// CIEDE2000 of two L*a*b* colours (Sharma, Wu and Dalal 2005).
+double _deltaE2000Lab(List<double> lab1, List<double> lab2) {
+  double rad(double deg) => deg * math.pi / 180;
+  double deg(double rad) => rad * 180 / math.pi;
+  final [l1, a1, b1] = lab1;
+  final [l2, a2, b2] = lab2;
+  final cBar =
+      (math.sqrt(a1 * a1 + b1 * b1) + math.sqrt(a2 * a2 + b2 * b2)) / 2;
+  final cBar7 = math.pow(cBar, 7);
+  final g = .5 * (1 - math.sqrt(cBar7 / (cBar7 + math.pow(25, 7))));
+  final a1p = (1 + g) * a1, a2p = (1 + g) * a2;
+  final c1p = math.sqrt(a1p * a1p + b1 * b1);
+  final c2p = math.sqrt(a2p * a2p + b2 * b2);
+  final h1p = (deg(math.atan2(b1, a1p)) + 360) % 360;
+  final h2p = (deg(math.atan2(b2, a2p)) + 360) % 360;
+  final dLp = l2 - l1;
+  final dCp = c2p - c1p;
+  var dh = h2p - h1p;
+  if (c1p * c2p == 0) {
+    dh = 0;
+  } else if (dh > 180) {
+    dh -= 360;
+  } else if (dh < -180) {
+    dh += 360;
+  }
+  final dHp = 2 * math.sqrt(c1p * c2p) * math.sin(rad(dh / 2));
+  final lBarp = (l1 + l2) / 2;
+  final cBarp = (c1p + c2p) / 2;
+  double hBarp;
+  if (c1p * c2p == 0) {
+    hBarp = h1p + h2p;
+  } else if ((h1p - h2p).abs() <= 180) {
+    hBarp = (h1p + h2p) / 2;
+  } else if (h1p + h2p < 360) {
+    hBarp = (h1p + h2p + 360) / 2;
+  } else {
+    hBarp = (h1p + h2p - 360) / 2;
+  }
+  final t =
+      1 -
+      .17 * math.cos(rad(hBarp - 30)) +
+      .24 * math.cos(rad(2 * hBarp)) +
+      .32 * math.cos(rad(3 * hBarp + 6)) -
+      .20 * math.cos(rad(4 * hBarp - 63));
+  final dTheta = 30 * math.exp(-math.pow((hBarp - 275) / 25, 2));
+  final cBarp7 = math.pow(cBarp, 7);
+  final rc = 2 * math.sqrt(cBarp7 / (cBarp7 + math.pow(25, 7)));
+  final sl =
+      1 +
+      .015 * math.pow(lBarp - 50, 2) / math.sqrt(20 + math.pow(lBarp - 50, 2));
+  final sc = 1 + .045 * cBarp;
+  final sh = 1 + .015 * cBarp * t;
+  final rt = -math.sin(rad(2 * dTheta)) * rc;
+  return math.sqrt(
+    math.pow(dLp / sl, 2) +
+        math.pow(dCp / sc, 2) +
+        math.pow(dHp / sh, 2) +
+        rt * (dCp / sc) * (dHp / sh),
+  );
+}
+
+/// The distance between two colours' hues on the colour wheel, 0–180°.
+double _hueDistance(Color a, Color b) {
+  final d = (HSVColor.fromColor(a).hue - HSVColor.fromColor(b).hue).abs();
+  return d > 180 ? 360 - d : d;
+}
+
+/// LOOK-39 for [accent] against a role set's attention and danger.
+List<String> _apart(String tag, Color accent, ThemeRoles r) => [
+  for (final (name, other) in [
+    ('attention', r.attention),
+    ('danger', r.danger),
+  ]) ...[
+    if (_hueDistance(accent, other) < 30)
+      '$tag hue ${_hueDistance(accent, other).toStringAsFixed(0)}° '
+          'from $name < 30°',
+    if (_deltaE2000(accent, other) < 20)
+      '$tag ΔE2000 ${_deltaE2000(accent, other).toStringAsFixed(1)} '
+          'from $name < 20',
+  ],
+];
 
 void main() {
   test('Graphite is the default and keeps the spec palette', () {
@@ -214,5 +315,210 @@ void main() {
       expect(style?.fontSize, style!.fontSize!.roundToDouble());
       expect(style.color?.a, 1);
     }
+  });
+
+  test('the ΔE2000 used for LOOK-39 matches the published reference', () {
+    // Sharma, Wu and Dalal (2005), table 1: pairs 1, 7 and 17.
+    expect(
+      _deltaE2000Lab([50, 2.6772, -79.7751], [50, 0, -82.7485]),
+      closeTo(2.0425, 1e-4),
+    );
+    expect(_deltaE2000Lab([50, 0, 0], [50, -1, 2]), closeTo(2.3669, 1e-4));
+    expect(_deltaE2000Lab([50, 2.5, 0], [73, 25, -18]), closeTo(27.1492, 1e-4));
+    expect(_deltaE2000(Colors.black, Colors.white), closeTo(100, .01));
+    expect(_hueDistance(const Color(0xFFFF0000), const Color(0xFF00FFFF)), 180);
+    expect(_hueDistance(const Color(0xFFFF0000), const Color(0xFFFF00FF)), 60);
+  });
+
+  test(
+    'Graphite offers green, blue, teal and violet; teal replaced orange',
+    () {
+      // Owner decision B15: amber means only "needs you", so no accent is
+      // orange.
+      expect(graphiteAccents.map((option) => option.name), [
+        'green',
+        'blue',
+        'teal',
+        'violet',
+      ]);
+      final teal = graphiteAccents.firstWhere(
+        (option) => option.name == 'teal',
+      );
+      expect(teal.dark, const Color(0xFF3CCFCF));
+      expect(teal.light, const Color(0xFF0D7377));
+      // Teal passes LOOK-8 as chosen: the contrast guard leaves it alone.
+      expect(graphiteDark.withAccent(teal.dark).accent, teal.dark);
+      expect(graphiteLight.withAccent(teal.light).accent, teal.light);
+      for (final (roles, accent) in [
+        (graphiteDark, teal.dark),
+        (graphiteLight, teal.light),
+      ]) {
+        final tag = 'teal/${roles.brightness.name}';
+        expect(
+          contrastRatio(onColor(accent), accent),
+          greaterThanOrEqualTo(4.5),
+          reason: '$tag onAccent on accent',
+        );
+        expect(
+          contrastRatio(accent, roles.ground),
+          greaterThanOrEqualTo(4.5),
+          reason: '$tag accent on ground',
+        );
+        expect(
+          contrastRatio(accent, roles.surface1),
+          greaterThanOrEqualTo(4.5),
+          reason: '$tag accent on surface1',
+        );
+      }
+    },
+  );
+
+  test(
+    'every Graphite accent keeps clear of attention and danger (LOOK-39)',
+    () {
+      final failures = <String>[];
+      for (final option in graphiteAccents) {
+        for (final (roles, raw) in [
+          (graphiteDark, option.dark),
+          (graphiteLight, option.light),
+        ]) {
+          final tag = '${option.name}/${roles.brightness.name}';
+          failures
+            ..addAll(_apart(tag, raw, roles))
+            ..addAll(
+              _apart('$tag guarded', roles.withAccent(raw).accent, roles),
+            );
+        }
+      }
+      expect(failures, isEmpty, reason: failures.join('\n'));
+      // The check bites: the orange that teal replaced fails it.
+      expect(
+        _apart('orange', const Color(0xFFFF8A4C), graphiteDark),
+        isNotEmpty,
+      );
+      expect(
+        _apart('orange', const Color(0xFFC2410C), graphiteLight),
+        isNotEmpty,
+      );
+    },
+  );
+
+  test('floating glass has its own rim and shadow roles in every theme', () {
+    // LOOK-20: the one shadow is 30 % black in both brightnesses. LOOK-21:
+    // the rim is a light line on top and a darker line at the bottom.
+    const shadow = Color(0x4D000000);
+    expect(graphiteDark.glassShadow, shadow);
+    expect(graphiteLight.glassShadow, shadow);
+    expect(graphiteDark.glassRimLight, const Color(0x33FFFFFF));
+    expect(graphiteDark.glassRimDark, const Color(0x80000000));
+    expect(graphiteLight.glassRimLight, const Color(0xE6FFFFFF));
+    expect(graphiteLight.glassRimDark, const Color(0x1A000000));
+    for (final roles in [graphiteDark, graphiteLight]) {
+      expect(
+        roles.glassRimLight.computeLuminance(),
+        greaterThan(roles.glassRimDark.computeLuminance()),
+      );
+    }
+    // Derived: every pack and a custom theme carry them.
+    for (final brightness in Brightness.values) {
+      final defaults = brightness == Brightness.dark
+          ? graphiteDark
+          : graphiteLight;
+      final custom = deriveRoles(
+        accent: const Color(0xFFE91E63),
+        ground: brightness == Brightness.dark
+            ? const Color(0xFF1E1E2E)
+            : const Color(0xFFFDF6E3),
+        brightness: brightness,
+      );
+      final packs = [
+        for (final id in ThemePackId.values.where(
+          (id) => id != ThemePackId.dynamic,
+        ))
+          themePack(id).palette(brightness).themeRoles,
+      ];
+      for (final roles in [custom, ...packs]) {
+        expect(roles.glassShadow, shadow);
+        expect(roles.glassRimLight, defaults.glassRimLight);
+        expect(roles.glassRimDark, defaults.glassRimDark);
+      }
+    }
+    // They survive copyWith and lerp.
+    expect(graphiteDark.copyWith().glassRimLight, graphiteDark.glassRimLight);
+    expect(
+      graphiteDark.lerp(graphiteLight, 1).glassRimLight,
+      graphiteLight.glassRimLight,
+    );
+    final tokens = KitTokens.fromRoles(
+      graphiteLight,
+      AppTheme.light().textTheme,
+    );
+    expect(tokens.glassShadows, hasLength(1));
+    expect(tokens.glassShadows.single.color, shadow);
+    expect(tokens.glassShadows.single.blurRadius, 16);
+    expect(tokens.glassShadows.single.offset, const Offset(0, 6));
+  });
+
+  test('every Material type slot is one role, with no other size', () {
+    // LOOK-12, LOOK-17: no 57/45/36/28/20/15 anywhere in the type scale.
+    bool same(TextStyle a, TextStyle b) =>
+        a.fontSize == b.fontSize &&
+        a.height == b.height &&
+        a.fontWeight == b.fontWeight &&
+        a.letterSpacing == b.letterSpacing;
+    final roleSizes = {
+      for (final role in KitTextRole.values) KitText.styleFor(role).fontSize,
+    };
+    expect(roleSizes, {32, 24, 17, 16, 14, 13, 12});
+    for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+      final text = theme.textTheme;
+      final slots = {
+        'displayLarge': text.displayLarge,
+        'displayMedium': text.displayMedium,
+        'displaySmall': text.displaySmall,
+        'headlineLarge': text.headlineLarge,
+        'headlineMedium': text.headlineMedium,
+        'headlineSmall': text.headlineSmall,
+        'titleLarge': text.titleLarge,
+        'titleMedium': text.titleMedium,
+        'titleSmall': text.titleSmall,
+        'bodyLarge': text.bodyLarge,
+        'bodyMedium': text.bodyMedium,
+        'bodySmall': text.bodySmall,
+        'labelLarge': text.labelLarge,
+        'labelMedium': text.labelMedium,
+        'labelSmall': text.labelSmall,
+      };
+      for (final MapEntry(:key, :value) in slots.entries) {
+        final roles = KitTextRole.values.where(
+          (role) =>
+              role != KitTextRole.mono && same(value!, KitText.styleFor(role)),
+        );
+        expect(roles, isNotEmpty, reason: '$key is no role: $value');
+      }
+      // The top bar's title is the headline role.
+      expect(
+        same(
+          theme.appBarTheme.titleTextStyle!,
+          KitText.styleFor(KitTextRole.headline),
+        ),
+        isTrue,
+      );
+    }
+    // The button role is 16/20 (LOOK-12), not the old 15.
+    expect(KitText.styleFor(KitTextRole.button).fontSize, 16);
+  });
+
+  test('a row value is the secondary role and a typed name is mono 13', () {
+    final tokens = AppTheme.dark().extension<KitTokens>()!;
+    final secondary = KitText.styleFor(KitTextRole.secondary);
+    expect(tokens.rowValue.fontSize, secondary.fontSize);
+    expect(tokens.rowValue.height, secondary.height);
+    expect(tokens.rowValue.fontWeight, secondary.fontWeight);
+    expect(tokens.rowValue.color, graphiteDark.text3);
+    final mono = KitText.styleFor(KitTextRole.mono);
+    expect(tokens.typedName.fontFamily, AppTheme.monoFamily);
+    expect(tokens.typedName.fontSize, 13);
+    expect(tokens.typedName.height, mono.height);
   });
 }

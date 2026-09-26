@@ -72,27 +72,34 @@ void main() {
       }
     }
 
-    // The generated themes. The four hand-written packs keep their authors'
-    // exact colours (Solarized's famous low contrast included) and have
-    // goldens instead.
+    // Every pack, the four hand-written ones included, reaches the app
+    // through its role set, so the theme the app builds meets the visual
+    // language's floors (LOOK-7, LOOK-8): text1 7:1 on every surface step,
+    // text2 4.5:1, the accent 4.5:1 on the ground and surface1 (links are
+    // text), its on-colour 4.5:1, and danger and success 4.5:1 on the ground.
     for (final id in ThemePackId.values.where(
-      (id) => id != ThemePackId.dynamic && !curatedThemePacks.contains(id),
+      (id) => id != ThemePackId.dynamic,
     )) {
       for (final brightness in Brightness.values) {
-        final palette = themePack(id).palette(brightness);
-        final s = palette.scheme;
+        final pack = themePack(id);
+        final theme = brightness == Brightness.dark
+            ? AppTheme.dark(pack)
+            : AppTheme.light(pack);
+        final s = theme.colorScheme;
         final tag = '${id.name}/${brightness.name}';
-        // Reading text: WCAG AA. On the page and on every surface it sits on.
         for (final surface in [
-          palette.background,
-          s.surface,
+          theme.scaffoldBackgroundColor,
+          s.surfaceContainerLow,
           s.surfaceContainer,
           s.surfaceContainerHigh,
+          s.surfaceContainerHighest,
         ]) {
-          floor('$tag text', s.onSurface, surface, 4.5);
+          floor('$tag text', s.onSurface, surface, 7);
           floor('$tag muted text', s.onSurfaceVariant, surface, 4.5);
         }
         floor('$tag on primary', s.onPrimary, s.primary, 4.5);
+        floor('$tag accent', s.primary, theme.scaffoldBackgroundColor, 4.5);
+        floor('$tag accent on surface1', s.primary, s.surfaceContainerLow, 4.5);
         floor(
           '$tag on primary container',
           s.onPrimaryContainer,
@@ -111,11 +118,13 @@ void main() {
           s.errorContainer,
           4.5,
         );
-        // Things recognised by colour (accent, status): the 3:1 of
-        // non-text contrast.
-        floor('$tag accent', s.primary, palette.background, 3);
-        floor('$tag error', s.error, palette.background, 3);
-        floor('$tag success', palette.success, palette.background, 3);
+        floor('$tag error', s.error, theme.scaffoldBackgroundColor, 4.5);
+        floor(
+          '$tag success',
+          AppTheme.successOf(theme),
+          theme.scaffoldBackgroundColor,
+          4.5,
+        );
       }
     }
     expect(failures, isEmpty, reason: failures.join('\n'));

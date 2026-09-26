@@ -9,8 +9,9 @@
 // dock.
 //
 // flutter_test paints with a 1em-per-glyph test font, so assertions here are
-// about structure and geometry, not glyph widths; tool/capture/
-// stable_workspace_test.dart loads the real fonts and checks painted text.
+// about structure and geometry, not glyph widths, except the last group,
+// which loads the real fonts for the 390dp/1x side-by-side dock;
+// tool/capture/stable_workspace_test.dart checks painted text.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -23,6 +24,8 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../tool/capture/fixtures.dart' show loadCaptureFonts;
 
 const _directory = '/home/dev/shopfront';
 
@@ -349,43 +352,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('390dp 1x keeps the row header, a two-line facts line and the '
-      'side-by-side dock', (tester) async {
-    _phone(tester, 390);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await _pumpFrames(tester);
-    expect(tester.takeException(), isNull);
-
-    // Normal text uses the same single project entry as enlarged text.
-    expect(_header, findsOneWidget);
-    expect(_name, findsOneWidget);
-    expect(_switch, findsNothing);
-    expect(_manage, findsNothing);
-    expect(
-      find.descendant(of: _header, matching: find.text('shopfront')),
-      findsOneWidget,
-    );
-
-    final facts = find.descendant(
-      of: _row('busy'),
-      matching: find.textContaining('Working'),
-    );
-    expect(tester.widget<Text>(facts).maxLines, 2);
-
-    // Primary beside the isolated icon, the icon at the end of the dock.
-    expect(_primary, findsOneWidget);
-    expect(_isolated, findsOneWidget);
-    expect(tester.widget<IconButton>(_isolated).onPressed, isNotNull);
-    expect(find.text('Isolated task'), findsNothing);
-    expect(
-      tester.getTopRight(_primary).dx,
-      lessThan(tester.getTopLeft(_isolated).dx),
-    );
-    expect(tester.getTopRight(_isolated).dx, 390 - 16);
-    expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
-  });
   testWidgets('session details disclose usage without cluttering the list', (
     tester,
   ) async {
@@ -420,5 +386,52 @@ void main() {
     expect(find.text(_directory), findsOneWidget);
     expect(controller.createCalls, 0);
     expect(tester.takeException(), isNull);
+  });
+
+  // Whether "New conversation" shares the row with the isolated icon is a
+  // question of glyph widths: with the 1em test font the button role's
+  // 16 px label (LOOK-12) is 256 dp and can never fit a compact row, so this
+  // case paints with the real Geist, as a phone does. Last in the file: the
+  // fonts stay loaded for the rest of the isolate.
+  group('with the real fonts', () {
+    setUpAll(loadCaptureFonts);
+
+    testWidgets('390dp 1x keeps the row header, a two-line facts line and the '
+        'side-by-side dock', (tester) async {
+      _phone(tester, 390);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await _pumpFrames(tester);
+      expect(tester.takeException(), isNull);
+
+      // Normal text uses the same single project entry as enlarged text.
+      expect(_header, findsOneWidget);
+      expect(_name, findsOneWidget);
+      expect(_switch, findsNothing);
+      expect(_manage, findsNothing);
+      expect(
+        find.descendant(of: _header, matching: find.text('shopfront')),
+        findsOneWidget,
+      );
+
+      final facts = find.descendant(
+        of: _row('busy'),
+        matching: find.textContaining('Working'),
+      );
+      expect(tester.widget<Text>(facts).maxLines, 2);
+
+      // Primary beside the isolated icon, the icon at the end of the dock.
+      expect(_primary, findsOneWidget);
+      expect(_isolated, findsOneWidget);
+      expect(tester.widget<IconButton>(_isolated).onPressed, isNotNull);
+      expect(find.text('Isolated task'), findsNothing);
+      expect(
+        tester.getTopRight(_primary).dx,
+        lessThan(tester.getTopLeft(_isolated).dx),
+      );
+      expect(tester.getTopRight(_isolated).dx, 390 - 16);
+      expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
+    });
   });
 }
