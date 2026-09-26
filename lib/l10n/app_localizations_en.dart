@@ -20536,4 +20536,46 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String kitQueuedTitle(int count) {
+    return 'Waiting to send · $count';
+  }
+
+  @override
+  String get kitQueuedOffline => 'Sends when you\'re back online';
+
+  @override
+  String get kitQueuedWaiting => 'Waiting to send';
+
+  @override
+  String get kitQueuedReachedServer => 'Reached the server';
+
+  @override
+  String get kitQueuedAfterReply => 'Sends after this reply';
+
+  @override
+  String get kitQueuedAddToTurn => 'Adds to this turn';
+
+  @override
+  String get kitQueuedUpdate => 'Update waiting';
+
+  @override
+  String kitQueuedAttachments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attachments',
+      one: '1 attachment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitQueuedItemLabel(int index, int count, String text, String state) {
+    return 'Waiting message $index of $count: $text. $state';
+  }
+
+  @override
+  String get kitQueuedActions => 'Message actions';
 }

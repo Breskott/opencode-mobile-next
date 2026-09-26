@@ -32782,6 +32782,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
   String kitJumpNewLatest(int count);
+
+  /// Kit queued message: the bubble's head line with how many messages wait to reach the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send · {count}'**
+  String kitQueuedTitle(int count);
+
+  /// Kit queued message: added to the head line when every message waits for the app to be online
+  ///
+  /// In en, this message translates to:
+  /// **'Sends when you\'re back online'**
+  String get kitQueuedOffline;
+
+  /// Kit queued message: one message waits for the app to be online
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send'**
+  String get kitQueuedWaiting;
+
+  /// Kit queued message: the server accepted the message though the phone could not record that; it is never resent
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the server'**
+  String get kitQueuedReachedServer;
+
+  /// Kit queued message (OpenCode 2): accepted, delivered when the running reply finishes
+  ///
+  /// In en, this message translates to:
+  /// **'Sends after this reply'**
+  String get kitQueuedAfterReply;
+
+  /// Kit queued message (OpenCode 2): accepted, delivered at the agent's next step
+  ///
+  /// In en, this message translates to:
+  /// **'Adds to this turn'**
+  String get kitQueuedAddToTurn;
+
+  /// Kit queued message (OpenCode 2): an update the server itself queued
+  ///
+  /// In en, this message translates to:
+  /// **'Update waiting'**
+  String get kitQueuedUpdate;
+
+  /// Kit queued message: how many files go with the message
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 attachment} other{{count} attachments}}'**
+  String kitQueuedAttachments(int count);
+
+  /// Kit queued message: what a screen reader says for one waiting message
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting message {index} of {count}: {text}. {state}'**
+  String kitQueuedItemLabel(int index, int count, String text, String state);
+
+  /// Kit queued message: the name of one waiting message's menu
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get kitQueuedActions;
 }
 
 class _AppLocalizationsDelegate

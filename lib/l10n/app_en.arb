@@ -23101,5 +23101,75 @@
         "type": "int"
       }
     }
+  },
+  "kitQueuedTitle": "Waiting to send · {count}",
+  "@kitQueuedTitle": {
+    "description": "Kit queued message: the bubble's head line with how many messages wait to reach the agent",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "kitQueuedOffline": "Sends when you're back online",
+  "@kitQueuedOffline": {
+    "description": "Kit queued message: added to the head line when every message waits for the app to be online"
+  },
+  "kitQueuedWaiting": "Waiting to send",
+  "@kitQueuedWaiting": {
+    "description": "Kit queued message: one message waits for the app to be online"
+  },
+  "kitQueuedReachedServer": "Reached the server",
+  "@kitQueuedReachedServer": {
+    "description": "Kit queued message: the server accepted the message though the phone could not record that; it is never resent"
+  },
+  "kitQueuedAfterReply": "Sends after this reply",
+  "@kitQueuedAfterReply": {
+    "description": "Kit queued message (OpenCode 2): accepted, delivered when the running reply finishes"
+  },
+  "kitQueuedAddToTurn": "Adds to this turn",
+  "@kitQueuedAddToTurn": {
+    "description": "Kit queued message (OpenCode 2): accepted, delivered at the agent's next step"
+  },
+  "kitQueuedUpdate": "Update waiting",
+  "@kitQueuedUpdate": {
+    "description": "Kit queued message (OpenCode 2): an update the server itself queued"
+  },
+  "kitQueuedAttachments": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@kitQueuedAttachments": {
+    "description": "Kit queued message: how many files go with the message",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "kitQueuedItemLabel": "Waiting message {index} of {count}: {text}. {state}",
+  "@kitQueuedItemLabel": {
+    "description": "Kit queued message: what a screen reader says for one waiting message",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "1"
+      },
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "text": {
+        "type": "String",
+        "example": "Use SQLite for the cache"
+      },
+      "state": {
+        "type": "String",
+        "example": "Waiting to send"
+      }
+    }
+  },
+  "kitQueuedActions": "Message actions",
+  "@kitQueuedActions": {
+    "description": "Kit queued message: the name of one waiting message's menu"
   }
 }
