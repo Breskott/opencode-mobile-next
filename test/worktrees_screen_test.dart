@@ -286,7 +286,7 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const ValueKey('remove-worktree-confirmation')),
+      find.byKey(const ValueKey('kit-confirm-typed-name')),
       'mobile-review',
     );
     await tester.pump();

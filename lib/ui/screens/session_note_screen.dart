@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../kit/kit.dart';
 
 /// One editor for the mobile-owned note, never a generic instruction browser.
 class SessionNoteScreen extends StatefulWidget {
@@ -109,23 +110,14 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
   Future<void> _confirmLeave() async {
     if (_savingForScope) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final discard = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.sessionNoteDiscard),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.sessionNoteKeepEditing),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.sessionNoteDiscardAction),
-          ),
-        ],
-      ),
+    final discard = await showKitConfirm(
+      context,
+      title: l10n.sessionNoteDiscard,
+      body: l10n.sessionNoteDiscardDetail,
+      confirmLabel: l10n.sessionNoteDiscardAction,
+      kind: KitConfirmKind.discard,
     );
-    if (mounted && discard == true) await _leave();
+    if (mounted && discard) await _leave();
   }
 
   Future<void> _save({bool remove = false}) async {

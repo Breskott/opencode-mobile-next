@@ -873,6 +873,8 @@ void main() {
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Open external link?'), findsOneWidget);
+    // The confirmation slides in; let it land before tapping.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
 
@@ -930,6 +932,8 @@ void main() {
       await tester.tap(find.text('Open browser'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Open external link?'), findsOneWidget);
+      // The confirmation slides in; let it land before tapping.
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Open link'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
@@ -1004,6 +1008,8 @@ void main() {
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Open external link?'), findsOneWidget);
+    // The confirmation slides in; let it land before tapping.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -1285,6 +1291,8 @@ void main() {
       await tester.tap(find.text('Open browser'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Open external link?'), findsOneWidget);
+      // The confirmation slides in; let it land before tapping.
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Open link'));
       await tester.pumpAndSettle();
 
@@ -1336,6 +1344,8 @@ void main() {
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Open external link?'), findsOneWidget);
+    // The confirmation slides in; let it land before tapping.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Check'));
@@ -1390,6 +1400,8 @@ void main() {
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Open external link?'), findsOneWidget);
+    // The confirmation slides in; let it land before tapping.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enter code'));
@@ -1564,6 +1576,8 @@ void main() {
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Open external link?'), findsOneWidget);
+    // The confirmation slides in; let it land before tapping.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Check'));

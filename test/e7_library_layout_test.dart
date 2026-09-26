@@ -259,8 +259,10 @@ void main() {
               await capturePng(tester, boundary, pixelRatio: 1),
             );
           }
-          await tester.tap(find.text('Keep access'));
+          await tester.ensureVisible(find.text('Cancel'));
+          await tester.tap(find.text('Cancel'));
           await tester.pumpAndSettle();
+          expect(find.text('Revoke access?'), findsNothing);
           expect(repository.mutations, 0);
         }
         if (entry.key == 'mcp-setup') {

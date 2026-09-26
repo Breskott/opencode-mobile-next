@@ -282,7 +282,7 @@ void main() {
         find.textContaining('does not cancel sign-in on the server'),
         findsOneWidget,
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Cancel'));
       await tester.pumpAndSettle();
       expect(controller.uncertainIntegrationAuth, hasLength(1));
       await tester.tap(find.text('Forget uncertain start'));

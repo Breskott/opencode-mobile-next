@@ -4,6 +4,11 @@
 /// | Part | Standard |
 /// |---|---|
 /// | [KitScreen] | §1 screen: header, one loading bar, body, pinned bottom |
+/// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
+/// | [KitSheet], [showKitSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, its draft and unsaved-input guard |
+/// | [KitConfirmSheet], [showKitConfirm], [KitConfirmKind] | kit v2 §1.2 the one confirmation (§4.1 undo, confirm or neither) |
+/// | [KitTokens] | kit v2 the colours, radii, elevations, scrim, type and spacing the modal parts read (a ThemeExtension) |
+/// | [KitTechnicalValue] | kit v2 §1.8 a technical value shown under Details, left to right |
 /// | [KitButton], [KitActionBlock], [KitAction] | §2 one button hierarchy |
 /// | [KitActionStack] | §2 the same hierarchy with each rare path on its own line |
 /// | [KitStateView] | §3 every not-normal state, page or inline |
@@ -19,6 +24,7 @@
 /// | [KitTaskMark] | §6 a task's leading mark: a step's four, needs you, stopped |
 /// | [KitNotice] | §3 a message inside one part of a form or list |
 /// | [KitMotion] | §10 the timings, curves and when things may loop |
+/// | [KitHaptics] | §10, kit v2 §2.13 send, done and commit: the only vibration, obeying Settings › Vibration |
 /// | [KitEffects], [KitEffectsScope] | §10 the person's glass, motion, celebration and vibration choices (Settings › Appearance) |
 /// | [KitGlass] | §10 glass: a bounded surface floating over content (liquid, frosted or solid) |
 /// | [KitIllustration], [KitScene], [KitDraw], [KitPortalScene] | §10 drawings in the brand's line, drawn in code, that can move |
@@ -40,6 +46,7 @@ export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
 export 'kit_effects.dart';
 export 'kit_illustration.dart';
+export 'kit_layout.dart';
 export 'kit_motion.dart';
 export 'kit_panel.dart';
 export 'kit_notice.dart';
@@ -48,10 +55,13 @@ export 'kit_request_card.dart';
 export 'kit_row.dart';
 export 'kit_row_parts.dart';
 export 'kit_screen.dart';
+export 'kit_sheet.dart';
 export 'kit_skeleton_transcript.dart';
 export 'kit_state_view.dart';
 export 'kit_status_line.dart';
 export 'kit_status_mark.dart';
+export 'kit_technical_value.dart';
+export 'kit_tokens.dart';
 export 'kit_task_mark.dart';
 export 'scenes/portal_scene.dart';
 export 'motion/kit_animated_rows.dart';

@@ -12,7 +12,7 @@ import '../../state/orchestration.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../permission_presentation.dart';
-import '../kit/kit_illustration.dart';
+import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import '../widgets/completion_digest.dart';
@@ -29,8 +29,6 @@ import 'run_result_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
 import '../widgets/session_title.dart';
-import '../kit/motion/kit_refresh.dart';
-import '../kit/motion/kit_animated_rows.dart';
 
 /// Activity: the single cross-session control centre (audit §3, §8).
 ///
@@ -1167,30 +1165,16 @@ class _QuestionSheetState extends State<_QuestionSheet> {
       _error = null;
     });
     try {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) {
-          widget.routes.own(ModalRoute.of(context));
-          return AlertDialog(
-            title: Text(_l10n(context).e7WorkspaceDismissRequest),
-            content: Text(_l10n(context).e7WorkspaceDismissDetail),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(_l10n(context).projectFolderCancel),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(_l10n(context).workspaceDismissNotice),
-              ),
-            ],
-          );
-        },
+      final confirmed = await showKitConfirm(
+        context,
+        title: _l10n(context).e7WorkspaceDismissRequest,
+        body: _l10n(context).e7WorkspaceDismissDetail,
+        confirmLabel: _l10n(context).workspaceDismissNotice,
+        kind: KitConfirmKind.destructive,
+        icon: AppIconography.blocked,
+        routes: widget.routes,
       );
-      if (confirmed != true || !mounted || !widget.routes.isPending) return;
+      if (!confirmed || !mounted || !widget.routes.isPending) return;
       setState(() => _confirming = false);
       await widget.controller.rejectQuestion(
         widget.question.id,

@@ -12,6 +12,7 @@ import 'package:opencode_mobile/state/agent_account.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/agent_account_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,14 +121,14 @@ void main() {
       expect(find.text('Open external link?'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byType(KitConfirmSheet),
           matching: find.text('auth.openai.com'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byType(KitConfirmSheet),
           matching: find.text('TEST-1234'),
         ),
         findsNothing,

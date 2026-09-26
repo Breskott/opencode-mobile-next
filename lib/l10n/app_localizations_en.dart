@@ -829,6 +829,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionNoteDiscardAction => 'Discard changes';
 
   @override
+  String get sessionNoteDiscardDetail =>
+      'The edits you made to this note will be lost. This can\'t be undone.';
+
+  @override
   String sessionNoteBytes(int used, int limit) {
     return '$used / $limit bytes';
   }
@@ -3169,6 +3173,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.';
 
   @override
+  String get usageBudgetClearTitle => 'Clear consumption budgets?';
+
+  @override
   String get monitorTitle => 'Saved-server attention';
 
   @override
@@ -3342,6 +3349,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaBudgetClearDescription =>
       'Remove all provider thresholds and attention settings for this saved server, including previous accounts? Consumption budgets are kept.';
+
+  @override
+  String get quotaBudgetClearTitle => 'Clear provider thresholds?';
 
   @override
   String managedStorageSummary(String available, String total) {
@@ -19682,4 +19692,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get thermalGuardSettingDetail =>
       'The team pauses with its work kept and resumes by itself once the phone cools.';
+
+  @override
+  String get kitSheetClose => 'Close';
+
+  @override
+  String get kitSheetDismiss => 'Dismiss';
+
+  @override
+  String get kitSheetLoading => 'Loading';
+
+  @override
+  String get kitConfirmCancel => 'Cancel';
+
+  @override
+  String get kitConfirmKeepRunning => 'Keep running';
+
+  @override
+  String get kitConfirmKeepEditing => 'Keep editing';
+
+  @override
+  String kitConfirmTypeName(String name) {
+    return 'Type $name to confirm';
+  }
+
+  @override
+  String get kitConfirmTypeNameReason =>
+      'Type the name exactly as shown to turn this on.';
+
+  @override
+  String get kitConfirmFailed => 'That didn\'t finish. You can try again.';
+
+  @override
+  String get kitTryAgain => 'Try again';
+
+  @override
+  String get kitDetails => 'Details';
+
+  @override
+  String get kitDiscardTitle => 'Discard your changes?';
+
+  @override
+  String get kitDiscardBody =>
+      'What you changed here isn\'t saved. Discarding it can\'t be undone.';
+
+  @override
+  String get kitDiscardConfirm => 'Discard changes';
 }

@@ -6,6 +6,7 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import 'activity_screen.dart' show showQuestionSheet;
 import 'chat/form_flow.dart';
@@ -24,24 +25,13 @@ Future<void> openMonitoredRequest(
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   if (controller.profile?.id != route.profileID &&
       controller.busySessions.isNotEmpty) {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.monitorSwitchTitle),
-        content: Text(l10n.monitorSwitchDetail),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.monitorSwitch),
-          ),
-        ],
-      ),
+    final accepted = await showKitConfirm(
+      context,
+      title: l10n.monitorSwitchTitle,
+      body: l10n.monitorSwitchDetail,
+      confirmLabel: l10n.monitorSwitch,
     );
-    if (accepted != true || !context.mounted) return;
+    if (!accepted || !context.mounted) return;
   }
   // Switching servers rebuilds the list this was opened from, and the row
   // that was tapped goes with it. The navigator stays: what follows the

@@ -1526,6 +1526,12 @@ abstract class AppLocalizations {
   /// **'Discard changes'**
   String get sessionNoteDiscardAction;
 
+  /// No description provided for @sessionNoteDiscardDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The edits you made to this note will be lost. This can\'t be undone.'**
+  String get sessionNoteDiscardDetail;
+
   /// No description provided for @sessionNoteBytes.
   ///
   /// In en, this message translates to:
@@ -5294,6 +5300,12 @@ abstract class AppLocalizations {
   /// **'Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.'**
   String get usageBudgetClearDescription;
 
+  /// No description provided for @usageBudgetClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear consumption budgets?'**
+  String get usageBudgetClearTitle;
+
   /// No description provided for @monitorTitle.
   ///
   /// In en, this message translates to:
@@ -5586,6 +5598,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove all provider thresholds and attention settings for this saved server, including previous accounts? Consumption budgets are kept.'**
   String get quotaBudgetClearDescription;
+
+  /// No description provided for @quotaBudgetClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear provider thresholds?'**
+  String get quotaBudgetClearTitle;
 
   /// No description provided for @managedStorageSummary.
   ///
@@ -31732,6 +31750,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team pauses with its work kept and resumes by itself once the phone cools.'**
   String get thermalGuardSettingDetail;
+
+  /// Kit sheet: the close button's label in every sheet header
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get kitSheetClose;
+
+  /// Kit sheet: the drag handle's spoken action that closes the sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get kitSheetDismiss;
+
+  /// Kit sheet: the spoken label of the loading bar under a sheet's header
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get kitSheetLoading;
+
+  /// Kit confirmation: the cancel button for a neutral or destructive question
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get kitConfirmCancel;
+
+  /// Kit confirmation: the cancel button when the question is whether to stop running work
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get kitConfirmKeepRunning;
+
+  /// Kit confirmation: the cancel button when the question is whether to drop unsaved input
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get kitConfirmKeepEditing;
+
+  /// Kit confirmation: the label of the field where the person types the exact name of what will be deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Type {name} to confirm'**
+  String kitConfirmTypeName(String name);
+
+  /// Kit confirmation: the reason shown under the disabled confirm button until the typed name matches
+  ///
+  /// In en, this message translates to:
+  /// **'Type the name exactly as shown to turn this on.'**
+  String get kitConfirmTypeNameReason;
+
+  /// Kit confirmation: a failure notice when the confirmed act did not complete; the question stays open
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t finish. You can try again.'**
+  String get kitConfirmFailed;
+
+  /// Kit: the action that repeats something that failed
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get kitTryAgain;
+
+  /// Kit: the row that unfolds technical values (addresses, paths)
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get kitDetails;
+
+  /// Kit sheet: the question asked in place when the person closes a sheet with unsaved input
+  ///
+  /// In en, this message translates to:
+  /// **'Discard your changes?'**
+  String get kitDiscardTitle;
+
+  /// Kit sheet: the body of the discard question
+  ///
+  /// In en, this message translates to:
+  /// **'What you changed here isn\'t saved. Discarding it can\'t be undone.'**
+  String get kitDiscardBody;
+
+  /// Kit sheet: the button that closes the sheet and drops the unsaved input
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get kitDiscardConfirm;
 }
 
 class _AppLocalizationsDelegate

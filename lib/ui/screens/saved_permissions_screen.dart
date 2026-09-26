@@ -9,7 +9,7 @@ import '../../state/connection.dart';
 import '../permission_presentation.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 
 typedef SavedPermissionRepositoryResolver =
     Future<ServerOperationsGateway?> Function();
@@ -153,58 +153,29 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_removing.contains(permission.id)) return;
     final scope = _scope;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        scrollable: true,
-        icon: const Icon(AppIconography.privacyWarning),
-        title: Text(actionL10n.e7LibraryRevokeAlwaysAllowedAction),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(actionL10n.e7LibraryOpenCodeWillAskAgainBeforeAFuture),
-            const SizedBox(height: 16),
-            Text(
-              actionL10n.e7LibraryAction,
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(permissionRequestTitle(permission.action)),
-            const SizedBox(height: 12),
-            Text(
-              actionL10n.e7LibraryResource,
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 4),
-            SelectableText(
-              permission.resource.trim().isEmpty
-                  ? actionL10n.e7LibraryAllMatchingResources
-                  : permission.resource,
-              textDirection: permission.resource.trim().isEmpty
-                  ? null
-                  : TextDirection.ltr,
-              style: const TextStyle(fontFamily: AppTheme.monoFamily),
-            ),
-            const SizedBox(height: 12),
-            Text(actionL10n.e7LibraryThisDoesNotStopAnActionThat),
-          ],
+    final resource = permission.resource.trim();
+    final confirmed = await showKitConfirm(
+      context,
+      title: actionL10n.e7LibraryRevokeAlwaysAllowedAction,
+      body:
+          '${actionL10n.e7LibraryOpenCodeWillAskAgainBeforeAFuture} '
+          '${actionL10n.e7LibraryThisDoesNotStopAnActionThat}',
+      confirmLabel: actionL10n.e7LibraryRevokeAccess,
+      kind: KitConfirmKind.destructive,
+      details: [
+        KitTechnicalValue(
+          actionL10n.e7LibraryAction,
+          permissionRequestTitle(permission.action),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(actionL10n.e7LibraryKeepAccess),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(actionL10n.e7LibraryRevokeAccess),
-          ),
-        ],
-      ),
+        KitTechnicalValue(
+          actionL10n.e7LibraryResource,
+          resource.isEmpty
+              ? actionL10n.e7LibraryAllMatchingResources
+              : permission.resource,
+        ),
+      ],
     );
-    if (confirmed != true || !mounted || scope != _currentScope) return;
+    if (!confirmed || !mounted || scope != _currentScope) return;
 
     setState(() {
       _removing.add(permission.id);

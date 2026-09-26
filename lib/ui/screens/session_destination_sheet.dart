@@ -8,6 +8,7 @@ import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
+import '../kit/kit.dart';
 import '../early_l10n.dart';
 
 enum SessionDestinationMode { move, warp }
@@ -307,48 +308,37 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
     }
   }
 
-  Future<bool?> _confirmTransfer(_SessionDestination destination) {
+  /// True moves or copies the working changes with the conversation, false
+  /// continues without them, null cancels.
+  Future<bool?> _confirmTransfer(_SessionDestination destination) async {
+    final copy = _sharedCopy(context);
     final hasChanges = _changes.isNotEmpty;
     final unknownChanges = _changesError != null;
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_sharedCopy(context).e7SharedDetail429),
-        content: Text(
-          hasChanges
-              ? _sharedCopy(
-                  context,
-                ).e7SharedDetail430(_changes.length, _moving ? 'move' : 'copy')
-              : unknownChanges
-              ? _sharedCopy(context).e7SharedTheAppCouldNotInspectWorkingChanges
-              : _sharedCopy(context).e7SharedDetail432(destination.title),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(_sharedCopy(context).projectFolderCancel),
-          ),
-          if (hasChanges)
-            TextButton(
+    var withoutChanges = false;
+    final confirmed = await showKitConfirm(
+      context,
+      title: copy.e7SharedDetail429,
+      body: hasChanges
+          ? copy.e7SharedDetail430(_changes.length, _moving ? 'move' : 'copy')
+          : unknownChanges
+          ? copy.e7SharedTheAppCouldNotInspectWorkingChanges
+          : copy.e7SharedDetail432(destination.title),
+      confirmLabel: hasChanges
+          ? _moving
+                ? copy.e7SharedMoveWithChanges
+                : copy.e7SharedCopyChangesAndMove
+          : _verb,
+      confirmKey: const Key('session-destination-confirm'),
+      alternative: hasChanges
+          ? KitAction(
               key: const Key('session-destination-without-changes'),
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(_sharedCopy(context).e7SharedDetail435),
-            ),
-          FilledButton(
-            key: const Key('session-destination-confirm'),
-            onPressed: () =>
-                Navigator.pop(dialogContext, hasChanges && !unknownChanges),
-            child: Text(
-              hasChanges
-                  ? _moving
-                        ? _sharedCopy(context).e7SharedMoveWithChanges
-                        : _sharedCopy(context).e7SharedCopyChangesAndMove
-                  : _verb,
-            ),
-          ),
-        ],
-      ),
+              label: copy.e7SharedDetail435,
+              onPressed: () => withoutChanges = true,
+            )
+          : null,
     );
+    if (confirmed) return hasChanges && !unknownChanges;
+    return withoutChanges ? false : null;
   }
 
   @override
@@ -541,27 +531,14 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
   Future<void> _switch(ConsoleOrganization organization) async {
     if (_working || organization.active) return;
     final messenger = ScaffoldMessenger.of(widget.rootContext);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_sharedCopy(context).e7SharedSwitchOrganization),
-        content: Text(
-          _sharedCopy(context).e7SharedDetail456(organization.orgName),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(_sharedCopy(context).projectFolderCancel),
-          ),
-          FilledButton(
-            key: const Key('console-org-confirm'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(_sharedCopy(context).e7SharedSwitch),
-          ),
-        ],
-      ),
+    final confirmed = await showKitConfirm(
+      context,
+      title: _sharedCopy(context).e7SharedSwitchOrganization,
+      body: _sharedCopy(context).e7SharedDetail456(organization.orgName),
+      confirmLabel: _sharedCopy(context).e7SharedSwitch,
+      confirmKey: const Key('console-org-confirm'),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() {
       _working = true;
       _error = null;

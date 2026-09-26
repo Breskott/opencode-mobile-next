@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import 'kit_motion.dart';
 
 /// Where one step of a list stands.
 enum KitMarkState { waiting, working, done, failed }
@@ -18,7 +19,8 @@ class KitStatusMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // The system setting and Animations: Off in Settings (KitEffects).
+    final reduceMotion = KitMotion.reduced(context);
     final Widget mark = switch (state) {
       KitMarkState.done => Icon(
         AppIconography.check,

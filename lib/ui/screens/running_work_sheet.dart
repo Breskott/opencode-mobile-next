@@ -11,6 +11,7 @@ import '../../state/shell_output.dart';
 import '../widgets/product_states.dart';
 import '../widgets/running_agents_strip.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -746,28 +747,14 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
   Future<void> _stop() async {
     if (!_canMutate) return;
     final l10n = _strings(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.workStopTitle),
-        content: Text(l10n.workStopDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.workCancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.workStop),
-          ),
-        ],
-      ),
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.workStopTitle,
+      body: l10n.workStopDescription,
+      confirmLabel: l10n.workStop,
+      kind: KitConfirmKind.stop,
     );
-    if (!mounted || confirmed != true || !_canMutate) return;
+    if (!mounted || !confirmed || !_canMutate) return;
     await _change(() async {
       await widget.controller.repository!.stopManagedShell(widget.shell.id);
       if (mounted && _sameScope) setState(() => _stopped = true);

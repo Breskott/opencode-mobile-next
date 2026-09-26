@@ -11,6 +11,7 @@ import 'device.dart';
 import 'model_manager.dart';
 import 'model_manifest.dart';
 import '../ui/app_theme.dart';
+import '../ui/kit/kit.dart';
 import '../platform/platform_capabilities.dart';
 import '../l10n/app_localizations.dart';
 
@@ -268,34 +269,15 @@ class _VoiceModelSetupSheet extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, VoiceModelPack pack) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          _voiceStrings(
-            context,
-          ).e7VoiceUiDeletePack(voicePackLabel(pack, _voiceStrings(context))),
-        ),
-        content: Text(
-          _voiceStrings(
-            context,
-          ).e7VoiceUiDeleteDetail(formatModelBytes(pack.downloadBytes)),
-        ),
-        actions: [
-          TextButton(
-            style: _voiceButtonStyle(),
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(_voiceStrings(context).e7VoiceUiKeep),
-          ),
-          FilledButton(
-            style: _voiceButtonStyle(),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(_voiceStrings(context).e7VoiceUiDelete),
-          ),
-        ],
-      ),
+    final strings = _voiceStrings(context);
+    final confirmed = await showKitConfirm(
+      context,
+      title: strings.e7VoiceUiDeletePack(voicePackLabel(pack, strings)),
+      body: strings.e7VoiceUiDeleteDetail(formatModelBytes(pack.downloadBytes)),
+      confirmLabel: strings.e7VoiceUiDelete,
+      kind: KitConfirmKind.destructive,
     );
-    if (confirmed == true) await manager.deletePack(pack);
+    if (confirmed) await manager.deletePack(pack);
   }
 }
 

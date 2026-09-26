@@ -264,13 +264,18 @@ void main() {
     expect(
       tester
           .widget<FilledButton>(
-            find.byKey(const ValueKey('confirm-remove-managed-workspace')),
+            find.descendant(
+              of: find.byKey(
+                const ValueKey('confirm-remove-managed-workspace'),
+              ),
+              matching: find.byType(FilledButton),
+            ),
           )
           .onPressed,
       isNull,
     );
     await tester.enterText(
-      find.byKey(const ValueKey('remove-managed-workspace-confirmation')),
+      find.byKey(const ValueKey('kit-confirm-typed-name')),
       'Phone runner',
     );
     await tester.pump();
