@@ -1,0 +1,527 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading <worktree>/test/kit_motion_test.dart
+00:00 +0: manifest the G4 manifest is read (the parser still works)
+00:00 +1: manifest every kit.dart part has reduced-motion samples (G8x)
+00:00 +2: manifest this file registers only the parts that predate G8x
+00:00 +3: manifest the ratchet only shrinks and names real samples
+00:00 +4: manifest registrations name parts kit.dart exports
+00:00 +5: KitActionBlock (MOT-7) default settles at once under system
+00:00 +6: KitActionBlock (MOT-7) working settles at once under system
+00:00 +7: KitActionBlock (MOT-7) default settles at once under effectsOff
+00:00 +8: KitActionBlock (MOT-7) working settles at once under effectsOff
+00:00 +9: KitActionStack (MOT-7) default settles at once under system
+00:00 +10: KitActionStack (MOT-7) default settles at once under effectsOff
+00:00 +11: KitAnimatedRows (MOT-7) default settles at once under system
+00:00 +12: KitAnimatedRows (MOT-7) row inserted changes and settles at once under system
+00:01 +13: KitAnimatedRows (MOT-7) row removed changes and settles at once under system
+00:01 +14: KitAnimatedRows (MOT-7) default settles at once under effectsOff
+00:01 +15: KitAnimatedRows (MOT-7) row inserted changes and settles at once under effectsOff
+00:01 +16: KitAnimatedRows (MOT-7) row removed changes and settles at once under effectsOff
+00:01 +17: KitAskLine (MOT-7) default settles at once under system
+00:01 +18: KitAskLine (MOT-7) default settles at once under effectsOff
+00:01 +19: KitButton (MOT-7) primary working settles at once under system
+00:01 +20: KitButton (MOT-7) secondary working settles at once under system
+00:01 +21: KitButton (MOT-7) tertiary settles at once under system
+00:01 +22: KitButton (MOT-7) disabled settles at once under system
+00:01 +23: KitButton (MOT-7) working ends changes and settles at once under system
+00:01 +24: KitButton (MOT-7) working ends with an icon changes and settles at once under system
+00:01 +25: KitButton (MOT-7) primary working settles at once under effectsOff
+00:01 +26: KitButton (MOT-7) secondary working settles at once under effectsOff
+00:01 +27: KitButton (MOT-7) tertiary settles at once under effectsOff
+00:01 +28: KitButton (MOT-7) disabled settles at once under effectsOff
+00:01 +29: KitButton (MOT-7) working ends changes and settles at once under effectsOff
+00:01 +30: KitButton (MOT-7) working ends with an icon changes and settles at once under effectsOff
+00:01 +31: KitChevron (MOT-7) default settles at once under system
+00:01 +32: KitChevron (MOT-7) default settles at once under effectsOff
+00:01 +33: KitConfirmSheet (MOT-7) default settles at once under system
+00:01 +34: KitConfirmSheet (MOT-7) working settles at once under system
+00:01 +35: KitConfirmSheet (MOT-7) details open changes and settles at once under system
+00:01 +36: KitConfirmSheet (MOT-7) default settles at once under effectsOff
+00:01 +37: KitConfirmSheet (MOT-7) working settles at once under effectsOff
+00:01 +38: KitConfirmSheet (MOT-7) details open changes and settles at once under effectsOff
+00:01 +39: KitEntrance (MOT-7) default settles at once under system
+00:01 +40: KitEntrance (MOT-7) trigger changes changes and settles at once under system
+00:01 +41: KitEntrance (MOT-7) default settles at once under effectsOff
+00:01 +42: KitEntrance (MOT-7) trigger changes changes and settles at once under effectsOff
+00:01 +43: KitExpandRow (MOT-7) closed settles at once under system
+00:01 +44: KitExpandRow (MOT-7) open settles at once under system
+00:02 +45: KitExpandRow (MOT-7) opens on press changes and settles at once under system
+00:02 +46: KitExpandRow (MOT-7) closes on press changes and settles at once under system
+00:02 +47: KitExpandRow (MOT-7) closed settles at once under effectsOff
+00:02 +48: KitExpandRow (MOT-7) open settles at once under effectsOff
+00:02 +49: KitExpandRow (MOT-7) opens on press changes and settles at once under effectsOff
+00:02 +50: KitExpandRow (MOT-7) closes on press changes and settles at once under effectsOff
+00:02 +51: KitGlass (MOT-7) default settles at once under system
+00:02 +52: KitGlass (MOT-7) default settles at once under effectsOff
+00:02 +53: KitIconButton (MOT-7) default settles at once under system
+00:02 +54: KitIconButton (MOT-7) default settles at once under effectsOff
+00:02 +55: KitIllustration (MOT-7) entrance settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration entrance: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  entrance settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -1: KitIllustration (MOT-7) entrance settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: entrance settles at once under system
+  
+00:02 +55 -1: KitIllustration (MOT-7) ambient settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration ambient: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -2: KitIllustration (MOT-7) ambient settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: ambient settles at once under system
+  
+00:02 +55 -2: KitIllustration (MOT-7) ambient turns on changes and settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration ambient turns on: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitChangeStill (file:///<worktree>/test/kit/kit_motion_still.dart:408:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:472:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient turns on changes and settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -3: KitIllustration (MOT-7) ambient turns on changes and settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: ambient turns on changes and settles at once under system
+  
+00:02 +55 -3: KitIllustration (MOT-7) entrance settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration entrance: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  entrance settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -4: KitIllustration (MOT-7) entrance settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: entrance settles at once under effectsOff
+  
+00:02 +55 -4: KitIllustration (MOT-7) ambient settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration ambient: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -5: KitIllustration (MOT-7) ambient settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: ambient settles at once under effectsOff
+  
+00:02 +55 -5: KitIllustration (MOT-7) ambient turns on changes and settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitIllustration ambient turns on: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitChangeStill (file:///<worktree>/test/kit/kit_motion_still.dart:408:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:472:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient turns on changes and settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +55 -6: KitIllustration (MOT-7) ambient turns on changes and settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: ambient turns on changes and settles at once under effectsOff
+  
+00:02 +55 -6: KitInset (MOT-7) default settles at once under system
+00:02 +56 -6: KitInset (MOT-7) default settles at once under effectsOff
+00:02 +57 -6: KitLoadingBar (MOT-7) loading settles at once under system
+00:02 +58 -6: KitLoadingBar (MOT-7) idle settles at once under system
+00:02 +59 -6: KitLoadingBar (MOT-7) loading ends changes and settles at once under system
+00:02 +60 -6: KitLoadingBar (MOT-7) loading settles at once under effectsOff
+00:02 +61 -6: KitLoadingBar (MOT-7) idle settles at once under effectsOff
+00:02 +62 -6: KitLoadingBar (MOT-7) loading ends changes and settles at once under effectsOff
+00:02 +63 -6: KitNotice (MOT-7) default settles at once under system
+00:02 +64 -6: KitNotice (MOT-7) default settles at once under effectsOff
+00:02 +65 -6: KitPanel (MOT-7) default settles at once under system
+00:02 +66 -6: KitPanel (MOT-7) default settles at once under effectsOff
+00:02 +67 -6: KitPortalScene (MOT-7) ambient settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitPortalScene ambient: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +67 -7: KitPortalScene (MOT-7) ambient settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: ambient settles at once under system
+  
+00:02 +67 -7: KitPortalScene (MOT-7) ambient settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitPortalScene ambient: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  ambient settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +67 -8: KitPortalScene (MOT-7) ambient settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: ambient settles at once under effectsOff
+  
+00:02 +67 -8: KitProgressView (MOT-7) waiting settles at once under system
+00:02 +68 -8: KitProgressView (MOT-7) known settles at once under system
+00:02 +69 -8: KitProgressView (MOT-7) progress moves changes and settles at once under system
+00:02 +70 -8: KitProgressView (MOT-7) waiting settles at once under effectsOff
+00:02 +71 -8: KitProgressView (MOT-7) known settles at once under effectsOff
+00:02 +72 -8: KitProgressView (MOT-7) progress moves changes and settles at once under effectsOff
+00:02 +73 -8: KitRefresh (MOT-7) default settles at once under system
+00:03 +74 -8: KitRefresh (MOT-7) pulled and released changes and settles at once under system
+00:03 +75 -8: KitRefresh (MOT-7) default settles at once under effectsOff
+00:03 +76 -8: KitRefresh (MOT-7) pulled and released changes and settles at once under effectsOff
+00:03 +77 -8: KitRequestCard (MOT-7) default settles at once under system
+00:03 +78 -8: KitRequestCard (MOT-7) default settles at once under effectsOff
+00:03 +79 -8: KitReveal (MOT-7) default settles at once under system
+00:03 +80 -8: KitReveal (MOT-7) child arrives changes and settles at once under system
+00:03 +81 -8: KitReveal (MOT-7) child leaves changes and settles at once under system
+00:03 +82 -8: KitReveal (MOT-7) default settles at once under effectsOff
+00:03 +83 -8: KitReveal (MOT-7) child arrives changes and settles at once under effectsOff
+00:03 +84 -8: KitReveal (MOT-7) child leaves changes and settles at once under effectsOff
+00:03 +85 -8: KitRow (MOT-7) default settles at once under system
+00:03 +86 -8: KitRow (MOT-7) disabled settles at once under system
+00:03 +87 -8: KitRow (MOT-7) default settles at once under effectsOff
+00:03 +88 -8: KitRow (MOT-7) disabled settles at once under effectsOff
+00:03 +89 -8: KitRowIcon (MOT-7) current settles at once under system
+00:03 +90 -8: KitRowIcon (MOT-7) current settles at once under effectsOff
+00:03 +91 -8: KitRowMenu (MOT-7) default settles at once under system
+00:03 +92 -8: KitRowMenu (MOT-7) menu opens changes and settles at once under system
+00:03 +93 -8: KitRowMenu (MOT-7) default settles at once under effectsOff
+00:03 +94 -8: KitRowMenu (MOT-7) menu opens changes and settles at once under effectsOff
+00:03 +95 -8: KitScreen (MOT-7) loading settles at once under system
+00:03 +96 -8: KitScreen (MOT-7) loading ends changes and settles at once under system
+00:03 +97 -8: KitScreen (MOT-7) loading settles at once under effectsOff
+00:03 +98 -8: KitScreen (MOT-7) loading ends changes and settles at once under effectsOff
+00:03 +99 -8: KitSecretField (MOT-7) default settles at once under system
+00:03 +100 -8: KitSecretField (MOT-7) revealed changes and settles at once under system
+00:03 +101 -8: KitSecretField (MOT-7) default settles at once under effectsOff
+00:03 +102 -8: KitSecretField (MOT-7) revealed changes and settles at once under effectsOff
+00:04 +103 -8: KitSheet (MOT-7) loading settles at once under system
+00:04 +104 -8: KitSheet (MOT-7) loading settles at once under effectsOff
+00:04 +105 -8: KitSkeletonRows (MOT-7) default settles at once under system
+00:04 +106 -8: KitSkeletonRows (MOT-7) default settles at once under effectsOff
+00:04 +107 -8: KitSkeletonTranscript (MOT-7) default settles at once under system
+00:04 +108 -8: KitSkeletonTranscript (MOT-7) default settles at once under effectsOff
+00:04 +109 -8: KitStateView (MOT-7) working settles at once under system
+00:04 +110 -8: KitStateView (MOT-7) illustrated settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitStateView illustrated: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  illustrated settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +110 -9: KitStateView (MOT-7) illustrated settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: illustrated settles at once under system
+  
+00:04 +110 -9: KitStateView (MOT-7) details open changes and settles at once under system
+00:04 +111 -9: KitStateView (MOT-7) working settles at once under effectsOff
+00:04 +112 -9: KitStateView (MOT-7) illustrated settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.0>
+KitStateView illustrated: the drawing is not at its finished frame
+
+When the exception was thrown, this was the stack:
+#4      _expectPartShown (file:///<worktree>/test/kit/kit_motion_still.dart:302:7)
+#5      expectKitPartStill (file:///<worktree>/test/kit/kit_motion_still.dart:357:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (file:///<worktree>/test/kit/kit_motion_still.dart:445:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///<worktree>/test/kit/kit_motion_still.dart line 302
+The test description was:
+  illustrated settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +112 -10: KitStateView (MOT-7) illustrated settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: illustrated settles at once under effectsOff
+  
+00:04 +112 -10: KitStateView (MOT-7) details open changes and settles at once under effectsOff
+00:04 +113 -10: KitStatusLine (MOT-7) default settles at once under system
+00:04 +114 -10: KitStatusLine (MOT-7) default settles at once under effectsOff
+00:06 +115 -10: KitStatusMark (MOT-7) waiting settles at once under system
+00:06 +116 -10: KitStatusMark (MOT-7) working settles at once under system
+00:06 +117 -10: KitStatusMark (MOT-7) done settles at once under system
+00:06 +118 -10: KitStatusMark (MOT-7) failed settles at once under system
+00:06 +119 -10: KitStatusMark (MOT-7) working to done changes and settles at once under system
+00:06 +120 -10: KitStatusMark (MOT-7) waiting settles at once under effectsOff
+00:06 +121 -10: KitStatusMark (MOT-7) working settles at once under effectsOff
+00:06 +122 -10: KitStatusMark (MOT-7) done settles at once under effectsOff
+00:06 +123 -10: KitStatusMark (MOT-7) failed settles at once under effectsOff
+00:06 +124 -10: KitStatusMark (MOT-7) working to done changes and settles at once under effectsOff
+00:06 +125 -10: KitSwitchRow (MOT-7) default settles at once under system
+00:06 +126 -10: KitSwitchRow (MOT-7) switched on changes and settles at once under system
+00:06 +127 -10: KitSwitchRow (MOT-7) default settles at once under effectsOff
+00:06 +128 -10: KitSwitchRow (MOT-7) switched on changes and settles at once under effectsOff
+00:06 +129 -10: KitTabSwitcher (MOT-7) default settles at once under system
+00:06 +130 -10: KitTabSwitcher (MOT-7) index changes changes and settles at once under system
+00:06 +131 -10: KitTabSwitcher (MOT-7) default settles at once under effectsOff
+00:06 +132 -10: KitTabSwitcher (MOT-7) index changes changes and settles at once under effectsOff
+00:06 +133 -10: KitTaskMark (MOT-7) waiting settles at once under system
+00:06 +134 -10: KitTaskMark (MOT-7) working settles at once under system
+00:06 +135 -10: KitTaskMark (MOT-7) done settles at once under system
+00:06 +136 -10: KitTaskMark (MOT-7) failed settles at once under system
+00:06 +137 -10: KitTaskMark (MOT-7) needsYou settles at once under system
+00:06 +138 -10: KitTaskMark (MOT-7) stopped settles at once under system
+00:06 +139 -10: KitTaskMark (MOT-7) waiting settles at once under effectsOff
+00:06 +140 -10: KitTaskMark (MOT-7) working settles at once under effectsOff
+00:06 +141 -10: KitTaskMark (MOT-7) done settles at once under effectsOff
+00:06 +142 -10: KitTaskMark (MOT-7) failed settles at once under effectsOff
+00:06 +143 -10: KitTaskMark (MOT-7) needsYou settles at once under effectsOff
+00:06 +144 -10: KitTaskMark (MOT-7) stopped settles at once under effectsOff
+00:06 +145 -10: LoadingList (MOT-7) default settles at once under system
+00:06 +146 -10: LoadingList (MOT-7) default settles at once under effectsOff
+00:06 +147 -10: ProductEmptyState (MOT-7) default settles at once under system
+00:06 +148 -10: ProductEmptyState (MOT-7) default settles at once under effectsOff
+00:06 +149 -10: ProductErrorState (MOT-7) default settles at once under system
+00:06 +150 -10: ProductErrorState (MOT-7) default settles at once under effectsOff
+00:06 +151 -10: ProductInlineEmpty (MOT-7) default settles at once under system
+00:06 +152 -10: ProductInlineEmpty (MOT-7) default settles at once under effectsOff
+00:06 +153 -10: SectionLabel (MOT-7) default settles at once under system
+00:06 +154 -10: SectionLabel (MOT-7) default settles at once under effectsOff
+00:06 +155 -10: showKitConfirm (MOT-7) destructive opens and settles at once under system
+00:06 +156 -10: showKitConfirm (MOT-7) dismissed changes and settles at once under system
+00:06 +157 -10: showKitConfirm (MOT-7) destructive opens and settles at once under effectsOff
+00:06 +158 -10: showKitConfirm (MOT-7) dismissed changes and settles at once under effectsOff
+00:06 +159 -10: showKitSheet (MOT-7) content opens and settles at once under system
+00:06 +160 -10: showKitSheet (MOT-7) full opens and settles at once under system
+00:06 +161 -10: showKitSheet (MOT-7) dismissed changes and settles at once under system
+00:07 +162 -10: showKitSheet (MOT-7) content opens and settles at once under effectsOff
+00:07 +163 -10: showKitSheet (MOT-7) full opens and settles at once under effectsOff
+00:07 +164 -10: showKitSheet (MOT-7) dismissed changes and settles at once under effectsOff
+00:07 +165 -10: with motion on, KitStatusMark working spins
+00:07 +166 -10: with motion on, KitExpandRow animates its opening
+00:07 +167 -10: KitStatusMark working shows its still dot under system
+00:07 +168 -10: KitStatusMark working shows its still dot under effectsOff
+00:07 +169 -10: Some tests failed.
+
+Failing tests:
+  <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient settles at once under effectsOff
+  <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient settles at once under system
+  <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient turns on changes and settles at once under effectsOff
+  <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient turns on changes and settles at once under system
+  ... and 6 more
