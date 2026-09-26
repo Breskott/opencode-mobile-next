@@ -3,8 +3,10 @@
 // final state on the first pump(), is instant under reduced motion, and
 // settles for pumpAndSettle (nothing loops).
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/effects.dart';
@@ -24,9 +26,11 @@ final _theme = AppTheme.dark();
 /// paints through a `RenderParagraph` like any other text, and dimming a
 /// glyph is kit-KitIcon's job — see the Replaces table).
 const Widget _mark = SizedBox.square(
+  key: ValueKey('mark'),
   dimension: 24,
   child: ColoredBox(color: Color(0xFF3366CC)),
 );
+final _markFinder = find.byKey(const ValueKey('mark'));
 
 /// An app around [child] with the person's effects choices and reduced
 /// motion applied the way the real app does (`KitEffectsScope` plus
@@ -54,6 +58,89 @@ Widget _harness(
   ),
 );
 
+/// The opacity actually painted over [finder]'s render object: the product
+/// of every opacity render object between it and [KitDim] / [KitSwap] /
+/// the root. Reads the render tree, not a widget's target, so it keeps
+/// working whatever widgets a part builds inside.
+double _paintedOpacity(WidgetTester tester, Finder finder) {
+  var opacity = 1.0;
+  RenderObject? node = tester.renderObject(finder);
+  while (node != null) {
+    if (node is RenderOpacity) opacity *= node.opacity;
+    if (node is RenderAnimatedOpacityMixin) {
+      opacity *= node.opacity.value;
+    }
+    node = node.parent;
+  }
+  return opacity;
+}
+
+/// The clockwise angle, in turns, at which [finder]'s render object paints
+/// its local "down" (0, 1): 0 when upright, .5 when upside down. Read from
+/// the paint transform to the screen, so it is what the person sees.
+double _paintedTurns(WidgetTester tester, Finder finder) {
+  final box = tester.renderObject(finder);
+  final m = box.getTransformTo(null);
+  final origin = MatrixUtils.transformPoint(m, Offset.zero);
+  final down = MatrixUtils.transformPoint(m, const Offset(0, 1)) - origin;
+  // Down (0, 1) is angle pi/2 on screen; a clockwise turn adds to it.
+  final turns = (math.atan2(down.dy, down.dx) - math.pi / 2) / (2 * math.pi);
+  final wrapped = (turns % 1 + 1) % 1;
+  return wrapped > 1 - 1e-7 ? 0 : wrapped;
+}
+
+/// Every label in the live semantics tree, from its root down: what a
+/// screen reader can reach.
+List<String> _semanticLabels(WidgetTester tester) {
+  var node = tester.getSemantics(find.byType(Scaffold));
+  while (node.parent != null) {
+    node = node.parent!;
+  }
+  final labels = <String>[];
+  bool visit(SemanticsNode n) {
+    if (n.label.isNotEmpty) labels.add(n.label);
+    n.visitChildren(visit);
+    return true;
+  }
+
+  visit(node);
+  return labels;
+}
+
+/// A stateful child that counts its own initState and dispose calls, so a
+/// test can prove KitSwap keeps its state while it leaves.
+class _Counted extends StatefulWidget {
+  const _Counted(this.label, this.log, {super.key});
+
+  final String label;
+  final Map<String, List<String>> log;
+
+  @override
+  State<_Counted> createState() => _CountedState();
+}
+
+class _CountedState extends State<_Counted> {
+  @override
+  void initState() {
+    super.initState();
+    widget.log.putIfAbsent(widget.label, () => []).add('init');
+  }
+
+  @override
+  void dispose() {
+    widget.log[widget.label]!.add('dispose');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      SizedBox(key: ValueKey('box-${widget.label}'), width: 120, height: 40);
+}
+
+const _star = SizedBox(key: ValueKey('star'), width: 24, height: 8);
+final _starFinder = find.byKey(const ValueKey('star'));
+final _chevronFinder = find.byIcon(AppIconography.chevronDown);
+
 void main() {
   group('first build is final (no mount animation)', () {
     testWidgets('KitSwap', (tester) async {
@@ -61,33 +148,21 @@ void main() {
         _harness(const KitSwap(child: Text('one', key: ValueKey('one')))),
       );
       expect(tester.hasRunningAnimations, isFalse);
-      expect(
-        tester
-            .widget<FadeTransition>(find.byType(FadeTransition))
-            .opacity
-            .value,
-        1,
-      );
+      expect(_paintedOpacity(tester, find.text('one')), 1);
     });
 
     testWidgets('KitSpin', (tester) async {
       await tester.pumpWidget(
-        _harness(const KitSpin(turns: .25, child: Icon(Icons.star))),
+        _harness(const KitSpin(turns: .25, child: _star)),
       );
       expect(tester.hasRunningAnimations, isFalse);
-      expect(
-        tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
-        .25,
-      );
+      expect(_paintedTurns(tester, _starFinder), closeTo(.25, 1e-9));
     });
 
     testWidgets('KitSpin.chevron', (tester) async {
       await tester.pumpWidget(_harness(const KitSpin.chevron(expanded: true)));
       expect(tester.hasRunningAnimations, isFalse);
-      expect(
-        tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
-        .5,
-      );
+      expect(_paintedTurns(tester, _chevronFinder), closeTo(.5, 1e-9));
     });
 
     testWidgets('KitAnimatedBox', (tester) async {
@@ -105,10 +180,7 @@ void main() {
     testWidgets('KitDim', (tester) async {
       await tester.pumpWidget(_harness(const KitDim(child: _mark)));
       expect(tester.hasRunningAnimations, isFalse);
-      expect(
-        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
-        KitTokens.disabledAlpha,
-      );
+      expect(_paintedOpacity(tester, _markFinder), KitTokens.disabledAlpha);
     });
 
     testWidgets('KitAnimatedValue', (tester) async {
@@ -172,15 +244,12 @@ void main() {
       testWidgets('KitSpin ($label)', (tester) async {
         await expectSettles(
           tester,
-          before: () => const KitSpin(turns: 0, child: Icon(Icons.star)),
-          after: () => const KitSpin(turns: .5, child: Icon(Icons.star)),
+          before: () => const KitSpin(turns: 0, child: _star),
+          after: () => const KitSpin(turns: .5, child: _star),
           disableAnimations: disableAnimations,
           motion: motion,
         );
-        expect(
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
-          .5,
-        );
+        expect(_paintedTurns(tester, _starFinder), closeTo(.5, 1e-9));
       });
 
       testWidgets('KitSpin.chevron ($label)', (tester) async {
@@ -191,10 +260,7 @@ void main() {
           disableAnimations: disableAnimations,
           motion: motion,
         );
-        expect(
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
-          .5,
-        );
+        expect(_paintedTurns(tester, _chevronFinder), closeTo(.5, 1e-9));
       });
 
       testWidgets('KitAnimatedBox ($label)', (tester) async {
@@ -221,10 +287,7 @@ void main() {
           disableAnimations: disableAnimations,
           motion: motion,
         );
-        expect(
-          tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
-          KitTokens.disabledAlpha,
-        );
+        expect(_paintedOpacity(tester, _markFinder), KitTokens.disabledAlpha);
       });
 
       testWidgets('KitAnimatedValue ($label)', (tester) async {
@@ -249,13 +312,18 @@ void main() {
   });
 
   group('KitSwap', () {
-    testWidgets(
-      'a keyed change cross-fades over exactly KitMotion.quick, with no '
-      'scale or size animation, and the outgoing child ignores taps and '
-      'has no semantics',
-      (tester) async {
+    for (final (pace, length) in [
+      (KitPace.quick, KitMotion.quick),
+      (KitPace.standard, KitMotion.standard),
+    ]) {
+      testWidgets('a keyed change cross-fades over exactly ${pace.name} '
+          '(${length.inMilliseconds} ms), with no scale or size animation, and '
+          'the outgoing child ignores taps and has no semantics', (
+        tester,
+      ) async {
         final taps = <String>[];
         Widget build(String key) => KitSwap(
+          pace: pace,
           child: Semantics(
             key: ValueKey(key),
             label: key,
@@ -273,33 +341,43 @@ void main() {
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(_harness(build('a')));
         await tester.pumpAndSettle();
+        final size = tester.getSize(find.byType(KitSwap));
         await tester.pumpWidget(_harness(build('b')));
         // A little real time, not zero: right at t=0 the incoming fade's
-        // opacity is 0 and FadeTransition excludes a fully transparent
-        // child from semantics, which would falsely look like exclusion.
-        await tester.pump(const Duration(milliseconds: 30));
+        // opacity is 0 and a fully transparent child is excluded from
+        // semantics anyway, which would falsely look like exclusion.
+        const step = Duration(milliseconds: 30);
+        await tester.pump(step);
 
         expect(tester.hasRunningAnimations, isTrue);
+        // Both children paint part-way: a cross-fade, not a cut.
+        final leaving = _paintedOpacity(
+          tester,
+          find.byKey(const ValueKey('box-a')),
+        );
+        final arriving = _paintedOpacity(
+          tester,
+          find.byKey(const ValueKey('box-b')),
+        );
+        expect(leaving, inExclusiveRange(0, 1));
+        expect(arriving, inExclusiveRange(0, 1));
+        // No size animation: the swap keeps its settled size.
+        expect(tester.getSize(find.byType(KitSwap)), size);
         // Scoped to KitSwap's own subtree: the app shell's page-transition
         // machinery (Android's default zoom route transition) legitimately
         // uses ScaleTransition/Transform elsewhere in the tree.
         final swap = find.byType(KitSwap);
-        expect(
-          find.descendant(of: swap, matching: find.byType(ScaleTransition)),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: swap, matching: find.byType(SizeTransition)),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: swap, matching: find.byType(Transform)),
-          findsNothing,
-        );
+        for (final type in [ScaleTransition, SizeTransition, Transform]) {
+          expect(
+            find.descendant(of: swap, matching: find.byType(type)),
+            findsNothing,
+          );
+        }
 
-        // The outgoing ('a') is excluded from semantics while it leaves.
-        expect(find.bySemanticsLabel('a'), findsNothing);
-        expect(find.bySemanticsLabel('b'), findsOneWidget);
+        // The outgoing ('a') is excluded from semantics while it leaves:
+        // read from the live semantics tree, what a screen reader gets.
+        expect(_semanticLabels(tester), isNot(contains('a')));
+        expect(_semanticLabels(tester), contains('b'));
 
         // The outgoing ignores taps: tapping its box does not call back.
         await tester.tapAt(
@@ -307,16 +385,73 @@ void main() {
         );
         expect(taps, isEmpty);
 
-        // Settles after exactly KitMotion.quick (30 ms already elapsed).
-        await tester.pump(
-          KitMotion.quick - const Duration(milliseconds: 1 + 30),
-        );
+        // Settles after exactly the pace's length (30 ms already elapsed).
+        await tester.pump(length - step - const Duration(milliseconds: 1));
         expect(tester.hasRunningAnimations, isTrue);
         await tester.pump(const Duration(milliseconds: 2));
         expect(tester.hasRunningAnimations, isFalse);
         expect(find.byKey(const ValueKey('a')), findsNothing);
+        expect(_paintedOpacity(tester, find.byKey(const ValueKey('box-b'))), 1);
 
         semantics.dispose();
+      });
+    }
+
+    testWidgets('the leaving child keeps its state until it has faded out', (
+      tester,
+    ) async {
+      final log = <String, List<String>>{};
+      Widget build(String label) =>
+          KitSwap(child: _Counted(label, log, key: ValueKey(label)));
+      await tester.pumpWidget(_harness(build('a')));
+      await tester.pumpAndSettle();
+      expect(log['a'], ['init']);
+
+      await tester.pumpWidget(_harness(build('b')));
+      await tester.pump(const Duration(milliseconds: 50));
+      // Still the first State: not rebuilt from scratch, not disposed.
+      expect(log['a'], ['init']);
+      expect(log['b'], ['init']);
+      expect(find.byKey(const ValueKey('box-a')), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(log['a'], ['init', 'dispose']);
+      expect(log['b'], ['init']);
+    });
+
+    testWidgets(
+      'a change mid-swap fades each leaving child on from its current opacity',
+      (tester) async {
+        final log = <String, List<String>>{};
+        Widget build(String label) =>
+            KitSwap(child: _Counted(label, log, key: ValueKey(label)));
+        double opacityOf(String label) =>
+            _paintedOpacity(tester, find.byKey(ValueKey('box-$label')));
+
+        await tester.pumpWidget(_harness(build('a')));
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(_harness(build('b')));
+        await tester.pump(const Duration(milliseconds: 60));
+        final aBefore = opacityOf('a');
+        final bBefore = opacityOf('b');
+        expect(bBefore, inExclusiveRange(0, 1));
+
+        await tester.pumpWidget(_harness(build('c')));
+        // No jump: both leaving children still show where they were.
+        expect(find.byKey(const ValueKey('box-a')), findsOneWidget);
+        expect(opacityOf('a'), closeTo(aBefore, 1e-9));
+        expect(opacityOf('b'), closeTo(bBefore, 1e-9));
+
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(opacityOf('b'), lessThan(bBefore));
+        expect(log['a'], ['init']);
+        expect(log['b'], ['init']);
+
+        await tester.pumpAndSettle();
+        expect(log['a'], ['init', 'dispose']);
+        expect(log['b'], ['init', 'dispose']);
+        expect(log['c'], ['init']);
+        expect(opacityOf('c'), 1);
       },
     );
 
@@ -332,24 +467,17 @@ void main() {
 
   group('KitSpin', () {
     testWidgets('KitSpin(turns: .5) animates', (tester) async {
-      await tester.pumpWidget(
-        _harness(const KitSpin(turns: 0, child: Icon(Icons.star))),
-      );
+      await tester.pumpWidget(_harness(const KitSpin(turns: 0, child: _star)));
       await tester.pumpAndSettle();
-      await tester.pumpWidget(
-        _harness(const KitSpin(turns: .5, child: Icon(Icons.star))),
-      );
+      final before = tester.getSize(_starFinder);
+      await tester.pumpWidget(_harness(const KitSpin(turns: .5, child: _star)));
       await tester.pump(const Duration(milliseconds: 50));
-      // AnimatedRotation.turns is the target, not the interpolated value
-      // (that lives inside its own private state), so the running ticker is
-      // the evidence that this is easing rather than snapping (checked
-      // instant on mount and under reduced motion elsewhere).
       expect(tester.hasRunningAnimations, isTrue);
+      // Painted part-way round, and the layout is untouched (paint only).
+      expect(_paintedTurns(tester, _starFinder), inExclusiveRange(0.01, .49));
+      expect(tester.getSize(_starFinder), before);
       await tester.pumpAndSettle();
-      expect(
-        tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
-        .5,
-      );
+      expect(_paintedTurns(tester, _starFinder), closeTo(.5, 1e-9));
       expect(tester.hasRunningAnimations, isFalse);
     });
 
@@ -375,47 +503,52 @@ void main() {
         'KitSpin.chevron(expanded: true) points up under ${direction.name} '
         'and turns over KitMotion.standard with emphasized',
         (tester) async {
-          await tester.pumpWidget(
-            _harness(
-              locale: direction == TextDirection.rtl
-                  ? const Locale('ar')
-                  : const Locale('en'),
-              const KitSpin.chevron(expanded: false),
-            ),
+          Widget build(bool expanded) => _harness(
+            locale: direction == TextDirection.rtl
+                ? const Locale('ar')
+                : const Locale('en'),
+            KitSpin.chevron(expanded: expanded),
           );
+          await tester.pumpWidget(build(false));
           await tester.pumpAndSettle();
-          final rotation = tester.widget<AnimatedRotation>(
-            find.byType(AnimatedRotation),
-          );
-          expect(rotation.duration, KitMotion.standard);
-          expect(rotation.curve, KitMotion.emphasized);
-          expect(rotation.turns, 0);
+          expect(Directionality.of(tester.element(_chevronFinder)), direction);
+          // chevronDown drawn upright: pointing down when folded.
+          expect(_paintedTurns(tester, _chevronFinder), closeTo(0, 1e-9));
 
-          await tester.pumpWidget(
-            _harness(
-              locale: direction == TextDirection.rtl
-                  ? const Locale('ar')
-                  : const Locale('en'),
-              const KitSpin.chevron(expanded: true),
-            ),
+          await tester.pumpWidget(build(true));
+          // Sampled against KitMotion.emphasized over KitMotion.standard.
+          const step = Duration(milliseconds: 50);
+          var elapsed = Duration.zero;
+          while (elapsed + step < KitMotion.standard) {
+            await tester.pump(step);
+            elapsed += step;
+            final t =
+                elapsed.inMicroseconds / KitMotion.standard.inMicroseconds;
+            expect(
+              _paintedTurns(tester, _chevronFinder),
+              closeTo(.5 * KitMotion.emphasized.transform(t), 1e-6),
+              reason: 'at ${elapsed.inMilliseconds} ms',
+            );
+          }
+          // Still turning 1 ms before KitMotion.standard, settled just past
+          // it (an animation is done once its time EXCEEDS its duration).
+          await tester.pump(
+            KitMotion.standard - elapsed - const Duration(milliseconds: 1),
           );
-          await tester.pumpAndSettle();
-          expect(
-            tester
-                .widget<AnimatedRotation>(find.byType(AnimatedRotation))
-                .turns,
-            .5,
-          );
+          expect(tester.hasRunningAnimations, isTrue);
+          await tester.pump(const Duration(milliseconds: 2));
+          expect(tester.hasRunningAnimations, isFalse);
+          // Pointing up: the painted glyph is turned half a turn, the same
+          // way in both reading directions (clockwise, never mirrored).
+          expect(_paintedTurns(tester, _chevronFinder), closeTo(.5, 1e-9));
         },
       );
     }
 
     testWidgets('pumpAndSettle completes (nothing loops)', (tester) async {
+      await tester.pumpWidget(_harness(const KitSpin(turns: 0, child: _star)));
       await tester.pumpWidget(
-        _harness(const KitSpin(turns: 0, child: Icon(Icons.star))),
-      );
-      await tester.pumpWidget(
-        _harness(const KitSpin(turns: .75, child: Icon(Icons.star))),
+        _harness(const KitSpin(turns: .75, child: _star)),
       );
       await tester.pumpAndSettle();
       expect(tester.hasRunningAnimations, isFalse);
@@ -468,13 +601,60 @@ void main() {
           ),
         ),
       );
-      final container = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer),
+      final hairline = KitTokens.of(
+        tester.element(find.byType(KitAnimatedBox)),
+      ).roles.hairline;
+      // The edge is painted as a ring whose outer and inner edges are one
+      // physical pixel (half a logical pixel at DPR 2) apart, in hairline.
+      expect(
+        find.byType(KitAnimatedBox),
+        paints..something((method, args) {
+          if (method != #drawDRRect) return false;
+          final outer = args[0] as RRect;
+          final inner = args[1] as RRect;
+          final paint = args[2] as Paint;
+          return paint.color.toARGB32() == hairline.toARGB32() &&
+              inner.left - outer.left == .5 &&
+              outer.right - inner.right == .5 &&
+              inner.top - outer.top == .5 &&
+              outer.bottom - inner.bottom == .5;
+        }),
       );
-      final shape = (container.decoration! as ShapeDecoration).shape;
-      expect(shape, isA<RoundedRectangleBorder>());
-      expect((shape as RoundedRectangleBorder).side.width, .5);
     });
+
+    testWidgets(
+      'turning outlined on and off animates only the paint (RenderBox size '
+      'and child offset are constant)',
+      (tester) async {
+        tester.view.devicePixelRatio = 3;
+        addTearDown(tester.view.reset);
+        const child = SizedBox(key: ValueKey('inside'), width: 96, height: 56);
+        Widget build(bool outlined) => KitAnimatedBox(
+          level: KitSurfaceLevel.surface1,
+          outlined: outlined,
+          child: child,
+        );
+        final box = find.byType(KitAnimatedBox);
+        final inside = find.byKey(const ValueKey('inside'));
+        await tester.pumpWidget(_harness(build(false)));
+        await tester.pumpAndSettle();
+        final size = tester.getSize(box);
+        final offset = tester.getTopLeft(inside) - tester.getTopLeft(box);
+        expect(size, const Size(96, 56));
+
+        for (final outlined in [true, false]) {
+          await tester.pumpWidget(_harness(build(outlined)));
+          for (var i = 0; i < 4; i++) {
+            await tester.pump(const Duration(milliseconds: 30));
+            expect(tester.getSize(box), size);
+            expect(tester.getTopLeft(inside) - tester.getTopLeft(box), offset);
+          }
+          await tester.pumpAndSettle();
+          expect(tester.getSize(box), size);
+          expect(tester.getTopLeft(inside) - tester.getTopLeft(box), offset);
+        }
+      },
+    );
 
     testWidgets('pumpAndSettle completes (nothing loops)', (tester) async {
       await tester.pumpWidget(
@@ -518,29 +698,23 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(_harness(const KitDim(child: _mark)));
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(
-        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
-        KitTokens.disabledAlpha,
-      );
+      expect(_paintedOpacity(tester, _markFinder), KitTokens.disabledAlpha);
 
       await tester.pumpWidget(
         _harness(const KitDim(level: KitDimLevel.stale, child: _mark)),
       );
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(
-        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
-        KitTokens.staleAlpha,
-      );
+      expect(_paintedOpacity(tester, _markFinder), KitTokens.staleAlpha);
 
       await tester.pumpWidget(
         _harness(const KitDim(dimmed: false, child: _mark)),
       );
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(
-        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
-        1,
-      );
+      expect(_paintedOpacity(tester, _markFinder), 1);
     });
 
     testWidgets('pumpAndSettle completes (nothing loops)', (tester) async {

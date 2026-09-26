@@ -40,7 +40,11 @@ Duration _durationOf(BuildContext context, KitPace pace) =>
 /// back to its widget type, so two different widget classes still cross-fade
 /// without an explicit key). The old child ignores touches and is excluded
 /// from semantics while it leaves.
-class KitSwap extends StatefulWidget {
+///
+/// Built on [AnimatedSwitcher], so each child keeps its element and state
+/// from the moment it arrives until it has faded out, and a change during a
+/// swap fades every leaving child on from its current opacity.
+class KitSwap extends StatelessWidget {
   const KitSwap({
     super.key,
     required this.child,
@@ -52,87 +56,80 @@ class KitSwap extends StatefulWidget {
   final KitPace pace;
   final AlignmentDirectional alignment;
 
+  // A static tear-off is one identical function on every build, so
+  // AnimatedSwitcher never rebuilds the leaving children's transitions.
+  static Widget _layer(Widget child, Animation<double> animation) =>
+      _KitSwapLayer(animation: animation, child: child);
+
   @override
-  State<KitSwap> createState() => _KitSwapState();
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: _durationOf(context, pace),
+    switchInCurve: KitMotion.enter,
+    // The switcher runs a leaving child's animation in reverse (1 to 0), so
+    // the flipped exit curve fades it out on KitMotion.exit, as KitReveal
+    // does.
+    switchOutCurve: KitMotion.exit.flipped,
+    transitionBuilder: _layer,
+    layoutBuilder: (current, previous) =>
+        Stack(alignment: alignment, children: [...previous, ?current]),
+    child: child,
+  );
 }
 
-class _KitSwapState extends State<KitSwap> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: _paceLength(widget.pace),
-    value: 1,
-  )..addStatusListener(_onStatus);
-  late final Animation<double> _incoming = CurvedAnimation(
-    parent: _controller,
-    curve: KitMotion.enter,
-  );
-  late final Animation<double> _outgoingOpacity = Tween<double>(
-    begin: 1,
-    end: 0,
-  ).chain(CurveTween(curve: KitMotion.exit)).animate(_controller);
-  Widget? _outgoing;
+/// One child of [KitSwap]. Its structure never changes when the child starts
+/// to leave: only the [IgnorePointer] and [ExcludeSemantics] flags turn on,
+/// so the child's element and state survive the swap.
+class _KitSwapLayer extends StatefulWidget {
+  const _KitSwapLayer({required this.animation, required this.child});
 
-  // Set in initState, not as a lazy `late` initializer: nothing in build()
-  // reads _key, so a lazy initializer would stay unevaluated until the
-  // first didUpdateWidget — where `widget` already IS the new child, making
-  // the very first change compare a key against itself.
-  late Key _key;
+  final Animation<double> animation;
+  final Widget child;
 
-  static Key _keyOf(Widget child) => child.key ?? ValueKey(child.runtimeType);
+  @override
+  State<_KitSwapLayer> createState() => _KitSwapLayerState();
+}
+
+class _KitSwapLayerState extends State<_KitSwapLayer> {
+  late bool _leaving = _isLeaving(widget.animation.status);
+
+  static bool _isLeaving(AnimationStatus status) =>
+      status == AnimationStatus.reverse || status == AnimationStatus.dismissed;
 
   @override
   void initState() {
     super.initState();
-    _key = _keyOf(widget.child);
-  }
-
-  void _onStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && _outgoing != null) {
-      setState(() => _outgoing = null);
-    }
+    widget.animation.addStatusListener(_onStatus);
   }
 
   @override
-  void didUpdateWidget(covariant KitSwap old) {
+  void didUpdateWidget(covariant _KitSwapLayer old) {
     super.didUpdateWidget(old);
-    final newKey = _keyOf(widget.child);
-    if (newKey != _key) {
-      _key = newKey;
-      _controller.duration = _paceLength(widget.pace);
-      if (KitMotion.reduced(context)) {
-        _outgoing = null;
-        _controller.value = 1;
-      } else {
-        _outgoing = old.child;
-        _controller.forward(from: 0);
-      }
-    } else if (widget.pace != old.pace) {
-      _controller.duration = _paceLength(widget.pace);
+    if (widget.animation != old.animation) {
+      old.animation.removeStatusListener(_onStatus);
+      widget.animation.addStatusListener(_onStatus);
+      _leaving = _isLeaving(widget.animation.status);
     }
+  }
+
+  void _onStatus(AnimationStatus status) {
+    final leaving = _isLeaving(status);
+    if (leaving != _leaving && mounted) setState(() => _leaving = leaving);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    widget.animation.removeStatusListener(_onStatus);
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final outgoing = _outgoing;
-    return Stack(
-      alignment: widget.alignment,
-      children: [
-        if (outgoing != null)
-          IgnorePointer(
-            child: ExcludeSemantics(
-              child: FadeTransition(opacity: _outgoingOpacity, child: outgoing),
-            ),
-          ),
-        FadeTransition(opacity: _incoming, child: widget.child),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: _leaving,
+    child: ExcludeSemantics(
+      excluding: _leaving,
+      child: FadeTransition(opacity: widget.animation, child: widget.child),
+    ),
+  );
 }
 
 /// Rotates its child. The rotation is paint only and does not change layout.
@@ -237,44 +234,47 @@ class KitAnimatedBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final base = tokens.shapeOf(shape);
-    final shapeBorder = outlined
-        ? _withHairline(context, base, tokens.roles.hairline)
-        : base;
     final fillLevel = level;
+    final hairline = tokens.roles.hairline;
+    // The fill is a side-less shape and the edge is a FOREGROUND decoration,
+    // and Container pads its child only by the background decoration's
+    // insets. So neither the fill nor the edge ever takes layout space, and
+    // turning [outlined] on or off changes paint only (MOT-5): the edge
+    // keeps its one-physical-pixel width and animates its colour from
+    // transparent to the hairline role.
     return AnimatedContainer(
       duration: _durationOf(context, pace),
       curve: KitMotion.enter,
       decoration: ShapeDecoration(
         color: fillLevel == null ? null : tokens.fillOf(fillLevel),
-        shape: shapeBorder,
+        shape: base,
+      ),
+      foregroundDecoration: ShapeDecoration(
+        shape: _withEdge(
+          base,
+          BorderSide(
+            color: outlined ? hairline : hairline.withAlpha(0),
+            width: KitTokens.hairlineWidth(context),
+          ),
+        ),
       ),
       child: child,
     );
   }
 }
 
-/// [shape] with a hairline [BorderSide] in [color], so an outlined box's
-/// border can animate in and out with the rest of its paint
-/// (`ShapeBorder.lerp` interpolates the side like any other property).
-ShapeBorder _withHairline(
-  BuildContext context,
-  ShapeBorder shape,
-  Color color,
-) {
-  final side = BorderSide(
-    color: color,
-    width: KitTokens.hairlineWidth(context),
-  );
-  return switch (shape) {
-    RoundedRectangleBorder(:final borderRadius) => RoundedRectangleBorder(
-      borderRadius: borderRadius,
-      side: side,
-    ),
-    StadiumBorder() => StadiumBorder(side: side),
-    CircleBorder() => CircleBorder(side: side),
-    _ => shape,
-  };
-}
+/// [shape] with [side] as its edge, so an outlined box's edge can fade in
+/// and out with the rest of its paint (`ShapeBorder.lerp` interpolates the
+/// side's colour like any other property).
+ShapeBorder _withEdge(ShapeBorder shape, BorderSide side) => switch (shape) {
+  RoundedRectangleBorder(:final borderRadius) => RoundedRectangleBorder(
+    borderRadius: borderRadius,
+    side: side,
+  ),
+  StadiumBorder() => StadiumBorder(side: side),
+  CircleBorder() => CircleBorder(side: side),
+  _ => shape,
+};
 
 /// How far [KitDim] dims.
 enum KitDimLevel {
