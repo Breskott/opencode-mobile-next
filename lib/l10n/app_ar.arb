@@ -5222,5 +5222,8 @@
   "teamBoardAddNote": "تنتظر في قائمة الانتظار حتى تبدأها.",
   "teamBoardAddFailed": "تعذّرت الإضافة. رفض مضيف الفريق الطلب.",
   "teamBoardProjectTooltip": "اختر المشروع",
-  "teamBoardCardHint": "اضغط مطولًا للنقل"
+  "teamBoardCardHint": "اضغط مطولًا للنقل",
+  "teamAgentLastStep": "آخر خطوة: {step}",
+  "teamAgentLastActive": "آخر نشاط قبل {elapsed}",
+  "teamChatLeadEarlier": "{count, plural, =1{تحديث سابق واحد} other{{count} تحديثات سابقة}}"
 }

@@ -252,7 +252,25 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                l10n.teamChatSubtitle(teamHostPhrase(l10n, _team)),
+                l10n.teamChatSubtitle(
+                  // Never "Paused" while this task's worker starts or works:
+                  // the task's own state and its agents' sessions say so.
+                  teamHostPhrase(
+                    l10n,
+                    _team,
+                    working:
+                        agents.any(
+                          (agent) =>
+                              teamSessionState(agent) == AgentState.working,
+                        ) ||
+                        switch (now?.kind) {
+                          TeamNowKind.starting ||
+                          TeamNowKind.working ||
+                          TeamNowKind.review => true,
+                          _ => false,
+                        },
+                  ),
+                ),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: AppTheme.mutedOf(theme),
                 ),
@@ -347,7 +365,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                       expansion: _expansion,
                     ),
                   for (final agent in agents)
-                    _TeamAgentCard(
+                    _TeamAgentLine(
                       agent: agent,
                       work: [
                         for (final item in work)
@@ -445,14 +463,19 @@ MessageWithParts _teamMessage(
       id: id,
       sessionID: 'team',
       role: role,
-      time: MsgTime(created: ms, completed: ms ?? 0),
+      // Always finished: the app wrote it whole, so it never wears the
+      // tint of a reply still being written.
+      time: MsgTime(created: ms, completed: ms ?? 1),
     ),
     parts: [Part(id: '$id-text', messageID: id, type: 'text', text: text)],
   );
 }
 
-/// The lead's reply: one line per real team event, each with its time.
-class _TeamLeadReply extends StatelessWidget {
+/// The lead's reply, read like any reply in the chat: one plain line per
+/// real team event with its time, on the prose's edge, no frame or fill.
+/// When there are many, the earlier ones fold under one line (the chat's
+/// fold) and the newest stay in view.
+class _TeamLeadReply extends StatefulWidget {
   const _TeamLeadReply({
     required this.lines,
     required this.pending,
@@ -463,26 +486,59 @@ class _TeamLeadReply extends StatelessWidget {
   final TeamPendingTask? pending;
   final Map<String, bool> expansion;
 
+  /// Up to this many lines show unfolded; beyond it, all but the newest
+  /// [_kept] fold.
+  static const _openUpTo = 3;
+  static const _kept = 2;
+  static const _storeKey = 'team-lead-earlier';
+
+  @override
+  State<_TeamLeadReply> createState() => _TeamLeadReplyState();
+}
+
+class _TeamLeadReplyState extends State<_TeamLeadReply> {
+  bool get _expanded => widget.expansion[_TeamLeadReply._storeKey] ?? false;
+
+  Widget _reply(String id, List<String> rows) {
+    final message = _teamMessage(id, 'assistant', rows.join('\n\n'), null);
+    return _MessageView(
+      m: message,
+      meta: const _MessageMeta(),
+      parts: message.parts,
+      reasoningExpanded: false,
+      expansionStore: widget.expansion,
+      showTimestamp: false,
+      showActions: false,
+      filePreviewLoader: _noFilePreview,
+      onAttachFile: null,
+      onDownloadFile: _noFileAction,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
     String at(DateTime? time) =>
         time == null ? '' : ' · ${teamClockLabel(context, time)}';
     final rows = <String>[
-      if (pending case final task?)
+      if (widget.pending case final task?)
         '${l10n.teamChatLeadSent}${at(task.sentAt)}',
-      for (final line in lines) '${teamLeadSentence(l10n, line)}${at(line.at)}',
+      for (final line in widget.lines)
+        '${teamLeadSentence(l10n, line)}${at(line.at)}',
     ];
-    final text = rows.isEmpty
-        ? l10n.teamChatLeadNothingYet
-        : rows.map((row) => '- $row').join('\n');
-    final message = _teamMessage('team-lead', 'assistant', text, null);
+    final fold = rows.length > _TeamLeadReply._openUpTo;
+    final earlier = fold
+        ? rows.sublist(0, rows.length - _TeamLeadReply._kept)
+        : const <String>[];
+    final recent = fold
+        ? rows.sublist(rows.length - _TeamLeadReply._kept)
+        : rows;
     return Column(
       key: const ValueKey('team-conversation-lead'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 4),
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
           child: Text(
             l10n.teamChatLeadName,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -490,17 +546,30 @@ class _TeamLeadReply extends StatelessWidget {
             ),
           ),
         ),
-        _MessageView(
-          m: message,
-          meta: const _MessageMeta(),
-          parts: message.parts,
-          reasoningExpanded: false,
-          expansionStore: expansion,
-          showTimestamp: false,
-          showActions: false,
-          filePreviewLoader: _noFilePreview,
-          onAttachFile: null,
-          onDownloadFile: _noFileAction,
+        if (fold)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 0),
+            child: _FoldLine(
+              headerKey: const ValueKey('team-conversation-lead-earlier'),
+              icon: AppIconography.timeline,
+              title: l10n.teamChatLeadEarlier(earlier.length),
+              expanded: _expanded,
+              onTap: () => setState(
+                () => widget.expansion[_TeamLeadReply._storeKey] = !_expanded,
+              ),
+            ),
+          ),
+        if (fold && _expanded)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 0),
+            child: _FoldSteps(
+              key: const ValueKey('team-conversation-lead-earlier-lines'),
+              children: [_reply('team-lead-earlier', earlier)],
+            ),
+          ),
+        _reply(
+          'team-lead',
+          recent.isEmpty ? [l10n.teamChatLeadNothingYet] : recent,
         ),
       ],
     );
@@ -551,7 +620,9 @@ class _TeamNowLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
     final waiting =
-        !team.snapshot.hasData || teamHostCondition(l10n, team) != null;
+        !team.snapshot.hasData ||
+        // Not answering only: a paused team answers, and says so itself.
+        teamHostCondition(l10n, team, working: true) != null;
     return GraceTimer(
       waiting: waiting,
       grace: const Duration(seconds: 8),
@@ -831,10 +902,12 @@ class _TeamStepsFold extends StatelessWidget {
   }
 }
 
-/// One worker or reviewer: who it is, what it works on, its state from
-/// its session and for how long; opens its conversation.
-class _TeamAgentCard extends StatelessWidget {
-  const _TeamAgentCard({
+/// One worker or reviewer as the chat draws a sub-agent: one line of the
+/// reply on the prose's edge, no frame or fill (as [ToolCard] draws a
+/// `task` call). Who it is, what it works on, its state from its session
+/// and for how long; a tap opens its conversation.
+class _TeamAgentLine extends StatelessWidget {
+  const _TeamAgentLine({
     required this.agent,
     required this.work,
     required this.now,
@@ -861,57 +934,102 @@ class _TeamAgentCard extends StatelessWidget {
                 ? Duration.zero
                 : now.difference(started),
           );
+    // The state and how long, where a sub-agent call shows its state.
     final line = [
       teamAgentStateWord(team, state),
-      ?work?.title,
       ?elapsed,
     ].join(teamUsageSeparator);
+    final title = _teamAgentTitle(team, agent);
+    final mark = _teamAgentMark(agent);
+    final (markIcon, markColor) = switch (mark) {
+      KitMarkState.working => (
+        AppIconography.waitingStart,
+        theme.colorScheme.primary,
+      ),
+      KitMarkState.done => (
+        AppIconography.checkCircle,
+        AppTheme.successOf(theme),
+      ),
+      KitMarkState.failed => (AppIconography.error, theme.colorScheme.error),
+      KitMarkState.waiting => (
+        AppIconography.waiting,
+        theme.colorScheme.onSurfaceVariant,
+      ),
+    };
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-      child: KitPanel(
-        key: ValueKey('team-conversation-agent-${agent.id}'),
-        padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
-        onTap: onOpen,
-        child: Row(
-          children: [
-            KitStatusMark(state: _teamAgentMark(agent)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsetsDirectional.fromSTEB(6, 4, 6, 0),
+      child: Semantics(
+        button: true,
+        label: [title, ?work?.title, line].join(', '),
+        hint: l10n.teamOpenConversation,
+        excludeSemantics: true,
+        child: InkWell(
+          key: ValueKey('team-conversation-agent-${agent.id}'),
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(8),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              // The prose's inset, as a sub-agent call on its own.
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 8),
+              child: Row(
                 children: [
-                  Text(
-                    _teamAgentTitle(team, agent),
-                    style: theme.textTheme.titleSmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Icon(
+                    AppIconography.agent,
+                    size: 16,
+                    color: AppTheme.mutedOf(theme),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    line,
-                    key: ValueKey('team-conversation-agent-line-${agent.id}'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.mutedOf(theme),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TitleWithDetail(
+                      title: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall!.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: .9,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      detail: work == null
+                          ? null
+                          : Text(
+                              work!.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.teamOpenConversation,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
+                  const SizedBox(width: 6),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      line,
+                      key: ValueKey('team-conversation-agent-line-${agent.id}'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(markIcon, size: 14, color: markColor),
+                  const SizedBox(width: 4),
+                  Icon(
+                    AppIconography.chevronRight,
+                    size: 16,
+                    color: AppTheme.mutedOf(theme),
                   ),
                 ],
               ),
             ),
-            Icon(
-              AppIconography.chevronRight,
-              size: 18,
-              color: AppTheme.mutedOf(theme),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1044,6 +1162,68 @@ enum TeamAgentConversationMiss {
   notFound,
 }
 
+/// Where "Open conversation" leads for an agent: its OpenCode session, or
+/// why there is none ([miss]).
+@immutable
+class TeamAgentConversationLookup {
+  const TeamAgentConversationLookup.found(String this.sessionId) : miss = null;
+  const TeamAgentConversationLookup.missing(TeamAgentConversationMiss this.miss)
+    : sessionId = null;
+
+  final String? sessionId;
+  final TeamAgentConversationMiss? miss;
+}
+
+/// Looks for [agent]'s own OpenCode session on the connected server
+/// ([findTeamAgentSession]): in its work folder, newest since its session
+/// began. Unreadable when there is no connected server that can list
+/// conversations across projects (or none above [context] at all), or the
+/// agent names no folder.
+Future<TeamAgentConversationLookup> lookupTeamAgentConversation(
+  BuildContext context,
+  OrchestrationAgent agent,
+) async {
+  final ConnectionController conn;
+  try {
+    conn = ProviderScope.containerOf(context, listen: false).read(connProvider);
+  } catch (_) {
+    return const TeamAgentConversationLookup.missing(
+      TeamAgentConversationMiss.unreadable,
+    );
+  }
+  final repository = conn.repository;
+  if (repository == null ||
+      !conn.capabilities.globalSessionSearch ||
+      (agent.workDir?.trim().isEmpty ?? true)) {
+    return const TeamAgentConversationLookup.missing(
+      TeamAgentConversationMiss.unreadable,
+    );
+  }
+  final sessionId = await findTeamAgentSession(
+    repository,
+    workDir: agent.workDir,
+    startedAt: agent.sessionStartedAt,
+  );
+  return sessionId == null
+      ? const TeamAgentConversationLookup.missing(
+          TeamAgentConversationMiss.notFound,
+        )
+      : TeamAgentConversationLookup.found(sessionId);
+}
+
+/// Live output's words for why the agent's conversation could not open.
+String teamAgentConversationMissNote(
+  BuildContext context,
+  TeamAgentConversationMiss miss,
+) => switch (miss) {
+  TeamAgentConversationMiss.unreadable => _chatL10n(
+    context,
+  ).teamWatchFallbackUnreadable,
+  TeamAgentConversationMiss.notFound => _chatL10n(
+    context,
+  ).teamWatchFallbackNotFound,
+};
+
 /// Opens [agent]'s own OpenCode session on the chat page in watching mode:
 /// the session in its work folder, newest since the agent's session began
 /// ([findTeamAgentSession]). When there is none on the connected server
@@ -1053,27 +1233,12 @@ Future<void> openTeamAgentConversation(
   BuildContext context,
   OrchestrationAgent agent, {
   OrchestrationController? team,
+  TeamAgentConversationLookup? lookup,
 }) async {
-  final conn = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(connProvider);
   final navigator = Navigator.of(context);
-  final repository = conn.repository;
-  String? sessionId;
-  TeamAgentConversationMiss? miss;
-  if (repository == null ||
-      !conn.capabilities.globalSessionSearch ||
-      (agent.workDir?.trim().isEmpty ?? true)) {
-    miss = TeamAgentConversationMiss.unreadable;
-  } else {
-    sessionId = await findTeamAgentSession(
-      repository,
-      workDir: agent.workDir,
-      startedAt: agent.sessionStartedAt,
-    );
-    if (sessionId == null) miss = TeamAgentConversationMiss.notFound;
-  }
+  final found = lookup ?? await lookupTeamAgentConversation(context, agent);
+  final sessionId = found.sessionId;
+  final miss = found.miss;
   if (!context.mounted) return;
   final controller = team ?? _teamOf(context);
   if (sessionId case final id?) {
@@ -1093,12 +1258,10 @@ Future<void> openTeamAgentConversation(
       builder: (context) => AgentOutputScreen(
         controller: controller,
         agentId: agent.id,
-        note: switch (miss) {
-          TeamAgentConversationMiss.unreadable => _chatL10n(
-            context,
-          ).teamWatchFallbackUnreadable,
-          _ => _chatL10n(context).teamWatchFallbackNotFound,
-        },
+        note: teamAgentConversationMissNote(
+          context,
+          miss ?? TeamAgentConversationMiss.notFound,
+        ),
       ),
     ),
   );
@@ -1307,4 +1470,127 @@ class _TeamOpenConversationRowState extends State<TeamOpenConversationRow> {
       onTap: _opening ? null : () => unawaited(_open()),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// An agent's live output, drawn as the chat draws a reply
+// ---------------------------------------------------------------------------
+
+/// An AI Team agent's live output (Live output, the fallback when its
+/// OpenCode session cannot be read) drawn with the chat's own parts: what
+/// the agent wrote is the reply's prose, and its `[tool: …]` calls are the
+/// chat's tool lines, a run of them folded under one line. There is no
+/// second renderer of work: the transcript becomes the chat's message
+/// shape and the chat's message view draws it.
+class TeamAgentTranscript extends StatefulWidget {
+  const TeamAgentTranscript({
+    super.key,
+    required this.text,
+    this.maxBlocks = 40,
+  });
+
+  /// The transcript as the host streams it.
+  final String text;
+
+  /// Blocks (what it said, or a run of calls) drawn; older ones are left
+  /// out, as a long reply's beginning scrolls away.
+  final int maxBlocks;
+
+  @override
+  State<TeamAgentTranscript> createState() => _TeamAgentTranscriptState();
+}
+
+class _TeamAgentTranscriptState extends State<TeamAgentTranscript> {
+  final _expansion = <String, bool>{};
+
+  @override
+  Widget build(BuildContext context) {
+    final blocks = parseAgentTranscript(widget.text);
+    final first = math.max(0, blocks.length - widget.maxBlocks);
+    final parts = <Part>[];
+    for (var i = first; i < blocks.length; i++) {
+      switch (blocks[i]) {
+        case AgentProse(:final text):
+          parts.add(
+            Part(
+              id: 'agent-output-$i',
+              messageID: 'agent-output',
+              type: 'text',
+              text: text,
+            ),
+          );
+        case AgentStepGroup(:final steps):
+          for (var j = 0; j < steps.length; j++) {
+            parts.add(_agentStepPart(steps[j], 'agent-output-$i-$j'));
+          }
+      }
+    }
+    final message = MessageWithParts(
+      info: MessageInfo(
+        id: 'agent-output',
+        sessionID: 'agent-output',
+        role: 'assistant',
+        // Drawn finished: no tint on the newest words (the status line
+        // above says whether it is live).
+        time: MsgTime(completed: 1),
+      ),
+      parts: parts,
+    );
+    return _MessageView(
+      key: const ValueKey('team-agent-transcript'),
+      m: message,
+      meta: const _MessageMeta(),
+      parts: parts,
+      reasoningExpanded: false,
+      expansionStore: _expansion,
+      showTimestamp: false,
+      showActions: false,
+      filePreviewLoader: _noFilePreview,
+      onAttachFile: null,
+      onDownloadFile: _noFileAction,
+    );
+  }
+}
+
+/// One `[tool: …]` call as the chat's tool part: a command is a shell
+/// call, a file read or edit names its file, a search its pattern; its
+/// output is what the call printed.
+Part _agentStepPart(AgentStep step, String id) {
+  final tool = step.tool.trim().toLowerCase();
+  final (String name, Map<String, dynamic> input) = switch (step.kind) {
+    AgentStepKind.command ||
+    AgentStepKind.test => ('bash', {'command': step.command}),
+    AgentStepKind.read => ('read', {'filePath': step.command}),
+    AgentStepKind.edit => (
+      const {
+            'edit',
+            'write',
+            'patch',
+            'apply_patch',
+            'multiedit',
+          }.contains(tool)
+          ? tool
+          : 'edit',
+      {'filePath': step.command},
+    ),
+    AgentStepKind.search => switch (tool) {
+      'list' || 'ls' => ('list', {'path': step.command}),
+      'glob' => ('glob', {'pattern': step.command}),
+      _ => ('grep', {'pattern': step.command}),
+    },
+    AgentStepKind.other => (tool, {'command': step.command}),
+  };
+  return Part(
+    id: id,
+    messageID: 'agent-output',
+    type: 'tool',
+    callID: id,
+    toolName: name,
+    toolState: ToolState(
+      status: 'completed',
+      title: step.command,
+      input: input,
+      output: step.output.isEmpty ? null : step.output,
+    ),
+  );
 }

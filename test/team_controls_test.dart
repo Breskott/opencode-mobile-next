@@ -385,6 +385,10 @@ void main() {
         matching: find.byType(Scrollable),
       ),
     );
+    // The block opens with the primary (Open conversation or Live
+    // output); bring its controls into view too.
+    final message = key('team-agent-control-message');
+    if (message.evaluate().isNotEmpty) await tester.ensureVisible(message);
     await tester.pump();
   }
 
@@ -409,8 +413,11 @@ void main() {
         capabilities: OrchestrationCapabilities.gascityRead,
       );
       await pumpAgent(tester, controller);
-      expect(key('team-agent-controls'), findsNothing);
+      // Only the way to its work (Live output here) remains.
+      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-control-nudge'), findsNothing);
+      expect(key('team-agent-control-pause'), findsNothing);
+      expect(key('team-agent-open-output'), findsOneWidget);
       expect(find.text('Open session'), findsNothing);
 
       await tester.pumpWidget(

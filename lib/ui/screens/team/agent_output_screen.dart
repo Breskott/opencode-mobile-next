@@ -1,6 +1,9 @@
 /// The live output page (02-ux-flows-and-screens §5.2 "Output"): the
-/// agent's session transcript as the host streams it, monospace and LTR
-/// in every locale, one tap away from the Agent detail (§5.3).
+/// agent's session transcript as the host streams it, drawn with the
+/// chat's own parts ([TeamAgentTranscript]: its words as the reply's prose,
+/// its tool calls as the chat's folded work lines, commands in LTR mono).
+/// It is the fallback of "Open conversation" when the agent's OpenCode
+/// session cannot be read (a team on a computer without a readable store).
 ///
 /// Follow-latest works like the chat and the shell output sheet: on by
 /// default, every new capture scrolls to the end; a drag up stops
@@ -28,6 +31,7 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_now.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart' show TeamAgentTranscript;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -271,31 +275,27 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
                     child: ListView(
                       key: const ValueKey('team-agent-output-list'),
                       controller: _scroll,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 72),
+                      // The chat's own transcript rails.
+                      padding: const EdgeInsets.fromLTRB(6, 10, 6, 72),
                       children: [
-                        // Output is a terminal transcript: LTR always.
-                        Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: text.isEmpty
-                              ? Text(
-                                  l10n.teamUiAgentOutputEmpty,
-                                  key: const ValueKey(
-                                    'team-agent-output-empty',
-                                  ),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: muted,
-                                  ),
-                                )
-                              : Text(
-                                  text,
-                                  key: const ValueKey('team-agent-output-text'),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontFamily: AppTheme.monoFamily,
-                                    fontSize: AppTheme.codeFontSize,
-                                    height: AppTheme.codeLineHeight,
-                                  ),
-                                ),
-                        ),
+                        if (text.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              l10n.teamUiAgentOutputEmpty,
+                              key: const ValueKey('team-agent-output-empty'),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: muted,
+                              ),
+                            ),
+                          )
+                        else
+                          // What it said and did, drawn as the chat draws a
+                          // reply: prose, and its calls folded into lines.
+                          TeamAgentTranscript(
+                            key: const ValueKey('team-agent-output-text'),
+                            text: text,
+                          ),
                       ],
                     ),
                   ),

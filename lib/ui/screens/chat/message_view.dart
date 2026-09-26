@@ -1443,110 +1443,160 @@ class _WorkGroupState extends State<_WorkGroup> {
       key: const Key('work-group'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          button: true,
+        _FoldLine(
+          headerKey: const Key('work-group-header'),
+          icon: running ? AppIconography.timeline : _workIcon(_tools),
+          title: titleText,
+          detail: summary,
           expanded: _expanded,
-          label: summary == null ? titleText : '$titleText, $summary',
-          child: InkWell(
-            key: const Key('work-group-header'),
-            onTap: () => setState(() {
-              _expanded = !_expanded;
-              widget.expansionStore[_storeKey] = _expanded;
-            }),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      running ? AppIconography.timeline : _workIcon(_tools),
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TitleWithDetail(
-                        gap: 8,
-                        title: Text(
-                          titleText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        detail: summary == null
-                            ? null
-                            : Text(
-                                summary,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    if (running && !reduceMotion)
-                      SizedBox.square(
-                        dimension: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.6,
-                          color: theme.colorScheme.primary,
-                        ),
-                      )
-                    // Finished is the normal state and needs no mark;
-                    // only running and failed are worth a glance.
-                    else if (running || failed)
-                      Icon(
-                        failed
-                            ? AppIconography.error
-                            : running
-                            ? AppIconography.waitingStart
-                            : AppIconography.checkCircle,
-                        size: 14,
-                        color: failed
-                            ? theme.colorScheme.error
-                            : AppTheme.successOf(theme),
-                      ),
-                    const SizedBox(width: 4),
-                    AnimatedRotation(
-                      turns: _expanded ? .5 : 0,
-                      duration: reduceMotion
-                          ? Duration.zero
-                          : const Duration(milliseconds: 150),
-                      child: Icon(
-                        AppIconography.chevronDown,
-                        size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          onTap: () => setState(() {
+            _expanded = !_expanded;
+            widget.expansionStore[_storeKey] = _expanded;
+          }),
+          mark: running && !reduceMotion
+              ? SizedBox.square(
+                  dimension: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.6,
+                    color: theme.colorScheme.primary,
+                  ),
+                )
+              // Finished is the normal state and needs no mark; only
+              // running and failed are worth a glance.
+              : running || failed
+              ? Icon(
+                  failed
+                      ? AppIconography.error
+                      : running
+                      ? AppIconography.waitingStart
+                      : AppIconography.checkCircle,
+                  size: 14,
+                  color: failed
+                      ? theme.colorScheme.error
+                      : AppTheme.successOf(theme),
+                )
+              : null,
         ),
         if (_expanded)
-          Container(
+          _FoldSteps(
             key: const Key('work-group-steps'),
-            margin: const EdgeInsetsDirectional.only(start: 11),
-            padding: const EdgeInsetsDirectional.only(start: 6),
-            decoration: BoxDecoration(
-              border: BorderDirectional(
-                start: BorderSide(color: AppTheme.hairline(theme)),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [for (final run in widget.runs) widget.buildRun(run)],
-            ),
+            children: [for (final run in widget.runs) widget.buildRun(run)],
           ),
       ],
     );
   }
+}
+
+/// The one line work folds under: a glyph, what was done, an optional
+/// detail and mark, and the chevron that opens it. The work of a turn and
+/// anything else that folds the same way (an AI Team lead's earlier lines)
+/// share it, so every fold in a transcript looks and reads alike.
+class _FoldLine extends StatelessWidget {
+  const _FoldLine({
+    required this.headerKey,
+    required this.icon,
+    required this.title,
+    required this.expanded,
+    required this.onTap,
+    this.detail,
+    this.mark,
+  });
+
+  final Key headerKey;
+  final IconData icon;
+  final String title;
+  final String? detail;
+  final Widget? mark;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final detail = this.detail;
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      label: detail == null ? title : '$title, $detail',
+      child: InkWell(
+        key: headerKey,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TitleWithDetail(
+                    gap: 8,
+                    title: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    detail: detail == null
+                        ? null
+                        : Text(
+                            detail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                ?mark,
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: expanded ? .5 : 0,
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 150),
+                  child: Icon(
+                    AppIconography.chevronDown,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What a [_FoldLine] opens: the steps hanging off one rule on the leading
+/// edge, in the order they happened.
+class _FoldSteps extends StatelessWidget {
+  const _FoldSteps({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsetsDirectional.only(start: 11),
+    padding: const EdgeInsetsDirectional.only(start: 6),
+    decoration: BoxDecoration(
+      border: BorderDirectional(
+        start: BorderSide(color: AppTheme.hairline(Theme.of(context))),
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
 }
 
 /// Upper bound for assistant prose line length on wide screens; tool cards

@@ -2,9 +2,11 @@
 // (docs/design/design-standard.md §8): 412x915, dark and light, the app's
 // real fonts, a pinned clock and the recorded Gas City fixture.
 //
-// team_agent: the top of the page (state, a question waiting, identity).
-// team_agent_controls: scrolled to the controls (one secondary, two text
-// buttons, the rest under More).
+// team_agent: the short status page (status line, a question waiting, the
+// primary — Live output here, no OpenCode server to find its conversation
+// on — then Message, two text buttons, the rest under More, and Technical
+// details folded).
+// team_agent_controls: Technical details opened, scrolled to its end.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/team_agent_golden_test.dart
@@ -199,13 +201,17 @@ void main() {
         'team_agent_controls',
         light: light,
         before: () async {
+          await tester.tap(find.byKey(const ValueKey('team-agent-technical')));
+          await tester.pump(const Duration(milliseconds: 500));
           await tester.scrollUntilVisible(
-            find.byKey(const ValueKey('team-agent-controls')),
+            find.byKey(const ValueKey('team-agent-work-chip')),
             300,
-            scrollable: find.descendant(
-              of: find.byKey(const ValueKey('team-agent-list')),
-              matching: find.byType(Scrollable),
-            ),
+            scrollable: find
+                .descendant(
+                  of: find.byKey(const ValueKey('team-agent-list')),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
           );
           await tester.pump(const Duration(milliseconds: 300));
         },

@@ -21,11 +21,16 @@ import '../team/start_run_sheet.dart' show showStartRunSheet;
 
 export '../chat_screen.dart'
     show
+        TeamAgentConversationLookup,
+        TeamAgentConversationMiss,
+        TeamAgentTranscript,
         TeamConversationScreen,
         TeamControllerScope,
         TeamOpenConversationRow,
         TeamPendingTask,
+        lookupTeamAgentConversation,
         openTeamAgentConversation,
+        teamAgentConversationMissNote,
         teamAgentWatch;
 
 abstract final class TeamConversation {

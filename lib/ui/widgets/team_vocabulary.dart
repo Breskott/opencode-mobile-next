@@ -43,11 +43,14 @@ String? teamComputerName(OrchestrationController controller) {
 /// "Paused" when the agents were switched off on purpose (suspended) and
 /// none is live, "Not answering" when the shown data is old or the host
 /// could not be reached; null otherwise. Agents that are only asleep (they
-/// wake when there is work) are not a pause ([teamRest]).
+/// wake when there is work) are not a pause ([teamRest]). [working] is the
+/// caller's own evidence that the team is at work (a task's worker starting
+/// or working): then it is never "Paused", whatever the agents list says.
 String? teamHostCondition(
   AppLocalizations l10n,
-  OrchestrationController controller,
-) {
+  OrchestrationController controller, {
+  bool working = false,
+}) {
   if (controller.isStale ||
       (controller.phase == OrchestrationPhase.ready &&
           controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
@@ -64,7 +67,8 @@ String? teamHostCondition(
     };
   }
   final snapshot = controller.snapshot;
-  if (controller.phase == OrchestrationPhase.ready &&
+  if (!working &&
+      controller.phase == OrchestrationPhase.ready &&
       snapshot.hasData &&
       teamRest(snapshot.agents) == TeamRest.paused) {
     return l10n.teamUiHostPhrasePaused;
@@ -75,11 +79,12 @@ String? teamHostCondition(
 /// Where the team runs, as one short phrase: "On this phone", "On pop-os"
 /// or "On your computer", then " · Paused" or " · Not answering" when true.
 /// Never an address, a version or the engine's name: those are under the
-/// info button's Technical details.
+/// info button's Technical details. [working]: see [teamHostCondition].
 String teamHostPhrase(
   AppLocalizations l10n,
-  OrchestrationController controller,
-) {
+  OrchestrationController controller, {
+  bool working = false,
+}) {
   final hostMode = controller.host?.hostMode ?? controller.config.hostMode;
   final place = switch (hostMode) {
     OrchestrationHostMode.phone => l10n.teamUiHostPhrasePhone,
@@ -88,7 +93,7 @@ String teamHostPhrase(
       null => l10n.teamUiHostPhraseComputer,
     },
   };
-  final condition = teamHostCondition(l10n, controller);
+  final condition = teamHostCondition(l10n, controller, working: working);
   return condition == null ? place : '$place$teamUsageSeparator$condition';
 }
 

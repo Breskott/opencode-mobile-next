@@ -19779,4 +19779,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamBoardCardHint => 'اضغط مطولًا للنقل';
+
+  @override
+  String teamAgentLastStep(String step) {
+    return 'آخر خطوة: $step';
+  }
+
+  @override
+  String teamAgentLastActive(String elapsed) {
+    return 'آخر نشاط قبل $elapsed';
+  }
+
+  @override
+  String teamChatLeadEarlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تحديثات سابقة',
+      one: 'تحديث سابق واحد',
+    );
+    return '$_temp0';
+  }
 }
