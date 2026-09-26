@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
-import 'kit_bidi.dart';
 import 'kit_buttons.dart';
 import 'kit_divider.dart';
 import 'kit_icon_button.dart';

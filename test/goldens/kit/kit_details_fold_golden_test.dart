@@ -15,6 +15,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_technical_value.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
@@ -125,6 +126,26 @@ final _states = <String, void Function(BuildContext)>{
             ),
           ),
         ),
+      ),
+    ),
+  ),
+  // The fold as it sits in a sheet body (surface2), last, open.
+  'open_values_in_sheet': (context) => unawaited(
+    showKitSheet<void>(
+      context,
+      title: 'Server',
+      body: (context) => const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitText(
+            'Connected over Tailscale.',
+            role: KitTextRole.body,
+            tone: KitTextTone.secondary,
+          ),
+          SizedBox(height: 8),
+          KitDetailsFold(initiallyExpanded: true, values: _values),
+        ],
       ),
     ),
   ),

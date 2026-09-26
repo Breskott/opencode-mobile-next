@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 // (KitDetailsFold.md "File").
 export 'kit_details_fold.dart' show KitDetailsFold, showKitTechnicalDetails;
 
+// The same seam for the one bidi helper: the confirm part isolates its
+// typed name with KitBidi.ltr (KitConfirmSheet.md row 5, COPY-30).
+export 'kit_bidi.dart' show KitBidi;
+
 /// One technical value a person may need but never reads first: an
 /// address, a path, a branch, an id (docs/ux-system/kit-v2.md §1.8, §4.10).
 /// Kit parts show it last, folded under Details ([KitDetailsFold]), in mono,
