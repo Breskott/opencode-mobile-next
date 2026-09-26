@@ -1,0 +1,120 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart
+00:00 +0: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 1. shows the message and Undo; no framework SnackBar
+00:00 +1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 2. the window elapsing commits once and closes the bar
+00:00 +2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 3. tapping Undo runs onUndo once, never onCommit
+00:00 +3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 4. one at a time: a new bar commits the pending one first
+00:00 +4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 5a. a route pop commits the caller's bar
+00:00 +5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 5b. AppLifecycleState.paused commits the pending bar
+00:00 +6: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 5c. commitPending() commits the pending bar; no-op after
+00:01 +7: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 6. accessible navigation: no timeout; Dismiss commits
+00:01 +8: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 7. onUndo throws with onUndoFailed: it gets the error; tryAgain re-runs onUndo
+00:01 +9: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 8. onUndo throws, no onUndoFailed: failure words and Try again, no timeout, Try again re-runs
+00:01 +10: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 9. async onUndo in flight shows working, ignores a second tap
+00:01 +11: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 10. placement compact clears KitBottomInset plus space2
+00:01 +12: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 10. placement medium/expanded caps width at 480 and starts at 16 dp
+00:01 +13: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 10. placement RTL hugs the end (the right edge)
+00:01 +14: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 11. one live region; message announced once; Undo is >= 48x48 with a label
+00:01 +15: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 12a. Ctrl+Z does not take Undo while a text field has focus
+00:01 +16: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 12b. Ctrl+Z takes Undo with no text field focused
+00:01 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 13a. reduced motion (system): the entrance and exit settle in one pump()
+00:01 +18: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 13b. reduced motion (Effects Animations Off) settles in one pump()
+00:01 +19: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (KitUndo.md) 14. no HapticFeedback and no KitHaptics call in any path
+00:01 +20: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 1. with no publisher, of() falls back to MediaQuery
+00:01 +21: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 2. KitBottomInset publishes; add() adds extraBottom
+00:01 +22: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 3. add(start:) replaces start, keeps bottom
+00:01 +23: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 4. a descendant depending through of() rebuilds on change; read() does not depend
+00:01 +24: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 5. add() keeps MediaQuery.padding.bottom equal to the published bottom (keyboard closed)
+00:01 +25: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: KitBottomInset (KitBottomInset.md) 6. values snap to whole physical pixels at DPR 3
+00:01 +26: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (MOT-7) nothing pending settles at once under system
+00:01 +27: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (MOT-7) shows, then commits and closes changes and settles at once under system
+00:01 +28: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (MOT-7) nothing pending settles at once under effectsOff
+00:01 +29: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/kit/kit_undo_test.dart: showKitUndo (MOT-7) shows, then commits and closes changes and settles at once under effectsOff
+00:01 +30: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart
+00:03 +30: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: (setUpAll)
+00:03 +30: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · dark
+00:03 +31: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo working · dark
+00:04 +32: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo error · dark
+00:04 +33: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo accessible · dark
+00:04 +34: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 360x800 · dark
+00:04 +35: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 800x1280 · dark
+00:04 +36: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 1280x800 · dark
+00:04 +37: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 1600x1000 · dark
+00:04 +38: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 915x412 · dark
+00:04 +39: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · text 2.0 · 412x915 · dark
+00:04 +40: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · ar · 412x915 · dark
+00:04 +41: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · text 2.0 · 1280x800 · dark
+00:05 +42: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · ar · 1280x800 · dark
+00:05 +43: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · light
+00:05 +44: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo working · light
+00:05 +45: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo error · light
+00:05 +46: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo accessible · light
+00:05 +47: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 360x800 · light
+00:05 +48: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 800x1280 · light
+00:05 +49: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 1280x800 · light
+00:05 +50: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 1600x1000 · light
+00:05 +51: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · 915x412 · light
+00:05 +52: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · text 2.0 · 412x915 · light
+00:05 +53: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · ar · 412x915 · light
+00:05 +54: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · text 2.0 · 1280x800 · light
+00:05 +55: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: kit_undo default · ar · 1280x800 · light
+00:06 +56: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-4/test/goldens/kit/kit_undo_golden_test.dart: (tearDownAll)
+00:06 +56: All tests passed!
