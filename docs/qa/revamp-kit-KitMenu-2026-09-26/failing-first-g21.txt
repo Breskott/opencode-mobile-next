@@ -1,0 +1,29 @@
+$ flutter test -j 1 --plain-name "G21 look and motion" test/kit_ratchet_test.dart
+(run against the first draft of lib/ui/kit/kit_menu.dart, before the fix below)
+
+00:00 +0: G21 look and motion: numbers and effects come from the kit
+00:00 +0 -1: G21 look and motion: numbers and effects come from the kit [E]
+  Expected: empty
+    Actual: [
+              'G21: lib/ui/kit/kit_menu.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)',
+              'G21: lib/ui/kit/kit_menu.dart uses "stroke width not KitTokens in kit" x1 (new — baseline has none) — give Border.all/BorderSide width: KitTokens.hairlineWidth(context) or focusRingWidth(context); Divider thickness: 0 (LOOK-21; STANDARDS.md §18 G21)'
+            ]
+  G21: lib/ui/kit/kit_menu.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_menu.dart uses "stroke width not KitTokens in kit" x1 (new — baseline has none) — give Border.all/BorderSide width: KitTokens.hairlineWidth(context) or focusRingWidth(context); Divider thickness: 0 (LOOK-21; STANDARDS.md §18 G21)
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit_ratchet_test.dart 1554:7                   main.<fn>
+
+00:00 +0 -1: Some tests failed.
+
+Cause: `_KitMenuItemTile` used a literal `EdgeInsetsDirectional.only(top: 2)` for the
+gap above a disabled item's reason line, and `_KitMenuBody`'s panel border used
+`Border.all(color: roles.hairline, width: hairline)` where `hairline` was a local
+variable holding `KitTokens.hairlineWidth(context)` — correct at runtime, but the
+ratchet's static scan requires the literal `width:` argument text to contain
+"KitTokens" at the call site (test/kit_ratchet_test.dart `_kitStrokeCount`).
+
+Fix: `EdgeInsetsDirectional.only(top: tokens.space1)` and
+`Border.all(color: roles.hairline, width: KitTokens.hairlineWidth(context))`
+(inlined). Re-running the same command afterwards passes (see run-ratchet.txt).
