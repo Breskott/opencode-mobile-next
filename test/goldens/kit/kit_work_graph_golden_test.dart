@@ -16,7 +16,9 @@ import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 import 'kit_gallery.dart';
 
 /// The six-item fixture (done, working, blocked, needs you, queued,
-/// failed), matching `test/team_work_graph_test.dart`'s `_six`.
+/// failed), matching `test/team_work_graph_test.dart`'s `_six`. The
+/// working mark shows its accent tone (LOOK-6); the gallery runs with
+/// reduced motion, which freezes its indicator.
 List<KitWorkGraphNode> _six() => const [
   KitWorkGraphNode(
     id: 'a',
@@ -27,7 +29,7 @@ List<KitWorkGraphNode> _six() => const [
   KitWorkGraphNode(
     id: 'b',
     title: 'Sync engine',
-    mark: KitTaskState.waiting,
+    mark: KitTaskState.working,
     dependsOn: ['a'],
   ),
   KitWorkGraphNode(
@@ -54,10 +56,12 @@ List<KitWorkGraphNode> _six() => const [
 ];
 
 /// A chain of three, all stuck-or-downstream (the "blocked chain" state).
+/// The stuck item's title wraps to two lines, so the gallery shows a row
+/// growing with its text.
 List<KitWorkGraphNode> _blockedChain() => const [
   KitWorkGraphNode(
     id: 'x',
-    title: 'Provision the runner',
+    title: 'Provision the runner on the build machine before the window',
     mark: KitTaskState.waiting,
     word: 'Blocked',
     stuck: true,
@@ -76,6 +80,13 @@ List<KitWorkGraphNode> _blockedChain() => const [
   ),
 ];
 
+/// The host's rails: rows run the full width between them (KitWorkGraph.md
+/// Adaptive, compact).
+Widget _rails(Widget child) => Padding(
+  padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+  child: child,
+);
+
 void main() {
   setUpAll(loadKitGalleryFonts);
 
@@ -92,10 +103,12 @@ void main() {
         ),
         size: const Size(412, 915),
         light: light,
-        child: KitWorkGraph(
-          nodes: _six(),
-          onOpen: (_) {},
-          layout: KitWorkGraphLayout.rows,
+        child: _rails(
+          KitWorkGraph(
+            nodes: _six(),
+            onOpen: (_) {},
+            layout: KitWorkGraphLayout.rows,
+          ),
         ),
       );
     });
@@ -110,10 +123,12 @@ void main() {
         ),
         size: const Size(412, 915),
         light: light,
-        child: KitWorkGraph(
-          nodes: _blockedChain(),
-          onOpen: (_) {},
-          layout: KitWorkGraphLayout.rows,
+        child: _rails(
+          KitWorkGraph(
+            nodes: _blockedChain(),
+            onOpen: (_) {},
+            layout: KitWorkGraphLayout.rows,
+          ),
         ),
       );
     });
@@ -149,10 +164,12 @@ void main() {
         ),
         size: const Size(412, 915),
         light: light,
-        child: KitWorkGraph(
-          nodes: const [],
-          onOpen: (_) {},
-          layout: KitWorkGraphLayout.rows,
+        child: _rails(
+          KitWorkGraph(
+            nodes: const [],
+            onOpen: (_) {},
+            layout: KitWorkGraphLayout.rows,
+          ),
         ),
       );
     });
@@ -167,16 +184,18 @@ void main() {
         ),
         size: const Size(412, 915),
         light: light,
-        child: KitWorkGraph(
-          nodes: const [
-            KitWorkGraphNode(
-              id: 'a',
-              title: 'Storage layer',
-              mark: KitTaskState.working,
-            ),
-          ],
-          onOpen: (_) {},
-          layout: KitWorkGraphLayout.rows,
+        child: _rails(
+          KitWorkGraph(
+            nodes: const [
+              KitWorkGraphNode(
+                id: 'a',
+                title: 'Storage layer',
+                mark: KitTaskState.working,
+              ),
+            ],
+            onOpen: (_) {},
+            layout: KitWorkGraphLayout.rows,
+          ),
         ),
       );
     });

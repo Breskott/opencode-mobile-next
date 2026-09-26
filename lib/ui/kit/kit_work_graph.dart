@@ -11,19 +11,13 @@
 /// [KitWorkGraphNode]s. [KitWorkGraphGeometry] is the pure, deterministic
 /// layout the widget paints — tests assert its positions directly.
 ///
-/// Build note (PROC-32/STANDARDS.md §2): the frozen spec makes this part
-/// depend on kit-KitTappable for its nodes' focus, hover and 48dp target
-/// behaviour. That unit had not merged into feat/phone-setup-v2 when this
-/// one was built (wave 1, same tier), so the node button below reproduces
-/// the nearest already-merged idiom instead — the same
-/// DecoratedBox(foreground border) + Material + InkWell pattern
-/// KitIconButton and KitButtons already use for their own focus ring — and
-/// leaves the gap listed in this unit's QA record. When kit-KitTappable
-/// merges, `_GraphNodeButton` should be replaced with it (KIT-3).
+/// Nodes are [KitTappable]s holding a [KitTaskMark] and [KitText]; only the
+/// links and their arrow heads are painted.
 library;
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -32,6 +26,8 @@ import 'kit_bidi.dart';
 import 'kit_image.dart';
 import 'kit_layout.dart';
 import 'kit_state_view.dart';
+import 'kit_surface.dart';
+import 'kit_tappable.dart';
 import 'kit_task_mark.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
@@ -120,8 +116,8 @@ class KitWorkGraphEdge {
   /// On the critical path: drawn thicker.
   final bool critical;
 
-  /// Both ends in the blocked chain: drawn dashed, in the attention-free
-  /// blocked tone.
+  /// Both ends in the blocked chain: drawn dashed in `text1` (LOOK-4:
+  /// never the attention tone).
   final bool blocked;
 
   /// Rows only; -1 in layers.
@@ -321,17 +317,18 @@ class KitWorkGraphGeometry {
     required this.gutter,
   });
 
-  /// Default chip size at 1x text (UNCHANGED from the retired
-  /// `WorkGraphLayout.defaultNodeSize`: geometry keeps today's output for
-  /// the same node size; the widget grows this at runtime to the 48dp
-  /// target, LAY-9).
-  static const defaultNodeSize = Size(KitTokens.graphNodeWidth, 44.0);
-  static const double _padding = 16.0;
+  /// The canvas padding around `layers`, in logical pixels.
+  ///
+  /// [KitTokens.space4]'s value. The geometry is pure Dart with no
+  /// BuildContext, and its `layers` output must stay exactly the retired
+  /// `WorkGraphLayout`'s for the same node size (KitWorkGraph.md Notes,
+  /// KIT-43), so it takes the token's fixed value here.
+  static const double _canvasPadding = 16;
 
-  /// Mirrors [KitTokens.space3]'s base (unscaled) value: geometry is pure
-  /// Dart with no BuildContext, so it takes the base spacing and callers
-  /// already grow node/row sizes with text before calling in.
-  static const double _laneWidth = 12.0;
+  /// One `rows` lane's width in the pure geometry: [KitTokens.space3]'s
+  /// value, for the same reason as [_canvasPadding]. The widget draws the
+  /// gutter from the live token (lanes × `space3`).
+  static const double _laneWidth = 12;
 
   /// The nodes in input order, duplicates (by id) dropped.
   final List<KitWorkGraphNode> nodes;
@@ -396,8 +393,9 @@ class KitWorkGraphGeometry {
       final rowWidth =
           row.length * nodeSize.width +
           (row.length - 1) * KitTokens.graphColumnGap;
-      final left = _padding + (width - rowWidth) / 2;
-      final top = _padding + r * (nodeSize.height + KitTokens.graphRowGap);
+      final left = _canvasPadding + (width - rowWidth) / 2;
+      final top =
+          _canvasPadding + r * (nodeSize.height + KitTokens.graphRowGap);
       for (final (p, i) in row.indexed) {
         rects[a.nodes[i].id] = Rect.fromLTWH(
           left + p * (nodeSize.width + KitTokens.graphColumnGap),
@@ -408,12 +406,12 @@ class KitWorkGraphGeometry {
       }
     }
     final size = Size(
-      width + 2 * _padding,
+      width + 2 * _canvasPadding,
       depth == 0
-          ? 2 * _padding
+          ? 2 * _canvasPadding
           : depth * nodeSize.height +
                 (depth - 1) * KitTokens.graphRowGap +
-                2 * _padding,
+                2 * _canvasPadding,
     );
 
     final critical = <(int, int)>{
@@ -606,6 +604,8 @@ class KitWorkGraph extends StatefulWidget {
 
   /// Passed to [KitZoom]'s `resetControlKey`.
   final Key? fitKey;
+
+  /// A test handle on each node's [KitTappable] (its `tappableKey`).
   final Key Function(String id)? nodeKey;
 
   static const _viewerKey = ValueKey('kit-work-graph-viewer');
@@ -674,97 +674,182 @@ class _KitWorkGraphState extends State<KitWorkGraph> {
   }
 }
 
-/// A node's leading mark and word, in one place so `rows` and `layers`
-/// (and the graph's data-safety rule, ARCH-8) read it the same way.
+/// A node's word, in one place so `rows` and `layers` (and the graph's
+/// data-safety rule, ARCH-8) read it the same way.
 String _wordOf(BuildContext context, KitWorkGraphNode node) =>
     node.word ?? KitTaskMark.wordFor(context, node.mark, paused: node.paused);
 
-/// The nearest already-merged focus/hover/48dp-target idiom (see the file
-/// doc comment): a foreground focus ring plus a transparent [InkWell],
-/// exactly as [KitIconButton] already builds its own. Every node is a Tab
-/// stop, a hover target and a single semantics button (STATE-9).
-class _GraphNodeButton extends StatefulWidget {
-  const _GraphNodeButton({
-    required this.label,
-    required this.hint,
-    required this.onTap,
-    required this.borderColor,
-    required this.tooltip,
-    required this.child,
-    this.nodeKey,
-  });
-
-  final String label;
-  final String? hint;
-  final VoidCallback onTap;
-
-  /// Null: no border when not focused (rows — the row itself is the
-  /// boundary). Non-null: a hairline border in this colour (layers).
-  final Color? borderColor;
-  final String? tooltip;
-  final Widget child;
-  final Key? nodeKey;
-
-  @override
-  State<_GraphNodeButton> createState() => _GraphNodeButtonState();
+/// One line of [role] at this context's text scale, in logical pixels:
+/// KitText's own size × line height (never a guessed metric).
+double _lineOf(TextScaler scaler, KitTextRole role) {
+  final style = KitText.styleFor(role);
+  return scaler.scale(style.fontSize!) * style.height!;
 }
 
-class _GraphNodeButtonState extends State<_GraphNodeButton> {
-  bool _focused = false;
+/// [value] rounded up to the next physical pixel, so stacked boxes start on
+/// whole device pixels (no soft edges at DPR 3).
+double _ceilToPixel(double value, double dpr) =>
+    (value * dpr).ceilToDouble() / dpr;
 
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
-    final radius = BorderRadius.circular(tokens.panelCornerRadius);
-    final color = widget.borderColor;
-    Widget button = DecoratedBox(
-      position: DecorationPosition.foreground,
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        border: _focused
-            ? Border.all(
-                color: roles.accent,
-                width: KitTokens.focusRingWidth(context),
-              )
-            : color == null
-            ? null
-            : Border.all(color: color, width: KitTokens.hairlineWidth(context)),
-      ),
-      child: Material(
-        color: roles.surface1,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          key: widget.nodeKey,
-          onTap: widget.onTap,
-          hoverColor: roles.surface2,
-          focusColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          canRequestFocus: true,
-          onFocusChange: (value) {
-            if (value != _focused) setState(() => _focused = value);
-          },
-          child: widget.child,
-        ),
-      ),
-    );
-    if (widget.tooltip != null) {
-      button = Tooltip(message: widget.tooltip!, child: button);
-    }
-    return Semantics(
-      button: true,
-      label: widget.label,
-      hint: widget.hint,
-      onTap: widget.onTap,
-      excludeSemantics: true,
-      child: button,
+/// A stroke's centre line snapped to the physical grid: on a pixel's centre
+/// for an odd physical width (a 1 px hairline), on a pixel edge for an even
+/// one (the 2 px critical link), so neither straddles two pixels.
+double _snapStroke(double value, double strokeWidth, double dpr) {
+  final physical = (strokeWidth * dpr).round();
+  if (physical.isOdd) return ((value * dpr).floorToDouble() + .5) / dpr;
+  return (value * dpr).roundToDouble() / dpr;
+}
+
+/// A node's title: [KitTextRole.rowTitle], isolated (COPY-30), semibold in
+/// the blocked chain (KitWorkGraph.md States, "blocked chain").
+Widget _titleText(
+  KitWorkGraphNode node, {
+  required bool inChain,
+  required int maxLines,
+}) {
+  final title = KitBidi.auto(node.title);
+  if (!inChain) {
+    return KitText(
+      title,
+      role: KitTextRole.rowTitle,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
     );
   }
+  return KitText.rich(
+    TextSpan(
+      text: title,
+      style: const TextStyle(fontWeight: _chainWeight),
+    ),
+    role: KitTextRole.rowTitle,
+    maxLines: maxLines,
+    overflow: TextOverflow.ellipsis,
+  );
 }
 
-/// `rows`: one item per row, mark, title (up to 2 lines), a supporting line
-/// naming the state word and first dependency.
+/// `rowTitle` semibold: the blocked chain's titles (KitWorkGraph.md States).
+const FontWeight _chainWeight = FontWeight.w600;
+
+/// The arrow head's half width and length, in logical pixels, at every
+/// link width (KitWorkGraph.md Tokens: "arrow heads the same as their
+/// link").
+const double _arrowHalfWidth = 5;
+const double _arrowLength = 7;
+
+/// The paint for [edge]: critical 2 physical px in `text2`, others 1
+/// physical px in `text3`, blocked in `text1` (LOOK-4: never the attention
+/// colour; KitWorkGraph.md States).
+Paint _linkPaint(
+  ThemeRoles roles,
+  KitWorkGraphEdge edge, {
+  required double hairline,
+  required double focusWidth,
+}) => Paint()
+  ..style = PaintingStyle.stroke
+  ..strokeCap = StrokeCap.butt
+  ..strokeJoin = StrokeJoin.miter
+  ..strokeWidth = edge.critical ? focusWidth : hairline
+  ..color = edge.blocked
+      ? roles.text1
+      : edge.critical
+      ? roles.text2
+      : roles.text3;
+
+/// Dashes [path] with [dash]-long segments and equal gaps.
+Path _dashed(Path path, double dash) {
+  final result = Path();
+  for (final metric in path.computeMetrics()) {
+    var distance = 0.0;
+    var draw = true;
+    while (distance < metric.length) {
+      final next = math.min(distance + dash, metric.length);
+      if (draw) {
+        result.addPath(metric.extractPath(distance, next), Offset.zero);
+      }
+      distance = next;
+      draw = !draw;
+    }
+  }
+  return result;
+}
+
+/// Paints the `layers` links of [geometry]: each curve, then its arrow head
+/// pointing down into the node that needs it, in the same tone, width and
+/// dash as the link. No nodes: they are widgets. Mirrored in RTL
+/// (KitWorkGraph.md RTL, `x → width − x`).
+///
+/// Shared by `KitWorkGraph` and the retired `WorkGraphPainter` only
+/// (KitWorkGraph.md Notes: the painter "stays exported (retired), painting
+/// the links only"). Not part of the frozen API: new code uses
+/// [KitWorkGraph]; the kit barrel should not export it.
+void kitWorkGraphPaintLinks(
+  Canvas canvas,
+  Size size,
+  KitWorkGraphGeometry geometry,
+  ThemeRoles roles, {
+  required double hairline,
+  required double focusWidth,
+  TextDirection textDirection = TextDirection.ltr,
+}) {
+  canvas.save();
+  if (textDirection == TextDirection.rtl) {
+    canvas
+      ..translate(size.width, 0)
+      ..scale(-1, 1);
+  }
+  // Plain links under critical ones, blocked on top: the stronger reading
+  // is never hidden under a hairline.
+  int rank(KitWorkGraphEdge e) => e.blocked ? 2 : (e.critical ? 1 : 0);
+  final edges = [...geometry.edges]..sort((a, b) => rank(a).compareTo(rank(b)));
+  for (final edge in edges) {
+    final paint = _linkPaint(
+      roles,
+      edge,
+      hairline: hairline,
+      focusWidth: focusWidth,
+    );
+    final path = edge.toPath();
+    canvas.drawPath(
+      edge.blocked ? _dashed(path, KitTokens.graphDash) : path,
+      paint,
+    );
+    final tip = edge.end;
+    canvas.drawPath(
+      Path()
+        ..moveTo(tip.dx - _arrowHalfWidth, tip.dy - _arrowLength)
+        ..lineTo(tip.dx, tip.dy)
+        ..lineTo(tip.dx + _arrowHalfWidth, tip.dy - _arrowLength),
+      paint,
+    );
+  }
+  canvas.restore();
+}
+
+/// Where a row sits on one link's lane in the `rows` gutter.
+enum _RunPart {
+  /// The needed item's row: a stub out of the row, then down.
+  from,
+
+  /// A row the link passes: the lane runs its full height.
+  through,
+
+  /// The row that needs it: down to a stub into the row, with the arrow.
+  to,
+}
+
+@immutable
+class _LaneRun {
+  const _LaneRun(this.edge, this.part);
+
+  final KitWorkGraphEdge edge;
+  final _RunPart part;
+}
+
+/// `rows`: one item per row — mark, title (up to 2 lines), a supporting
+/// line naming the state word and first dependency — in a column whose rows
+/// grow with their text. Each row paints its own slice of the start-side
+/// gutter, so the links follow the rows' real heights (no fixed row
+/// height, nothing to overflow).
 class _RowsGraph extends StatelessWidget {
   const _RowsGraph({required this.nodes, required this.onOpen, this.nodeKey});
 
@@ -772,73 +857,62 @@ class _RowsGraph extends StatelessWidget {
   final ValueChanged<String> onOpen;
   final Key Function(String id)? nodeKey;
 
-  double _rowHeight(BuildContext context, KitTokens tokens) {
-    final scaler = MediaQuery.textScalerOf(context);
-    final title = scaler.scale(16) * 1.3;
-    final secondary = scaler.scale(14) * 1.3;
-    return math.max(
-      tokens.minTarget,
-      tokens.space2 * 2 + title * 2 + secondary,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
-    final rowHeight = _rowHeight(context, tokens);
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
-            : KitWorkGraphGeometry.defaultNodeSize.width * 2;
+            : 2 * KitTokens.graphNodeWidth;
+        // The geometry gives the order, lanes, critical path and blocked
+        // chain; the rows' real heights come from their own layout, with
+        // the two-line row token as the floor.
         final geometry = KitWorkGraphGeometry.rows(
           nodes,
           width: width,
-          rowHeight: (_) => rowHeight,
+          rowHeight: (_) => tokens.rowHeightTwoLine,
         );
-        final titleById = {for (final n in geometry.nodes) n.id: n.title};
+        final order = [for (final row in geometry.layerRows) ...row];
+        final position = {for (final (i, id) in order.indexed) id: i};
+        final runs = <String, List<_LaneRun>>{for (final id in order) id: []};
+        var lanes = 0;
+        for (final edge in geometry.edges) {
+          lanes = math.max(lanes, edge.lane + 1);
+          final from = position[edge.from]!;
+          final to = position[edge.to]!;
+          runs[edge.from]!.add(_LaneRun(edge, _RunPart.from));
+          for (var k = from + 1; k < to; k++) {
+            runs[order[k]]!.add(_LaneRun(edge, _RunPart.through));
+          }
+          runs[edge.to]!.add(_LaneRun(edge, _RunPart.to));
+        }
+        final gutter = lanes * tokens.space3;
+        final byId = {for (final n in geometry.nodes) n.id: n};
         return Semantics(
           container: true,
           label: l10n.kitWorkGraph,
-          child: SizedBox(
-            width: width,
-            height: geometry.size.height,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: RepaintBoundary(
-                    child: CustomPaint(
-                      painter: _RowEdgePainter(
-                        geometry: geometry,
-                        theme: Theme.of(context),
-                        hairline: KitTokens.hairlineWidth(context),
-                        focusWidth: KitTokens.focusRingWidth(context),
-                        textDirection: Directionality.of(context),
-                      ),
-                    ),
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final id in order)
+                _RowNode(
+                  node: byId[id]!,
+                  word: _wordOf(context, byId[id]!),
+                  inChain: geometry.blockedChain.contains(id),
+                  dependencyTitles: [
+                    for (final dep in byId[id]!.dependsOn)
+                      if (dep != id) ?byId[dep]?.title,
+                  ],
+                  runs: runs[id]!,
+                  gutter: gutter,
+                  l10n: l10n,
+                  onOpen: () => onOpen(id),
+                  nodeKey: nodeKey?.call(id),
                 ),
-                for (final node in geometry.nodes)
-                  if (geometry.rects[node.id] case final rect?)
-                    PositionedDirectional(
-                      start: rect.left,
-                      top: rect.top,
-                      width: rect.width,
-                      height: rect.height,
-                      child: _RowNode(
-                        node: node,
-                        word: _wordOf(context, node),
-                        dependencyTitles: [
-                          for (final id in node.dependsOn) ?titleById[id],
-                        ],
-                        l10n: l10n,
-                        onOpen: () => onOpen(node.id),
-                        nodeKey: nodeKey?.call(node.id),
-                      ),
-                    ),
-              ],
-            ),
+            ],
           ),
         );
       },
@@ -850,7 +924,10 @@ class _RowNode extends StatelessWidget {
   const _RowNode({
     required this.node,
     required this.word,
+    required this.inChain,
     required this.dependencyTitles,
+    required this.runs,
+    required this.gutter,
     required this.l10n,
     required this.onOpen,
     this.nodeKey,
@@ -858,7 +935,10 @@ class _RowNode extends StatelessWidget {
 
   final KitWorkGraphNode node;
   final String word;
+  final bool inChain;
   final List<String> dependencyTitles;
+  final List<_LaneRun> runs;
+  final double gutter;
   final AppLocalizations l10n;
   final VoidCallback onOpen;
   final Key? nodeKey;
@@ -877,50 +957,185 @@ class _RowNode extends StatelessWidget {
     final supporting = dependencyTitles.isEmpty
         ? word
         : '$word · ${l10n.kitWorkGraphNeeds(dependencyTitles.first)}';
-    final label = l10n.kitWorkGraphNode(node.title, word);
-    return _GraphNodeButton(
-      label: label,
-      hint: hint,
+    // No fill and no radius of its own: the row sits on the host's panel
+    // and shows only KitTappable's hover and pressed fills (KitWorkGraph.md
+    // Tokens, "rows sit on the host's panel").
+    final Widget row = KitTappable(
+      label: l10n.kitWorkGraphNode(node.title, word),
       onTap: onOpen,
-      borderColor: null,
-      tooltip: null,
-      nodeKey: nodeKey,
-      child: Padding(
-        padding: EdgeInsetsDirectional.symmetric(
-          horizontal: tokens.space3,
-          vertical: tokens.space2,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            KitTaskMark(state: node.mark, paused: node.paused, label: word),
-            SizedBox(width: tokens.space2),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  KitText(
-                    KitBidi.auto(node.title),
-                    role: KitTextRole.rowTitle,
-                    tone: node.stuck ? KitTextTone.primary : null,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  KitText(
-                    supporting,
-                    role: KitTextRole.secondary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+      tappableKey: nodeKey,
+      shape: KitShape.square,
+      surface: KitSurfaceLevel.surface1,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.rowHeightTwoLine),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          heightFactor: 1,
+          child: Padding(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: tokens.space3,
+              vertical: tokens.space2,
             ),
-          ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                KitTaskMark(state: node.mark, paused: node.paused, label: word),
+                SizedBox(width: tokens.space2),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _titleText(node, inChain: inChain, maxLines: 2),
+                      KitText(
+                        supporting,
+                        role: KitTextRole.secondary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
+    // The supporting line is read as the node's hint (KitWorkGraph.md
+    // Accessibility), merged into KitTappable's own button node.
+    final Widget named = hint == null
+        ? row
+        : MergeSemantics(
+            child: Semantics(hint: hint, child: row),
+          );
+    if (gutter == 0) return named;
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(start: gutter),
+          child: named,
+        ),
+        PositionedDirectional(
+          start: 0,
+          top: 0,
+          bottom: 0,
+          width: gutter,
+          child: IgnorePointer(
+            child: CustomPaint(
+              painter: _RowGutterPainter(
+                runs: runs,
+                laneWidth: tokens.space3,
+                stubOffset: tokens.space1,
+                roles: tokens.roles,
+                hairline: KitTokens.hairlineWidth(context),
+                focusWidth: KitTokens.focusRingWidth(context),
+                dpr: MediaQuery.devicePixelRatioOf(context),
+                textDirection: Directionality.of(context),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
+}
+
+/// Paints one row's slice of the `rows` gutter: for each link through the
+/// row, its lane (snapped to the physical pixel grid) and, at either end, a
+/// stub between the lane and the row's start edge — the needed item's stub
+/// leaves just below the row's centre, the dependent's arrives just above
+/// it with an arrow head pointing into the row — all in the link's tone,
+/// width and dash (KitWorkGraph.md Tokens).
+class _RowGutterPainter extends CustomPainter {
+  _RowGutterPainter({
+    required this.runs,
+    required this.laneWidth,
+    required this.stubOffset,
+    required this.roles,
+    required this.hairline,
+    required this.focusWidth,
+    required this.dpr,
+    required this.textDirection,
+  });
+
+  final List<_LaneRun> runs;
+  final double laneWidth;
+  final double stubOffset;
+  final ThemeRoles roles;
+  final double hairline;
+  final double focusWidth;
+  final double dpr;
+  final TextDirection textDirection;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    if (textDirection == TextDirection.rtl) {
+      canvas
+        ..translate(size.width, 0)
+        ..scale(-1, 1);
+    }
+    int rank(_LaneRun r) => r.edge.blocked ? 2 : (r.edge.critical ? 1 : 0);
+    final ordered = [...runs]..sort((a, b) => rank(a).compareTo(rank(b)));
+    final centre = size.height / 2;
+    for (final run in ordered) {
+      final edge = run.edge;
+      final paint = _linkPaint(
+        roles,
+        edge,
+        hairline: hairline,
+        focusWidth: focusWidth,
+      );
+      final width = paint.strokeWidth;
+      final x = _snapStroke((edge.lane + .5) * laneWidth, width, dpr);
+      final path = Path();
+      switch (run.part) {
+        case _RunPart.from:
+          final y = _snapStroke(centre + stubOffset, width, dpr);
+          path
+            ..moveTo(size.width, y)
+            ..lineTo(x, y)
+            ..lineTo(x, size.height);
+        case _RunPart.through:
+          path
+            ..moveTo(x, 0)
+            ..lineTo(x, size.height);
+        case _RunPart.to:
+          final y = _snapStroke(centre - stubOffset, width, dpr);
+          path
+            ..moveTo(x, 0)
+            ..lineTo(x, y)
+            ..lineTo(size.width, y);
+      }
+      canvas.drawPath(
+        edge.blocked ? _dashed(path, KitTokens.graphDash) : path,
+        paint,
+      );
+      if (run.part == _RunPart.to) {
+        final y = _snapStroke(centre - stubOffset, width, dpr);
+        canvas.drawPath(
+          Path()
+            ..moveTo(size.width - _arrowLength, y - _arrowHalfWidth)
+            ..lineTo(size.width, y)
+            ..lineTo(size.width - _arrowLength, y + _arrowHalfWidth),
+          paint,
+        );
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_RowGutterPainter oldDelegate) =>
+      !listEquals(oldDelegate.runs, runs) ||
+      oldDelegate.laneWidth != laneWidth ||
+      oldDelegate.stubOffset != stubOffset ||
+      oldDelegate.roles != roles ||
+      oldDelegate.hairline != hairline ||
+      oldDelegate.focusWidth != focusWidth ||
+      oldDelegate.dpr != dpr ||
+      oldDelegate.textDirection != textDirection;
 }
 
 /// `layers`: the layered graph in a zoomable canvas, fitted on open.
@@ -943,30 +1158,42 @@ class _LayersGraph extends StatelessWidget {
   final Key fitKey;
   final Key Function(String id)? nodeKey;
 
-  Size _nodeSize(BuildContext context) {
+  /// Every chip's size here: [KitTokens.graphNodeWidth] grown with the text,
+  /// and the chip's insides (`space2` above and below) around one
+  /// `rowTitle` line — plus one `secondary` line for the state word when
+  /// any item is stuck — never under [KitTokens.minTarget] (LAY-9), rounded
+  /// up to the physical pixel.
+  Size _nodeSize(BuildContext context, {required bool withWord}) {
     final scaler = MediaQuery.textScalerOf(context);
-    final line = scaler.scale(14) * 1.3;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     final tokens = KitTokens.of(context);
+    final text =
+        _lineOf(scaler, KitTextRole.rowTitle) +
+        (withWord ? _lineOf(scaler, KitTextRole.secondary) : 0);
     return Size(
-      math.max(
-        KitWorkGraphGeometry.defaultNodeSize.width,
-        scaler.scale(KitTokens.graphNodeWidth),
+      _ceilToPixel(
+        math.max(
+          KitTokens.graphNodeWidth,
+          scaler.scale(KitTokens.graphNodeWidth),
+        ),
+        dpr,
       ),
-      // LAY-9: the 48dp target floor, grown with text like the retired
-      // wrapper's 44dp floor.
-      math.max(tokens.minTarget, line + 16),
+      _ceilToPixel(math.max(tokens.minTarget, 2 * tokens.space2 + text), dpr),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
+    final withWord = nodes.any((n) => n.stuck);
     final geometry = KitWorkGraphGeometry.layers(
       nodes,
-      nodeSize: _nodeSize(context),
+      nodeSize: _nodeSize(context, withWord: withWord),
     );
     final direction = Directionality.of(context);
+    final byId = {for (final n in geometry.nodes) n.id: n};
+    final order = [for (final row in geometry.layerRows) ...row];
     return KitZoom(
       key: viewerKey,
       mode: KitZoomMode.canvas,
@@ -976,41 +1203,67 @@ class _LayersGraph extends StatelessWidget {
       child: SizedBox.fromSize(
         key: canvasKey,
         size: geometry.size,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  painter: _LayerEdgePainter(
-                    geometry: geometry,
-                    theme: theme,
-                    hairline: KitTokens.hairlineWidth(context),
-                    focusWidth: KitTokens.focusRingWidth(context),
+        // Tab order (LAY-10): nodes in geometry order, layer by layer and
+        // start to end, before the zoom pill that follows the canvas.
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Stack(
+            children: [
+              PositionedDirectional(
+                start: 0,
+                end: 0,
+                top: 0,
+                bottom: 0,
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _LayerEdgePainter(
+                      geometry: geometry,
+                      roles: tokens.roles,
+                      hairline: KitTokens.hairlineWidth(context),
+                      focusWidth: KitTokens.focusRingWidth(context),
+                      textDirection: direction,
+                    ),
                   ),
                 ),
               ),
-            ),
-            for (final node in geometry.nodes)
-              if (geometry.rects[node.id] case final rect?)
-                Positioned.fromRect(
-                  rect: rect,
-                  child: _LayerChip(
-                    node: node,
-                    word: _wordOf(context, node),
-                    inChain: geometry.blockedChain.contains(node.id),
-                    l10n: l10n,
-                    onOpen: () => onOpen(node.id),
-                    nodeKey: nodeKey?.call(node.id),
-                    textDirection: direction,
+              for (final (index, id) in order.indexed)
+                if ((geometry.rects[id], byId[id]) case (
+                  final rect?,
+                  final node?,
+                ))
+                  // Start-relative: mirrored in RTL like the painter above
+                  // (KitWorkGraph.md RTL, `x → width − x`).
+                  PositionedDirectional(
+                    start: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    child: FocusTraversalOrder(
+                      order: NumericFocusOrder(index.toDouble()),
+                      child: _LayerChip(
+                        node: node,
+                        word: _wordOf(context, node),
+                        inChain: geometry.blockedChain.contains(id),
+                        l10n: l10n,
+                        onOpen: () => onOpen(id),
+                        nodeKey: nodeKey?.call(id),
+                      ),
+                    ),
                   ),
-                ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// A `layers` chip: `surface1` with a 1-physical-px `hairline` border
+/// (`text1` in the blocked chain), the panel radius, KitTappable's hover,
+/// pressed and focus treatments, the mark and a one-line title. A stuck
+/// item also shows its state word on a second line, so a blocked item
+/// never reads as the waiting mark it borrows (KitTaskState has no
+/// blocked value; this unit's QA record, contract problem).
 class _LayerChip extends StatelessWidget {
   const _LayerChip({
     required this.node,
@@ -1018,7 +1271,6 @@ class _LayerChip extends StatelessWidget {
     required this.inChain,
     required this.l10n,
     required this.onOpen,
-    required this.textDirection,
     this.nodeKey,
   });
 
@@ -1027,163 +1279,110 @@ class _LayerChip extends StatelessWidget {
   final bool inChain;
   final AppLocalizations l10n;
   final VoidCallback onOpen;
-  final TextDirection textDirection;
   final Key? nodeKey;
 
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    final label = l10n.kitWorkGraphNode(node.title, word);
-    return _GraphNodeButton(
-      label: label,
-      hint: null,
-      onTap: onOpen,
-      borderColor: inChain ? roles.text1 : roles.hairline,
-      tooltip: KitBidi.auto(node.title),
-      nodeKey: nodeKey,
-      child: Padding(
-        padding: EdgeInsetsDirectional.symmetric(
-          horizontal: tokens.space3,
-          vertical: tokens.space2,
-        ),
-        child: Row(
-          children: [
-            KitTaskMark(state: node.mark, paused: node.paused, label: word),
-            SizedBox(width: tokens.space2),
-            Expanded(
-              child: KitText(
-                KitBidi.auto(node.title),
-                role: KitTextRole.rowTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    Widget chip = KitSurface(
+      level: KitSurfaceLevel.surface1,
+      shape: KitShape.panel,
+      padding: KitSurfacePadding.none,
+      outlined: !inChain,
+      child: KitTappable(
+        label: l10n.kitWorkGraphNode(node.title, word),
+        // A layers title may cut to one line: the tooltip repeats it
+        // (A11Y-8, LAY-11).
+        tooltip: KitBidi.auto(node.title),
+        onTap: onOpen,
+        tappableKey: nodeKey,
+        shape: KitShape.panel,
+        surface: KitSurfaceLevel.surface1,
+        child: Padding(
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: tokens.space3,
+            vertical: tokens.space2,
+          ),
+          child: Row(
+            children: [
+              KitTaskMark(state: node.mark, paused: node.paused, label: word),
+              SizedBox(width: tokens.space2),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _titleText(node, inChain: inChain, maxLines: 1),
+                    if (node.stuck)
+                      KitText(
+                        word,
+                        role: KitTextRole.secondary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-  }
-}
-
-/// Dashes [path] with [dash]-long segments and equal gaps.
-Path _dashed(Path path, double dash) {
-  final result = Path();
-  for (final metric in path.computeMetrics()) {
-    var distance = 0.0;
-    var draw = true;
-    while (distance < metric.length) {
-      final next = math.min(distance + dash, metric.length);
-      if (draw) {
-        result.addPath(metric.extractPath(distance, next), Offset.zero);
-      }
-      distance = next;
-      draw = !draw;
+    if (inChain) {
+      final shape = tokens.shapeOf(KitShape.panel);
+      chip = DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: ShapeDecoration(
+          shape: shape is OutlinedBorder
+              ? shape.copyWith(
+                  side: BorderSide(
+                    color: roles.text1,
+                    width: KitTokens.hairlineWidth(context),
+                  ),
+                )
+              : shape,
+        ),
+        child: chip,
+      );
     }
+    return chip;
   }
-  return result;
 }
 
-void _arrowHead(Canvas canvas, Offset tip, Paint paint) {
-  final head = Path()
-    ..moveTo(tip.dx - 5, tip.dy - 7)
-    ..lineTo(tip.dx, tip.dy)
-    ..lineTo(tip.dx + 5, tip.dy - 7);
-  canvas.drawPath(head, paint);
-}
-
-/// Paints [KitWorkGraphGeometry.layers]'s links: critical 2 physical px in
-/// `text2`, others 1 physical px in `text3`, blocked dashed in `text1`
-/// (LOOK-4: never the attention colour). No nodes: they are widgets.
+/// Paints [KitWorkGraphGeometry.layers]'s links through
+/// [kitWorkGraphPaintLinks].
 class _LayerEdgePainter extends CustomPainter {
   _LayerEdgePainter({
     required this.geometry,
-    required this.theme,
-    required this.hairline,
-    required this.focusWidth,
-  });
-
-  final KitWorkGraphGeometry geometry;
-  final ThemeData theme;
-  final double hairline;
-  final double focusWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roles = AppTheme.rolesOf(theme);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    for (final edge in geometry.edges) {
-      final path = edge.toPath();
-      paint
-        ..strokeWidth = edge.critical ? focusWidth : hairline
-        ..color = edge.blocked
-            ? roles.text1
-            : edge.critical
-            ? roles.text2
-            : roles.text3;
-      canvas.drawPath(
-        edge.blocked ? _dashed(path, KitTokens.graphDash) : path,
-        paint,
-      );
-      _arrowHead(canvas, edge.end, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_LayerEdgePainter oldDelegate) =>
-      oldDelegate.geometry != geometry || oldDelegate.theme != theme;
-}
-
-/// Paints [KitWorkGraphGeometry.rows]'s gutter links: straight lane runs,
-/// same tones as `layers`.
-class _RowEdgePainter extends CustomPainter {
-  _RowEdgePainter({
-    required this.geometry,
-    required this.theme,
+    required this.roles,
     required this.hairline,
     required this.focusWidth,
     required this.textDirection,
   });
 
   final KitWorkGraphGeometry geometry;
-  final ThemeData theme;
+  final ThemeRoles roles;
   final double hairline;
   final double focusWidth;
   final TextDirection textDirection;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final roles = AppTheme.rolesOf(theme);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.save();
-    if (textDirection == TextDirection.rtl) {
-      canvas.translate(size.width, 0);
-      canvas.scale(-1, 1);
-    }
-    for (final edge in geometry.edges) {
-      final path = edge.toPath();
-      paint
-        ..strokeWidth = edge.critical ? focusWidth : hairline
-        ..color = edge.blocked
-            ? roles.text1
-            : edge.critical
-            ? roles.text2
-            : roles.text3;
-      canvas.drawPath(
-        edge.blocked ? _dashed(path, KitTokens.graphDash) : path,
-        paint,
-      );
-    }
-    canvas.restore();
-  }
+  void paint(Canvas canvas, Size size) => kitWorkGraphPaintLinks(
+    canvas,
+    size,
+    geometry,
+    roles,
+    hairline: hairline,
+    focusWidth: focusWidth,
+    textDirection: textDirection,
+  );
 
   @override
-  bool shouldRepaint(_RowEdgePainter oldDelegate) =>
+  bool shouldRepaint(_LayerEdgePainter oldDelegate) =>
       oldDelegate.geometry != geometry ||
-      oldDelegate.theme != theme ||
+      oldDelegate.roles != roles ||
+      oldDelegate.hairline != hairline ||
+      oldDelegate.focusWidth != focusWidth ||
       oldDelegate.textDirection != textDirection;
 }

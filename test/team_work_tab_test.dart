@@ -534,7 +534,12 @@ void main() {
       for (final item in controller.snapshot.work)
         if (item.runId == 'oc-xru') WorkGraphNode.of(item),
     ];
-    final layout = WorkGraphLayout.compute(nodes, nodeSize: const Size(156, 48));
+    // 58: the 48dp floor (LAY-9) grown to hold a stuck item's word line
+    // (KitWorkGraph layers chips; this unit's QA record).
+    final layout = WorkGraphLayout.compute(
+      nodes,
+      nodeSize: const Size(156, 58),
+    );
     expect(layout.blockedChain, {
       'w-work-a',
       'w-blocked',

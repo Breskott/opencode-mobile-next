@@ -17,6 +17,7 @@ import '../../kit/kit_image.dart';
 import '../../kit/kit_task_mark.dart';
 import '../../kit/kit_tokens.dart';
 import '../../kit/kit_work_graph.dart';
+import '../../theme_roles.dart';
 import '../../widgets/team_vocabulary.dart';
 
 /// Retired by kit-KitWorkGraph: use [KitWorkGraphNode].
@@ -43,10 +44,20 @@ class WorkGraphNode {
   /// Ids this node needs; ids outside the graph are ignored.
   final List<String> dependsOn;
 
-  /// The mapping this unit's build note keeps in one place: a real "needs
-  /// you" mark only for a state that truly needs the person, never for
-  /// "blocked" alone (LOOK-4 retires the old attention-tinted blocked
-  /// look; the blocked chain is drawn by [KitWorkGraphNode.stuck] instead).
+  /// The graph's one WorkState → KitTaskState mapping: a real "needs you"
+  /// mark only for a state that truly needs the person, never for
+  /// "blocked" alone (LOOK-4). The word always comes from
+  /// [teamWorkStateWord], so the chip and row say the true state.
+  ///
+  /// Contract problem (this unit's QA record): KitWorkGraph.md asks for
+  /// "the blocked glyph" and for the host to map each state once through
+  /// `teamWork*` (ARCH-8), but [KitTaskState] has no blocked (or queued,
+  /// ready, review) value and `teamWorkGlyph` returns an icon and tone, not
+  /// a [KitTaskState]. Until the coordinator decides (a `KitTaskState`
+  /// value, or a `teamWorkMark` beside `teamWorkGlyph` in
+  /// `widgets/team_vocabulary.dart`, owned by another unit), this is the
+  /// only copy of the mapping, and KitWorkGraph shows a stuck item's word
+  /// visibly on its layers chip and rows line so it never reads as waiting.
   KitTaskState get _mark => switch (state) {
     WorkState.needsInput => KitTaskState.needsYou,
     WorkState.completed => KitTaskState.done,
@@ -110,7 +121,8 @@ class WorkGraphEdge {
   /// On the critical path: drawn thicker.
   final bool critical;
 
-  /// Both ends in the blocked chain: drawn in the attention tone.
+  /// Both ends in the blocked chain: drawn dashed in `text1` (LOOK-4:
+  /// never the attention tone).
   final bool blocked;
 
   Path toPath() => Path()
@@ -135,8 +147,10 @@ class WorkGraphLayout {
 
   final KitWorkGraphGeometry _geometry;
 
-  /// Default chip size at 1x text: at least 44dp tall (§11).
-  static const defaultNodeSize = KitWorkGraphGeometry.defaultNodeSize;
+  /// The retired default chip size at 1x text (KIT-43 keeps the
+  /// signature). `KitWorkGraph` itself sizes chips from its tokens:
+  /// [KitTokens.graphNodeWidth] wide, at least [KitTokens.minTarget] tall.
+  static const defaultNodeSize = Size(KitTokens.graphNodeWidth, 44);
   static const columnGap = KitTokens.graphColumnGap;
   static const rowGap = KitTokens.graphRowGap;
   static const padding = 16.0;
@@ -250,10 +264,13 @@ class _WorkGraphState extends State<WorkGraph> {
   }
 }
 
-/// Retired by kit-KitWorkGraph: painting moved into `KitWorkGraph`'s own
-/// edge painters; nodes are widgets now, not paint. Kept exported, unused,
-/// so a caller that still imports the type does not break the build
-/// (KIT-43).
+/// Retired by kit-KitWorkGraph: use [KitWorkGraph], whose nodes are
+/// widgets now, not paint.
+///
+/// Stays exported, painting the links only (KitWorkGraph.md Notes): the
+/// same curves, arrow heads, tones and widths as `KitWorkGraph`'s `layers`
+/// form, from [theme]'s roles, and no nodes. [l10n], [textScaler] and
+/// [onNodeTap] are kept for the signature (KIT-43) and unused.
 class WorkGraphPainter extends CustomPainter {
   WorkGraphPainter({
     required this.layout,
@@ -272,8 +289,21 @@ class WorkGraphPainter extends CustomPainter {
   final ValueChanged<String> onNodeTap;
 
   @override
-  void paint(Canvas canvas, Size size) {}
+  void paint(Canvas canvas, Size size) => kitWorkGraphPaintLinks(
+    canvas,
+    size,
+    layout._geometry,
+    ThemeRoles.resolve(theme),
+    // No BuildContext here: one logical pixel stands in for the one
+    // physical pixel `KitWorkGraph` draws, and two for the critical path.
+    hairline: 1,
+    focusWidth: 2,
+    textDirection: textDirection,
+  );
 
   @override
-  bool shouldRepaint(WorkGraphPainter oldDelegate) => false;
+  bool shouldRepaint(WorkGraphPainter oldDelegate) =>
+      oldDelegate.layout != layout ||
+      oldDelegate.theme != theme ||
+      oldDelegate.textDirection != textDirection;
 }

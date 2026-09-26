@@ -1,0 +1,14 @@
+machine_lock: waiting for a test slot (60s)
+machine_lock: got test slot 2 after 105s
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_cb026353-734-4/test/team_work_graph_test.dart
+00:00 +0: WorkGraphLayout lays the six-node graph out the same way twice
+00:00 +1: WorkGraphLayout names the critical path and draws its edges thicker
+00:00 +2: WorkGraphLayout the blocked chain is the stuck item, its open need, its waiters
+00:00 +3: WorkGraphLayout unknown ids, self links, duplicates and cycles do not break it
+00:00 +4: WorkGraphLayout a larger chip size moves every rect and grows the canvas
+00:00 +5: WorkGraph fits on first layout, taps a node, Fit restores
+00:00 +6: WorkGraph a large graph is scaled down to fit; never below 0.2
+00:01 +7: WorkGraph every chip is a labelled button in the semantics tree
+00:01 +8: WorkGraph chips grow with the text so labels always fit
+00:01 +9: All tests passed!
+exit 0

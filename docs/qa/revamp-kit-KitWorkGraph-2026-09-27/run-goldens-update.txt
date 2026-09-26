@@ -1,0 +1,18 @@
+machine_lock: got test slot 2 after 9s
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_cb026353-734-4/test/goldens/kit/kit_work_graph_golden_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: rows · dark
+00:01 +1: rows blocked · dark
+00:01 +2: layers (forced) · dark
+00:01 +3: empty · dark
+00:01 +4: one · dark
+00:01 +5: auto at 1280x800 (layers) · dark
+00:02 +6: rows · light
+00:02 +7: rows blocked · light
+00:02 +8: layers (forced) · light
+00:02 +9: empty · light
+00:02 +10: one · light
+00:02 +11: auto at 1280x800 (layers) · light
+00:02 +12: (tearDownAll)
+00:02 +12: All tests passed!
+exit 0
