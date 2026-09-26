@@ -16,10 +16,33 @@
   `lib/l10n/app_ar.arb` (four new keys: `kitProgressStep`,
   `kitProgressEtaSeconds`, `kitProgressEtaMinutes`, `kitProgressEtaHours`;
   `flutter gen-l10n` run locally, the three generated
-  `lib/l10n/app_localizations*.dart` restored before committing, PROC-13);
-  `test/kit/kit_progress_test.dart` (new, 18 tests); `test/goldens/kit/kit_progress_golden_test.dart`
-  (new, 28 shots) plus its 28 PNGs (all opened and reviewed). Full list:
-  `git diff feat/phone-setup-v2...8f39e631 --stat`.
+  `lib/l10n/app_localizations*.dart` left unstaged, PROC-13);
+  `test/kit/kit_progress_test.dart` (30 tests); `test/goldens/kit/kit_progress_golden_test.dart`
+  (30 shots) plus its 30 PNGs (all opened and reviewed). Full list:
+  `git diff b67e3276...a16f34cf --stat`.
+- Fix round (review findings 1–7, 2026-09-27, same folder per EVID-1). Fix:
+  1. waiting under reduced motion read as "30 percent" — the still segment
+     is drawn inside `ExcludeSemantics` under one container node with the
+     label, `SemanticsRole.loadingSpinner` and no value (the same node a
+     moving waiting bar has);
+  2. the line was read twice (bar label and the `KitText` under it) — the
+     text is excluded from semantics, and a determinate bar is now its own
+     container node, so a host such as `KitStateView` no longer folds its
+     title and body into the bar's label (found while writing the test for
+     this finding: without the container, the bar's label in a
+     `KitStateView` read "Downloading the base\n…");
+  3. debug asserts — `known(value)` and `staged(stepValue)` within 0..1,
+     and within one staged job (same `of`, step and label) the value never
+     drops; the check is a private stateful child, so `KitProgressView`
+     stays the frozen `StatelessWidget` (the review suggested making it
+     stateful; the spec's API block says `extends StatelessWidget`
+     UNCHANGED, and the private child keeps that exactly);
+  4. the 915×412 staged shots (dark, light) are added;
+  5. hours round up (see Contract problems 2);
+  6. no test reads `LinearProgressIndicator` fields any more: colour and
+     length come from paint matchers, value and role from `getSemantics`;
+  7. shared breakage unchanged and still reported below for the
+     integrator.
 - Pages (map ids): none — `KitProgress`/`KitProgressView` are a value
   object and its renderer, not a screen; no `docs/ux-system/map/all.json`
   page record names them.
@@ -58,11 +81,50 @@
      screen reader hears both, one after the other. Its value is left to
      the framework's own default (a bare percentage) for any determinate
      bar — `known` and `staged` alike." Blocks: false — the resolution
-     above ships in this unit (`kit_progress.dart` lines 252–263) and is
-     covered by `test/kit/kit_progress_test.dart`'s three "semantics"
-     tests; the audible outcome (label then value, together) matches the
+     above ships in this unit (`KitProgressView.build`, the `label` join;
+     the visible line is excluded from semantics so it is heard once) and
+     is covered by the "KitProgressView semantics" group of
+     `test/kit/kit_progress_test.dart`; the audible outcome (label then value, together) matches the
      spec's intent even though the sentence lives in a different
      `SemanticsData` field than the spec named.
+  2. **"hours with one decimal dropped" (The eta words) is ambiguous.**
+     What it says: "Rounding: under 60 s, round up to 10 s; under 1 h,
+     whole minutes rounded up; beyond that, hours with one decimal
+     dropped." Why it is a problem: "dropped" reads either as truncation
+     (2 h 54 min → "about 2 h left", nearly an hour short, which the first
+     build shipped) or as a whole-hour figure. Truncation is the only
+     reading that under-states time left, while seconds and minutes both
+     round up. Resolution in this unit: whole hours rounded up (2 h 54 min
+     → "about 3 h left"; exactly 2 h → "about 2 h left"). Evidence:
+     `test/kit/kit_progress_test.dart` "an hour or more rounds whole hours
+     up, never down" fails on the first build (`failing-first.txt`:
+     Expected 'about 3 h left', Actual 'about 2 h left'). Proposed text:
+     "beyond that, whole hours rounded up". Blocks: false — the spec owner
+     may pick another rounding; only `_etaWords` and that test change.
+  3. **"the value never goes backwards within a job … asserted in debug"
+     cannot be asserted for `known`.** What it says: "A `staged` step never
+     exceeds `of`, and the value never goes backwards within a job unless
+     the step goes back. This is asserted in debug." Why it is a problem:
+     `known` carries no job identity (no step, label or `of`), and live
+     callers start a new job on the same bar with a lower value —
+     `SetupProgressView` after "done" and for "Add tools" (its own
+     `_jobKey`/`_jump`, `lib/ui/widgets/setup_progress_view.dart:155-172`),
+     the phone-setup start meter. Asserting a drop for `known` would throw
+     in debug on those callers (R11). Resolution in this unit: asserted for
+     `staged` (same `of`, step and label → the value must not drop); `known`
+     is left unchecked, pinned by the test "known has no job identity: a
+     host may start a new job lower". Proposed text: "Within one `staged`
+     job (the same `of`, step and label) the value never goes backwards;
+     asserted in debug. A new job, or a stage measured again from zero, is
+     a new `KitProgressView` (a new key). For `known` the host keeps the
+     bar monotonic within its job (SetupProgressView's furthest-point
+     rule)." Blocks: false.
+- Harness note (not a spec problem): `kitGallerySizes` in
+  `test/goldens/kit/kit_gallery.dart` has no 915×412, though gate G23
+  (`namedGallerySizes`) and `kitGalleryName` both accept it. This gallery
+  now lists the spec's five sizes itself (`_defaultSizes`); other kit
+  galleries that loop over `kitGallerySizes` miss the landscape phone the
+  same way. `kit_gallery.dart` is shared and outside this unit's write set.
 - New kit parts (KIT-3): none.
 - Map items (EVID-11): n/a — no page record (see Pages above).
 - States per page (STATE-20): n/a — no page; `KitProgress`'s own states
@@ -102,13 +164,24 @@
     determinate change on `KitMotion.standard`/`enter`, which compounds
     with `SetupProgressView`'s own separate 700 ms easing wrapper and
     shifts the sampled values. Remedy: update the three expectations
-    (the new `text1` colour; the new sample timings, or drop
-    `SetupProgressView`'s own easing once `kit-KitChecklist` absorbs it).
+    (the new `text1` colour; the new sample timings). Recommended instead
+    of new timings: drop `SetupProgressView`'s own 700 ms
+    `TweenAnimationBuilder` (`setup_progress_view.dart:305-331`) so the
+    two eases do not stack — `KitProgressView` already eases, and
+    `_furthest` alone keeps the bar from going backwards. That file is
+    outside this unit's write set.
+  - Merge note: this branch cannot merge alone. The integrator lands, in
+    the same integration, the four `test/kit_motion_baseline.json` and
+    `_frozenBaseline` removals and the three
+    `test/phone_setup_progress_screen_test.dart` updates above. Re-run
+    after the fix round: the same 4 and 3 tests fail with the same
+    messages (runs 12 and 13), nothing else.
 
 ## 2. Builds
 
 - Branch `revamp/kit-KitProgress-v2`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4`
-  (`feat/phone-setup-v2` tip at branch time), code head `8f39e631`.
+  (`feat/phone-setup-v2` tip at branch time), code head `a16f34cf`
+  (the fix round; the first build was `8f39e631`).
 - No APK (unit agents do not build).
 
 ## 3. Devices
@@ -120,42 +193,59 @@ wave checkpoint work (R19, R20).
 
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
-| 1 | `test/kit/kit_progress_test.dart` (18 tests, the spec's 7 "Tests required" items plus tone) | passes | 18 passed | PASS |
-| 2 | `test/goldens/kit/kit_progress_golden_test.dart` (28 shots, `--update-goldens` then reviewed) | passes; every PNG opened and looked at | 28 passed; images reviewed (waiting's still 30 % frame, known/staged/staged-measured/stopped/failed at 412×915, staged at the other four LAY-4 sizes, staged at text2 and Arabic RTL at two sizes — correct mirrored fill, no overflow, `text1` not red for failed) | PASS |
-| 3 | Both files together (`-j 1`) | passes | 46 passed | PASS |
-| 4 | `flutter analyze lib test` (whole worktree tree, PROC-2) | no errors, no new warnings or infos | No issues found! | PASS |
-| 5 | `dart format --language-version=3.10` on every changed `.dart` file | no diff after formatting | applied (one lint fixed: `use_null_aware_elements`), no further diff | PASS |
-| 6 | Existing callers: `test/phone_setup_start_screen_test.dart`, `test/phone_setup_welcome_entry_test.dart`, `test/saved_server_connection_card_test.dart` | pass unchanged | 29 + 12 + 13 = 54 passed | PASS |
-| 7 | `test/kit_ratchet_test.dart`, `test/kit/kit_pre_wave_tokens_test.dart` | pass; counts only drop | passed; informational-only print: `kit_progress.dart "Radius.circular(<n>" 1 -> 0`, `"SizedBox numeric" 5 -> 4` (not committed — `test/kit_ratchet_baseline.json` is outside this unit's write set, PROC-13/R05) | PASS |
-| 8 | `test/design_standard_test.dart`, `test/l10n_coverage_test.dart` | pass | 15 and 17 passed (l10n's own "these files improved" print is pre-existing, unrelated drift, not from this unit) | PASS |
-| 9 | `test/kit/kit_manifest_test.dart` (gate G4) | pass (`KitProgressView`'s pre-existing `name`/`gallery`/`test`/`docRow`/`states` allowlist entries stay valid: NAME-1 still does not match — the class lives in `kit_progress.dart`, not `kit_progress_view.dart`, exactly as this frozen spec's File section requires) | 2 passed, no stale entries | PASS |
-| 10 | `test/phone_setup_progress_screen_test.dart` | — | 3 of 22 fail (colour and timing, both tied to this unit's spec-mandated changes); see "Shared tests broken" above | FAIL, reported |
-| 11 | `test/kit_motion_test.dart` | — | 4 of 175 fail (stale G8x baseline entries); see "Shared tests broken" above | FAIL, reported |
+| 1 | Fixes only: the new tests on the pre-fix part (`git show 85c86a1a:lib/ui/kit/kit_progress.dart`) | the fix tests fail with an assertion | 7 failed with `Expected:`/`Actual:` (stepValue and value asserts, no-backwards, hours, line read once, KitStateView host node, waiting reduced-motion semantics); see `failing-first.txt` | PASS |
+| 2 | `test/kit/kit_progress_test.dart` (30 tests) | passes | 30 passed; see `run-kit-progress-test.txt` | PASS |
+| 3 | `test/goldens/kit/kit_progress_golden_test.dart` (30 shots; `--update-goldens` only for the two new 915×412 shots) | passes; new PNGs opened and looked at; the 28 existing PNGs unchanged | 30 passed; `git status` shows only the two new PNGs | PASS |
+| 4 | `flutter analyze lib test` | no issues | No issues found! | PASS |
+| 5 | `dart format --language-version=3.10` on every changed `.dart` file | no diff after formatting | no further diff | PASS |
+| 6 | Callers: `phone_setup_start_screen`, `phone_setup_welcome_entry`, `saved_server_connection_card`, `kit_illustration`, `local_terminal_screen`, `kit_motion_app` tests | pass unchanged | 41 + 25 + 36 passed | PASS |
+| 7 | Hosts: `design_standard_setup`, `e7_setup_layout`, `first_run_welcome`, `motion_setup`, `phone_server_card`, `phone_setup_ready_screen`, `phone_setup_notification_route`, `local_agent_onboarding`, `work_tab_cleanup`, `goldens/work_tab_golden`, `oc2_server_discovery`, `phone_termux_discovery`, `team_discover`, `launch_shortcut_routing` tests | pass unchanged | 20 + 28 + 44 + 31 + 38 + 17 + 33 passed | PASS |
+| 8 | `test/text_scale_overflow_test.dart`, `test/goldens/kit/kit_gallery_g5_test.dart` | pass | 75 passed; G5 31 passed (with `local_terminal_screen`) | PASS |
+| 9 | `test/kit_ratchet_test.dart`, `test/kit/kit_pre_wave_tokens_test.dart` | pass; counts only drop | 38 passed; informational print `kit_progress.dart "Radius.circular(<n>" 1 -> 0`, `"SizedBox numeric" 5 -> 4` (baseline is integrator-owned, R05) | PASS |
+| 10 | `test/design_standard_test.dart`, `test/l10n_coverage_test.dart` | pass | 17 passed (l10n's "these files improved" print is pre-existing drift) | PASS |
+| 11 | `test/kit/kit_manifest_test.dart`, `test/golden_harness_test.dart` (G4, G23) | pass | 10 passed; the `_915x412` names are accepted | PASS |
+| 12 | `test/kit_motion_test.dart` | — | 4 of 179 fail (the same stale G8x baseline entries); see "Shared tests broken" | FAIL, reported |
+| 13 | `test/phone_setup_progress_screen_test.dart` | — | 3 of 25 fail (the same colour and timing expectations); see "Shared tests broken" | FAIL, reported |
 
 ## 5. Evidence
 
-- No `failing-first.txt`: this is new/additive behaviour on an existing
-  part, not a fix to a specific reported bug (TEST-2's "new code that
-  fixes nothing needs no failing-first run").
+- `failing-first.txt`: run 1 — the fix round's tests on the pre-fix part,
+  seven assertion failures (`Expected:`/`Actual:`), none a compile error.
+- `run-kit-progress-test.txt`: run 2.
 - Rule evidence (PROC-31):
 
   | Rule | Test (`file` + `--plain-name`) or golden | Output |
   |---|---|---|
-  | Staged line join order and value formula | `test/kit/kit_progress_test.dart` "KitProgress.staged line joins the step, the label and the eta with ' · '" / "value is (step - 1 + stepValue) / of, or (step - 1) / of" | run 1 above, PASS |
-  | Staged asserts (K2 §2.8) | `test/kit/kit_progress_test.dart` "asserts step within 1..of and of at least 1" | run 1 above, PASS |
-  | Eta rounding (under 60 s → 10 s; under 1 h → whole minutes; beyond → whole hours) | `test/kit/kit_progress_test.dart` "under a minute rounds up to the nearest 10 s" / "under an hour rounds whole minutes up" / "an hour or more drops to whole hours" / "an eta of zero or less is never shown" | run 1 above, PASS |
-  | Arabic plural forms in the line | `test/kit/kit_progress_test.dart` "uses the locale plural forms in Arabic" | run 1 above, PASS |
-  | Semantics label carries the line; value is the framework's own percentage | `test/kit/kit_progress_test.dart` "carries the line and the percentage for known" / "carries the line for staged; the framework still adds its own percentage to any determinate bar" / "carries the semanticsLabel for waiting" | run 1 above, PASS (also: Contract problems §1 above) |
-  | MOT-5/G8: indeterminate settles under reduced motion; determinate change is immediate under reduced motion | `test/kit/kit_progress_test.dart` "an indeterminate bar settles after one pump() under reduced motion" / "a determinate change applies immediately under reduced motion" | run 1 above, PASS |
-  | LOOK-5 interim: stopped is `text3`, failed is `text1`, never `danger` | `test/kit/kit_progress_test.dart` "stopped (neutral) and failed use text3 and text1, not the danger role" | run 1 above, PASS |
-  | KIT-43: existing `waiting`/`known` calls still compile and render | `test/kit/kit_progress_test.dart` "waiting renders an indeterminate bar with its caption" / "known renders a determinate bar with its caption" | run 1 above, PASS |
-  | Galleries at DPR 3, the six declared states, the five LAY-4 sizes, text2 and Arabic (TEST-9) | `test/goldens/kit/kit_progress_golden_test.dart` (28 shots) | run 2 above, PASS |
+  | Staged line join order and value formula | `test/kit/kit_progress_test.dart` "joins the step, the label and the eta with ' · '" / "value is (step - 1 + stepValue) / of, or (step - 1) / of" | `run-kit-progress-test.txt` |
+  | Staged asserts (K2 §2.8): step within 1..of, of ≥ 1, stepValue within 0..1 | "asserts step within 1..of and of at least 1" / "asserts stepValue within 0..1" | `run-kit-progress-test.txt`; fails on base: `failing-first.txt` |
+  | Known value within 0..1 | "asserts value within 0..1" | `run-kit-progress-test.txt`; fails on base: `failing-first.txt` |
+  | Never backwards within a staged job, in debug (Data safety and honest state) | "the same step and label dropping its value asserts" / "moving forward, or holding, is fine" / "the step going back may lower the bar" / "a different job (another \"of\") starts over" / "known has no job identity: …" | `run-kit-progress-test.txt`; fails on base: `failing-first.txt` |
+  | Eta rounding (under 60 s → 10 s up; under 1 h → minutes up; beyond → hours up) | "under a minute rounds up to the nearest 10 s" / "under an hour rounds whole minutes up" / "an hour or more rounds whole hours up, never down" / "an eta of zero or less is never shown" | `run-kit-progress-test.txt`; hours fails on base: `failing-first.txt` |
+  | Arabic plural forms in the line (COPY-3) | "uses the locale plural forms in Arabic" | `run-kit-progress-test.txt` |
+  | A11Y: one node; the line read once; the percentage for determinate bars | "carries the line and the percentage for known" / "the line is read once: the bar and its words are one node" / "inside a KitStateView the bar stays its own node: …" / "carries the line for staged; …" | `run-kit-progress-test.txt`; the two "once"/"own node" tests fail on base: `failing-first.txt` |
+  | STATE-7: waiting is indeterminate for every reader, reduced motion included | "carries the semanticsLabel for waiting" / "waiting under reduced motion is still indeterminate: no value and no percentage, the same as with motion" | `run-kit-progress-test.txt`; fails on base (value '30'): `failing-first.txt` |
+  | MOT-5/G8: waiting still under reduced motion, a 30 % segment at the start; moving otherwise; determinate jumps under reduced motion and eases otherwise | "an indeterminate bar settles after one pump() under reduced motion, as a still 30 % segment at the start" / "without reduced motion the waiting bar keeps moving" / "a determinate change applies immediately under reduced motion" / "a determinate change eases there with motion" (paint matchers) | `run-kit-progress-test.txt` |
+  | LOOK-5 interim, LOOK-6: running accent, stopped `text3`, failed `text1`, never `danger` | "running is the accent; stopped (neutral) and failed paint text3 and text1, not the danger role" (paint matcher) | `run-kit-progress-test.txt` |
+  | KIT-43: existing `waiting`/`known` calls still compile and render | "waiting renders an indeterminate bar with its caption" / "known renders a determinate bar with its caption" | `run-kit-progress-test.txt` |
+  | Galleries at DPR 3: six declared states; staged at 360×800, 915×412, 800×1280, 1280×800, 1600×1000; text2 and Arabic (TEST-9) | `test/goldens/kit/kit_progress_golden_test.dart` (30 shots) | run 3 |
 
-- Changed test expectations (TEST-19): none in this unit's own files — no
-  existing test was touched (the three broken assertions are in a shared
-  file outside this unit's write set; see "Shared tests broken" above,
-  not "changed" here).
-- Goldens changed (all new, each opened and looked at): `kit_progress_waiting_{dark,light}.png`
+- Changed test expectations (TEST-19), all in this unit's own
+  `test/kit/kit_progress_test.dart`:
+  - "an hour or more drops to whole hours" → "an hour or more rounds whole
+    hours up, never down": 2 h 20 min was "about 2 h left", now "about 3 h
+    left" (review finding 5; Contract problems 2).
+  - The motion, KIT-43 and tone tests read `LinearProgressIndicator.value`
+    and `.color`; they now assert the painted segment (`paints..rrect`) and
+    the semantics value and role (review finding 6). The asserted
+    behaviour is the same, apart from waiting under reduced motion, whose
+    old expectation (`bar.value` not null) is replaced by "no semantics
+    value, a still 30 % segment painted at the start" (review finding 1).
+- Goldens changed, fix round: `kit_progress_staged_915x412_{dark,light}.png`
+  (new, opened and looked at: the bar at 40 % in the accent, capped at the
+  state width and centred, "Step 3 of 5 · Installing · about 2 min left"
+  under it, no overflow; no approved render, EVID-12). The other 28 are
+  byte-identical after the fix round (semantics changes paint nothing).
+- Goldens from the first build (all new, each opened and looked at): `kit_progress_waiting_{dark,light}.png`
   (indeterminate, shown at its reduced-motion still 30 % frame because
   the gallery harness always disables animations); `kit_progress_known_{dark,light}.png`
   (62 %, "29 of 30 MB · about 50 s left"); `kit_progress_staged_{dark,light}.png`
@@ -169,17 +259,22 @@ wave checkpoint work (R19, R20).
   fill, `text3`/`text1`, never red). No approved VL canvas render exists
   for this part (EVID-12: none — KitProgress.md is the frozen spec and
   predates a canvas render for it).
-- Before and after: n/a — a `kit-change` on a part with no prior gallery;
-  `git show b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4:lib/ui/kit/kit_progress.dart`
-  is the "before" source (no PNG existed to diff, EVID-10).
-- Accessibility: `semanticsLabel` plus the line are combined into the
-  bar's semantics label (see Contract problems §1); the framework's own
-  percentage is still the value for any determinate bar; the gallery's
-  built-in G5 checks (`androidTapTargetGuideline`, `labeledTapTargetGuideline`,
-  `textContrastGuideline`, reading order) ran and passed for all 28 shots
-  in both themes — the bar has no tap target, so only the text-contrast
-  and reading-order checks apply, and both passed with no new baseline
-  entry. 2.0 text wraps the line to two lines with no overflow (`kit_progress_staged_text2_*`).
+- Before and after: no before render — a `kit-change` on a part with no
+  prior gallery (`git show b67e3276:lib/ui/kit/kit_progress.dart` is the
+  "before" source, EVID-10). After: `after-kit_progress-staged_915x412_dark.png`
+  (new landscape shot) and `after-kit_progress-waiting_dark.png` (the
+  reduced-motion still frame, pixels unchanged by the semantics fix).
+- Accessibility: the bar is one semantics node in every state. Its label
+  is `semanticsLabel` then the line, joined with ", "; the line's visible
+  `KitText` is excluded, so it is heard once. A determinate bar has
+  `SemanticsRole.progressBar` and the framework's percentage as its value;
+  a waiting bar has `SemanticsRole.loadingSpinner` and no value, with or
+  without reduced motion. The bar is a container node, so inside a
+  `KitStateView` live region the title and body stay in the host's node
+  and the bar is read after them as its own item. Not focusable, no tap
+  target. The gallery's G5 checks ran for all 30 shots in both themes
+  with no new baseline entry; 2.0 text wraps the line with no overflow
+  (`kit_progress_staged_text2_*`).
 - Privacy and security: n/a — no credentials, stored data, external links
   or notifications are involved.
 - Migration: n/a — no stored format changed.
@@ -188,9 +283,17 @@ wave checkpoint work (R19, R20).
 
 ```bash
 F=~/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter
-$F test -j 1 test/kit/kit_progress_test.dart test/goldens/kit/kit_progress_golden_test.dart
-$F test -j 1 test/kit_ratchet_test.dart test/l10n_coverage_test.dart test/design_standard_test.dart test/kit/kit_manifest_test.dart test/kit/kit_pre_wave_tokens_test.dart
+$F gen-l10n   # the generated l10n files are not committed on this branch
+$F test -j 1 test/kit/kit_progress_test.dart
+$F test -j 1 test/goldens/kit/kit_progress_golden_test.dart
+$F test -j 1 test/kit_ratchet_test.dart test/kit/kit_pre_wave_tokens_test.dart
+$F test -j 1 test/design_standard_test.dart test/l10n_coverage_test.dart
+$F test -j 1 test/kit/kit_manifest_test.dart test/golden_harness_test.dart
 $F analyze lib test
+# Failing-first: the fix round's tests on the pre-fix part
+git show 85c86a1a:lib/ui/kit/kit_progress.dart > lib/ui/kit/kit_progress.dart
+$F test -j 1 test/kit/kit_progress_test.dart   # 7 fail, see failing-first.txt
+git checkout lib/ui/kit/kit_progress.dart
 # Shared, unedited, expected to show the reported breakage:
 $F test -j 1 test/kit_motion_test.dart
 $F test -j 1 test/phone_setup_progress_screen_test.dart
@@ -204,6 +307,11 @@ $F test -j 1 test/phone_setup_progress_screen_test.dart
   around — both files are outside this unit's write set.
 - No approved visual-language canvas render exists to diff the goldens
   against.
+- TalkBack itself was not run: "read once", "no percentage while
+  waiting" and "the bar is its own node in a KitStateView" are proven on
+  the semantics tree in widget tests, not by listening on a device.
+- The no-backwards assert covers `staged` only; `known` hosts are not
+  checked by the part (Contract problems 3).
 - The `packages/opencode_sdk`, Android build and live-server checks do not
   apply to this unit (no touched file reaches them).
 
@@ -214,6 +322,6 @@ $F test -j 1 test/phone_setup_progress_screen_test.dart
 | Implemented | Yes | `revamp/kit-KitProgress-v2` |
 | Enabled | Yes: `KitProgressView` already renders on every existing call site (`SetupProgressView`, the phone-setup screens, `saved_server_connection_card.dart`); the new `staged`/`eta` parameters have no call site yet | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `8f39e631` |
+| Committed | Yes | code head `a16f34cf` (fix round; first build `8f39e631`) |
 | Deployed | No | |
 | Released | No | |
