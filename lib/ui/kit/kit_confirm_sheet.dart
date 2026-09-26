@@ -105,7 +105,11 @@ Future<bool> showKitConfirm(
         onCancel: () => close(false),
       );
       if (shape != _KitModalShape.bottom) {
-        return SingleChildScrollView(child: question);
+        // A panel has no handle above the icon: the same air instead.
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(top: 12),
+          child: question,
+        );
       }
       return Padding(
         padding: EdgeInsets.only(
@@ -419,7 +423,9 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   decoration: InputDecoration(
                     // The name is isolated left to right inside the
                     // sentence, so a branch or path never reorders.
-                    labelText: l10n.kitConfirmTypeName('\u2066$typedName\u2069'),
+                    labelText: l10n.kitConfirmTypeName(
+                      '\u2066$typedName\u2069',
+                    ),
                   ),
                   onSubmitted: (_) => unawaited(_confirm()),
                 ),
@@ -444,7 +450,8 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 label: widget.confirmLabel,
                 destructive: danger,
                 working: _working,
-                onPressed: _enabled ? () => unawaited(_confirm()) : null,
+                // Keeps its fill while working; a second tap is ignored.
+                onPressed: _nameMatches ? () => unawaited(_confirm()) : null,
               ),
               if (!_nameMatches) ...[
                 const SizedBox(height: 6),
