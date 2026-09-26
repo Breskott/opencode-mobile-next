@@ -31979,6 +31979,36 @@ abstract class AppLocalizations {
   /// **'Discard changes'**
   String get kitDiscardConfirm;
 
+  /// KitBreadcrumb: the semantic name of the folder trail (root, the folders below it, the current folder last)
+  ///
+  /// In en, this message translates to:
+  /// **'Folder path'**
+  String get kitBreadcrumb;
+
+  /// KitBreadcrumb: the semantic label of an ancestor folder crumb; {folder} is the folder's name as written
+  ///
+  /// In en, this message translates to:
+  /// **'Open folder {folder}'**
+  String kitBreadcrumbOpen(String folder);
+
+  /// KitBreadcrumb: the semantic label of the root crumb; {root} is the root's label, e.g. the project's name
+  ///
+  /// In en, this message translates to:
+  /// **'Open {root}'**
+  String kitBreadcrumbOpenRoot(String root);
+
+  /// KitBreadcrumb: the semantic label of the last, not tappable crumb (the folder being shown)
+  ///
+  /// In en, this message translates to:
+  /// **'Current folder: {folder}'**
+  String kitBreadcrumbCurrent(String folder);
+
+  /// KitBreadcrumb: the name of the collapsed '…' crumb and of the menu it opens, listing the hidden middle folders
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more folder} other{{count} more folders}}'**
+  String kitBreadcrumbMore(int count);
+
   /// Kit copy: spoken to a screen reader once after a value is copied to the clipboard
   ///
   /// In en, this message translates to:

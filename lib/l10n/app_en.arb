@@ -23377,5 +23377,45 @@
         "type": "String"
       }
     }
+  },
+  "kitBreadcrumb": "Folder path",
+  "@kitBreadcrumb": {
+    "description": "KitBreadcrumb: the semantic name of the folder trail (root, the folders below it, the current folder last)"
+  },
+  "kitBreadcrumbOpen": "Open folder {folder}",
+  "@kitBreadcrumbOpen": {
+    "description": "KitBreadcrumb: the semantic label of an ancestor folder crumb; {folder} is the folder's name as written",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "kitBreadcrumbOpenRoot": "Open {root}",
+  "@kitBreadcrumbOpenRoot": {
+    "description": "KitBreadcrumb: the semantic label of the root crumb; {root} is the root's label, e.g. the project's name",
+    "placeholders": {
+      "root": {
+        "type": "String"
+      }
+    }
+  },
+  "kitBreadcrumbCurrent": "Current folder: {folder}",
+  "@kitBreadcrumbCurrent": {
+    "description": "KitBreadcrumb: the semantic label of the last, not tappable crumb (the folder being shown)",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "kitBreadcrumbMore": "{count, plural, =1{1 more folder} other{{count} more folders}}",
+  "@kitBreadcrumbMore": {
+    "description": "KitBreadcrumb: the name of the collapsed '…' crumb and of the menu it opens, listing the hidden middle folders",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

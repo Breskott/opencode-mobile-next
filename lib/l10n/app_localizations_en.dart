@@ -19825,6 +19825,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kitDiscardConfirm => 'Discard changes';
 
   @override
+  String get kitBreadcrumb => 'Folder path';
+
+  @override
+  String kitBreadcrumbOpen(String folder) {
+    return 'Open folder $folder';
+  }
+
+  @override
+  String kitBreadcrumbOpenRoot(String root) {
+    return 'Open $root';
+  }
+
+  @override
+  String kitBreadcrumbCurrent(String folder) {
+    return 'Current folder: $folder';
+  }
+
+  @override
+  String kitBreadcrumbMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more folders',
+      one: '1 more folder',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get kitCopied => 'Copied';
 
   @override
