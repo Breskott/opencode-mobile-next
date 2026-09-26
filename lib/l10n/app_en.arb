@@ -2050,6 +2050,14 @@
   "quotaMonitorSourceChanged": "This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.",
   "quotaMonitorSaveFailed": "Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.",
   "quotaMonitorDisable": "Disable quota monitoring",
+  "quotaMonitorThreshold": "Alert when used reaches",
+  "@quotaMonitorThreshold": {
+    "description": "Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string."
+  },
+  "quotaMonitorSaving": "Saving…",
+  "@quotaMonitorSaving": {
+    "description": "Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved."
+  },
   "setupChooseServerTitle": "Choose your server setup",
   "setupChooseServerDescription": "Connect an existing server, or use Termux to run OpenCode on this phone.",
   "setupUncheckedTitle": "Continue without an installation check?",
