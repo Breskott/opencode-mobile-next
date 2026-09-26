@@ -119,9 +119,12 @@ class AppDiagnosticsController extends ChangeNotifier {
         }
       },
     );
+    // Header syntax (`Authorization: Bearer …`) and the `KEY=VALUE` form an
+    // MCP header uses (mcp_setup_screen.dart, P0.1) both carry a secret in
+    // the same place.
     safe = safe.replaceAllMapped(
       RegExp(
-        r'\b(authorization|proxy-authorization)\s*:\s*[^\r\n]+',
+        r'\b(authorization|proxy-authorization)\s*[:=]\s*[^\r\n]+',
         caseSensitive: false,
       ),
       (match) => '${match.group(1)}: [REDACTED]',

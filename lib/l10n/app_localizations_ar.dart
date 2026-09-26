@@ -1059,6 +1059,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpRuntimeAdded => 'أُضيف خادم MCP لهذا المشروع';
 
   @override
+  String get mcpHeaderName => 'اسم الترويسة';
+
+  @override
+  String get mcpHeaderValue => 'قيمة الترويسة';
+
+  @override
+  String get mcpShowHeaderValue => 'إظهار قيمة الترويسة';
+
+  @override
+  String get mcpHideHeaderValue => 'إخفاء قيمة الترويسة';
+
+  @override
+  String get mcpAddHeader => 'إضافة ترويسة أخرى';
+
+  @override
+  String get mcpRemoveHeader => 'إزالة الترويسة';
+
+  @override
   String get sessionUnread => 'نتيجة غير مقروءة';
 
   @override
@@ -16260,6 +16278,23 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get notifyQuotaAlertsDetail =>
       'عندما يتجاوز مزوّد مُراقَب الحد الذي ضبطته في الاستخدام. يسجّل التنبيه قراءة سابقة، لا المتبقي الآن.';
+
+  @override
+  String get notifyBlockedTitle => 'الإشعارات مُعطَّلة لهذا التطبيق';
+
+  @override
+  String get notifyBlockedMessage =>
+      'لا يسمح نظام Android لتطبيق OpenCode بإشعارك، لذا لن تصل تنبيهات المهام المنتهية والموافقات وحدود الحصص إلى أن يُصلَح هذا.';
+
+  @override
+  String get notifyOpenAndroidSettings => 'فتح إعدادات Android';
+
+  @override
+  String get notifySendTest => 'إرسال إشعار تجريبي';
+
+  @override
+  String get notifySendTestDetail =>
+      'يتحقق مما إذا كان Android يُسلِّم إشعارات هذا التطبيق فعليًا الآن.';
 
   @override
   String get notifyQuietDetail =>

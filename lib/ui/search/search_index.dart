@@ -531,7 +531,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     // The AI Team as a place of its own in Settings, not only a plugin
     // (docs/qa/team-discover-2026-09-25): off, it opens the intro, which
-    // leads to this server's set-up; on, Plugins, where it is managed.
+    // leads to this server's set-up; on, the team page itself (P0.5), the
+    // same door 'ai-team' below and Work's own entry already use.
     SearchEntry(
       id: 'settings-ai-team',
       kind: SearchEntryKind.hubRow,
@@ -543,9 +544,13 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       gate: (scope) => scope.controller.profile != null,
       open: (context, scope) {
         final controller = scope.controller;
-        return controller.profile?.orchestration == null
-            ? openTeamIntro(context, controller)
-            : _push(context, PluginsSettingsScreen(controller: controller));
+        if (controller.profile?.orchestration == null) {
+          return openTeamIntro(context, controller);
+        }
+        final team = controller.orchestration;
+        return team == null
+            ? Future<void>.value()
+            : _push(context, TeamHomeScreen(controller: team));
       },
     ),
     SearchEntry(

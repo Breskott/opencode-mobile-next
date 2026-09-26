@@ -29,7 +29,16 @@ class _NotificationsSettingsScreenState
     extends State<NotificationsSettingsScreen>
     with WidgetsBindingObserver {
   bool _saving = false;
+  bool _sendingTest = false;
   final _sectionKeys = <String, GlobalKey>{};
+
+  /// True once Android itself is refusing this app's notifications (denied
+  /// permission or muted): the honest state P0.6 asks the page to show,
+  /// re-checked on resume ([didChangeAppLifecycleState]) rather than only
+  /// read once at open.
+  bool get _notificationsBlocked =>
+      platformCapabilities.supportsBackgroundService &&
+      !widget.controller.backgroundLive.notificationGranted;
 
   @override
   void initState() {
@@ -66,6 +75,16 @@ class _NotificationsSettingsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error ?? _settingsCopy(context).e7SettingsUi22)),
       );
+    }
+  }
+
+  Future<void> _sendTestNotification() async {
+    if (_sendingTest) return;
+    setState(() => _sendingTest = true);
+    try {
+      await widget.controller.backgroundLive.sendTestNotification();
+    } finally {
+      if (mounted) setState(() => _sendingTest = false);
     }
   }
 
@@ -120,6 +139,7 @@ class _NotificationsSettingsScreenState
     final copy = _settingsCopy(context);
     final controller = widget.controller;
     final notifications = platformCapabilities.supportsNotifications;
+    final blocked = _notificationsBlocked;
     return [
       if (notifications)
         SwitchListTile(
@@ -127,7 +147,7 @@ class _NotificationsSettingsScreenState
           title: Text(copy.notifyFinishedRuns),
           subtitle: Text(copy.notifyFinishedRunsDetail),
           value: controller.notificationPreferences.finishedRuns,
-          onChanged: _saving
+          onChanged: _saving || blocked
               ? null
               : (value) => _save(() => controller.setNotifyFinishedRuns(value)),
         ),
@@ -137,7 +157,7 @@ class _NotificationsSettingsScreenState
           title: Text(copy.notifyRequests),
           subtitle: Text(copy.notifyRequestsDetail),
           value: controller.notificationPreferences.requests,
-          onChanged: _saving
+          onChanged: _saving || blocked
               ? null
               : (value) => _save(() => controller.setNotifyRequests(value)),
         ),
@@ -206,12 +226,24 @@ class _NotificationsSettingsScreenState
           key: const ValueKey('notify-quota-alerts'),
           title: Text(copy.notifyQuotaAlerts),
           value: rules.quotaAlerts,
-          onChanged: _saving
+          onChanged: _saving || blocked
               ? null
               : (value) =>
                     _shared((rules) => rules.copyWith(quotaAlerts: value)),
         ),
       if (notifications) _RowDetail(copy.notifyQuotaAlertsDetail),
+      // Real proof, not just a read of the permission flag (P0.6): posts an
+      // actual alert through the same channel a coding request would use.
+      if (notifications)
+        KitRow(
+          key: const ValueKey('notify-send-test'),
+          leading: KitRow.icon(context, AppIconography.notificationImportant),
+          title: copy.notifySendTest,
+          supporting: TextSpan(text: copy.notifySendTestDetail),
+          supportingMaxLines: 2,
+          enabled: !_sendingTest,
+          onTap: _sendTestNotification,
+        ),
     ];
   }
 
@@ -371,6 +403,29 @@ class _NotificationsSettingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The honest state (P0.6): Android is refusing this app's
+            // notifications, so every switch below is decoration until this
+            // is fixed. Comes before everything else, including the
+            // Android-timeout notice below it.
+            if (_notificationsBlocked)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: KitNotice(
+                  key: const ValueKey('notifications-blocked-notice'),
+                  tone: AppStatusTone.attention,
+                  icon: AppIconography.notificationImportant,
+                  title: copy.notifyBlockedTitle,
+                  message: copy.notifyBlockedMessage,
+                  actions: [
+                    KitAction(
+                      key: const ValueKey('notifications-open-settings'),
+                      label: copy.notifyOpenAndroidSettings,
+                      onPressed: () =>
+                          controller.backgroundLive.openNotificationSettings(),
+                    ),
+                  ],
+                ),
+              ),
             // Android 15 stops the service on its own once the daily budget is
             // spent, and the switch flips itself off when it does. It needs the
             // person, so it comes before every setting (plan 5.7).

@@ -1056,6 +1056,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpRuntimeAdded => 'MCP server added for this project';
 
   @override
+  String get mcpHeaderName => 'Header name';
+
+  @override
+  String get mcpHeaderValue => 'Header value';
+
+  @override
+  String get mcpShowHeaderValue => 'Show header value';
+
+  @override
+  String get mcpHideHeaderValue => 'Hide header value';
+
+  @override
+  String get mcpAddHeader => 'Add another header';
+
+  @override
+  String get mcpRemoveHeader => 'Remove header';
+
+  @override
   String get sessionUnread => 'Unread result';
 
   @override
@@ -15987,6 +16005,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notifyQuotaAlertsDetail =>
       'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
+
+  @override
+  String get notifyBlockedTitle => 'Notifications are off for this app';
+
+  @override
+  String get notifyBlockedMessage =>
+      'Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.';
+
+  @override
+  String get notifyOpenAndroidSettings => 'Open Android settings';
+
+  @override
+  String get notifySendTest => 'Send a test notification';
+
+  @override
+  String get notifySendTestDetail =>
+      'Confirms whether Android is actually delivering this app\'s notifications right now.';
 
   @override
   String get notifyQuietDetail =>

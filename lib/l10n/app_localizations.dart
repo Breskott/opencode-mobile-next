@@ -1916,6 +1916,42 @@ abstract class AppLocalizations {
   /// **'MCP server added for this project'**
   String get mcpRuntimeAdded;
 
+  /// MCP setup: label of one HTTP header row's name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Header name'**
+  String get mcpHeaderName;
+
+  /// MCP setup: label of one HTTP header row's value field. Hidden by default; see mcpShowHeaderValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Header value'**
+  String get mcpHeaderValue;
+
+  /// MCP setup: reveals one header row's obscured value.
+  ///
+  /// In en, this message translates to:
+  /// **'Show header value'**
+  String get mcpShowHeaderValue;
+
+  /// MCP setup: hides a revealed header row's value again.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide header value'**
+  String get mcpHideHeaderValue;
+
+  /// MCP setup: adds another blank HTTP header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another header'**
+  String get mcpAddHeader;
+
+  /// MCP setup: removes one HTTP header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove header'**
+  String get mcpRemoveHeader;
+
   /// No description provided for @sessionUnread.
   ///
   /// In en, this message translates to:
@@ -25798,6 +25834,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.'**
   String get notifyQuotaAlertsDetail;
+
+  /// Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off for this app'**
+  String get notifyBlockedTitle;
+
+  /// Notifications screen: body of the blocked-notifications notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.'**
+  String get notifyBlockedMessage;
+
+  /// Action on the blocked-notifications notice: opens this app's Android notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Android settings'**
+  String get notifyOpenAndroidSettings;
+
+  /// Row on the Notifications screen: posts one real notification to prove whether Android is letting this app notify.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a test notification'**
+  String get notifySendTest;
+
+  /// Subtitle of the Send a test notification row.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirms whether Android is actually delivering this app\'s notifications right now.'**
+  String get notifySendTestDetail;
 
   /// Subtitle of the single Quiet hours toggle on the Notifications screen.
   ///

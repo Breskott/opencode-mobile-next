@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/diagnostics/app_diagnostics.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
@@ -261,8 +262,12 @@ void main() {
       'https://mcp.example.com/rpc',
     );
     await tester.enterText(
-      find.byKey(const ValueKey('mcp-headers')),
-      'Authorization=Bearer test-token',
+      find.byKey(const ValueKey('mcp-header-key-0')),
+      'Authorization',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('mcp-header-value-0')),
+      'Bearer test-token',
     );
     await _reveal(tester, const ValueKey('mcp-oauth-detection'));
     await tester.tap(find.byKey(const ValueKey('mcp-oauth-detection')));
@@ -348,9 +353,11 @@ void main() {
       find.byKey(const ValueKey('mcp-url')),
       'https://mcp.example.com',
     );
+    // A value with no header name: the same "line, use KEY=VALUE" error the
+    // old single free-text field gave for a line with no '='.
     await tester.enterText(
-      find.byKey(const ValueKey('mcp-headers')),
-      'Authorization without equals',
+      find.byKey(const ValueKey('mcp-header-value-0')),
+      'without a name',
     );
     await tester.tap(find.byKey(const ValueKey('mcp-save')));
     await tester.pump();
@@ -359,8 +366,12 @@ void main() {
     expect(repository.addedDraft, isNull);
 
     await tester.enterText(
-      find.byKey(const ValueKey('mcp-headers')),
-      'Authorization=token',
+      find.byKey(const ValueKey('mcp-header-key-0')),
+      'Authorization',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('mcp-header-value-0')),
+      'token',
     );
     repository.addError = const ProductException(
       'An MCP server named "duplicate" already exists',
@@ -463,4 +474,152 @@ void main() {
     expect(controller.reloadCalls, 1);
     expect(find.byKey(const ValueKey('mcp-saved-status')), findsOneWidget);
   });
+
+  group('P0.1: header values are secrets', () {
+    bool obscured(WidgetTester tester, String key) => tester
+        .widget<TextField>(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(TextField),
+          ),
+        )
+        .obscureText;
+
+    testWidgets(
+      'masks the value, key stays visible, reveal on press, never prefilled',
+      (tester) async {
+        final repository = _McpRepository();
+        final controller = await _controller(repository);
+        addTearDown(controller.dispose);
+        await _open(tester, controller);
+
+        // Never prefilled: the Add form always starts with one empty row.
+        // There is no edit-existing-server entry point in this app (only
+        // McpSetupScreen is Add-only; see docs/qa/p0-secure-settings-
+        // 2026-09-26/README.md), so nothing saved could be shown here.
+        expect(
+          tester
+              .widget<TextFormField>(
+                find.byKey(const ValueKey('mcp-header-key-0')),
+              )
+              .controller!
+              .text,
+          isEmpty,
+        );
+        expect(
+          tester
+              .widget<TextFormField>(
+                find.byKey(const ValueKey('mcp-header-value-0')),
+              )
+              .controller!
+              .text,
+          isEmpty,
+        );
+
+        // Fill the fields above the headers block first: scrolling down to
+        // reach the reveal toggle can carry fields far above it out of the
+        // list's cache extent.
+        await tester.enterText(find.byKey(const ValueKey('mcp-name')), 'docs');
+        await tester.enterText(
+          find.byKey(const ValueKey('mcp-url')),
+          'https://mcp.example.com',
+        );
+
+        const fakeToken = 'sekret-abc123XYZ';
+        await tester.enterText(
+          find.byKey(const ValueKey('mcp-header-key-0')),
+          'Authorization',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('mcp-header-value-0')),
+          'Bearer $fakeToken',
+        );
+
+        // Masked by default.
+        expect(obscured(tester, 'mcp-header-value-0'), isTrue);
+
+        // Reveal on press, and hide it again — the point of the toggle,
+        // not something the value should stay stuck at.
+        await _reveal(tester, const ValueKey('mcp-header-reveal-0'));
+        await tester.tap(find.byKey(const ValueKey('mcp-header-reveal-0')));
+        await tester.pump();
+        expect(obscured(tester, 'mcp-header-value-0'), isFalse);
+        expect(find.byTooltip('Hide header value'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('mcp-header-reveal-0')));
+        await tester.pump();
+        expect(obscured(tester, 'mcp-header-value-0'), isTrue);
+
+        // Every rendered string except the still-mounted, editable input
+        // itself (which necessarily holds what the person typed, obscured
+        // or not — that is a live field, not a leak).
+        List<String> renderedTexts() => tester
+            .widgetList<Text>(find.byType(Text))
+            .map((widget) => widget.data ?? '')
+            .toList();
+
+        // The save (error) path: the fake token must not surface anywhere.
+        repository.addError = const ProductException(
+          'An MCP server named "docs" already exists',
+        );
+        await tester.tap(find.byKey(const ValueKey('mcp-save')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('mcp-save-error')), findsOneWidget);
+        for (final text in renderedTexts()) {
+          expect(text, isNot(contains(fakeToken)));
+        }
+
+        // The save (success) path: still nowhere, and the real value did
+        // reach the draft that is sent to the server.
+        repository.addError = null;
+        await tester.tap(find.byKey(const ValueKey('mcp-save')));
+        await tester.pumpAndSettle();
+        for (final text in renderedTexts()) {
+          expect(text, isNot(contains(fakeToken)));
+        }
+        expect(repository.addedDraft?.headers, {
+          'Authorization': 'Bearer $fakeToken',
+        });
+      },
+    );
+
+    testWidgets('adds and removes header rows', (tester) async {
+      final repository = _McpRepository();
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await _open(tester, controller);
+
+      expect(find.byKey(const ValueKey('mcp-header-key-1')), findsNothing);
+      // A lone row has no remove button; nothing to remove down to.
+      expect(find.byKey(const ValueKey('mcp-header-remove-0')), findsNothing);
+
+      await _reveal(tester, const ValueKey('mcp-header-add'));
+      await tester.tap(find.byKey(const ValueKey('mcp-header-add')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('mcp-header-key-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('mcp-header-remove-1')), findsOneWidget);
+
+      await _reveal(tester, const ValueKey('mcp-header-remove-1'));
+      await tester.tap(find.byKey(const ValueKey('mcp-header-remove-1')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('mcp-header-key-1')), findsNothing);
+      expect(find.byKey(const ValueKey('mcp-header-remove-0')), findsNothing);
+    });
+  });
+
+  test(
+    'diagnostics also redact an Authorization=Bearer header value (P0.1)',
+    () {
+      final diagnostics = AppDiagnosticsController();
+      addTearDown(diagnostics.dispose);
+      const fakeToken = 'p0-1-bearer-abcXYZ';
+      diagnostics.record(
+        StateError('MCP save failed: Authorization=Bearer $fakeToken'),
+        StackTrace.fromString(
+          'at _save (lib/ui/screens/mcp_setup_screen.dart:1:1)',
+        ),
+        source: 'mcp',
+      );
+      expect(diagnostics.reportText(), isNot(contains(fakeToken)));
+    },
+  );
 }

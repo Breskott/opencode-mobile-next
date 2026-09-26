@@ -654,6 +654,28 @@ void main() {
       expect(line(tester), isNot(startsWith(_en.teamUiRowOff)));
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets('tapping it while on opens the team page, never Plugins '
+        '(P0.5)', (tester) async {
+      _mockChannels();
+      final profile = _computer()
+        ..orchestration = OrchestrationConfig(
+          provider: OrchestrationProvider.gascity,
+          url: 'https://team.example',
+          city: 'city',
+          hostMode: OrchestrationHostMode.computer,
+          enabledAt: DateTime.utc(2026, 9, 25),
+        );
+      final controller = await _boot(profile);
+      await pumpSettings(tester, controller);
+      await tester.ensureVisible(_key('settings-ai-team'));
+      await _settle(tester);
+      await tester.tap(_key('settings-ai-team'));
+      await _settle(tester);
+      expect(find.byType(TeamHomeScreen), findsOneWidget);
+      expect(find.byType(PluginsSettingsScreen), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 
   group('one AI Team per page (OpenCode inside the app)', () {

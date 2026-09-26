@@ -520,6 +520,30 @@
   "mcpAdd": "Add MCP server",
   "mcpRuntimeEmpty": "Add tools for the current project until OpenCode restarts.",
   "mcpRuntimeAdded": "MCP server added for this project",
+  "mcpHeaderName": "Header name",
+  "@mcpHeaderName": {
+    "description": "MCP setup: label of one HTTP header row's name field."
+  },
+  "mcpHeaderValue": "Header value",
+  "@mcpHeaderValue": {
+    "description": "MCP setup: label of one HTTP header row's value field. Hidden by default; see mcpShowHeaderValue."
+  },
+  "mcpShowHeaderValue": "Show header value",
+  "@mcpShowHeaderValue": {
+    "description": "MCP setup: reveals one header row's obscured value."
+  },
+  "mcpHideHeaderValue": "Hide header value",
+  "@mcpHideHeaderValue": {
+    "description": "MCP setup: hides a revealed header row's value again."
+  },
+  "mcpAddHeader": "Add another header",
+  "@mcpAddHeader": {
+    "description": "MCP setup: adds another blank HTTP header row."
+  },
+  "mcpRemoveHeader": "Remove header",
+  "@mcpRemoveHeader": {
+    "description": "MCP setup: removes one HTTP header row."
+  },
   "sessionUnread": "Unread result",
   "shareSessionViewsTitle": "Sync read state",
   "shareSessionViewsOn": "Let your other OpenCode clients know which completed results you have viewed.",
@@ -17304,6 +17328,26 @@
   "notifyQuotaAlertsDetail": "When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.",
   "@notifyQuotaAlertsDetail": {
     "description": "Subtitle of the Quota thresholds toggle."
+  },
+  "notifyBlockedTitle": "Notifications are off for this app",
+  "@notifyBlockedTitle": {
+    "description": "Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted)."
+  },
+  "notifyBlockedMessage": "Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.",
+  "@notifyBlockedMessage": {
+    "description": "Notifications screen: body of the blocked-notifications notice."
+  },
+  "notifyOpenAndroidSettings": "Open Android settings",
+  "@notifyOpenAndroidSettings": {
+    "description": "Action on the blocked-notifications notice: opens this app's Android notification settings."
+  },
+  "notifySendTest": "Send a test notification",
+  "@notifySendTest": {
+    "description": "Row on the Notifications screen: posts one real notification to prove whether Android is letting this app notify."
+  },
+  "notifySendTestDetail": "Confirms whether Android is actually delivering this app's notifications right now.",
+  "@notifySendTestDetail": {
+    "description": "Subtitle of the Send a test notification row."
   },
   "notifyQuietDetail": "No notifications during these local times, for every server and for quota alerts. Checks continue.",
   "@notifyQuietDetail": {
