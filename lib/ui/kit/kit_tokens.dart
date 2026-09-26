@@ -1,9 +1,13 @@
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
 import '../theme_roles.dart';
+import 'kit_shape.dart';
 import 'kit_text.dart';
+
+export 'kit_shape.dart';
 
 /// The design tokens the kit's parts read (docs/ux-system/kit-v2.md, the
 /// visual language in docs/design/visual-language-2026-09-26.md §3–§7):
@@ -223,6 +227,228 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// A panel set into a sheet or a dialog (a confirmation's consequences):
   /// one step below the sheet's `surface2`, which in light is the ground.
   Color get insetSurface => roles.isDark ? roles.surface1 : roles.ground;
+
+  // ── Pre-wave named tokens (STANDARDS §0.5 step 2; kit-api/_new-tokens.md).
+  // Fixed by the visual language, the same in every theme, so static.
+
+  /// LOOK-21 (KitDivider.md and most specs): one physical pixel, in logical
+  /// pixels.
+  static double hairlineWidth(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return dpr > 0 ? 1 / dpr : 1;
+  }
+
+  /// LOOK-21 (KitTappable.md, KitField.md): the focus ring, two physical
+  /// pixels, never under one logical pixel at a ratio of 1 or less.
+  static double focusRingWidth(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    if (dpr <= 1) return dpr > 0 ? math.max(2 / dpr, 1) : 2;
+    return 2 / dpr;
+  }
+
+  /// KitChip.md: the visual pill height; its 48 dp target is padding.
+  static const double chipHeight = 32;
+
+  /// KitChoiceList.md: a choice row's minimum height (KIT-25).
+  static const double choiceRowMinHeight = 56;
+
+  /// KitComposer.md: the Send, Stop and mic circles.
+  static const double composerActionSize = 40;
+
+  /// KitComposer.md: Stop's ground square (corners a quarter of it).
+  static const double composerStopSquare = 14;
+
+  /// KitBreadcrumb.md: the widest an ancestor crumb grows before it truncates.
+  static const double crumbMaxWidth = 160;
+
+  /// KitDetailsFold.md: the label column from expanded up.
+  static const double detailsLabelColumn = 160;
+
+  /// KitMotionParts.md: a disabled part's opacity.
+  static const double disabledAlpha = .38;
+
+  /// KitMotionParts.md: a stale value's dim.
+  static const double staleAlpha = .6;
+
+  /// KitIcon.md: the alpha of a duotone glyph's background.
+  static const double duotoneWash = .2;
+
+  /// KitField.md: a field's corners.
+  static const double fieldRadius = 14;
+
+  /// KitImage.md: the initials' text-scale clamp in a fixed avatar (A11Y-8).
+  static const double monogramMaxTextScale = 1.3;
+
+  /// KitIconButton.md, KitMenu.md, KitTerm.md: the one popover radius (tooltip, menu, term bubble).
+  static const double popoverRadius = 14;
+
+  /// KitMessage.md, KitQueuedMessage.md: a prompt bubble's corners (VL §5).
+  static const double bubbleRadius = 20;
+
+  /// KitMessage.md, KitQueuedMessage.md: the bubble's bottom-end corner (VL §5).
+  static const double bubbleTailRadius = 6;
+
+  /// KitLogPanel.md: the folded log panel's height in lines.
+  static const int logFoldedLines = 12;
+
+  /// KitTerm.md: the window-height share above which the explanation opens as a sheet.
+  static const double termBubbleMaxHeight = .4;
+
+  /// KitStatusLine.md, KitAskLine.md: the status and ask line minimum height.
+  static const double statusLineMinHeight = 52;
+
+  /// KitProgress.md, KitChecklist.md: the thin indeterminate bar.
+  static const double loadingBarHeight = 2;
+
+  /// KitProgress.md, KitChecklist.md, KitProgressRow.md: the job bar.
+  static const double progressBarHeight = 4;
+
+  /// KitProgress.md, KitProgressRow.md: the progress bar's corners.
+  static const double progressBarRadius = 2;
+
+  /// KitNav.md: the dock and rail labels' text-scale clamp (A11Y-8).
+  static const double navLabelMaxScale = 2;
+
+  /// KitLevelMeter.md: the number of bars.
+  static const int meterBars = 9;
+
+  /// KitLevelMeter.md: a bar's width, snapped to physical pixels.
+  static const double meterBarWidth = 6;
+
+  /// KitLevelMeter.md: the centre bar's height.
+  static const double meterBarMin = 12;
+
+  /// KitLevelMeter.md: the end bars' height.
+  static const double meterBarMax = 20;
+
+  /// KitNeedsYou.md: a count badge's height (a pill).
+  static const double badgeHeight = 18;
+
+  /// KitNeedsYou.md: a count badge's minimum width.
+  static const double badgeMinWidth = 18;
+
+  /// KitNeedsYou.md: the badge's text-scale clamp (A11Y-8).
+  static const double badgeTextScaleMax = 1.3;
+
+  /// KitQr.md: the QR code's largest side.
+  static const double qrMaxSize = 240;
+
+  /// KitQr.md: the quiet zone the QR standard requires, in modules.
+  static const int qrQuietModules = 4;
+
+  /// KitRequestCard.md: the needs-you ring outside the border (LOOK-20).
+  static const double needsYouRingWidth = 4;
+
+  /// KitRequestCard.md: the needs-you ring's attention alpha.
+  static const double needsYouRingAlpha = .06;
+
+  /// KitRequestCard.md: the request card's tile.
+  static const double requestTileSize = 36;
+
+  /// KitRequestCard.md: the request card tile's corners.
+  static const double requestTileRadius = 10;
+
+  /// KitRequestCard.md: the card's window-height cap at 2.0 text.
+  static const double requestMaxHeightShare = .45;
+
+  /// KitScanner.md: the side of the square scan window.
+  static const double scannerWindow = 240;
+
+  /// KitScanner.md: the length of each corner bracket's arms.
+  static const double scannerBracket = 28;
+
+  /// KitScenes.md: an illustration's wash alpha.
+  static const double sceneWashAlpha = .12;
+
+  /// KitScenes.md: an illustration's default page width.
+  static const double illustrationPage = 160;
+
+  /// KitScenes.md: an illustration's inline width (KitStateView).
+  static const double illustrationInline = 88;
+
+  /// KitStateView.md: the page state's top and bottom padding.
+  static const double stateVerticalPadding = 32;
+
+  /// KitStatusMark.md: the leading status slot.
+  static const double markSlotSize = 32;
+
+  /// KitStatusMark.md: the waiting ring.
+  static const double markRingSize = 10;
+
+  /// KitStatusMark.md: the still-working dot under reduced motion.
+  static const double markDotSize = 12;
+
+  /// KitSwatch.md: the narrowest theme tile.
+  static const double swatchMinWidth = 112;
+
+  /// KitSwatch.md: the miniature's height.
+  static const double swatchPreviewHeight = 56;
+
+  /// KitSwatch.md: the accent and success dots.
+  static const double swatchDot = 12;
+
+  /// KitTerminalView.md: the terminal face's text-scale clamp (A11Y-8).
+  static const double terminalMaxTextScale = 2;
+
+  /// KitTerminalView.md: the key caps' text-scale clamp (A11Y-8).
+  static const double terminalKeyMaxTextScale = 1.3;
+
+  /// KitWorkGraph.md: a node's width at 1x text.
+  static const double graphNodeWidth = 156;
+
+  /// KitWorkGraph.md: the gap between columns.
+  static const double graphColumnGap = 24;
+
+  /// KitWorkGraph.md: the gap between rows.
+  static const double graphRowGap = 48;
+
+  /// KitWorkGraph.md: the rows gutter's lane cap.
+  static const int graphMaxLanes = 6;
+
+  /// KitWorkGraph.md: the dash length of blocked links.
+  static const double graphDash = 4;
+
+  /// KitQr.md: the QR ink, dark on light in every theme (graphiteLight).
+  static Color get qrInk => graphiteLight.text1;
+
+  /// KitQr.md: the QR paper (graphiteLight's `surface1`).
+  static Color get qrPaper => graphiteLight.surface1;
+
+  /// KitSurface.md: [shape] as a border with the kit radii.
+  ShapeBorder shapeOf(KitShape shape) {
+    RoundedRectangleBorder r(double radius) =>
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
+    return switch (shape) {
+      KitShape.square => const RoundedRectangleBorder(),
+      KitShape.tile => r(iconTileRadius),
+      KitShape.code => r(codeRadius),
+      KitShape.button => r(buttonRadius),
+      KitShape.panel => r(panelCornerRadius),
+      KitShape.card => r(cardRadius),
+      KitShape.dialog => r(panelRadius),
+      KitShape.sheet => RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+      ),
+      KitShape.pill => const StadiumBorder(),
+      KitShape.circle => const CircleBorder(),
+    };
+  }
+
+  /// KitSurface.md: the role colour of surface step [level].
+  Color fillOf(KitSurfaceLevel level) => switch (level) {
+    KitSurfaceLevel.ground => roles.ground,
+    KitSurfaceLevel.surface1 => roles.surface1,
+    KitSurfaceLevel.surface2 => roles.surface2,
+    KitSurfaceLevel.surface3 => roles.surface3,
+  };
+
+  /// KitProgressRow.md: the four stacked-bar fills, from existing roles.
+  List<Color> get segmentFills => [
+    roles.accent,
+    roles.text2,
+    roles.text3,
+    roles.surface3,
+  ];
 
   /// The tokens in force: the theme's extension, or ones derived from it.
   static KitTokens of(BuildContext context) {

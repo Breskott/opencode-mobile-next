@@ -37,8 +37,49 @@ abstract final class KitLayout {
   /// A list on its own.
   static const double listWidth = 960;
 
-  /// The list pane when a screen shows two panes.
-  static const double paneListWidth = 360;
+  /// The list pane when a screen shows two or three panes (KitScreen.md,
+  /// KitNav.md; LAY-5: 296, changed from 360).
+  static const double paneListWidth = 296;
+
+  /// The detail pane's maximum width, and the conversation's cap
+  /// (KitScreen.md, KitMarkdown.md, KitAskLine.md; LAY-5).
+  static const double paneDetailMaxWidth = 700;
+
+  /// The side pane of a three-pane PC window (KitScreen.md).
+  static const double paneSideWidth = 340;
+
+  /// The PC three panes, list · detail · side (KitScreen.md: 296/700/340).
+  static const double pcListPane = paneListWidth;
+  static const double pcDetailPane = paneDetailMaxWidth;
+  static const double pcSidePane = paneSideWidth;
+
+  /// The navigation rail on a medium window (KitNav.md, KitBottomInset.md).
+  static const double railWidth = 80;
+
+  /// An undo bar's maximum width (KitUndo.md).
+  static const double undoMaxWidth = 480;
+
+  /// The popover widths the KitMenu panel and the KitTerm bubble share
+  /// (KitMenu.md, KitTerm.md; README.md decision D2).
+  static const double popoverMinWidth = 200;
+  static const double popoverMaxWidth = 320;
+
+  /// A prompt bubble's maximum share of the available width (KitMessage.md).
+  static const double bubbleMaxShare = .85;
+
+  /// The composer field's height cap as a share of the window height
+  /// (KitComposer.md).
+  static const double composerMaxShare = .4;
+
+  /// A board lane: its cap on a phone or medium window, how much of each
+  /// neighbour peeks on compact, and the narrowest side by side
+  /// (KitBoardLane.md; LAY-2).
+  static const double laneMaxWidth = 400;
+  static const double lanePeek = 20;
+  static const double laneMinWidth = 296;
+
+  /// A page state's width (KitStateView.md).
+  static const double stateMaxWidth = 440;
 
   /// A bottom sheet on a medium window: capped and centred (§8.2).
   static const double sheetMaxWidth = 640;

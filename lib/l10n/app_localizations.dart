@@ -31978,6 +31978,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard changes'**
   String get kitDiscardConfirm;
+
+  /// Kit copy: spoken to a screen reader once after a value is copied to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get kitCopied;
 }
 
 class _AppLocalizationsDelegate

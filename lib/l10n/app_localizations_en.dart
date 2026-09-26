@@ -19823,4 +19823,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitDiscardConfirm => 'Discard changes';
+
+  @override
+  String get kitCopied => 'Copied';
 }

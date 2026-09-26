@@ -20093,4 +20093,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitDiscardConfirm => 'تجاهل التغييرات';
+
+  @override
+  String get kitCopied => 'تم النسخ';
 }
