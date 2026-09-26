@@ -19,16 +19,19 @@ import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../widgets/request_routes.dart';
 import 'kit_buttons.dart';
+import 'kit_icon_button.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
 import 'kit_notice.dart';
 import 'kit_progress.dart';
 import 'kit_technical_value.dart';
+import 'kit_text.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_haptics.dart';
 import 'motion/kit_reveal.dart';
 
 part 'kit_confirm_sheet.dart';
+part 'kit_consequences.dart';
 
 AppLocalizations _l10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -43,6 +46,18 @@ enum KitSheetHeight {
 
   /// Nearly the whole window; an end-side sheet on a wide window (§8.2).
   full,
+}
+
+/// The tone of a [showKitSheet] header's icon tile (§5 Sheets). [attention]
+/// is used only by `showKitRequestSheet` (LOOK-4, LOOK-24); nothing outside
+/// `lib/ui/kit/` reads it (G17).
+enum KitSheetTone { neutral, attention }
+
+extension on KitSheetTone {
+  _KitTileTone get _tileTone => switch (this) {
+    KitSheetTone.neutral => _KitTileTone.neutral,
+    KitSheetTone.attention => _KitTileTone.attention,
+  };
 }
 
 /// Typed input kept across dismissal, per target and server profile
@@ -134,6 +149,8 @@ Future<T?> showKitSheet<T>(
   required String title,
   required WidgetBuilder body,
   String? subtitle,
+  IconData? icon,
+  KitSheetTone tone = KitSheetTone.neutral,
   KitSheetHeight height = KitSheetHeight.content,
   KitAction? primary,
   KitAction? secondary,
@@ -168,6 +185,8 @@ Future<T?> showKitSheet<T>(
       return _KitSheetHost(
         title: title,
         subtitle: subtitle,
+        icon: icon,
+        tone: tone,
         body: body,
         height: height,
         shape: shape,
@@ -198,6 +217,8 @@ class KitSheet extends StatelessWidget {
     required this.title,
     required this.child,
     this.subtitle,
+    this.icon,
+    this.tone = KitSheetTone.neutral,
     this.primary,
     this.secondary,
     this.tertiary = const [],
@@ -211,6 +232,10 @@ class KitSheet extends StatelessWidget {
   /// The place in the person's words, at most four words.
   final String title;
   final String? subtitle;
+
+  /// The header's icon tile; null draws no tile.
+  final IconData? icon;
+  final KitSheetTone tone;
 
   /// The body; it scrolls inside the frame, so it is never its own
   /// scroll view or Scaffold.
@@ -258,49 +283,52 @@ class KitSheet extends StatelessWidget {
             tokens.space2,
             tokens.space1,
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    top: tokens.space3,
-                    end: tokens.space2,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Semantics(
-                        header: true,
-                        namesRoute: true,
-                        child: Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.sheetTitle,
-                        ),
+              if (icon case final icon?) ...[
+                KeyedSubtree(
+                  key: const ValueKey('kit-sheet-icon'),
+                  child: _KitIconTile(icon: icon, tone: tone._tileTone),
+                ),
+                SizedBox(height: tokens.space3),
+              ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        top: tokens.space3,
+                        end: tokens.space2,
                       ),
-                      if (subtitle != null) ...[
-                        SizedBox(height: tokens.space1 / 2),
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.sheetSubtitle,
-                        ),
-                      ],
-                    ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Semantics(
+                            header: true,
+                            namesRoute: true,
+                            child: KitText(title, role: KitTextRole.title),
+                          ),
+                          if (subtitle != null) ...[
+                            SizedBox(height: tokens.space1 / 2),
+                            KitText(subtitle, role: KitTextRole.secondary),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  if (onClose case final close?)
+                    KitIconButton(
+                      key: const ValueKey('kit-sheet-close'),
+                      icon: AppIconography.close,
+                      label: l10n.kitSheetClose,
+                      onPressed: close,
+                    ),
+                ],
               ),
-              if (onClose case final close?)
-                IconButton(
-                  key: const ValueKey('kit-sheet-close'),
-                  tooltip: l10n.kitSheetClose,
-                  onPressed: close,
-                  icon: const Icon(AppIconography.close),
-                ),
             ],
           ),
         ),
@@ -370,6 +398,62 @@ class _KitHandle extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The tone of the one header tile [_KitIconTile] draws (§5 Sheets).
+/// [KitSheet] uses [neutral] and [attention]; the confirm part (kit_confirm_
+/// sheet.dart) uses [neutral] and [danger] (LOOK-5: danger only inside a
+/// confirmation).
+enum _KitTileTone { neutral, attention, danger }
+
+/// The one 44 dp header tile (§5 Sheets, new private seam): a rounded square
+/// with a centred glyph, excluded from semantics — the title beside it (or,
+/// for a confirmation, the title after it) carries the meaning.
+class _KitIconTile extends StatelessWidget {
+  const _KitIconTile({required this.icon, required this.tone});
+
+  final IconData icon;
+  final _KitTileTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    // The tile stays the one 44 dp square at every text size, so its edge
+    // always lands on whole physical pixels (VL §7); only the glyph grows
+    // with the person's text size, clamped at maxIconScale (22 → 33 dp at
+    // most, still inside the 44 dp tile).
+    final glyphSize = tokens.iconSize(context, tokens.markIconSize);
+    final tileSize = tokens.markSize;
+    final (Color background, Color glyph) = switch (tone) {
+      _KitTileTone.neutral => (roles.surface3, roles.text1),
+      _KitTileTone.attention => (
+        Color.alphaBlend(
+          roles.attention.withValues(alpha: tokens.markTintAlpha),
+          tokens.sheetSurface,
+        ),
+        roles.attention,
+      ),
+      _KitTileTone.danger => (
+        Color.alphaBlend(
+          roles.danger.withValues(alpha: tokens.markTintAlpha),
+          tokens.sheetSurface,
+        ),
+        roles.danger,
+      ),
+    };
+    return ExcludeSemantics(
+      child: Container(
+        width: tileSize,
+        height: tileSize,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(tokens.markRadius),
+        ),
+        child: Icon(icon, size: glyphSize, color: glyph),
       ),
     );
   }
@@ -564,6 +648,8 @@ class _KitSheetHost extends StatefulWidget {
   const _KitSheetHost({
     required this.title,
     required this.subtitle,
+    required this.icon,
+    required this.tone,
     required this.body,
     required this.height,
     required this.shape,
@@ -579,6 +665,8 @@ class _KitSheetHost extends StatefulWidget {
 
   final String title;
   final String? subtitle;
+  final IconData? icon;
+  final KitSheetTone tone;
   final WidgetBuilder body;
   final KitSheetHeight height;
   final _KitModalShape shape;
@@ -705,6 +793,8 @@ class _KitSheetHostState extends State<_KitSheetHost> {
       key: widget.sheetKey,
       title: widget.title,
       subtitle: widget.subtitle,
+      icon: widget.icon,
+      tone: widget.tone,
       primary: widget.primary,
       secondary: widget.secondary,
       tertiary: widget.tertiary,

@@ -1,0 +1,162 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading test/kit/kit_manifest_test.dart
+00:00 +0: test/kit/kit_manifest_test.dart: G4: the manifest reads the kit library and every kit file
+00:00 +1: test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+00:00 +1 -1: test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks) [E]
+  3 kit manifest violation(s) break STANDARDS.md G4 (NAME-1, KIT-10–KIT-14, TEST-9, TEST-14, TEST-15). Fix the part; the allowlist only shrinks:
+    - gallery · KitConsequences: test/goldens/kit/kit_consequences_golden_test.dart lacks kitGallerySizes, an …_ar_… golden in Locale('ar')
+    - gallery · KitSheet: test/goldens/kit/kit_sheet_golden_test.dart lacks kitGallerySizes, an …_ar_… golden in Locale('ar')
+    - docRow · KitConsequences: no [KitConsequences] row in the kit.dart table
+  package:matcher                         fail
+  test/kit/kit_manifest_test.dart 1685:7  main.<fn>
+  
+00:00 +1 -1: loading test/text_scale_overflow_test.dart
+00:04 +1 -1: test/text_scale_overflow_test.dart: chat transcript and composer lay out at 2.5x
+00:05 +2 -1: test/text_scale_overflow_test.dart: the busy composer lays out at 2.5x
+00:05 +3 -1: test/text_scale_overflow_test.dart: workspace lays out at 2.5x
+00:05 +4 -1: test/text_scale_overflow_test.dart: the home shell lays out at 2.5x
+00:05 +5 -1: test/text_scale_overflow_test.dart: the Settings tab lays out at 2.5x
+00:05 +6 -1: test/text_scale_overflow_test.dart: settings lays out at 2.5x
+00:06 +7 -1: test/text_scale_overflow_test.dart: the servers first-run screen lays out at 2.5x
+00:06 +8 -1: test/text_scale_overflow_test.dart: the permission sheet lays out at 2.5x
+00:06 +9 -1: test/text_scale_overflow_test.dart: the form renderer lays out at 2.5x
+00:06 +10 -1: test/text_scale_overflow_test.dart: G6 kit overflow matrix (setUpAll)
+00:06 +10 -1: test/text_scale_overflow_test.dart: G6 kit overflow matrix every exported kit part has a scene, and every scene a part
+00:06 +10 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix every exported kit part has a scene, and every scene a part [E]
+  Expected: empty
+    Actual: ['KitConsequences']
+  Kit parts with no scene in test/kit/kit_overflow_scenes.dart (add one per declared state at the end of kitOverflowScenes)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/text_scale_overflow_test.dart 848:7            main.<fn>.<fn>
+  
+00:06 +10 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix the manifest fails loudly on what it cannot read
+00:06 +11 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix the KIT-24 check passes a stack and fails a track, narrow rows or no part
+00:06 +12 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix the overflow baseline exists and stays under the ceiling
+00:06 +13 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix LoadingList/loading fits every overflow size, text scale and direction
+00:07 +14 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix ProductEmptyState/empty fits every overflow size, text scale and direction
+00:08 +15 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix ProductErrorState/error fits every overflow size, text scale and direction
+00:08 +16 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix ProductInlineEmpty/empty fits every overflow size, text scale and direction
+00:09 +17 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix SectionLabel/default fits every overflow size, text scale and direction
+00:09 +18 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitActionStack/default fits every overflow size, text scale and direction
+00:10 +19 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitAskLine/default fits every overflow size, text scale and direction
+00:11 +20 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitButton/default fits every overflow size, text scale and direction
+00:11 +21 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitButton/working fits every overflow size, text scale and direction
+00:12 +22 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitButton/disabled fits every overflow size, text scale and direction
+00:12 +23 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction
+00:13 +24 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction
+00:14 +25 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitInset/default fits every overflow size, text scale and direction
+00:14 +26 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitIconButton/default fits every overflow size, text scale and direction
+00:14 +27 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitIllustration/default fits every overflow size, text scale and direction
+00:15 +28 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitPanel/default fits every overflow size, text scale and direction
+00:15 +29 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitNotice/default fits every overflow size, text scale and direction
+00:16 +30 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitLoadingBar/loading fits every overflow size, text scale and direction
+00:16 +31 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSkeletonRows/loading fits every overflow size, text scale and direction
+00:16 +32 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitProgressView/working fits every overflow size, text scale and direction
+00:17 +33 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction
+00:17 +34 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRequestCard/disabled fits every overflow size, text scale and direction
+00:18 +35 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRow/default fits every overflow size, text scale and direction
+00:18 +36 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRow/disabled fits every overflow size, text scale and direction
+00:19 +37 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRowIcon/default fits every overflow size, text scale and direction
+00:19 +38 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRowMenu/default fits every overflow size, text scale and direction
+00:19 +39 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRowMenu/disabled fits every overflow size, text scale and direction
+00:20 +40 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSwitchRow/default fits every overflow size, text scale and direction
+00:20 +41 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSwitchRow/disabled fits every overflow size, text scale and direction
+00:20 +42 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitExpandRow/default fits every overflow size, text scale and direction
+00:21 +43 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitExpandRow/expanded fits every overflow size, text scale and direction
+00:21 +44 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitScreen/default fits every overflow size, text scale and direction
+00:22 +45 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitScreen/loading fits every overflow size, text scale and direction
+00:22 +46 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSecretField/default fits every overflow size, text scale and direction
+00:23 +47 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSecretField/disabled fits every overflow size, text scale and direction
+00:24 +48 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSheet/default fits every overflow size, text scale and direction
+00:25 +49 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSheet/full fits every overflow size, text scale and direction
+00:26 +50 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSheet/loading fits every overflow size, text scale and direction
+00:27 +51 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSheet/disabled fits every overflow size, text scale and direction
+00:28 +52 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSheet/inline fits every overflow size, text scale and direction
+00:28 +53 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitConfirmSheet/neutral fits every overflow size, text scale and direction
+00:29 +54 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitConfirmSheet/destructive fits every overflow size, text scale and direction
+00:30 +55 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitConfirmSheet/stop fits every overflow size, text scale and direction
+00:30 +56 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitConfirmSheet/working fits every overflow size, text scale and direction
+00:31 +57 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitConfirmSheet/error fits every overflow size, text scale and direction
+00:31 +58 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitSkeletonTranscript/loading fits every overflow size, text scale and direction
+00:31 +59 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStateView/error fits every overflow size, text scale and direction
+00:32 +60 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStateView/working fits every overflow size, text scale and direction
+00:32 +61 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStateView/empty fits every overflow size, text scale and direction
+00:33 +62 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStateView/illustrated fits every overflow size, text scale and direction
+00:33 +63 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStatusLine/default fits every overflow size, text scale and direction
+00:34 +64 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStatusLine/together fits every overflow size, text scale and direction
+00:34 +65 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitStatusMark/default fits every overflow size, text scale and direction
+00:34 +66 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitTaskMark/default fits every overflow size, text scale and direction
+00:34 +67 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitAnimatedRows/default fits every overflow size, text scale and direction
+00:35 +68 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRefresh/default fits every overflow size, text scale and direction
+00:35 +69 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitReveal/default fits every overflow size, text scale and direction
+00:36 +70 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitTabSwitcher/default fits every overflow size, text scale and direction
+00:36 +71 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitGlass/default fits every overflow size, text scale and direction
+00:36 +72 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitEffectsScope/default fits every overflow size, text scale and direction
+00:37 +73 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitText/default fits every overflow size, text scale and direction
+00:37 +74 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRowGroup/default fits every overflow size, text scale and direction
+00:37 +75 -2: test/text_scale_overflow_test.dart: G6 kit overflow matrix (tearDownAll)
+00:37 +75 -2: Some tests failed.
+
+Failing tests:
+  test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+  test/text_scale_overflow_test.dart: G6 kit overflow matrix every exported kit part has a scene, and every scene a part
