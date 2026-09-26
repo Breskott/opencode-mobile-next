@@ -20096,4 +20096,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCopied => 'تم النسخ';
+
+  @override
+  String get kitQrTooLong =>
+      'This is too long for a QR code. Copy the link instead.';
 }

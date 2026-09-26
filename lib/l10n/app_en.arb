@@ -22245,5 +22245,9 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitQrTooLong": "This is too long for a QR code. Copy the link instead.",
+  "@kitQrTooLong": {
+    "description": "Kit QR code: shown in place of the code when the data does not fit a QR code at any size"
   }
 }
