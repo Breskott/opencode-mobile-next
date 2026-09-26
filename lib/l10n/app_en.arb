@@ -23645,5 +23645,29 @@
         "type": "String"
       }
     }
+  },
+  "kitUntilOff": "Until I turn it off",
+  "@kitUntilOff": {
+    "description": "KitSwitchRow risk step: a duration choice for a risky setting; it stays on until the person turns it off"
+  },
+  "kitUntilConversation": "For this conversation",
+  "@kitUntilConversation": {
+    "description": "KitSwitchRow risk step: a duration choice for a risky setting; it ends with the current conversation"
+  },
+  "kitUntilHour": "For an hour",
+  "@kitUntilHour": {
+    "description": "KitSwitchRow risk step: a duration choice for a risky setting; it ends after one hour"
+  },
+  "kitRiskTurnOn": "Turn on",
+  "@kitRiskTurnOn": {
+    "description": "KitSwitchRow risk step: the button that turns a risky setting on when there is only one duration"
+  },
+  "kitRiskNotNow": "Not now",
+  "@kitRiskNotNow": {
+    "description": "KitSwitchRow risk step: folds the step back and leaves the risky setting off"
+  },
+  "kitRiskTurnOff": "Turn off",
+  "@kitRiskTurnOff": {
+    "description": "KitSwitchRow: the status-line action that turns a risky setting off while it is on"
   }
 }
