@@ -22282,5 +22282,19 @@
         "type": "String"
       }
     }
+  },
+  "kitZoomShortcut": "{action} · Ctrl+{key}",
+  "@kitZoomShortcut": {
+    "description": "KitZoom: a zoom control's tooltip and label when a mouse or keyboard is in use, naming its keyboard shortcut, e.g. Zoom in · Ctrl+=",
+    "placeholders": {
+      "action": {
+        "type": "String",
+        "example": "Zoom in"
+      },
+      "key": {
+        "type": "String",
+        "example": "="
+      }
+    }
   }
 }

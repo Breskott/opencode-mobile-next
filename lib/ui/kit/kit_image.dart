@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -22,6 +25,10 @@ AppLocalizations _l10n(BuildContext context) =>
 /// many device px on the longer side, so an unconstrained huge source never
 /// decodes at its full native resolution.
 const int _kitImageUnboundedCap = 4096;
+
+/// KitImage.md "failed": from this many logical px wide the failure state
+/// also shows its words (when they fit in two lines).
+const double _kitImageWordsMinWidth = 120;
 
 /// Where a [KitImage] or [KitAvatar]'s pixels come from. There is never a
 /// raw URL string: a network image arrives as an [ImageProvider] built by a
@@ -55,27 +62,158 @@ ImageProvider _providerOf(KitImageSource source) => switch (source) {
   _ProviderSource(:final provider) => provider,
 };
 
-/// The decode target for a source laid out in a box of [boxWidth] by
-/// [boxHeight] logical px (either may be null when that axis is
-/// unbounded), at [dpr] device pixels per logical px (KitImage.md
-/// "Decode size").
+/// The decode target for a source drawn with [fit] in a box of [boxWidth]
+/// by [boxHeight] logical px (either may be null when that axis is
+/// unbounded), at [dpr] device pixels per logical px (KitImage.md "Decode
+/// size").
+///
+/// With both axes bounded the binding axis is chosen from the source's own
+/// aspect ratio at decode time: `contain` decodes to fit inside the box
+/// ([ResizeImagePolicy.fit]), `cover` decodes so the shorter side still
+/// covers the box ([_KitCoverResizeImage]). Neither ever upscales.
 ImageProvider _decodeProvider(
   ImageProvider base,
   double? boxWidth,
   double? boxHeight,
   double dpr,
+  KitImageFit fit,
 ) {
+  int px(double logical) => math.max(1, (logical * dpr).round());
+  if (boxWidth != null && boxHeight != null) {
+    final width = px(boxWidth);
+    final height = px(boxHeight);
+    return fit == KitImageFit.cover
+        ? _KitCoverResizeImage(base, width: width, height: height)
+        : ResizeImage(
+            base,
+            width: width,
+            height: height,
+            policy: ResizeImagePolicy.fit,
+          );
+  }
   if (boxWidth != null) {
-    return ResizeImage.resizeIfNeeded((boxWidth * dpr).round(), null, base);
+    return ResizeImage.resizeIfNeeded(px(boxWidth), null, base);
   }
   if (boxHeight != null) {
-    return ResizeImage.resizeIfNeeded(null, (boxHeight * dpr).round(), base);
+    return ResizeImage.resizeIfNeeded(null, px(boxHeight), base);
   }
   return ResizeImage(
     base,
     width: _kitImageUnboundedCap,
     height: _kitImageUnboundedCap,
     policy: ResizeImagePolicy.fit,
+  );
+}
+
+@immutable
+class _KitCoverKey {
+  const _KitCoverKey(this.base, this.width, this.height);
+  final Object base;
+  final int width;
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _KitCoverKey &&
+      other.base == base &&
+      other.width == width &&
+      other.height == height;
+
+  @override
+  int get hashCode => Object.hash(base, width, height);
+}
+
+/// Decodes [base] at the smallest size whose shorter side still covers a
+/// [width] × [height] device-px box (BoxFit.cover), keeping the source's
+/// aspect ratio and never upscaling. [ResizeImagePolicy] has no cover
+/// policy, so this is ResizeImage's own decode hook with a cover target.
+class _KitCoverResizeImage extends ImageProvider<_KitCoverKey> {
+  const _KitCoverResizeImage(
+    this.base, {
+    required this.width,
+    required this.height,
+  });
+
+  final ImageProvider base;
+  final int width;
+  final int height;
+
+  @override
+  Future<_KitCoverKey> obtainKey(ImageConfiguration configuration) {
+    // Keeps a synchronously resolved base key synchronous, so a cached
+    // image still reports wasSynchronouslyLoaded (no cross-fade).
+    Completer<_KitCoverKey>? completer;
+    SynchronousFuture<_KitCoverKey>? result;
+    base.obtainKey(configuration).then((Object key) {
+      final cover = _KitCoverKey(key, width, height);
+      if (completer == null) {
+        result = SynchronousFuture<_KitCoverKey>(cover);
+      } else {
+        completer.complete(cover);
+      }
+    });
+    if (result != null) return result!;
+    completer = Completer<_KitCoverKey>();
+    return completer.future;
+  }
+
+  @override
+  ImageStreamCompleter loadImage(
+    _KitCoverKey key,
+    ImageDecoderCallback decode,
+  ) {
+    Future<ui.Codec> decodeCover(
+      ui.ImmutableBuffer buffer, {
+      ui.TargetImageSizeCallback? getTargetSize,
+    }) => decode(
+      buffer,
+      getTargetSize: (intrinsicWidth, intrinsicHeight) {
+        if (intrinsicWidth <= 0 || intrinsicHeight <= 0) {
+          return ui.TargetImageSize(
+            width: intrinsicWidth,
+            height: intrinsicHeight,
+          );
+        }
+        final scale = math.min(
+          1.0,
+          math.max(width / intrinsicWidth, height / intrinsicHeight),
+        );
+        return ui.TargetImageSize(
+          width: math.max(1, (intrinsicWidth * scale).round()),
+          height: math.max(1, (intrinsicHeight * scale).round()),
+        );
+      },
+    );
+    return base.loadImage(key.base, decodeCover);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is _KitCoverResizeImage &&
+      other.base == base &&
+      other.width == width &&
+      other.height == height;
+
+  @override
+  int get hashCode => Object.hash(base, width, height);
+}
+
+/// The loaded cross-fade shared by [KitImage] and [KitAvatar]: the first
+/// frame fades in on [KitMotion.quick], unless it loaded synchronously or
+/// motion is reduced (MOT-2: no fade-scale).
+Widget _crossFade(
+  BuildContext context,
+  Widget child,
+  bool wasSynchronouslyLoaded,
+) {
+  if (wasSynchronouslyLoaded || KitMotion.reduced(context)) return child;
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: KitMotion.quick,
+    curve: KitMotion.enter,
+    child: child,
+    builder: (context, opacity, child) =>
+        Opacity(opacity: opacity, child: child),
   );
 }
 
@@ -147,8 +285,8 @@ class KitImage extends StatelessWidget {
                 boxWidth,
                 boxHeight,
                 dpr,
+                fit,
               );
-              final extent = boxWidth ?? double.infinity;
               return Image(
                 key: imageKey,
                 image: provider,
@@ -160,25 +298,12 @@ class KitImage extends StatelessWidget {
                   // Flutter's own Image state keeps the previous frame's
                   // pixels visible (gaplessPlayback) while a new source
                   // loads, so `child` already shows the old frame here —
-                  // this only adds the loaded-frame cross-fade (MOT-2: no
-                  // fade-scale).
-                  if (frame == null ||
-                      wasSynchronouslyLoaded ||
-                      KitMotion.reduced(context)) {
-                    return child;
-                  }
-                  return TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 1),
-                    duration: KitMotion.quick,
-                    curve: KitMotion.enter,
-                    child: child,
-                    builder: (context, opacity, child) =>
-                        Opacity(opacity: opacity, child: child),
-                  );
+                  // this only adds the loaded-frame cross-fade.
+                  if (frame == null) return child;
+                  return _crossFade(context, child, wasSynchronouslyLoaded);
                 },
                 errorBuilder: (context, error, stack) =>
-                    fallback ??
-                    _KitImageFailure(tokens: tokens, wide: extent >= 120),
+                    fallback ?? _KitImageFailure(tokens: tokens),
               );
             },
           ),
@@ -186,52 +311,96 @@ class KitImage extends StatelessWidget {
       ),
     );
     final label = semanticsLabel;
-    if (label == null) return content;
+    if (label == null) return ExcludeSemantics(child: content);
+    // One image node. The loaded image adds nothing to it; the failure
+    // state merges its words into it ("A photo, Can't show this image"),
+    // so a screen reader can tell a broken image from a loaded one
+    // (A11Y: "The failure state's words are read").
     return Semantics(
+      container: true,
       image: true,
       label: label,
-      excludeSemantics: true,
       child: content,
     );
   }
 }
 
 class _KitImageFailure extends StatelessWidget {
-  const _KitImageFailure({required this.tokens, required this.wide});
+  const _KitImageFailure({required this.tokens});
 
   final KitTokens tokens;
-  final bool wide;
+
+  /// Whether [words] fit in two lines of the secondary role across
+  /// [maxWidth] at the ambient text scale (KitImage.md "200 % text": the
+  /// words wrap to two lines, then the glyph alone shows).
+  static bool _fitsTwoLines(
+    BuildContext context,
+    String words,
+    double maxWidth,
+  ) {
+    if (maxWidth <= 0) return false;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: words,
+        style: KitText.styleOf(context, KitTextRole.secondary),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 2,
+    )..layout(maxWidth: maxWidth);
+    final fits = !painter.didExceedMaxLines;
+    painter.dispose();
+    return fits;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = _l10n(context);
-    return ColoredBox(
-      color: tokens.roles.surface2,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              AppIconography.imageBroken,
-              size: 20,
-              color: tokens.roles.text2,
-            ),
-            if (wide) ...[
-              SizedBox(height: tokens.space1),
-              Padding(
-                padding: EdgeInsetsDirectional.symmetric(
-                  horizontal: tokens.space2,
+    final words = _l10n(context).kitImageUnavailable;
+    return Semantics(
+      label: words,
+      child: ExcludeSemantics(
+        child: ColoredBox(
+          color: tokens.roles.surface2,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final inset = tokens.space2;
+              final showWords =
+                  constraints.maxWidth >= _kitImageWordsMinWidth &&
+                  _fitsTwoLines(
+                    context,
+                    words,
+                    constraints.maxWidth - 2 * inset,
+                  );
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      AppIconography.imageBroken,
+                      size: tokens.smallIconSize,
+                      color: tokens.roles.text2,
+                    ),
+                    if (showWords) ...[
+                      SizedBox(height: tokens.space1),
+                      Padding(
+                        padding: EdgeInsetsDirectional.symmetric(
+                          horizontal: inset,
+                        ),
+                        child: KitText(
+                          words,
+                          role: KitTextRole.secondary,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                child: KitText(
-                  l10n.kitImageUnavailable,
-                  role: KitTextRole.secondary,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -283,7 +452,7 @@ class KitAvatar extends StatelessWidget {
         : KitTextRole.headline;
     final source = image;
     final identity = icon != null
-        ? Icon(icon, size: 20, color: tokens.roles.text1)
+        ? Icon(icon, size: tokens.smallIconSize, color: tokens.roles.text1)
         : MediaQuery.withClampedTextScaling(
             maxScaleFactor: KitTokens.monogramMaxTextScale,
             child: KitText(
@@ -306,50 +475,42 @@ class KitAvatar extends StatelessWidget {
             children: [
               identity,
               if (source != null)
-                Positioned.fill(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final dpr = MediaQuery.devicePixelRatioOf(context);
-                      final boxWidth = constraints.maxWidth.isFinite
-                          ? constraints.maxWidth
-                          : diameter;
-                      final provider = _decodeProvider(
-                        _providerOf(source),
-                        boxWidth,
-                        null,
-                        dpr,
-                      );
-                      return Image(
-                        image: provider,
-                        fit: BoxFit.cover,
-                        gaplessPlayback: true,
-                        excludeFromSemantics: true,
-                        filterQuality: FilterQuality.high,
-                        frameBuilder:
-                            (context, child, frame, wasSynchronouslyLoaded) {
-                              if (frame == null) {
-                                // Loading: transparent, so the identity mark
-                                // beneath keeps the slot from ever reading
-                                // empty.
-                                return const SizedBox.shrink();
-                              }
-                              if (wasSynchronouslyLoaded ||
-                                  KitMotion.reduced(context)) {
-                                return child;
-                              }
-                              return TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0, end: 1),
-                                duration: KitMotion.quick,
-                                curve: KitMotion.enter,
-                                child: child,
-                                builder: (context, opacity, child) =>
-                                    Opacity(opacity: opacity, child: child),
-                              );
-                            },
-                        errorBuilder: (context, error, stack) =>
-                            const SizedBox.shrink(),
-                      );
-                    },
+                PositionedDirectional(
+                  start: 0,
+                  end: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Image(
+                    // The circle is always filled (BoxFit.cover), so the
+                    // decode keeps the shorter side at the diameter: a
+                    // wide favicon is never drawn from a thinner decode.
+                    image: _decodeProvider(
+                      _providerOf(source),
+                      diameter,
+                      diameter,
+                      MediaQuery.devicePixelRatioOf(context),
+                      KitImageFit.cover,
+                    ),
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    excludeFromSemantics: true,
+                    filterQuality: FilterQuality.high,
+                    frameBuilder:
+                        (context, child, frame, wasSynchronouslyLoaded) {
+                          if (frame == null) {
+                            // Loading: transparent, so the identity mark
+                            // beneath keeps the slot from ever reading
+                            // empty.
+                            return const SizedBox.shrink();
+                          }
+                          return _crossFade(
+                            context,
+                            child,
+                            wasSynchronouslyLoaded,
+                          );
+                        },
+                    errorBuilder: (context, error, stack) =>
+                        const SizedBox.shrink(),
                   ),
                 ),
             ],
@@ -401,18 +562,18 @@ enum KitZoomMode {
 /// Drives a [KitZoom] from its host (the work graph's Fit on open and its
 /// keyboard zoom). [value] is the current transform, for tests.
 class KitZoomController extends ChangeNotifier {
+  /// Wraps a host's [transformation] controller when it has one.
   KitZoomController({TransformationController? transformation})
-    : transformation = transformation ?? TransformationController(),
+    : _transformation = transformation ?? TransformationController(),
       _ownsTransformation = transformation == null {
-    this.transformation.addListener(notifyListeners);
+    _transformation.addListener(notifyListeners);
   }
 
-  /// Wraps a host's controller when it has one.
-  final TransformationController transformation;
+  final TransformationController _transformation;
   final bool _ownsTransformation;
   _KitZoomState? _state;
 
-  Matrix4 get value => transformation.value;
+  Matrix4 get value => _transformation.value;
 
   void _attach(_KitZoomState state) => _state = state;
 
@@ -425,7 +586,7 @@ class KitZoomController extends ChangeNotifier {
   void reset() {
     final state = _state;
     if (state == null) {
-      transformation.value = Matrix4.identity();
+      _transformation.value = Matrix4.identity();
     } else {
       state.resetView();
     }
@@ -441,19 +602,19 @@ class KitZoomController extends ChangeNotifier {
       state.stepZoom(inward);
       return;
     }
-    final current = transformation.value.getMaxScaleOnAxis();
-    final target = (current * (inward ? 1.5 : 1 / 1.5)).clamp(
-      0.2,
-      KitZoom.maxScale,
-    );
-    transformation.value = Matrix4.identity()
-      ..scaleByDouble(target, target, 1, 1);
+    final current = _transformation.value.getMaxScaleOnAxis();
+    final factor = inward
+        ? _KitZoomState._zoomStep
+        : 1 / _KitZoomState._zoomStep;
+    final target = (current * factor).clamp(KitZoom.minScale, KitZoom.maxScale);
+    _transformation.value = Matrix4.identity()
+      ..scaleByDouble(target, target, target, 1);
   }
 
   @override
   void dispose() {
-    transformation.removeListener(notifyListeners);
-    if (_ownsTransformation) transformation.dispose();
+    _transformation.removeListener(notifyListeners);
+    if (_ownsTransformation) _transformation.dispose();
     super.dispose();
   }
 }
@@ -502,10 +663,47 @@ class KitZoom extends StatefulWidget {
   State<KitZoom> createState() => _KitZoomState();
 }
 
+enum _ZoomCommand { zoomIn, zoomOut, reset }
+
+class _ZoomIntent extends Intent {
+  const _ZoomIntent(this.command);
+  final _ZoomCommand command;
+}
+
+class _PanIntent extends Intent {
+  const _PanIntent(this.delta);
+
+  /// Where the view moves over the content, in logical px.
+  final Offset delta;
+}
+
+/// An action that is only enabled while [enabled] says so, so a key it
+/// cannot use (an arrow at rest, Ctrl+0 at the start view) propagates to
+/// the host's shortcuts instead of being swallowed.
+class _GuardedAction<T extends Intent> extends Action<T> {
+  _GuardedAction({required this.enabled, required this.onInvoke});
+
+  final bool Function(T intent) enabled;
+  final void Function(T intent) onInvoke;
+
+  @override
+  bool isEnabled(T intent) => enabled(intent);
+
+  @override
+  Object? invoke(T intent) {
+    onInvoke(intent);
+    return null;
+  }
+}
+
 class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
+  /// One step of the controls, the keys and one Ctrl+wheel notch.
   static const double _zoomStep = 1.5;
   static const double _doubleTapScale = 2;
   static const double _epsilon = 0.01;
+
+  /// How far one arrow key moves the view, in logical px: a behaviour
+  /// constant (like [KitZoom.maxScale]), not a look token.
   static const double _panStep = 32;
 
   final GlobalKey _viewportKey = GlobalKey(debugLabel: 'kit-zoom-viewport');
@@ -519,12 +717,18 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
   KitZoomController? _owned;
   KitZoomController get _controller =>
       widget.controller ?? (_owned ??= KitZoomController());
-  TransformationController get _t => _controller.transformation;
+  TransformationController get _t => _controller._transformation;
 
   Animation<Matrix4>? _matrixAnim;
-  double _fittedScale = 1;
+
+  /// The start view: identity in fit mode; the fitted child in canvas mode
+  /// (set by the first post-frame fit).
+  Matrix4 _start = Matrix4.identity();
   Offset? _doubleTapPosition;
   Size _viewportSize = Size.zero;
+
+  Matrix4? _gestureStart;
+  Offset _gestureFocal = Offset.zero;
 
   @override
   void initState() {
@@ -541,8 +745,9 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
   void didUpdateWidget(KitZoom oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
-      (oldWidget.controller ?? _owned)?._detach(this);
-      oldWidget.controller?.transformation.removeListener(_onTransformChanged);
+      final old = oldWidget.controller ?? _owned;
+      old?._detach(this);
+      old?._transformation.removeListener(_onTransformChanged);
       if (oldWidget.controller == null) {
         _owned?.dispose();
         _owned = null;
@@ -579,14 +784,86 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
     if (matrix != null) _t.value = matrix;
   }
 
-  double get _scale => _t.value.getMaxScaleOnAxis();
-  double get _restScale =>
-      widget.mode == KitZoomMode.canvas ? _fittedScale : 1.0;
-  bool get _atRest => (_scale - _restScale).abs() < _epsilon;
+  // --- geometry -------------------------------------------------------------
+  //
+  // Every matrix KitZoom makes is a uniform scale s plus a translation t
+  // (scene point x is drawn at s·x + t), in the viewport's own physical
+  // coordinates: an image is never mirrored under RTL.
+
+  static double _scaleOf(Matrix4 m) => m.storage[0];
+  static Offset _translationOf(Matrix4 m) =>
+      Offset(m.storage[12], m.storage[13]);
+  static Matrix4 _matrix(double scale, Offset translation) => Matrix4.identity()
+    ..translateByDouble(translation.dx, translation.dy, 0, 1)
+    ..scaleByDouble(scale, scale, scale, 1);
+
+  Size get _viewport =>
+      (_viewportKey.currentContext?.findRenderObject() as RenderBox?)?.size ??
+      _viewportSize;
+
+  Size get _childSize {
+    final box = _childKey.currentContext?.findRenderObject() as RenderBox?;
+    return box != null && box.hasSize ? box.size : _viewport;
+  }
+
+  double get _floor =>
+      widget.mode == KitZoomMode.canvas ? KitZoom.minScale : 1.0;
+
+  /// Keeps the child over the view: a child larger than the view cannot
+  /// leave a gap at an edge, and a smaller one (canvas mode, zoomed out)
+  /// stays wholly inside, free to sit anywhere up to centred and beyond.
+  Matrix4 _clamped(Matrix4 m) {
+    final scale = _scaleOf(m).clamp(_floor, KitZoom.maxScale);
+    final t = _translationOf(m);
+    final view = _viewport;
+    final child = _childSize;
+    double axis(double value, double viewExtent, double childExtent) {
+      final slack = viewExtent - childExtent * scale;
+      return value.clamp(math.min(0.0, slack), math.max(0.0, slack));
+    }
+
+    return _matrix(
+      scale,
+      Offset(
+        axis(t.dx, view.width, child.width),
+        axis(t.dy, view.height, child.height),
+      ),
+    );
+  }
+
+  /// [current] zoomed to [targetScale] (clamped to this mode's range) with
+  /// the scene point under viewport point [p] kept under it.
+  Matrix4 _zoomedTo(Matrix4 current, Offset p, double targetScale) {
+    final scale = _scaleOf(current);
+    final t = _translationOf(current);
+    final scene = (p - t) / scale;
+    final target = targetScale.clamp(_floor, KitZoom.maxScale);
+    return _clamped(_matrix(target, p - scene * target));
+  }
+
+  static bool _same(Matrix4 a, Matrix4 b) =>
+      (_scaleOf(a) - _scaleOf(b)).abs() < _epsilon &&
+      (_translationOf(a) - _translationOf(b)).distance < 0.5;
+
+  double get _scale => _scaleOf(_t.value);
+  bool get _atRest => _same(_t.value, _start);
   bool get _atMax => _scale >= KitZoom.maxScale - _epsilon;
-  bool get _canZoomOut => widget.mode == KitZoomMode.canvas
-      ? _scale > KitZoom.minScale + _epsilon
-      : !_atRest;
+  bool get _canZoomOut => _scale > _floor + _epsilon;
+
+  /// The view can move in the direction of [delta].
+  bool _canPan(Offset delta) =>
+      !_same(_clamped(_panned(_t.value, delta)), _t.value);
+
+  bool get _pannable =>
+      _canPan(const Offset(1, 0)) ||
+      _canPan(const Offset(-1, 0)) ||
+      _canPan(const Offset(0, 1)) ||
+      _canPan(const Offset(0, -1));
+
+  /// The view moves by [delta] over the content, so the content moves the
+  /// other way.
+  static Matrix4 _panned(Matrix4 m, Offset delta) =>
+      _matrix(_scaleOf(m), _translationOf(m) - delta);
 
   void _fitCanvas() {
     if (!mounted) return;
@@ -601,43 +878,34 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
     }
     final matrix = _canvasFitMatrix(viewportBox.size, childBox.size);
     if (matrix != null) {
-      setState(() => _t.value = matrix);
+      _anim.stop();
+      setState(() {
+        _start = matrix;
+        _t.value = matrix;
+      });
     }
   }
 
-  Matrix4? _canvasFitMatrix(Size viewport, Size child) {
+  static Matrix4? _canvasFitMatrix(Size viewport, Size child) {
     if (child.width <= 0 || child.height <= 0) return null;
     final scale = math
         .min(viewport.width / child.width, viewport.height / child.height)
         .clamp(KitZoom.minScale, 1.0);
-    _fittedScale = scale;
-    final dx = (viewport.width - child.width * scale) / 2;
-    final dy = (viewport.height - child.height * scale) / 2;
-    return Matrix4.identity()
-      ..translateByDouble(dx, dy, 0, 1)
-      ..scaleByDouble(scale, scale, 1, 1);
+    return _matrix(
+      scale,
+      Offset(
+        (viewport.width - child.width * scale) / 2,
+        (viewport.height - child.height * scale) / 2,
+      ),
+    );
   }
 
-  /// Keeps the scene point under viewport point [p] fixed while applying a
-  /// relative zoom of [factor] to [current] (clamped to this mode's
-  /// range).
-  Matrix4 _zoomedAt(Matrix4 current, Offset p, double factor) {
-    final currentScale = current.getMaxScaleOnAxis();
-    final floor = widget.mode == KitZoomMode.canvas ? KitZoom.minScale : 1.0;
-    final targetScale = (currentScale * factor).clamp(floor, KitZoom.maxScale);
-    final applied = targetScale / currentScale;
-    if ((applied - 1).abs() < 1e-9) return current.clone();
-    final inverse = Matrix4.identity()..copyInverse(current);
-    final scene = MatrixUtils.transformPoint(inverse, p);
-    return current.clone()
-      ..translateByDouble(scene.dx, scene.dy, 0, 1)
-      ..scaleByDouble(applied, applied, 1, 1)
-      ..translateByDouble(-scene.dx, -scene.dy, 0, 1);
-  }
+  // --- commands -------------------------------------------------------------
 
   void _animateTo(Matrix4 target) {
+    _anim.stop();
     if (KitMotion.reduced(context)) {
-      setState(() => _t.value = target);
+      _t.value = target;
       return;
     }
     _matrixAnim = Matrix4Tween(
@@ -648,35 +916,50 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
   }
 
   void resetView() {
-    final target = widget.mode == KitZoomMode.canvas
-        ? (_canvasFitMatrix(
-                _viewportKey.currentContext?.size ?? _viewportSize,
-                _childKey.currentContext?.size ?? Size.zero,
-              ) ??
-              Matrix4.identity())
-        : Matrix4.identity();
-    _animateTo(target);
+    if (widget.mode == KitZoomMode.canvas) {
+      final fitted = _canvasFitMatrix(_viewport, _childSize);
+      if (fitted != null) _start = fitted;
+    }
+    _animateTo(_start.clone());
+  }
+
+  Offset get _viewCentre {
+    final view = _viewport;
+    return view.isEmpty ? Offset.zero : view.center(Offset.zero);
   }
 
   void stepZoom(bool inward) {
-    final center = _viewportSize.isEmpty
-        ? Offset.zero
-        : Offset(_viewportSize.width / 2, _viewportSize.height / 2);
-    _animateTo(_zoomedAt(_t.value, center, inward ? _zoomStep : 1 / _zoomStep));
-  }
-
-  void _relativeZoomAt(Offset point, double factor) {
-    setState(() => _t.value = _zoomedAt(_t.value, point, factor));
+    final factor = inward ? _zoomStep : 1 / _zoomStep;
+    _animateTo(_zoomedTo(_t.value, _viewCentre, _scale * factor));
   }
 
   void _panBy(Offset delta) {
-    if (_atRest) return;
-    setState(
-      () =>
-          _t.value = _t.value.clone()
-            ..translateByDouble(delta.dx, delta.dy, 0, 1),
+    _anim.stop();
+    _t.value = _clamped(_panned(_t.value, delta));
+  }
+
+  // --- input ----------------------------------------------------------------
+
+  void _handleScaleStart(ScaleStartDetails details) {
+    _anim.stop();
+    _gestureStart = _t.value.clone();
+    _gestureFocal = details.localFocalPoint;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    final start = _gestureStart;
+    if (start == null) return;
+    // Pinch follows the fingers: the scene point under the gesture's first
+    // focal point stays under the current one.
+    final startScale = _scaleOf(start);
+    final scene = (_gestureFocal - _translationOf(start)) / startScale;
+    final target = (startScale * details.scale).clamp(_floor, KitZoom.maxScale);
+    _t.value = _clamped(
+      _matrix(target, details.localFocalPoint - scene * target),
     );
   }
+
+  void _handleScaleEnd(ScaleEndDetails details) => _gestureStart = null;
 
   void _handleDoubleTapDown(TapDownDetails details) {
     _doubleTapPosition = details.localPosition;
@@ -686,93 +969,140 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
     final p = _doubleTapPosition;
     if (p == null) return;
     if (_atRest) {
-      _animateTo(_zoomedAt(_t.value, p, _doubleTapScale));
+      // An absolute 2×, whatever the start scale (a fitted canvas is
+      // often well under 1×).
+      _animateTo(_zoomedTo(_t.value, p, _doubleTapScale));
     } else {
       resetView();
     }
   }
 
+  /// Ctrl (or Cmd) + wheel zooms one step per notch at the pointer. The
+  /// pointer-signal resolver lets exactly one handler take the event, and a
+  /// plain wheel is left alone so the host can scroll.
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is PointerScrollEvent) {
+      final keys = HardwareKeyboard.instance;
+      if (!keys.isControlPressed && !keys.isMetaPressed) return;
+      if (event.scrollDelta.dy == 0) return;
+      final at = event.localPosition;
+      final factor = event.scrollDelta.dy < 0 ? _zoomStep : 1 / _zoomStep;
+      GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+        _anim.stop();
+        _t.value = _zoomedTo(_t.value, at, _scale * factor);
+      });
+    } else if (event is PointerScaleEvent) {
+      final at = event.localPosition;
+      final scale = event.scale;
+      GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+        _anim.stop();
+        _t.value = _zoomedTo(_t.value, at, _scale * scale);
+      });
+    }
+  }
+
+  static const _ctrlKeys = <LogicalKeyboardKey>[
+    LogicalKeyboardKey.control,
+    LogicalKeyboardKey.meta,
+  ];
+
+  Map<ShortcutActivator, Intent> get _shortcuts => {
+    for (final modifier in _ctrlKeys) ...{
+      LogicalKeySet(modifier, LogicalKeyboardKey.equal): const _ZoomIntent(
+        _ZoomCommand.zoomIn,
+      ),
+      LogicalKeySet(modifier, LogicalKeyboardKey.minus): const _ZoomIntent(
+        _ZoomCommand.zoomOut,
+      ),
+      LogicalKeySet(modifier, LogicalKeyboardKey.digit0): const _ZoomIntent(
+        _ZoomCommand.reset,
+      ),
+    },
+    const SingleActivator(LogicalKeyboardKey.arrowUp): const _PanIntent(
+      Offset(0, -_panStep),
+    ),
+    const SingleActivator(LogicalKeyboardKey.arrowDown): const _PanIntent(
+      Offset(0, _panStep),
+    ),
+    const SingleActivator(LogicalKeyboardKey.arrowLeft): const _PanIntent(
+      Offset(-_panStep, 0),
+    ),
+    const SingleActivator(LogicalKeyboardKey.arrowRight): const _PanIntent(
+      Offset(_panStep, 0),
+    ),
+  };
+
+  late final Map<Type, Action<Intent>> _actions = {
+    _ZoomIntent: _GuardedAction<_ZoomIntent>(
+      enabled: (intent) => switch (intent.command) {
+        _ZoomCommand.zoomIn => !_atMax,
+        _ZoomCommand.zoomOut => _canZoomOut,
+        _ZoomCommand.reset => !_atRest,
+      },
+      onInvoke: (intent) => switch (intent.command) {
+        _ZoomCommand.zoomIn => stepZoom(true),
+        _ZoomCommand.zoomOut => stepZoom(false),
+        _ZoomCommand.reset => resetView(),
+      },
+    ),
+    _PanIntent: _GuardedAction<_PanIntent>(
+      enabled: (intent) => _canPan(intent.delta),
+      onInvoke: (intent) => _panBy(intent.delta),
+    ),
+  };
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
-    Widget viewer = LayoutBuilder(
-      key: _viewportKey,
-      builder: (context, constraints) {
-        _viewportSize = constraints.biggest;
-        return InteractiveViewer(
-          key: widget.zoomKey,
-          transformationController: _t,
-          constrained: widget.mode == KitZoomMode.fit,
-          boundaryMargin: widget.mode == KitZoomMode.canvas
-              ? const EdgeInsets.all(double.infinity)
-              : EdgeInsets.zero,
-          minScale: widget.mode == KitZoomMode.canvas ? KitZoom.minScale : 1.0,
-          maxScale: KitZoom.maxScale,
-          child: KeyedSubtree(key: _childKey, child: widget.child),
-        );
-      },
+    final finePointer = KitLayout.finePointer(context);
+    Widget viewer = ClipRect(
+      child: LayoutBuilder(
+        key: _viewportKey,
+        builder: (context, constraints) {
+          _viewportSize = constraints.biggest;
+          final child = KeyedSubtree(key: _childKey, child: widget.child);
+          return Transform(
+            key: widget.zoomKey,
+            transform: _t.value,
+            child: widget.mode == KitZoomMode.canvas
+                // The canvas child keeps its own (larger) size. The
+                // transform's origin is the viewport's physical top-left,
+                // so this alignment is physical on purpose.
+                ? OverflowBox(
+                    alignment: Alignment.topLeft,
+                    minWidth: 0,
+                    minHeight: 0,
+                    maxWidth: double.infinity,
+                    maxHeight: double.infinity,
+                    child: child,
+                  )
+                : child,
+          );
+        },
+      ),
     );
     viewer = GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: _focusNode.requestFocus,
       onDoubleTapDown: _handleDoubleTapDown,
       onDoubleTap: _handleDoubleTap,
+      onScaleStart: _handleScaleStart,
+      onScaleUpdate: _handleScaleUpdate,
+      onScaleEnd: _handleScaleEnd,
       child: viewer,
     );
-    final finePointer = KitLayout.finePointer(context);
+    viewer = Listener(onPointerSignal: _handlePointerSignal, child: viewer);
     if (finePointer) {
-      viewer = Listener(
-        onPointerSignal: (event) {
-          if (event is PointerScrollEvent &&
-              (HardwareKeyboard.instance.isControlPressed ||
-                  HardwareKeyboard.instance.isMetaPressed)) {
-            final factor = event.scrollDelta.dy < 0 ? _zoomStep : 1 / _zoomStep;
-            _relativeZoomAt(event.localPosition, factor);
-          }
-        },
-        child: MouseRegion(
-          cursor: _atRest ? MouseCursor.defer : SystemMouseCursors.grab,
-          child: viewer,
-        ),
+      viewer = MouseRegion(
+        cursor: _pannable ? SystemMouseCursors.grab : MouseCursor.defer,
+        child: viewer,
       );
     }
     viewer = Focus(focusNode: _focusNode, child: viewer);
     if (finePointer) {
-      viewer = CallbackShortcuts(
-        bindings: {
-          LogicalKeySet(
-            LogicalKeyboardKey.control,
-            LogicalKeyboardKey.equal,
-          ): () =>
-              stepZoom(true),
-          LogicalKeySet(
-            LogicalKeyboardKey.meta,
-            LogicalKeyboardKey.equal,
-          ): () =>
-              stepZoom(true),
-          LogicalKeySet(
-            LogicalKeyboardKey.control,
-            LogicalKeyboardKey.minus,
-          ): () =>
-              stepZoom(false),
-          LogicalKeySet(
-            LogicalKeyboardKey.meta,
-            LogicalKeyboardKey.minus,
-          ): () =>
-              stepZoom(false),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit0):
-              resetView,
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit0):
-              resetView,
-          LogicalKeySet(LogicalKeyboardKey.arrowUp): () =>
-              _panBy(const Offset(0, -_panStep)),
-          LogicalKeySet(LogicalKeyboardKey.arrowDown): () =>
-              _panBy(const Offset(0, _panStep)),
-          LogicalKeySet(LogicalKeyboardKey.arrowLeft): () =>
-              _panBy(const Offset(-_panStep, 0)),
-          LogicalKeySet(LogicalKeyboardKey.arrowRight): () =>
-              _panBy(const Offset(_panStep, 0)),
-        },
-        child: viewer,
+      viewer = Shortcuts(
+        shortcuts: _shortcuts,
+        child: Actions(actions: _actions, child: viewer),
       );
     }
     final l10n = _l10n(context);
@@ -790,60 +1120,72 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
           if (_canZoomOut)
             CustomSemanticsAction(label: l10n.kitZoomOut): () =>
                 stepZoom(false),
-          CustomSemanticsAction(label: l10n.kitZoomReset): resetView,
+          if (!_atRest)
+            CustomSemanticsAction(label: l10n.kitZoomReset): resetView,
         },
         child: viewer,
       ),
     );
+    // A fine pointer adds each control's shortcut to its tooltip (Adaptive:
+    // "Zoom in · Ctrl+="); a disabled control keeps its reason alone.
+    String withKeys(String action, String key) =>
+        finePointer ? l10n.kitZoomShortcut(action, key) : action;
     return Stack(
       children: [
-        Positioned.fill(child: viewer),
+        PositionedDirectional(
+          start: 0,
+          end: 0,
+          top: 0,
+          bottom: 0,
+          child: viewer,
+        ),
         if (widget.controls)
           PositionedDirectional(
+            end: tokens.space4,
             bottom: tokens.space4,
-            start: 0,
-            end: 0,
-            child: Center(
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  color: tokens.roles.surface2,
-                  shape: const StadiumBorder(),
+            child: DecoratedBox(
+              decoration: ShapeDecoration(
+                color: tokens.roles.surface2,
+                shape: const StadiumBorder(),
+              ),
+              child: Padding(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.space2,
+                  vertical: tokens.space1,
                 ),
-                child: Padding(
-                  padding: EdgeInsetsDirectional.symmetric(
-                    horizontal: tokens.space2,
-                    vertical: tokens.space1,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      KitIconButton(
-                        icon: AppIconography.collapse,
-                        label: l10n.kitZoomOut,
-                        onPressed: _canZoomOut ? () => stepZoom(false) : null,
-                      ),
-                      SizedBox(width: tokens.space2),
-                      KitIconButton(
-                        key: widget.resetControlKey,
-                        icon: AppIconography.retry,
-                        label: widget.mode == KitZoomMode.canvas
-                            ? l10n.kitZoomFit
-                            : (_atRest
-                                  ? l10n.kitZoomAtStart
-                                  : l10n.kitZoomReset),
-                        onPressed:
-                            (widget.mode == KitZoomMode.canvas || !_atRest)
-                            ? resetView
-                            : null,
-                      ),
-                      SizedBox(width: tokens.space2),
-                      KitIconButton(
-                        icon: AppIconography.expand,
-                        label: _atMax ? l10n.kitZoomAtMax : l10n.kitZoomIn,
-                        onPressed: _atMax ? null : () => stepZoom(true),
-                      ),
-                    ],
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    KitIconButton(
+                      icon: AppIconography.collapse,
+                      label: _canZoomOut
+                          ? withKeys(l10n.kitZoomOut, '−')
+                          : l10n.kitZoomOut,
+                      onPressed: _canZoomOut ? () => stepZoom(false) : null,
+                    ),
+                    SizedBox(width: tokens.space2),
+                    KitIconButton(
+                      key: widget.resetControlKey,
+                      icon: AppIconography.retry,
+                      label: _atRest
+                          ? l10n.kitZoomAtStart
+                          : withKeys(
+                              widget.mode == KitZoomMode.canvas
+                                  ? l10n.kitZoomFit
+                                  : l10n.kitZoomReset,
+                              '0',
+                            ),
+                      onPressed: _atRest ? null : resetView,
+                    ),
+                    SizedBox(width: tokens.space2),
+                    KitIconButton(
+                      icon: AppIconography.expand,
+                      label: _atMax
+                          ? l10n.kitZoomAtMax
+                          : withKeys(l10n.kitZoomIn, '='),
+                      onPressed: _atMax ? null : () => stepZoom(true),
+                    ),
+                  ],
                 ),
               ),
             ),

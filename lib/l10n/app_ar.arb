@@ -5313,5 +5313,6 @@
   "kitZoomFit": "ملائمة الشاشة",
   "kitZoomAtStart": "في العرض الكامل بالفعل",
   "kitZoomAtMax": "أقصى تكبير",
-  "kitZoomLevel": "{percent}٪"
+  "kitZoomLevel": "{percent}٪",
+  "kitZoomShortcut": "{action} · Ctrl+{key}"
 }

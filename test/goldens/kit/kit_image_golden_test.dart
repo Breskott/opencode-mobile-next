@@ -157,12 +157,23 @@ Widget _failedGallery({required bool wide}) => SizedBox(
   ),
 );
 
-Widget _avatarGallery() => _list([
-  const KitAvatar(name: 'Open AI'),
-  const KitAvatar(name: 'Open AI', size: KitAvatarSize.mark),
-  const KitAvatar(name: 'This phone', icon: AppIconography.phone),
-  KitAvatar(name: 'A teammate', image: KitImageSource.memory(_onePixelPng)),
-]);
+/// [arabic] names the initials entries in Arabic, so the `_ar` shots show
+/// Arabic initials (the first grapheme of each word, without case).
+Widget _avatarGallery({bool arabic = false}) {
+  final name = arabic ? 'محمد علي' : 'Open AI';
+  return _list([
+    KitAvatar(name: name),
+    KitAvatar(name: name, size: KitAvatarSize.mark),
+    KitAvatar(
+      name: arabic ? 'هذا الهاتف' : 'This phone',
+      icon: AppIconography.phone,
+    ),
+    KitAvatar(
+      name: arabic ? 'زميل' : 'A teammate',
+      image: KitImageSource.memory(_onePixelPng),
+    ),
+  ]);
+}
 
 Widget _zoomGallery({required bool zoomed}) => SizedBox(
   width: 280,
@@ -269,7 +280,9 @@ void main() {
       );
     });
 
-    for (final s in kitGallerySizes) {
+    // KitImage.md "Galleries": the default state also at the 915x412
+    // landscape phone, which the shared harness list does not carry.
+    for (final s in [...kitGallerySizes, const Size(915, 412)]) {
       testWidgets('default (loaded + avatar) · ${kitGallerySize(s)} · $mode', (
         tester,
       ) async {
@@ -349,7 +362,7 @@ void main() {
         size: s,
         light: false,
         locale: const Locale('ar'),
-        child: _avatarGallery(),
+        child: _avatarGallery(arabic: true),
       );
     });
 
