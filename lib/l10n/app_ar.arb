@@ -5305,5 +5305,9 @@
   "kitDiscardTitle": "هل تريد تجاهل تغييراتك؟",
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
-  "kitCopied": "تم النسخ"
+  "kitCopied": "تم النسخ",
+  "kitProgressStep": "الخطوة {step} من {of}",
+  "kitProgressEtaSeconds": "{seconds, plural, zero{بقي أقل من ثانية} one{بقيت ثانية تقريبًا} two{بقيت ثانيتان تقريبًا} few{بقيت {seconds} ثوانٍ تقريبًا} many{بقيت {seconds} ثانية تقريبًا} other{بقيت {seconds} ثانية تقريبًا}}",
+  "kitProgressEtaMinutes": "{minutes, plural, zero{بقي أقل من دقيقة} one{بقيت دقيقة تقريبًا} two{بقيت دقيقتان تقريبًا} few{بقيت {minutes} دقائق تقريبًا} many{بقيت {minutes} دقيقة تقريبًا} other{بقيت {minutes} دقيقة تقريبًا}}",
+  "kitProgressEtaHours": "{hours, plural, zero{بقي أقل من ساعة} one{بقيت ساعة تقريبًا} two{بقيت ساعتان تقريبًا} few{بقيت {hours} ساعات تقريبًا} many{بقيت {hours} ساعة تقريبًا} other{بقيت {hours} ساعة تقريبًا}}"
 }
