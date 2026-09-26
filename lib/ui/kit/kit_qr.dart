@@ -58,21 +58,26 @@ class KitQr extends StatelessWidget {
     }
   }
 
-  /// The card's side: at most [KitTokens.qrMaxSize], never more than
+  /// The card's side: at most [KitTokens.qrMaxSize] and never more than
   /// [maxWidth], snapped down so every module (plus the quiet zone) lands
   /// on a whole physical pixel (LOOK-21, VL §7).
+  ///
+  /// In a window too narrow for even one physical pixel per module, the
+  /// code draws at the width it has, with fractional modules, rather than
+  /// growing past its box. The side never exceeds [maxWidth], so a module
+  /// can fall under the spec's 2-physical-px floor; the host keeps the
+  /// copy-link path (see the QA record's contract problem on "Short
+  /// windows").
   static double _sideFor({
     required double maxWidth,
     required int moduleCount,
     required double dpr,
   }) {
     final totalModules = moduleCount + KitTokens.qrQuietModules * 2;
-    final idealSide = math.min(maxWidth, KitTokens.qrMaxSize);
+    final idealSide = math.max(0.0, math.min(maxWidth, KitTokens.qrMaxSize));
     final ratio = dpr > 0 ? dpr : 1.0;
-    final physicalModule = math.max(
-      1,
-      (idealSide * ratio / totalModules).floor(),
-    );
+    final physicalModule = (idealSide * ratio / totalModules).floor();
+    if (physicalModule < 1) return idealSide;
     return physicalModule * totalModules / ratio;
   }
 

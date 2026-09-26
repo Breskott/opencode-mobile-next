@@ -19826,8 +19826,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitCopied => 'Copied';
-
-  @override
-  String get kitQrTooLong =>
-      'This is too long for a QR code. Copy the link instead.';
 }

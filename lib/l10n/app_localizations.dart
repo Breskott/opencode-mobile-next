@@ -31984,12 +31984,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied'**
   String get kitCopied;
-
-  /// Kit QR code: shown in place of the code when the data does not fit a QR code at any size
-  ///
-  /// In en, this message translates to:
-  /// **'This is too long for a QR code. Copy the link instead.'**
-  String get kitQrTooLong;
 }
 
 class _AppLocalizationsDelegate

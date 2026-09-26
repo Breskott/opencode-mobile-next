@@ -289,6 +289,7 @@ void main() {
     '8. overflow: no overflow at 320/412 dp, text 1.0/1.3/2.0, LTR/RTL, '
     'both states',
     (tester) async {
+      addTearDown(tester.view.reset);
       for (final width in [320.0, 412.0]) {
         tester.view.physicalSize = Size(width, 800) * 3;
         tester.view.devicePixelRatio = 3;
@@ -314,7 +315,65 @@ void main() {
           }
         }
       }
+    },
+  );
+
+  testWidgets(
+    '9. short windows: at DPR 1 the side never exceeds the width it has; '
+    'modules are whole physical px when one fits, and at least 2 px when '
+    'two fit',
+    (tester) async {
       addTearDown(tester.view.reset);
+      tester.view.devicePixelRatio = 1;
+      final image = QrImage(
+        QrCode.fromData(data: _link, errorCorrectLevel: QrErrorCorrectLevel.M),
+      );
+      final total = image.moduleCount + KitTokens.qrQuietModules * 2;
+      // Narrower than one physical px per module, exactly one, between one
+      // and two, and room for two or more.
+      for (final width in <double>[
+        total - 3.0,
+        total.toDouble(),
+        total * 1.5,
+        total * 2.0 + 5,
+      ]) {
+        tester.view.physicalSize = Size(width, 600);
+        await tester.pumpWidget(
+          _host(const KitQr(data: _link, semanticsLabel: 'code')),
+        );
+        await tester.pumpAndSettle();
+        final reason = 'width=$width total=$total';
+        expect(tester.takeException(), isNull, reason: reason);
+
+        final side = tester.getSize(find.byType(KitQr)).width;
+        expect(side, lessThanOrEqualTo(width), reason: reason);
+        expect(side, greaterThan(0), reason: reason);
+        expect(_paintedCells(tester, side, total), _darkCellsOf(_link));
+        // The pattern and its far quiet zone fit inside the card: nothing is
+        // painted past the box the layout gave it.
+        final inkEdge = side * (total - KitTokens.qrQuietModules) / total;
+        for (final rect in _paintedRects(tester)) {
+          expect(rect.right, lessThanOrEqualTo(inkEdge + 1e-6), reason: reason);
+          expect(
+            rect.bottom,
+            lessThanOrEqualTo(inkEdge + 1e-6),
+            reason: reason,
+          );
+        }
+
+        if (width < total) {
+          // Not even one physical px per module fits: it draws at the
+          // width it has instead of overflowing.
+          expect(side, width, reason: reason);
+        } else {
+          final modulePx = side / total;
+          expect(modulePx, modulePx.roundToDouble(), reason: reason);
+          expect(modulePx, (width / total).floor().toDouble(), reason: reason);
+          if (width >= total * 2) {
+            expect(modulePx, greaterThanOrEqualTo(2), reason: reason);
+          }
+        }
+      }
     },
   );
 }
