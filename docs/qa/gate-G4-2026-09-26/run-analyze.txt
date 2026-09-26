@@ -1,0 +1,3 @@
+$ flutter analyze test/kit/kit_manifest_test.dart
+Analyzing kit_manifest_test.dart...                             
+No issues found! (ran in 0.8s)

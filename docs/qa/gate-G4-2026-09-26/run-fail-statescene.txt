@@ -1,0 +1,13 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart
+00:00 +0: G4: the manifest reads the kit library and every kit file
+00:00 +1: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+00:00 +1 -1: G4: every kit part and opener meets the manifest (allowlist only shrinks) [E]
+  1 kit manifest violation(s) break STANDARDS.md G4 (NAME-1, KIT-10–KIT-14, TEST-9, TEST-14, TEST-15). Fix the part; the allowlist only shrinks:
+    - stateScenes · KitSheet: no 412x915 golden kit_sheet_empty_…dark, kit_sheet_empty_…light
+  package:matcher                         fail
+  test/kit/kit_manifest_test.dart 1651:7  main.<fn>
+  
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)

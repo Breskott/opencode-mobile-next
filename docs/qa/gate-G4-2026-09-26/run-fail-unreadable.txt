@@ -1,0 +1,18 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart
+00:00 +0: G4: the manifest reads the kit library and every kit file
+00:00 +0 -1: G4: the manifest reads the kit library and every kit file [E]
+  Expected: empty
+    Actual: [
+              'lib/ui/kit/kit_zz_odd.dart:4 showKitZzOdd: a top-level showKit… the scan could not read'
+            ]
+  kit declarations the scan could not read
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit/kit_manifest_test.dart 1593:5              main.<fn>
+  
+00:00 +0 -1: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart: G4: the manifest reads the kit library and every kit file
