@@ -22245,5 +22245,19 @@
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
+  },
+  "kitUndoAction": "Undo",
+  "@kitUndoAction": {
+    "description": "Kit undo: the default label of the one Undo bar's action button"
+  },
+  "kitUndoFailed": "Couldn't undo. {message}",
+  "@kitUndoFailed": {
+    "description": "Kit undo: the bar's message once Undo has failed and no host failure handler was given; {message} is the bar's own done message (\"Archived “Fix login”\")",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Archived “Fix login”"
+      }
+    }
   }
 }

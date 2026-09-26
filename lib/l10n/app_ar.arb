@@ -5305,5 +5305,7 @@
   "kitDiscardTitle": "هل تريد تجاهل تغييراتك؟",
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
-  "kitCopied": "تم النسخ"
+  "kitCopied": "تم النسخ",
+  "kitUndoAction": "تراجع",
+  "kitUndoFailed": "تعذّر التراجع. {message}"
 }
