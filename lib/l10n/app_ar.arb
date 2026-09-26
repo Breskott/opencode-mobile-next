@@ -5307,5 +5307,6 @@
   "kitDiscardConfirm": "تجاهل التغييرات",
   "kitCopied": "تم النسخ",
   "kitUndoAction": "تراجع",
-  "kitUndoFailed": "تعذّر التراجع. {message}"
+  "kitUndoFailed": "تعذّر التراجع. {message}",
+  "kitUndoWorking": "جارٍ التراجع"
 }

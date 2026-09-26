@@ -102,6 +102,7 @@ Future<void> _kitUndoShot(
   Locale locale = const Locale('en'),
   double textScale = 1,
   bool settleAfterThen = true,
+  bool image = true,
 }) async {
   final own = light ? 'light' : 'dark';
   if (!name.endsWith('_$own')) {
@@ -184,8 +185,69 @@ Future<void> _kitUndoShot(
     semantics.dispose();
     KitUndo.commitPending();
   }
+  // G5 and G6 (no overflow: takeException above) ran on both themes; the
+  // non-image runs stop there (KitUndo.md Galleries: "G5 guidelines and G6
+  // overflow (no images) for every other state × size").
+  if (!image) return;
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }
+
+/// One declared state: how to open it and (for working and error) the tap
+/// that gets it there.
+typedef _UndoState = ({
+  void Function(BuildContext context, String message) open,
+  Future<void> Function(WidgetTester tester)? then,
+  bool settleAfterThen,
+  bool accessible,
+});
+
+Future<void> _tapUndo(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('the-undo-action')));
+  await tester.pump();
+}
+
+final _states = <String, _UndoState>{
+  'working': (
+    open: (context, message) => showKitUndo(
+      context,
+      key: const Key('the-undo-bar'),
+      undoKey: const Key('the-undo-action'),
+      message: message,
+      onUndo: () => Completer<void>().future,
+    ),
+    then: _tapUndo,
+    // KitButton's working spinner never settles.
+    settleAfterThen: false,
+    accessible: false,
+  ),
+  'error': (
+    open: (context, message) => showKitUndo(
+      context,
+      key: const Key('the-undo-bar'),
+      undoKey: const Key('the-undo-action'),
+      message: message,
+      onUndo: () => throw StateError('offline'),
+    ),
+    then: _tapUndo,
+    settleAfterThen: true,
+    accessible: false,
+  ),
+  'accessible': (
+    open: (context, message) => showKitUndo(
+      context,
+      key: const Key('the-undo-bar'),
+      undoKey: const Key('the-undo-action'),
+      message: message,
+      onUndo: () {},
+    ),
+    then: null,
+    settleAfterThen: true,
+    accessible: true,
+  ),
+};
+
+const _message = 'Archived "Fix login"';
+const _messageAr = 'أرشفة "إصلاح تسجيل الدخول"';
 
 void _default(BuildContext context) => showKitUndo(
   context,
@@ -337,6 +399,59 @@ void main() {
             message: 'أرشفة "إصلاح تسجيل الدخول"',
             onUndo: () {},
           ),
+        );
+      });
+    }
+  }
+
+  // G5 and G6 without images for every other state × size (KitUndo.md
+  // Galleries): working, error and accessible at every §8.4 size other
+  // than the phone shots above, at 915x412, at text 2.0 and in Arabic.
+  // Both themes run inside each test.
+  const landscape = Size(915, 412);
+  for (final MapEntry(key: state, value: spec) in _states.entries) {
+    final runs = <({String label, Size size, double text, bool ar})>[
+      for (final size in [...kitGallerySizes, landscape])
+        if (size != const Size(412, 915))
+          (label: kitGallerySize(size), size: size, text: 1, ar: false),
+      for (final size in kitGalleryScaledSizes) ...[
+        (
+          label: 'text 2.0 · ${kitGallerySize(size)}',
+          size: size,
+          text: 2,
+          ar: false,
+        ),
+        (label: 'ar · ${kitGallerySize(size)}', size: size, text: 1, ar: true),
+      ],
+    ];
+    for (final run in runs) {
+      testWidgets('kit_undo $state · ${run.label} · G5/G6 only', (
+        tester,
+      ) async {
+        if (spec.accessible) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              const FakeAccessibilityFeatures(accessibleNavigation: true);
+          addTearDown(
+            tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+          );
+        }
+        await _kitUndoShot(
+          tester,
+          name: kitGalleryName(
+            'kit_undo_$state',
+            run.size,
+            light: true,
+            text2: run.text == 2,
+            ar: run.ar,
+          ),
+          size: run.size,
+          light: true,
+          textScale: run.text,
+          locale: run.ar ? const Locale('ar') : const Locale('en'),
+          open: (context) => spec.open(context, run.ar ? _messageAr : _message),
+          then: spec.then,
+          settleAfterThen: spec.settleAfterThen,
+          image: false,
         );
       });
     }

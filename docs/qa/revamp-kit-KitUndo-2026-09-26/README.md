@@ -12,7 +12,9 @@
 - Files changed: `lib/ui/kit/kit_undo.dart`, `lib/ui/kit/kit_bottom_inset.dart`
   (new), `lib/l10n/app_en.arb`, `lib/l10n/app_ar.arb`,
   `test/kit/kit_undo_test.dart`, `test/goldens/kit/kit_undo_golden_test.dart`
-  and its 26 PNGs, this QA record. (`lib/l10n/app_localizations*.dart` were
+  and its 26 PNGs, this QA record. The review-fix round (2026-09-27) added
+  one copy key, `kitUndoWorking` ("Undoing" / "جارٍ التراجع"), spoken on the
+  action while an undo runs. (`lib/l10n/app_localizations*.dart` were
   regenerated locally to run the tests but are not committed — PROC-13, units
   never commit them.)
 - Pages (map ids): none — KitUndo.md and KitBottomInset.md both say "No map
@@ -62,7 +64,9 @@
 - Branch `revamp/kit-KitUndo`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4`
   (`feat/phone-setup-v2` at the time this worktree was created; the branch
   has since moved on with other units' work, not rebased onto here), code
-  head `c1f22864` (`c1f2286461121abb4d031c1044b47d9fe5105922`).
+  head `c1f22864` (`c1f2286461121abb4d031c1044b47d9fe5105922`) for the
+  first build; the review-fix round is the commit after `b453b60b` on the
+  same branch (`git log -1 revamp/kit-KitUndo`).
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
@@ -74,12 +78,10 @@ the wave checkpoint (R19/R20).
 
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
-| 1 | `test/kit/kit_undo_test.dart` (KitUndo's 14 behaviour contracts, KitBottomInset's 6, plus its `kitMotionStillTests` registration) | passes | 30 passed | PASS |
-| 2 | `test/goldens/kit/kit_undo_golden_test.dart` (the required galleries) | passes, goldens looked at | 26 passed | PASS |
-| 3 | `test/kit_ratchet_test.dart` (G16/G21/…, includes the metal/chrome check) | passes | passed | PASS |
-| 4 | `test/kit_motion_test.dart` (G8x manifest + samples) | passes | 179 passed | PASS |
-| 5 | `test/design_standard_test.dart` | passes | passed | PASS |
-| 6 | `test/l10n_coverage_test.dart` | passes | passed | PASS |
+| 1 | `test/kit/kit_undo_test.dart` (KitUndo's 14 behaviour contracts plus the review-fix tests 9b, 11b, 11c, 12c, 12d, 13c and the stacking group; KitBottomInset's 6; the `kitMotionStillTests` registration) | passes | 43 passed | PASS |
+| 2 | `test/goldens/kit/kit_undo_golden_test.dart` (the 26 required images plus 27 non-image G5/G6 runs: working, error, accessible × the other §8.4 sizes, 915×412, text 2.0, Arabic) | passes, goldens looked at | 53 passed | PASS |
+| 3 | `test/kit_ratchet_test.dart` + `test/l10n_coverage_test.dart` | passes | 34 passed | PASS |
+| 4 | `test/kit_motion_test.dart` (G8x manifest + samples) + `test/design_standard_test.dart` | passes | 194 passed | PASS |
 | 7 | `flutter analyze lib test` | no errors, no new issues | no issues found | PASS |
 | 8 | `dart format --language-version=3.10` on every changed Dart file | no diff | no diff | PASS |
 
@@ -126,6 +128,49 @@ fix's before/after; see "How to reproduce" to redo any of them):
   theme and bypasses `forLocale`'s type-role fix). Reverting this reproduces
   tofu in `kit_undo_default_ar_*.png`.
 
+Review fixes (2026-09-27, seven findings). Findings 1 and 2 were checked
+failing-first (fix reverted, named test rerun, failure seen, fix restored);
+the others are covered by the new tests named below:
+
+1. DATA-11 (Undo taken): `_commit` now treats a request whose async
+   `onUndo` is in flight as Undo taken — any commit trigger (a new bar, the
+   owning route popping, `AppLifecycleState.paused`, `commitPending()`,
+   Dismiss) only closes the bar and never runs `onCommit`; `attemptUndo`
+   keeps the outcome. `_PendingUndo.dispose` is idempotent (`_disposed`) and
+   `setWorking`/`setError` do nothing after it, so no second dispose and no
+   notify on a disposed notifier. If that closed undo then fails, the
+   failure form takes the slot back (never silent, item 4), committing the
+   newer bar first exactly as a new bar would (item 1). Tests "9b" (six
+   cases). Reverting the `pending.working` guard fails all six.
+2. Stacking measured in the theme's face: `_stacks` measures the message
+   with `KitText.styleOf(context, body)` and the action with the theme's
+   `textButtonTheme` text style (the face `KitButton` renders with), plus
+   the working spinner's room and the 48 dp minimum. At 412×915 text 1.0
+   the default bar is now one row (the old goldens had "Undo" on a second
+   line). Test "stacking … a short message and Undo share one row at 412
+   wide" (real fonts loaded); reverting to `KitText.styleFor` fails it.
+   14 PNGs re-rendered and looked at: `default`, `default_ar`,
+   `default_360x800`, `default_ar_1280x800`, `default_text2_1280x800`,
+   `working`, `accessible`, dark and light. `error` still stacks at 412 wide
+   (the failure message, Try again and Dismiss do not fit) — correct.
+3. Motion: one `CurvedAnimation` made in `initState` and disposed; opacity
+   reads its value (`KitMotion.enter` in, `KitMotion.exit` out); the
+   `space2` slide applies only while the controller runs forward, so the
+   exit is a fade. Test "13c".
+4. A11Y-3: the live-region node's own label is the message (the visible
+   text is excluded so it is not read twice), so the platform bridges
+   announce the failure form when the label changes. Test "11b" records the
+   label sequence: the message, then once the failure text.
+5. Galleries: G5/G6 (no images) for working, error and accessible at every
+   other size (test 2 above).
+6. Ctrl+Z: Shift or Alt with it is not Undo. It is bound as a
+   `FocusManager` late key handler, so a focused widget that handles Ctrl+Z
+   itself (a terminal) keeps it; a `HardwareKeyboard` handler covers only
+   the no-primary-focus case. Text fields keep it as before. Tests "12c",
+   "12d".
+7. While working the action's node is not enabled, has no tap action and
+   carries the value "Undoing" (`kitUndoWorking`). Test "11c".
+
 ## 5. Evidence
 
 - `run-unit-tests.txt`: `test/kit/kit_undo_test.dart` +
@@ -138,20 +183,22 @@ fix's before/after; see "How to reproduce" to redo any of them):
   |---|---|---|
   | KIT-11 | `test/kit/kit_undo_test.dart` "1. shows the message and Undo" | `run-unit-tests.txt` |
   | KIT-34 | `test/kit/kit_undo_test.dart` "4. one at a time" | `run-unit-tests.txt` |
-  | DATA-11 | `test/kit/kit_undo_test.dart` "5a/5b/5c", "7", "8" | `run-unit-tests.txt` |
-  | MOT-1 | `test/kit/kit_undo_test.dart` "13a"/"13b" | `run-unit-tests.txt` |
+  | DATA-11 | `test/kit/kit_undo_test.dart` "5a/5b/5c", "7", "8", "9b" group | `run-unit-tests.txt` |
+  | MOT-1, MOT-2 | `test/kit/kit_undo_test.dart` "13a"/"13b"/"13c" | `run-unit-tests.txt` |
   | MOT-11 | `test/kit/kit_undo_test.dart` "14. no HapticFeedback" | `run-unit-tests.txt` |
-  | A11Y-3, A11Y-8 | `test/kit/kit_undo_test.dart` "11. one live region…" | `run-unit-tests.txt` |
+  | A11Y-3 | `test/kit/kit_undo_test.dart` "11", "11b", "11c" | `run-unit-tests.txt` |
+  | A11Y-8 | `test/kit/kit_undo_test.dart` "stacking (A11Y-8) in the theme's own face" group | `run-unit-tests.txt` |
   | LAY-8, LAY-9 | `test/kit/kit_undo_test.dart` "10. placement" group | `run-unit-tests.txt` |
-  | LAY-10 | `test/kit/kit_undo_test.dart` "12a"/"12b" | `run-unit-tests.txt` |
+  | LAY-10 | `test/kit/kit_undo_test.dart` "12a"/"12b"/"12c"/"12d" | `run-unit-tests.txt` |
   | KitBottomInset invariants | `test/kit/kit_undo_test.dart` `KitBottomInset` group (6 tests) | `run-unit-tests.txt` |
-  | TEST-9, G23, TEST-20 | `test/goldens/kit/kit_undo_golden_test.dart` | `run-unit-tests.txt`, the 26 PNGs |
+  | TEST-9, G23, TEST-20, G5, G6 | `test/goldens/kit/kit_undo_golden_test.dart` (images + "G5/G6 only" runs) | `run-unit-tests.txt`, the 26 PNGs |
   | KIT-9, LOOK-32 (G21) | `test/kit_ratchet_test.dart` | `run-shared-gates.txt` |
   | G8x manifest | `test/kit_motion_test.dart` | `run-shared-gates.txt` |
 
-- Changed test expectations (TEST-19): none — every test in the two files
-  above is new.
-- Goldens changed (each opened and looked at before committing): all 26 are
+- Changed test expectations (TEST-19): none — the review-fix round only
+  added tests; no existing expectation was edited.
+- Goldens changed (each opened and looked at before committing): the
+  review-fix round re-rendered 14 (finding 2 above); all 26 are
   new (`test/goldens/kit/kit_undo_*.png`), listed in the commit. No approved
   VL canvas render exists for KitUndo yet, so EVID-12 is "no approved
   render" for every one of them.
@@ -183,6 +230,15 @@ $F analyze lib test
 ```
 
 ## 7. NOT proven
+
+- The failure-form announcement is proven through the semantics tree (the
+  live-region label changes once); no TalkBack/VoiceOver pass heard it.
+- A failed undo whose bar was closed meanwhile comes back and commits
+  whatever newer bar held the slot. KitUndo.md does not name this case;
+  this follows items 1 and 4 together. If the owning route had popped, the
+  failure form now shows over whatever route is on top.
+- The working spinner widens the action by its room, so a bar that only just
+  fitted on one row can move to two rows when Undo is tapped.
 
 - Not run on a device or emulator (R19/R20: coordinator work at the wave
   checkpoint).

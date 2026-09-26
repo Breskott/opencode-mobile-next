@@ -111,6 +111,7 @@ class _PendingUndo extends ChangeNotifier {
   Timer? _timer;
   bool working = false;
   Object? error;
+  bool _disposed = false;
 
   void startTimer(VoidCallback onElapsed) {
     _timer?.cancel();
@@ -123,20 +124,26 @@ class _PendingUndo extends ChangeNotifier {
   }
 
   void setWorking(bool value) {
-    if (working == value) return;
+    if (_disposed || working == value) return;
     working = value;
     notifyListeners();
   }
 
   void setError(Object value) {
+    if (_disposed) return;
     error = value;
     working = false;
     notifyListeners();
   }
 
+  /// Idempotent: a request can be finished from two sides (a commit
+  /// trigger and the in-flight undo's outcome); the second call is a no-op
+  /// rather than a disposed-notifier assertion.
   @override
   void dispose() {
     cancelTimer();
+    if (_disposed) return;
+    _disposed = true;
     super.dispose();
   }
 }
@@ -209,25 +216,46 @@ class _KitUndoHost {
     WidgetsBinding.instance.addObserver(_KitUndoLifecycleObserver(this));
   }
 
+  // Ctrl+Z (item 7) goes to the focused widgets first: it is bound as a
+  // FocusManager *late* handler, which runs only when no focus node on the
+  // primary focus's path handled the key — so a focused terminal (Ctrl+Z is
+  // SIGTSTP there) or any other key-consuming editor keeps it. With no
+  // primary focus at all the focus system never sees the key, so a
+  // HardwareKeyboard handler covers that one case.
+  //
   // Re-armed on every show(), not guarded by an "added once" flag: a test
   // harness clears HardwareKeyboard's own handler list between tests to
   // keep them hermetic (HardwareKeyboard.clearState), which would otherwise
-  // silently drop this after the first test that shows a bar. Removing
-  // first keeps this idempotent (never more than one registration).
+  // silently drop it after the first test that shows a bar. Removing first
+  // keeps this idempotent (never more than one registration).
   void _ensureKeyHandler() {
-    HardwareKeyboard.instance.removeHandler(_handleKey);
-    HardwareKeyboard.instance.addHandler(_handleKey);
+    final focus = FocusManager.instance;
+    focus.removeLateKeyEventHandler(_handleLateKey);
+    focus.addLateKeyEventHandler(_handleLateKey);
+    HardwareKeyboard.instance.removeHandler(_handleUnfocusedKey);
+    HardwareKeyboard.instance.addHandler(_handleUnfocusedKey);
   }
 
-  bool _handleKey(KeyEvent event) {
+  KeyEventResult _handleLateKey(KeyEvent event) =>
+      _takeUndoKey(event) ? KeyEventResult.handled : KeyEventResult.ignored;
+
+  bool _handleUnfocusedKey(KeyEvent event) {
+    if (FocusManager.instance.primaryFocus != null) return false;
+    return _takeUndoKey(event);
+  }
+
+  /// Ctrl+Z (Cmd+Z) exactly — Shift (redo) or Alt with it is not Undo.
+  bool _takeUndoKey(KeyEvent event) {
     final pending = current.value;
     if (pending == null || event is! KeyDownEvent) return false;
     if (event.logicalKey != LogicalKeyboardKey.keyZ) return false;
     final keyboard = HardwareKeyboard.instance;
     if (!keyboard.isControlPressed && !keyboard.isMetaPressed) return false;
-    // The focused node's context sits inside EditableText's own build
-    // output (a Focus wrapper), not on an EditableText element itself, so
-    // an ancestor lookup is what actually finds it.
+    if (keyboard.isShiftPressed || keyboard.isAltPressed) return false;
+    // A text field keeps Ctrl+Z even when its own undo history is empty
+    // (its undo action is then disabled and lets the key through). The
+    // focused node's context sits inside EditableText's own build output
+    // (a Focus wrapper), so an ancestor lookup is what finds it.
     final focusContext = FocusManager.instance.primaryFocus?.context;
     final typing =
         focusContext?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -250,6 +278,15 @@ class _KitUndoHost {
 
   void _commit(_PendingUndo pending) {
     pending.cancelTimer();
+    if (pending.working) {
+      // Undo is taken (item 3, DATA-11): an async onUndo is in flight, so
+      // this request is never committed. A commit trigger (a new bar, the
+      // route popping, the app pausing, commitPending, Dismiss) only closes
+      // the bar; attemptUndo still owns the outcome — it disposes on
+      // success and brings the failure back on error (never silent).
+      if (identical(current.value, pending)) current.value = null;
+      return;
+    }
     if (!identical(current.value, pending)) return;
     current.value = null;
     final onCommit = pending.onCommit;
@@ -290,9 +327,17 @@ class _KitUndoHost {
           // `attemptUndo` on this same request.
           pending.setWorking(false);
           onUndoFailed(error, () => attemptUndo(pending));
-        } else {
-          pending.setError(error);
+          return;
         }
+        pending.setError(error);
+        if (identical(current.value, pending)) return;
+        // A commit trigger closed the bar while this undo was in flight. A
+        // failed undo is never silent (item 4): the failure form takes the
+        // one slot back. Whatever bar holds it now is committed first, as a
+        // new bar would commit it (item 1); the failure form has no timeout.
+        final other = current.value;
+        if (other != null) _commit(other);
+        current.value = pending;
       },
     );
   }
@@ -322,8 +367,8 @@ class _KitUndoOverlay extends StatelessWidget {
 }
 
 /// Motion (KitUndo.md §Motion): in, slides up `space2` and fades over
-/// `KitMotion.standard` on `KitMotion.enter`; out, fades over
-/// `KitMotion.quick` on `KitMotion.exit`. Under `KitMotion.reduced`,
+/// `KitMotion.standard` on `KitMotion.enter`; out, fades only (no slide)
+/// over `KitMotion.quick` on `KitMotion.exit`. Under `KitMotion.reduced`,
 /// appears and disappears at once and settles in one `pump()` (G8x).
 class _KitUndoTransition extends StatefulWidget {
   const _KitUndoTransition({required this.pending});
@@ -341,12 +386,21 @@ class _KitUndoTransitionState extends State<_KitUndoTransition>
     duration: KitMotion.standard,
     reverseDuration: KitMotion.quick,
   );
+
+  /// The one curve over [_controller] (disposed with it): `enter` going
+  /// forward, `exit` in reverse.
+  late final CurvedAnimation _curve;
   _PendingUndo? _shown;
   bool _ranInitialEntrance = false;
 
   @override
   void initState() {
     super.initState();
+    _curve = CurvedAnimation(
+      parent: _controller,
+      curve: KitMotion.enter,
+      reverseCurve: KitMotion.exit,
+    );
     _shown = widget.pending;
   }
 
@@ -396,6 +450,7 @@ class _KitUndoTransitionState extends State<_KitUndoTransition>
 
   @override
   void dispose() {
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -413,18 +468,19 @@ class _KitUndoTransitionState extends State<_KitUndoTransition>
         math.max(shown.clearance.bottom, keyboardBottom) + tokens.space2;
 
     Widget bar = AnimatedBuilder(
-      animation: CurvedAnimation(
-        parent: _controller,
-        curve: KitMotion.enter,
-        reverseCurve: KitMotion.exit,
-      ),
-      builder: (context, child) => Opacity(
-        opacity: _controller.value.clamp(0, 1),
-        child: Transform.translate(
-          offset: Offset(0, (1 - _controller.value) * tokens.space2),
-          child: child,
-        ),
-      ),
+      animation: _curve,
+      builder: (context, child) {
+        final t = _curve.value.clamp(0.0, 1.0);
+        // The slide belongs to the entrance only; the exit is a fade.
+        final entering = _controller.status == AnimationStatus.forward;
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, entering ? (1 - t) * tokens.space2 : 0),
+            child: child,
+          ),
+        );
+      },
       child: ListenableBuilder(
         listenable: shown,
         builder: (context, _) => _KitUndoBar(pending: shown),
@@ -473,17 +529,24 @@ class _KitUndoBar extends StatelessWidget {
         ? (pending.undoLabel ?? l10n.kitUndoAction)
         : l10n.kitTryAgain;
     final semanticLabel = '$actionLabel, $message';
+    final working = pending.working;
 
+    // While working the action ignores taps (item 9), so its node says so:
+    // not enabled, no tap action, and the "Undoing" value.
     final action = Semantics(
       key: pending.undoKey,
+      // Its own node, never merged into the live region's label.
+      container: true,
       button: true,
+      enabled: !working,
       label: semanticLabel,
-      onTap: () => host.attemptUndo(pending),
+      value: working ? l10n.kitUndoWorking : null,
+      onTap: working ? null : () => host.attemptUndo(pending),
       excludeSemantics: true,
       child: KitButton(
         role: KitButtonRole.tertiary,
         label: actionLabel,
-        working: pending.working,
+        working: working,
         expand: false,
         onPressed: () => host.attemptUndo(pending),
       ),
@@ -496,10 +559,15 @@ class _KitUndoBar extends StatelessWidget {
             onPressed: () => host.dismiss(pending),
           );
 
+    // One polite live region (A11Y-3) whose own label is the message: the
+    // platform bridges re-announce a live region only when its label
+    // changes, so the failure form (a new message) is announced once. The
+    // visible text is excluded below so it is not read twice.
     return Semantics(
       key: pending.barKey,
       container: true,
       liveRegion: true,
+      label: message,
       child: Material(
         color: roles.surface3,
         shape: RoundedRectangleBorder(
@@ -523,9 +591,12 @@ class _KitUndoBar extends StatelessWidget {
                 message,
                 actionLabel,
                 tokens,
+                working: working,
                 hasDismiss: dismiss != null,
               );
-              final text = KitText(message, role: KitTextRole.body);
+              final text = ExcludeSemantics(
+                child: KitText(message, role: KitTextRole.body),
+              );
               if (!stacked) {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -567,13 +638,17 @@ class _KitUndoBar extends StatelessWidget {
 
   /// The action (and Dismiss) move under the message when both would not
   /// fit on one line (long words, large text): the same stacking rule as
-  /// `KitStatusLine` (Accessibility, A11Y-8).
+  /// `KitStatusLine` (Accessibility, A11Y-8). Measured in the faces the bar
+  /// renders with — the message's `KitText.styleOf(body)` and the tertiary
+  /// button's theme text style — so the theme's font decides, not the
+  /// framework default.
   bool _stacks(
     BuildContext context,
     double width,
     String message,
     String actionLabel,
     KitTokens tokens, {
+    required bool working,
     required bool hasDismiss,
   }) {
     final scaler = MediaQuery.textScalerOf(context);
@@ -589,12 +664,25 @@ class _KitUndoBar extends StatelessWidget {
       return result;
     }
 
-    final messageWidth = measure(message, KitText.styleFor(KitTextRole.body));
-    final actionWidth =
-        measure(actionLabel, KitText.styleFor(KitTextRole.button)) +
-        2 * KitButton.tertiaryInset;
+    final buttonStyle =
+        Theme.of(context).textButtonTheme.style?.textStyle?.resolve(const {}) ??
+        KitText.styleOf(context, KitTextRole.button);
+    final messageWidth = measure(
+      message,
+      KitText.styleOf(context, KitTextRole.body),
+    );
+    // A working tertiary button leads with its spinner (`_spinnerSize`) and
+    // the icon gap of a text button with an icon.
+    final spinner = working ? _spinnerSize + tokens.space2 : 0.0;
+    final actionWidth = math.max(
+      tokens.minTarget,
+      measure(actionLabel, buttonStyle) + 2 * KitButton.tertiaryInset + spinner,
+    );
     final reserved =
         tokens.space3 + (hasDismiss ? tokens.space2 + tokens.minTarget : 0);
     return messageWidth + actionWidth + reserved > width;
   }
+
+  /// KitButton's working spinner (`_Spinner`, kit_buttons.dart).
+  static const double _spinnerSize = 18;
 }

@@ -7,6 +7,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -15,6 +16,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 
+import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 import 'kit_harness.dart';
 import 'kit_motion_still.dart';
 
@@ -27,6 +29,7 @@ Future<BuildContext> _pumpUndoHost(
   KitClearance? clearance,
   Locale locale = const Locale('en'),
   bool light = false,
+  double textScale = 1,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -48,6 +51,12 @@ Future<BuildContext> _pumpUndoHost(
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       home: Scaffold(body: body),
     ),
   );
@@ -329,6 +338,135 @@ void main() {
       },
     );
 
+    group('9b. a commit trigger while an async onUndo is in flight never '
+        'commits (DATA-11: Undo taken)', () {
+      /// Shows a deferred-commit bar on [context], taps Undo so its async
+      /// onUndo is in flight, and returns the commit counter and the undo's
+      /// completer.
+      Future<({int Function() commits, Completer<void> undo})> startUndo(
+        WidgetTester tester,
+        BuildContext context,
+      ) async {
+        var commits = 0;
+        final undo = Completer<void>();
+        showKitUndo(
+          context,
+          message: 'Archived "Fix login"',
+          onUndo: () => undo.future,
+          onCommit: () => commits++,
+        );
+        await tester.pump();
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        return (commits: () => commits, undo: undo);
+      }
+
+      Future<void> finish(
+        WidgetTester tester,
+        ({int Function() commits, Completer<void> undo}) run,
+      ) async {
+        run.undo.complete();
+        await tester.pump();
+        await tester.pump(KitUndo.window);
+        expect(run.commits(), 0, reason: 'Undo was taken: onCommit never');
+        expect(tester.takeException(), isNull);
+      }
+
+      testWidgets('the owning route pops', (tester) async {
+        final context = await pumpKitHost(tester);
+        late BuildContext pushed;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (inner) {
+              pushed = inner;
+              return const SizedBox.expand();
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+        final run = await startUndo(tester, pushed);
+        Navigator.of(pushed).pop();
+        await tester.pumpAndSettle();
+        expect(run.commits(), 0);
+        expect(tester.takeException(), isNull);
+        await finish(tester, run);
+      });
+
+      testWidgets('the app pauses', (tester) async {
+        final context = await pumpKitHost(tester);
+        final run = await startUndo(tester, context);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
+        expect(run.commits(), 0);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await finish(tester, run);
+      });
+
+      testWidgets('a new showKitUndo takes the slot', (tester) async {
+        final context = await pumpKitHost(tester);
+        final run = await startUndo(tester, context);
+        showKitUndo(context, message: 'Removed "Add tests"', onUndo: () {});
+        await tester.pumpAndSettle();
+        expect(run.commits(), 0);
+        expect(find.text('Removed "Add tests"'), findsOneWidget);
+        expect(find.text('Archived "Fix login"'), findsNothing);
+        await finish(tester, run);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Removed "Add tests"'),
+          findsNothing,
+          reason: 'the second bar\'s own window ran out meanwhile',
+        );
+      });
+
+      testWidgets('commitPending()', (tester) async {
+        final context = await pumpKitHost(tester);
+        final run = await startUndo(tester, context);
+        KitUndo.commitPending();
+        await tester.pump();
+        expect(run.commits(), 0);
+        expect(KitUndo.debugHasPending, isFalse);
+        await finish(tester, run);
+      });
+
+      testWidgets('Dismiss (accessible navigation)', (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(accessibleNavigation: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        final context = await pumpKitHost(tester);
+        final run = await startUndo(tester, context);
+        await tester.tap(find.byTooltip('Dismiss'));
+        await tester.pump();
+        expect(run.commits(), 0);
+        await finish(tester, run);
+      });
+
+      testWidgets(
+        'the bar closed meanwhile and the undo then fails: the failure form '
+        'comes back (never silent), still without a commit',
+        (tester) async {
+          final context = await pumpKitHost(tester);
+          final run = await startUndo(tester, context);
+          KitUndo.commitPending();
+          await tester.pumpAndSettle();
+          expect(find.text('Archived "Fix login"'), findsNothing);
+          run.undo.completeError(Exception('offline'));
+          await tester.pumpAndSettle();
+          expect(
+            find.text('Couldn\'t undo. Archived "Fix login"'),
+            findsOneWidget,
+          );
+          expect(find.text('Try again'), findsOneWidget);
+          expect(run.commits(), 0);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
+
     group('10. placement', () {
       testWidgets('compact clears KitBottomInset plus space2', (tester) async {
         final context = await _pumpUndoHost(
@@ -422,6 +560,105 @@ void main() {
       },
     );
 
+    testWidgets(
+      '11b. the live region\'s own label is the message; it changes once, to '
+      'the failure form (which is what the platforms announce)',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final context = await pumpKitHost(tester);
+        showKitUndo(
+          context,
+          key: const Key('the-undo-bar'),
+          message: 'Archived "Fix login"',
+          onUndo: () => throw Exception('offline'),
+        );
+        await tester.pumpAndSettle();
+        final bar = find.byKey(const Key('the-undo-bar'));
+        final labels = <String>[];
+        void record() {
+          final node = tester.getSemantics(bar);
+          expect(node.flagsCollection.isLiveRegion, isTrue);
+          if (labels.isEmpty || labels.last != node.label) {
+            labels.add(node.label);
+          }
+        }
+
+        record();
+        expect(labels, ['Archived "Fix login"']);
+        // The visible words are excluded: nothing below the live region
+        // repeats the message as its own node.
+        final below = <String>[];
+        bool collect(SemanticsNode node) {
+          below.add(node.label);
+          node.visitChildren(collect);
+          return true;
+        }
+
+        tester.getSemantics(bar).visitChildren(collect);
+        expect(
+          below,
+          isNot(contains('Archived "Fix login"')),
+          reason: 'the message is spoken once, from the live region',
+        );
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        record();
+        await tester.pump(const Duration(seconds: 1));
+        record();
+        await tester.pumpAndSettle();
+        record();
+        expect(labels, [
+          'Archived "Fix login"',
+          'Couldn\'t undo. Archived "Fix login"',
+        ]);
+        KitUndo.commitPending();
+        semantics.dispose();
+      },
+    );
+
+    testWidgets(
+      '11c. while working the action is honestly busy: not enabled, no tap '
+      'action, value "Undoing"',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final context = await pumpKitHost(tester);
+        final undo = Completer<void>();
+        showKitUndo(
+          context,
+          undoKey: const Key('the-undo-action'),
+          message: 'Archived "Fix login"',
+          onUndo: () => undo.future,
+        );
+        await tester.pumpAndSettle();
+        final action = find.byKey(const Key('the-undo-action'));
+        expect(
+          tester.getSemantics(action),
+          isSemantics(
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            hasTapAction: true,
+          ),
+        );
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        final busy = tester.getSemantics(action);
+        expect(
+          busy,
+          isSemantics(
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: false,
+            hasTapAction: false,
+            value: 'Undoing',
+          ),
+        );
+        undo.complete();
+        await tester.pumpAndSettle();
+        semantics.dispose();
+      },
+    );
+
     testWidgets('12a. Ctrl+Z does not take Undo while a text field has focus', (
       tester,
     ) async {
@@ -503,6 +740,86 @@ void main() {
       expect(undoCalls, 1);
     });
 
+    testWidgets('12c. Ctrl+Shift+Z (redo) and Ctrl+Alt+Z do not take Undo', (
+      tester,
+    ) async {
+      HardwareKeyboard.instance.clearState();
+      final context = await pumpKitHost(tester);
+      var undoCalls = 0;
+      showKitUndo(
+        context,
+        message: 'Archived "Fix login"',
+        onUndo: () => undoCalls++,
+      );
+      await tester.pump();
+      for (final extra in [
+        LogicalKeyboardKey.shiftLeft,
+        LogicalKeyboardKey.altLeft,
+      ]) {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyDownEvent(extra);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+        await tester.sendKeyUpEvent(extra);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+      }
+      expect(undoCalls, 0);
+      expect(KitUndo.debugHasPending, isTrue);
+      KitUndo.commitPending();
+    });
+
+    testWidgets(
+      '12d. a focused widget that handles Ctrl+Z itself (a terminal) keeps '
+      'it',
+      (tester) async {
+        HardwareKeyboard.instance.clearState();
+        var terminalGotIt = 0;
+        late BuildContext context;
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.dark(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (inner) {
+                  context = inner;
+                  return Focus(
+                    autofocus: true,
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.keyZ) {
+                        terminalGotIt++;
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
+                    },
+                    child: const SizedBox.expand(),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        var undoCalls = 0;
+        showKitUndo(
+          context,
+          message: 'Archived "Fix login"',
+          onUndo: () => undoCalls++,
+        );
+        await tester.pump();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+        expect(terminalGotIt, 1);
+        expect(undoCalls, 0);
+        KitUndo.commitPending();
+      },
+    );
+
     testWidgets(
       '13a. reduced motion (system): the entrance and exit settle in one '
       'pump()',
@@ -554,6 +871,65 @@ void main() {
         await tester.pump();
         expect(find.text('Archived "Fix login"'), findsNothing);
         expect(tester.hasRunningAnimations, isFalse);
+      },
+    );
+
+    testWidgets(
+      '13c. motion: the entrance fades and slides on KitMotion.enter; the '
+      'exit fades on KitMotion.exit with no slide',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        showKitUndo(
+          context,
+          key: const Key('the-undo-bar'),
+          message: 'Archived "Fix login"',
+          onUndo: () {},
+        );
+        await tester.pumpAndSettle();
+        final rest = tester.getRect(find.byKey(const Key('the-undo-bar')));
+        double opacity() => tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: find.byKey(const Key('the-undo-bar')),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity;
+
+        KitUndo.commitPending();
+        await tester.pump();
+        await tester.pump(
+          Duration(milliseconds: KitMotion.quick.inMilliseconds ~/ 2),
+        );
+        // CurvedAnimation applies reverseCurve to the controller's own value
+        // as it runs back from 1 to 0.
+        expect(opacity(), closeTo(KitMotion.exit.transform(0.5), 0.01));
+        expect(
+          tester.getRect(find.byKey(const Key('the-undo-bar'))),
+          rest,
+          reason: 'the exit is a fade only',
+        );
+        await tester.pumpAndSettle();
+
+        showKitUndo(
+          context,
+          key: const Key('the-undo-bar'),
+          message: 'Archived "Fix login"',
+          onUndo: () {},
+        );
+        await tester.pump();
+        await tester.pump(
+          Duration(milliseconds: KitMotion.standard.inMilliseconds ~/ 2),
+        );
+        final t = KitMotion.enter.transform(0.5);
+        expect(opacity(), closeTo(t, 0.01));
+        final midway = tester.getRect(find.byKey(const Key('the-undo-bar')));
+        expect(midway.top - rest.top, closeTo((1 - t) * 8, 0.01));
+        await tester.pumpAndSettle();
+        KitUndo.commitPending();
+        await tester.pumpAndSettle();
       },
     );
 
@@ -800,4 +1176,56 @@ void main() {
       ),
     },
   );
+
+  // Last on purpose: it loads the gallery's real faces (process-wide), so
+  // the stacking rule is measured in the font the bar actually renders
+  // with; with the test font every face measures alike and the rule's
+  // choice of style would go unseen.
+  group('stacking (A11Y-8) in the theme\'s own face', () {
+    setUpAll(loadKitGalleryFonts);
+
+    testWidgets('a short message and Undo share one row at 412 wide', (
+      tester,
+    ) async {
+      final context = await _pumpUndoHost(tester, size: const Size(412, 915));
+      showKitUndo(
+        context,
+        undoKey: const Key('the-undo-action'),
+        message: 'Archived "Fix login"',
+        onUndo: () {},
+      );
+      await tester.pumpAndSettle();
+      final message = tester.getRect(find.text('Archived "Fix login"'));
+      final undo = tester.getRect(find.byKey(const Key('the-undo-action')));
+      expect(
+        undo.top,
+        lessThan(message.bottom),
+        reason: 'Undo sits beside the message, not under it',
+      );
+      expect(undo.left, greaterThan(message.right));
+      KitUndo.commitPending();
+    });
+
+    testWidgets('at text 2.0 the same bar stacks, and nothing overflows', (
+      tester,
+    ) async {
+      final context = await _pumpUndoHost(
+        tester,
+        size: const Size(412, 915),
+        textScale: 2,
+      );
+      showKitUndo(
+        context,
+        undoKey: const Key('the-undo-action'),
+        message: 'Archived "Fix login"',
+        onUndo: () {},
+      );
+      await tester.pumpAndSettle();
+      final message = tester.getRect(find.text('Archived "Fix login"'));
+      final undo = tester.getRect(find.byKey(const Key('the-undo-action')));
+      expect(undo.top, greaterThanOrEqualTo(message.bottom));
+      expect(tester.takeException(), isNull);
+      KitUndo.commitPending();
+    });
+  });
 }

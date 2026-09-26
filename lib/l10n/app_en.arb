@@ -22259,5 +22259,9 @@
         "example": "Archived “Fix login”"
       }
     }
+  },
+  "kitUndoWorking": "Undoing",
+  "@kitUndoWorking": {
+    "description": "Kit undo: spoken to a screen reader on the Undo action while the undo is still running (the action ignores taps until it finishes)"
   }
 }
