@@ -25538,13 +25538,13 @@ abstract class AppLocalizations {
   /// Search aliases for the Notifications row; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds'**
+  /// **'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds'**
   String get settingsHubSearchNotificationsAliases;
 
   /// Search aliases for the Appearance row; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'appearance theme dark light language arabic english font text size colors'**
+  /// **'appearance theme dark light language arabic english colors'**
   String get settingsHubSearchAppearanceAliases;
 
   /// Search aliases for the Models row; preserve English terms.
@@ -25880,7 +25880,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverNotifyBackgroundAliases.
   ///
   /// In en, this message translates to:
-  /// **'background connection stay connected battery keep alive service'**
+  /// **'background connection stay connected keep alive service'**
   String get discoverNotifyBackgroundAliases;
 
   /// No description provided for @discoverNotifyServersAliases.

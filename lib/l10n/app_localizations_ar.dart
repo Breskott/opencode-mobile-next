@@ -16077,11 +16077,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds إشعارات تنبيهات ساعات الهدوء بطارية خلفية متابعة واي فاي مراقبة خوادم محفوظة العمليات المنتهية موافقات أسئلة حدود الحصص';
+      'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds إشعارات تنبيهات ساعات الهدوء خلفية متابعة واي فاي مراقبة خوادم محفوظة العمليات المنتهية موافقات أسئلة حدود الحصص';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
-      'appearance theme dark light language arabic english font text size colors مظهر سمة داكن فاتح لغة عربية إنجليزية خط حجم نص ألوان';
+      'appearance theme dark light language arabic english colors مظهر سمة داكن فاتح لغة عربية إنجليزية ألوان';
 
   @override
   String get settingsHubSearchModelsAliases =>
@@ -16284,7 +16284,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discoverNotifyBackgroundAliases =>
-      'background battery keep alive الخلفية البقاء متصلا بطارية خدمة';
+      'background keep alive الخلفية البقاء متصلا خدمة';
 
   @override
   String get discoverNotifyServersAliases =>

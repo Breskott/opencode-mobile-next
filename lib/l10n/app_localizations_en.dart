@@ -15814,11 +15814,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
+      'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
-      'appearance theme dark light language arabic english font text size colors';
+      'appearance theme dark light language arabic english colors';
 
   @override
   String get settingsHubSearchModelsAliases =>
@@ -16017,7 +16017,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverNotifyBackgroundAliases =>
-      'background connection stay connected battery keep alive service';
+      'background connection stay connected keep alive service';
 
   @override
   String get discoverNotifyServersAliases =>
