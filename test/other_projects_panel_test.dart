@@ -143,7 +143,7 @@ void main() {
     expect(controller.switched, ['/work/site']);
   });
 
-  testWidgets('the trailing button opens the live conversation in its own '
+  testWidgets('the row menu opens the live conversation, named, in its own '
       'project', (tester) async {
     final controller = await _pump(
       tester,
@@ -152,10 +152,19 @@ void main() {
         _conversation('s2', 'Tidy css', '/work/site'),
       ],
     );
+    // One tap target per row (R2): no trailing button that looks like the
+    // row's own.
+    expect(
+      find.byKey(const ValueKey('other-project-open-/work/FinanceHub3')),
+      findsNothing,
+    );
+    await tester.longPress(find.text('FinanceHub3'));
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('other-project-open-/work/site')),
       findsNothing,
     );
+    expect(find.text('Open “Fix offers”'), findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey('other-project-open-/work/FinanceHub3')),
     );

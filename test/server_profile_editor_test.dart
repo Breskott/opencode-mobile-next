@@ -155,9 +155,9 @@ void main() {
         ),
       );
       await tester.pumpWidget(_app(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('More setup options'));
+      // Tailscale is one of Add server's ways in (R3).
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const ValueKey('welcome-tailscale-card')),

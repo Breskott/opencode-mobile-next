@@ -533,7 +533,10 @@ void main() {
         findsNothing,
       );
       // "shell" is one of the words that find the explanation instead.
-      final help = find.byKey(const ValueKey('settings-server-capabilities'));
+      // It is a Help row now, so the hub lists it as a search result.
+      final help = find.byKey(
+        const ValueKey('search-result-settings-server-capabilities'),
+      );
       expect(help, findsOneWidget);
 
       await tester.tap(help);

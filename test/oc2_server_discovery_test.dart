@@ -169,11 +169,15 @@ void main() {
       addTearDown(conn.dispose);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
-      final entry = find.byKey(const ValueKey('connect-existing-opencode2'));
-      await _reveal(tester, entry);
+      // Add server's default choice pairs OpenCode 1 or 2 (R3: no separate
+      // "Connect OpenCode 2" door on the list).
+      expect(
+        find.byKey(const ValueKey('connect-existing-opencode2')),
+        findsNothing,
+      );
+      final entry = find.byKey(const ValueKey('servers-add'));
       await tester.tap(entry);
       await tester.pumpAndSettle();
-      expect(find.text('OpenCode 2'), findsOneWidget);
       // The same autodetecting editor: OpenCode, 1 or 2, chosen.
       expect(find.text('OpenCode on a computer'), findsOneWidget);
       // The check after the address says which one it found; no line
@@ -305,8 +309,10 @@ void main() {
     await tester.pumpWidget(_app(store, conn, scale: 2));
     await tester.pumpAndSettle();
     PhoneSetup.engine = FakeSetupEngine();
-    // Phone setup v2: the list's one phone entry opens "On this phone",
-    // and Termux (where OpenCode 1 or 2 is chosen) is one of its Other ways.
+    // Phone setup v2: Add server's "On this phone" opens phone setup, and
+    // Termux (where OpenCode 1 or 2 is chosen) is one of its Other ways.
+    await tester.tap(find.byKey(const ValueKey('servers-add')));
+    await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('quick-add-phone-card'));
     await _reveal(tester, entry);
     await tester.tap(entry);

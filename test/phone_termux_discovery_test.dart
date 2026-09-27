@@ -70,7 +70,7 @@ void main() {
 
   for (final scale in [1.0, 2.5]) {
     testWidgets(
-      'Settings exposes phone Termux above server tools at ${scale}x',
+      'Settings finds this phone through Saved servers at ${scale}x',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
@@ -79,43 +79,25 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller, scale: scale));
         await tester.pumpAndSettle();
-        final phone = find.byKey(const ValueKey('settings-on-this-phone'));
+        // Adding a server on this phone is one of Add server's ways (R3):
+        // the hub holds no second door to it, search finds it there.
         expect(
-          find.descendant(of: phone, matching: find.text('On this phone')),
-          findsOneWidget,
+          find.byKey(const ValueKey('settings-on-this-phone')),
+          findsNothing,
         );
-        expect(
-          find.text('Run a coding agent right here. No computer needed.'),
-          findsOneWidget,
-        );
-        // A Connection row: above everything that depends on the server.
-        expect(
-          find.descendant(
-            of: find.byKey(const ValueKey('settings-group-connection')),
-            matching: phone,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          tester.getTopLeft(phone).dy,
-          lessThan(
-            tester
-                .getTopLeft(
-                  find.byKey(const ValueKey('settings-group-agent-setup')),
-                )
-                .dy,
-          ),
-        );
-        // Reachable by scrolling alone: no search, no expander to open first.
-        await tester.ensureVisible(phone);
-        await tester.pumpAndSettle();
-        expect(phone.hitTestable(), findsOneWidget);
         await tester.enterText(
           find.byKey(const Key('library-search')),
           'local termux',
         );
         await tester.pumpAndSettle();
-        expect(find.text('On this phone'), findsOneWidget);
+        final result = find.byKey(
+          const ValueKey('search-result-settings-on-this-phone'),
+        );
+        expect(result, findsOneWidget);
+        expect(
+          find.descendant(of: result, matching: find.text('On this phone')),
+          findsOneWidget,
+        );
         expect(find.text('Models & agents'), findsNothing);
         expect(tester.takeException(), isNull);
       },
@@ -146,7 +128,14 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('On this phone'));
+        await tester.enterText(
+          find.byKey(const Key('library-search')),
+          'termux',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('search-result-settings-on-this-phone')),
+        );
         await tester.pumpAndSettle();
         // The phone setup screen; Termux is one of its other ways.
         expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
@@ -204,12 +193,20 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
+      // One of Add server's ways in, no expander to open first (R3).
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('quick-add-phone-card')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('On this phone').hitTestable(), findsOneWidget);
       expect(
         find.byKey(const ValueKey('quick-add-phone-card')),
         findsOneWidget,
       );
-      expect(find.text('Connect with Tailscale'), findsNothing);
+      // The other ways in sit together under Connect to.
+      expect(find.text('Connect with Tailscale'), findsOneWidget);
     },
   );
 

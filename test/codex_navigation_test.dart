@@ -157,27 +157,20 @@ void main() {
         find.byKey(const ValueKey('restricted-directory-context')),
         findsOneWidget,
       );
-      // One Conversations list: the pin is a row in it, no Pinned header.
-      expect(find.text('Conversations'), findsOneWidget);
+      // One list with no caption: the pin is a row in it, no Pinned header.
+      expect(find.text('Conversations'), findsNothing);
       expect(find.text('Pinned Codex session'), findsOneWidget);
 
       // The project catalog is not queried when project management is absent.
       expect(repository.listProjectsCalls, 0);
       expect(find.byKey(const ValueKey('search-all-sessions')), findsNothing);
-      // Terminal is a section-menu entry, so its absence only means
-      // something with the menu open.
-      await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
-      await tester.pumpAndSettle();
-      expect(find.text('Refresh recent conversations'), findsOneWidget);
-      expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
-      await tester.tapAt(const Offset(4, 4));
-      await tester.pumpAndSettle();
-      expect(find.text('Refresh recent conversations'), findsNothing);
-      // The menu route is gone: only the shell's navigator page remains.
+      // No caption menu: reload is pull to refresh, background updates
+      // live in Settings (owner rule R4).
       expect(
-        find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+        find.byKey(const ValueKey('workspace-section-menu')),
         findsNothing,
       );
+      expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
 
       // At the 800px test surface the shell uses a NavigationRail, whose
       // labels are zero-size semantics-only boxes; tap the destination's
@@ -215,7 +208,7 @@ void main() {
       // The tab is the hub itself; what is about the app survives a Codex
       // connection, what needs the server catalog is absent.
       expect(
-        find.byKey(const ValueKey('settings-group-connection')),
+        find.byKey(const ValueKey('settings-group-server')),
         findsOneWidget,
       );
       expect(
@@ -257,7 +250,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Models & agents'), findsOneWidget);
+    // One Model row (R3); the catalog screen is found by search.
+    expect(
+      find.byKey(const ValueKey('settings-model-and-mode')),
+      findsOneWidget,
+    );
     expect(find.text('Providers'), findsOneWidget);
     expect(find.text('MCP'), findsOneWidget);
     expect(find.text('Commands & tools'), findsOneWidget);

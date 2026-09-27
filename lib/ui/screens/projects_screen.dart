@@ -20,6 +20,7 @@ import '../kit/kit_screen.dart';
 import '../kit/kit_search_field.dart';
 import '../kit/kit_state_view.dart';
 import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_refresh.dart';
 import '../widgets/product_states.dart' show productErrorText;
@@ -273,6 +274,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         child: ListView(
           key: const ValueKey('projects-list'),
           physics: const AlwaysScrollableScrollPhysics(),
+          // One rail (R5): the list's gutter; the panels below add none of
+          // their own, so notices, states and panels line up.
           padding: KitScreen.padding(context),
           children: [
             if (switchError != null)
@@ -284,6 +287,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 onDismiss: () => setState(() => _switchError = null),
               ),
             KitRowGroup(
+              margin: EdgeInsets.zero,
               children: [
                 if (ProjectFolderActions.canCreate(widget.controller))
                   KitRow(
@@ -303,6 +307,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   leading: const KitRowIcon(AppIconography.folderOpen),
                   title: l10n.projectFolderOpen,
                   supporting: TextSpan(text: l10n.projectFolderOpenSubtitle),
+                  supportingMaxLines: 2,
                   trailing: const KitChevron(),
                   onTap: _openFolder,
                 ),
@@ -334,6 +339,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               KitSearchNoMatch(query: query, onClear: _search.clear)
             else if (visible.isNotEmpty)
               KitRowGroup(
+                margin: EdgeInsetsDirectional.only(
+                  top: KitTokens.of(context).sectionGap,
+                ),
                 label: l10n.e7ProjectProjectsOpened,
                 children: [
                   for (final project in visible)
@@ -412,6 +420,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             size: KitStateSize.inline,
           ),
           KitRowGroup(
+            margin: EdgeInsets.zero,
             children: [
               KitRow(
                 key: const ValueKey('projects-configured-folder'),

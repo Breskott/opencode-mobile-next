@@ -8,7 +8,6 @@ import '../../api2/models.dart' show Api2FormInfo;
 import '../../domain/completion_digest.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
-import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration.dart';
 import '../app_iconography.dart';
@@ -26,7 +25,6 @@ import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
 import 'profile_monitor_screen.dart';
 import 'run_result_screen.dart';
-import 'settings_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
 
@@ -109,7 +107,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
   bool _initialGateScheduled = false;
   bool _initialGateHandled = false;
   Object? _digestScope;
-  bool _showDigests = false;
   final Set<(String, int)> _expandedDigests = {};
   final Set<(String, int)> _dismissedDigests = {};
   _Pick? _picked;
@@ -126,7 +123,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void _clearDigestScope() {
     if (_digestScope == _currentDigestScope) return;
     _digestScope = _currentDigestScope;
-    _showDigests = false;
     _expandedDigests.clear();
     _dismissedDigests.clear();
     _picked = null;
@@ -197,7 +193,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _completionDigests() {
+  /// What finished while the person was away, newest first: one ordinary
+  /// row each in the Inbox's one list, its done mark and the word
+  /// "Finished" carrying the state (owner rule R1: no headed sections). A
+  /// row unfolds to its digest card. Only conversations the person has not
+  /// looked at since they finished, where the server keeps that record.
+  List<Widget> _finishedRows() {
     final l10n = _l10n(context);
     final controller = widget.controller;
     final scope = _currentDigestScope;
@@ -210,7 +211,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
               idle != null &&
               idle > 0 &&
               !controller.busySessions.contains(session.id) &&
-              !_dismissedDigests.contains((session.id, idle));
+              !_dismissedDigests.contains((session.id, idle)) &&
+              (!controller.supportsSessionReadState ||
+                  controller.isSessionUnread(session));
         }).toList()..sort((a, b) {
           final byTime = b.time!.idle!.compareTo(a.time!.idle!);
           return byTime == 0 ? a.id.compareTo(b.id) : byTime;
@@ -222,90 +225,77 @@ class _ActivityScreenState extends State<ActivityScreen> {
         controller.questionsError == null &&
         (!controller.capabilities.forms ||
             (!controller.formsLoading && controller.formsError == null));
-    return KitRowGroup(
-      key: const ValueKey('activity-digests'),
-      children: [
+    final now = (widget.now ?? DateTime.now)();
+    return [
+      for (final session in sessions)
         KitExpandRow(
-          headerKey: const ValueKey('activity-digests-header'),
-          leading: const KitRowIcon(AppIconography.checklist),
-          title: l10n.activityFinishedAway,
-          supporting: TextSpan(text: l10n.digestSubtitle),
-          supportingMaxLines: 2,
-          expanded: _showDigests,
-          onExpansionChanged: (open) => setState(() => _showDigests = open),
+          key: ValueKey('activity-digest-${session.id}'),
+          headerKey: ValueKey('activity-digest-${session.id}-header'),
+          leading: KitStatusMark(
+            state: KitMarkState.done,
+            label: l10n.workFinished,
+          ),
+          title: presentedSessionTitle(
+            session,
+            fallback: l10n.globalSessionsUntitled,
+            l10n: l10n,
+          ),
+          supporting: TextSpan(
+            text: l10n.activityFinishedRow(
+              relativeTimeLabel(session.time!.idle!, now: now, l10n: l10n),
+            ),
+          ),
+          expanded: _expandedDigests.contains((
+            session.id,
+            session.time!.idle!,
+          )),
+          onExpansionChanged: (_) => setState(() {
+            final key = (session.id, session.time!.idle!);
+            if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
+          }),
           children: [
-            if (sessions.isEmpty)
-              KitRow(
-                key: const ValueKey('activity-digests-empty'),
-                title: l10n.digestEmpty,
-                titleMaxLines: 2,
+            CompletionDigestCard(
+              key: ValueKey((scope, session.id, session.time!.idle)),
+              digest: CompletionDigest(
+                sessionID: session.id,
+                idleAt: session.time!.idle!,
+                changedFiles:
+                    session.summary == null || session.summary!.files < 0
+                    ? null
+                    : session.summary!.files,
+                pendingDecisions: !pendingKnown
+                    ? null
+                    : controller.awaitingPermissions
+                              .where((p) => p.sessionID == session.id)
+                              .length +
+                          controller.questions.values
+                              .where((q) => q.sessionID == session.id)
+                              .length +
+                          (controller.capabilities.forms
+                              ? controller.forms.values
+                                    .where((f) => f.sessionID == session.id)
+                                    .length
+                              : 0),
               ),
-            for (final session in sessions)
-              KitExpandRow(
-                key: ValueKey('activity-digest-${session.id}'),
-                title: presentedSessionTitle(
-                  session,
-                  fallback: l10n.globalSessionsUntitled,
-                  l10n: l10n,
-                ),
-                supporting: TextSpan(text: l10n.digestIdle),
-                expanded: _expandedDigests.contains((
-                  session.id,
-                  session.time!.idle!,
-                )),
-                onExpansionChanged: (_) => setState(() {
-                  final key = (session.id, session.time!.idle!);
-                  if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
-                }),
-                children: [
-                  CompletionDigestCard(
-                    key: ValueKey((scope, session.id, session.time!.idle)),
-                    digest: CompletionDigest(
-                      sessionID: session.id,
-                      idleAt: session.time!.idle!,
-                      changedFiles:
-                          session.summary == null || session.summary!.files < 0
-                          ? null
-                          : session.summary!.files,
-                      pendingDecisions: !pendingKnown
-                          ? null
-                          : controller.awaitingPermissions
-                                    .where((p) => p.sessionID == session.id)
-                                    .length +
-                                controller.questions.values
-                                    .where((q) => q.sessionID == session.id)
-                                    .length +
-                                (controller.capabilities.forms
-                                    ? controller.forms.values
-                                          .where(
-                                            (f) => f.sessionID == session.id,
-                                          )
-                                          .length
-                                    : 0),
-                    ),
-                    onOpenConversation: () {
-                      if (scope == _currentDigestScope) _openChat(session.id);
-                    },
-                    onReview: () => _reviewDigest(session.id, scope),
-                    onRunResults: () {
-                      if (scope != _currentDigestScope) return;
-                      pushKitPage<void>(
-                        context,
-                        (_) => RunResultScreen(
-                          controller: controller,
-                          sessionID: session.id,
-                        ),
-                      );
-                    },
-                    onDismiss: () =>
-                        _dismissDigest(session.id, session.time!.idle!),
+              onOpenConversation: () {
+                if (scope == _currentDigestScope) _openChat(session.id);
+              },
+              onReview: () => _reviewDigest(session.id, scope),
+              onRunResults: () {
+                if (scope != _currentDigestScope) return;
+                pushKitPage<void>(
+                  context,
+                  (_) => RunResultScreen(
+                    controller: controller,
+                    sessionID: session.id,
                   ),
-                ],
-              ),
+                );
+              },
+              onDismiss: () => _dismissDigest(session.id, session.time!.idle!),
+            ),
           ],
         ),
-      ],
-    );
+    ];
   }
 
   @override
@@ -359,13 +349,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final now = (widget.now ?? DateTime.now)();
       showGateSheet(context, team, gateId, now: () => now);
     });
-  }
-
-  void _openBackgroundSettings(BuildContext context) {
-    pushKitPage<void>(
-      context,
-      (_) => NotificationsSettingsScreen(controller: widget.controller),
-    );
   }
 
   void _scheduleInitialQuestion() {
@@ -731,6 +714,54 @@ class _ActivityScreenState extends State<ActivityScreen> {
         if (row.rank > teamActivityPermissionRank) row.widget,
     ];
 
+    // The server's own forms (MCP elicitation) have no conversation to
+    // open; they follow the conversations' requests in the same list.
+    final globalFormRows = [
+      for (final form in globalForms)
+        ActivityFormTile(
+          key: ValueKey('activity-global-form-${form.id}'),
+          form: form,
+          controller: controller,
+        ),
+    ];
+    final monitor = ProfileMonitorInbox.rowsFor(controller);
+    final runningRows = [
+      for (final session in running)
+        _SessionRow(
+          key: ValueKey('activity-running-${session.id}'),
+          session: session,
+          live: live,
+          subagents: _subagentCount(session.id),
+          detail:
+              controller.sessionDetailsErrors[session.id] ?? _place(session),
+          onTap: () => _openChat(session.id),
+        ),
+    ];
+    final finishedRows = _finishedRows();
+    // The one list (owner rule R1, 2026-09-27): no headed state sections.
+    // Most urgent first: what waits on the person here, the server's own
+    // forms, what other saved servers wait on, running work (and check-ins
+    // due on it), then what finished, newest first. Each row's mark and its
+    // word ("Needs you", "Working", "Finished") carry the meaning. A row
+    // that arrives while the Inbox is open unfolds in, one answered (here or
+    // on another device) folds away where it was (design standard §10).
+    final rows = [
+      ...attentionRows,
+      ...globalFormRows,
+      ...monitor.requests,
+      ...runningRows,
+      ...monitor.checkIns,
+      ...finishedRows,
+    ];
+    Widget oneList(List<Widget> rows) => _Section(
+      child: KitRowGroup(
+        key: const ValueKey('activity-list'),
+        children: [
+          _DividedRows(key: const ValueKey('activity-rows'), rows: rows),
+        ],
+      ),
+    );
+
     final Widget list;
     if (loading && empty) {
       list = ListView(
@@ -755,6 +786,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         ],
       );
     } else if (empty) {
+      final quiet = [...monitor.checkIns, ...finishedRows];
       list = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsetsDirectional.only(
@@ -766,23 +798,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
               known:
                   controller.isConnected &&
                   controller.unknownAttentionProfileCount == 0,
-              onRefresh: _refresh,
+              // In the shell the connection line above says the server is
+              // away and holds the one Reconnect (R3); a pushed Inbox has no
+              // such line, so it keeps its own.
+              offline: !controller.isConnected,
+              onRefresh: widget.embedded && !controller.isConnected
+                  ? null
+                  : _refresh,
             ),
-          ProfileMonitorInbox(controller: controller, compact: true),
-          // An empty inbox is only reassuring if it would fill while the
-          // app is closed; when it would not, offer to turn that on.
-          if (platformCapabilities.supportsBackgroundService &&
-              !controller.keepLiveInBackground)
-            _Section(
-              child: KitRowGroup(
-                children: [
-                  _BackgroundUpdatesHint(
-                    onOpen: () => _openBackgroundSettings(context),
-                  ),
-                ],
-              ),
-            ),
-          _Section(child: _completionDigests()),
+          if (quiet.isNotEmpty) oneList(quiet),
         ],
       );
     } else {
@@ -811,91 +835,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
                 ),
               ),
-            // What waits on the person: a request that arrives while the
-            // Inbox is open unfolds in, one answered (here or on another
-            // device) folds away where it was (design standard §10). The
-            // list's first paint shows them at once.
-            if (attentionRows.isNotEmpty)
-              _Section(
-                child: KitRowGroup(
-                  key: const ValueKey('activity-attention'),
-                  label: l10n.setupSwitchAttention,
-                  children: [
-                    _DividedRows(
-                      key: const ValueKey('activity-attention-rows'),
-                      rows: attentionRows,
-                    ),
-                  ],
-                ),
-              ),
-            if (globalForms.isNotEmpty)
-              _Section(
-                child: KitRowGroup(
-                  label: l10n.e7WorkspaceServerRequests,
-                  children: [
-                    _DividedRows(
-                      key: const ValueKey('activity-global-forms'),
-                      rows: [
-                        for (final form in globalForms)
-                          ActivityFormTile(
-                            key: ValueKey('activity-global-form-${form.id}'),
-                            form: form,
-                            controller: controller,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ProfileMonitorInbox(controller: controller, compact: true),
-            // Conversations start and finish while the person looks: their
-            // rows come and go gently too.
-            if (running.isNotEmpty)
-              _Section(
-                child: KitRowGroup(
-                  key: const ValueKey('activity-running'),
-                  label: l10n.workRunning,
-                  children: [
-                    _DividedRows(
-                      key: const ValueKey('activity-running-rows'),
-                      rows: [
-                        for (final session in running)
-                          _SessionRow(
-                            key: ValueKey('activity-running-${session.id}'),
-                            session: session,
-                            live: live,
-                            subagents: _subagentCount(session.id),
-                            detail:
-                                controller.sessionDetailsErrors[session.id] ??
-                                _place(session),
-                            onTap: () => _openChat(session.id),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            _Section(child: _completionDigests()),
+            if (rows.isNotEmpty) oneList(rows),
           ],
         ),
       );
     }
 
+    // Pull to refresh is the one refresh (R4): no second one in the bar.
     final body = KitRefresh(onRefresh: _refresh, child: list);
     final topBar = widget.embedded
         ? null
-        : KitTopBar(
-            title: l10n.shellTabInbox,
-            actions: [
-              KitAction(
-                key: const ValueKey('activity-refresh'),
-                label: l10n.globalSessionsRefresh,
-                icon: AppIconography.retry,
-                working: _refreshing,
-                onPressed: _refreshing ? null : _refresh,
-              ),
-            ],
-          );
+        : KitTopBar(title: l10n.shellTabInbox);
     return KitScreen.twoPane(
       topBar: topBar,
       loading: loading && !empty,
@@ -1035,15 +985,24 @@ class _ActivityPermissionTileState extends State<ActivityPermissionTile> {
     final error = _error;
     final connected = _canAnswer(controller);
     return KitRow(
-      leading: const KitRowIcon(AppIconography.shield),
+      leading: KitNeedsYou.mark(),
       title: title,
       selected: widget.selected,
       supporting: error != null
           ? TextSpan(text: l10n.activityAllowOnceFailed(error))
           : TextSpan(
-              text: permission.patterns.isNotEmpty
-                  ? permission.patterns.first
-                  : _sessionTitle(context, controller, permission.sessionID),
+              children: [
+                KitNeedsYou.span(context),
+                TextSpan(
+                  text: permission.patterns.isNotEmpty
+                      ? permission.patterns.first
+                      : _sessionTitle(
+                          context,
+                          controller,
+                          permission.sessionID,
+                        ),
+                ),
+              ],
             ),
       supportingMaxLines: error != null ? 2 : 1,
       trailing: KitIconButton(
@@ -1083,14 +1042,19 @@ class ActivityQuestionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
     return KitRow(
-      leading: const KitRowIcon(AppIconography.question),
+      leading: KitNeedsYou.mark(),
       title: question.prompts.isEmpty
           ? l10n.e7WorkspaceAssistantQuestion
           : question.prompts.first.title,
       supporting: TextSpan(
-        text: question.prompts.isEmpty
-            ? _sessionTitle(context, controller, question.sessionID)
-            : question.prompts.first.question,
+        children: [
+          KitNeedsYou.span(context),
+          TextSpan(
+            text: question.prompts.isEmpty
+                ? _sessionTitle(context, controller, question.sessionID)
+                : question.prompts.first.question,
+          ),
+        ],
       ),
       supportingMaxLines: 2,
       selected: selected,
@@ -1124,15 +1088,20 @@ class ActivityFormTile extends StatelessWidget {
     final count = form.fields.length;
     return KitRow(
       key: ValueKey('form-request-tile-${form.id}'),
-      leading: const KitRowIcon(AppIconography.editNote),
+      leading: KitNeedsYou.mark(),
       title: form.title ?? l10n.e7WorkspaceInputRequested,
       supporting: TextSpan(
-        text: form.sessionID == 'global'
-            ? l10n.e7WorkspaceMcpAsked
-            : l10n.e7WorkspaceQuestionCount(
-                count,
-                _sessionTitle(context, controller, form.sessionID),
-              ),
+        children: [
+          KitNeedsYou.span(context),
+          TextSpan(
+            text: form.sessionID == 'global'
+                ? l10n.e7WorkspaceMcpAsked
+                : l10n.e7WorkspaceQuestionCount(
+                    count,
+                    _sessionTitle(context, controller, form.sessionID),
+                  ),
+          ),
+        ],
       ),
       supportingMaxLines: 2,
       selected: selected,
@@ -1174,7 +1143,6 @@ class ActivityGateTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
-    final (icon, _) = teamGateGlyph(gate.kind);
     final age = gate.createdAt == null
         ? null
         : relativeTimeLabel(
@@ -1191,9 +1159,14 @@ class ActivityGateTile extends StatelessWidget {
     final record = teamGateMutation(team, gate);
     void open() => showGateSheet(context, team, gate.id, now: () => now);
     return KitRow(
-      leading: KitRowIcon(icon),
+      leading: KitNeedsYou.mark(),
       title: gate.title,
-      supporting: TextSpan(text: subtitle),
+      supporting: TextSpan(
+        children: [
+          KitNeedsYou.span(context),
+          TextSpan(text: subtitle),
+        ],
+      ),
       supportingMaxLines: 2,
       trailing: record == null || record.status == MutationStatus.confirmed
           ? const KitChevron()
@@ -1226,7 +1199,6 @@ class ActivityAgentBlockedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
-    final (icon, _) = teamAgentGlyph(agent.state);
     String? work;
     for (final item in team.snapshot.work) {
       if (item.id == agent.currentWorkId) {
@@ -1248,9 +1220,14 @@ class ActivityAgentBlockedTile extends StatelessWidget {
       ?age,
     ].join(' · ');
     return KitRow(
-      leading: KitRowIcon(icon),
+      leading: KitNeedsYou.mark(),
       title: agent.name,
-      supporting: TextSpan(text: subtitle),
+      supporting: TextSpan(
+        children: [
+          KitNeedsYou.span(context),
+          TextSpan(text: subtitle),
+        ],
+      ),
       supportingMaxLines: 2,
       trailing: const KitChevron(),
       onTap: () => pushKitPage<void>(
@@ -1333,7 +1310,9 @@ class _SessionRow extends StatelessWidget {
       fallback: l10n.globalSessionsUntitled,
       l10n: l10n,
     );
-    final state = live ? l10n.workRunning : l10n.activityLastSeenRunning;
+    final state = live
+        ? l10n.globalSessionsWorking
+        : l10n.activityLastSeenRunning;
     final line = [
       state,
       if (detail.isNotEmpty) detail,
@@ -1856,38 +1835,24 @@ String _sessionTitle(
   );
 }
 
-/// Offers to keep the Inbox filling while the app is closed (map
-/// `whenMissing: perm.notifications → offers-enable`).
-class _BackgroundUpdatesHint extends StatelessWidget {
-  final VoidCallback onOpen;
-
-  const _BackgroundUpdatesHint({required this.onOpen});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _l10n(context);
-    return KitRow(
-      key: const ValueKey('activity-background-settings'),
-      leading: const KitRowIcon(AppIconography.activity),
-      title: l10n.activityBackgroundUpdates,
-      supporting: TextSpan(text: l10n.activityBackgroundOffDetail),
-      supportingKey: const ValueKey('activity-background-hint'),
-      supportingMaxLines: 2,
-      trailing: const KitChevron(),
-      onTap: onOpen,
-    );
-  }
-}
-
 /// A scoped result, rather than an unqualified claim about every project.
+/// Offline it says only what that means here; the fix is the connection
+/// line's Reconnect, so [onRefresh] is null there and no second button
+/// repeats it (R3).
 class _ActivityStatus extends StatelessWidget {
-  const _ActivityStatus({required this.known, required this.onRefresh});
+  const _ActivityStatus({
+    required this.known,
+    required this.offline,
+    required this.onRefresh,
+  });
   final bool known;
-  final VoidCallback onRefresh;
+  final bool offline;
+  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
+    final retry = onRefresh;
     return KitStateView(
       key: ValueKey(known ? 'activity-all-clear' : 'activity-status-unknown'),
       size: KitStateSize.inline,
@@ -1897,21 +1862,27 @@ class _ActivityStatus extends StatelessWidget {
       illustration: known
           ? const StatesTrayScene()
           : const StatesUnpluggedScene(),
-      title: known ? l10n.activityClearHere : l10n.activityStatusIncomplete,
+      title: known
+          ? l10n.activityClearHere
+          : offline
+          ? l10n.activityOfflineRequests
+          : l10n.activityStatusIncomplete,
       // The all-clear says what would fill this list, so an empty Inbox
       // reads as "watching" rather than "nothing here" (UX plan 5.8, item
       // 3). The unknown state keeps its own copy: teaching there would
       // claim a calm the app has not verified.
       body: known
           ? l10n.emptyTeachInboxMessage
+          : offline
+          ? null
           : l10n.activityUnknownStatusDetail,
       tertiary: [
-        if (!known)
+        if (!known && retry != null)
           KitAction(
             key: const ValueKey('activity-check-again'),
             label: l10n.activityCheckAgain,
             icon: AppIconography.retry,
-            onPressed: onRefresh,
+            onPressed: retry,
           ),
       ],
     );

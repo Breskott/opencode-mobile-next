@@ -1273,64 +1273,44 @@ void main() {
   });
 
   group('workspace wiring', () {
-    testWidgets('the team door follows Recent and precedes Archived', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(390, 2400);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final (controller, _) = await boot();
-      final connection = _Connection(ProfileStore(prefs: prefs))
-        ..team = controller;
-      addTearDown(connection.dispose);
-      connection.sessionsById = {
-        'recent': Session(
-          id: 'recent',
-          title: 'recent conversation',
-          time: SessionTime(created: 1, updated: 5),
-        ),
-        'old': Session(
-          id: 'old',
-          title: 'old conversation',
-          time: SessionTime(created: 1, updated: 2, archived: 3),
-        ),
-      };
-      await tester.pumpWidget(
-        app(Scaffold(body: WorkspaceScreen(controller: connection))),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Work lists conversations only: no team door, no archived row',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final (controller, _) = await boot();
+        final connection = _Connection(ProfileStore(prefs: prefs))
+          ..team = controller;
+        addTearDown(connection.dispose);
+        connection.sessionsById = {
+          'recent': Session(
+            id: 'recent',
+            title: 'recent conversation',
+            time: SessionTime(created: 1, updated: 5),
+          ),
+          'old': Session(
+            id: 'old',
+            title: 'old conversation',
+            time: SessionTime(created: 1, updated: 2, archived: 3),
+          ),
+        };
+        await tester.pumpWidget(
+          app(Scaffold(body: WorkspaceScreen(controller: connection))),
+        );
+        await tester.pumpAndSettle();
 
-      // UX plan 5.5 and 5.7: the person's own conversations come first.
-      // The team's tasks are rows in the lists now (docs/design/team-
-      // conversation-2026-09-26.md); its page is one quiet door here.
-      double top(Finder finder) => tester.getTopLeft(finder).dy;
-      final card = find.byKey(const ValueKey('team-work-door'));
-      expect(card, findsOneWidget);
-      expect(find.byType(TeamCard), findsNothing);
-      expect(top(card), greaterThan(top(find.text('Conversations'))));
-      expect(top(card), greaterThan(top(find.text('recent conversation'))));
-      expect(top(card), lessThan(top(find.text('Archived conversations'))));
-    });
-
-    testWidgets('the team door pushes the home', (tester) async {
-      final (controller, _) = await boot();
-      final connection = _Connection(ProfileStore(prefs: prefs))
-        ..team = controller;
-      addTearDown(connection.dispose);
-      await tester.pumpWidget(app(WorkspaceScreen(controller: connection)));
-      await tester.pumpAndSettle();
-      expect(find.byType(TeamHomeScreen), findsNothing);
-      // The card follows the person's own conversations (UX plan 5.7).
-      await tester.ensureVisible(find.byKey(const ValueKey('team-work-door')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('team-work-door')));
-      await tester.pumpAndSettle();
-      expect(find.byType(TeamHomeScreen), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-home-data')), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-home-tasks')), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        // Owner rule R4 (2026-09-27): the team's tasks are rows in the one
+        // list; its page is reached from Settings › AI Team, and archived
+        // conversations are a filter of All conversations.
+        expect(find.text('recent conversation'), findsOneWidget);
+        expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
+        expect(find.byType(TeamCard), findsNothing);
+        expect(find.text('Archived conversations'), findsNothing);
+        expect(find.text('Conversations'), findsNothing);
+      },
+    );
   });
 
   // TEAM-115: the host's internals stay out of the counts and lists.

@@ -890,13 +890,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     double top(Finder finder) => tester.getTopLeft(finder).dy;
+    // One list, no section headers (owner rule R1): the rows' marks and
+    // words carry the state.
     final order = [
-      find.text('Needs attention'),
       find.byKey(const ValueKey('activity-permission-perm-old')),
       find.byKey(const ValueKey('activity-permission-perm-new')),
-      find.text('Running'),
       find.byKey(const ValueKey('activity-running-running')),
-      find.text('Completion digests'),
+      find.byKey(const ValueKey('activity-digest-finished')),
     ];
     for (final item in order) {
       expect(item, findsOneWidget);
@@ -904,14 +904,10 @@ void main() {
     for (var i = 1; i < order.length; i++) {
       expect(top(order[i - 1]), lessThan(top(order[i])), reason: 'item $i');
     }
-    // Finished work is listed under its heading once opened.
-    await tester.tap(find.text('Completion digests'));
-    await tester.pump();
+    for (final header in ['Needs attention', 'Running', 'Completion digests']) {
+      expect(find.text(header), findsNothing, reason: header);
+    }
     expect(find.text('Finished conversation'), findsOneWidget);
-    expect(
-      top(find.text('Finished conversation')),
-      greaterThan(top(find.text('Completion digests'))),
-    );
   });
 
   testWidgets('failed reconnect keeps the product shell and location visible', (

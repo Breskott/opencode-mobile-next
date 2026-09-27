@@ -71,14 +71,22 @@ void main() {
       expect(find.text(_l10n.serverSwitcherTitle), findsOneWidget);
       final current = find.byKey(const ValueKey('server-switcher-current'));
       expect(
-        find.descendant(of: current, matching: _rich('Connected · ')),
+        find.descendant(of: current, matching: _rich('Connected')),
         findsOneWidget,
       );
       expect(
         find.byKey(const ValueKey('kit-row-current-mark')),
         findsOneWidget,
       );
-      expect(find.text(_l10n.activitySavedServers), findsOneWidget);
+      // One unlabelled panel (R1): no "Saved servers" header splits it.
+      expect(find.text(_l10n.activitySavedServers), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('server-switcher-saved')),
+          matching: current,
+        ),
+        findsOneWidget,
+      );
       for (final id in ['laptop', 'lab', 'locked']) {
         expect(
           find.byKey(ValueKey('server-switcher-profile-$id')),
@@ -114,7 +122,7 @@ void main() {
                   as TextSpan)
               .toPlainText();
 
-      expect(text('laptop'), startsWith('Needs you · 1 working · '));
+      expect(text('laptop'), 'Needs you · 1 working');
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('server-switcher-profile-laptop')),
@@ -124,10 +132,31 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(text('lab'), startsWith('2 working · '));
+      expect(text('lab'), '2 working');
       expect(text('locked'), startsWith(_l10n.e7SetupPasswordRequired));
       expect(text('locked'), isNot(contains('working')));
-      expect(text('lab'), contains('https://lab.example.test'));
+      // The name identifies the server; no address to cut off (R5).
+      expect(text('lab'), isNot(contains('https://lab.example.test')));
+    });
+
+    testWidgets('the one list is ordered by urgency: needs you, working, '
+        'then the rest', (tester) async {
+      await open(
+        tester,
+        snapshots: {
+          'laptop': snapshot('laptop', running: 1),
+          'lab': snapshot('lab'),
+          'locked': snapshot('locked', waiting: 1),
+        },
+      );
+      double top(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      final order = [
+        top('server-switcher-current'),
+        top('server-switcher-profile-locked'),
+        top('server-switcher-profile-laptop'),
+        top('server-switcher-profile-lab'),
+      ];
+      expect(order, [...order]..sort());
     });
 
     testWidgets('the current row opens its menu, and Disconnect there '
@@ -136,6 +165,14 @@ void main() {
       expect(find.text(_l10n.e7SettingsUi8), findsNothing);
       await tester.tap(find.byKey(const ValueKey('server-switcher-current')));
       await tester.pumpAndSettle();
+      // It names what it leaves (R2).
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('server-switcher-disconnect')),
+          matching: find.textContaining('Disconnect from '),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(
         find.byKey(const ValueKey('server-switcher-disconnect')),
       );
@@ -155,8 +192,8 @@ void main() {
       tester,
     ) async {
       await open(tester, status: StreamStatus.reconnecting);
-      expect(_rich('Reconnecting · '), findsOneWidget);
-      expect(_rich('Connected · '), findsNothing);
+      expect(_rich('Reconnecting'), findsOneWidget);
+      expect(_rich('Connected'), findsNothing);
     });
   });
 

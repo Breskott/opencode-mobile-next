@@ -272,16 +272,17 @@ void main() {
       find.descendant(of: current, matching: find.text('Work server')),
       findsOneWidget,
     );
-    // One current mark: its line starts with the state word.
+    // One current mark: its line is the state word.
     expect(
       find.descendant(
         of: current,
-        matching: find.textContaining('Connected · ', findRichText: true),
+        matching: find.textContaining('Connected', findRichText: true),
       ),
       findsOneWidget,
     );
-    // Saved servers: every other profile, never the current one twice.
-    expect(inSheet(find.text('Saved servers')), findsOneWidget);
+    // One unlabelled panel of servers (R1): every other profile after the
+    // current one, never the current one twice.
+    expect(inSheet(find.text('Saved servers')), findsNothing);
     expect(
       find.byKey(const ValueKey('server-switcher-profile-home')),
       findsOneWidget,
@@ -290,6 +291,8 @@ void main() {
       find.byKey(const ValueKey('server-switcher-profile-work')),
       findsNothing,
     );
+    // The name identifies a server; its address is technical and lives in
+    // its editor, so no row is cut off mid-address.
     expect(
       inSheet(
         find.textContaining(
@@ -297,7 +300,7 @@ void main() {
           findRichText: true,
         ),
       ),
-      findsOneWidget,
+      findsNothing,
     );
 
     // Order: current, saved, Add, Manage.
@@ -385,7 +388,7 @@ void main() {
     final connection = await pumpShell(tester, profiles: [work]);
     await openSwitcher(tester);
     Finder word(String text) =>
-        inSheet(find.textContaining('$text · ', findRichText: true));
+        inSheet(find.textContaining(text, findRichText: true));
     expect(word('Connected'), findsOneWidget);
     expect(inSheet(find.text('Saved servers')), findsNothing);
     connection.status = StreamStatus.reconnecting;
@@ -516,7 +519,7 @@ void main() {
   });
 
   group('the server on this phone', () {
-    testWidgets('its card leads the saved servers and connects in place', (
+    testWidgets('its row follows the one server list and connects in place', (
       tester,
     ) async {
       fakeRunningPhoneServer();
@@ -526,7 +529,8 @@ void main() {
       final card = find.byKey(const ValueKey('termux-running-server'));
       expect(inSheet(card), findsOneWidget);
       expect(inSheet(find.byType(TermuxRunningServerEntry)), findsOneWidget);
-      // Found live on the phone: above every saved server, below the current.
+      // The saved servers are one unlabelled panel, the current one first
+      // (R1); the phone's own server, controlled in place, follows it.
       expect(
         tester.getTopLeft(card).dy,
         greaterThan(
@@ -537,7 +541,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(card).dy,
-        lessThan(
+        greaterThan(
           tester
               .getTopLeft(
                 find.byKey(const ValueKey('server-switcher-profile-home')),

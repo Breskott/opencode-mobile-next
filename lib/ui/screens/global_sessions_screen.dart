@@ -14,6 +14,7 @@ import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
 import '../widgets/session_handoff.dart';
 import '../widgets/session_title.dart';
+import 'session_import_screen.dart';
 import 'session_relations_screen.dart';
 
 /// All conversations (docs/ux-system/map/all.json `global-sessions`,
@@ -631,6 +632,14 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     }
   }
 
+  /// The server takes an exported conversation file.
+  bool get _canImport {
+    final repository = widget.controller.repository;
+    return widget.controller.capabilities.sessionImportExport &&
+        repository is SessionImportGateway &&
+        (repository as SessionImportGateway).sessionImportSupported;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
@@ -649,7 +658,25 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
 
     return KitScreen(
       width: KitScreenWidth.list,
-      topBar: KitTopBar(title: l10n.globalSessionsTitle),
+      // Importing adds a conversation to this list, so it lives in this
+      // page's menu (R2), not among the agent's settings.
+      topBar: KitTopBar(
+        title: l10n.globalSessionsTitle,
+        menu: [
+          if (_canImport)
+            KitMenuItem(
+              key: const ValueKey('global-sessions-import'),
+              label: l10n.libraryImportAConversation,
+              icon: AppIconography.fileUpload,
+              onSelected: () => unawaited(
+                pushKitPage<void>(
+                  context,
+                  (_) => SessionImportScreen(controller: widget.controller),
+                ),
+              ),
+            ),
+        ],
+      ),
       // 1. Search first: the page exists to find one conversation among
       // every project on the server. The project filter is one menu, so
       // any number of projects fits.

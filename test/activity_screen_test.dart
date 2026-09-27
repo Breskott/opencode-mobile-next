@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -5,6 +7,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,12 +69,13 @@ Session _session(
   String? title,
   String? parentID,
   int updated = 0,
+  int? idle,
 }) => Session(
   id: id,
   title: title,
   parentID: parentID,
   directory: '/work/oc_app',
-  time: SessionTime(created: updated - 10, updated: updated),
+  time: SessionTime(created: updated - 10, updated: updated, idle: idle),
 );
 
 Future<_Controller> _controller({bool seed = true}) async {
@@ -152,8 +156,18 @@ void main() {
     await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
     await tester.pump();
 
-    expect(find.text('Needs attention'), findsOneWidget);
-    expect(find.text('Running'), findsOneWidget);
+    // One list, no headed state sections (owner rule R1): the rows' marks
+    // and words carry the state.
+    expect(find.text('Needs attention'), findsNothing);
+    expect(find.text('Running'), findsNothing);
+    expect(find.byKey(const ValueKey('activity-list')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('activity-running-ses_run')),
+        matching: find.textContaining('Working', findRichText: true),
+      ),
+      findsOneWidget,
+    );
     // Activity is a pure inbox: idle sessions belong to Workspace.
     expect(find.text('Recently completed'), findsNothing);
     // Permissions and questions are resolvable rows, not links.
@@ -258,7 +272,9 @@ void main() {
     await tester.pump();
 
     // Bounded pumps: the Running row's live spinner never settles.
-    await tester.tap(find.byTooltip('Refresh'));
+    // Pull to refresh is the page's one refresh (R4).
+    expect(find.byTooltip('Refresh'), findsNothing);
+    unawaited(tester.widget<KitRefresh>(find.byType(KitRefresh)).onRefresh());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -313,7 +329,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('activity-all-clear')), findsNothing);
     expect(find.text('Status incomplete'), findsOneWidget);
-    expect(find.textContaining('2 unknown'), findsOneWidget);
+    // No saved-servers summary row with counts (R4).
+    expect(find.textContaining('2 unknown'), findsNothing);
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(controller.refreshCalls, 1);
@@ -326,40 +343,97 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
     await tester.pumpAndSettle();
-    expect(find.text('Status incomplete'), findsOneWidget);
+    expect(
+      find.text("Requests can't load while you're offline."),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('activity-all-clear')), findsNothing);
+    // A pushed Inbox has no connection line above it: it keeps its retry.
+    expect(find.text('Try again'), findsOneWidget);
   });
 
-  testWidgets('requests lead the page and digest explanation is disclosed', (
+  testWidgets('in the shell, offline leaves Reconnect to the connection line', (
+    tester,
+  ) async {
+    final controller = await _controller(seed: false)
+      ..status = StreamStatus.disconnected;
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _app(
+        Scaffold(body: ActivityScreen(controller: controller, embedded: true)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text("Requests can't load while you're offline."),
+      findsOneWidget,
+    );
+    expect(find.text('Status incomplete'), findsNothing);
+    // R3: the banner holds the one "Reconnect to …"; no second Try again.
+    expect(find.text('Try again'), findsNothing);
+    expect(find.byKey(const ValueKey('activity-check-again')), findsNothing);
+  });
+
+  testWidgets('one list, most urgent first: needs you, working, finished', (
     tester,
   ) async {
     final controller = await _controller();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    controller.sessionsById = {
+      ...controller.sessionsById,
+      'ses_old': _session(
+        'ses_old',
+        title: 'Older finished',
+        updated: now - 7200000,
+        idle: now - 7200000,
+      ),
+      'ses_new': _session(
+        'ses_new',
+        title: 'Newer finished',
+        updated: now - 60000,
+        idle: now - 60000,
+      ),
+    };
+    controller.directory = '/work/oc_app';
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
     await tester.pump();
+
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    final permission = find.text('Edit a file');
+    final running = find.byKey(const ValueKey('activity-running-ses_run'));
+    final newer = find.byKey(const ValueKey('activity-digest-ses_new'));
+    final older = find.byKey(const ValueKey('activity-digest-ses_old'));
+    await tester.ensureVisible(older);
+    await tester.pump();
+    expect(top(permission), lessThan(top(running)));
+    expect(top(running), lessThan(top(newer)));
+    expect(top(newer), lessThan(top(older)));
+    // Every row in the one panel, each saying its state in words.
     expect(
-      tester.getTopLeft(find.text('Edit a file')).dy,
-      lessThan(tester.getTopLeft(find.text('Saved servers')).dy),
+      find.descendant(
+        of: find.byKey(const ValueKey('activity-list')),
+        matching: find.textContaining('Needs you', findRichText: true),
+      ),
+      findsWidgets,
     );
-    expect(find.text('Nothing running'), findsNothing);
-    // The folded section explains itself; opening it lists what finished.
     expect(
-      find.textContaining(
-        'On demand · cached metadata, not AI summaries',
-        findRichText: true,
+      find.descendant(
+        of: newer,
+        matching: find.textContaining('Finished', findRichText: true),
       ),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('activity-digests-empty')), findsNothing);
-    await tester.ensureVisible(find.text('Finished while you were away'));
-    await tester.tap(find.text('Finished while you were away'));
-    // Bounded pumps: the Running row's live mark never settles.
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(
-      find.byKey(const ValueKey('activity-digests-empty')),
-      findsOneWidget,
-    );
+    // No section headers, no settings rows, no folded digest header (R1, R4).
+    for (final gone in [
+      'Needs attention',
+      'Running',
+      'Finished while you were away',
+      'Saved servers',
+      'Background updates',
+    ]) {
+      expect(find.text(gone), findsNothing, reason: gone);
+    }
   });
 
   testWidgets('failed pending check never shows all clear', (tester) async {

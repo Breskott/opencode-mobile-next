@@ -100,6 +100,15 @@ Future<void> _shot(
   }
 }
 
+/// A row's start or stop button: its tooltip names the service (R2).
+Finder _tip(String verb) => find.byWidgetPredicate(
+  (widget) =>
+      widget is Tooltip &&
+      (widget.message ?? widget.richMessage?.toPlainText() ?? '').startsWith(
+        '$verb ',
+      ),
+);
+
 void main() {
   setUpAll(loadCaptureFonts);
   setUp(() {
@@ -213,7 +222,7 @@ void main() {
           size: size,
           home: DevelopmentServicesScreen(controller: connection),
           act: () async {
-            await tester.tap(find.byTooltip('Start'));
+            await tester.tap(_tip('Start'));
             await tester.pumpAndSettle();
             KitUndo.commitPending();
           },
@@ -265,7 +274,7 @@ void main() {
         light: light,
         home: DevelopmentServicesScreen(controller: connection),
         act: () async {
-          await tester.tap(find.byTooltip('Start'));
+          await tester.tap(_tip('Start'));
           await tester.pumpAndSettle();
           KitUndo.commitPending();
           await tester.pumpAndSettle();
@@ -286,11 +295,11 @@ void main() {
         light: light,
         home: DevelopmentServicesScreen(controller: connection),
         act: () async {
-          await tester.tap(find.byTooltip('Start'));
+          await tester.tap(_tip('Start'));
           await tester.pumpAndSettle();
           KitUndo.commitPending();
           await tester.pumpAndSettle();
-          await tester.tap(find.byTooltip('Stop'));
+          await tester.tap(_tip('Stop'));
         },
       );
     });

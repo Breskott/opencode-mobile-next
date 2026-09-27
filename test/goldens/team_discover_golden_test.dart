@@ -165,7 +165,7 @@ void main() {
         controller: controller,
         home: SettingsScreen(
           controller: controller,
-          initialGroup: SettingsGroup.agentSetup,
+          initialGroup: SettingsGroup.server,
         ),
       );
     });

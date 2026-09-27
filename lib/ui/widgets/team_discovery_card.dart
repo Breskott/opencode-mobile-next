@@ -282,7 +282,7 @@ class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
             KitActionBlock(
               primary: KitAction(
                 key: const ValueKey('team-discovery-turn-on'),
-                label: l10n.teamUiDiscoveryTurnOn,
+                label: l10n.teamDiscoverTurnOnNamed,
                 working: _turningOn,
                 onPressed: _turnOn,
               ),

@@ -851,9 +851,10 @@ void main() {
           ),
         );
         await settle(tester);
-        // The team's door (its tasks are rows in the lists; docs/design/
-        // team-conversation-2026-09-26.md).
-        expect(find.byKey(const ValueKey('team-work-door')), findsOneWidget);
+        // The team's tasks are rows in the one list (docs/design/
+        // team-conversation-2026-09-26.md); no door row (owner rule R4).
+        expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
+        expect(find.byType(WorkspaceScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
         await teardown(tester, controller);
       },

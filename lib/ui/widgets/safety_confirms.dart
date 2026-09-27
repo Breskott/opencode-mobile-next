@@ -49,16 +49,16 @@ Future<bool> confirmDisconnectServer(
   final queued = id == null ? 0 : controller.queuedPromptCountForProfile(id);
   final drafts = id == null ? 0 : controller.draftCountForProfile(id);
   final waiting = queued + drafts;
+  final server = controller.profile?.name ?? l10n.e7SettingsUi16;
   return showKitConfirm(
     context,
-    title: l10n.e7SettingsDisconnectTitle(
-      controller.profile?.name ?? l10n.e7SettingsUi16,
-    ),
+    title: l10n.e7SettingsDisconnectTitle(server),
     body: (onThisPhone ?? isServerOnThisPhone(controller))
         ? l10n.safetyDisconnectBodyPhone
         : l10n.safetyDisconnectBody,
     consequences: [if (waiting > 0) l10n.safetyDisconnectWaiting(waiting)],
-    confirmLabel: l10n.e7SettingsUi8,
+    // Names what it acts on (R2), like the title above it.
+    confirmLabel: l10n.serverDisconnectFrom(server),
     icon: AppIconography.unlink,
     sheetKey: const ValueKey('disconnect-confirm-sheet'),
     confirmKey: const ValueKey('confirm-disconnect'),
@@ -129,7 +129,7 @@ Future<bool> confirmStopLocalAgents(BuildContext context) {
     context,
     title: l10n.localAgentStopTitle,
     body: l10n.localAgentStopBody,
-    confirmLabel: l10n.phoneServerStop,
+    confirmLabel: l10n.localAgentStopNamed,
     cancelLabel: l10n.safetyStopLocalServerKeep,
     icon: AppIcons.stop,
     kind: KitConfirmKind.stop,

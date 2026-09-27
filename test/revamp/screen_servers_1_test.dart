@@ -21,6 +21,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import '../../tool/capture/fixtures.dart';
 import '../support/setup_capture_preferences.dart';
+import 'shared_servers_1_fixtures.dart';
 
 /// A store the editor can write to; the first saved server is active only
 /// when [active] says so.
@@ -161,6 +162,109 @@ void main() {
   setUpAll(loadCaptureFonts);
 
   group('behaviour', () {
+    testWidgets('every server is one list, most urgent first, state in words', (
+      tester,
+    ) async {
+      _mockPlatform(tester);
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      addTearDown(() => debugPlatformCapabilities = null);
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final prefs = await setupCapturePreferences();
+      final store = SwitcherStore(prefs: prefs);
+      // Lab waits on the person, Laptop is working; Work and Home desk have
+      // nothing going on and keep the order they were saved in.
+      final controller = SwitcherController(
+        store,
+        snapshots: {
+          'lab': snapshot('lab', waiting: 1),
+          'laptop': snapshot('laptop', running: 2),
+        },
+      );
+      await tester.pumpWidget(
+        captureApp(
+          home: const ServersScreen(),
+          boundaryKey: GlobalKey(),
+          controller: controller,
+          store: store,
+        ),
+      );
+      await _settle(tester);
+      try {
+        double top(String id) =>
+            tester.getTopLeft(find.byKey(ValueKey('server-row-$id'))).dy;
+        final order = [top('lab'), top('laptop'), top('work'), top('locked')];
+        expect(order, [...order]..sort());
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('server-row-lab')),
+            matching: find.textContaining('Needs you', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('server-row-laptop')),
+            matching: find.textContaining('2 working', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        // One list: no group label, no second panel of ways in, no
+        // attention page or guide in the bar, no demo beside Add server.
+        expect(find.byKey(const ValueKey('servers-list')), findsOneWidget);
+        expect(find.text('Other ways to connect'), findsNothing);
+        expect(find.byKey(const ValueKey('servers-attention')), findsNothing);
+        expect(find.byKey(const ValueKey('servers-guide')), findsNothing);
+        expect(find.byKey(const ValueKey('servers-try-demo')), findsNothing);
+        expect(find.byKey(const ValueKey('servers-add')), findsOneWidget);
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        controller.dispose();
+        await tester.pump();
+      }
+    });
+
+    testWidgets('Add server offers the other ways in, after its main path', (
+      tester,
+    ) async {
+      final (_, done) = await _mount(tester, boundary: GlobalKey());
+      try {
+        await tester.tap(find.byKey(const ValueKey('servers-add')));
+        await _settle(tester);
+        final ways = find.byKey(const ValueKey('server-editor-other-ways'));
+        await tester.ensureVisible(ways);
+        await _settle(tester, frames: 3);
+        expect(
+          find.descendant(
+            of: ways,
+            matching: find.byKey(const ValueKey('quick-add-phone-card')),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: ways,
+            matching: find.byKey(
+              const ValueKey('server-editor-external-agents'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        // Below the kinds it chooses between.
+        expect(
+          tester.getTopLeft(ways).dy,
+          greaterThan(
+            tester
+                .getTopLeft(find.byKey(const ValueKey('server-backend-paseo')))
+                .dy,
+          ),
+        );
+      } finally {
+        await done();
+      }
+    });
+
     testWidgets('a saved server\'s actions open on long-press, no ⋮ button', (
       tester,
     ) async {

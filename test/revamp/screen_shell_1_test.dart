@@ -261,8 +261,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Finished while you were away'));
-      await tester.pumpAndSettle();
+      // The finished conversation is a row of the one list (R1).
       await tester.tap(find.text('Review the migration'));
       await tester.pumpAndSettle();
       final dismiss = find.descendant(

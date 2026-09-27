@@ -291,7 +291,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-server',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      group: SettingsGroup.server,
       icon: AppIconography.server,
       title: l10n.settingsHubThisServer,
       keywords:
@@ -305,7 +305,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-saved-servers',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      group: SettingsGroup.server,
       icon: AppIconography.database,
       title: l10n.activitySavedServers,
       // The screen's own heading is the product name over "Servers".
@@ -319,8 +319,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-on-this-phone',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.activitySavedServers,
       icon: AppIconography.phone,
       title: onThisPhone,
       keywords: l10n.settingsHubSearchPhoneAliases,
@@ -335,7 +335,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-accounts',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      group: SettingsGroup.server,
       icon: AppIconography.person,
       title: l10n.settingsHubAccounts,
       keywords:
@@ -349,8 +349,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-external-agents',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.activitySavedServers,
       icon: AppIconography.support,
       title: l10n.a2aTitle,
       keywords: l10n.settingsHubSearchExternalAgentsAliases,
@@ -359,8 +359,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-tailscale',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.activitySavedServers,
       icon: AppIconography.network,
       title: l10n.tailscaleTitle,
       keywords: l10n.settingsHubSearchTailscaleAliases,
@@ -371,16 +371,18 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-model-and-mode',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversation,
+      group: SettingsGroup.server,
       icon: AppIconography.model,
-      title: l10n.settingsHubModelAndMode,
-      keywords: l10n.settingsHubSearchModelModeAliases,
+      title: l10n.settingsHubModelRow,
+      keywords:
+          '${l10n.settingsHubModelAndMode} '
+          '${l10n.settingsHubSearchModelModeAliases}',
       open: (context, _) async => showModelPicker(context),
     ),
     SearchEntry(
       id: 'default-shell-settings-entry',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversation,
+      group: SettingsGroup.server,
       icon: AppIconography.terminal,
       title: l10n.e7SettingsUi35,
       keywords: l10n.settingsHubSearchShellAliases,
@@ -392,14 +394,14 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: _screen(
         (scope) => SettingsScreen(
           controller: scope.controller,
-          initialGroup: SettingsGroup.conversation,
+          initialGroup: SettingsGroup.server,
         ),
       ),
     ),
     SearchEntry(
       id: 'saved-permissions-entry',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversation,
+      group: SettingsGroup.server,
       icon: AppIconography.privacy,
       title: l10n.e7SettingsUi74,
       keywords: l10n.settingsHubSearchPermissionsAliases,
@@ -412,7 +414,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-transcript-display',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversation,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.clock,
       title: l10n.chatUiTranscriptDisplay,
       keywords: l10n.settingsHubSearchTranscriptAliases,
@@ -421,7 +423,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-voice',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversation,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.mic,
       title: l10n.settingsHubVoice,
       keywords: l10n.settingsHubSearchVoiceAliases,
@@ -432,7 +434,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-background',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.notificationImportant,
       title: notifications,
       keywords: l10n.settingsHubSearchNotificationsAliases,
@@ -444,7 +446,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-keep-running',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.batteryCharging,
       title: l10n.keepRunningTitle,
       keywords: l10n.keepRunningRowSubtitle,
@@ -457,7 +459,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-appearance',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.appearance,
       title: appearance,
       keywords: l10n.settingsHubSearchAppearanceAliases,
@@ -468,8 +470,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-models',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubModelRow,
       icon: AppIconography.model,
       title: l10n.libraryModelsAgentsTitle,
       // The hub says "Models & agents"; the screen spells it out.
@@ -483,7 +485,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-providers',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      group: SettingsGroup.server,
       icon: AppIconography.cloud,
       title: l10n.libraryProvidersTitle,
       keywords: l10n.settingsHubSearchProvidersAliases,
@@ -499,7 +501,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-mcp',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      group: SettingsGroup.server,
       icon: AppIconography.network,
       title: l10n.libraryMcpTitle,
       // "Add MCP server" is a button on this screen, so its title leads here.
@@ -518,7 +520,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-commands-tools',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      group: SettingsGroup.server,
       icon: AppIconography.tools,
       title: commandsAndTools,
       keywords: l10n.settingsHubSearchCommandsAliases,
@@ -535,7 +537,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-ai-team',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      group: SettingsGroup.server,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
       keywords: l10n.discoverTeamAliases,
@@ -555,7 +557,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-plugins',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      group: SettingsGroup.server,
       icon: AppIconography.extensions,
       title: l10n.teamUiPluginsTitle,
       keywords: l10n.settingsHubSearchPluginsAliases,
@@ -571,8 +573,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'library-import-session',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.agentSetup,
+      kind: SearchEntryKind.destination,
+      parent: l10n.globalSessionsTitle,
       icon: AppIconography.fileUpload,
       title: l10n.importTitle,
       keywords: l10n.e7LibrarySearchImportAliases,
@@ -585,7 +587,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-usage',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.usage,
       title: usage,
       keywords: l10n.settingsHubSearchUsageAliases,
@@ -597,7 +599,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-privacy',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      group: SettingsGroup.thisPhone,
       icon: AppIconography.privacy,
       title: l10n.settingsHubPrivacyRow,
       // Older drafts are listed from the conversation that owns them; the
@@ -611,8 +613,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-setup-guide',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.guide,
       title: l10n.onboardingSetupGuide,
       keywords: l10n.settingsHubSearchGuideAliases,
@@ -621,8 +623,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-server-capabilities',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.checklist,
       title: l10n.capabilityScreenTitle,
       keywords: l10n.capabilityScreenAliases,
@@ -636,8 +638,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'library-keyboard-shortcuts',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.keyboard,
       title: l10n.e7LibraryKeyboardShortcuts,
       keywords: l10n.e7LibrarySearchShortcutsAliases,
@@ -648,17 +650,30 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-show-tips-again',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.idea,
       title: l10n.discoverShowTipsAgain,
       keywords: l10n.discoverShowTipsAliases,
-      // The hub row is the control itself; from anywhere else, open Help.
+      // The Help page's row is the control itself; from anywhere else,
+      // open Help.
       open: _screen(
-        (scope) => SettingsScreen(
-          controller: scope.controller,
-          initialGroup: SettingsGroup.help,
-        ),
+        (scope) => SettingsHelpScreen(controller: scope.controller),
+      ),
+    ),
+    // Help: the guide, what this server offers, shortcuts, tips and
+    // diagnostics behind one row, so the hub ends with three (R4).
+    SearchEntry(
+      id: 'settings-help',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.help,
+      icon: AppIconography.support,
+      title: l10n.settingsHubHelpRow,
+      keywords:
+          '${l10n.settingsHubHelpSubtitle} ${l10n.onboardingSetupGuide} '
+          '${l10n.e7SettingsUi88}',
+      open: _screen(
+        (scope) => SettingsHelpScreen(controller: scope.controller),
       ),
     ),
     SearchEntry(
@@ -672,8 +687,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'app-diagnostics-entry',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.activity,
       title: l10n.e7SettingsUi88,
       keywords: l10n.settingsHubSearchDiagnosticsAliases,
@@ -684,8 +699,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-privacy-data-use',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubPrivacyRow,
       icon: Icons.privacy_tip_outlined,
       title: l10n.e7SettingsUi92,
       keywords:
@@ -695,8 +710,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-voice-notices',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
       icon: AppIconography.policy,
       title: l10n.e7SettingsUi94,
       keywords: l10n.settingsHubSearchAboutAliases,

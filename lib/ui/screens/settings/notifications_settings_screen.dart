@@ -152,9 +152,8 @@ class _NotificationsSettingsScreenState
     final controller = widget.controller;
     final notifications = platformCapabilities.supportsNotifications;
     final blocked = _notificationsBlocked;
-    // Blocked by Android: the switches say why they cannot change instead of
-    // reading "on" while nothing can arrive.
-    final blockedReason = blocked ? copy.notifyBlockedTitle : null;
+    // Blocked by Android: the switches rest, dimmed, and keep saying what
+    // each one is for; the notice above says why, once (R3).
     final checkIn = rules.checkInAfterMinutes;
     return [
       if (notifications)
@@ -164,7 +163,6 @@ class _NotificationsSettingsScreenState
           title: copy.notifyFinishedRuns,
           supporting: copy.notifyFinishedRunsDetail,
           value: controller.notificationPreferences.finishedRuns,
-          disabledReason: blockedReason,
           onChanged: blocked
               ? null
               : (value) => _save(() => controller.setNotifyFinishedRuns(value)),
@@ -176,7 +174,6 @@ class _NotificationsSettingsScreenState
           title: copy.notifyRequests,
           supporting: copy.notifyRequestsDetail,
           value: controller.notificationPreferences.requests,
-          disabledReason: blockedReason,
           onChanged: blocked
               ? null
               : (value) => _save(() => controller.setNotifyRequests(value)),
@@ -222,7 +219,6 @@ class _NotificationsSettingsScreenState
           title: copy.notifyQuotaAlerts,
           supporting: copy.notifyQuotaAlertsDetail,
           value: rules.quotaAlerts,
-          disabledReason: blockedReason,
           onChanged: blocked
               ? null
               : (value) =>
@@ -430,9 +426,10 @@ class _NotificationsSettingsScreenState
     final controller = widget.controller;
     final tokens = KitTokens.of(context);
     final rules = controller.sharedNotifyRules;
-    final sections = <(String, String, List<Widget>)>[
+    // Quiet hours is one switch that names itself: no header repeats it.
+    final sections = <(String, String?, List<Widget>)>[
       ('what', copy.notifySectionWhat, _whatNotifies(rules)),
-      ('quiet', copy.monitorQuiet, _quietHours(rules)),
+      ('quiet', null, _quietHours(rules)),
       ('background', copy.notifySectionBackground, _background()),
       ('servers', copy.notifySectionServers, _savedServers(rules)),
     ].where((section) => section.$3.isNotEmpty).toList();
@@ -454,7 +451,7 @@ class _NotificationsSettingsScreenState
           actions: [
             KitAction(
               key: const ValueKey('notifications-open-settings'),
-              label: copy.notifyOpenAndroidSettings,
+              label: copy.notifyTurnOnInAndroid,
               onPressed: () =>
                   controller.backgroundLive.openNotificationSettings(),
             ),

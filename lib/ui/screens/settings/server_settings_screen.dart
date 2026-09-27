@@ -233,9 +233,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       serverUpdateAction = () => _showRemoteRestartSheet(installedVersion);
     } else if (availableVersion != null) {
       serverUpdateTitle = copy.e7SettingsUpdateVersion(availableVersion);
+      // The running version is said once, on the health row (R3).
       serverUpdateSubtitle = _serverUpgradeError != null
           ? copy.e7SettingsRetryError(_serverUpgradeError!)
-          : copy.e7SettingsCurrentServer(running ?? copy.e7SettingsUi17);
+          : copy.serverSettingsUpdateHint;
       serverUpdateTrailing = const _RowMark(AppIconography.download);
       serverUpdateAction = () => _upgradeRemoteServer(availableVersion);
     } else {
@@ -261,8 +262,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       onPressed: _checking ? null : _checkHealth,
       disabledReason: _checking ? copy.e7SettingsUi11 : null,
     );
+    // The page is titled with the server it is about (R3): no identity row
+    // repeats the name under a generic "Server".
+    final serverName = profile == null
+        ? copy.e7SettingsUi1
+        : serverDisplayName(
+            profile,
+            lookupAppLocalizations(Localizations.localeOf(context)),
+            among: controller.store.profiles,
+          );
     return KitScreen(
-      topBar: KitTopBar(title: copy.e7SettingsUi1),
+      topBar: KitTopBar(title: serverName),
       width: KitScreenWidth.reading,
       // The health check and an update in flight are the screen's one
       // loading bar (design standard §4); the rows say what is happening.
@@ -276,15 +286,13 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         children: [
           KitRowGroup(
             children: [
-              KitRow(
-                key: const Key('server-identity'),
-                leading: KitRow.icon(context, AppIconography.server),
-                title: profile?.name ?? copy.e7SettingsUi9,
-                // The address is technical: it sits in Details below.
-                supporting: baseUrl == null
-                    ? TextSpan(text: copy.e7SettingsUi56)
-                    : null,
-              ),
+              if (profile == null)
+                KitRow(
+                  key: const Key('server-identity'),
+                  leading: KitRow.icon(context, AppIconography.server),
+                  title: copy.e7SettingsUi9,
+                  supporting: TextSpan(text: copy.e7SettingsUi56),
+                ),
               // Neutral until the first probe answers: a red "unavailable"
               // row that flashes for the half-second before the result lands
               // reads as a real outage.
@@ -313,26 +321,29 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   supportingMaxLines: 3,
                   trailing: checkAgain,
                 ),
-              KitRow(
-                key: const Key('server-authentication'),
-                leading: KitRow.icon(context, AppIconography.person),
-                title: copy.e7SettingsUi61,
-                supporting: TextSpan(
-                  text: [
-                    hasPassword
-                        ? copy.e7SettingsAuthenticationUser(
-                            profile?.username.isNotEmpty == true
-                                ? profile!.username
+              // This server's sign-in is changed on this server's page: the
+              // row opens its own editor, not the whole list (R2).
+              if (profile != null)
+                KitRow(
+                  key: const Key('server-authentication'),
+                  leading: KitRow.icon(context, AppIconography.person),
+                  title: copy.serverSettingsChangeSignIn(serverName),
+                  titleMaxLines: 2,
+                  supporting: TextSpan(
+                    text: hasPassword
+                        ? copy.serverSettingsAuthBasic(
+                            profile.username.isNotEmpty
+                                ? profile.username
                                 : 'opencode',
                           )
                         : copy.e7SettingsUi62,
-                    copy.serverSettingsPasswordInServers,
-                  ].join(' · '),
+                  ),
+                  supportingMaxLines: 2,
+                  trailing: const _RowMark(AppIconography.chevronRight),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed('/servers', arguments: 'edit-active'),
                 ),
-                supportingMaxLines: 2,
-                trailing: const _RowMark(AppIconography.chevronRight),
-                onTap: () => Navigator.of(context).pushNamed('/servers'),
-              ),
             ],
           ),
           SizedBox(height: tokens.sectionGap),
@@ -384,11 +395,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               child: KitDetailsFold(
                 values: [
                   KitTechnicalValue(copy.serverSettingsAddressLabel, baseUrl),
-                  if (running != null)
-                    KitTechnicalValue(
-                      copy.serverSettingsRunningVersionLabel,
-                      running,
-                    ),
                 ],
               ),
             ),

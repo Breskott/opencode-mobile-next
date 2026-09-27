@@ -12,6 +12,7 @@ import '../kit/kit_sheet.dart';
 import '../kit/kit_status_line.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
+import 'phone_server_card.dart' show serverDisplayName;
 import 'work_status_line.dart' show confirmPhoneServerRestart;
 
 /// The shell's connection line on the tabs that do not say it themselves
@@ -113,11 +114,20 @@ class ConnectionStatusBanner extends StatelessWidget {
 
     // While a Try again of the person's own is in flight the words say so;
     // a disabled "Retrying" button would be a status display (§2).
+    // It names what it retries (R2): "Reconnect to This phone". The line
+    // is the one place with this act; the tab under it only says what the
+    // lost connection means there (R3).
     final retry = manualRetry
         ? null
         : KitAction(
             key: const ValueKey('connection-banner-retry'),
-            label: l10n.isolatedTaskRetryOpen,
+            label: l10n.connectionReconnectTo(
+              serverDisplayName(
+                controller.profile,
+                l10n,
+                among: controller.store.profiles,
+              ),
+            ),
             onPressed: () => unawaited(controller.retryConnection()),
           );
     // The phone's own server: the way out the app cannot take alone is a
