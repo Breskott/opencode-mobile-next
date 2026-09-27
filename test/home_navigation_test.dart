@@ -18,7 +18,10 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
+import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
+import 'package:opencode_mobile/ui/theme_roles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
@@ -141,6 +144,43 @@ Future<void> _pumpShell(
   await tester.pumpAndSettle();
 }
 
+// The shell revamp names the current destination in its selected navigation
+// item; compact/medium headers now identify the server instead of repeating it.
+String _selectedDestination(WidgetTester tester) {
+  final nav = tester.widget<KitNav>(find.byType(KitNav));
+  final destination = nav.destinations[nav.selected];
+  expect(
+    tester.getSemantics(find.byKey(destination.key!)),
+    isSemantics(
+      isButton: true,
+      isSelected: true,
+      hasSelectedState: true,
+      hasTapAction: true,
+      label: destination.needsYou > 0
+          ? '${destination.label}, ${destination.needsYou} need you'
+          : destination.label,
+    ),
+  );
+  return destination.label;
+}
+
+Finder _dockGlass() => find.descendant(
+  of: find.byType(KitNavBar),
+  matching: find.byType(KitGlass),
+);
+
+Finder _inboxDestination() =>
+    find.byKey(const ValueKey('home-shell-tab-inbox'));
+
+Duration _navigationDuration(WidgetTester tester) => tester
+    .widget<AnimatedPositionedDirectional>(
+      find.descendant(
+        of: find.byType(KitNavBar),
+        matching: find.byType(AnimatedPositionedDirectional),
+      ),
+    )
+    .duration;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
@@ -177,7 +217,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final dock = tester.getRect(find.byType(GlassSurface));
+      final dock = tester.getRect(_dockGlass());
       final icon = tester.getRect(
         find.byIcon(AppIconography.workspaceSelected),
       );
@@ -194,21 +234,21 @@ void main() {
       } else {
         expect(labels, ['العمل', 'الوارد', 'المشروع', 'الإعدادات']);
         expect(
-          Directionality.of(tester.element(find.byType(NavigationBar))),
+          Directionality.of(tester.element(find.byType(KitNavBar))),
           TextDirection.rtl,
         );
       }
       for (final label in labels) {
         final rect = tester.getRect(
           find.descendant(
-            of: find.byType(NavigationBar),
+            of: find.byType(KitNavBar),
             matching: find.text(label),
           ),
         );
         final paragraph = tester.renderObject<RenderParagraph>(
           find.descendant(
             of: find.descendant(
-              of: find.byType(NavigationBar),
+              of: find.byType(KitNavBar),
               matching: find.text(label),
             ),
             matching: find.byType(RichText),
@@ -260,9 +300,7 @@ void main() {
       await tester.tap(find.text('src'));
       await tester.pumpAndSettle();
       expect(
-        tester
-            .getSemantics(find.widgetWithText(ActionChip, 'Project root'))
-            .label,
+        tester.getSemantics(find.bySemanticsLabel('Open Project root')).label,
         contains('Project root'),
       );
       final search = find.byKey(const ValueKey('files-search-field'));
@@ -295,12 +333,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Project',
-      );
+      expect(_selectedDestination(tester), 'Project');
       expect(
         find.byKey(const ValueKey('project-hub-files')).hitTestable(),
         findsOneWidget,
@@ -309,12 +342,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Work',
-      );
+      expect(_selectedDestination(tester), 'Work');
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsOneWidget);
@@ -343,10 +371,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pump();
     expect(find.text('Press back again to exit'), findsNothing);
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Work',
-    );
+    expect(_selectedDestination(tester), 'Work');
     expect(api.paths.length, loads);
   });
 
@@ -386,10 +411,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Work',
-    );
+    expect(_selectedDestination(tester), 'Work');
     expect(find.text('Press back again to exit'), findsNothing);
   });
 
@@ -403,18 +425,10 @@ void main() {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller, disableAnimations: true);
-    expect(
-      tester
-          .widget<NavigationBar>(find.byType(NavigationBar))
-          .animationDuration,
-      Duration.zero,
-    );
+    expect(_navigationDuration(tester), Duration.zero);
     await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pump();
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Settings',
-    );
+    expect(_selectedDestination(tester), 'Settings');
     expect(tester.takeException(), isNull);
   });
 
@@ -429,12 +443,7 @@ void main() {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
-    expect(
-      tester
-          .widget<NavigationBar>(find.byType(NavigationBar))
-          .animationDuration,
-      KitMotion.standard,
-    );
+    expect(_navigationDuration(tester), KitMotion.standard);
 
     double opacityOf(Type screen) => tester
         .widget<Opacity>(
@@ -474,8 +483,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('project-hub-files')));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
-        isTrue,
+        KitBottomInset.of(
+          tester.element(find.byKey(const ValueKey('files-search-field'))),
+        ).bottom,
+        greaterThanOrEqualTo(tester.getSize(_dockGlass()).height),
       );
       final list = find.byType(ListView).first;
       await tester.drag(list, const Offset(0, -2200));
@@ -491,20 +502,22 @@ void main() {
       await tester.pump();
       expect(
         tester.getRect(last).bottom,
-        lessThanOrEqualTo(tester.getRect(find.byType(GlassSurface)).top),
+        lessThanOrEqualTo(tester.getRect(_dockGlass()).top),
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsNothing);
+      expect(_dockGlass(), findsNothing);
       expect(
-        tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
-        isFalse,
+        KitBottomInset.of(
+          tester.element(find.byKey(const ValueKey('files-search-field'))),
+        ).bottom,
+        300,
       );
       final search = find.byKey(const ValueKey('files-search-field'));
       expect(tester.getRect(search).bottom, lessThanOrEqualTo(544));
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsOneWidget);
+      expect(_dockGlass(), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -519,59 +532,39 @@ void main() {
 
     await _pumpShell(tester, controller);
 
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(GlassSurface), findsOneWidget);
-    final dock = tester.getRect(find.byType(GlassSurface));
+    expect(find.byType(KitNavBar), findsOneWidget);
+    expect(_dockGlass(), findsOneWidget);
+    final dock = tester.getRect(_dockGlass());
     expect(dock.left, 16);
     expect(dock.right, 374);
     expect(dock.height, 60);
-    final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    final navigationContext = tester.element(find.byType(NavigationBar));
-    for (final states in [
-      <WidgetState>{},
-      {WidgetState.selected},
+    final navigation = tester.widget<KitNavBar>(find.byType(KitNavBar));
+    final roles = ThemeRoles.resolve(
+      Theme.of(tester.element(find.byType(KitNavBar))),
+    );
+    for (final (label, glyph, color) in [
+      ('Work', AppIconography.workspaceSelected, roles.text1),
+      ('Inbox', AppIconography.activity, roles.text2),
+      ('Project', AppIconography.files, roles.text2),
+      ('Settings', AppIconography.settings, roles.text2),
     ]) {
-      expect(
-        navigation.labelTextStyle!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+      final labelFinder = find.descendant(
+        of: find.byType(KitNavBar),
+        matching: find.text(label),
       );
-      expect(
-        NavigationBarTheme.of(
-          navigationContext,
-        ).iconTheme!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
-      );
-    }
-    for (final glyph in [
-      AppIconography.workspaceSelected,
-      AppIconography.files,
-    ]) {
-      final iconFinder = find.byIcon(glyph);
-      expect(tester.widget<Icon>(iconFinder).color, isNull);
-      expect(
-        IconTheme.of(tester.element(iconFinder)).color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
-      );
+      expect(tester.widget<Text>(labelFinder).style!.color, color);
+      expect(tester.widget<Icon>(find.byIcon(glyph)).color, color);
     }
     final icon = tester.getRect(find.byIcon(AppIconography.workspaceSelected));
     expect(icon.top - dock.top, greaterThanOrEqualTo(8));
     final label = tester.getRect(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('Work'),
-      ),
+      find.descendant(of: find.byType(KitNavBar), matching: find.text('Work')),
     );
     expect(dock.bottom - label.bottom, greaterThanOrEqualTo(4));
 
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(KitNavRail), findsNothing);
     // UX plan 5.1: one tab per noun, in this order.
-    final navigationLabels = tester
-        .widgetList<NavigationDestination>(
-          find.descendant(
-            of: find.byType(NavigationBar),
-            matching: find.byType(NavigationDestination),
-          ),
-        )
+    final navigationLabels = navigation.destinations
         .map((destination) => destination.label)
         .toList();
     expect(navigationLabels, ['Work', 'Inbox', 'Project', 'Settings']);
@@ -597,7 +590,10 @@ void main() {
     addTearDown(controller.dispose);
 
     await _pumpShell(tester, controller);
-    expect(find.byType(Badge), findsNothing);
+    expect(
+      find.descendant(of: _inboxDestination(), matching: find.text('1')),
+      findsNothing,
+    );
 
     controller.permissions = {
       'perm-1': PermissionRequest(
@@ -612,27 +608,21 @@ void main() {
 
     // UX-P0-01: exactly one global badge, and the duplicate app-bar entry
     // points are gone.
-    final badge = find.byKey(const ValueKey('activity-pending-badge'));
+    final badge = _inboxDestination();
     expect(badge, findsOneWidget);
-    expect(find.byType(Badge), findsOneWidget);
     expect(
-      find.descendant(of: find.byType(NavigationBar), matching: badge),
+      find.descendant(of: find.byType(KitNav), matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(KitNavBar), matching: badge),
       findsOneWidget,
     );
     expect(
       find.descendant(of: badge, matching: find.text('1')),
       findsOneWidget,
     );
-    expect(
-      find.ancestor(
-        of: badge,
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is NavigationDestination && widget.label == 'Inbox',
-        ),
-      ),
-      findsOneWidget,
-    );
+    expect(tester.getSemantics(badge).label, 'Inbox, 1 need you');
 
     // The badge counts everything waiting on the person, not just "some".
     controller.permissions = {
@@ -645,14 +635,14 @@ void main() {
         ),
     };
     controller.notifyListeners();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.descendant(of: badge, matching: find.text('3')),
       findsOneWidget,
     );
     controller.permissions = {'perm-1': controller.permissions['perm-1']!};
     controller.notifyListeners();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.descendant(of: badge, matching: find.text('1')),
       findsOneWidget,
@@ -684,10 +674,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(ActivityScreen), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Inbox',
-    );
+    expect(_selectedDestination(tester), 'Inbox');
     // An empty inbox reads as success, not as a missing feature.
     expect(find.text('All clear here'), findsWidgets);
   });
@@ -700,9 +687,7 @@ void main() {
       patterns: const ['lib/main.dart'],
     );
 
-    String title(WidgetTester tester) => tester
-        .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-        .data!;
+    String title(WidgetTester tester) => _selectedDestination(tester);
 
     Future<void> pump(
       WidgetTester tester,
@@ -732,7 +717,10 @@ void main() {
       addTearDown(controller.dispose);
       await pump(tester, controller);
       expect(title(tester), 'Work');
-      expect(find.byType(Badge), findsNothing);
+      expect(
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
+        findsNothing,
+      );
     });
 
     testWidgets('something waiting: Inbox, on the request itself', (
@@ -786,10 +774,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(title(tester), 'Work');
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('activity-pending-badge')),
-          matching: find.text('2'),
-        ),
+        find.descendant(of: _inboxDestination(), matching: find.text('2')),
         findsOneWidget,
       );
     });
@@ -818,7 +803,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(title(tester), 'Work');
       expect(
-        find.byKey(const ValueKey('activity-pending-badge')),
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
         findsOneWidget,
       );
     });
@@ -849,7 +834,7 @@ void main() {
       await pump(tester, controller, initialTab: 0);
       expect(title(tester), 'Work');
       expect(
-        find.byKey(const ValueKey('activity-pending-badge')),
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
         findsOneWidget,
       );
     });
@@ -932,7 +917,7 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(KitNavBar), findsOneWidget);
     // On Work, the failed attempt is the one status line, at once (no
     // grace: nothing is in flight), not the shell banner.
     expect(
@@ -1047,46 +1032,65 @@ void main() {
     expect(find.text('Change server'), findsOneWidget);
   });
 
-  testWidgets('phone header separates long local server and workspace labels', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(411, 891);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller(profileName: 'This device (Termux)');
-    addTearDown(controller.dispose);
+  testWidgets(
+    'phone header names the server and keeps the current tab in the dock',
+    (tester) async {
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller(profileName: 'This device (Termux)');
+      addTearDown(controller.dispose);
 
-    await _pumpShell(tester, controller);
+      await _pumpShell(tester, controller);
 
-    final profile = find.byKey(const ValueKey('server-profile-title'));
-    final tab = find.byKey(const ValueKey('current-tab-title'));
-    expect(profile, findsOneWidget);
-    expect(tab, findsOneWidget);
-    expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
-    expect(
-      tester.getSemantics(profile).label,
-      contains('Server: This device (Termux)'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      final profile = find.byKey(const ValueKey('server-switcher-button'));
+      final tab = find.byKey(const ValueKey('home-shell-tab-work'));
+      expect(profile, findsOneWidget);
+      expect(tab, findsOneWidget);
+      expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
+      expect(
+        tester.getSemantics(profile).label,
+        contains('This device (Termux)'),
+      );
+      expect(
+        tester.getSemantics(profile).label,
+        contains('Connected, Switch server'),
+      );
+      expect(_selectedDestination(tester), 'Work');
+      expect(find.byKey(const ValueKey('current-tab-title')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('tablet shell switches to navigation rail', (tester) async {
-    tester.view.physicalSize = const Size(1024, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
+  testWidgets(
+    'expanded tablet shell puts navigation and server controls in the sidebar',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
 
-    await _pumpShell(tester, controller);
+      await _pumpShell(tester, controller);
 
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
-    final profile = tester.getRect(
-      find.byKey(const ValueKey('server-profile-title')),
-    );
-    final tab = tester.getRect(find.byKey(const ValueKey('current-tab-title')));
-    expect((profile.center.dy - tab.center.dy).abs(), lessThan(2));
-  });
+      expect(find.byType(KitNavRail), findsOneWidget);
+      expect(
+        tester.widget<KitNavRail>(find.byType(KitNavRail)).extended,
+        isTrue,
+      );
+      expect(find.byType(KitNavBar), findsNothing);
+      final profile = find.byKey(const ValueKey('server-switcher-button'));
+      expect(
+        find.descendant(of: find.byType(KitNavRail), matching: profile),
+        findsOneWidget,
+      );
+      final tab = find.byKey(const ValueKey('home-shell-tab-work'));
+      expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
+      expect(_selectedDestination(tester), 'Work');
+      expect(find.byKey(const ValueKey('current-tab-title')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
