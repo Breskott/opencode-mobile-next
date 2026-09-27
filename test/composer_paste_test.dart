@@ -62,7 +62,14 @@ Future<TextField> _pumpChatField(
   );
   await tester.pump();
   await tester.pump();
-  return tester.widget<TextField>(find.byKey(const Key('chat-composer-field')));
+  // The composer's field is a KitField (a TextFormField); its TextField
+  // carries the IME content-insertion hook.
+  return tester.widget<TextField>(
+    find.descendant(
+      of: find.byKey(const Key('chat-composer-field')),
+      matching: find.byType(TextField),
+    ),
+  );
 }
 
 void main() {
@@ -100,11 +107,8 @@ void main() {
 
     expect(find.textContaining('pasted-image-'), findsOneWidget);
     expect(find.textContaining('.png'), findsOneWidget);
-    // Explain local draft recovery as soon as an attachment is staged.
-    expect(
-      find.byKey(const Key('composer-attachment-draft-note')),
-      findsOneWidget,
-    );
+    // Explain local draft recovery as soon as an attachment is staged: the
+    // pill's note line says it.
     expect(
       find.text('Attachments save with this draft on this device.'),
       findsOneWidget,

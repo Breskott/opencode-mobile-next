@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
@@ -119,6 +120,8 @@ Future<(_Controller, ReviewHandoffStore)> _pump(
       child: RepaintBoundary(
         key: const ValueKey('prompt-preview'),
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
           theme: captureTheme(),
           builder: (context, child) => MediaQuery(
@@ -139,11 +142,17 @@ Future<(_Controller, ReviewHandoffStore)> _pump(
 Future<void> _tool(WidgetTester tester, String key) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+  // The sheet scrolls under its header at large text: centre each row
+  // before tapping it.
+  Future<void> reveal(Finder finder) async {
+    await Scrollable.ensureVisible(tester.element(finder), alignment: .5);
+    await tester.pumpAndSettle();
+  }
+
+  await reveal(find.byKey(const Key('composer-tools-prompts')));
   await tester.tap(find.byKey(const Key('composer-tools-prompts')));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.byKey(Key(key)));
-  await tester.pumpAndSettle();
+  await reveal(find.byKey(Key(key)));
   await tester.tap(find.byKey(Key(key)));
   // Stash ownership keeps the composer busy while its sheet is open. Wait for
   // the finite transition, not for an intentionally live progress indicator.
@@ -299,7 +308,7 @@ void main() {
       final (c, _) = await _pump(tester);
       final fieldFinder = find.byKey(const Key('chat-composer-field'));
       await tester.enterText(fieldFinder, 'my draft');
-      final field = tester.widget<TextField>(fieldFinder).controller!;
+      final field = tester.widget<TextField>(_inner(fieldFinder)).controller!;
       field.selection = const TextSelection.collapsed(offset: 0);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
@@ -354,7 +363,9 @@ void main() {
       await _frames(tester);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<TextField>(
+              _inner(find.byKey(const Key('chat-composer-field'))),
+            )
             .controller!
             .text,
         'restore available text',
@@ -363,6 +374,44 @@ void main() {
         c.promptStash.single.attachmentRefs.single.url,
         'content://keyboard/temporary',
       );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'deleting a saved prompt happens at once with Undo, and commits when the '
+    'Undo window closes',
+    (tester) async {
+      final (c, _) = await _pump(tester);
+      await c.savePromptStash(
+        const StashedPrompt(id: 'old', text: 'keep for later', createdAt: 1),
+        locationRevision: c.locationRevision,
+      );
+      await _tool(tester, 'composer-tool-saved');
+      final row = find.byKey(const ValueKey('restore-stash-old'));
+      expect(row, findsOneWidget);
+      Future<void> delete() async {
+        await tester.longPress(row);
+        await _frames(tester);
+        await tester.tap(find.text('Delete saved prompt'));
+        await _frames(tester);
+      }
+
+      await delete();
+      // No confirmation sheet on the sheet: the row leaves now.
+      expect(row, findsNothing);
+      expect(find.text('Saved prompt deleted'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await _frames(tester);
+      expect(row, findsOneWidget);
+      expect(c.promptStash.single.id, 'old');
+
+      await delete();
+      expect(row, findsNothing);
+      for (var second = 0; second < 10; second++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(c.promptStash, isEmpty);
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -381,7 +430,10 @@ void main() {
           _reference.toPromptText(),
         );
         expect(handoff.referencesFor('s'), isEmpty);
-        expect(tester.widget<TextField>(fieldFinder).controller!.text, isEmpty);
+        expect(
+          tester.widget<TextField>(_inner(fieldFinder)).controller!.text,
+          isEmpty,
+        );
         final id = c.promptStash.single.id;
         await tester.enterText(fieldFinder, 'keep current');
         await _tool(tester, 'composer-tool-saved');
@@ -411,7 +463,7 @@ void main() {
         await tester.tap(find.text('Restore').last);
         await _frames(tester);
         expect(
-          tester.widget<TextField>(fieldFinder).controller!.text,
+          tester.widget<TextField>(_inner(fieldFinder)).controller!.text,
           'save this',
         );
         expect(
@@ -435,3 +487,8 @@ void main() {
     );
   }
 }
+
+/// The composer's field is a KitField (a TextFormField); its TextField
+/// holds the controller and focus node.
+Finder _inner(Finder field) =>
+    find.descendant(of: field, matching: find.byType(TextField));

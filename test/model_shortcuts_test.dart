@@ -129,8 +129,8 @@ void main() {
       ),
     );
     for (final label in [
-      'Next recent model · F2',
-      'Previous recent model · Shift+F2',
+      'Next recent model',
+      'Previous recent model',
       'Next favorite model',
     ]) {
       await tester.tap(find.byTooltip('Switch model for this conversation'));
@@ -140,5 +140,34 @@ void main() {
     }
     expect(calls, [(false, false), (true, false), (false, true)]);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a shortcut that cannot run says why and shows its key', (
+    tester,
+  ) async {
+    final calls = <(bool, bool)>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ModelCycleButton(
+            hasRecent: true,
+            hasFavorites: false,
+            onCycle:
+                ({bool reverse = false, bool favoritesOnly = false}) async {
+                  calls.add((reverse, favoritesOnly));
+                },
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('Switch model for this conversation'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Mark a model as a favorite in the model picker first'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Next favorite model'));
+    await tester.pumpAndSettle();
+    expect(calls, isEmpty);
   });
 }

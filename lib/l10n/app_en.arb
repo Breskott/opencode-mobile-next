@@ -29649,5 +29649,109 @@
         "type": "int"
       }
     }
+  },
+  "composerBusyReason": "Getting your prompt ready…",
+  "@composerBusyReason": {
+    "description": "Composer: the field waits while a saved prompt or photo is being put in the draft."
+  },
+  "composerToolsTextOnly": "This server takes text only",
+  "@composerToolsTextOnly": {
+    "description": "Composer + sheet: why the attach row is unavailable on a text-only server."
+  },
+  "composerToolCommandsTitle": "Commands and agents",
+  "@composerToolCommandsTitle": {
+    "description": "Composer + sheet: the door to the command and agent list."
+  },
+  "composerToolSavedSubtitle": "Put a prompt you saved back in the draft",
+  "@composerToolSavedSubtitle": {
+    "description": "Composer + sheet: what Saved prompts does."
+  },
+  "composerToolSaveForLater": "Save prompt for later",
+  "@composerToolSaveForLater": {
+    "description": "Composer + sheet: keeps the current prompt in Saved prompts."
+  },
+  "composerToolNothingToSave": "Type or attach something first",
+  "@composerToolNothingToSave": {
+    "description": "Composer + sheet: why Save prompt for later is unavailable."
+  },
+  "composerToolsMore": "More tools",
+  "@composerToolsMore": {
+    "description": "Composer + sheet: the fold holding the rarer tools."
+  },
+  "composerToolNotesTitle": "Notes for this conversation",
+  "@composerToolNotesTitle": {
+    "description": "Composer + sheet: the context capsule, in plain words."
+  },
+  "composerReturnedToDraft": "Returned to your draft",
+  "@composerReturnedToDraft": {
+    "description": "Undo bar after a waiting message was taken back into the draft."
+  },
+  "promptHistoryIntro": "Tap a prompt to add it to your draft.",
+  "@promptHistoryIntro": {
+    "description": "Reuse a prompt sheet: one-line intro."
+  },
+  "promptEditorDiscardChanges": "Discard changes",
+  "@promptEditorDiscardChanges": {
+    "description": "Prompt editor: confirms leaving without keeping the edits."
+  },
+  "promptEditorDone": "Use in draft",
+  "@promptEditorDone": {
+    "description": "Prompt editor: the pinned primary; hands the text back to the composer."
+  },
+  "promptEditorFieldLabel": "Prompt",
+  "@promptEditorFieldLabel": {
+    "description": "Prompt editor: the field label."
+  },
+  "promptStashDeleted": "Saved prompt deleted",
+  "@promptStashDeleted": {
+    "description": "Undo bar after deleting a saved prompt."
+  },
+  "promptStashIntro": "Newest first · kept on this device for this server",
+  "@promptStashIntro": {
+    "description": "Saved prompts sheet: subtitle."
+  },
+  "promptStashEmptyTitle": "No saved prompts yet",
+  "@promptStashEmptyTitle": {
+    "description": "Saved prompts sheet: empty state title."
+  },
+  "promptStashEmptyBody": "Choose Save prompt for later in the + menu to keep a prompt here.",
+  "@promptStashEmptyBody": {
+    "description": "Saved prompts sheet: empty state body."
+  },
+  "promptStashBusy": "Wait for the current step to finish",
+  "@promptStashBusy": {
+    "description": "Saved prompts sheet: why a row cannot be restored right now."
+  },
+  "promptStashRowActions": "Saved prompt actions",
+  "@promptStashRowActions": {
+    "description": "Saved prompts sheet: the row menu name."
+  },
+  "promptStashRestoreToDraft": "Restore to draft",
+  "@promptStashRestoreToDraft": {
+    "description": "Saved prompts sheet: row menu item."
+  },
+  "promptStashDeleteAction": "Delete saved prompt",
+  "@promptStashDeleteAction": {
+    "description": "Saved prompts sheet: row menu item; deletes at once with Undo."
+  },
+  "modelShortcutsNextRecent": "Next recent model",
+  "@modelShortcutsNextRecent": {
+    "description": "Model shortcuts menu item (F2 shown beside it)."
+  },
+  "modelShortcutsPreviousRecent": "Previous recent model",
+  "@modelShortcutsPreviousRecent": {
+    "description": "Model shortcuts menu item (Shift+F2 shown beside it)."
+  },
+  "modelShortcutsNoRecent": "Use another model first to cycle back to it",
+  "@modelShortcutsNoRecent": {
+    "description": "Model shortcuts: why the recent items are unavailable."
+  },
+  "modelShortcutsNoFavorite": "Mark a model as a favorite in the model picker first",
+  "@modelShortcutsNoFavorite": {
+    "description": "Model shortcuts: why the favorite item is unavailable."
+  },
+  "composerDraftBlockedReason": "Answer the question about this draft first",
+  "@composerDraftBlockedReason": {
+    "description": "Composer: typing waits while the person decides what to do with a recovered draft."
   }
 }

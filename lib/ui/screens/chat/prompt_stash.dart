@@ -1,5 +1,11 @@
 part of '../chat_screen.dart';
 
+/// "Saved prompts": prompts kept on this device for this server, newest
+/// first. Tapping a row restores it into the draft (the host asks before
+/// replacing anything). Delete sits in the row's menu and happens at once
+/// with "Saved prompt deleted · Undo": the entry leaves the list now and is
+/// removed from the device when the Undo window closes, so no confirmation
+/// sheet stacks on this one (map prompt-stash-delete-sheet: remove).
 class _PromptStashSheet extends StatefulWidget {
   const _PromptStashSheet({
     required this.controller,
@@ -23,6 +29,9 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
   bool _readFailed = false;
   bool _migrationPending = false;
   List<StashedPrompt> _prompts = const [];
+
+  /// Deleted in the list, waiting for the Undo window to close.
+  final _pendingDelete = <String>{};
 
   bool get _current =>
       !_invalidated &&
@@ -92,42 +101,72 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
     super.dispose();
   }
 
-  Future<void> _delete(StashedPrompt prompt) async {
-    if (_unsafe) return;
+  void _restore(StashedPrompt prompt) {
+    if (_unsafe || !(ModalRoute.of(context)?.isCurrent ?? true)) return;
     setState(() => _deleting = true);
-    try {
-      final confirmed = await showConfirmSheet(
+    Navigator.pop(context, prompt);
+  }
+
+  /// Delete at once, with Undo. The store keeps the entry until the Undo
+  /// window closes; a failed removal brings the row back and says so.
+  void _delete(StashedPrompt prompt) {
+    if (_unsafe) return;
+    final controller = widget.controller;
+    final location = widget.location;
+    final strings = _chatL10n(context);
+    setState(() {
+      _pendingDelete.add(prompt.id);
+      _error = null;
+    });
+    showKitUndo(
+      context,
+      message: strings.promptStashDeleted,
+      key: ValueKey('stash-deleted-${prompt.id}'),
+      onUndo: () {
+        if (mounted) setState(() => _pendingDelete.remove(prompt.id));
+      },
+      onCommit: () async {
+        try {
+          await controller.removePromptStash(
+            prompt.id,
+            locationRevision: location,
+          );
+        } catch (_) {
+          if (mounted && _current) {
+            setState(() => _error = strings.promptStashDeleteFailed);
+          }
+        } finally {
+          if (mounted) setState(() => _pendingDelete.remove(prompt.id));
+        }
+      },
+    );
+  }
+
+  bool _matches(StashedPrompt prompt, String query) {
+    if (query.isEmpty) return true;
+    final fields = <String>[
+      prompt.text,
+      ...prompt.attachmentNames,
+      if (prompt.directory != null) prompt.directory!,
+      if (prompt.workspace != null) prompt.workspace!,
+      for (final reference in prompt.references) reference.description,
+    ];
+    return fields.any((field) => field.toLowerCase().contains(query));
+  }
+
+  String _supporting(BuildContext context, StashedPrompt prompt) {
+    final l10n = _chatL10n(context);
+    return [
+      MaterialLocalizations.of(
         context,
-        icon: AppIconography.delete,
-        title: _chatL10n(context).promptStashDeleteTitle,
-        message: _chatL10n(context).promptStashDeleteDetail,
-        confirmLabel: _chatL10n(context).promptStashDelete,
-        cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-        destructive: true,
-      );
-      if (!mounted ||
-          !confirmed ||
-          !_current ||
-          _readFailed ||
-          _preparing ||
-          !(ModalRoute.of(context)?.isCurrent ?? true)) {
-        return;
-      }
-      setState(() {
-        _deleting = true;
-        _error = null;
-      });
-      await widget.controller.removePromptStash(
-        prompt.id,
-        locationRevision: widget.location,
-      );
-    } catch (_) {
-      if (mounted && _current) {
-        setState(() => _error = _chatL10n(context).promptStashDeleteFailed);
-      }
-    } finally {
-      if (mounted) setState(() => _deleting = false);
-    }
+      ).formatMediumDate(DateTime.fromMillisecondsSinceEpoch(prompt.createdAt)),
+      if (prompt.attachmentCount > 0)
+        l10n.promptStashAttachments(prompt.attachmentCount),
+      if (prompt.references.isNotEmpty)
+        l10n.promptStashReferences(prompt.references.length),
+      if (prompt.locationBound)
+        KitBidi.ltr(prompt.directory ?? l10n.promptDefaultLocation),
+    ].join(' · ');
   }
 
   @override
@@ -136,201 +175,128 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
     builder: (context, _) {
       final l10n = _chatL10n(context);
       final query = _query.trim().toLowerCase();
-      final prompts = query.isEmpty
-          ? _prompts
-          : _prompts.where((prompt) {
-              final fields = <String>[
-                prompt.text,
-                ...prompt.attachmentNames,
-                if (prompt.directory != null) prompt.directory!,
-                if (prompt.workspace != null) prompt.workspace!,
-                for (final reference in prompt.references)
-                  reference.description,
-              ];
-              return fields.any((field) => field.toLowerCase().contains(query));
-            }).toList();
-      var error = _error;
+      final prompts =
+          _prompts
+              .where((p) => !_pendingDelete.contains(p.id))
+              .where((p) => _matches(p, query))
+              .toList()
+            // Newest first.
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final current = _current;
-      if (!current) {
-        error = l10n.promptStashScopeChanged;
-      } else if (_readFailed) {
-        error = l10n.promptStashReadFailed;
-      }
-      return SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .85,
-          ),
-          child: ListView(
-            key: const Key('prompt-stash-sheet'),
-            shrinkWrap: true,
-            padding: EdgeInsetsDirectional.fromSTEB(
-              16,
-              0,
-              16,
-              20 + MediaQuery.viewInsetsOf(context).bottom,
+      final error = !current
+          ? l10n.promptStashScopeChanged
+          : _readFailed
+          ? l10n.promptStashReadFailed
+          : _error;
+      final unsafe = _unsafe;
+      final busyReason = !current ? l10n.promptStashScopeChanged : null;
+      return KitSheet(
+        key: const Key('prompt-stash-sheet'),
+        // The host's modal draws the handle.
+        handle: false,
+        title: l10n.promptStashTitle,
+        subtitle: l10n.promptStashIntro,
+        icon: AppIconography.bookmarks,
+        loading: _preparing || _deleting,
+        onClose: () => Navigator.pop(context),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitSearchField(
+              controller: _search,
+              label: l10n.promptStashSearch,
+              enabled: current,
+              disabledReason: busyReason,
+              resultCount: query.isEmpty ? null : prompts.length,
+              onChanged: (value) => setState(() => _query = value),
             ),
-            children: [
-              Text(
-                l10n.promptStashTitle,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 6),
-              Text(l10n.promptStashListDescription),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _search,
-                enabled: current,
-                textInputAction: TextInputAction.search,
-                onChanged: (value) => setState(() => _query = value),
-                decoration: InputDecoration(
-                  labelText: l10n.promptStashSearch,
-                  prefixIcon: const Icon(AppIconography.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: l10n.commonClearSearch,
-                          onPressed: () {
-                            _search.clear();
-                            setState(() => _query = '');
-                          },
-                          icon: const Icon(AppIconography.close),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (error != null)
-                Text(
-                  error,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              if (_preparing || _deleting)
-                const LinearProgressIndicator(minHeight: 2),
-              if (_migrationPending && current)
-                Text(l10n.promptStashMigrationPending),
-              if (current && (_readFailed || _migrationPending))
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
+            if (error != null)
+              KitNotice(
+                key: const Key('prompt-stash-error'),
+                tone: AppStatusTone.failure,
+                message: error,
+                actions: [
+                  if (current && _readFailed)
+                    KitAction(
+                      label: l10n.commonRetry,
+                      onPressed: _preparing
+                          ? null
+                          : () => unawaited(_prepare()),
                     ),
-                    onPressed: _preparing || _deleting ? null : _prepare,
-                    child: Text(l10n.commonRetry),
+                ],
+              ),
+            if (_migrationPending && current)
+              KitNotice(
+                message: l10n.promptStashMigrationPending,
+                actions: [
+                  KitAction(
+                    label: l10n.commonRetry,
+                    onPressed: _preparing || _deleting
+                        ? null
+                        : () => unawaited(_prepare()),
                   ),
+                ],
+              ),
+            if (prompts.isEmpty && error == null && !_preparing)
+              if (query.isNotEmpty)
+                KitSearchNoMatch(
+                  query: _query.trim(),
+                  onClear: () {
+                    _search.clear();
+                    setState(() => _query = '');
+                  },
+                )
+              else
+                KitStateView(
+                  key: const Key('prompt-stash-empty'),
+                  size: KitStateSize.inline,
+                  icon: AppIconography.bookmarks,
+                  title: l10n.promptStashEmptyTitle,
+                  body: l10n.promptStashEmptyBody,
                 ),
-              if (prompts.isEmpty && error == null && !_preparing)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    query.isEmpty
-                        ? l10n.promptStashEmpty
-                        : l10n.promptStashNoMatches,
-                  ),
-                ),
-              for (final prompt in prompts)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          MaterialLocalizations.of(context).formatMediumDate(
-                            DateTime.fromMillisecondsSinceEpoch(
-                              prompt.createdAt,
-                            ),
-                          ),
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          childrenPadding: const EdgeInsets.only(bottom: 12),
-                          title: Text(
-                            prompt.text.isEmpty
-                                ? l10n.promptStashContextOnly
-                                : prompt.text,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          children: [
-                            Align(
-                              alignment: AlignmentDirectional.centerStart,
-                              child: SelectableText(prompt.text),
-                            ),
-                          ],
-                        ),
-                        if (prompt.attachmentCount > 0 ||
-                            prompt.references.isNotEmpty)
-                          Text(
-                            [
-                              if (prompt.attachmentCount > 0)
-                                l10n.promptStashAttachments(
-                                  prompt.attachmentCount,
+            if (prompts.isNotEmpty)
+              KitRowGroup(
+                leadingIcons: false,
+                children: [
+                  for (final prompt in prompts)
+                    KitRow(
+                      key: ValueKey('restore-stash-${prompt.id}'),
+                      title: prompt.text.isEmpty
+                          ? l10n.promptStashContextOnly
+                          : prompt.text,
+                      titleMaxLines: 2,
+                      supporting: TextSpan(text: _supporting(context, prompt)),
+                      supportingMaxLines: 2,
+                      enabled: !unsafe,
+                      disabledReason: unsafe
+                          ? (busyReason ?? l10n.promptStashBusy)
+                          : null,
+                      onTap: unsafe ? null : () => _restore(prompt),
+                      menuLabel: l10n.promptStashRowActions,
+                      menu: unsafe
+                          ? const []
+                          : [
+                              KitMenuItem(
+                                key: ValueKey(
+                                  'restore-stash-menu-${prompt.id}',
                                 ),
-                              if (prompt.references.isNotEmpty)
-                                l10n.promptStashReferences(
-                                  prompt.references.length,
-                                ),
-                            ].join(' · '),
-                          ),
-                        for (final name in prompt.attachmentNames)
-                          Text(
-                            name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        for (final reference in prompt.references)
-                          Text(
-                            reference.description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        if (prompt.locationBound)
-                          Text(
-                            prompt.directory ?? l10n.promptDefaultLocation,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            TextButton.icon(
-                              key: ValueKey('restore-stash-${prompt.id}'),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
+                                icon: AppIconography.unarchive,
+                                label: l10n.promptStashRestoreToDraft,
+                                onSelected: () => _restore(prompt),
                               ),
-                              onPressed: _unsafe
-                                  ? null
-                                  : () {
-                                      if (_unsafe ||
-                                          !(ModalRoute.of(context)?.isCurrent ??
-                                              true)) {
-                                        return;
-                                      }
-                                      setState(() => _deleting = true);
-                                      Navigator.pop(context, prompt);
-                                    },
-                              icon: const Icon(AppIconography.unarchive),
-                              label: Text(l10n.promptRestore),
-                            ),
-                            TextButton.icon(
-                              key: ValueKey('delete-stash-${prompt.id}'),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
+                              KitMenuItem(
+                                key: ValueKey('delete-stash-${prompt.id}'),
+                                icon: AppIconography.delete,
+                                label: l10n.promptStashDeleteAction,
+                                destructive: true,
+                                onSelected: () => _delete(prompt),
                               ),
-                              onPressed: _unsafe ? null : () => _delete(prompt),
-                              icon: const Icon(AppIconography.delete),
-                              label: Text(l10n.promptStashDelete),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
                     ),
-                  ),
-                ),
-            ],
-          ),
+                ],
+              ),
+          ],
         ),
       );
     },

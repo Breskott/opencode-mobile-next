@@ -1,7 +1,9 @@
 part of '../chat_screen.dart';
 
-/// Only text from this conversation is offered. Reuse never resends a
-/// message or silently copies attachments from an earlier request.
+/// "Reuse a prompt": text from this conversation and recent sends, newest
+/// first. Tapping a row adds its text to the draft; nothing is resent and no
+/// attachment is copied. The host opens it as a sheet and appends the
+/// chosen text.
 class _PromptHistorySheet extends StatefulWidget {
   const _PromptHistorySheet({required this.prompts});
   final List<String> prompts;
@@ -11,81 +13,70 @@ class _PromptHistorySheet extends StatefulWidget {
 }
 
 class _PromptHistorySheetState extends State<_PromptHistorySheet> {
+  final _search = TextEditingController();
   String _query = '';
 
   @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _search.clear();
+    setState(() => _query = '');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final matches = widget.prompts
-        .where((text) => text.toLowerCase().contains(_query))
-        .toList();
-    return Padding(
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: math.max(
-            160,
-            media.size.height * .75 - media.viewInsets.bottom,
+    final l10n = _chatL10n(context);
+    final query = _query.trim().toLowerCase();
+    final matches = [
+      for (final text in widget.prompts)
+        if (text.toLowerCase().contains(query)) text,
+    ];
+    return KitSheet(
+      key: const Key('prompt-history-sheet'),
+      // The host's modal draws the handle.
+      handle: false,
+      title: l10n.composerReuseTitle,
+      subtitle: l10n.promptHistoryIntro,
+      icon: AppIconography.history,
+      onClose: () => Navigator.pop(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitSearchField(
+            controller: _search,
+            label: l10n.composerReuseSearch,
+            fieldKey: const Key('prompt-history-search'),
+            resultCount: query.isEmpty ? null : matches.length,
+            onChanged: (value) => setState(() => _query = value),
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          // The heading and search scroll with the results. Keeping them
-          // fixed can leave no room for results above a large keyboard.
-          child: ListView(
-            key: const Key('prompt-history-sheet'),
-            shrinkWrap: true,
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  _chatL10n(context).composerReuseTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
-                child: Text(_chatL10n(context).composerReuseDescription),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  key: const Key('prompt-history-search'),
-                  decoration: InputDecoration(
-                    hintText: _chatL10n(context).composerReuseSearch,
-                    prefixIcon: const Icon(AppIconography.search),
+          if (matches.isEmpty && query.isNotEmpty)
+            KitSearchNoMatch(query: _query.trim(), onClear: _clear)
+          else if (matches.isEmpty)
+            KitStateView(
+              size: KitStateSize.inline,
+              icon: AppIconography.history,
+              title: l10n.composerReuseEmpty,
+            )
+          else
+            KitRowGroup(
+              leadingIcons: false,
+              children: [
+                for (var index = 0; index < matches.length; index++)
+                  KitRow(
+                    key: ValueKey('reuse-prompt-$index'),
+                    title: matches[index],
+                    titleMaxLines: 3,
+                    trailing: const KitRowIcon(AppIconography.add),
+                    onTap: () => Navigator.pop(context, matches[index]),
                   ),
-                  onChanged: (value) =>
-                      setState(() => _query = value.trim().toLowerCase()),
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (matches.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(_chatL10n(context).composerReuseEmpty),
-                ),
-              for (var index = 0; index < matches.length; index++) ...[
-                if (index > 0) const Divider(height: 1, indent: 20),
-                ListTile(
-                  key: ValueKey('reuse-prompt-$index'),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  title: Text(
-                    matches[index],
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: const Icon(AppIconography.add),
-                  onTap: () => Navigator.pop(context, matches[index]),
-                ),
               ],
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
