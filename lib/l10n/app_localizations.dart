@@ -464,12 +464,6 @@ abstract class AppLocalizations {
   /// **'Thinking mode'**
   String get modelThinkingMode;
 
-  /// No description provided for @modelDefaultMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Default mode'**
-  String get modelDefaultMode;
-
   /// No description provided for @modelSessionScopeNote.
   ///
   /// In en, this message translates to:
@@ -6241,125 +6235,17 @@ abstract class AppLocalizations {
   /// **'Dismiss shown items'**
   String get returnBriefDismiss;
 
-  /// No description provided for @capsuleTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Context capsule'**
-  String get capsuleTitle;
-
-  /// No description provided for @capsuleEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Collect notes, errors and screenshots for this conversation'**
-  String get capsuleEntry;
-
-  /// No description provided for @capsuleDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.'**
-  String get capsuleDescription;
-
-  /// No description provided for @capsuleNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get capsuleNote;
-
   /// No description provided for @capsuleError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get capsuleError;
 
-  /// No description provided for @capsuleCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Code'**
-  String get capsuleCode;
-
-  /// No description provided for @capsuleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Label'**
-  String get capsuleLabel;
-
-  /// No description provided for @capsuleExcerpt.
-  ///
-  /// In en, this message translates to:
-  /// **'Excerpt'**
-  String get capsuleExcerpt;
-
-  /// No description provided for @capsulePaste.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste'**
-  String get capsulePaste;
-
   /// No description provided for @capsuleRemove.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get capsuleRemove;
-
-  /// No description provided for @capsuleAddImage.
-  ///
-  /// In en, this message translates to:
-  /// **'Add screenshot or image'**
-  String get capsuleAddImage;
-
-  /// No description provided for @capsulePreview.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to preview'**
-  String get capsulePreview;
-
-  /// No description provided for @capsuleApply.
-  ///
-  /// In en, this message translates to:
-  /// **'Apply to draft'**
-  String get capsuleApply;
-
-  /// No description provided for @capsuleApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'Context added to your saved draft. Review it before sending.'**
-  String get capsuleApplied;
-
-  /// No description provided for @capsuleScopeChanged.
-  ///
-  /// In en, this message translates to:
-  /// **'The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.'**
-  String get capsuleScopeChanged;
-
-  /// No description provided for @capsuleTextOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'This server accepts text only. You can still collect notes, errors and code.'**
-  String get capsuleTextOnly;
-
-  /// No description provided for @capsuleImagesOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.'**
-  String get capsuleImagesOnly;
-
-  /// No description provided for @capsuleImageFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.'**
-  String get capsuleImageFailed;
-
-  /// No description provided for @capsulePasteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Clipboard text is unavailable. You can type or paste into the excerpt.'**
-  String get capsulePasteFailed;
-
-  /// No description provided for @capsuleTextLimit.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep each excerpt under 16,000 characters and the bundle under 32,000.'**
-  String get capsuleTextLimit;
 
   /// No description provided for @markdownCopyCode.
   ///
@@ -7969,35 +7855,11 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get reviewTitle;
 
-  /// No description provided for @modelChoiceProvidersTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Providers not loaded'**
-  String get modelChoiceProvidersTitle;
-
-  /// No description provided for @modelChoiceProvidersSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}'**
-  String modelChoiceProvidersSummary(int count);
-
   /// No description provided for @modelChoiceReloadProviders.
   ///
   /// In en, this message translates to:
   /// **'Reload providers'**
   String get modelChoiceReloadProviders;
-
-  /// No description provided for @modelChoiceStagedAgentHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Applied with your model choice'**
-  String get modelChoiceStagedAgentHint;
-
-  /// No description provided for @modelChoiceAgentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose an agent'**
-  String get modelChoiceAgentTitle;
 
   /// No description provided for @modelChoiceDone.
   ///
@@ -18759,12 +18621,6 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get e7ModelUiAgent;
 
-  /// Shared voice or model selection UI: e7ModelUiNoAgents
-  ///
-  /// In en, this message translates to:
-  /// **'No agents available'**
-  String get e7ModelUiNoAgents;
-
   /// Shared voice or model selection UI: e7ModelUiServerDefault
   ///
   /// In en, this message translates to:
@@ -19463,7 +19319,7 @@ abstract class AppLocalizations {
   /// Voice/model presentation: e7ModelUiUnloadedProviders
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{OpenCode is signed in to {providers} but has not loaded it yet, so its models fail with “Model not found”. Reload to pick up the sign-in.} other{OpenCode is signed in to {providers} but has not loaded them yet, so their models fail with “Model not found”. Reload to pick up the sign-in.}}'**
+  /// **'{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}'**
   String e7ModelUiUnloadedProviders(int count, String providers);
 
   /// Fallback product error when a platform exception carries no message.
@@ -35229,24 +35085,6 @@ abstract class AppLocalizations {
   /// **'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.'**
   String get handoffSheetPhoneServerNote;
 
-  /// Model picker: section label above the chosen model, thinking level and agent
-  ///
-  /// In en, this message translates to:
-  /// **'Your choice'**
-  String get modelPickerYourChoice;
-
-  /// Model picker: the choice row when no model is chosen
-  ///
-  /// In en, this message translates to:
-  /// **'No model chosen'**
-  String get modelPickerNoneChosen;
-
-  /// Model picker: supporting line when no model is chosen
-  ///
-  /// In en, this message translates to:
-  /// **'Pick one from the list below.'**
-  String get modelPickerNoneChosenHint;
-
   /// Model picker: why the apply action cannot run
   ///
   /// In en, this message translates to:
@@ -35259,24 +35097,6 @@ abstract class AppLocalizations {
   /// **'Thinking'**
   String get modelPickerThinking;
 
-  /// Model picker: what the thinking level means
-  ///
-  /// In en, this message translates to:
-  /// **'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.'**
-  String get modelPickerThinkingExplain;
-
-  /// Model picker: the model offers no thinking levels to choose from
-  ///
-  /// In en, this message translates to:
-  /// **'This model has one thinking level'**
-  String get modelPickerThinkingOneLevel;
-
-  /// Model picker: what the agent choice means
-  ///
-  /// In en, this message translates to:
-  /// **'The agent decides what the model may do, such as edit files or only read and plan.'**
-  String get modelPickerAgentExplain;
-
   /// Model picker: what the built-in build agent does
   ///
   /// In en, this message translates to:
@@ -35288,12 +35108,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reads and plans; does not change files'**
   String get modelPickerAgentPlan;
-
-  /// Model picker details: context window in words
-  ///
-  /// In en, this message translates to:
-  /// **'{count} tokens of context'**
-  String modelPickerDetailsContext(String count);
 
   /// Model picker details: output limit in words
   ///
@@ -35324,12 +35138,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reads images and files you attach'**
   String get modelPickerCanReadAttachments;
-
-  /// Model picker details: label of the provider/model id
-  ///
-  /// In en, this message translates to:
-  /// **'Model id'**
-  String get modelPickerModelId;
 
   /// Model picker: row menu item that copies the provider/model id
   ///
@@ -38937,12 +38745,6 @@ abstract class AppLocalizations {
   /// **'More tools'**
   String get composerToolsMore;
 
-  /// Composer + sheet: the context capsule, in plain words.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes for this conversation'**
-  String get composerToolNotesTitle;
-
   /// Undo bar after a waiting message was taken back into the draft.
   ///
   /// In en, this message translates to:
@@ -40916,6 +40718,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Give the team a first task'**
   String get teamPhoneReadyFirstTask;
+
+  /// Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The server doesn\'t have this model.'**
+  String get chatErrorModelNotFound;
+
+  /// Chat: an agent error of the context-overflow kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is too long for the model.'**
+  String get chatErrorContextOverflow;
+
+  /// Chat: an agent error of the provider-sign-in kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The model provider needs you to sign in again.'**
+  String get chatErrorProviderAuth;
+
+  /// Chat: an agent error of the output-length kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The reply reached the model\'s length limit.'**
+  String get chatErrorOutputLength;
+
+  /// Chat: an agent error of the content-filter kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The provider\'s safety filter stopped this reply.'**
+  String get chatErrorContentFilter;
+
+  /// Chat: an agent or prompt error the app does not recognise; the server's text is under Details, never shown as the headline
+  ///
+  /// In en, this message translates to:
+  /// **'The agent stopped because of an error.'**
+  String get chatErrorUnknown;
+
+  /// Model picker footer: the chip that opens the thinking level menu, with the level chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking: {level}'**
+  String modelPickerThinkingChip(String level);
+
+  /// Model picker footer: the chip that opens the agent menu, with the agent chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Agent: {agent}'**
+  String modelPickerAgentChip(String agent);
 }
 
 class _AppLocalizationsDelegate

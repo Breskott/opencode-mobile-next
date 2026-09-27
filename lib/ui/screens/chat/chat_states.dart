@@ -121,6 +121,26 @@ Future<void> _showChatErrorDetails(
   sheetKey: const ValueKey('chat-error-details'),
 );
 
+/// An agent or server failure in the app's words: the recognised cause,
+/// else what its [kind] means, else one plain line. The server's own text
+/// is only ever shown under Details (owner rule: no raw error text as copy).
+String _plainErrorHeadline(
+  AgentErrorWords words,
+  MessageErrorKind kind,
+  AppLocalizations l10n,
+) {
+  if (words.humanized) return words.headline;
+  return switch (kind) {
+    MessageErrorKind.modelNotFound => l10n.chatErrorModelNotFound,
+    MessageErrorKind.contextOverflow => l10n.chatErrorContextOverflow,
+    MessageErrorKind.providerAuth => l10n.chatErrorProviderAuth,
+    MessageErrorKind.outputLength => l10n.chatErrorOutputLength,
+    MessageErrorKind.contentFilter => l10n.chatErrorContentFilter,
+    MessageErrorKind.aborted ||
+    MessageErrorKind.unknown => l10n.chatErrorUnknown,
+  };
+}
+
 /// A prompt the server refused, or a session-level failure with no home in
 /// the transcript: the plain sentence, what to do, the fix when there is one
 /// (a model the server does not know), and the server's words under Details.
@@ -136,16 +156,13 @@ _ChatStatus _promptErrorStatus(
     MessageErrorKind.unknown,
     message,
   );
-  final details = words.humanized || errorHasDetails(message)
+  final headline = _plainErrorHeadline(words, kind, l10n);
+  final details = message.trim().isNotEmpty
       ? KitAction(
           key: const ValueKey('prompt-error-details'),
           label: l10n.chatUiDetails,
           onPressed: () => unawaited(
-            _showChatErrorDetails(
-              context,
-              title: words.headline,
-              text: message,
-            ),
+            _showChatErrorDetails(context, title: headline, text: message),
           ),
         )
       : null;
@@ -161,7 +178,7 @@ _ChatStatus _promptErrorStatus(
     key: const ValueKey('prompt-error-banner'),
     icon: AppIconography.error,
     tone: AppStatusTone.failure,
-    message: words.headline,
+    message: headline,
     messageKey: const ValueKey('prompt-error-headline'),
     supporting: words.hint,
     supportingKey: const ValueKey('prompt-error-hint'),

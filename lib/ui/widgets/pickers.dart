@@ -5,8 +5,9 @@ import 'package:intl/intl.dart' show NumberFormat;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
-import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
+import 'package:opencode_mobile/ui/kit/kit_chip.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
+import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_notice.dart';
 import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
 import 'package:opencode_mobile/ui/kit/kit_progress.dart';
@@ -75,12 +76,13 @@ String _applyLabel(AppLocalizations strings, ModelPickerApplyScope scope) =>
       ModelPickerApplyScope.newSessions => strings.e7ModelUiUseNewSessions,
     };
 
-/// Opens the model sheet: the choice (model, thinking level, agent) on top,
-/// then every model to pick from, with "Use for this conversation" (or the
-/// scope's wording) pinned at the bottom. With [sessionID] and
+/// Opens the one model sheet, from every door (the composer chip, `/model`,
+/// a chat error, Settings › Model, search): every model to pick from, with
+/// the thinking level and the agent pinned in its footer beside "Use for
+/// this conversation" (or the scope's wording). With [sessionID] and
 /// [ModelPickerApplyScope.session] the choice applies to that session only;
-/// otherwise it becomes the profile default. [focusAgent] opens the sheet
-/// with the agent choice unfolded.
+/// otherwise it becomes the default for new conversations (Settings).
+/// [focusAgent] opens the sheet with the agent menu open.
 Future<void> showModelPicker(
   BuildContext context, {
   ModelPickerApplyScope applyScope = ModelPickerApplyScope.classic,
@@ -108,15 +110,27 @@ Future<void> showModelPicker(
   return showKitSheet<void>(
     context,
     title: strings.modelChooseTitle,
+    subtitle: scope == ModelPickerApplyScope.session
+        ? strings.modelSessionScopeNote
+        : null,
     icon: AppIconography.model,
     height: KitSheetHeight.full,
     loading: apply.applying,
+    footer: (_) => ValueListenableBuilder<int>(
+      valueListenable: apply.footerTick,
+      builder: (footerContext, _, _) =>
+          apply.footer?.call(footerContext) ?? const SizedBox.shrink(),
+    ),
+    // Until the view has built: the scope's wording, or nothing to apply
+    // while there is no catalog to choose from.
     primaryListenable: apply.primary
-      ..value = KitAction(
-        key: const Key('model-picker-apply'),
-        label: _applyLabel(strings, scope),
-        onPressed: apply.run,
-      ),
+      ..value = controller.catalog?.models.isNotEmpty == true
+          ? KitAction(
+              key: const Key('model-picker-apply'),
+              label: _applyLabel(strings, scope),
+              onPressed: apply.run,
+            )
+          : null,
     body: (sheetContext) => ModelCatalogView._sheet(
       controller: controller,
       apply: apply,
@@ -129,32 +143,57 @@ Future<void> showModelPicker(
 }
 
 /// The sheet's pinned primary runs the view's apply through this; the view
-/// reports its in-flight save back as the sheet's loading bar.
+/// reports its in-flight save back as the sheet's loading bar, and draws
+/// the pinned footer (thinking level, agent) through [footer].
 class _SheetApply {
   final applying = ValueNotifier<bool>(false);
 
   /// The sheet's pinned primary; its label names what it applies ("Use
   /// Claude Opus 5.5 · Build"), so the view renames it as the draft changes.
   final primary = ValueNotifier<KitAction?>(null);
+
+  /// Bumped after the view builds, so the pinned footer redraws with it.
+  final footerTick = ValueNotifier<int>(0);
+
+  /// The view's footer; null while no view is attached.
+  WidgetBuilder? footer;
   Future<void> Function()? _handler;
-  String? _label;
+  (String?, String?)? _offered;
+  bool _footerQueued = false;
 
   void run() {
     final handler = _handler;
     if (handler != null) unawaited(handler());
   }
 
-  /// Renames the primary after the frame (called from the view's build).
-  void offerLabel(String label) {
-    if (label == _label) return;
-    _label = label;
+  /// Renames the primary after the frame (called from the view's build);
+  /// [blockedBy] says why it cannot apply yet. A null [label] takes the
+  /// primary away (no catalog: nothing to apply).
+  void offerPrimary(String? label, {String? blockedBy}) {
+    final offer = (label, blockedBy);
+    if (offer == _offered) return;
+    _offered = offer;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_disposed) return;
-      primary.value = KitAction(
-        key: const Key('model-picker-apply'),
-        label: label,
-        onPressed: run,
-      );
+      primary.value = label == null
+          ? null
+          : KitAction(
+              key: const Key('model-picker-apply'),
+              label: label,
+              onPressed: blockedBy == null ? run : null,
+              disabledReason: blockedBy,
+            );
+    });
+  }
+
+  /// Redraws the footer after the frame (called from the view's build).
+  void footerChanged() {
+    if (_footerQueued) return;
+    _footerQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _footerQueued = false;
+      if (_disposed) return;
+      footerTick.value++;
     });
   }
 
@@ -164,6 +203,7 @@ class _SheetApply {
     _disposed = true;
     applying.dispose();
     primary.dispose();
+    footerTick.dispose();
   }
 }
 
@@ -176,15 +216,17 @@ enum _ModelCollection { all, favorites, recent }
 const _modelPage = 60;
 
 /// The single model, thinking level and agent selector used throughout the
-/// app: in the model sheet ([showModelPicker]) and as the body of the
-/// catalog screen.
+/// app: the body of the model sheet ([showModelPicker]); tests and
+/// captures also host it on its own.
 ///
-/// Top to bottom: notices about this catalog (only when they apply), "Your
-/// choice" (Thinking; Agent), then search with its filter menu, All /
-/// Favorites / Recent with Refresh, and the models; the chosen one is the
-/// checked row, with its details under it.
-/// With a bounded height (a screen) the list scrolls and the apply action is
-/// pinned under it; inside the sheet the sheet scrolls and pins it.
+/// Top to bottom: notices about this catalog (only when they apply), a
+/// "Reload providers" row when a signed-in provider is not loaded, then
+/// search with its filter menu, All / Favorites / Recent with Refresh, and
+/// the models; the chosen one is the checked row, with its details under
+/// it. The footer, pinned with the apply action, holds the thinking level
+/// and the agent as two chips that each open a menu (no dialog over the
+/// sheet). With a bounded height the list scrolls and the footer and apply
+/// action are pinned under it; inside the sheet the sheet pins them.
 class ModelCatalogView extends StatefulWidget {
   const ModelCatalogView({
     super.key,
@@ -244,8 +286,10 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   String _observedVariant = '';
   String _draftAgent = '';
   String _observedAgent = '';
-  bool _thinkingOpen = false;
-  late bool _agentOpen = widget.focusAgent;
+
+  /// [ModelCatalogView.focusAgent]: the agent menu opens once, as soon as
+  /// the catalog has agents to offer.
+  late bool _agentPending = widget.focusAgent;
   String? _scopeProfile;
   int _scopeLocation = 0;
 
@@ -269,6 +313,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     _observedAgent = _currentAgent;
     widget.controller.addListener(_selectionChanged);
     widget._apply?._handler = _applyDraft;
+    widget._apply?.footer = _footer;
   }
 
   @override
@@ -276,7 +321,9 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget._apply != widget._apply) {
       oldWidget._apply?._handler = null;
+      oldWidget._apply?.footer = null;
       widget._apply?._handler = _applyDraft;
+      widget._apply?.footer = _footer;
     }
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_selectionChanged);
@@ -350,7 +397,10 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
 
   @override
   void dispose() {
-    if (widget._apply?._handler == _applyDraft) widget._apply?._handler = null;
+    if (widget._apply?._handler == _applyDraft) {
+      widget._apply?._handler = null;
+      widget._apply?.footer = null;
+    }
     widget.controller.removeListener(_selectionChanged);
     _ownedScroll?.dispose();
     _search.dispose();
@@ -372,7 +422,14 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         final drafted = catalog == null ? null : _draftedModel(catalog);
         final items = _items(context, catalog, drafted);
         final inSheet = widget._apply != null;
-        widget._apply?.offerLabel(_applyText(drafted));
+        widget._apply
+          ?..offerPrimary(
+            catalog == null || catalog.models.isEmpty
+                ? null
+                : _applyText(drafted),
+            blockedBy: _applying ? null : _applyBlockedBy(drafted),
+          )
+          ..footerChanged();
         final apply = inSheet ? null : _applyBlock(context, drafted);
         if (!constraints.hasBoundedHeight) {
           // Inside a scrolling host (the sheet): the host scrolls.
@@ -443,7 +500,6 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   ) {
     final tokens = KitTokens.of(context);
     final gap = SizedBox(height: tokens.space3);
-    final section = SizedBox(height: tokens.sectionGap);
     final controller = widget.controller;
     final current = _currentModel;
     final notices = <Widget>[
@@ -470,7 +526,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           tone: AppStatusTone.failure,
           message: error,
         ),
-      if (catalog != null) ..._catalogNotices(catalog),
+      if (catalog != null) ..._catalogNotices(context, catalog),
     ];
     return [
       if (widget.showHeader) ...[_header(context), gap],
@@ -479,11 +535,8 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         _catalogState()
       else if (catalog.models.isEmpty)
         _noModels(context)
-      else ...[
-        _choiceGroup(context, catalog, drafted),
-        section,
+      else
         ..._modelSection(context, catalog),
-      ],
     ];
   }
 
@@ -505,7 +558,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   );
 
   /// Notices about the catalog itself, each only when it applies.
-  List<Widget> _catalogNotices(CatalogSnapshot catalog) {
+  List<Widget> _catalogNotices(BuildContext context, CatalogSnapshot catalog) {
     final controller = widget.controller;
     final unloaded = controller.unloadedProviderIDs;
     // A basic catalog is worth saying only when the rows really lack their
@@ -517,24 +570,31 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           (model) => model.contextLimit <= 0 && model.cost == null,
         );
     return [
+      // A row, not a notice or a dialog: what is wrong and the one fix, in
+      // the sheet itself.
       if (unloaded.isNotEmpty)
-        KitNotice(
+        KitRowGroup(
           key: const ValueKey('picker-unloaded-providers'),
-          icon: AppIconography.info,
-          title: _strings.modelChoiceProvidersTitle,
-          message: unloadedProvidersNotice(
-            unloaded
-                .map((id) => presentedProviderName(id, catalog.providers))
-                .toList(),
-            strings: _strings,
-          ),
-          actions: [
-            KitAction(
+          margin: EdgeInsets.zero,
+          children: [
+            KitRow(
               key: const ValueKey('picker-reload-providers'),
-              label: _strings.modelChoiceReloadProviders,
-              icon: AppIconography.retry,
-              working: controller.catalogLoading,
-              onPressed: controller.reloadProviderRuntime,
+              leading: KitRow.icon(context, AppIconography.retry),
+              title: _strings.modelChoiceReloadProviders,
+              supporting: TextSpan(
+                text: unloadedProvidersNotice(
+                  unloaded
+                      .map((id) => presentedProviderName(id, catalog.providers))
+                      .toList(),
+                  strings: _strings,
+                ),
+              ),
+              supportingMaxLines: 4,
+              enabled: !controller.catalogLoading,
+              disabledReason: controller.catalogLoading
+                  ? _strings.e7ModelUiLoading
+                  : null,
+              onTap: () => unawaited(controller.reloadProviderRuntime()),
             ),
           ],
         ),
@@ -569,53 +629,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     );
   }
 
-  // --- Your choice ---------------------------------------------------------
-
-  Widget _choiceGroup(
-    BuildContext context,
-    CatalogSnapshot catalog,
-    CatalogModel? drafted,
-  ) {
-    final tokens = KitTokens.of(context);
-    return Column(
-      key: const Key('model-picker-choice'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        KitRowGroup(
-          margin: EdgeInsets.zero,
-          label: _strings.modelPickerYourChoice,
-          children: [
-            // The chosen model is the checked row in the list below (and
-            // named on the apply action), not repeated here.
-            if (drafted == null)
-              KitRow(
-                key: const Key('model-picker-none-chosen'),
-                leading: KitRow.icon(context, AppIconography.model),
-                title: _strings.modelPickerNoneChosen,
-                supporting: TextSpan(text: _strings.modelPickerNoneChosenHint),
-              ),
-            _thinkingRow(context, drafted),
-            _agentRow(context, catalog),
-          ],
-        ),
-        if (widget.applyScope == ModelPickerApplyScope.session)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space1,
-              end: tokens.space1,
-              top: tokens.labelGap,
-            ),
-            child: KitText(
-              _strings.modelSessionScopeNote,
-              key: const Key('model-picker-session-scope-note'),
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-          ),
-      ],
-    );
-  }
+  // --- Footer: thinking and agent ----------------------------------------
 
   /// What the chosen model can do, its output limit and prices, in words,
   /// under its checked row. The context window is already on the row's
@@ -644,83 +658,6 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     );
   }
 
-  Widget _thinkingRow(BuildContext context, CatalogModel? model) {
-    final variants =
-        model?.variants.where((variant) => !variant.disabled).toList() ??
-        const <CatalogVariant>[];
-    if (model == null || variants.isEmpty) {
-      return KitRow(
-        key: const Key('model-picker-thinking'),
-        leading: KitRow.icon(context, AppIconography.idea),
-        title: _strings.modelPickerThinking,
-        supporting: TextSpan(
-          text: model == null
-              ? _strings.modelDefaultMode
-              : _strings.modelPickerThinkingOneLevel,
-        ),
-      );
-    }
-    final locked = _lockedReason;
-    CatalogVariant? chosen;
-    for (final variant in variants) {
-      if (variant.id == _draftVariant) chosen = variant;
-    }
-    final tokens = KitTokens.of(context);
-    return KitExpandRow(
-      key: const Key('model-picker-thinking'),
-      headerKey: const Key('model-picker-thinking-header'),
-      leading: KitRow.icon(context, AppIconography.idea),
-      title: _strings.modelPickerThinking,
-      supporting: TextSpan(
-        text: chosen == null
-            ? _strings.e7ModelUiDefault
-            : _variantLabel(chosen),
-      ),
-      expanded: _thinkingOpen,
-      onExpansionChanged: (open) => setState(() => _thinkingOpen = open),
-      children: [
-        Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: tokens.space4,
-            end: tokens.space4,
-            bottom: tokens.space2,
-          ),
-          child: KitText(
-            _strings.modelPickerThinkingExplain,
-            role: KitTextRole.secondary,
-            tone: KitTextTone.secondary,
-          ),
-        ),
-        KitChoiceList<String>.single(
-          semanticsLabel: _strings.modelPickerThinking,
-          selected: _draftVariant,
-          choices: [
-            KitChoice(
-              key: ValueKey('model-variant-${model.id}-default'),
-              value: '',
-              title: _strings.e7ModelUiDefault,
-              enabled: locked == null,
-              disabledReason: locked,
-            ),
-            for (final variant in variants)
-              KitChoice(
-                key: ValueKey('model-variant-${model.id}-${variant.id}'),
-                value: variant.id,
-                title: _variantLabel(variant),
-                enabled: locked == null,
-                disabledReason: locked,
-              ),
-          ],
-          onSelected: (value) => setState(() {
-            _draftVariant = value;
-            _saveError = null;
-            _thinkingOpen = false;
-          }),
-        ),
-      ],
-    );
-  }
-
   /// A server agent in words: the built-in ones say what they do, others
   /// use the server's description, then their mode.
   String _agentSupporting(CatalogAgent agent) {
@@ -744,79 +681,156 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     _ => id,
   };
 
-  Widget _agentRow(BuildContext context, CatalogSnapshot catalog) {
-    final visible = catalog.agents
-        .where((agent) => !agent.hidden && agent.mode != 'subagent')
-        .toList();
-    final selected = _draftAgent;
-    if (visible.isEmpty) {
-      return KitRow(
-        key: const Key('model-picker-agent'),
-        leading: KitRow.icon(context, AppIconography.agent),
-        title: _strings.e7ModelUiAgent,
-        supporting: TextSpan(
-          text: selected.isEmpty
-              ? _strings.e7ModelUiNoAgents
-              : _agentTitle(selected),
-        ),
-      );
+  /// What sits pinned with the apply action: the thinking level and the
+  /// agent, each a chip that opens its menu. A chip that has nothing to
+  /// choose is left out (a model with one level, a server without agents).
+  Widget _footer(BuildContext context) {
+    final catalog = widget.controller.catalog;
+    if (catalog == null || catalog.models.isEmpty) {
+      return const SizedBox.shrink();
     }
-    final unavailable =
-        selected.isNotEmpty && !visible.any((agent) => agent.id == selected);
-    final locked = _lockedReason;
-    final tokens = KitTokens.of(context);
-    return KitExpandRow(
-      key: const Key('model-picker-agent-row'),
-      headerKey: const Key('model-picker-agent'),
-      leading: KitRow.icon(context, AppIconography.agent),
-      title: _strings.e7ModelUiAgent,
-      supporting: TextSpan(
-        text: selected.isEmpty
-            ? _strings.e7ModelUiServerDefault
-            : _agentTitle(selected),
+    final drafted = _draftedModel(catalog);
+    final variants =
+        drafted?.variants.where((variant) => !variant.disabled).toList() ??
+        const <CatalogVariant>[];
+    final agents = _choosableAgents(catalog);
+    CatalogVariant? chosenVariant;
+    for (final variant in variants) {
+      if (variant.id == _draftVariant) chosenVariant = variant;
+    }
+    final chips = <Widget>[
+      if (drafted != null && variants.isNotEmpty)
+        Builder(
+          builder: (chipContext) => KitChip.summary(
+            key: const Key('model-picker-thinking'),
+            icon: AppIconography.idea,
+            label: _strings.modelPickerThinkingChip(
+              chosenVariant == null
+                  ? _strings.e7ModelUiDefault
+                  : _variantLabel(chosenVariant),
+            ),
+            expanded: false,
+            onPressed: () =>
+                unawaited(_chooseThinking(chipContext, drafted, variants)),
+          ),
+        ),
+      if (agents.isNotEmpty)
+        Builder(
+          builder: (chipContext) {
+            if (_agentPending) {
+              _agentPending = false;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && chipContext.mounted) {
+                  unawaited(_chooseAgent(chipContext));
+                }
+              });
+            }
+            return KitChip.summary(
+              key: const Key('model-picker-agent'),
+              icon: AppIconography.agent,
+              label: _strings.modelPickerAgentChip(
+                _draftAgent.isEmpty
+                    ? _strings.e7ModelUiServerDefault
+                    : _agentTitle(_draftAgent),
+              ),
+              expanded: false,
+              onPressed: () => unawaited(_chooseAgent(chipContext)),
+            );
+          },
+        ),
+    ];
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsetsDirectional.only(bottom: KitTokens.of(context).space2),
+      child: KitChipWrap(
+        key: const Key('model-picker-footer'),
+        children: chips,
       ),
-      expanded: _agentOpen,
-      onExpansionChanged: (open) => setState(() => _agentOpen = open),
-      children: [
-        Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: tokens.space4,
-            end: tokens.space4,
-            bottom: tokens.space2,
-          ),
-          child: KitText(
-            _strings.modelPickerAgentExplain,
-            role: KitTextRole.secondary,
-            tone: KitTextTone.secondary,
-          ),
+    );
+  }
+
+  /// The agents a person picks from: primary ones the server does not hide.
+  List<CatalogAgent> _choosableAgents(CatalogSnapshot catalog) => catalog.agents
+      .where((agent) => !agent.hidden && agent.mode != 'subagent')
+      .toList();
+
+  Future<void> _chooseThinking(
+    BuildContext anchor,
+    CatalogModel model,
+    List<CatalogVariant> variants,
+  ) async {
+    final locked = _lockedReason;
+    final known = variants.any((variant) => variant.id == _draftVariant);
+    await showKitMenu(
+      anchor,
+      semanticsLabel: _strings.modelPickerThinking,
+      items: [
+        KitMenuItem(
+          key: ValueKey('model-variant-${model.id}-default'),
+          label: _strings.e7ModelUiDefault,
+          checked: !known,
+          enabled: locked == null,
+          disabledReason: locked,
+          onSelected: () => _setVariant(''),
         ),
-        KitChoiceList<String>.single(
-          semanticsLabel: _strings.e7ModelUiAgent,
-          selected: selected.isEmpty ? null : selected,
-          choices: [
-            if (unavailable)
-              KitChoice(
-                value: selected,
-                title: _agentTitle(selected),
-                enabled: false,
-                disabledReason: _strings.modelPickerUnavailableReason,
-              ),
-            for (final agent in visible)
-              KitChoice(
-                key: ValueKey('model-picker-agent-${agent.id}'),
-                value: agent.id,
-                title: _agentTitle(agent.id),
-                supporting: _agentSupporting(agent),
-                enabled: locked == null,
-                disabledReason: locked,
-              ),
-          ],
-          onSelected: (value) => setState(() {
-            _draftAgent = value;
-            _saveError = null;
-            _agentOpen = false;
-          }),
-        ),
+        for (final variant in variants)
+          KitMenuItem(
+            key: ValueKey('model-variant-${model.id}-${variant.id}'),
+            label: _variantLabel(variant),
+            checked: variant.id == _draftVariant,
+            enabled: locked == null,
+            disabledReason: locked,
+            onSelected: () => _setVariant(variant.id),
+          ),
+      ],
+    );
+  }
+
+  void _setVariant(String value) {
+    if (!mounted) return;
+    setState(() {
+      _draftVariant = value;
+      _saveError = null;
+    });
+  }
+
+  Future<void> _chooseAgent(BuildContext anchor) async {
+    final catalog = widget.controller.catalog;
+    if (catalog == null) return;
+    final agents = _choosableAgents(catalog);
+    if (agents.isEmpty) return;
+    final selected = _draftAgent;
+    final unavailable =
+        selected.isNotEmpty && !agents.any((agent) => agent.id == selected);
+    final locked = _lockedReason;
+    await showKitMenu(
+      anchor,
+      semanticsLabel: _strings.e7ModelUiAgent,
+      items: [
+        if (unavailable)
+          KitMenuItem(
+            label: _agentTitle(selected),
+            checked: true,
+            enabled: false,
+            disabledReason: _strings.modelPickerUnavailableReason,
+            onSelected: () {},
+          ),
+        for (final agent in agents)
+          KitMenuItem(
+            key: ValueKey('model-picker-agent-${agent.id}'),
+            label: _agentTitle(agent.id),
+            supporting: _agentSupporting(agent),
+            checked: agent.id == selected,
+            enabled: locked == null,
+            disabledReason: locked,
+            onSelected: () {
+              if (!mounted) return;
+              setState(() {
+                _draftAgent = agent.id;
+                _saveError = null;
+              });
+            },
+          ),
       ],
     );
   }
@@ -1225,23 +1239,32 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         : _strings.e7ModelUiUseModelMode(drafted.name, _agentTitle(agent));
   }
 
-  /// The apply action for a view that pins its own (a screen); inside the
-  /// sheet the sheet pins it.
+  /// Why the apply action cannot run yet; null when it can.
+  String? _applyBlockedBy(CatalogModel? drafted) =>
+      drafted == null ? _strings.modelPickerChooseFirst : _lockedReason;
+
+  /// The footer and apply action for a view that pins its own (hosted on
+  /// its own); inside the sheet the sheet pins them.
   Widget _applyBlock(BuildContext context, CatalogModel? drafted) {
-    final reason = drafted == null
-        ? _strings.modelPickerChooseFirst
-        : _lockedReason;
-    return KitActionBlock(
-      key: const Key('model-picker-apply-bar'),
-      primary: KitAction(
-        key: drafted == null
-            ? const Key('model-picker-apply')
-            : ValueKey('use-model-${drafted.providerID}-${drafted.id}'),
-        label: _applyText(drafted),
-        working: _applying,
-        onPressed: reason == null || _applying ? _applyDraft : null,
-        disabledReason: _applying ? null : reason,
-      ),
+    final reason = _applyBlockedBy(drafted);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _footer(context),
+        KitActionBlock(
+          key: const Key('model-picker-apply-bar'),
+          primary: KitAction(
+            key: drafted == null
+                ? const Key('model-picker-apply')
+                : ValueKey('use-model-${drafted.providerID}-${drafted.id}'),
+            label: _applyText(drafted),
+            working: _applying,
+            onPressed: reason == null || _applying ? _applyDraft : null,
+            disabledReason: _applying ? null : reason,
+          ),
+        ),
+      ],
     );
   }
 

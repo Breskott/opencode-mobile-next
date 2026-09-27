@@ -752,7 +752,6 @@
   "_send (2425) -> no surface; submits through the action transport, or queues offline with _conn.queuePrompt when _conn.capabilities.offlinePromptQueue; a typed '/command' goes to _submitTypedCommand (2738) -> actionApi.slashCommand or _runMobileCommand.",
   "_openVoice (2801) -> showVoiceModelSetupSheet line 2836 when !voice.models.isReady, then showVoiceComposerResultSheet line 2844 (lib/voice/voice_ui.dart). Gates: !_conn.isIsolated, platformCapabilities.supportsVoice. Callers: composer onVoice 7285, chat/voice_conversation.dart:107 and 495.",
   "_addWebSources (2878) -> Navigator.push(WebSourcesScreen) line 2888; gates _conn.capabilities.webSearch, !_voiceConversation. Caller: composer onWebSources 7287.",
-  "_addContextCapsule (2920) -> Navigator.push(ContextCapsuleScreen) line 2967; its pickImage callback uses _chooseAttachment. Caller: composer onContextCapsule 7288.",
   "_pickAttachment (3013) / _chooseAttachment (3261) -> OS file picker FilePicker.pickFile(dialogTitle 'Attach to prompt') line 3282, not an app page; limits 5 files, 10 MB each, 20 MB total; gate _conn.capabilities.promptAttachments.",
   "_recoverLegacyDraft (3034) -> Navigator.push(LegacyDraftsScreen) line 3040. Caller: composer callback 7220.",
   "_reviewPendingPhoto (3197) -> showFilePreviewSheet line 3208 (lib/ui/widgets/file_preview.dart). Caller: TextButton near chat_screen.dart:7020 (b2).",

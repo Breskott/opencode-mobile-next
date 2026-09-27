@@ -1,8 +1,9 @@
 // Behaviour of shared-chat-1 (wave 2a): the model sheet, the two handoff
 // sheets and the transcript display toggles, rebuilt from kit parts. The
-// agent, thinking level and model details live in the sheet (no dialogs on
-// the sheet), the unloaded-providers explanation carries its own Reload
-// action, and the handoff sheet offers Reload where reloading helps.
+// agent and thinking level sit in the sheet's pinned footer and model
+// details under the chosen row (no dialogs on the sheet, P3.3), the
+// unloaded providers are a Reload row, and the handoff sheet offers Reload
+// where reloading helps.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,20 +126,19 @@ void main() {
   });
 
   group('model sheet', () {
-    testWidgets('opens as one kit sheet with the choice on top', (
+    testWidgets('opens as one kit sheet with the choice in its footer', (
       tester,
     ) async {
       final controller = await _controller();
       await _open(tester, controller);
       expect(find.text('Choose a model'), findsOneWidget);
-      expect(find.text('Your choice'), findsOneWidget);
-      expect(find.text('Thinking'), findsOneWidget);
-      expect(find.text('Agent'), findsOneWidget);
+      expect(find.text('Thinking: Default'), findsOneWidget);
+      expect(find.text('Agent: Build'), findsOneWidget);
       // No dialog is ever stacked on the sheet.
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.byType(Dialog), findsNothing);
       // The primary names what it applies; the chosen model is shown once,
-      // as the checked row, not again under "Your choice".
+      // as the checked row.
       expect(find.text('Use Claude Opus 5.5 · Build'), findsOneWidget);
       expect(find.text('Claude Opus 5.5'), findsOneWidget);
       expect(find.byKey(const Key('model-picker-options')), findsNothing);
@@ -162,7 +162,7 @@ void main() {
       await tester.tap(find.byKey(const Key('model-picker-apply')));
       await tester.pumpAndSettle();
       expect(controller.selectedModel?.wireName, 'openai/gpt-6-sol');
-      expect(find.text('Your choice'), findsNothing);
+      expect(find.text('Choose a model'), findsNothing);
     });
 
     testWidgets('the agent is chosen in the sheet, in words', (tester) async {
@@ -198,9 +198,7 @@ void main() {
       expect(controller.selectedAgent, 'plan');
     });
 
-    testWidgets('focusAgent opens with the agent choice unfolded', (
-      tester,
-    ) async {
+    testWidgets('focusAgent opens with the agent menu open', (tester) async {
       final controller = await _controller();
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
@@ -244,7 +242,7 @@ void main() {
       );
       expect(find.text('1,000,000 tokens of context'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('model-picker-thinking-header')));
+      await tester.tap(find.byKey(const Key('model-picker-thinking')));
       await tester.pumpAndSettle();
       final max = find.byKey(
         const ValueKey('model-variant-claude-opus-5-5-max'),
@@ -258,25 +256,29 @@ void main() {
       expect(controller.selectedVariant, 'max');
     });
 
-    testWidgets('a model without levels says so instead of a dead control', (
+    testWidgets('a model without levels offers no thinking control', (
       tester,
     ) async {
       final controller = await _controller()
         ..selectedModel = ModelRef(providerID: 'openai', modelID: 'gpt-6-sol');
       await _open(tester, controller);
-      expect(find.text('This model has one thinking level'), findsOneWidget);
+      expect(find.byKey(const Key('model-picker-thinking')), findsNothing);
+      expect(find.text('Agent: Build'), findsOneWidget);
     });
 
-    testWidgets('unloaded providers explain in place and offer Reload', (
+    testWidgets('unloaded providers are a Reload row in the sheet', (
       tester,
     ) async {
       final controller = await _controller(unloaded: {'ollama'});
       await _open(tester, controller);
       expect(
-        find.byKey(const ValueKey('picker-unloaded-providers')),
+        find.byKey(const ValueKey('picker-reload-providers')),
         findsOneWidget,
       );
-      expect(find.textContaining('but has not loaded it'), findsOneWidget);
+      expect(
+        find.textContaining('has not loaded it yet', findRichText: true),
+        findsOneWidget,
+      );
       expect(find.text('Reload providers'), findsOneWidget);
       expect(find.byType(AlertDialog), findsNothing);
     });

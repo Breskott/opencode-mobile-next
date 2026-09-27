@@ -335,11 +335,16 @@ class V2TranscriptRow extends StatelessWidget {
             key: ValueKey('compaction-failed-$messageId'),
             icon: AppIconography.collapse,
             header: strings.chatUiCompactionFailed,
-            // What it means for the reader, then the server's own reason.
+            // What it means for the reader, then the reason when the app
+            // knows it (the server's own text is never the copy).
             text: [
               strings.chatUiCompactionFailedHint,
-              if (part.text.trim().isNotEmpty)
-                agentErrorWords(part.text, strings).headline,
+              if (agentErrorWords(part.text, strings) case (
+                :final headline,
+                humanized: true,
+                hint: _,
+              ))
+                headline,
             ].join(' '),
             error: true,
             actionLabel: strings.chatUiCompactAgain,
@@ -1481,11 +1486,12 @@ class _AssistantErrorRow extends StatelessWidget {
     final strings = _chatL10n(context);
     final raw = info.errorText ?? '';
     final words = agentErrorWords(raw, strings);
-    final text = words.headline;
     final kind = MessageErrorKind.refineFromText(
       info.errorKind ?? MessageErrorKind.unknown,
       raw,
     );
+    // Words, never the server's text: that is under Error details.
+    final text = _plainErrorHeadline(words, kind, strings);
     final (String id, KitAction? fix) = switch (kind) {
       MessageErrorKind.modelNotFound => (
         'model-not-found',

@@ -212,9 +212,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get modelThinkingMode => 'وضع التفكير';
 
   @override
-  String get modelDefaultMode => 'الوضع الافتراضي';
-
-  @override
   String get modelSessionScopeNote =>
       'يسري على الرسائل التالية في هذه المحادثة.';
 
@@ -3743,73 +3740,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get returnBriefDismiss => 'تجاهل العناصر المعروضة';
 
   @override
-  String get capsuleTitle => 'حزمة السياق';
-
-  @override
-  String get capsuleEntry =>
-      'اجمع الملاحظات والأخطاء ولقطات الشاشة لهذه المحادثة';
-
-  @override
-  String get capsuleDescription =>
-      'أنشئ حزمة لهذه المحادثة. تضيفها إلى مسودتك الحالية دون إرسال أي شيء. تُحفظ التعديلات غير المطبّقة ما دامت هذه الشاشة مفتوحة فقط.';
-
-  @override
-  String get capsuleNote => 'ملاحظة';
-
-  @override
   String get capsuleError => 'خطأ';
 
   @override
-  String get capsuleCode => 'شيفرة';
-
-  @override
-  String get capsuleLabel => 'تسمية';
-
-  @override
-  String get capsuleExcerpt => 'مقتطف';
-
-  @override
-  String get capsulePaste => 'لصق';
-
-  @override
   String get capsuleRemove => 'إزالة';
-
-  @override
-  String get capsuleAddImage => 'إضافة لقطة شاشة أو صورة';
-
-  @override
-  String get capsulePreview => 'اضغط للمعاينة';
-
-  @override
-  String get capsuleApply => 'إضافة إلى المسودة';
-
-  @override
-  String get capsuleApplied =>
-      'أُضيف السياق إلى مسودتك المحفوظة. راجعه قبل الإرسال.';
-
-  @override
-  String get capsuleScopeChanged =>
-      'تغيّرت المحادثة أو الخادم أو المسودة. أغلق حزمة السياق هذه وافتحها مجددًا من المحادثة المقصودة.';
-
-  @override
-  String get capsuleTextOnly =>
-      'يقبل هذا الخادم النص فقط. لا يزال بإمكانك جمع الملاحظات والأخطاء والشيفرة.';
-
-  @override
-  String get capsuleImagesOnly =>
-      'اختر صورة PNG أو JPEG أو GIF أو WebP. الصق النص في مقتطف بدلًا من ذلك.';
-
-  @override
-  String get capsuleImageFailed =>
-      'تعذّرت إضافة تلك الصورة. استخدم حتى 5 مرفقات، بحد أقصى 10 MB لكل منها و20 MB إجمالًا، بما فيها مسودتك الحالية.';
-
-  @override
-  String get capsulePasteFailed =>
-      'نص الحافظة غير متاح. يمكنك الكتابة أو اللصق في المقتطف.';
-
-  @override
-  String get capsuleTextLimit =>
-      'اجعل كل مقتطف أقل من 16,000 حرف، والحزمة أقل من 32,000 حرف.';
 
   @override
   String get markdownCopyCode => 'نسخ الشيفرة';
@@ -4746,31 +4680,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reviewTitle => 'مراجعة';
 
   @override
-  String get modelChoiceProvidersTitle => 'مزوّدو خدمة لم يُحمّلوا';
-
-  @override
-  String modelChoiceProvidersSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'لم يُحمّل $count مزوّد خدمة مسجّل الدخول. عرض التفاصيل',
-      many: 'لم يُحمّل $count مزوّد خدمة مسجّل الدخول. عرض التفاصيل',
-      few: 'لم يُحمّل $count مزوّدي خدمة مسجّلي الدخول. عرض التفاصيل',
-      two: 'لم يُحمّل مزوّدا خدمة مسجّلان الدخول. عرض التفاصيل',
-      one: 'لم يُحمّل مزوّد خدمة واحد مسجّل الدخول. عرض التفاصيل',
-      zero: 'لا يوجد مزوّد خدمة مسجّل الدخول بانتظار التحميل. عرض التفاصيل',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get modelChoiceReloadProviders => 'إعادة تحميل مزوّدي الخدمة';
-
-  @override
-  String get modelChoiceStagedAgentHint => 'يُطبّق مع اختيارك للنموذج';
-
-  @override
-  String get modelChoiceAgentTitle => 'اختيار وكيل';
 
   @override
   String get modelChoiceDone => 'تم';
@@ -11721,9 +11631,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ModelUiAgent => 'الوكيل';
-
-  @override
-  String get e7ModelUiNoAgents => 'لا توجد وكلاء متاحة';
 
   @override
   String get e7ModelUiServerDefault => 'إعداد الخادم الافتراضي';
@@ -22456,41 +22363,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.';
 
   @override
-  String get modelPickerYourChoice => 'Your choice';
-
-  @override
-  String get modelPickerNoneChosen => 'No model chosen';
-
-  @override
-  String get modelPickerNoneChosenHint => 'Pick one from the list below.';
-
-  @override
   String get modelPickerChooseFirst => 'Choose a model first.';
 
   @override
   String get modelPickerThinking => 'Thinking';
 
   @override
-  String get modelPickerThinkingExplain =>
-      'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.';
-
-  @override
-  String get modelPickerThinkingOneLevel => 'This model has one thinking level';
-
-  @override
-  String get modelPickerAgentExplain =>
-      'The agent decides what the model may do, such as edit files or only read and plan.';
-
-  @override
   String get modelPickerAgentBuild => 'Edits files and runs commands';
 
   @override
   String get modelPickerAgentPlan => 'Reads and plans; does not change files';
-
-  @override
-  String modelPickerDetailsContext(String count) {
-    return '$count tokens of context';
-  }
 
   @override
   String modelPickerDetailsOutput(String count) {
@@ -22511,9 +22393,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get modelPickerCanReadAttachments =>
       'Reads images and files you attach';
-
-  @override
-  String get modelPickerModelId => 'Model id';
 
   @override
   String get modelPickerCopyId => 'Copy model id';
@@ -24892,9 +24771,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get composerToolsMore => 'More tools';
 
   @override
-  String get composerToolNotesTitle => 'Notes for this conversation';
-
-  @override
   String get composerReturnedToDraft => 'Returned to your draft';
 
   @override
@@ -26233,4 +26109,36 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamPhoneReadyFirstTask => 'Give the team a first task';
+
+  @override
+  String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
+
+  @override
+  String get chatErrorContextOverflow =>
+      'This conversation is too long for the model.';
+
+  @override
+  String get chatErrorProviderAuth =>
+      'The model provider needs you to sign in again.';
+
+  @override
+  String get chatErrorOutputLength =>
+      'The reply reached the model\'s length limit.';
+
+  @override
+  String get chatErrorContentFilter =>
+      'The provider\'s safety filter stopped this reply.';
+
+  @override
+  String get chatErrorUnknown => 'The agent stopped because of an error.';
+
+  @override
+  String modelPickerThinkingChip(String level) {
+    return 'Thinking: $level';
+  }
+
+  @override
+  String modelPickerAgentChip(String agent) {
+    return 'Agent: $agent';
+  }
 }

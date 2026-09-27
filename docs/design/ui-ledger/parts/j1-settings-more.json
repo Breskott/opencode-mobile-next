@@ -2677,12 +2677,12 @@
       "title": "Choose a model",
       "kind": "sheet",
       "file": "lib/ui/widgets/pickers.dart",
-      "widget": "_ModelAgentSheet",
+      "widget": "ModelCatalogView",
       "presentedBy": [
         "showModelPicker"
       ],
       "line": 71,
-      "purpose": "The single model / thinking mode / agent selector (ModelCatalogView in a draggable sheet). On open it calls controller.refreshCatalog() and, for a session on a server that owns selection, controller.ensureSession(sessionID). pickers.dart defines only this picker (showModelPicker); the same ModelCatalogView is embedded full-screen by CatalogScreen (showHeader: false).",
+      "purpose": "The one model sheet (slice-P3.3): every door opens it through showModelPicker (composer model chip, '/model', a chat error's Choose model, Settings › Model and search; the catalog screen is gone). Settings opens it for new conversations (classic scope, promoted to newSessions on a server that owns selection); the chat opens it for this conversation (session scope, subtitle 'Applies to this conversation's next turns.'). Body: notices, a 'Reload providers' row when signed-in providers are not loaded, search with its filter menu, All/Favorites/Recent, the models (the chosen one checked, its details under it). Pinned footer: 'Thinking: <level>' and 'Agent: <agent>' chips that open KitMenus; the apply action under them. No dialog opens over the sheet. On open it calls controller.refreshCatalog().",
       "reachedFrom": [
         {
           "page": "?",
@@ -2729,21 +2729,6 @@
       ],
       "gates": [],
       "elements": [
-        {
-          "id": "model-picker-sheet-close",
-          "type": "icon-button",
-          "label": "Close model selector",
-          "key": null,
-          "line": 340,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "onClose -> Navigator.maybePop.",
-          "gates": [
-            "widget.showHeader && widget.onClose != null (absent when embedded in CatalogScreen)"
-          ],
-          "destructive": false
-        },
         {
           "id": "model-picker-sheet-search",
           "type": "text-field",
@@ -2803,30 +2788,15 @@
           "destructive": false
         },
         {
-          "id": "model-picker-sheet-unloaded-providers-info",
-          "type": "gesture",
-          "label": "{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}",
-          "key": null,
-          "line": 522,
-          "action": "open-dialog",
-          "target": "model-picker-sheet-unloaded-providers-dialog",
-          "targetWidget": "_catalog",
-          "effect": "InkWell: showDialog listing signed-in providers the server has not loaded.",
-          "gates": [
-            "controller.unloadedProviderIDs.isNotEmpty (row keyed picker-unloaded-providers)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "model-picker-sheet-reload-providers",
-          "type": "icon-button",
+          "type": "list-tile",
           "label": "Reload providers",
           "key": "picker-reload-providers",
           "line": 566,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
-          "effect": "controller.reloadProviderRuntime(). Disabled while controller.catalogLoading.",
+          "effect": "A row (not a notice or dialog): says which signed-in providers the server has not loaded, in words; tap -> controller.reloadProviderRuntime(). Disabled with 'Loading model catalog' while controller.catalogLoading.",
           "gates": [
             "controller.unloadedProviderIDs.isNotEmpty"
           ],
@@ -2936,34 +2906,49 @@
           "destructive": false
         },
         {
-          "id": "model-picker-sheet-options",
-          "type": "button",
-          "label": "Options",
-          "key": "model-picker-options",
-          "line": 1001,
-          "action": "open-dialog",
-          "target": "model-picker-sheet-options-dialog",
-          "targetWidget": "_showModelOptions",
-          "effect": "_showModelOptions(context, catalog, model): model details, thinking mode chips and agent dropdown.",
-          "gates": [
-            "a drafted, enabled model exists (_draftedModel(catalog) != null)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "model-picker-sheet-apply",
           "type": "button",
-          "label": "Use model and mode | Use for this session | Use for new sessions",
-          "key": "use-model-<providerID>-<modelID>",
+          "label": "Use <model> · <agent> | Use for this conversation | Use for new conversations",
+          "key": "model-picker-apply",
           "line": 1042,
           "action": "toggle-setting",
           "target": null,
           "targetWidget": null,
           "effect": "_applyDraft(): session scope -> controller.selectModelForSession(sessionID, model, variant:) then controller.selectAgentForSession(sessionID, agent); otherwise controller.selectModel(model, variant:) then controller.selectAgent(agent) (profile defaults). Verifies the selection stuck, then onApplied (Navigator.maybePop). Errors: \"Could not confirm the model choice. Check your selection and try again.\" / \"Model saved. Agent choice was not confirmed. Try again.\" / \"This choice is no longer available. Refresh models and try again.\".",
           "gates": [
-            "bar keyed model-picker-apply-bar shown only when a drafted enabled model exists",
-            "disabled when !_sameScope || _applying || controller.sessionSelectionSaving(sessionID)",
+            "pinned in the sheet's action block, under the footer",
+            "disabled with 'Choose a model first.' while no enabled model is drafted; disabled with the locked reason while saving or after the scope changed",
             "label by applyScope: classic / session / newSessions (classic is promoted to newSessions when controller.serverOwnsSessionSelection)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "model-picker-sheet-thinking",
+          "type": "chip",
+          "label": "Thinking: <level>",
+          "key": "model-picker-thinking",
+          "line": null,
+          "action": "other",
+          "target": null,
+          "targetWidget": "showKitMenu",
+          "effect": "Pinned footer chip; opens a KitMenu of Default and the drafted model's levels (checked = the drafted level); choosing one stages it until the apply action.",
+          "gates": [
+            "a model is drafted and has at least one enabled variant"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "model-picker-sheet-agent",
+          "type": "chip",
+          "label": "Agent: <agent>",
+          "key": "model-picker-agent",
+          "line": null,
+          "action": "other",
+          "target": null,
+          "targetWidget": "showKitMenu",
+          "effect": "Pinned footer chip; opens a KitMenu of the primary, unhidden agents, each with a line saying what it does (Build: edits files and runs commands; Plan: reads and plans). Staged until the apply action. showModelPicker(focusAgent: true) opens this menu once the catalog has agents.",
+          "gates": [
+            "the catalog has a primary agent that is not hidden"
           ],
           "destructive": false
         }
@@ -2974,148 +2959,6 @@
           "file": "lib/ui/screens/library/catalog_screen.dart",
           "line": 108,
           "note": "ModelCatalogView(controller, showHeader: false): same elements except the close button; apply does not pop (onApplied null -> _syncDraft)."
-        }
-      ]
-    },
-    {
-      "id": "model-picker-sheet-unloaded-providers-dialog",
-      "title": "Providers not loaded",
-      "kind": "dialog",
-      "file": "lib/ui/widgets/pickers.dart",
-      "widget": "_catalog",
-      "presentedBy": [],
-      "line": 522,
-      "purpose": "Explains which signed-in providers the server has not loaded.",
-      "reachedFrom": [
-        {
-          "page": "model-picker-sheet",
-          "element": "model-picker-sheet-unloaded-providers-info"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "model-picker-sheet-unloaded-providers-dialog-done",
-          "type": "button",
-          "label": "Done",
-          "key": null,
-          "line": 540,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "model-picker-sheet-agent-dialog",
-      "title": "Choose an agent",
-      "kind": "dialog",
-      "file": "lib/ui/widgets/pickers.dart",
-      "widget": "_showAgentOptions",
-      "presentedBy": [],
-      "line": 1076,
-      "purpose": "Agent-only dialog, opened automatically after the first frame when showModelPicker(focusAgent: true) and the catalog is loaded.",
-      "reachedFrom": [
-        {
-          "page": "system",
-          "element": null,
-          "trigger": "automatic post-frame in _scheduleAgentEntry when widget.focusAgent (coding-settings-default-agent)"
-        }
-      ],
-      "gates": [
-        "widget.focusAgent && controller.catalog != null && _sameScope"
-      ],
-      "elements": [
-        {
-          "id": "model-picker-sheet-agent-dialog-agent",
-          "type": "dropdown",
-          "label": "Agent",
-          "key": "model-picker-agent",
-          "line": 738,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_agentPicker: stages _draftAgent (visible, non-subagent agents); saved only by the sheet apply button via controller.selectAgent / selectAgentForSession.",
-          "gates": [
-            "disabled when !_sameScope || no visible agents || _applying || controller.sessionSelectionSaving(sessionID)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "model-picker-sheet-agent-dialog-done",
-          "type": "button",
-          "label": "Done",
-          "key": null,
-          "line": 1089,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "model-picker-sheet-options-dialog",
-      "title": "<model name>",
-      "kind": "dialog",
-      "file": "lib/ui/widgets/pickers.dart",
-      "widget": "_showModelOptions",
-      "presentedBy": [],
-      "line": 1109,
-      "purpose": "Model details plus staged thinking mode (variant) and agent.",
-      "reachedFrom": [
-        {
-          "page": "model-picker-sheet",
-          "element": "model-picker-sheet-options"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "model-picker-sheet-options-dialog-variant-chips",
-          "type": "chip",
-          "label": "Default | <variant id>",
-          "key": "model-variant-<model.id>-<default|variant.id>",
-          "line": 1197,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_variantSelector: stages _draftVariant (\"\" = default); saved by the sheet apply button.",
-          "gates": [
-            "model has at least one non-disabled variant"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "model-picker-sheet-options-dialog-agent",
-          "type": "dropdown",
-          "label": "Agent",
-          "key": "model-picker-agent",
-          "line": 738,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_agentPicker: stages _draftAgent.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "model-picker-sheet-options-dialog-done",
-          "type": "button",
-          "label": "Done",
-          "key": null,
-          "line": 1170,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop.",
-          "gates": [],
-          "destructive": false
         }
       ]
     },

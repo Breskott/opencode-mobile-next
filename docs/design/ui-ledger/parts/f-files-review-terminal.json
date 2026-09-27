@@ -2215,13 +2215,6 @@
         {
           "page": "?",
           "element": null,
-          "widget": "_ContextCapsuleScreenState",
-          "file": "lib/ui/screens/context_capsule_screen.dart",
-          "line": 283
-        },
-        {
-          "page": "?",
-          "element": null,
           "widget": "_AttachmentPart.openPreview",
           "file": "lib/ui/screens/chat/message_view.dart",
           "line": 1968
