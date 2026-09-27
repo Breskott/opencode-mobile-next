@@ -32,7 +32,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/screen-team-1`, base `da6a2a2f` (feat/phone-setup-v2), code head `346ca55c`.
+- Branch `revamp/screen-team-1`, base `9007257d` (feat/phone-setup-v2 when the branch was cut), code head `346ca55c`.
 - No APK (unit agents do not build).
 
 ## 3. Devices
