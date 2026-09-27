@@ -932,7 +932,9 @@ void main() {
       await tester.pumpAndSettle();
       final text = gateway.calls.single.arg! as String;
       expect(text, contains('Project: ocproof'));
-      expect(text, contains('Supervision: Balanced'));
+      // The server's level from What runs by itself: High until chosen
+      // (P6.1, personas-verticals.md §3).
+      expect(text, contains('Supervision: High'));
       await drain(tester);
     });
 

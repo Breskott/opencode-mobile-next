@@ -409,9 +409,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // Durable grants are a row of the server's group: they are about how
-    // the agent works there, not about privacy.
-    final entry = find.byKey(const ValueKey('saved-permissions-entry'));
+    // Durable grants sit inside What runs by itself (P6.1), a row of the
+    // server's group: they are about how the agent works there.
+    final entry = find.byKey(const ValueKey('settings-automation'));
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('settings-group-server')),
@@ -421,8 +421,11 @@ void main() {
     );
     await tester.ensureVisible(entry);
     await tester.pumpAndSettle();
-    expect(find.text('Always allowed actions'), findsOneWidget);
     await tester.tap(entry);
+    await tester.pumpAndSettle();
+    final inside = find.byKey(const ValueKey('automation-saved-permissions'));
+    expect(find.text('Always allowed actions'), findsOneWidget);
+    await tester.tap(inside);
     await tester.pumpAndSettle();
 
     expect(find.byType(SavedPermissionsScreen), findsOneWidget);

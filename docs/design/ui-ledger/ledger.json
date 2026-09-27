@@ -1,5 +1,5 @@
 {
- "generatedFrom": "e1ccfc4228a5a1db4e81a83077647da54ad47b3b",
+ "generatedFrom": "24b76eb82fda3371e97ce0158db21539bc601421",
  "pages": [
   {
    "id": "system",
@@ -7223,6 +7223,14 @@
      "element": "running-work-sheet-agent"
     },
     {
+     "page": "new-conversation-sheet",
+     "element": "new-conversation-solo"
+    },
+    {
+     "page": "new-conversation-sheet",
+     "element": "new-conversation-cloud"
+    },
+    {
      "page": "profile-monitor",
      "element": "profile-monitor-busy-row"
     },
@@ -12925,8 +12933,8 @@
    "purpose": "Create a fresh worktree for the project, wait for it to be prepared and open a new session in it (non-dismissible sheet with phase-dependent actions).",
    "reachedFrom": [
     {
-     "page": "workspace",
-     "element": "workspace-isolated-task"
+     "page": "new-conversation-sheet",
+     "element": "new-conversation-copy"
     }
    ],
    "gates": [
@@ -13565,6 +13573,106 @@
       "enabled only when the typed text == workspace.name"
      ],
      "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "new-conversation-sheet",
+   "title": "New conversation",
+   "kind": "sheet",
+   "area": "workspace",
+   "file": "lib/ui/screens/new_conversation_sheet.dart",
+   "widget": "NewConversationChoices",
+   "presentedBy": [
+    "showNewConversationSheet"
+   ],
+   "line": null,
+   "purpose": "Ask how a new conversation starts (Solo, Team, In a separate copy, On a cloud machine) where the server supports more than one way; the last way is marked and remembered per server (slice-P4.5).",
+   "reachedFrom": [
+    {
+     "page": "workspace",
+     "element": "workspace-new"
+    }
+   ],
+   "gates": [
+    "more than one way supported (NewConversationOptions.onlySolo is false)"
+   ],
+   "elements": [
+    {
+     "id": "new-conversation-solo",
+     "type": "button",
+     "label": "Solo",
+     "key": "new-conversation-solo",
+     "file": "lib/ui/screens/new_conversation_sheet.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "ChatScreen",
+     "effect": "controller.createSession() in the current project, then pushNamed('/chat/<id>').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "new-conversation-team",
+     "type": "button",
+     "label": "Team",
+     "key": "new-conversation-team",
+     "file": "lib/ui/screens/new_conversation_sheet.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversation.start",
+     "effect": "Team on: TeamConversation.start. Team off: openTeamIntro (the team's off state).",
+     "gates": [
+      "teamPossibleOn(profile) or a team controller exists"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "new-conversation-copy",
+     "type": "button",
+     "label": "In a separate copy of <project>",
+     "key": "new-conversation-copy",
+     "file": "lib/ui/screens/new_conversation_sheet.dart",
+     "line": null,
+     "action": "open-sheet",
+     "target": "isolated-task-sheet",
+     "targetWidget": "showIsolatedTaskSheet",
+     "effect": "showIsolatedTaskSheet(project); the returned session opens as a conversation.",
+     "gates": [
+      "capabilities.projectManagement && capabilities.worktreeCreate, a project selected, no workspace selected"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "new-conversation-cloud",
+     "type": "button",
+     "label": "On <cloud machine>",
+     "key": "new-conversation-cloud-<id>",
+     "file": "lib/ui/screens/new_conversation_sheet.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "ChatScreen",
+     "effect": "selectLocation(workspace) then createSession() there and open it.",
+     "gates": [
+      "the project's managed workspaces other than the one in use"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "new-conversation-sheet-close",
+     "type": "icon-button",
+     "label": "Close",
+     "key": null,
+     "file": "lib/ui/screens/new_conversation_sheet.dart",
+     "line": null,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Closes without starting anything.",
+     "gates": [],
+     "destructive": false
     }
    ]
   },
@@ -14808,6 +14916,22 @@
    "gates": [],
    "elements": [
     {
+     "id": "workspace-new",
+     "type": "button",
+     "label": "New conversation",
+     "key": "workspace-new",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": null,
+     "action": "open-sheet",
+     "target": "new-conversation-sheet",
+     "targetWidget": "showNewConversationSheet",
+     "effect": "_newConversation(): with only Solo possible it creates the session and opens it; otherwise the chooser asks how to start, remembers the answer per server and starts it (slice-P4.5).",
+     "gates": [
+      "disabled while _creating or a project folder must be chosen"
+     ],
+     "destructive": false
+    },
+    {
      "id": "workspace-nudge-pin-got-it",
      "type": "button",
      "label": "Got it",
@@ -15446,23 +15570,6 @@
      "destructive": false
     },
     {
-     "id": "workspace-isolated-task",
-     "type": "button",
-     "label": "Isolated task (tooltip: Start a task in a fresh worktree)",
-     "key": "workspace-isolated-task",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2156,
-     "action": "open-sheet",
-     "target": "isolated-task-sheet",
-     "targetWidget": "showIsolatedTaskSheet",
-     "effect": "_startIsolatedTask(): showIsolatedTaskSheet(context, controller, project); a returned session is opened with pushNamed('/chat/<id>', newlyCreated). Three layout variants (lines 2156, 2182, 2190) share the key.",
-     "gates": [
-      "_isolatedTaskProject != null: capabilities.projectManagement && capabilities.worktreeCreate && _selectedWorkspaceID == null && selected project has a directory",
-      "disabled while _creating"
-     ],
-     "destructive": false
-    },
-    {
      "id": "workspace-new-session",
      "type": "fab",
      "label": "New session",
@@ -15475,22 +15582,6 @@
      "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB. In Team mode (workspace-new-mode on), onTap is _createTeamTask instead: TeamConversation.start (team-conversation) when the team is on, else openTeamIntro (team-intro).",
      "gates": [
       "disabled while _creating"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-new-mode",
-     "type": "toggle",
-     "label": "Solo | Team",
-     "key": "workspace-new-mode",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2673,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "New conversation's choice, remembered per server (oc.newConversationMode.<profileId>). Team turns the primary into 'New team task': TeamConversation.start with the team on, else the AI Team intro.",
-     "gates": [
-      "the server can run a team (teamPossibleOn: a Termux phone asks its runtime)"
      ],
      "destructive": false
     },
@@ -26286,6 +26377,10 @@
     {
      "page": "system",
      "element": "system-entry-team-link-run"
+    },
+    {
+     "page": "new-conversation-sheet",
+     "element": "new-conversation-team"
     }
    ],
    "gates": [],
@@ -31700,6 +31795,76 @@
    ]
   },
   {
+   "id": "automation-settings",
+   "title": "What runs by itself",
+   "kind": "screen",
+   "area": "settings",
+   "file": "lib/ui/screens/automation_settings_screen.dart",
+   "widget": "AutomationSettingsScreen",
+   "presentedBy": [],
+   "line": 70,
+   "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
+   "reachedFrom": [
+    {
+     "page": "settings",
+     "element": "settings-automation"
+    }
+   ],
+   "gates": [
+    "one server (controller.profile); each section present only where the server supports it"
+   ],
+   "elements": [
+    {
+     "id": "automation-saved-permissions",
+     "type": "list-tile",
+     "label": "Always allowed actions",
+     "key": "automation-saved-permissions",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 210,
+     "action": "navigate",
+     "target": "saved-permissions",
+     "targetWidget": "SavedPermissionsScreen",
+     "effect": "Pushes SavedPermissionsScreen(controller).",
+     "gates": [
+      "capabilities.savedPermissionList"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "automation-supervision",
+     "type": "list-tile",
+     "label": "High / Balanced / Autonomous",
+     "key": "automation-supervision-<level>",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "AutomationPolicyController.setSupervision(level); a refused write shows automation-save-failed.",
+     "gates": [
+      "AI Team set up for this server"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "automation-watch",
+     "type": "list-tile",
+     "label": "Watch this server in the background",
+     "key": "automation-watch",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 290,
+     "action": "navigate",
+     "target": "notifications-settings",
+     "targetWidget": "NotificationsSettingsScreen",
+     "effect": "Pushes NotificationsSettingsScreen(initialSection: 'servers'); the value says whether the monitor watches this server.",
+     "gates": [
+      "profile monitor supports and can read this server"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "keep-running",
    "title": "Keep running in the background",
    "kind": "screen",
@@ -34086,8 +34251,8 @@
    "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
    "reachedFrom": [
     {
-     "page": "settings",
-     "element": "settings-saved-permissions"
+     "page": "automation-settings",
+     "element": "automation-saved-permissions"
     }
    ],
    "gates": [],
@@ -34304,6 +34469,10 @@
     {
      "page": "provider-quota",
      "element": "provider-quota-monitor-notification-settings"
+    },
+    {
+     "page": "automation-settings",
+     "element": "automation-watch"
     }
    ],
    "gates": [],
@@ -35439,18 +35608,18 @@
      "widgetFile": "lib/ui/screens/settings/default_shell_row.dart"
     },
     {
-     "id": "settings-saved-permissions",
+     "id": "settings-automation",
      "type": "list-tile",
-     "label": "Always allowed actions",
-     "key": "saved-permissions-entry",
+     "label": "What runs by itself",
+     "key": "settings-automation",
      "file": "lib/ui/screens/settings_screen.dart",
      "line": 326,
      "action": "navigate",
-     "target": "saved-permissions",
-     "targetWidget": "SavedPermissionsScreen",
-     "effect": "Pushes SavedPermissionsScreen(controller) via _open.",
+     "target": "automation-settings",
+     "targetWidget": "AutomationSettingsScreen",
+     "effect": "Pushes AutomationSettingsScreen(controller) via the search index entry; the value names the AI Team's level when there is a team.",
      "gates": [
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
+      "absent when the server has no team, no saved-permission list and cannot be watched (AutomationSettingsSections.any)"
      ],
      "destructive": false
     },
@@ -39653,11 +39822,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-isolated-task",
-    "to": "isolated-task-sheet"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-inventory-footer",
     "to": "embedded-session-inventory-footer"
    },
@@ -39670,6 +39834,11 @@
     "from": "workspace",
     "element": "workspace-team-door",
     "to": "team-home"
+   },
+   {
+    "from": "workspace",
+    "element": "workspace-new",
+    "to": "new-conversation-sheet"
    },
    {
     "from": "workspace-folder-chooser",
@@ -39870,6 +40039,26 @@
     "from": "shell-output",
     "element": "shell-output-stop",
     "to": "shell-output-stop-dialog"
+   },
+   {
+    "from": "new-conversation-sheet",
+    "element": "new-conversation-solo",
+    "to": "chat"
+   },
+   {
+    "from": "new-conversation-sheet",
+    "element": "new-conversation-team",
+    "to": "team-conversation"
+   },
+   {
+    "from": "new-conversation-sheet",
+    "element": "new-conversation-copy",
+    "to": "isolated-task-sheet"
+   },
+   {
+    "from": "new-conversation-sheet",
+    "element": "new-conversation-cloud",
+    "to": "chat"
    },
    {
     "from": "project-hub",
@@ -41058,8 +41247,8 @@
    },
    {
     "from": "settings",
-    "element": "settings-saved-permissions",
-    "to": "saved-permissions"
+    "element": "settings-automation",
+    "to": "automation-settings"
    },
    {
     "from": "settings",
@@ -41285,6 +41474,16 @@
     "from": "legacy-drafts-review-sheet",
     "element": "legacy-drafts-review-sheet-delete",
     "to": "legacy-drafts-delete-sheet"
+   },
+   {
+    "from": "automation-settings",
+    "element": "automation-saved-permissions",
+    "to": "saved-permissions"
+   },
+   {
+    "from": "automation-settings",
+    "element": "automation-watch",
+    "to": "notifications-settings"
    },
    {
     "from": "saved-permissions",

@@ -23,6 +23,7 @@ import '../desktop/shortcuts.dart';
 import '../screens/about_screen.dart';
 import '../screens/agent_account_screen.dart';
 import '../screens/app_diagnostics_screen.dart';
+import '../screens/automation_settings_screen.dart';
 import '../screens/capabilities_screen.dart';
 import '../screens/demo_screen.dart';
 import '../screens/external_agents_screen.dart';
@@ -548,10 +549,32 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
         ),
       ),
     ),
+    // What runs by itself (P6.1): the team's level and the doors to the
+    // rules and the watching that let things happen without asking.
     SearchEntry(
-      id: 'saved-permissions-entry',
+      id: 'settings-automation',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.server,
+      icon: AppIconography.sync,
+      title: l10n.automationTitle,
+      keywords: l10n.automationSearchAliases,
+      pages: const ['automation-settings'],
+      gate: (scope) => AutomationSettingsSections.of(
+        scope.controller,
+        team: scope.hasTeam,
+      ).any,
+      open: _screen(
+        (scope) => AutomationSettingsScreen(
+          controller: scope.controller,
+          teamAvailable: scope.hasTeam,
+        ),
+      ),
+    ),
+    // Inside What runs by itself; still found by its own words.
+    SearchEntry(
+      id: 'saved-permissions-entry',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.automationTitle,
       icon: AppIconography.privacy,
       title: l10n.e7SettingsUi74,
       keywords: l10n.settingsHubSearchPermissionsAliases,

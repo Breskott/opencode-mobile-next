@@ -231,17 +231,17 @@
           "file": "lib/ui/screens/settings/default_shell_row.dart"
         },
         {
-          "id": "settings-saved-permissions",
+          "id": "settings-automation",
           "type": "list-tile",
-          "label": "Always allowed actions",
-          "key": "saved-permissions-entry",
+          "label": "What runs by itself",
+          "key": "settings-automation",
           "line": 326,
           "action": "navigate",
-          "target": "saved-permissions",
-          "targetWidget": "SavedPermissionsScreen",
-          "effect": "Pushes SavedPermissionsScreen(controller) via _open.",
+          "target": "automation-settings",
+          "targetWidget": "AutomationSettingsScreen",
+          "effect": "Pushes AutomationSettingsScreen(controller) via the search index entry; the value names the AI Team's level when there is a team.",
           "gates": [
-            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+            "absent when the server has no team, no saved-permission list and cannot be watched (AutomationSettingsSections.any)"
           ],
           "destructive": false
         },
@@ -2489,6 +2489,72 @@
       ]
     },
     {
+      "id": "automation-settings",
+      "title": "What runs by itself",
+      "kind": "screen",
+      "file": "lib/ui/screens/automation_settings_screen.dart",
+      "widget": "AutomationSettingsScreen",
+      "presentedBy": [],
+      "line": 70,
+      "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
+      "reachedFrom": [
+        {
+          "page": "settings",
+          "element": "settings-automation"
+        }
+      ],
+      "gates": [
+        "one server (controller.profile); each section present only where the server supports it"
+      ],
+      "elements": [
+        {
+          "id": "automation-supervision",
+          "type": "list-tile",
+          "label": "High / Balanced / Autonomous",
+          "key": "automation-supervision-<level>",
+          "line": 250,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "AutomationPolicyController.setSupervision(level); a refused write shows automation-save-failed.",
+          "gates": [
+            "AI Team set up for this server"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "automation-saved-permissions",
+          "type": "list-tile",
+          "label": "Always allowed actions",
+          "key": "automation-saved-permissions",
+          "line": 210,
+          "action": "navigate",
+          "target": "saved-permissions",
+          "targetWidget": "SavedPermissionsScreen",
+          "effect": "Pushes SavedPermissionsScreen(controller).",
+          "gates": [
+            "capabilities.savedPermissionList"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "automation-watch",
+          "type": "list-tile",
+          "label": "Watch this server in the background",
+          "key": "automation-watch",
+          "line": 290,
+          "action": "navigate",
+          "target": "notifications-settings",
+          "targetWidget": "NotificationsSettingsScreen",
+          "effect": "Pushes NotificationsSettingsScreen(initialSection: 'servers'); the value says whether the monitor watches this server.",
+          "gates": [
+            "profile monitor supports and can read this server"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
       "id": "saved-permissions",
       "title": "Always allowed actions",
       "kind": "screen",
@@ -2499,8 +2565,8 @@
       "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
       "reachedFrom": [
         {
-          "page": "settings",
-          "element": "settings-saved-permissions"
+          "page": "automation-settings",
+          "element": "automation-saved-permissions"
         }
       ],
       "gates": [],

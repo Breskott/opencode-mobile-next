@@ -584,7 +584,8 @@ void main() {
       expect(_key('settings-category-usage'), findsOneWidget);
       await tester.enterText(search, 'always allowed');
       await tester.pump(KitMotion.typingSettle);
-      expect(_key('saved-permissions-entry'), findsOneWidget);
+      // Inside What runs by itself (P6.1), still found by its own name.
+      expect(_key('search-result-saved-permissions-entry'), findsOneWidget);
     });
 
     testWidgets('a tab result asks the shell for that tab', (tester) async {
