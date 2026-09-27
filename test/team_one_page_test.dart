@@ -123,8 +123,11 @@ void main() {
       expect(_key('team-start-run-sheet'), findsNothing);
       expect(find.byType(TeamConversationScreen), findsOneWidget);
       expect(
-        tester.widget<Text>(_key('team-conversation-title')).data,
-        'Add a docstring to add()',
+        find.descendant(
+          of: _key('team-conversation-title'),
+          matching: find.text('Add a docstring to add()'),
+        ),
+        findsOneWidget,
       );
       // Back on the team's page, not a second page of the task.
       await tester.pageBack();

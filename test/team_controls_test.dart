@@ -1033,8 +1033,11 @@ void main() {
         expect(key('team-start-run-sheet'), findsNothing);
         expect(find.byType(TeamConversationScreen), findsOneWidget);
         expect(
-          tester.widget<Text>(key('team-conversation-title')).data,
-          'Add a docstring to add() in calc.py',
+          find.descendant(
+            of: key('team-conversation-title'),
+            matching: find.text('Add a docstring to add() in calc.py'),
+          ),
+          findsOneWidget,
         );
         final record = controller.latestMutation(
           kind: MutationKind.createWork,
