@@ -11,9 +11,11 @@ AppLocalizations _libraryCopy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The state word leads the supporting line (STATE-9). A state that needs
-/// the person reads in the needs-you tone, a failure in the danger tone,
-/// both at label weight; an ordinary state keeps the line's muted tone, so
-/// the list scans by colour.
+/// the person reads at label weight in the primary tone beside the row's
+/// KitNeedsYou mark, which alone draws the needs-you colour (LOOK-4,
+/// LOOK-24); a failure reads in the danger tone at label weight; an
+/// ordinary state keeps the line's muted tone, so the list scans by weight
+/// and colour.
 TextSpan _stateWord(
   BuildContext context,
   String word, {
@@ -152,7 +154,7 @@ class _McpServerRow extends StatelessWidget {
             tone: authorizing
                 ? KitTextTone.secondary
                 : _needsYou
-                ? KitTextTone.attention
+                ? KitTextTone.primary
                 : _failed
                 ? KitTextTone.danger
                 : KitTextTone.secondary,
@@ -454,7 +456,7 @@ class _SignInRow extends StatelessWidget {
       title: name,
       supporting: TextSpan(
         children: [
-          _stateWord(context, word, last: true, tone: KitTextTone.attention),
+          _stateWord(context, word, last: true, tone: KitTextTone.primary),
         ],
       ),
       trailing: busy

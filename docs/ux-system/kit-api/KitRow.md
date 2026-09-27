@@ -228,7 +228,7 @@ class KitRowGroup extends StatelessWidget {
 | focused (keyboard) | a 2-physical-pixel `accent` focus ring inside the row's bounds |
 | selected | a `surface3` fill; `selected` semantics; the supporting line starts with the state word when the caller gives one (STATE-9) |
 | disabled | title and leading in `text3`; reason line in `text2` |
-| unavailable | as disabled, plus the trailing `enable` tertiary, or none |
+| unavailable | as disabled, plus the trailing `enable` tertiary, or none; the reason wraps in full (never cut), and from 1.3× text `enable` sits under it (A11Y-8) |
 | destructive | title (and a tinted leading glyph, by the caller's `KitRow.icon(color:)`) in `danger`; last in its group |
 | with server | the supporting line begins "{server} · ", with the server name in `text2` |
 | swipe revealing | see KitSwipeAction.md |

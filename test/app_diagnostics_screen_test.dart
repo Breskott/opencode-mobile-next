@@ -328,6 +328,10 @@ void main() {
     await tester.pumpWidget(_app(page()));
     await tester.pumpAndSettle();
     expect(find.text('Kept while away'), findsOneWidget);
+    // One app-wide draft, the same key with or without a server (G10):
+    // never keyed to a profile it could outlive.
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('oc.draft.report-problem.app'), 'Kept while away');
 
     await _tapKey(tester, 'report-problem-review');
     await _tapKey(tester, 'report-problem-open-github');
@@ -337,6 +341,7 @@ void main() {
     await tester.pumpWidget(_app(page()));
     await tester.pumpAndSettle();
     expect(find.text('Kept while away'), findsNothing);
+    expect(prefs.getString('oc.draft.report-problem.app'), isNull);
   });
 
   testWidgets('every Report a problem opens this page, with the failure '
