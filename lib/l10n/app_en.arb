@@ -25407,5 +25407,45 @@
         "type": "int"
       }
     }
+  },
+  "formRendererFinishLater": "Finish later",
+  "@formRendererFinishLater": {
+    "description": "Form sheet: closes the form and keeps the answers typed so far for when it is reopened"
+  },
+  "formRendererSending": "Sending your answers…",
+  "@formRendererSending": {
+    "description": "Form sheet: why Dismiss cannot be pressed while the answers are being sent"
+  },
+  "formRendererChoose": "Choose",
+  "@formRendererChoose": {
+    "description": "Form sheet: value of a choice row before anything is chosen"
+  },
+  "formRendererChooseDate": "Choose a date",
+  "@formRendererChooseDate": {
+    "description": "Form sheet: value of a date row before a date is chosen"
+  },
+  "formRendererChooseDateTime": "Choose a date and time",
+  "@formRendererChooseDateTime": {
+    "description": "Form sheet: value of a date-and-time row before one is chosen"
+  },
+  "formRendererDateAndTime": "{date} at {time}",
+  "@formRendererDateAndTime": {
+    "description": "Form sheet: a chosen date and time, e.g. 'Sep 27, 2026 at 3:30 PM'",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "formRendererUseDate": "Use date",
+  "@formRendererUseDate": {
+    "description": "Form sheet date picker: confirms the picked date"
+  },
+  "formRendererUseTime": "Use time",
+  "@formRendererUseTime": {
+    "description": "Form sheet time picker: confirms the picked time"
   }
 }
