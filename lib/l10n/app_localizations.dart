@@ -21954,41 +21954,11 @@ abstract class AppLocalizations {
   /// **'The host did not accept this answer.'**
   String get teamUiGateAnswerRejectedNoMessage;
 
-  /// Trailing chip on a needs-you row whose answer is on its way
-  ///
-  /// In en, this message translates to:
-  /// **'Sent'**
-  String get teamUiGateAnswerChipSent;
-
-  /// Trailing chip on a needs-you row whose answer got no confirmation; tapping it opens the sheet to retry
-  ///
-  /// In en, this message translates to:
-  /// **'Unconfirmed'**
-  String get teamUiGateAnswerChipUnconfirmed;
-
-  /// Trailing chip on a needs-you row whose answer the host refused
-  ///
-  /// In en, this message translates to:
-  /// **'Not accepted'**
-  String get teamUiGateAnswerChipRejected;
-
   /// Accessibility label of the unconfirmed chip
   ///
   /// In en, this message translates to:
   /// **'Unconfirmed, open to retry'**
   String get teamUiGateAnswerChipUnconfirmedSemantics;
-
-  /// Two-step sheet title before a deny is sent
-  ///
-  /// In en, this message translates to:
-  /// **'Deny this request?'**
-  String get teamUiGateAnswerConfirmDenyTitle;
-
-  /// Two-step sheet body before a deny is sent
-  ///
-  /// In en, this message translates to:
-  /// **'The agent is told no and goes on without it.'**
-  String get teamUiGateAnswerConfirmDenyBody;
 
   /// Two-step sheet title before a destructive confirmation is approved
   ///
@@ -23186,7 +23156,7 @@ abstract class AppLocalizations {
   /// Clean refused because a process is using the category
   ///
   /// In en, this message translates to:
-  /// **'In use by {process}. Stop it under Running now first.'**
+  /// **'In use by {process}. Stop it under Running on this phone first.'**
   String termuxStorageInUse(String process);
 
   /// Clean result: paths the script refused to remove
@@ -23204,7 +23174,7 @@ abstract class AppLocalizations {
   /// Action that opens the process screen
   ///
   /// In en, this message translates to:
-  /// **'Open Running now'**
+  /// **'Open Running on this phone'**
   String get termuxStorageOpenRunning;
 
   /// Byte formatting: gigabytes
@@ -23243,29 +23213,17 @@ abstract class AppLocalizations {
   /// **'Could not read the storage scan.'**
   String get termuxStorageReadFailed;
 
-  /// Settings › Termux server › Running now: screen title
+  /// This phone › Running on this phone (P5.3): the processes tool's title and its row on This phone
   ///
   /// In en, this message translates to:
-  /// **'Running now'**
+  /// **'Running on this phone'**
   String get termuxProcsTitle;
-
-  /// Settings entry row subtitle and the screen headline
-  ///
-  /// In en, this message translates to:
-  /// **'{count} processes · CPU {cpu}%'**
-  String termuxProcsRowSubtitle(int count, String cpu);
 
   /// Settings entry row subtitle while the list loads
   ///
   /// In en, this message translates to:
   /// **'Checking…'**
   String get termuxProcsRowLoading;
-
-  /// Settings entry row subtitle when the list cannot be read
-  ///
-  /// In en, this message translates to:
-  /// **'Not available right now'**
-  String get termuxProcsRowUnavailable;
 
   /// Refresh action
   ///
@@ -23278,36 +23236,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refreshes every 10 seconds while open'**
   String get termuxProcsAutoRefresh;
-
-  /// Process group
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode server'**
-  String get termuxProcsGroupOpenCode;
-
-  /// Process group
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team'**
-  String get termuxProcsGroupAiTeam;
-
-  /// Process group
-  ///
-  /// In en, this message translates to:
-  /// **'Build daemons'**
-  String get termuxProcsGroupBuild;
-
-  /// Process group
-  ///
-  /// In en, this message translates to:
-  /// **'Orphans'**
-  String get termuxProcsGroupOrphans;
-
-  /// Process group
-  ///
-  /// In en, this message translates to:
-  /// **'Other'**
-  String get termuxProcsGroupOther;
 
   /// Under the OpenCode server group instead of a Stop all button
   ///
@@ -23378,7 +23306,7 @@ abstract class AppLocalizations {
   /// Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled
   ///
   /// In en, this message translates to:
-  /// **'Protected · control it from On this phone'**
+  /// **'Protected · control it from This phone'**
   String get termuxProcsProtected;
 
   /// Orphan reason line
@@ -23392,12 +23320,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{cpu} of CPU with no owner'**
   String termuxProcsOrphanCpu(String cpu);
-
-  /// Row subtitle: CPU, memory, elapsed
-  ///
-  /// In en, this message translates to:
-  /// **'CPU {cpu}% · {memory} · {elapsed}'**
-  String termuxProcsStats(String cpu, String memory, String elapsed);
 
   /// Status while a stop runs
   ///
@@ -23435,12 +23357,6 @@ abstract class AppLocalizations {
   /// **'Nothing is running in the phone server'**
   String get termuxProcsEmpty;
 
-  /// Error state
-  ///
-  /// In en, this message translates to:
-  /// **'Could not read the process list.'**
-  String get termuxProcsFailed;
-
   /// Workspace line when an orphan has burned over ten minutes of CPU
   ///
   /// In en, this message translates to:
@@ -23464,12 +23380,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Folder'**
   String get termuxProcsFolder;
-
-  /// Process detail sheet: identifiers
-  ///
-  /// In en, this message translates to:
-  /// **'PID {pid} · parent {ppid}'**
-  String termuxProcsPid(int pid, int ppid);
 
   /// Duration: seconds
   ///
@@ -24650,7 +24560,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverRunningNowAliases.
   ///
   /// In en, this message translates to:
-  /// **'running now processes termux services stop on this phone'**
+  /// **'running now running on this phone processes termux services stop busy memory background'**
   String get discoverRunningNowAliases;
 
   /// No description provided for @discoverStorageAliases.
@@ -28180,12 +28090,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer'**
   String get teamUiHomeNeedsYouAnswer;
-
-  /// Opens the full question sheet from the inline question block; names what it opens
-  ///
-  /// In en, this message translates to:
-  /// **'See the whole question'**
-  String get teamUiHomeNeedsYouMore;
 
   /// Title of the inline question block when the question belongs to no known task
   ///
@@ -34710,7 +34614,7 @@ abstract class AppLocalizations {
   /// Opens the phone server controls for a protected process
   ///
   /// In en, this message translates to:
-  /// **'Open On this phone'**
+  /// **'Open This phone'**
   String get termuxProcsOpenControls;
 
   /// Details label for a process's ID
@@ -38538,7 +38442,7 @@ abstract class AppLocalizations {
   /// Saved prompts sheet: subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Newest first · kept on this device for this server'**
+  /// **'Newest first · kept on this device'**
   String get promptStashIntro;
 
   /// Saved prompts sheet: empty state title.
@@ -41156,6 +41060,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose another model'**
   String get defaultModelChange;
+
+  /// A team control's receipt while the host has not answered yet: the control's name, then the moving word.
+  ///
+  /// In en, this message translates to:
+  /// **'{control} · Sending…'**
+  String teamControlReceiptSending(String control);
+
+  /// A failed task's card in the conversation: the one button that opens its Details, where asking the team to fix it, sending the work again, the logs, Report this failure and Stop work live.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to do'**
+  String get teamGateCardRunFailedOpen;
+
+  /// A team question's card: what happens if nobody answers.
+  ///
+  /// In en, this message translates to:
+  /// **'The team waits until you answer. Nothing is lost.'**
+  String get teamGateCardIfIgnored;
+
+  /// A failed task's card: what happens if nobody acts.
+  ///
+  /// In en, this message translates to:
+  /// **'The task stays stopped until someone acts on it.'**
+  String get teamGateCardIfIgnoredFailed;
+
+  /// A review-ready card: what happens if nobody reviews it.
+  ///
+  /// In en, this message translates to:
+  /// **'The work waits for review. Nothing is lost.'**
+  String get teamGateCardIfIgnoredReview;
+
+  /// Running on this phone: the budget line, also the row's summary on This phone. limit is Android's phantom process limit (32).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {limit} background processes'**
+  String termuxProcsBudget(int count, int limit);
+
+  /// Running on this phone: under the budget line, what the limit is and that other apps count too
+  ///
+  /// In en, this message translates to:
+  /// **'Android 12 and later may stop the oldest ones when all apps together run more than {limit}.'**
+  String termuxProcsBudgetNote(int limit);
+
+  /// Running on this phone: under the budget line when the count is past the limit
+  ///
+  /// In en, this message translates to:
+  /// **'More than {limit}: Android may stop the oldest of these at any time.'**
+  String termuxProcsBudgetOver(int limit);
+
+  /// Running on this phone: body when the list could not be read; the technical reason is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Termux did not answer. Open Termux, then try again.'**
+  String get termuxProcsLoadFailedBody;
+
+  /// Running on this phone: a later refresh failed; the technical reason is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the list again, so it shows the last reading.'**
+  String get termuxProcsRefreshFailed;
+
+  /// Running on this phone: a stop could not be sent; the technical reason is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop it. Try again, or stop it from Termux.'**
+  String get termuxProcsStopFailed;
+
+  /// Running on this phone: what a process is, first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode server'**
+  String get termuxProcsKindOpenCode;
+
+  /// Running on this phone: what a process is, first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get termuxProcsKindAiTeam;
+
+  /// Running on this phone: what a process is, first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code'**
+  String get termuxProcsKindClaudeCode;
+
+  /// Running on this phone: what a process is (a build daemon or dev server), first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'Dev service'**
+  String get termuxProcsKindDevService;
+
+  /// Running on this phone: what a process is (a shell session), first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get termuxProcsKindTerminal;
+
+  /// Running on this phone: what a process is (anything else), first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'Helper'**
+  String get termuxProcsKindHelper;
+
+  /// Running on this phone: the Termux app's own process, first words of its line
+  ///
+  /// In en, this message translates to:
+  /// **'Termux app'**
+  String get termuxProcsKindHostApp;
+
+  /// Running on this phone: the process used the processor since the last reading
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get termuxProcsBusy;
+
+  /// Running on this phone: the process barely used the processor since the last reading
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get termuxProcsIdle;
+
+  /// Running on this phone: how long a process has run, e.g. 'running 12 min'
+  ///
+  /// In en, this message translates to:
+  /// **'running {elapsed}'**
+  String termuxProcsRunningFor(String elapsed);
+
+  /// Running on this phone: what a kind's stop stops, by name
+  ///
+  /// In en, this message translates to:
+  /// **'{names}: each gets a polite stop, then a forced one after 5 seconds.'**
+  String termuxProcsStopKindBody(String names);
+
+  /// Running on this phone: one stop for every process of a kind (offered from two up); also its confirm button. things is a kind in the plural, e.g. 'dev services'
+  ///
+  /// In en, this message translates to:
+  /// **'Stop all {count} {things}'**
+  String termuxProcsStopKind(int count, String things);
+
+  /// Running on this phone: the question of a kind's stop
+  ///
+  /// In en, this message translates to:
+  /// **'Stop all {count} {things}?'**
+  String termuxProcsStopKindTitle(int count, String things);
+
+  /// Running on this phone: the AI Team kind in the plural, inside 'Stop all 3 …'
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team processes'**
+  String get termuxProcsKindsAiTeam;
+
+  /// Running on this phone: the Claude Code kind in the plural, inside 'Stop all 3 …'
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code processes'**
+  String get termuxProcsKindsClaudeCode;
+
+  /// Running on this phone: the dev service kind in the plural, inside 'Stop all 3 …'
+  ///
+  /// In en, this message translates to:
+  /// **'dev services'**
+  String get termuxProcsKindsDevServices;
+
+  /// Running on this phone: the terminal kind in the plural, inside 'Stop all 3 …'
+  ///
+  /// In en, this message translates to:
+  /// **'terminals'**
+  String get termuxProcsKindsTerminals;
+
+  /// Running on this phone: the helper kind in the plural, inside 'Stop all 3 …'
+  ///
+  /// In en, this message translates to:
+  /// **'helpers'**
+  String get termuxProcsKindsHelpers;
+
+  /// Running on this phone: what stopping the dev services costs
+  ///
+  /// In en, this message translates to:
+  /// **'The next build starts them again when it needs them.'**
+  String get termuxProcsStopDevRestart;
+
+  /// Running on this phone: what a Claude Code process is
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code, the coding agent. Stopping it ends the answer it is writing.'**
+  String get termuxProcsAboutClaudeCode;
+
+  /// Running on this phone: what a terminal process is
+  ///
+  /// In en, this message translates to:
+  /// **'A terminal. Stopping it closes it and whatever runs in it.'**
+  String get termuxProcsAboutTerminal;
+
+  /// Running on this phone: what the Termux app's own process is
+  ///
+  /// In en, this message translates to:
+  /// **'The Termux app itself. It is not stopped from here.'**
+  String get termuxProcsAboutHostApp;
+
+  /// Running on this phone › Details: ps's average CPU since the process started
+  ///
+  /// In en, this message translates to:
+  /// **'Average processor use'**
+  String get termuxProcsAverageCpu;
+
+  /// Running on this phone › Details: total CPU time the process used
+  ///
+  /// In en, this message translates to:
+  /// **'Processor time'**
+  String get termuxProcsCpuTime;
 }
 
 class _AppLocalizationsDelegate
