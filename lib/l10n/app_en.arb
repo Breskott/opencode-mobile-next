@@ -25741,5 +25741,38 @@
   "filePreviewOpenInFiles": "Open in Files",
   "filePreviewViewMode": "Show file as",
   "filePreviewAttachFailed": "Couldn't attach file",
-  "filePreviewSaveFailed": "Couldn't save file"
+  "filePreviewSaveFailed": "Couldn't save file",
+  "kitTurnStarting": "Starting the model…",
+  "@kitTurnStarting": {
+    "description": "KitTurn: the quiet line under a sent prompt before anything has come back from the agent"
+  },
+  "kitTurnStillStarting": "Still waiting for the model · {seconds} s",
+  "@kitTurnStillStarting": {
+    "description": "KitTurn: the starting line once the model has not answered for a while; seconds is how long the turn has waited",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "kitTurnStopped": "You stopped this reply.",
+  "@kitTurnStopped": {
+    "description": "KitTurn: the end line of a turn the person stopped"
+  },
+  "kitTurnInterrupted": "The connection dropped before this reply finished.",
+  "@kitTurnInterrupted": {
+    "description": "KitTurn: the end line of a turn cut off by server or connection loss"
+  },
+  "kitTurnCopy": "Copy reply",
+  "@kitTurnCopy": {
+    "description": "KitTurn: the footer button and menu item that copy the whole reply of a turn"
+  },
+  "kitTurnMore": "More for this reply",
+  "@kitTurnMore": {
+    "description": "KitTurn: the footer button that opens a turn's actions menu"
+  },
+  "kitTurnActions": "Reply actions",
+  "@kitTurnActions": {
+    "description": "KitTurn: the screen-reader name of a turn's actions menu"
+  }
 }
