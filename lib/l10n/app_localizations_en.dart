@@ -23895,4 +23895,443 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageViewContinueReply => 'Continue this reply';
+
+  @override
+  String get reviewRunResultsLoadingTitle => 'Loading run results';
+
+  @override
+  String get reviewRunResultsErrorTitle => 'Couldn\'t load run results';
+
+  @override
+  String get reviewRunResultsErrorBody =>
+      'The server didn\'t send this run\'s history.';
+
+  @override
+  String get reviewRunResultsEmptyTitle => 'Nothing to show yet';
+
+  @override
+  String get reviewRunResultsScopeChangedTitle => 'The project changed';
+
+  @override
+  String get reviewRunResultsCloseAction => 'Close run results';
+
+  @override
+  String get reviewRunResultsRunningNotice =>
+      'Still running. This shows what it has done so far; pull down for the latest.';
+
+  @override
+  String get reviewRunResultsRefreshFailed =>
+      'Couldn\'t refresh. This is what was loaded before.';
+
+  @override
+  String get reviewRunResultsReviewChanges => 'Review changed files';
+
+  @override
+  String get reviewRevertSheetTitle => 'Undo from this prompt?';
+
+  @override
+  String get reviewRevertSheetBody =>
+      'This prompt and everything after it are hidden while you review. Nothing is final until you choose.';
+
+  @override
+  String get reviewRevertPromptLabel => 'From this prompt';
+
+  @override
+  String get reviewRevertFilesToggle => 'Put files back too';
+
+  @override
+  String get reviewRevertFilesToggleHint =>
+      'Files go back to how they were before this prompt.';
+
+  @override
+  String get reviewRevertSheetAction => 'Undo and review';
+
+  @override
+  String get reviewRevertStageFailed =>
+      'Couldn\'t set up the undo. Nothing was hidden.';
+
+  @override
+  String get reviewRevertScreenTitle => 'Review the undo';
+
+  @override
+  String get reviewRevertScreenIntro =>
+      'This prompt and everything after it are hidden. Nothing is final until you choose below.';
+
+  @override
+  String get reviewRevertFilesLabel => 'Files in this undo';
+
+  @override
+  String get reviewRevertNoFiles => 'No files change with this undo.';
+
+  @override
+  String reviewRevertFileLines(int added, int removed) {
+    return '+$added −$removed';
+  }
+
+  @override
+  String reviewRevertFileSupporting(String folder, String lines) {
+    return '$folder · $lines';
+  }
+
+  @override
+  String get reviewRevertChooseLabel => 'Choose what happens';
+
+  @override
+  String get reviewRevertRestoreTitle => 'Put everything back';
+
+  @override
+  String get reviewRevertRestoreLine =>
+      'Bring back the hidden messages and the files as they were.';
+
+  @override
+  String get reviewRevertKeepTitle => 'Keep the undo';
+
+  @override
+  String get reviewRevertKeepLine =>
+      'Delete the hidden messages for good. This can\'t be undone.';
+
+  @override
+  String get reviewRevertKeepConfirmTitle => 'Keep the undo for good?';
+
+  @override
+  String get reviewRevertKeepConfirmBody =>
+      'The hidden prompt and everything after it are deleted from this conversation. This can\'t be undone.';
+
+  @override
+  String get reviewRevertKeepConfirmAction => 'Delete hidden messages';
+
+  @override
+  String get reviewRevertKeepConsequenceMessages =>
+      'The hidden messages are deleted';
+
+  @override
+  String get reviewRevertKeepConsequenceFiles => 'Files stay as they are now';
+
+  @override
+  String get reviewRevertRestoreConfirmTitle => 'Put everything back?';
+
+  @override
+  String get reviewRevertRestoreConfirmBody =>
+      'The hidden messages come back, and the files in this undo return to how they were when you set it up. You can undo from a prompt again later.';
+
+  @override
+  String get reviewRevertRestoreConsequenceMessages =>
+      'The hidden messages come back';
+
+  @override
+  String reviewRevertRestoreConsequenceFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files are replaced, with any edits made since',
+      one: '1 file is replaced, with any edits made since',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewRevertRestoreConsequenceUnknownFiles =>
+      'Files in this undo are replaced, with any edits made since';
+
+  @override
+  String get reviewRevertStaleTitle => 'The undo changed';
+
+  @override
+  String get reviewRevertNoneTitle => 'Nothing to review';
+
+  @override
+  String get reviewRevertNoneBody =>
+      'There\'s no undo waiting in this conversation.';
+
+  @override
+  String get reviewRevertBackAction => 'Back to the conversation';
+
+  @override
+  String get reviewRevertKeptTitle => 'Undo kept';
+
+  @override
+  String get reviewRevertKeptBody =>
+      'The hidden messages are deleted. Files stay as they are.';
+
+  @override
+  String get reviewRevertRestoredTitle => 'Everything is back';
+
+  @override
+  String get reviewRevertRestoredBody =>
+      'The messages and files are back as they were.';
+
+  @override
+  String get reviewRevertFailed =>
+      'That didn\'t finish. Check the conversation, then try again.';
+
+  @override
+  String get perfTraceClearTimings => 'Clear timings';
+
+  @override
+  String appDiagnosticsSendTo(String server) {
+    return 'Send to $server\'s log';
+  }
+
+  @override
+  String appDiagnosticsSendWhere(String server) {
+    return 'Adds these errors to the log of $server. The app\'s makers don\'t receive them.';
+  }
+
+  @override
+  String appDiagnosticsSentTo(String server) {
+    return 'Sent to $server\'s log';
+  }
+
+  @override
+  String get appDiagnosticsCopyErrors => 'Copy errors';
+
+  @override
+  String get appDiagnosticsClearErrors => 'Clear errors';
+
+  @override
+  String appDiagnosticsClearTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Clear $count errors?',
+      one: 'Clear 1 error?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String appDiagnosticsClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'The $count errors recorded since the app opened are removed from this phone. This can\'t be undone.',
+      one:
+          'The error recorded since the app opened is removed from this phone. This can\'t be undone.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String appDiagnosticsClearConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Clear $count errors',
+      one: 'Clear 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get appDiagnosticsEmptyBody =>
+      'Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.';
+
+  @override
+  String get capabilityStateHere => 'Works here';
+
+  @override
+  String get capabilityStateNotServer => 'Not on this server';
+
+  @override
+  String get capabilityStateNotDevice => 'Not on this device';
+
+  @override
+  String get capabilityNeedsAndroid => 'Needs the Android app';
+
+  @override
+  String capabilityAvailableCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count features work here',
+      one: '1 feature works here',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get capabilityAvailableCountDetail =>
+      'Show what this server and device can do';
+
+  @override
+  String get capabilityAddServer => 'Add a server that has these';
+
+  @override
+  String get capabilityAddServerDetail =>
+      'Connect another computer or set one up on this phone, then switch to it';
+
+  @override
+  String get keepRunningAllSetTitle => 'You\'re set';
+
+  @override
+  String get keepRunningAllSetBody =>
+      'Android leaves the app running in the background. There is nothing else to allow on this phone.';
+
+  @override
+  String get keepRunningDailyLimit =>
+      'On Android 15 and newer, Android allows background syncing for about 6 hours a day, even with everything here allowed. After that the app pauses in the background until you open it.';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutCopyVersion => 'Copy version';
+
+  @override
+  String get aboutCheckUpdates => 'Check for updates';
+
+  @override
+  String get aboutUpdateIdle => 'Looks for a newer version of this app';
+
+  @override
+  String get aboutUpdateChecking => 'Checking…';
+
+  @override
+  String get aboutUpdateCurrent => 'You have the latest version';
+
+  @override
+  String get aboutUpdateDownloading => 'Downloading the update…';
+
+  @override
+  String get aboutUpdateReady =>
+      'Update ready. Close and reopen the app to use it.';
+
+  @override
+  String get aboutUpdateCannot =>
+      'This build can\'t update itself. Install the newest release instead.';
+
+  @override
+  String get aboutUpdateFailed =>
+      'Couldn\'t check for updates. Check your connection and try again.';
+
+  @override
+  String get aboutReportBugOnGithub => 'Report a bug on GitHub';
+
+  @override
+  String get aboutDocuments => 'Documents';
+
+  @override
+  String get aboutAllLicences => 'All package licenses';
+
+  @override
+  String get aboutAllLicencesDetail =>
+      'The license text of every library bundled in this build';
+
+  @override
+  String get aboutPackageId => 'Package id';
+
+  @override
+  String get providerQuotaProviderLabel => 'Provider';
+
+  @override
+  String get providerQuotaRouteLabel => 'Collector route';
+
+  @override
+  String get providerQuotaThresholdStale =>
+      'Refresh remaining usage to change this threshold.';
+
+  @override
+  String get usageHubUnavailableTitle => 'No usage to show';
+
+  @override
+  String get usageHubUnavailableBody =>
+      'Connect to a saved server to see what it spent and what your provider accounts have left.';
+
+  @override
+  String get voiceSetupSubtitle =>
+      'Download a speech model once. After that, voice input runs on this phone without the internet.';
+
+  @override
+  String voiceSetupDownloadPack(String model, String size) {
+    return 'Download $model ($size)';
+  }
+
+  @override
+  String voiceSetupUsePack(String model) {
+    return 'Use $model';
+  }
+
+  @override
+  String voiceSetupRedownloadPack(String model) {
+    return 'Download $model again';
+  }
+
+  @override
+  String voiceSetupDeletePack(String model) {
+    return 'Delete $model';
+  }
+
+  @override
+  String voiceSetupKeepPack(String model) {
+    return 'Keep $model';
+  }
+
+  @override
+  String voiceSetupDownloadingPack(String model) {
+    return 'Downloading $model';
+  }
+
+  @override
+  String get voiceSetupModelLabel => 'Speech model';
+
+  @override
+  String get voiceComposerTitle => 'Voice input';
+
+  @override
+  String voiceComposerModelLine(String model, String language) {
+    return '$model model · $language';
+  }
+
+  @override
+  String get voiceNoticesTitle => 'Voice licenses';
+
+  @override
+  String get voiceNoticesIntro =>
+      'Voice input is built on these open-source parts. Open one to read its license.';
+
+  @override
+  String voiceNoticesMadeBy(String maker, String license) {
+    return '$maker · $license';
+  }
+
+  @override
+  String voiceNoticesOpenWebsite(String name) {
+    return 'Open the $name website';
+  }
+
+  @override
+  String get voiceNoticesWhisper => 'Whisper speech models';
+
+  @override
+  String get voiceSetupBusyReason => 'Available after the download';
+
+  @override
+  String get shorebirdUpdateReadyTitle => 'App update ready';
+
+  @override
+  String get shorebirdUpdateReadyBody =>
+      'It takes effect when you fully close the app and open it again.';
+
+  @override
+  String desktopReleaseAvailable(String tag) {
+    return 'OpenCode $tag is available';
+  }
+
+  @override
+  String get desktopReleaseWhatChanged =>
+      'The release page lists what changed and has the downloads.';
+
+  @override
+  String get desktopReleaseOpenPage => 'Open release page';
+
+  @override
+  String get bugReportBrowserDidNotOpen =>
+      'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.';
+
+  @override
+  String get bugReportCopyLinkAgain => 'Copy bug form link';
+
+  @override
+  String get bugReportLinkCopied => 'Bug form link copied';
 }

@@ -37832,6 +37832,672 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue this reply'**
   String get messageViewContinueReply;
+
+  /// Run results page: title of the loading state while the run's history is read from the server; also the loading bar's label during a refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading run results'**
+  String get reviewRunResultsLoadingTitle;
+
+  /// Run results page: title of the error state when the run's history could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load run results'**
+  String get reviewRunResultsErrorTitle;
+
+  /// Run results page: error state body when only a raw error is known (the raw text is behind Details).
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t send this run\'s history.'**
+  String get reviewRunResultsErrorBody;
+
+  /// Run results page: title of the empty state when the latest turn has no assistant step yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show yet'**
+  String get reviewRunResultsEmptyTitle;
+
+  /// Run results page: title shown when the server or project changed while the page was open, so its result no longer applies.
+  ///
+  /// In en, this message translates to:
+  /// **'The project changed'**
+  String get reviewRunResultsScopeChangedTitle;
+
+  /// Run results page, project changed state: button that closes the page.
+  ///
+  /// In en, this message translates to:
+  /// **'Close run results'**
+  String get reviewRunResultsCloseAction;
+
+  /// Run results page: notice above the result while the run is still going.
+  ///
+  /// In en, this message translates to:
+  /// **'Still running. This shows what it has done so far; pull down for the latest.'**
+  String get reviewRunResultsRunningNotice;
+
+  /// Run results page: notice above the kept result when a refresh failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. This is what was loaded before.'**
+  String get reviewRunResultsRefreshFailed;
+
+  /// Run results page: pinned button that opens the review of the project's changes at the first file this run changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Review changed files'**
+  String get reviewRunResultsReviewChanges;
+
+  /// Sheet opened from a prompt's menu in a conversation: asks whether to undo the conversation from this prompt (a staged revert).
+  ///
+  /// In en, this message translates to:
+  /// **'Undo from this prompt?'**
+  String get reviewRevertSheetTitle;
+
+  /// Undo-from-prompt sheet: what happens to the conversation when the undo is set up.
+  ///
+  /// In en, this message translates to:
+  /// **'This prompt and everything after it are hidden while you review. Nothing is final until you choose.'**
+  String get reviewRevertSheetBody;
+
+  /// Undo sheet and Review the undo page: label above the quoted prompt the undo starts from.
+  ///
+  /// In en, this message translates to:
+  /// **'From this prompt'**
+  String get reviewRevertPromptLabel;
+
+  /// Undo-from-prompt sheet: switch that also returns the files the later prompts changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Put files back too'**
+  String get reviewRevertFilesToggle;
+
+  /// Undo-from-prompt sheet: one line under the files switch saying what it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Files go back to how they were before this prompt.'**
+  String get reviewRevertFilesToggleHint;
+
+  /// Undo-from-prompt sheet: primary button that sets up the undo and opens its review.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo and review'**
+  String get reviewRevertSheetAction;
+
+  /// Undo-from-prompt sheet: notice when setting up the undo failed; the sheet stays open.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t set up the undo. Nothing was hidden.'**
+  String get reviewRevertStageFailed;
+
+  /// Title of the page that reviews a staged undo (revert) before it is kept or put back.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the undo'**
+  String get reviewRevertScreenTitle;
+
+  /// Review the undo page: first line, saying what is hidden and that nothing is final yet.
+  ///
+  /// In en, this message translates to:
+  /// **'This prompt and everything after it are hidden. Nothing is final until you choose below.'**
+  String get reviewRevertScreenIntro;
+
+  /// Review the undo page: label above the list of files the server lists for this undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Files in this undo'**
+  String get reviewRevertFilesLabel;
+
+  /// Review the undo page: the files list when the server reports no file changes.
+  ///
+  /// In en, this message translates to:
+  /// **'No files change with this undo.'**
+  String get reviewRevertNoFiles;
+
+  /// Technical: Review the undo page, a file row: lines added and removed in the file.
+  ///
+  /// In en, this message translates to:
+  /// **'+{added} −{removed}'**
+  String reviewRevertFileLines(int added, int removed);
+
+  /// Technical: Review the undo page, a file row's second line: the file's folder, then its added and removed lines.
+  ///
+  /// In en, this message translates to:
+  /// **'{folder} · {lines}'**
+  String reviewRevertFileSupporting(String folder, String lines);
+
+  /// Review the undo page: label above the two outcomes (put everything back, keep the undo).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what happens'**
+  String get reviewRevertChooseLabel;
+
+  /// Review the undo page: outcome row, and its confirmation button, that clears the staged undo and brings the conversation and files back.
+  ///
+  /// In en, this message translates to:
+  /// **'Put everything back'**
+  String get reviewRevertRestoreTitle;
+
+  /// Review the undo page: one line under Put everything back saying what happens.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring back the hidden messages and the files as they were.'**
+  String get reviewRevertRestoreLine;
+
+  /// Review the undo page: outcome row that makes the undo permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the undo'**
+  String get reviewRevertKeepTitle;
+
+  /// Review the undo page: one line under Keep the undo saying what happens and that it is permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the hidden messages for good. This can\'t be undone.'**
+  String get reviewRevertKeepLine;
+
+  /// Confirmation before making the undo permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the undo for good?'**
+  String get reviewRevertKeepConfirmTitle;
+
+  /// Confirmation before making the undo permanent: what happens and that it cannot be undone.
+  ///
+  /// In en, this message translates to:
+  /// **'The hidden prompt and everything after it are deleted from this conversation. This can\'t be undone.'**
+  String get reviewRevertKeepConfirmBody;
+
+  /// Confirmation before making the undo permanent: the confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete hidden messages'**
+  String get reviewRevertKeepConfirmAction;
+
+  /// Confirmation before making the undo permanent: what is lost.
+  ///
+  /// In en, this message translates to:
+  /// **'The hidden messages are deleted'**
+  String get reviewRevertKeepConsequenceMessages;
+
+  /// Confirmation before making the undo permanent: what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Files stay as they are now'**
+  String get reviewRevertKeepConsequenceFiles;
+
+  /// Confirmation before clearing the staged undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Put everything back?'**
+  String get reviewRevertRestoreConfirmTitle;
+
+  /// Confirmation before clearing the staged undo: what happens and that another undo is possible.
+  ///
+  /// In en, this message translates to:
+  /// **'The hidden messages come back, and the files in this undo return to how they were when you set it up. You can undo from a prompt again later.'**
+  String get reviewRevertRestoreConfirmBody;
+
+  /// Confirmation before clearing the staged undo: what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'The hidden messages come back'**
+  String get reviewRevertRestoreConsequenceMessages;
+
+  /// Confirmation before clearing the staged undo: files overwritten by the saved copy, including later edits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file is replaced, with any edits made since} other{{count} files are replaced, with any edits made since}}'**
+  String reviewRevertRestoreConsequenceFiles(int count);
+
+  /// Confirmation before clearing the staged undo when the server sent no file list.
+  ///
+  /// In en, this message translates to:
+  /// **'Files in this undo are replaced, with any edits made since'**
+  String get reviewRevertRestoreConsequenceUnknownFiles;
+
+  /// Review the undo page: title when the conversation or its undo changed on the server while the page was open.
+  ///
+  /// In en, this message translates to:
+  /// **'The undo changed'**
+  String get reviewRevertStaleTitle;
+
+  /// Review the undo page: title when there is no staged undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to review'**
+  String get reviewRevertNoneTitle;
+
+  /// Review the undo page: body when there is no staged undo.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no undo waiting in this conversation.'**
+  String get reviewRevertNoneBody;
+
+  /// Review the undo page: button that returns to the conversation (done, nothing staged, changed).
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the conversation'**
+  String get reviewRevertBackAction;
+
+  /// Review the undo page: done state after the undo was made permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo kept'**
+  String get reviewRevertKeptTitle;
+
+  /// Review the undo page: body of the done state after the undo was made permanent.
+  ///
+  /// In en, this message translates to:
+  /// **'The hidden messages are deleted. Files stay as they are.'**
+  String get reviewRevertKeptBody;
+
+  /// Review the undo page: done state after the staged undo was cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is back'**
+  String get reviewRevertRestoredTitle;
+
+  /// Review the undo page: body of the done state after the staged undo was cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'The messages and files are back as they were.'**
+  String get reviewRevertRestoredBody;
+
+  /// Review the undo page: notice when keeping or putting back the undo failed; the raw reason is behind Details.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t finish. Check the conversation, then try again.'**
+  String get reviewRevertFailed;
+
+  /// screen-system-1: App diagnostics › Performance: clears the measured step timings (not the errors).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear timings'**
+  String get perfTraceClearTimings;
+
+  /// screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {server}\'s log'**
+  String appDiagnosticsSendTo(String server);
+
+  /// screen-system-1: App diagnostics: says where Send goes, under the Send button.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds these errors to the log of {server}. The app\'s makers don\'t receive them.'**
+  String appDiagnosticsSendWhere(String server);
+
+  /// screen-system-1: App diagnostics: notice after a successful send.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {server}\'s log'**
+  String appDiagnosticsSentTo(String server);
+
+  /// screen-system-1: App diagnostics secondary: copies the redacted error report.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy errors'**
+  String get appDiagnosticsCopyErrors;
+
+  /// screen-system-1: App diagnostics tertiary (destructive, confirmed): clears the captured errors.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear errors'**
+  String get appDiagnosticsClearErrors;
+
+  /// screen-system-1: Confirmation title before clearing the captured errors.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Clear 1 error?} other{Clear {count} errors?}}'**
+  String appDiagnosticsClearTitle(int count);
+
+  /// screen-system-1: Confirmation body before clearing the captured errors.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{The error recorded since the app opened is removed from this phone. This can\'t be undone.} other{The {count} errors recorded since the app opened are removed from this phone. This can\'t be undone.}}'**
+  String appDiagnosticsClearBody(int count);
+
+  /// screen-system-1: Confirm button that clears the captured errors.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Clear 1 error} other{Clear {count} errors}}'**
+  String appDiagnosticsClearConfirm(int count);
+
+  /// screen-system-1: App diagnostics empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.'**
+  String get appDiagnosticsEmptyBody;
+
+  /// screen-system-1: Available on this server: state word of a feature this server and device have.
+  ///
+  /// In en, this message translates to:
+  /// **'Works here'**
+  String get capabilityStateHere;
+
+  /// screen-system-1: Available on this server: state word of a feature the connected server lacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on this server'**
+  String get capabilityStateNotServer;
+
+  /// screen-system-1: Available on this server: state word of a feature this device lacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on this device'**
+  String get capabilityStateNotDevice;
+
+  /// screen-system-1: Available on this server: how to get a feature this device lacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs the Android app'**
+  String get capabilityNeedsAndroid;
+
+  /// screen-system-1: Available on this server: the one row that unfolds every available feature.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 feature works here} other{{count} features work here}}'**
+  String capabilityAvailableCount(int count);
+
+  /// screen-system-1: Available on this server: supporting line of the available fold.
+  ///
+  /// In en, this message translates to:
+  /// **'Show what this server and device can do'**
+  String get capabilityAvailableCountDetail;
+
+  /// screen-system-1: Available on this server: opens adding a server, shown when this server lacks features.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server that has these'**
+  String get capabilityAddServer;
+
+  /// screen-system-1: Available on this server: supporting line of Add a server.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect another computer or set one up on this phone, then switch to it'**
+  String get capabilityAddServerDetail;
+
+  /// screen-system-1: Keep running: title of the notice once nothing checkable is left to allow.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re set'**
+  String get keepRunningAllSetTitle;
+
+  /// screen-system-1: Keep running: body of the all-set notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Android leaves the app running in the background. There is nothing else to allow on this phone.'**
+  String get keepRunningAllSetBody;
+
+  /// screen-system-1: Keep running: the daily background limit Android keeps regardless of these settings.
+  ///
+  /// In en, this message translates to:
+  /// **'On Android 15 and newer, Android allows background syncing for about 6 hours a day, even with everything here allowed. After that the app pauses in the background until you open it.'**
+  String get keepRunningDailyLimit;
+
+  /// screen-system-1: About screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// screen-system-1: About: icon button that copies the version.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy version'**
+  String get aboutCopyVersion;
+
+  /// screen-system-1: About: row that checks for a newer version of the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get aboutCheckUpdates;
+
+  /// screen-system-1: About: update row line before a check.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks for a newer version of this app'**
+  String get aboutUpdateIdle;
+
+  /// screen-system-1: About: update row line while checking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get aboutUpdateChecking;
+
+  /// screen-system-1: About: update row line when up to date.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the latest version'**
+  String get aboutUpdateCurrent;
+
+  /// screen-system-1: About: update row line while the update downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the update…'**
+  String get aboutUpdateDownloading;
+
+  /// screen-system-1: About: update row line once the update is downloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Update ready. Close and reopen the app to use it.'**
+  String get aboutUpdateReady;
+
+  /// screen-system-1: About: update row line on a build without the updater.
+  ///
+  /// In en, this message translates to:
+  /// **'This build can\'t update itself. Install the newest release instead.'**
+  String get aboutUpdateCannot;
+
+  /// screen-system-1: About: update row line after a failed check.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check for updates. Check your connection and try again.'**
+  String get aboutUpdateFailed;
+
+  /// screen-system-1: About: opens the prefilled GitHub bug form.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a bug on GitHub'**
+  String get aboutReportBugOnGithub;
+
+  /// screen-system-1: About: accessible name of the Privacy / Open source tab strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get aboutDocuments;
+
+  /// screen-system-1: About › Open source: row that opens every bundled package license.
+  ///
+  /// In en, this message translates to:
+  /// **'All package licenses'**
+  String get aboutAllLicences;
+
+  /// screen-system-1: About › Open source: supporting line of All package licenses.
+  ///
+  /// In en, this message translates to:
+  /// **'The license text of every library bundled in this build'**
+  String get aboutAllLicencesDetail;
+
+  /// screen-system-1: About › Details: label of the Android package id.
+  ///
+  /// In en, this message translates to:
+  /// **'Package id'**
+  String get aboutPackageId;
+
+  /// Remaining usage: the name of the choice of provider account (Codex, Claude, MiniMax, GLM), read by assistive technology.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get providerQuotaProviderLabel;
+
+  /// Remaining usage Details: label of the collector route path on the server (a technical value).
+  ///
+  /// In en, this message translates to:
+  /// **'Collector route'**
+  String get providerQuotaRouteLabel;
+
+  /// Remaining usage: why a window's alert threshold cannot be changed while the shown reading is out of date.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh remaining usage to change this threshold.'**
+  String get providerQuotaThresholdStale;
+
+  /// Usage screen, when neither Spent nor Remaining applies to the current connection: the state's title.
+  ///
+  /// In en, this message translates to:
+  /// **'No usage to show'**
+  String get usageHubUnavailableTitle;
+
+  /// Usage screen, when neither section applies: what to do to see usage.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a saved server to see what it spent and what your provider accounts have left.'**
+  String get usageHubUnavailableBody;
+
+  /// Voice model setup sheet: subtitle under 'Local voice input'; says what the sheet is for without engine jargon.
+  ///
+  /// In en, this message translates to:
+  /// **'Download a speech model once. After that, voice input runs on this phone without the internet.'**
+  String get voiceSetupSubtitle;
+
+  /// Voice model setup sheet: pinned primary button that downloads the chosen speech model; {model} is its name (Balanced), {size} its download size.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {model} ({size})'**
+  String voiceSetupDownloadPack(String model, String size);
+
+  /// Voice model setup sheet: pinned primary button when the chosen speech model is already on the phone; closes the sheet and starts voice input.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {model}'**
+  String voiceSetupUsePack(String model);
+
+  /// Voice model setup sheet: replaces the downloaded files of the chosen speech model with a fresh copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {model} again'**
+  String voiceSetupRedownloadPack(String model);
+
+  /// Voice model setup sheet: removes the chosen speech model from the phone (button and the confirm button).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {model}'**
+  String voiceSetupDeletePack(String model);
+
+  /// Voice model delete confirmation: the neutral answer that keeps the speech model.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {model}'**
+  String voiceSetupKeepPack(String model);
+
+  /// Voice model setup sheet: title of the download progress row.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {model}'**
+  String voiceSetupDownloadingPack(String model);
+
+  /// Voice model setup sheet: label above the list of speech models.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech model'**
+  String get voiceSetupModelLabel;
+
+  /// Voice input sheet: the sheet's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input'**
+  String get voiceComposerTitle;
+
+  /// Voice input sheet: tertiary button naming the speech model and language in use; opens the voice model setup sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} model · {language}'**
+  String voiceComposerModelLine(String model, String language);
+
+  /// Voice licenses page: the page title (Settings > Voice).
+  ///
+  /// In en, this message translates to:
+  /// **'Voice licenses'**
+  String get voiceNoticesTitle;
+
+  /// Voice licenses page: the line above the list of components.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input is built on these open-source parts. Open one to read its license.'**
+  String get voiceNoticesIntro;
+
+  /// Voice licenses page: a component row's second line; {maker} is who made it (OpenAI), {license} the license name (MIT License).
+  ///
+  /// In en, this message translates to:
+  /// **'{maker} · {license}'**
+  String voiceNoticesMadeBy(String maker, String license);
+
+  /// Voice license viewer: opens the component's project page in the browser; {name} is the component (sherpa-onnx).
+  ///
+  /// In en, this message translates to:
+  /// **'Open the {name} website'**
+  String voiceNoticesOpenWebsite(String name);
+
+  /// Voice licenses page: the row for the downloaded OpenAI Whisper models.
+  ///
+  /// In en, this message translates to:
+  /// **'Whisper speech models'**
+  String get voiceNoticesWhisper;
+
+  /// Voice model setup sheet: why the speech models and language cannot be changed while a model downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Available after the download'**
+  String get voiceSetupBusyReason;
+
+  /// App-wide status line once a downloaded app update is ready to apply. No tool name.
+  ///
+  /// In en, this message translates to:
+  /// **'App update ready'**
+  String get shorebirdUpdateReadyTitle;
+
+  /// Supporting line of the app update status line: when the downloaded update applies.
+  ///
+  /// In en, this message translates to:
+  /// **'It takes effect when you fully close the app and open it again.'**
+  String get shorebirdUpdateReadyBody;
+
+  /// Desktop status line when a newer release exists on the project's release page.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode {tag} is available'**
+  String desktopReleaseAvailable(String tag);
+
+  /// Supporting line of the desktop release status line: what the release page offers.
+  ///
+  /// In en, this message translates to:
+  /// **'The release page lists what changed and has the downloads.'**
+  String get desktopReleaseWhatChanged;
+
+  /// Desktop release status line action: opens the release page in the browser after the external-link confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release page'**
+  String get desktopReleaseOpenPage;
+
+  /// Report a bug sheet, shown when no browser opened the bug form: the link was copied instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.'**
+  String get bugReportBrowserDidNotOpen;
+
+  /// Report a bug sheet action: copies the bug form link again.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy bug form link'**
+  String get bugReportCopyLinkAgain;
+
+  /// Screen-reader announcement after the bug form link was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug form link copied'**
+  String get bugReportLinkCopied;
 }
 
 class _AppLocalizationsDelegate
