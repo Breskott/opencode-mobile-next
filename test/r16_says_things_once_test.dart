@@ -118,6 +118,8 @@ Future<_Controller> _controller(ProductRepository repository) async {
 Future<AgentAccountController> _signedOut() async {
   final controller = AgentAccountController(FakeAccountSession());
   await controller.refresh();
+  // A fixed "Last checked" so the gallery does not move with the clock.
+  controller.updatedAt = DateTime(2026, 9, 27, 9, 41);
   addTearDown(controller.dispose);
   return controller;
 }
