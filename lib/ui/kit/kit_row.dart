@@ -646,7 +646,7 @@ class _KitCountPill extends StatelessWidget {
 ///
 /// **Section gap.** A labelled group keeps [KitTokens.sectionGap] from what
 /// is above it ([gapBefore] null), except as the first thing in a scroll
-/// view; a fixed spacer the caller already put right above it collapses
+/// view or on its page; a fixed spacer the caller already put right above it collapses
 /// into the gap rather than adding to it. An unlabelled group adds no gap
 /// unless [gapBefore] asks for one. For a lazy list on one panel use
 /// [KitSliverRowGroup].

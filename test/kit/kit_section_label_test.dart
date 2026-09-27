@@ -172,6 +172,61 @@ void main() {
     );
   });
 
+  testWidgets('first on a page that does not scroll: no gap either', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [KitSectionLabel('Top'), KitSectionLabel('Next')],
+        ),
+      ),
+    );
+    expect(_top(tester, 'Top'), 0);
+    expect(
+      _top(tester, 'Next') - _bottom(tester, 'Top'),
+      moreOrLessEquals(_sectionGap + 8, epsilon: 0.5),
+    );
+  });
+
+  testWidgets('an explained label keeps a plain label\'s place: its 48 dp '
+      'target reaches into the gaps instead of pushing the section apart', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KitSectionLabel('First'),
+              KitSectionLabel('Plain'),
+              KitSectionLabel(
+                'Resources',
+                explanation: 'Files and data the server shares with agents.',
+              ),
+              KitSectionLabel('After'),
+            ],
+          ),
+        ),
+      ),
+    );
+    final plainStep = _top(tester, 'Plain') - _bottom(tester, 'First');
+    // From the words above to the explained words: the same as between two
+    // plain labels.
+    expect(
+      _top(tester, 'Resources') - _bottom(tester, 'Plain'),
+      moreOrLessEquals(plainStep, epsilon: 0.5),
+    );
+    // The target is still 48 dp tall.
+    expect(tester.getSize(find.byType(KitTerm)).height, greaterThan(47.9));
+    // Below the explained words the next section is no further than a
+    // plain label's gap plus what the target needs past the label gap.
+    final below = _top(tester, 'After') - _bottom(tester, 'Resources');
+    expect(below, lessThan(plainStep + 8));
+  });
+
   testWidgets('a trailing part drops under the words at large text instead '
       'of overflowing', (tester) async {
     tester.view.physicalSize = const Size(320, 800);

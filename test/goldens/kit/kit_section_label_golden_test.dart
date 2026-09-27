@@ -4,8 +4,8 @@
 // labelled group one section gap below. Every label's words start on the
 // same line as the rows' panel edge.
 //
-// Phone 412x915 and one wide size (1280x800), light and dark (owner
-// decision 2026-09-27: no Arabic galleries).
+// Phone 412x915 and one wide size (1280x800), light and dark, plus the
+// phone at text 2x (owner decision 2026-09-27: no Arabic galleries).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_section_label_golden_test.dart
@@ -82,5 +82,22 @@ void main() {
         );
       });
     }
+    // Text at 2x on the phone: the trailing part drops under the words,
+    // nothing clips (G4, A11Y-8).
+    testWidgets('page labels · text 2x · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_section_label_page',
+          const Size(412, 915),
+          light: light,
+          text2: true,
+        ),
+        size: const Size(412, 915),
+        light: light,
+        textScale: 2,
+        child: _page(),
+      );
+    });
   }
 }
