@@ -12534,10 +12534,6 @@
       }
     }
   },
-  "teamUiDiscoveryTurnOn": "Turn on",
-  "@teamUiDiscoveryTurnOn": {
-    "description": "Discovery card action that turns the plugin on"
-  },
   "teamUiEditorBody": "If this computer runs Gas City, the app can find it automatically.",
   "@teamUiEditorBody": {
     "description": "One-line copy of the AI Team (optional) section in the server editor"
@@ -12555,36 +12551,6 @@
   "teamUiEditorTitle": "AI Team (optional)",
   "@teamUiEditorTitle": {
     "description": "Title of the AI Team section in the server editor"
-  },
-  "teamUiEventStreamClosed": "Event stream closed",
-  "@teamUiEventStreamClosed": {
-    "description": "Live-updates line when the event stream is closed"
-  },
-  "teamUiEventStreamConnecting": "Event stream connecting…",
-  "@teamUiEventStreamConnecting": {
-    "description": "Live-updates line while the event stream connects"
-  },
-  "teamUiEventStreamLive": "Event stream connected · seq {seq}",
-  "@teamUiEventStreamLive": {
-    "description": "Live-updates line with the last event sequence number",
-    "placeholders": {
-      "seq": {
-        "type": "String",
-        "example": "41823"
-      }
-    }
-  },
-  "teamUiEventStreamLiveNoSeq": "Event stream connected",
-  "@teamUiEventStreamLiveNoSeq": {
-    "description": "Live-updates line before any numbered event arrived"
-  },
-  "teamUiEventStreamReconnecting": "Event stream reconnecting…",
-  "@teamUiEventStreamReconnecting": {
-    "description": "Live-updates line while the event stream reconnects"
-  },
-  "teamUiFrontLine": "The front is a small helper on the computer that lets the phone answer and steer.",
-  "@teamUiFrontLine": {
-    "description": "One-line explanation of the host front shown under a read-only verdict"
   },
   "teamUiHostGuideDocs": "The full guide with every command is docs/ai-team-host.md in the app's repository.",
   "@teamUiHostGuideDocs": {
@@ -12776,44 +12742,6 @@
       }
     }
   },
-  "teamUiSavedOn": "AI Team is on for {server}.",
-  "@teamUiSavedOn": {
-    "description": "Snackbar after the plugin was turned on for a server",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Development PC"
-      }
-    }
-  },
-  "teamUiStatusConnected": "Connected",
-  "@teamUiStatusConnected": {
-    "description": "Sheet status line when the host answers and the stream is live"
-  },
-  "teamUiStatusNotAvailable": "Not available",
-  "@teamUiStatusNotAvailable": {
-    "description": "Sheet status line when the host cannot be used"
-  },
-  "teamUiStatusOff": "Off",
-  "@teamUiStatusOff": {
-    "description": "Sheet status value when the plugin is off"
-  },
-  "teamUiStatusOn": "On",
-  "@teamUiStatusOn": {
-    "description": "Sheet status value when the plugin is on"
-  },
-  "teamUiStatusProbing": "Checking the host…",
-  "@teamUiStatusProbing": {
-    "description": "Sheet status line while the host is probed"
-  },
-  "teamUiStatusReconnecting": "Reconnecting…",
-  "@teamUiStatusReconnecting": {
-    "description": "Sheet status line while the stream reconnects"
-  },
-  "teamUiStatusUnreachable": "Host unreachable",
-  "@teamUiStatusUnreachable": {
-    "description": "Sheet status line when the host stopped answering"
-  },
   "teamUiTailnetRequired": "AI Team works over your Tailscale network or on this device. Use the computer's Tailscale address (100.x.x.x or name.ts.net).",
   "@teamUiTailnetRequired": {
     "description": "Verdict when a plain http address is neither loopback nor a tailnet address"
@@ -12857,10 +12785,6 @@
   "teamUiTurnOffBody": "Removes its card, attention items and cached team data from this phone. Nothing changes on the host.",
   "@teamUiTurnOffBody": {
     "description": "Body of the turn-off confirmation sheet"
-  },
-  "teamUiTurnOffFailed": "Turned off, but some cached data could not be removed from this phone.",
-  "@teamUiTurnOffFailed": {
-    "description": "Snackbar when the store refused to drop some keys during turn-off"
   },
   "teamUiTurnOffTitle": "Turn off AI Team for {server}?",
   "@teamUiTurnOffTitle": {
@@ -12915,14 +12839,6 @@
   "teamUiVersionUnknown": "unknown",
   "@teamUiVersionUnknown": {
     "description": "Version value when the host did not report one"
-  },
-  "teamUiWatchingAndAnswering": "Watching and answering from this phone",
-  "@teamUiWatchingAndAnswering": {
-    "description": "Sheet line under the status when the phone can answer and steer"
-  },
-  "teamUiWatchingOnly": "Watching from this phone",
-  "@teamUiWatchingOnly": {
-    "description": "Sheet line under the status when the phone can only watch"
   },
   "teamUiCardAgentsSummary": "{total} agents: {working} working, {waiting} waiting, {idle} idle, {stopped} stopped",
   "@teamUiCardAgentsSummary": {
@@ -13003,7 +12919,7 @@
   "@teamUiStatePlainHttpTitle": {
     "description": "AI Team screens, whole-screen state title: the team address is plain http outside Tailscale or this device"
   },
-  "teamUiStateNotAnsweringTitle": "The team host isn’t answering",
+  "teamUiStateNotAnsweringTitle": "The team isn’t answering",
   "@teamUiStateNotAnsweringTitle": {
     "description": "AI Team screens: shown instead of 'Connecting to the team host…' once connecting has taken longer than 8 seconds (design standard 8 s rule)"
   },
@@ -30818,5 +30734,98 @@
   "teamPhoneReadyFirstTask": "Give the team a first task",
   "@teamPhoneReadyFirstTask": {
     "description": "AI Team ready page: the primary action; opens the task sheet, and the task lands in its conversation."
+  },
+  "teamUiStateNotAnsweringPhone": "The app keeps trying while the team starts on this phone.",
+  "@teamUiStateNotAnsweringPhone": {
+    "description": "AI Team screens: under 'The team isn’t answering' when the team runs on this phone."
+  },
+  "teamUiStateNotAnsweringComputer": "The app keeps trying. Check that your computer is on and online.",
+  "@teamUiStateNotAnsweringComputer": {
+    "description": "AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name."
+  },
+  "teamUiStateNotAnsweringComputerNamed": "The app keeps trying. Check that {computer} is on and online.",
+  "@teamUiStateNotAnsweringComputerNamed": {
+    "description": "AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.",
+    "placeholders": {
+      "computer": {
+        "type": "String"
+      }
+    }
+  },
+  "teamHomeChangeAddress": "Change address",
+  "@teamHomeChangeAddress": {
+    "description": "AI Team page menu: opens the form for the address the team is reached at (the page title names the team)."
+  },
+  "teamHomeTurnOffFailed": "Couldn’t stop the team on this phone, so it is still on. Try again.",
+  "@teamHomeTurnOffFailed": {
+    "description": "AI Team page: Turn off could not stop the team inside the app; nothing changed."
+  },
+  "teamHomeHostStopped": "Stopped",
+  "@teamHomeHostStopped": {
+    "description": "AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again)."
+  },
+  "teamHomeHostCooling": "Cooling down",
+  "@teamHomeHostCooling": {
+    "description": "AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause."
+  },
+  "teamHomeHostStoppedForHeat": "Stopped to cool down",
+  "@teamHomeHostStoppedForHeat": {
+    "description": "AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot."
+  },
+  "teamHomeHeatPausedLine": "The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.",
+  "@teamHomeHeatPausedLine": {
+    "description": "AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamHomeHeatStoppedLine": "The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.",
+  "@teamHomeHeatStoppedLine": {
+    "description": "AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamHomeAgentsCooling": "resting while the phone cools",
+  "@teamHomeAgentsCooling": {
+    "description": "AI Team page agents row, after the count: the heat guard paused the agents."
+  },
+  "teamHomePhoneControls": "Keep it running, stop it or remove it",
+  "@teamHomePhoneControls": {
+    "description": "AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone)."
+  },
+  "teamHomeSpentToday": "Today · {usage}",
+  "@teamHomeSpentToday": {
+    "description": "AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.",
+    "placeholders": {
+      "usage": {
+        "type": "String"
+      }
+    }
+  },
+  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated",
+  "@teamHomeSpentHint": {
+    "description": "AI Team page: under today's spend; never a task's cost."
+  },
+  "teamHomeSpentPartial": "Some of today’s use has no price yet, so it cost more than this",
+  "@teamHomeSpentPartial": {
+    "description": "AI Team page: under today's spend when part of it is unpriced or history is missing."
+  },
+  "teamIntroNotFound": "No AI Team found on {server}",
+  "@teamIntroNotFound": {
+    "description": "AI Team page while off, on a computer: discovery found no team. {server} is the server's name.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsTeamOpenPage": "See the team’s tasks",
+  "@pluginsTeamOpenPage": {
+    "description": "Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page."
   }
 }

@@ -41,8 +41,7 @@ import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
-import '../screens/team/team_home_screen.dart';
-import '../screens/team/team_intro_screen.dart';
+import '../screens/team/team_page.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
@@ -718,16 +717,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       keywords: l10n.discoverTeamAliases,
       pages: const ['team-intro'],
       gate: (scope) => scope.controller.profile != null,
-      open: (context, scope) {
-        final controller = scope.controller;
-        if (controller.profile?.orchestration == null) {
-          return openTeamIntro(context, controller);
-        }
-        final team = controller.orchestration;
-        return team == null
-            ? Future<void>.value()
-            : _push(context, TeamHomeScreen(controller: team));
-      },
+      // The one team page, on or off (P3.4).
+      open: (context, scope) => openTeamPage(context, scope.controller),
     ),
     SearchEntry(
       id: 'settings-category-plugins',
@@ -1494,19 +1485,10 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       // Settings › AI Team, no longer a Work section.
       parent: l10n.librarySettingsTitle,
       keywords: l10n.discoverTeamAliases,
-      pages: const [
-        'team-home',
-        'team-home-runs-tab',
-        'team-home-agents-tab',
-        'team-home-needs-you-tab',
-      ],
+      pages: const ['team-home'],
       // Not in the index at all while the server has no plugin config.
       gate: (scope) => scope.hasTeam,
-      open: (context, scope) {
-        final team = scope.controller.orchestration;
-        if (team == null) return Future<void>.value();
-        return _push(context, TeamHomeScreen(controller: team));
-      },
+      open: (context, scope) => openTeamPage(context, scope.controller),
     ),
   ];
 }

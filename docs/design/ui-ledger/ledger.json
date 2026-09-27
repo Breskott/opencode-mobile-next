@@ -1,5 +1,5 @@
 {
- "generatedFrom": "24b76eb82fda3371e97ce0158db21539bc601421",
+ "generatedFrom": "4c81a9130949f5960abd4c463d377366c13ddaf6",
  "pages": [
   {
    "id": "system",
@@ -1811,10 +1811,10 @@
      "key": null,
      "file": "lib/ui/screens/activity_screen.dart",
      "line": 1279,
-     "action": "open-dialog",
-     "target": "question-sheet-dismiss-dialog",
-     "targetWidget": "_reject",
-     "effect": "_reject(): opens the dismiss confirmation dialog.",
+     "action": "open-sheet",
+     "target": "confirm-sheet",
+     "targetWidget": "showKitConfirm",
+     "effect": "_reject(): showKitConfirm (destructive, 'Dismiss this request?'); on confirm controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
      "gates": [
       "!_busy"
      ],
@@ -1830,59 +1830,11 @@
      "action": "submit",
      "target": null,
      "targetWidget": null,
-     "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+     "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close(). Pinned to the sheet foot through showKitSheet primaryListenable (slice-P3.11a); enables once every prompt is answered.",
      "gates": [
       "_complete && !_busy"
      ],
      "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "question-sheet-dismiss-dialog",
-   "title": "Dismiss this request?",
-   "kind": "dialog",
-   "area": "shell",
-   "file": "lib/ui/screens/activity_screen.dart",
-   "widget": "_reject",
-   "presentedBy": [],
-   "line": 1129,
-   "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
-   "reachedFrom": [
-    {
-     "page": "question-sheet",
-     "element": "question-sheet-dismiss"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "question-sheet-dismiss-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/activity_screen.dart",
-     "line": 1137,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "question-sheet-dismiss-dialog-confirm",
-     "type": "button",
-     "label": "Dismiss",
-     "key": null,
-     "file": "lib/ui/screens/activity_screen.dart",
-     "line": 1141,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
-     "gates": [],
-     "destructive": true
     }
    ]
   },
@@ -9974,6 +9926,14 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-context"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-session-menu-details"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-session-context-details"
     }
    ],
    "gates": [],
@@ -10604,14 +10564,14 @@
     {
      "id": "session-relations-menu-handoff",
      "type": "menu-item",
-     "label": "Copy handoff",
+     "label": "Continue {title} on computer",
      "key": null,
      "file": "lib/ui/screens/session_relations_screen.dart",
      "line": 474,
-     "action": "open-dialog",
-     "target": "session-handoff-dialog",
-     "targetWidget": "showSessionHandoff",
-     "effect": "Calls showSessionHandoff(context, controller, sessionID, projectID) for that session (wired at lines 274/317).",
+     "action": "open-sheet",
+     "target": "continue-on-computer-sheet",
+     "targetWidget": "showContinueOnComputerSheet",
+     "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet (the handoff dialog merged into it, slice-P3.11a).",
      "gates": [],
      "destructive": false
     },
@@ -11663,63 +11623,6 @@
    "elements": []
   },
   {
-   "id": "session-handoff-dialog",
-   "title": "Copy handoff reference? | Continue on computer",
-   "kind": "dialog",
-   "area": "chat",
-   "file": "lib/ui/widgets/session_handoff.dart",
-   "widget": "showSessionHandoff",
-   "presentedBy": [
-    "showSessionHandoff"
-   ],
-   "line": 85,
-   "purpose": "Previews the resume command (or a metadata reference when the repository cannot create one) and copies it to the clipboard on confirm.",
-   "reachedFrom": [
-    {
-     "page": "session-relations",
-     "element": "session-relations-menu-handoff"
-    },
-    {
-     "page": "global-sessions",
-     "element": "global-sessions-row-menu-handoff"
-    }
-   ],
-   "gates": [
-    "sessionID and projectID match ^[A-Za-z0-9_-]+$ (else product error)",
-    "command variant when repository is SessionCommandHandoffGateway"
-   ],
-   "elements": [
-    {
-     "id": "session-handoff-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/session_handoff.dart",
-     "line": 117,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "session-handoff-dialog-copy",
-     "type": "button",
-     "label": "Copy reference | Copy command",
-     "key": null,
-     "file": "lib/ui/widgets/session_handoff.dart",
-     "line": 121,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops true; showSessionHandoff revalidates session/location/command and Clipboard.setData(command ?? reference) (line 157), then shows a snackbar.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "continue-on-computer-sheet",
    "title": "Continue on computer",
    "kind": "sheet",
@@ -11738,6 +11641,14 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-continue-computer"
+    },
+    {
+     "page": "global-sessions",
+     "element": "global-sessions-row-menu-handoff"
+    },
+    {
+     "page": "session-relations",
+     "element": "session-relations-menu-handoff"
     }
    ],
    "gates": [],
@@ -12799,14 +12710,14 @@
     {
      "id": "global-sessions-row-menu-handoff",
      "type": "menu-item",
-     "label": "Copy handoff",
+     "label": "Continue on computer",
      "key": null,
      "file": "lib/ui/screens/global_sessions_screen.dart",
      "line": 1077,
      "action": "open-sheet",
-     "target": "session-handoff-dialog",
-     "targetWidget": "showSessionHandoff",
-     "effect": "onHandoff -> _open(result, handoff: true): switches location, then showSessionHandoff(context, controller, sessionID, projectID). Also a CustomSemanticsAction (979).",
+     "target": "continue-on-computer-sheet",
+     "targetWidget": "showContinueOnComputerSheet",
+     "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet with its resume command (the handoff dialog merged into it, slice-P3.11a).",
      "gates": [
       "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
      ],
@@ -13089,122 +13000,6 @@
    ]
   },
   {
-   "id": "manage-project",
-   "title": "Manage project",
-   "kind": "screen",
-   "area": "workspace",
-   "file": "lib/ui/screens/manage_project_screen.dart",
-   "widget": "ManageProjectScreen",
-   "presentedBy": [],
-   "line": 18,
-   "purpose": "Hub for low-frequency project surfaces: development services, switch project, worktrees, managed workspaces and project health.",
-   "reachedFrom": [
-    {
-     "page": "workspace-context-sheet",
-     "element": "workspace-context-sheet-manage-project"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "manage-project-back",
-     "type": "gesture",
-     "label": "[system back]",
-     "key": null,
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 47,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "PopScope pops with _changed so Workspace reloads.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-services",
-     "type": "list-tile",
-     "label": "Development services",
-     "key": null,
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 92,
-     "action": "navigate",
-     "target": "development-services",
-     "targetWidget": "DevelopmentServicesScreen",
-     "effect": "Pushes DevelopmentServicesScreen(controller).",
-     "gates": [
-      "enabled only when widget.controller.directory?.isNotEmpty == true"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-switch-project",
-     "type": "list-tile",
-     "label": "Switch project",
-     "key": "switch-project-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 117,
-     "action": "navigate",
-     "target": "projects",
-     "targetWidget": "ProjectsScreen",
-     "effect": "_switchProject() pushes ProjectsScreen; when it returns true this screen pops(true).",
-     "gates": [
-      "capabilities.projectManagement"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-worktrees",
-     "type": "list-tile",
-     "label": "Worktrees",
-     "key": "worktrees-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 142,
-     "action": "navigate",
-     "target": "worktrees",
-     "targetWidget": "WorktreesScreen",
-     "effect": "_openWorktrees() pushes WorktreesScreen(controller, project).",
-     "gates": [
-      "capabilities.projectManagement",
-      "enabled only when project != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-managed-workspaces",
-     "type": "list-tile",
-     "label": "Managed workspaces",
-     "key": "managed-workspaces-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 166,
-     "action": "navigate",
-     "target": "managed-workspaces",
-     "targetWidget": "ManagedWorkspacesScreen",
-     "effect": "_openManagedWorkspaces() pushes ManagedWorkspacesScreen(controller, project).",
-     "gates": [
-      "capabilities.managedWorkspaces",
-      "enabled only when project != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-health",
-     "type": "list-tile",
-     "label": "Project health",
-     "key": "project-health-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 183,
-     "action": "navigate",
-     "target": "project-health",
-     "targetWidget": "ProjectHealthScreen",
-     "effect": "_openProjectHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen(repository, repositoryResolver, capabilities).",
-     "gates": [
-      "capabilities.projectManagement"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "managed-workspaces",
    "title": "Cloud environments",
    "kind": "screen",
@@ -13216,8 +13011,8 @@
    "purpose": "List, discover, create, open and remove adapter-backed managed workspaces (cloud environments) for the project.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-managed-workspaces"
+     "page": "project-hub",
+     "element": "project-hub-workspaces"
     }
    ],
    "gates": [
@@ -13840,10 +13635,6 @@
    "purpose": "Read-only health of the open project: version control branch and changed files, language services and formatters, with Git initialization.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-health"
-    },
-    {
      "page": "chat",
      "element": null,
      "evidence": "lib/ui/screens/chat_screen.dart:5163"
@@ -14033,10 +13824,6 @@
     {
      "page": "workspace-context-sheet",
      "element": "workspace-context-sheet-switch-project"
-    },
-    {
-     "page": "manage-project",
-     "element": "manage-project-switch-project"
     }
    ],
    "gates": [
@@ -14974,10 +14761,10 @@
      "key": "active-session-directory",
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 449,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
+     "action": "open-sheet",
+     "target": "workspace-context-sheet",
+     "targetWidget": "_openContextSheet",
+     "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
      "gates": [
       "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
      ],
@@ -14990,10 +14777,10 @@
      "key": "restricted-directory-context",
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 469,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
+     "action": "open-sheet",
+     "target": "workspace-context-sheet",
+     "targetWidget": "_openContextSheet",
+     "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
      "gates": [
       "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
      ],
@@ -15112,23 +14899,6 @@
      "widgetFile": "lib/ui/widgets/termux_phone_tools.dart"
     },
     {
-     "id": "workspace-inventory-footer",
-     "type": "banner",
-     "label": "[session inventory footer: Load more sessions / Retry / Reload]",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 765,
-     "action": "other",
-     "target": "embedded-session-inventory-footer",
-     "targetWidget": "SessionInventoryFooter",
-     "effect": "Embeds SessionInventoryFooter(controller) under Recent sessions (and at line 1286 in the archived sheet); its buttons are listed on page embedded-session-inventory-footer.",
-     "gates": [
-      "renders only when controller.hasMoreSessions || a sessions error || loading"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/session_inventory_footer.dart"
-    },
-    {
      "id": "workspace-archived-sessions",
      "type": "list-tile",
      "label": "Archived sessions / {count} archived sessions",
@@ -15160,6 +14930,23 @@
      ],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_card.dart"
+    },
+    {
+     "id": "workspace-inventory-footer",
+     "type": "banner",
+     "label": "[end of the list: older conversations load as it comes near; a failed page says so with Try again]",
+     "key": null,
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 921,
+     "action": "other",
+     "target": null,
+     "targetWidget": "OlderSessionsPager",
+     "effect": "The list pages itself (target-ia §1.4): OlderSessionsPager asks for the next page as the end comes within reach, shows skeleton rows while it loads, and a failed page, a changed list or a failed refresh as one KitNotice.error with Try again or Refresh recent conversations. Replaces the session inventory footer (removed by slice-P3.1).",
+     "gates": [
+      "renders only when controller.hasMoreSessions || a sessions error || loading"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/older_sessions_pager.dart"
     },
     {
      "id": "workspace-team-door",
@@ -15241,14 +15028,14 @@
     {
      "id": "workspace-session-menu-details",
      "type": "menu-item",
-     "label": "Details",
+     "label": "Conversation context",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1530,
-     "action": "open-sheet",
-     "target": "workspace-session-details-sheet",
-     "targetWidget": "_sessionAction",
-     "effect": "_sessionAction('details') opens the session details sheet.",
+     "action": "navigate",
+     "target": "session-context",
+     "targetWidget": "SessionContextScreen",
+     "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
      "gates": [],
      "destructive": false
     },
@@ -15379,14 +15166,14 @@
     {
      "id": "workspace-session-context-details",
      "type": "menu-item",
-     "label": "Details",
+     "label": "Conversation context",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1573,
-     "action": "open-sheet",
-     "target": "workspace-session-details-sheet",
-     "targetWidget": "_sessionAction",
-     "effect": "onAction('details', session).",
+     "action": "navigate",
+     "target": "session-context",
+     "targetWidget": "SessionContextScreen",
+     "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
      "gates": [
       "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
      ],
@@ -15604,44 +15391,6 @@
    ]
   },
   {
-   "id": "workspace-directory-details-dialog",
-   "title": "<directory basename>",
-   "kind": "dialog",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_showDirectoryDetails",
-   "presentedBy": [],
-   "line": 834,
-   "purpose": "Shows the full selectable path of the active directory.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-active-session-directory"
-    },
-    {
-     "page": "workspace",
-     "element": "workspace-restricted-directory"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "workspace-directory-details-dialog-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 843,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop().",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "workspace-context-sheet",
    "title": "[Project and workspace context]",
    "kind": "sheet",
@@ -15657,6 +15406,14 @@
     {
      "page": "workspace",
      "element": "workspace-project-header"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-active-session-directory"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-restricted-directory"
     }
    ],
    "gates": [
@@ -15675,22 +15432,6 @@
      "targetWidget": "ProjectsScreen",
      "effect": "Pops the sheet with _ContextChoice.switchProject(); _openContextSheet then calls _openProjects() which pushes ProjectsScreen.",
      "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "workspace-context-sheet-manage-project",
-     "type": "list-tile",
-     "label": "Manage project",
-     "key": "manage-project-entry",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 967,
-     "action": "navigate",
-     "target": "manage-project",
-     "targetWidget": "ManageProjectScreen",
-     "effect": "Pops with _ContextChoice.manageProject(); _openManageProject() pushes ManageProjectScreen(project: _selectedProject) and reloads on return.",
-     "gates": [
-      "ManageProjectScreen.isAvailable(capabilities) (always true)"
-     ],
      "destructive": false
     },
     {
@@ -15726,29 +15467,6 @@
      "destructive": false
     }
    ]
-  },
-  {
-   "id": "workspace-session-details-sheet",
-   "title": "<session title>",
-   "kind": "sheet",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_sessionAction",
-   "presentedBy": [],
-   "line": 1044,
-   "purpose": "Read-only session details: title, directory, cost/diff usage labels and shared URL (selectable text only).",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-session-menu-details"
-    },
-    {
-     "page": "workspace",
-     "element": "workspace-session-context-details"
-    }
-   ],
-   "gates": [],
-   "elements": []
   },
   {
    "id": "workspace-rename-session-dialog",
@@ -15934,7 +15652,7 @@
    "file": "lib/ui/screens/workspace_screen.dart",
    "widget": "_WorkspaceFolderChooser",
    "presentedBy": [],
-   "line": 2233,
+   "line": 2123,
    "purpose": "Blocking state of the Workspace tab while the connection has no usable project folder: create, open or browse a folder, or search all sessions.",
    "reachedFrom": [
     {
@@ -15962,7 +15680,7 @@
      "label": "Create a new folder",
      "key": "workspace-create-folder",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2281,
+     "line": 2152,
      "action": "open-dialog",
      "target": "project-folder-new-dialog",
      "targetWidget": "ProjectFolderActions.createFolder",
@@ -15978,7 +15696,7 @@
      "label": "Open a project folder",
      "key": "workspace-open-folder",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2288,
+     "line": 2158,
      "action": "open-dialog",
      "target": "project-folder-open-dialog",
      "targetWidget": "ProjectFolderActions.openFolder",
@@ -15992,7 +15710,7 @@
      "label": "Choose from opened projects",
      "key": "workspace-browse-projects",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2295,
+     "line": 2164,
      "action": "navigate",
      "target": "projects",
      "targetWidget": "ProjectsScreen",
@@ -16001,18 +15719,18 @@
      "destructive": false
     },
     {
-     "id": "workspace-folder-chooser-details",
-     "type": "list-tile",
-     "label": "Details",
-     "key": null,
+     "id": "workspace-folder-chooser-search-all",
+     "type": "button",
+     "label": "Search all sessions",
+     "key": "workspace-chooser-search-all",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2300,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile expands the projectFolderNoCreateHint explanation.",
+     "line": 2171,
+     "action": "navigate",
+     "target": "global-sessions",
+     "targetWidget": "GlobalSessionsScreen",
+     "effect": "onSearchAll -> _openAllSessions() pushes GlobalSessionsScreen.",
      "gates": [
-      "!canCreate"
+      "capabilities.globalSessionSearch"
      ],
      "destructive": false
     },
@@ -16022,7 +15740,7 @@
      "label": "Retry projects",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2317,
+     "line": 2191,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -16033,18 +15751,18 @@
      "destructive": false
     },
     {
-     "id": "workspace-folder-chooser-search-all",
-     "type": "button",
-     "label": "Search all sessions",
-     "key": "workspace-chooser-search-all",
+     "id": "workspace-folder-chooser-details",
+     "type": "list-tile",
+     "label": "Details",
+     "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2326,
-     "action": "navigate",
-     "target": "global-sessions",
-     "targetWidget": "GlobalSessionsScreen",
-     "effect": "onSearchAll -> _openAllSessions() pushes GlobalSessionsScreen.",
+     "line": 2197,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile expands the projectFolderNoCreateHint explanation.",
      "gates": [
-      "capabilities.globalSessionSearch"
+      "!canCreate"
      ],
      "destructive": false
     }
@@ -16061,10 +15779,6 @@
    "line": 32,
    "purpose": "List the project's main copy and its worktrees with each row's state word; open, start a conversation in, create (pinned primary), reset and delete them.",
    "reachedFrom": [
-    {
-     "page": "manage-project",
-     "element": "manage-project-worktrees"
-    },
     {
      "page": "project-hub",
      "element": "project-hub-worktrees"
@@ -16210,6 +15924,20 @@
      "destructive": false
     },
     {
+     "id": "worktrees-glossary-label",
+     "type": "link",
+     "label": "Worktrees (term)",
+     "key": "worktrees-section-label",
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 553,
+     "action": "other",
+     "target": null,
+     "targetWidget": "KitTerm",
+     "effect": "KitTerm: a tap, long-press or hover shows the worktree explanation in a bubble anchored to the word (the info-label sheet was removed by slice-P3.1).",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "worktrees-primary-tile",
      "type": "list-tile",
      "label": "<project folder> / Default project · {directory}",
@@ -16224,21 +15952,6 @@
       "disabled when busy or already current"
      ],
      "destructive": false
-    },
-    {
-     "id": "worktrees-glossary-label",
-     "type": "link",
-     "label": "Worktrees (info label)",
-     "key": "worktrees-section-label",
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 623,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel with Glossary.worktree.explanation opens the explanation sheet (InfoLabel.show).",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/info_label.dart"
     },
     {
      "id": "worktrees-tile",
@@ -16707,79 +16420,6 @@
      "targetWidget": null,
      "effect": "toggle(): setState(_unfinishedOnly = !_unfinishedOnly) (local view filter; button variants at 154/160).",
      "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-session-inventory-footer",
-   "title": "[Session inventory footer]",
-   "kind": "overlay",
-   "area": "workspace",
-   "file": "lib/ui/widgets/session_inventory_footer.dart",
-   "widget": "SessionInventoryFooter",
-   "presentedBy": [],
-   "line": 7,
-   "purpose": "Continuation controls under session lists when the inventory is partial, loading or failed.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-inventory-footer"
-    },
-    {
-     "page": "run-command-dialog",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [],
-   "embeddedIn": [
-    "WorkspaceScreen",
-    "WorkspaceScreen._showArchived",
-    "RunCommandDialog (lib/ui/widgets/run_command_dialog.dart:186)"
-   ],
-   "hostPages": [
-    "run-command-dialog",
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-session-inventory-footer-reload",
-     "type": "button",
-     "label": "Reload recent sessions",
-     "key": null,
-     "file": "lib/ui/widgets/session_inventory_footer.dart",
-     "line": 46,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.refreshSessions().",
-     "gates": [
-      "(controller.sessionsError != null || controller.pinnedSessionsLoadFailed) && controller.hasMoreSessions",
-      "disabled while loading"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-session-inventory-footer-more",
-     "type": "button",
-     "label": "Load more sessions | Retry | Reload recent sessions",
-     "key": "session-inventory-more",
-     "file": "lib/ui/widgets/session_inventory_footer.dart",
-     "line": 51,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.loadMoreSessions(), or controller.refreshSessions() when the inventory failed and there is nothing to continue.",
-     "gates": [
-      "footer shown when controller.hasMoreSessions || error != null || loading",
-      "disabled while loading"
-     ],
      "destructive": false
     }
    ]
@@ -17614,6 +17254,38 @@
    ],
    "elements": [
     {
+     "id": "project-hub-services",
+     "type": "list-tile",
+     "label": "Development services",
+     "key": "project-hub-services",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "development-services",
+     "targetWidget": "DevelopmentServicesScreen",
+     "effect": "openProjectTool(services): pushes DevelopmentServicesScreen for the open project folder (moved from Manage project, slice-P3.11a).",
+     "gates": [
+      "capabilities.developmentServices"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-workspaces",
+     "type": "list-tile",
+     "label": "Cloud environments",
+     "key": "project-hub-workspaces",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "managed-workspaces",
+     "targetWidget": "ManagedWorkspacesScreen",
+     "effect": "openProjectTool(workspaces): resolves the catalog project for controller.directory and pushes ManagedWorkspacesScreen (moved from Manage project, slice-P3.11a).",
+     "gates": [
+      "capabilities.projectManagement && capabilities.managedWorkspaces"
+     ],
+     "destructive": false
+    },
+    {
      "id": "project-hub-system-back",
      "type": "gesture",
      "label": "[system back]",
@@ -17685,9 +17357,9 @@
      "action": "navigate",
      "target": "terminal",
      "targetWidget": "TerminalPage",
-     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))). Without capabilities.terminal (and other tools present) the row stays, dimmed with the registry's reason (KitRow.unavailable, 'flag:terminal').",
      "gates": [
-      "capabilities.terminal"
+      "listed while the tab shows; enabled when capabilities.terminal"
      ],
      "destructive": false
     },
@@ -19652,15 +19324,6 @@
    "purpose": "Runs a slash command in a new or existing chat with optional arguments; returns the session id.",
    "reachedFrom": [
     {
-     "page": "plugins-clear-mappings-sheet",
-     "element": null,
-     "evidence": "lib/ui/screens/settings/server_plugins_section.dart:477"
-    },
-    {
-     "page": "plugins-settings",
-     "element": "plugins-review-command"
-    },
-    {
      "page": "commands",
      "element": "commands-row"
     }
@@ -20948,15 +20611,15 @@
     },
     {
      "id": "provider-quota-enable-monitoring",
-     "type": "button",
-     "label": "Enable quota monitoring",
+     "type": "list-tile",
+     "label": "Alert me about {provider} on {server}",
      "key": null,
      "file": "lib/ui/screens/provider_quota_screen.dart",
      "line": 342,
-     "action": "open-dialog",
-     "target": "provider-quota-enroll-dialog",
-     "targetWidget": "_enroll",
-     "effect": "_enroll(): opens the monitoring consent dialog.",
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_enroll(): quotaMonitor.enroll(profileID, snapshot, threshold: 90, shared notification rules) in place; the row gives way to the source's threshold row and named Stop (the enrol dialog merged into the page, slice-P3.11a).",
      "gates": [
       "_overview.consented && snapshot != null && snapshot.canShowWindows",
       "disabled when _overview.snapshotIsStale"
@@ -21087,70 +20750,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "quotaMonitor.disable(profileID, provider): removes the source from monitoring.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "provider-quota-enroll-dialog",
-   "title": "Monitor this provider source?",
-   "kind": "dialog",
-   "area": "servers",
-   "file": "lib/ui/screens/provider_quota_screen.dart",
-   "widget": "_enroll",
-   "presentedBy": [
-    "_enroll"
-   ],
-   "line": 108,
-   "purpose": "Consent dialog for background quota monitoring of the current source, with its initial threshold.",
-   "reachedFrom": [
-    {
-     "page": "provider-quota",
-     "element": "provider-quota-enable-monitoring"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "provider-quota-enroll-dialog-threshold",
-     "type": "dropdown",
-     "label": "{percent}% used (50 / 75 / 90 / 100)",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 124,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Local dialog state: threshold.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 143,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops with false.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-enable",
-     "type": "button",
-     "label": "Enable quota monitoring",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 147,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, threshold) with alerts, Wi-Fi only and quiet hours taken from the shared notification rules; the new source appears in the monitoring section in place (snackbar on failure).",
      "gates": [],
      "destructive": false
     }
@@ -23141,8 +22740,8 @@
    "purpose": "Per-project registry of development commands and preview links: register, start/stop/restart tracked commands on the server, read logs, open the preview URL.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-services"
+     "page": "project-hub",
+     "element": "project-hub-services"
     }
    ],
    "gates": [
@@ -26366,13 +25965,8 @@
      "element": "workspace-new-session"
     },
     {
-     "page": "team-home-runs-tab",
-     "element": "team-home-runs-row"
-    },
-    {
      "page": "team-home",
-     "element": null,
-     "evidence": "lib/ui/screens/team/team_home_screen.dart:None"
+     "element": "team-home-runs-row"
     },
     {
      "page": "system",
@@ -26725,10 +26319,6 @@
    "line": 54,
    "purpose": "Agent detail: state header, identity, runtime, current work, activity step log, live output entry, capability-gated controls and technical details.",
    "reachedFrom": [
-    {
-     "page": "team-home-agents-tab",
-     "element": "team-home-agents-row"
-    },
     {
      "page": "team-run-agents-tab",
      "element": "team-run-agents-row"
@@ -27311,11 +26901,11 @@
      "element": "system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet"
     },
     {
-     "page": "team-home-needs-you-tab",
+     "page": "team-home",
      "element": "team-home-needs-you-gate-row"
     },
     {
-     "page": "team-home-needs-you-tab",
+     "page": "team-home",
      "element": "team-home-needs-you-gate-receipt-chip"
     },
     {
@@ -28490,10 +28080,6 @@
     {
      "page": "team-home",
      "element": "team-home-start-run"
-    },
-    {
-     "page": "team-home-runs-tab",
-     "element": "team-home-runs-tab-empty-start-run"
     }
    ],
    "gates": [],
@@ -28655,7 +28241,7 @@
    "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens AgentScreen.",
    "reachedFrom": [
     {
-     "page": "team-home-runs-tab",
+     "page": "team-home",
      "element": "team-home-runs-agents-row"
     }
    ],
@@ -28740,10 +28326,6 @@
     {
      "page": "team-home",
      "element": "team-home-board"
-    },
-    {
-     "page": "team-home-runs-tab",
-     "element": "team-home-board-row"
     }
    ],
    "gates": [
@@ -28913,12 +28495,20 @@
    "file": "lib/ui/screens/team/team_home_screen.dart",
    "widget": "TeamHomeScreen",
    "presentedBy": [],
-   "line": 46,
-   "purpose": "AI Team (Gas City orchestration) home: host chip, Runs / Agents / Needs you segments, refresh and Start a run.",
+   "line": 110,
+   "purpose": "The one AI Team page while the team is on (P3.4, TeamPage): where it runs in the subtitle (the person's pause, a pause for heat and Android's stop said apart), one Now line (the heat guard's line instead while it holds the team), what needs the person, the tasks in one list by urgency, then the team itself: agents, how it runs (speed, opening Technical details) and what it spent today. Its menu holds Refresh, Change address, the phone team's controls and Turn off (the AI Team sheet's switches); Give the team a task is pinned below.",
    "reachedFrom": [
     {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-open"
+     "page": "settings",
+     "element": "settings-ai-team"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugins-settings-ai-team-row"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugins-team-other"
     },
     {
      "page": "workspace",
@@ -28929,25 +28519,13 @@
      "element": "workspace-team-door"
     },
     {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-run-row"
-    },
-    {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-completed-runs"
-    },
-    {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-more-runs"
-    },
-    {
      "page": "team-conversation",
      "element": "team-conversation-team-page"
     }
    ],
    "gates": [
-    "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)",
-    "only constructed at lib/ui/screens/workspace_screen.dart:856 from the TeamCard's onOpen; the card exists only under `if (widget.controller.orchestration case final team?)` (workspace_screen.dart:619)"
+    "TeamPage shows it while ConnectionController.orchestration is the connected profile's team (profile.orchestration != null); off, the same page is team-intro",
+    "opened on its own (the team conversation's team page) it goes back to the first route after Change address or Turn off, since that team is gone"
    ],
    "elements": [
     {
@@ -28968,41 +28546,12 @@
      "destructive": false
     },
     {
-     "id": "team-home-refresh",
-     "type": "icon-button",
-     "label": "Refresh",
-     "key": "team-home-refresh",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 161,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh(); disabled while _refreshing.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-home-start-run",
-     "type": "fab",
-     "label": "Start a run",
-     "key": "team-home-start-run",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 170,
-     "action": "open-sheet",
-     "target": "start-run-sheet",
-     "targetWidget": "showStartRunSheet",
-     "effect": "_startRun(): showStartRunSheet(context, controller), then switches the segment back to Runs.",
-     "gates": [
-      "controller.capabilities.controlMessage && controller.phase == OrchestrationPhase.ready && controller.snapshot.hasData"
-     ],
-     "destructive": false
-    },
-    {
      "id": "team-home-board",
      "type": "icon-button",
      "label": "Board",
      "key": "team-home-board",
      "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 266,
+     "line": 450,
      "action": "navigate",
      "target": "team-board",
      "targetWidget": "TeamBoardScreen",
@@ -29013,81 +28562,256 @@
      "destructive": false
     },
     {
-     "id": "team-home-pull",
-     "type": "gesture",
-     "label": "[pull to refresh]",
-     "key": "team-home-pull",
+     "id": "team-home-refresh",
+     "type": "menu-item",
+     "label": "Refresh",
+     "key": "team-home-refresh",
      "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 306,
+     "line": 459,
      "action": "mutate",
      "target": null,
-     "effect": "RefreshIndicator.onRefresh -> _refresh() (controller.retry()/refresh()).",
-     "gates": [
-      "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-     ],
+     "targetWidget": "OrchestrationController.refresh",
+     "effect": "Top bar menu: refetches every scope from the host (pull to refresh does the same on a phone).",
+     "gates": [],
      "destructive": false
     },
     {
-     "id": "team-home-host-chip",
-     "type": "chip",
-     "label": "{host} · {kind} · Gas City {version} · city {city} · read-only|controls",
-     "key": "team-home-host-chip",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 359,
-     "action": "open-sheet",
-     "target": "team-host-details-sheet",
-     "targetWidget": "showTeamHostDetailsSheet",
-     "effect": "Opens the host Technical details sheet: showTeamHostDetailsSheet(context, controller).",
-     "gates": [
-      "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-segments-menu",
-     "type": "icon-button",
-     "label": "[segment menu button showing the current segment]",
-     "key": "team-home-segments-menu",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 462,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu (PopupMenuButton via _CompactChoice, built at line 549) listing the three segments.",
-     "gates": [
-      "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`",
-      "shown when `AppTheme.stackedActions(context)` (large text)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-segments-menu-item",
+     "id": "team-home-change-address",
      "type": "menu-item",
-     "label": "Runs ({count}) | Agents ({count}) | Needs you ({count})",
-     "key": "team-home-segment-runs | team-home-segment-agents | team-home-segment-needs-you",
+     "label": "Change address",
+     "key": "team-home-change-address",
      "file": "lib/ui/screens/team/team_home_screen.dart",
      "line": 468,
+     "action": "open-sheet",
+     "target": "team-host-sheet",
+     "targetWidget": "editTeamAddress",
+     "effect": "Top bar menu: the address form prefilled with the saved address; a saved change replaces this team (saveTeamHost).",
+     "gates": [
+      "the connected profile owns this team and it is not the team inside the app (BuiltinTeam.isBuiltinConfig)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-phone-controls",
+     "type": "menu-item",
+     "label": "Keep it running, stop it or remove it",
+     "key": "team-home-phone-controls",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 478,
+     "action": "open-sheet",
+     "target": "embedded-team-phone-section",
+     "targetWidget": "TeamPhoneSection",
+     "effect": "Top bar menu: a kit sheet holding the phone Termux team's own controls (embedded-team-phone-section), in every state of the page.",
+     "gates": [
+      "teamPhoneProfile(connection.profile)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-turn-off",
+     "type": "menu-item",
+     "label": "Turn off",
+     "key": "team-home-turn-off",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 485,
+     "action": "open-sheet",
+     "target": "team-turn-off-sheet",
+     "targetWidget": "showTeamTurnOffSheet",
+     "effect": "Top bar menu: asks first; turnOffTeam stops the team inside the app (BuiltinTeam.turnOff) when it is that one, drops the cache and the config; TeamPage then shows the off state (team-intro) on the same page. A failed stop keeps it on and says so (team-home-turn-off-failed).",
+     "gates": [
+      "the connected profile owns this team"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "team-home-start-run",
+     "type": "fab",
+     "label": "Start a run",
+     "key": "team-home-start-run",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 532,
+     "action": "open-sheet",
+     "target": "start-run-sheet",
+     "targetWidget": "showStartRunSheet",
+     "effect": "_startRun(): showStartRunSheet(context, controller), then switches the segment back to Runs.",
+     "gates": [
+      "controller.capabilities.controlMessage && controller.phase == OrchestrationPhase.ready && controller.snapshot.hasData"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-filter-menu-item",
+     "type": "menu-item",
+     "label": "Active | Blocked | Completed | All",
+     "key": "team-home-filter-<name>",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 561,
      "action": "other",
      "target": null,
-     "effect": "CheckedPopupMenuItem per TeamHomeSegment; onSelected -> setState(_segment = s).",
+     "effect": "CheckedPopupMenuItem; onSelected -> onFilter -> setState(_filter = f).",
      "gates": [
       "AppTheme.stackedActions(context)"
      ],
      "destructive": false
     },
     {
-     "id": "team-home-segments",
-     "type": "tab",
-     "label": "Runs ({count}) | Agents ({count}) / Agents ({count} · {off} off) | Needs you ({count})",
-     "key": "team-home-segments",
+     "id": "team-home-runs-search",
+     "type": "text-field",
+     "label": "Search runs by title",
+     "key": "team-home-search",
      "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 562,
+     "line": 571,
      "action": "other",
      "target": null,
-     "effect": "SegmentedButton.onSelectionChanged -> setState(_segment = s); swaps the list body.",
+     "effect": "TextEditingController listener -> setState; filters rows by run.title substring (local).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-search-clear",
+     "type": "icon-button",
+     "label": "Clear search",
+     "key": "team-home-search-clear",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 572,
+     "action": "other",
+     "target": null,
+     "effect": "search.clear().",
      "gates": [
-      "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`",
-      "shown when `!AppTheme.stackedActions(context)` (normal text scale)"
+      "search.text.isNotEmpty"
      ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-filter-menu",
+     "type": "icon-button",
+     "label": "Filters · <current filter>",
+     "key": "team-home-filter-menu",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 573,
+     "action": "other",
+     "target": null,
+     "effect": "Opens overflow menu (_CompactChoice PopupMenuButton, line 462) with the four filters.",
+     "gates": [
+      "AppTheme.stackedActions(context) (large text)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-needs-you-gate-receipt-chip",
+     "type": "chip",
+     "label": "Sent | Unconfirmed | Not accepted",
+     "key": "team-home-gate-<gate.id>-receipt",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 749,
+     "action": "open-sheet",
+     "target": "gate-sheet",
+     "targetWidget": "showGateSheet",
+     "effect": "TeamReceiptChip (team_receipt.dart) ActionChip.onPressed -> onOpen = the row's onTap -> showGateSheet(...), where the retry lives.",
+     "gates": [
+      "`record case final record? when record.status != MutationStatus.confirmed` (teamGateMutation(controller, gate)); replaces the chevron"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-row",
+     "type": "list-tile",
+     "label": "<run title> · <kind> · {done} of {total} done · <state word> [Needs you]",
+     "key": "team-home-run-<run.id>",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 756,
+     "action": "navigate",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversationScreen",
+     "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> TeamConversation.open(context, controller, runId: run.id) (P0.3). Opened from a conversation, the row for that same task pops back to it instead of stacking a second copy.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-home-needs-you-gate-row",
+     "type": "list-tile",
+     "label": "<gate title> · <kind word> · <run/work link> · <age>",
+     "key": "team-home-gate-<gate.id>",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 895,
+     "action": "open-sheet",
+     "target": "gate-sheet",
+     "targetWidget": "showGateSheet",
+     "effect": "showGateSheet(context, controller, gate.id, now: () => now) (line 1124).",
+     "gates": [
+      "row shown while `!teamGateAnswered(controller, gate)`"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-completed-more",
+     "type": "list-tile",
+     "label": "Show {n} more",
+     "key": "team-home-completed-more",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 906,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Shows the finished tasks past the first three, in the same list.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-upkeep-toggle",
+     "type": "toggle",
+     "label": "Show team upkeep ({count})",
+     "key": "team-home-upkeep-toggle",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 921,
+     "action": "other",
+     "target": null,
+     "effect": "SwitchListTile.onChanged -> setState(_upkeepShown = shown); view state only, never persisted.",
+     "gates": [
+      "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-agents-row",
+     "type": "list-tile",
+     "label": "{n} agents · {state}",
+     "key": "team-home-agents-row",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 939,
+     "action": "navigate",
+     "target": "team-agents",
+     "targetWidget": "TeamAgentsScreen",
+     "effect": "The agents list; says \"resting while the phone cools\" while the heat guard holds the team.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-home-host-row",
+     "type": "list-tile",
+     "label": "Technical details · <how fast it runs there>",
+     "key": "team-home-host-row",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 950,
+     "action": "open-sheet",
+     "target": "team-host-details-sheet",
+     "targetWidget": "showTeamHostDetailsSheet",
+     "effect": "How it runs where it runs (teamHostDisclaimer), opening the host's Technical details (address, version, access, terms).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-home-pull",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": "team-home-pull",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 975,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": "OrchestrationController.refresh",
+     "effect": "Pull to refresh (retry when the probe failed).",
+     "gates": [],
      "destructive": false
     },
     {
@@ -29124,310 +28848,6 @@
    ]
   },
   {
-   "id": "team-home-runs-tab",
-   "title": "Runs ({count})",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/team_home_screen.dart",
-   "widget": "_RunsSegment",
-   "presentedBy": [],
-   "line": 601,
-   "purpose": "Runs segment: filter chips, title search, open runs, collapsed completed group and the hidden host-upkeep runs.",
-   "reachedFrom": [
-    {
-     "page": "team-home",
-     "element": "team-home-segments"
-    },
-    {
-     "page": "team-home",
-     "element": "team-home-segments-menu-item"
-    }
-   ],
-   "gates": [
-    "_segment == TeamHomeSegment.runs (default)",
-    "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-   ],
-   "elements": [
-    {
-     "id": "team-home-runs-filter-menu-item",
-     "type": "menu-item",
-     "label": "Active | Blocked | Completed | All",
-     "key": "team-home-filter-<name>",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 468,
-     "action": "other",
-     "target": null,
-     "effect": "CheckedPopupMenuItem; onSelected -> onFilter -> setState(_filter = f).",
-     "gates": [
-      "AppTheme.stackedActions(context)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-agents-row",
-     "type": "list-tile",
-     "label": "{live} agents · {working} working",
-     "key": "team-home-agents-row",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 550,
-     "action": "navigate",
-     "target": "team-agents",
-     "targetWidget": "TeamAgentsScreen",
-     "effect": "_AgentsRow.onTap -> _openAgents(): Navigator.push(TeamAgentsScreen(controller, onOpenAgent: widget.onOpenAgent, now: widget.now)) (team_home_screen.dart:142-152). \"3. The team itself: one row, not a tab.\"",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-home-board-row",
-     "type": "list-tile",
-     "label": "View board",
-     "key": "team-home-board-row",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 575,
-     "action": "navigate",
-     "target": "team-board",
-     "targetWidget": "TeamBoardScreen",
-     "effect": "openTeamBoard(context, controller, now: widget.now): pushes the board (docs/design/team-board-2026-09-26.md); every task by where it stands.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-filter-menu",
-     "type": "icon-button",
-     "label": "Filters · <current filter>",
-     "key": "team-home-filter-menu",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 728,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu (_CompactChoice PopupMenuButton, line 462) with the four filters.",
-     "gates": [
-      "AppTheme.stackedActions(context) (large text)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-filter-chips",
-     "type": "chip",
-     "label": "Active | Blocked | Completed | All",
-     "key": "team-home-filter-<active|blocked|completed|all>",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 749,
-     "action": "other",
-     "target": null,
-     "effect": "ChoiceChip.onSelected -> onFilter(f) -> setState(_filter = f); local filter only.",
-     "gates": [
-      "!AppTheme.stackedActions(context)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-search",
-     "type": "text-field",
-     "label": "Search runs by title",
-     "key": "team-home-search",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 766,
-     "action": "other",
-     "target": null,
-     "effect": "TextEditingController listener -> setState; filters rows by run.title substring (local).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-search-clear",
-     "type": "icon-button",
-     "label": "Clear search",
-     "key": "team-home-search-clear",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 775,
-     "action": "other",
-     "target": null,
-     "effect": "search.clear().",
-     "gates": [
-      "search.text.isNotEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-completed-group",
-     "type": "list-tile",
-     "label": "Completed today ({count}) / Completed ({count})",
-     "key": "team-home-completed-group",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 801,
-     "action": "other",
-     "target": null,
-     "effect": "Expands/collapses the completed runs group: setState(_completedExpanded = !_completedExpanded).",
-     "gates": [
-      "completed.isNotEmpty (only under `filter == TeamRunFilter.all`)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-tab-empty-start-run",
-     "type": "button",
-     "label": "Start a run",
-     "key": null,
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 825,
-     "action": "open-sheet",
-     "target": "start-run-sheet",
-     "targetWidget": "showStartRunSheet",
-     "effect": "Action of the teaching empty state (key team-home-runs-empty): onStartRun -> _startRun(), the same as team-home-start-run.",
-     "gates": [
-      "the run list is empty (not failed)",
-      "controller.capabilities.controlMessage"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-upkeep-toggle",
-     "type": "toggle",
-     "label": "Show team upkeep ({count})",
-     "key": "team-home-upkeep-toggle",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 845,
-     "action": "other",
-     "target": null,
-     "effect": "SwitchListTile.onChanged -> setState(_upkeepShown = shown); view state only, never persisted.",
-     "gates": [
-      "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-runs-row",
-     "type": "list-tile",
-     "label": "<run title> · <kind> · {done} of {total} done · <state word> [Needs you]",
-     "key": "team-home-run-<run.id>",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 935,
-     "action": "navigate",
-     "target": "team-conversation",
-     "targetWidget": "TeamConversationScreen",
-     "effect": "onOpenRun(run): widget.onOpenRun ?? _openRun -> TeamConversation.open(context, controller, runId: run.id) (P0.3). Opened from a conversation, the row for that same task pops back to it instead of stacking a second copy.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-home-agents-tab",
-   "title": "Agents ({count})",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/team_home_screen.dart",
-   "widget": "_AgentsSegment",
-   "presentedBy": [],
-   "line": 986,
-   "purpose": "Agents segment: live fleet rows, then the collapsed 'Suspended on the host' group.",
-   "reachedFrom": [
-    {
-     "page": "team-home",
-     "element": "team-home-segments"
-    },
-    {
-     "page": "team-home",
-     "element": "team-home-segments-menu-item"
-    }
-   ],
-   "gates": [
-    "_segment == TeamHomeSegment.agents",
-    "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-   ],
-   "elements": [
-    {
-     "id": "team-home-agents-suspended-group",
-     "type": "list-tile",
-     "label": "Suspended on the host ({count})",
-     "key": "team-home-suspended-group",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 1036,
-     "action": "other",
-     "target": null,
-     "effect": "Expands/collapses the suspended/stopped agents: setState(_suspendedExpanded = !_suspendedExpanded).",
-     "gates": [
-      "suspended.isNotEmpty (teamOffAgents(snapshot.agents))"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-agents-row",
-     "type": "list-tile",
-     "label": "<agent name> · <role> · <provider / model> · <state word>",
-     "key": "team-home-agent-<agent.id>",
-     "file": "lib/ui/widgets/team_agent_row.dart",
-     "line": 113,
-     "action": "navigate",
-     "target": "team-agent",
-     "targetWidget": "AgentScreen",
-     "effect": "TeamAgentRow.onTap -> onOpenAgent(agent): widget.onOpenAgent ?? _openAgent -> Navigator.push(AgentScreen(controller, agentId: agent.id)) (team_home_screen.dart:114).",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-home-needs-you-tab",
-   "title": "Needs you ({count})",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/team_home_screen.dart",
-   "widget": "_NeedsYouSegment",
-   "presentedBy": [],
-   "line": 1082,
-   "purpose": "Needs you segment: the host's open gates, ranked by kind then newest first; a row opens the Gate sheet.",
-   "reachedFrom": [
-    {
-     "page": "team-home",
-     "element": "team-home-segments"
-    },
-    {
-     "page": "team-home",
-     "element": "team-home-segments-menu-item"
-    }
-   ],
-   "gates": [
-    "_segment == TeamHomeSegment.needsYou",
-    "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-   ],
-   "elements": [
-    {
-     "id": "team-home-needs-you-gate-row",
-     "type": "list-tile",
-     "label": "<gate title> · <kind word> · <run/work link> · <age>",
-     "key": "team-home-gate-<gate.id>",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 1169,
-     "action": "open-sheet",
-     "target": "gate-sheet",
-     "targetWidget": "showGateSheet",
-     "effect": "showGateSheet(context, controller, gate.id, now: () => now) (line 1124).",
-     "gates": [
-      "row shown while `!teamGateAnswered(controller, gate)`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-home-needs-you-gate-receipt-chip",
-     "type": "chip",
-     "label": "Sent | Unconfirmed | Not accepted",
-     "key": "team-home-gate-<gate.id>-receipt",
-     "file": "lib/ui/widgets/team_receipt.dart",
-     "line": 125,
-     "action": "open-sheet",
-     "target": "gate-sheet",
-     "targetWidget": "showGateSheet",
-     "effect": "TeamReceiptChip (team_receipt.dart) ActionChip.onPressed -> onOpen = the row's onTap -> showGateSheet(...), where the retry lives.",
-     "gates": [
-      "`record case final record? when record.status != MutationStatus.confirmed` (teamGateMutation(controller, gate)); replaces the chevron"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "team-intro",
    "title": "AI Team",
    "kind": "screen",
@@ -29436,8 +28856,16 @@
    "widget": "TeamIntroScreen",
    "presentedBy": [],
    "line": 59,
-   "purpose": "The AI Team's intro while it is off: a drawing of a task going from agent to agent, what the team does in four steps (plans, works, checks, merges), what it needs on this kind of server, and one primary action that hands over to that kind's own set-up (docs/qa/team-discover-2026-09-25).",
+   "purpose": "The one AI Team page while the team is off (P3.4: team-intro merged into team-home; TeamPage shows it in that page's place): a drawing, what the team does in four steps, what it needs on this kind of server, why nothing was found on a computer (TeamDiscovery.miss), and one primary action for that kind's set-up; Enter its address on a computer either way. Once the team is on, the same page is the team (no hop back).",
    "reachedFrom": [
+    {
+     "page": "settings",
+     "element": "settings-ai-team"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugins-settings-ai-team-row"
+    },
     {
      "page": "embedded-team-discover",
      "element": "embedded-team-discover-open"
@@ -29445,15 +28873,11 @@
     {
      "page": "embedded-team-discover",
      "element": "embedded-team-discover-row"
-    },
-    {
-     "page": "settings",
-     "element": "settings-ai-team"
     }
    ],
    "gates": [
-    "openTeamIntro(context, controller) from TeamDiscoverEntry (team off) or the Settings AI Team row when `controller.profile?.orchestration == null`",
-    "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's runtime supportsAiTeam decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
+    "TeamPage while connection.profile?.orchestration == null (openTeamPage from Settings › AI Team, Plugins, search, New conversation's Team)",
+    "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's pre-flight decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
    ],
    "elements": [
     {
@@ -29462,7 +28886,7 @@
      "label": "Set it up",
      "key": "team-intro-set-up",
      "file": "lib/ui/screens/team/team_intro_screen.dart",
-     "line": 239,
+     "line": 223,
      "action": "navigate",
      "target": "plugins-settings",
      "targetWidget": "PluginsSettingsScreen",
@@ -29473,28 +28897,12 @@
      "destructive": false
     },
     {
-     "id": "team-intro-turn-on",
-     "type": "button",
-     "label": "Turn on",
-     "key": "team-intro-turn-on",
-     "file": "lib/ui/screens/team/team_intro_screen.dart",
-     "line": 255,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "TeamDiscovery.turnOn(): saves the found host's config on the profile and syncs the plugin, then pops back (the Work tab's TeamCard takes the entry's place).",
-     "gates": [
-      "a computer, and TeamDiscovery found Gas City on the server's host"
-     ],
-     "destructive": false
-    },
-    {
      "id": "team-intro-set-up-termux",
      "type": "button",
      "label": "Set it up",
      "key": "team-intro-set-up",
      "file": "lib/ui/screens/team/team_intro_screen.dart",
-     "line": 266,
+     "line": 223,
      "action": "navigate",
      "target": "termux-setup-installed",
      "targetWidget": "ThisPhoneScreen",
@@ -29505,16 +28913,32 @@
      "destructive": false
     },
     {
+     "id": "team-intro-turn-on",
+     "type": "button",
+     "label": "Turn on",
+     "key": "team-intro-turn-on",
+     "file": "lib/ui/screens/team/team_intro_screen.dart",
+     "line": 232,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "TeamDiscovery.turnOn(): saves the found host's config on the profile and syncs the plugin, then pops back (the Work tab's TeamCard takes the entry's place).",
+     "gates": [
+      "a computer, and TeamDiscovery found Gas City on the server's host"
+     ],
+     "destructive": false
+    },
+    {
      "id": "team-intro-address",
      "type": "button",
      "label": "Enter its address",
      "key": "team-intro-address",
      "file": "lib/ui/screens/team/team_intro_screen.dart",
-     "line": 267,
+     "line": 247,
      "action": "open-sheet",
      "target": "team-host-sheet",
      "targetWidget": "showTeamHostSheet",
-     "effect": "The manual-add form (address, city, kind of computer; probes on submit). A found host's config is saved on the profile and the intro pops.",
+     "effect": "editTeamAddress: the address form (prefilled with what discovery found, else the server's host); a saved address turns the team on and the same page becomes the team's.",
      "gates": [
       "a computer, and nothing found"
      ],
@@ -29526,7 +28950,7 @@
      "label": "Run it on a computer",
      "key": "team-intro-on-computer",
      "file": "lib/ui/screens/team/team_intro_screen.dart",
-     "line": 399,
+     "line": 383,
      "action": "open-sheet",
      "target": "team-host-guide-sheet",
      "targetWidget": "showTeamHostGuideSheet",
@@ -30003,135 +29427,6 @@
    ]
   },
   {
-   "id": "embedded-team-card",
-   "title": "AI Team · Gas City",
-   "kind": "overlay",
-   "area": "team",
-   "file": "lib/ui/widgets/team_card.dart",
-   "widget": "TeamCard",
-   "presentedBy": [],
-   "line": 36,
-   "purpose": "Workspace card summarising the AI Team: hero percentage, sentence, progress bar, up to three run rows, agent constellation, Open and Refresh.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "`if (widget.controller.orchestration case final team?)` (lib/ui/screens/workspace_screen.dart:619): the card is not in the tree while the connected profile has no AI Team plugin config",
-    "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-   ],
-   "embeddedIn": [
-    "WorkspaceScreen"
-   ],
-   "hostPages": [
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-team-card-retry",
-     "type": "button",
-     "label": "Retry",
-     "key": "team-card-retry",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 477,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh().",
-     "gates": [
-      "`controller.phase == OrchestrationPhase.failed`, or `ready && !snapshot.hasData && controller.lastError != null`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-run-row",
-     "type": "list-tile",
-     "label": "<run title> · <state word> [Needs you]",
-     "key": "team-card-run-<run.id>",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 828,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "onTap -> widget.onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(TeamHomeScreen(controller: team)) (the row opens the home, not the run).",
-     "gates": [
-      "data state; up to 3 rows (_maxRunRows)",
-      "tap enabled only when `tapsAllowed = !stale`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-completed-runs",
-     "type": "list-tile",
-     "label": "{count} completed runs",
-     "key": "team-card-completed-runs",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 876,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-     "gates": [
-      "completed > 0",
-      "!stale"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-more-runs",
-     "type": "list-tile",
-     "label": "{count} more runs",
-     "key": "team-card-more-runs",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 876,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-     "gates": [
-      "more > 0",
-      "!stale"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-open",
-     "type": "button",
-     "label": "Open",
-     "key": "team-card-open",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 1009,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(MaterialPageRoute(TeamHomeScreen(controller: team))).",
-     "gates": [
-      "empty or data state (not loading/error)",
-      "disabled when the data is stale (`tapsAllowed = !stale`)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "team-card-refresh",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 1015,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry()/controller.refresh(); disabled while _refreshing. Stays enabled when stale.",
-     "gates": [
-      "empty or data state"
-     ],
-     "destructive": false
-    }
-   ],
-   "hostNotes": "Constructed at lib/ui/screens/workspace_screen.dart:621 with onOpen: () => _openTeamHome(team) (line 854). Sits below ReturnBriefPanel and above the session sections."
-  },
-  {
    "id": "team-cycle-how-sheet",
    "title": "How the host dispatches",
    "kind": "sheet",
@@ -30500,16 +29795,16 @@
    "purpose": "Manual-add form: address, optional city, kind of computer; one submit probes the host and returns the OrchestrationConfig.",
    "reachedFrom": [
     {
-     "page": "profile-editor",
-     "element": "profile-editor-team-add"
+     "page": "team-home",
+     "element": "team-home-change-address"
     },
     {
      "page": "team-intro",
      "element": "team-intro-address"
     },
     {
-     "page": "team-plugin-sheet",
-     "element": "team-plugin-sheet-add-manually"
+     "page": "profile-editor",
+     "element": "profile-editor-team-add"
     }
    ],
    "gates": [],
@@ -30622,10 +29917,6 @@
     {
      "page": "team-intro",
      "element": "team-intro-on-computer"
-    },
-    {
-     "page": "team-plugin-sheet",
-     "element": "team-plugin-sheet-how"
     }
    ],
    "gates": [],
@@ -30645,8 +29936,8 @@
    "purpose": "Destructive confirmation before turning the AI Team plugin off for a server.",
    "reachedFrom": [
     {
-     "page": "team-plugin-sheet",
-     "element": "team-plugin-sheet-turn-off"
+     "page": "team-home",
+     "element": "team-home-turn-off"
     }
    ],
    "gates": [],
@@ -30661,7 +29952,7 @@
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "Pops true; the caller (TeamPluginSheet, plugins_screen.dart:351) turns the plugin off for the profile.",
+     "effect": "Pops true; the caller (the AI Team page's Turn off, team_home_screen.dart) runs turnOffTeam for the profile.",
      "gates": [],
      "destructive": true,
      "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
@@ -31065,15 +30356,14 @@
    "widget": "TeamPhoneSection",
    "presentedBy": [],
    "line": 80,
-   "purpose": "Section of the AI Team plugin sheet for the Termux profile: phone supervisor status, Start/Stop, keep-running tips, Remove.",
+   "purpose": "The phone Termux team's own controls (P3.4: a kit sheet from the AI Team page's menu, reachable in every state of the page): phone supervisor status, Start/Stop, keep-running tips, Remove.",
    "reachedFrom": [
     {
-     "page": "team-plugin-sheet",
-     "element": null,
-     "evidence": "lib/ui/screens/settings/plugins_screen.dart:636"
+     "page": "team-home",
+     "element": "team-home-phone-controls"
     },
     {
-     "page": "team-plugin-sheet",
+     "page": "team-home",
      "element": null,
      "via": "embedded"
     }
@@ -31083,10 +30373,10 @@
     "controls only when await runtime.supportsAiTeam; otherwise a \"not available\" text"
    ],
    "embeddedIn": [
-    "TeamPluginSheet"
+    "TeamHomeScreen (menu sheet)"
    ],
    "hostPages": [
-    "team-plugin-sheet"
+    "team-home"
    ],
    "elements": [
     {
@@ -31385,7 +30675,7 @@
    "reachedFrom": [
     {
      "page": "team-home",
-     "element": "team-home-host-chip"
+     "element": "team-home-host-row"
     }
    ],
    "gates": [],
@@ -31425,11 +30715,6 @@
      "via": "embedded"
     },
     {
-     "page": "team-plugin-sheet",
-     "element": null,
-     "via": "embedded"
-    },
-    {
      "page": "team-run",
      "element": null,
      "via": "embedded"
@@ -31438,12 +30723,10 @@
    "gates": [],
    "embeddedIn": [
     "AgentScreen",
-    "RunScreen",
-    "TeamPluginSheet"
+    "RunScreen"
    ],
    "hostPages": [
     "team-agent",
-    "team-plugin-sheet",
     "team-run"
    ],
    "elements": [
@@ -32111,10 +31394,10 @@
      "key": null,
      "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 203,
-     "action": "open-sheet",
-     "target": "command-auth-sheet-confirm-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_start(): confirm sheet, then controller.startIntegrationCommand(integration.id, method.id, locationRevision); on failure tries controller.pendingIntegrationCommand to recover the attempt.",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): controller.startIntegrationCommand(integration.id, method.id, locationRevision) directly; the sheet's intro is the question (the confirm merged into it, slice-P3.11a).",
      "gates": [
       "_current (source/profile unchanged)",
       "_attempt == null && !_uncertainStart && _status != complete"
@@ -32124,14 +31407,14 @@
     {
      "id": "command-auth-sheet-check",
      "type": "button",
-     "label": "Check status",
+     "label": "Check {provider} sign-in now",
      "key": null,
      "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 208,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog().",
+     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog(). Offered 8 s after a start without an answer, or at once for an attempt found running.",
      "gates": [
       "_current",
       "_attempt != null"
@@ -32154,58 +31437,6 @@
       "_attempt != null"
      ],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "command-auth-sheet-confirm-sheet",
-   "title": "Start sign-in on the server?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/command_auth_sheet.dart",
-   "widget": "_CommandAuthSheetState._start",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 65,
-   "purpose": "Confirms running the sign-in command on the server.",
-   "reachedFrom": [
-    {
-     "page": "command-auth-sheet",
-     "element": "command-auth-sheet-start"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "command-auth-sheet-confirm-sheet-confirm",
-     "type": "button",
-     "label": "Start server sign-in",
-     "key": null,
-     "file": "lib/ui/screens/library/command_auth_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
-    },
-    {
-     "id": "command-auth-sheet-confirm-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/library/command_auth_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -32483,26 +31714,12 @@
    "gates": [],
    "elements": [
     {
-     "id": "credential-management-sheet-rename-dialog-label",
-     "type": "text-field",
-     "label": "Account label",
-     "key": null,
-     "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 418,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onChanged revalidates; onSubmitted pops the trimmed label when valid.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "credential-management-sheet-rename-dialog-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
      "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 430,
+     "line": 178,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -32516,11 +31733,25 @@
      "label": "Save label",
      "key": null,
      "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 434,
+     "line": 182,
      "action": "submit",
      "target": null,
      "targetWidget": null,
      "effect": "Pops the label; caller runs controller.renameIntegrationCredential(integrationID, id, label, locationRevision). Disabled when invalid.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-rename-dialog-label",
+     "type": "text-field",
+     "label": "Account label",
+     "key": null,
+     "file": "lib/ui/screens/library/credential_sheet.dart",
+     "line": 418,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onChanged revalidates; onSubmitted pops the trimmed label when valid.",
      "gates": [],
      "destructive": false
     }
@@ -33016,8 +32247,8 @@
      "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 187,
      "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "_confirmForgetSignIn",
      "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
      "gates": [
       "_showProviders (widget.mode != IntegrationsMode.mcp)",
@@ -33190,22 +32421,6 @@
      "gates": [
       "_showProviders (widget.mode != IntegrationsMode.mcp)",
       "_providerQuery.isNotEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-mcp-glossary",
-     "type": "link",
-     "label": "MCP (info label)",
-     "key": null,
-     "file": "lib/ui/screens/library/integrations_screen.dart",
-     "line": 896,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.glossary(Glossary.mcp) in the 'MCP SERVERS' header; tap calls InfoLabel.show (glossary bottom sheet, lib/ui/widgets/info_label.dart:138).",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
      ],
      "destructive": false
     },
@@ -33606,11 +32821,15 @@
     "showConfirmSheet"
    ],
    "line": 59,
-   "purpose": "Confirms dropping a locally persisted pending sign-in attempt.",
+   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
    "reachedFrom": [
     {
      "page": "integrations",
      "element": "integrations-pending-forget"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
     }
    ],
    "gates": [],
@@ -33631,56 +32850,6 @@
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "integrations-forget-uncertain-auth-sheet",
-   "title": "Forget uncertain start?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-   "widget": "_UncertainAuthRecoveryTile.build",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 191,
-   "purpose": "Confirms forgetting a sign-in start whose outcome was never confirmed.",
-   "reachedFrom": [
-    {
-     "page": "integrations",
-     "element": "integrations-uncertain-forget"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-confirm",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
@@ -33977,27 +33146,6 @@
    ]
   },
   {
-   "id": "skills-preview-sheet",
-   "title": "<skill name>",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/skills_screen.dart",
-   "widget": "_showSkill",
-   "presentedBy": [],
-   "line": 173,
-   "purpose": "Read-only preview of a skill: name, selectable location path and rendered SKILL.md (FilePreviewBody, key 'skill-content-preview').",
-   "reachedFrom": [
-    {
-     "page": "skills",
-     "element": "skills-row"
-    }
-   ],
-   "gates": [
-    "widget.sessionID == null (library / capabilities entry)"
-   ],
-   "elements": []
-  },
-  {
    "id": "mcp-setup",
    "title": "Add MCP server",
    "kind": "screen",
@@ -34027,20 +33175,6 @@
    ],
    "elements": [
     {
-     "id": "mcp-setup-glossary",
-     "type": "icon-button",
-     "label": "What is MCP?",
-     "key": "mcp-glossary",
-     "file": "lib/ui/screens/mcp_setup_screen.dart",
-     "line": 268,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.show(context, term: Glossary.mcp.term, explanation: ...).",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "mcp-setup-retry-reconnect",
      "type": "button",
      "label": "Retry reconnect",
@@ -34067,6 +33201,20 @@
      "target": null,
      "targetWidget": null,
      "effect": "_save(): validates, builds McpServerDraft, repository.addMcpServer(draft, scope: _scope); for persisted config also controller.reloadAfterConfigurationChange(); pops true. After a save whose reconnect failed the label becomes 'Close' and it just Navigator.pop(context, true). Disabled while saving or when detached before saving.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-glossary",
+     "type": "icon-button",
+     "label": "What is MCP?",
+     "key": "mcp-glossary",
+     "file": "lib/ui/screens/mcp_setup_screen.dart",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": "showKitTerm",
+     "effect": "showKitTerm(context, term: MCP, explanation: e7GlossaryMcpExplanation): a bubble anchored to the button (the info-label sheet was removed by slice-P3.1).",
      "gates": [],
      "destructive": false
     },
@@ -34785,20 +33933,6 @@
    "gates": [],
    "elements": [
     {
-     "id": "appearance-settings-mode",
-     "type": "list-tile",
-     "label": "Light or dark",
-     "key": "appearance-settings-entry",
-     "file": "lib/ui/screens/settings/personal_settings_screens.dart",
-     "line": 18,
-     "action": "open-sheet",
-     "target": "appearance-picker-sheet",
-     "targetWidget": "showAppearancePicker",
-     "effect": "showAppearancePicker(context, controller:) — the sheet writes controller.setAppearance(...). Subtitle is the current appearanceLabel.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "appearance-settings-theme-pack",
      "type": "list-tile",
      "label": "<theme pack name> (opencode, catppuccin, gruvbox, solarized, dynamic)",
@@ -34812,6 +33946,20 @@
      "gates": [
       "dynamic pack disabled unless harvestedDynamicPack.value != null (subtitle \"Material You colors are not available on this device.\")"
      ],
+     "destructive": false
+    },
+    {
+     "id": "appearance-settings-mode",
+     "type": "toggle",
+     "label": "Light or dark (Auto · Light · Dark)",
+     "key": "appearance-settings-entry",
+     "file": "lib/ui/screens/settings/personal_settings_screens.dart",
+     "line": 99,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": "KitSegmented",
+     "effect": "Inline segments; a tap calls controller.setAppearance(value) at once. The separate light-or-dark sheet (appearance-picker-sheet) was removed by slice-P3.1.",
+     "gates": [],
      "destructive": false
     },
     {
@@ -35025,14 +34173,14 @@
     {
      "id": "plugins-team-other",
      "type": "list-tile",
-     "label": "A team on a computer | Technical details",
+     "label": "A team on a computer | See the team’s tasks",
      "key": "plugins-team-other",
      "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 160,
-     "action": "open-sheet",
-     "target": "team-plugin-sheet",
-     "targetWidget": "TeamPluginSheet",
-     "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City (the sheet's Add manually); once the phone's team is on, its technical details and Turn off. Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
+     "line": 194,
+     "action": "navigate",
+     "target": "team-home",
+     "targetWidget": "TeamPage / editTeamAddress",
+     "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City opens the address form (team-host-sheet) straight away; once the phone's team is on, it opens the one AI Team page (openTeamPage, P3.4). Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
      "gates": [
       "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
      ],
@@ -35041,14 +34189,14 @@
     {
      "id": "plugins-settings-ai-team-row",
      "type": "list-tile",
-     "label": "AI Team · Gas City",
+     "label": "AI Team",
      "key": "plugins-ai-team-row",
      "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 166,
-     "action": "open-sheet",
-     "target": "team-plugin-sheet",
-     "targetWidget": "TeamPluginSheet",
-     "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
+     "line": 236,
+     "action": "navigate",
+     "target": "team-home",
+     "targetWidget": "TeamPage",
+     "effect": "openTeamPage(): the one AI Team page, on or off (P3.4; the AI Team sheet, team-plugin-sheet, is gone). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
      "gates": [
       "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
       "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
@@ -35073,23 +34221,6 @@
      "destructive": false
     },
     {
-     "id": "plugins-clear-mappings",
-     "type": "button",
-     "label": "Clear personal links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 209,
-     "action": "open-sheet",
-     "target": "plugins-clear-mappings-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_clearMappings() opens the destructive confirm sheet. Disabled while _editingMapping.",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "_mappingStore != null (controller.profile?.id != null)"
-     ],
-     "destructive": true
-    },
-    {
      "id": "plugins-retry",
      "type": "button",
      "label": "Try again",
@@ -35104,42 +34235,6 @@
       "section \"On the server\": capabilities.pluginInventory",
       "_failed",
       "_supported && _connected"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-review-command",
-     "type": "button",
-     "label": "Review /{command}",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 559,
-     "action": "open-dialog",
-     "target": "run-command-dialog",
-     "targetWidget": "showRunCommandDialog",
-     "effect": "_reviewCommand(plugin, name): re-validates plugin active + command present + mapping still stored, then showRunCommandDialog(context, controller:, command: CommandInfo(name), validateCommand:); if it returns a session id, Navigator.pushNamed('/chat/$sessionID').",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "one per mapped command name of a plugin with an id",
-      "enabled only when _connected && !_editingMapping && plugin.status == PluginStatus.active"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-manage-mapping",
-     "type": "button",
-     "label": "Link commands",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 573,
-     "action": "open-dialog",
-     "target": "plugins-mapping-dialog",
-     "targetWidget": "_editMapping",
-     "effect": "_editMapping(plugin): loads controller.repository.listCommands() then opens the mapping dialog.",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "plugin.id != null && PluginCommandMappings.validName(id)",
-      "enabled only when _connected && !_editingMapping"
      ],
      "destructive": false
     }
@@ -35158,253 +34253,6 @@
      "gates": [
       "controller.capabilities.pluginInventory"
      ]
-    }
-   ]
-  },
-  {
-   "id": "team-plugin-sheet",
-   "title": "AI Team · Gas City",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/plugins_screen.dart",
-   "widget": "TeamPluginSheet",
-   "presentedBy": [
-    "_openSheet"
-   ],
-   "line": 264,
-   "purpose": "AI Team sheet: status, host identity, stream line, technical details, on-phone section and the Turn on / Refresh / Add manually / Turn off actions.",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": "plugins-settings-ai-team-row"
-    },
-    {
-     "page": "plugins-settings",
-     "element": "plugins-team-other"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "team-plugin-sheet-how",
-     "type": "button",
-     "label": "How",
-     "key": "team-sheet-how",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 552,
-     "action": "open-sheet",
-     "target": "team-host-guide-sheet",
-     "targetWidget": "showTeamHostGuideSheet",
-     "effect": "showTeamHostGuideSheet(context) (lib/ui/widgets/team_host_form.dart:434).",
-     "gates": [
-      "config != null && teamReadOnly(config, live)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-plugin-sheet-technical",
-     "type": "list-tile",
-     "label": "Technical details",
-     "key": "team-sheet-technical",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 587,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile: expands provider / address / city / last answer values and the side-by-side terms list.",
-     "gates": [
-      "on || found != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-plugin-sheet-turn-on",
-     "type": "button",
-     "label": "Turn on",
-     "key": "team-sheet-turn-on",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 647,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_turnOn() -> widget.discovery.turnOn() (saves the discovered host as the profile orchestration config). Disabled while _busy.",
-     "gates": [
-      "profile.orchestration == null && discovery.result != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-plugin-sheet-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "team-sheet-refresh",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 653,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_refresh() -> controller.orchestration.refresh(). Disabled while _busy or live == null.",
-     "gates": [
-      "profile.orchestration != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-plugin-sheet-add-manually",
-     "type": "button",
-     "label": "Add manually / Change",
-     "key": "team-sheet-add-manually",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 661,
-     "action": "open-sheet",
-     "target": "team-host-sheet",
-     "targetWidget": "showTeamHostSheet",
-     "effect": "_addManually(): showTeamHostSheet(context, initialUrl/initialCity/initialHostKind, probe) and, when it returns a config, _save(): current.remove() (old host cache), profile.orchestration = config, controller.store.upsert(profile), controller.syncOrchestration(), snackbar \"AI Team is on for {server}.\".",
-     "gates": [
-      "disabled when _busy || profile == null",
-      "label is \"Change\" when already on"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-plugin-sheet-turn-off",
-     "type": "button",
-     "label": "Turn off",
-     "key": "team-sheet-turn-off",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 668,
-     "action": "open-sheet",
-     "target": "team-turn-off-sheet",
-     "targetWidget": "showTeamTurnOffSheet",
-     "effect": "_turnOff(): showTeamTurnOffSheet(context, profile.name) (a showConfirmSheet in team_host_form.dart:510); on confirm: orchestration.remove() or orchestrationStore.sweep(profile.id), profile.orchestration = null, store.upsert(profile), orchestrationStore.dismissDiscovery(profile.id), syncOrchestration(), pops the sheet (snackbar \"Turned off, but some cached data could not be removed from this phone.\" if cache removal failed).",
-     "gates": [
-      "profile.orchestration != null"
-     ],
-     "destructive": true
-    }
-   ],
-   "sheetKey": "team-plugin-sheet",
-   "embeds": [
-    {
-     "widget": "TeamPhoneSection",
-     "file": "lib/ui/widgets/team_phone_section.dart",
-     "line": 636,
-     "gates": [
-      "teamPhoneProfile(profile)"
-     ],
-     "contract": "onRemoved pops this sheet"
-    }
-   ]
-  },
-  {
-   "id": "plugins-clear-mappings-sheet",
-   "title": "Clear all personal command links?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/server_plugins_section.dart",
-   "widget": "_clearMappings",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 259,
-   "purpose": "Confirms clearing every personal plugin command mapping for this profile.",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": "plugins-clear-mappings"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "plugins-clear-mappings-sheet-confirm",
-     "type": "button",
-     "label": "Clear links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 245,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Returns true; _clearMappings awaits PluginCommandMappings.clear() (shared preferences for this profile) and empties _mappings; failure snackbar \"Personal links could not be cleared. Check that this server profile is still selected and try again.\".",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "plugins-clear-mappings-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 246,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "MaterialLocalizations cancelButtonLabel; pops false.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "plugins-mapping-dialog",
-   "title": "Link commands",
-   "kind": "dialog",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/server_plugins_section.dart",
-   "widget": "_editMapping",
-   "presentedBy": [],
-   "line": 315,
-   "purpose": "Checkbox list of server slash commands to associate with one plugin (personal, on-device mapping).",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": "plugins-manage-mapping"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "plugins-mapping-dialog-command-checkbox",
-     "type": "toggle",
-     "label": "/<command name>",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 318,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Adds/removes the name in the local selected set; refuses beyond PluginCommandMappings.maxCommands with \"Choose up to 16 commands for this plugin.\". Nothing is persisted until Save.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "plugins-mapping-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 355,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(dialogContext); disabled while saving.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "plugins-mapping-dialog-save",
-     "type": "button",
-     "label": "Save links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 361,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "await PluginCommandMappings.set(mappingScope, plugin.id, selected) (profile-scoped shared preferences), pops true and the screen reloads _mappings; on error shows \"Links could not be saved. Check that this server location is still selected and try again.\".",
-     "gates": [],
-     "destructive": false
     }
    ]
   },
@@ -36677,104 +35525,6 @@
    ]
   },
   {
-   "id": "appearance-picker-sheet",
-   "title": "Appearance",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/widgets/appearance_picker.dart",
-   "widget": "_AppearancePreviewSheet",
-   "presentedBy": [
-    "showAppearancePicker"
-   ],
-   "line": 71,
-   "purpose": "Preview-then-apply sheet for light/dark/system appearance (pack == null).",
-   "reachedFrom": [
-    {
-     "page": "appearance-settings",
-     "element": "appearance-settings-mode"
-    },
-    {
-     "page": "chat",
-     "element": null,
-     "evidence": "lib/ui/screens/chat_screen.dart:5287"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "appearance-picker-sheet-mode-option",
-     "type": "list-tile",
-     "label": "Follow Android | Follow system | Light | Dark",
-     "key": "appearance-<appearance.name>",
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 156,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets the local draft _appearance (live preview only; nothing persisted). One tile per AppAppearance.values.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-apply",
-     "type": "button",
-     "label": "Apply / Current appearance / Saving…",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 207,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_apply(): await controller.setAppearance(_appearance) then pops; on error shows \"Could not save the appearance. Your previous setting is unchanged. Try again.\" and keeps the sheet. Enabled only when changed && available && !_saving.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 217,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop without saving (disabled while _saving; PopScope canPop: !_saving).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-preview-chip",
-     "type": "chip",
-     "label": "Selected option",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 295,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample FilterChip: toggles local _selected only.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-preview-button",
-     "type": "button",
-     "label": "Try a control",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 301,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample button: flips local _selected only.",
-     "gates": [],
-     "destructive": false
-    }
-   ],
-   "sheetKey": "appearance-picker"
-  },
-  {
    "id": "theme-pack-preview-sheet",
    "title": "<theme pack name>",
    "kind": "sheet",
@@ -37895,6 +36645,10 @@
    "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
    "reachedFrom": [
     {
+     "page": "question-sheet",
+     "element": "question-sheet-dismiss"
+    },
+    {
      "page": "prompt-stash-sheet",
      "element": "prompt-stash-sheet-delete"
     }
@@ -38027,109 +36781,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, true) then launchUrl(uri, mode: LaunchMode.externalApplication); snackbar when no handler or on failure.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-info-label",
-   "title": "[Info label: term with info glyph]",
-   "kind": "overlay",
-   "area": "misc",
-   "file": "lib/ui/widgets/info_label.dart",
-   "widget": "InfoLabel",
-   "presentedBy": [],
-   "line": 110,
-   "purpose": "Inline term + info icon; tapping opens the explanation sheet.",
-   "reachedFrom": [
-    {
-     "page": "embedded-prompt-error-banner",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "integrations",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "worktrees",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [],
-   "embeddedIn": [
-    "lib/ui/screens/worktrees_screen.dart:623 (Glossary.worktree)",
-    "lib/ui/screens/library/integrations_screen.dart:896 (Glossary.mcp)",
-    "lib/ui/screens/chat/message_view.dart:2233 (Glossary.reasoning)"
-   ],
-   "hostPages": [
-    "embedded-prompt-error-banner",
-    "integrations",
-    "worktrees"
-   ],
-   "elements": [
-    {
-     "id": "embedded-info-label-term",
-     "type": "link",
-     "label": "<term> [info icon] (semantics: '{term}. Tap for an explanation.')",
-     "key": null,
-     "file": "lib/ui/widgets/info_label.dart",
-     "line": 208,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InkWell.onTap (and Semantics.onTap line 205) calls InfoLabel.show(context, term, explanation).",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "info-label-sheet",
-   "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
-   "kind": "sheet",
-   "area": "misc",
-   "file": "lib/ui/widgets/info_label.dart",
-   "widget": "InfoLabel.show",
-   "presentedBy": [
-    "InfoLabel.show"
-   ],
-   "line": 150,
-   "purpose": "Short plain-language explanation of a glossary term.",
-   "reachedFrom": [
-    {
-     "page": "embedded-info-label",
-     "element": "embedded-info-label-term"
-    },
-    {
-     "page": "worktrees",
-     "element": "worktrees-glossary-label"
-    },
-    {
-     "page": "integrations",
-     "element": "integrations-mcp-glossary"
-    },
-    {
-     "page": "mcp-setup",
-     "element": "mcp-setup-glossary"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "info-label-sheet-got-it",
-     "type": "button",
-     "label": "Got it",
-     "key": null,
-     "file": "lib/ui/widgets/info_label.dart",
-     "line": 174,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.of(context).pop().",
      "gates": [],
      "destructive": false
     }
@@ -38608,7 +37259,7 @@
    {
     "from": "question-sheet",
     "element": "question-sheet-dismiss",
-    "to": "question-sheet-dismiss-dialog"
+    "to": "confirm-sheet"
    },
    {
     "from": "global-shortcuts",
@@ -39728,12 +38379,12 @@
    {
     "from": "workspace",
     "element": "workspace-active-session-directory",
-    "to": "workspace-directory-details-dialog"
+    "to": "workspace-context-sheet"
    },
    {
     "from": "workspace",
     "element": "workspace-restricted-directory",
-    "to": "workspace-directory-details-dialog"
+    "to": "workspace-context-sheet"
    },
    {
     "from": "workspace",
@@ -39758,7 +38409,7 @@
    {
     "from": "workspace",
     "element": "workspace-session-menu-details",
-    "to": "workspace-session-details-sheet"
+    "to": "session-context"
    },
    {
     "from": "workspace",
@@ -39778,7 +38429,7 @@
    {
     "from": "workspace",
     "element": "workspace-session-context-details",
-    "to": "workspace-session-details-sheet"
+    "to": "session-context"
    },
    {
     "from": "workspace",
@@ -39822,11 +38473,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-inventory-footer",
-    "to": "embedded-session-inventory-footer"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-team-task-row",
     "to": "team-conversation"
    },
@@ -39866,11 +38512,6 @@
     "to": "projects"
    },
    {
-    "from": "workspace-context-sheet",
-    "element": "workspace-context-sheet-manage-project",
-    "to": "manage-project"
-   },
-   {
     "from": "projects",
     "element": "projects-create-folder",
     "to": "project-folder-new-dialog"
@@ -39884,31 +38525,6 @@
     "from": "projects",
     "element": "projects-project-rename",
     "to": "projects-rename-dialog"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-services",
-    "to": "development-services"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-switch-project",
-    "to": "projects"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-worktrees",
-    "to": "worktrees"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-managed-workspaces",
-    "to": "managed-workspaces"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-health",
-    "to": "project-health"
    },
    {
     "from": "project-folder-browser",
@@ -39952,11 +38568,6 @@
    },
    {
     "from": "worktrees",
-    "element": "worktrees-glossary-label",
-    "to": "info-label-sheet"
-   },
-   {
-    "from": "worktrees",
     "element": "worktrees-tile-menu-reset",
     "to": "worktrees-reset-dialog"
    },
@@ -39993,7 +38604,7 @@
    {
     "from": "global-sessions",
     "element": "global-sessions-row-menu-handoff",
-    "to": "session-handoff-dialog"
+    "to": "continue-on-computer-sheet"
    },
    {
     "from": "global-sessions",
@@ -40084,6 +38695,16 @@
     "from": "project-hub",
     "element": "project-hub-worktrees",
     "to": "worktrees"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-services",
+    "to": "development-services"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-workspaces",
+    "to": "managed-workspaces"
    },
    {
     "from": "project-hub",
@@ -40467,11 +39088,6 @@
    },
    {
     "from": "provider-quota",
-    "element": "provider-quota-enable-monitoring",
-    "to": "provider-quota-enroll-dialog"
-   },
-   {
-    "from": "provider-quota",
     "element": "provider-quota-clear-thresholds",
     "to": "provider-quota-clear-dialog"
    },
@@ -40797,11 +39413,6 @@
    },
    {
     "from": "team-home",
-    "element": "team-home-host-chip",
-    "to": "team-host-details-sheet"
-   },
-   {
-    "from": "team-home",
     "element": "team-home-planning-card",
     "to": "embedded-team-planning-card"
    },
@@ -40811,37 +39422,42 @@
     "to": "team-board"
    },
    {
-    "from": "team-home-runs-tab",
+    "from": "team-home",
+    "element": "team-home-change-address",
+    "to": "team-host-sheet"
+   },
+   {
+    "from": "team-home",
+    "element": "team-home-phone-controls",
+    "to": "embedded-team-phone-section"
+   },
+   {
+    "from": "team-home",
+    "element": "team-home-turn-off",
+    "to": "team-turn-off-sheet"
+   },
+   {
+    "from": "team-home",
+    "element": "team-home-host-row",
+    "to": "team-host-details-sheet"
+   },
+   {
+    "from": "team-home",
     "element": "team-home-runs-row",
     "to": "team-conversation"
    },
    {
-    "from": "team-home-runs-tab",
-    "element": "team-home-runs-tab-empty-start-run",
-    "to": "start-run-sheet"
-   },
-   {
-    "from": "team-home-runs-tab",
+    "from": "team-home",
     "element": "team-home-runs-agents-row",
     "to": "team-agents"
    },
    {
-    "from": "team-home-runs-tab",
-    "element": "team-home-board-row",
-    "to": "team-board"
-   },
-   {
-    "from": "team-home-agents-tab",
-    "element": "team-home-agents-row",
-    "to": "team-agent"
-   },
-   {
-    "from": "team-home-needs-you-tab",
+    "from": "team-home",
     "element": "team-home-needs-you-gate-row",
     "to": "gate-sheet"
    },
    {
-    "from": "team-home-needs-you-tab",
+    "from": "team-home",
     "element": "team-home-needs-you-gate-receipt-chip",
     "to": "gate-sheet"
    },
@@ -40944,26 +39560,6 @@
     "from": "embedded-team-cycle-strip",
     "element": "embedded-team-cycle-strip-stop",
     "to": "team-cycle-stop-confirm-sheet"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-run-row",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-completed-runs",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-more-runs",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-open",
-    "to": "team-home"
    },
    {
     "from": "embedded-team-receipt-chip",
@@ -41382,11 +39978,6 @@
    },
    {
     "from": "appearance-settings",
-    "element": "appearance-settings-mode",
-    "to": "appearance-picker-sheet"
-   },
-   {
-    "from": "appearance-settings",
     "element": "appearance-settings-language",
     "to": "language-sheet"
    },
@@ -41408,42 +39999,12 @@
    {
     "from": "plugins-settings",
     "element": "plugins-team-other",
-    "to": "team-plugin-sheet"
+    "to": "team-home"
    },
    {
     "from": "plugins-settings",
     "element": "plugins-settings-ai-team-row",
-    "to": "team-plugin-sheet"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-clear-mappings",
-    "to": "plugins-clear-mappings-sheet"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-review-command",
-    "to": "run-command-dialog"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-manage-mapping",
-    "to": "plugins-mapping-dialog"
-   },
-   {
-    "from": "team-plugin-sheet",
-    "element": "team-plugin-sheet-how",
-    "to": "team-host-guide-sheet"
-   },
-   {
-    "from": "team-plugin-sheet",
-    "element": "team-plugin-sheet-add-manually",
-    "to": "team-host-sheet"
-   },
-   {
-    "from": "team-plugin-sheet",
-    "element": "team-plugin-sheet-turn-off",
-    "to": "team-turn-off-sheet"
+    "to": "team-home"
    },
    {
     "from": "about",
@@ -41543,7 +40104,7 @@
    {
     "from": "integrations",
     "element": "integrations-uncertain-forget",
-    "to": "integrations-forget-uncertain-auth-sheet"
+    "to": "integrations-forget-pending-auth-sheet"
    },
    {
     "from": "integrations",
@@ -41582,11 +40143,6 @@
    },
    {
     "from": "integrations",
-    "element": "integrations-mcp-glossary",
-    "to": "info-label-sheet"
-   },
-   {
-    "from": "integrations",
     "element": "integrations-mcp-empty-add",
     "to": "mcp-setup"
    },
@@ -41621,11 +40177,6 @@
     "to": "integrations-authorization-launch-dialog"
    },
    {
-    "from": "command-auth-sheet",
-    "element": "command-auth-sheet-start",
-    "to": "command-auth-sheet-confirm-sheet"
-   },
-   {
     "from": "credential-management-sheet",
     "element": "credential-management-sheet-rename",
     "to": "credential-management-sheet-rename-dialog"
@@ -41634,11 +40185,6 @@
     "from": "credential-management-sheet",
     "element": "credential-management-sheet-remove",
     "to": "credential-management-sheet-remove-sheet"
-   },
-   {
-    "from": "mcp-setup",
-    "element": "mcp-setup-glossary",
-    "to": "info-label-sheet"
    },
    {
     "from": "session-context",
@@ -41653,7 +40199,7 @@
    {
     "from": "session-relations",
     "element": "session-relations-menu-handoff",
-    "to": "session-handoff-dialog"
+    "to": "continue-on-computer-sheet"
    },
    {
     "from": "session-import",
@@ -41694,11 +40240,6 @@
     "from": "continue-on-computer-sheet",
     "element": "continue-on-computer-sheet-export",
     "to": "session-export"
-   },
-   {
-    "from": "embedded-info-label",
-    "element": "embedded-info-label-term",
-    "to": "info-label-sheet"
    },
    {
     "from": "activity",
@@ -41785,39 +40326,9 @@
     "secondary": true
    },
    {
-    "from": "team-home",
-    "element": "team-home-segments",
-    "to": "team-home-runs-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-home",
-    "element": "team-home-segments-menu-item",
-    "to": "team-home-runs-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-home",
-    "element": "team-home-segments",
-    "to": "team-home-agents-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-home",
-    "element": "team-home-segments-menu-item",
-    "to": "team-home-agents-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-home",
-    "element": "team-home-segments",
-    "to": "team-home-needs-you-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-home",
-    "element": "team-home-segments-menu-item",
-    "to": "team-home-needs-you-tab",
+    "from": "settings",
+    "element": "settings-ai-team",
+    "to": "team-home",
     "secondary": true
    },
    {
@@ -41845,6 +40356,12 @@
     "secondary": true
    },
    {
+    "from": "plugins-settings",
+    "element": "plugins-settings-ai-team-row",
+    "to": "team-intro",
+    "secondary": true
+   },
+   {
     "from": "workspace",
     "element": "workspace-new-session",
     "to": "team-conversation",
@@ -41854,12 +40371,6 @@
     "from": "team-phone-onboarding-offer",
     "element": "team-phone-onboarding-offer-set-up",
     "to": "team-phone-onboarding-steps",
-    "secondary": true
-   },
-   {
-    "from": "skills",
-    "element": "skills-row",
-    "to": "skills-preview-sheet",
     "secondary": true
    },
    {
@@ -42453,18 +40964,6 @@
     "to": "console-organization-sheet"
    },
    {
-    "from": "run-command-dialog",
-    "element": null,
-    "to": "embedded-session-inventory-footer",
-    "via": "embedded"
-   },
-   {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-session-inventory-footer",
-    "via": "embedded"
-   },
-   {
     "from": "embedded-tool-card",
     "element": null,
     "to": "embedded-mobile-task-list",
@@ -42513,11 +41012,6 @@
     "from": "todos-sheet",
     "element": null,
     "to": "diff-view"
-   },
-   {
-    "from": "plugins-clear-mappings-sheet",
-    "element": null,
-    "to": "run-command-dialog"
    },
    {
     "from": "profile-editor",
@@ -42628,12 +41122,6 @@
     "via": "embedded"
    },
    {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-team-card",
-    "via": "embedded"
-   },
-   {
     "from": "activity",
     "element": null,
     "to": "embedded-team-receipt-chip",
@@ -42644,11 +41132,6 @@
     "element": null,
     "to": "embedded-team-discover",
     "via": "embedded"
-   },
-   {
-    "from": "team-home",
-    "element": null,
-    "to": "team-conversation"
    },
    {
     "from": "team-run",
@@ -42709,12 +41192,7 @@
     "via": "embedded"
    },
    {
-    "from": "team-plugin-sheet",
-    "element": null,
-    "to": "embedded-team-phone-section"
-   },
-   {
-    "from": "team-plugin-sheet",
+    "from": "team-home",
     "element": null,
     "to": "embedded-team-phone-section",
     "via": "embedded"
@@ -42737,21 +41215,10 @@
     "via": "embedded"
    },
    {
-    "from": "team-plugin-sheet",
-    "element": null,
-    "to": "embedded-team-technical-value",
-    "via": "embedded"
-   },
-   {
     "from": "team-run",
     "element": null,
     "to": "embedded-team-technical-value",
     "via": "embedded"
-   },
-   {
-    "from": "chat",
-    "element": null,
-    "to": "appearance-picker-sheet"
    },
    {
     "from": "chat",
@@ -42802,24 +41269,6 @@
     "from": "chat",
     "element": null,
     "to": "continue-on-phone-sheet"
-   },
-   {
-    "from": "embedded-prompt-error-banner",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
-   },
-   {
-    "from": "integrations",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
-   },
-   {
-    "from": "worktrees",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
    }
   ]
  },
@@ -42926,7 +41375,12 @@
   },
   {
    "file": "lib/ui/screens/team/team_needs_you.dart",
-   "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home-needs-you-tab (team_home_screen.dart:421) and team-run-overview-tab (run_screen.dart:780); TeamGateRow (one of several questions as a row) is shown on team-home-needs-you-tab (team_home_screen.dart:432). Both open the Gate sheet.",
+   "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home, where it is also its task's row, and on team-run-overview-tab (run_screen.dart:780); TeamGateRow (a question whose task is not listed) is a row of team-home's one list. Both open the Gate sheet.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_page.dart",
+   "reason": "TeamPage/openTeamPage: the one AI Team route (P3.4). No surface of its own: it shows team-home while the connected server's team is on and team-intro while it is off, following the connection, plus a bare loading page for the frame between turning on and the team starting.",
    "part": "i1-team-core"
   },
   {
@@ -43494,7 +41948,7 @@
   },
   {
    "part": "i2-team-sheets",
-   "note": "embedded-team-technical-value hosts found by grep: agent_screen.dart, run_screen.dart, plugins_screen.dart (exact host widget inside plugins_screen assumed TeamPluginSheet)."
+   "note": "embedded-team-technical-value hosts found by grep: agent_screen.dart, run_screen.dart, team_home_screen.dart's Technical details (TeamHostDetailsSheet); the AI Team sheet in plugins_screen.dart is gone (P3.4)."
   },
   {
    "part": "i2-team-sheets",
@@ -43510,19 +41964,11 @@
   },
   {
    "part": "j1-settings-more",
-   "note": "plugins-settings embeds TeamDiscoveryCard (lib/ui/widgets/team_discovery_card.dart) and TeamPhoneReofferCard; team-plugin-sheet embeds TeamPhoneSection (lib/ui/widgets/team_phone_section.dart). Those files are not in this area, so their interactive elements are not recorded here (see the pages' \"embeds\" field)."
-  },
-  {
-   "part": "j1-settings-more",
    "note": "ServerSettingsScreen (lib/ui/screens/settings/server_settings_screen.dart, part of settings_screen.dart) is not in this area's assignment; only the inbound edge settings-category-server is recorded."
   },
   {
    "part": "j1-settings-more",
    "note": "Targets defined elsewhere and resolved by naming rule only: termux-setup, catalog, integrations (two tiles with different IntegrationsMode), capabilities, terminal (TerminalPage), session-import, shortcuts-help-dialog (showShortcutsHelp), server-settings, usage, provider-quota, voice-notices (showVoiceNotices -> VoiceNoticesPage), connection-help, team-host-sheet, team-host-guide-sheet, team-turn-off-sheet, run-command-dialog."
-  },
-  {
-   "part": "j1-settings-more",
-   "note": "team-plugin-sheet Turn off: the confirmation surface (showTeamTurnOffSheet, team_host_form.dart:510) belongs to another area, but the destructive mutation itself runs in _turnOff (settings/plugins_screen.dart:348-380)."
   },
   {
    "part": "j1-settings-more",
@@ -43574,10 +42020,6 @@
   },
   {
    "part": "j2-library",
-   "note": "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274)."
-  },
-  {
-   "part": "j2-library",
    "note": "openBugReport (called from shared ProductErrorState, lib/ui/widgets/product_states.dart:250) not resolved to a page; targetWidget set, target null."
   },
   {
@@ -43619,10 +42061,6 @@
   {
    "part": "k-session-misc",
    "note": "session-relations tiles pop the screen with the selected Session; actual navigation happens in the opener (chat _openRelatedSession chat_screen.dart:5714, global_sessions_screen.dart:419 onward)."
-  },
-  {
-   "part": "k-session-misc",
-   "note": "embedded-info-label embeddedIn lists host files/lines rather than class names; host widget classes not resolved (worktrees_screen.dart:623, library/integrations_screen.dart:896, chat/message_view.dart:2233). chat_screen.dart:53 and library_screen.dart:23 import info_label.dart but do not use InfoLabel."
   },
   {
    "part": "k-session-misc",

@@ -677,15 +677,6 @@
       "changed": false
     },
     {
-      "page": "manage-project",
-      "element": "manage-project-back",
-      "gesture": "system back",
-      "action": "return the changed flag to the caller",
-      "visibleEquivalent": "system navigation; the app bar back button does the same (same PopScope handler)",
-      "evidence": "lib/ui/screens/manage_project_screen.dart:49",
-      "changed": false
-    },
-    {
       "page": "files",
       "element": "files-system-back",
       "gesture": "system back",

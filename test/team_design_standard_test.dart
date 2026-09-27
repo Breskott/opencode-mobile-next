@@ -66,7 +66,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(_key('team-home-loading'), findsNothing);
     expect(_key('team-home-not-answering'), findsOneWidget);
-    expect(find.text('The team host isn’t answering'), findsOneWidget);
+    expect(find.text('The team isn’t answering'), findsOneWidget);
     expect(_key('team-home-retry'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });

@@ -168,7 +168,7 @@ void main() {
   }
 
   for (final rtl in [false, true]) {
-    for (final page in ['discovery', 'sheet', 'form', 'guide', 'editor']) {
+    for (final page in ['discovery', 'team', 'form', 'guide', 'editor']) {
       testWidgets('plugins $page at 320dp 2.5x ${rtl ? 'RTL' : 'LTR'}', (
         tester,
       ) async {
@@ -180,7 +180,7 @@ void main() {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final secure = _MemorySecureStorage();
-        final on = page == 'sheet';
+        final on = page == 'team';
         final profile = ServerProfile(
           id: _profileId,
           name: 'Development PC',
@@ -262,39 +262,35 @@ void main() {
               await reveal(tester, row);
               await tester.pumpAndSettle();
               expect(row.hitTestable(), findsOneWidget);
-            case 'sheet':
+            case 'team':
+              // The row opens the one AI Team page (P3.4); its switches
+              // are in the top bar's menu, reachable at large text.
               expect(controller.orchestration?.phase, OrchestrationPhase.ready);
               await tapVisible(
                 tester,
                 find.byKey(const ValueKey('plugins-ai-team-row')),
               );
-              expect(
-                find.byKey(const ValueKey('team-plugin-sheet')),
-                findsOneWidget,
-              );
+              expect(find.byKey(const ValueKey('team-home')), findsOneWidget);
               await tapVisible(
                 tester,
-                find.byKey(const ValueKey('team-sheet-technical')),
+                find.byKey(const ValueKey('team-home-more')),
               );
-              final off = find.byKey(const ValueKey('team-sheet-turn-off'));
+              final off = find.byKey(const ValueKey('team-home-turn-off'));
               await tester.ensureVisible(off);
               await tester.pumpAndSettle();
               expect(off.hitTestable(), findsOneWidget);
-              // Ids and addresses stay LTR in RTL.
-              for (final text in tester.widgetList<SelectableText>(
-                find.byType(SelectableText),
-              )) {
-                expect(text.textDirection, TextDirection.ltr);
-              }
             case 'form':
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('plugins-ai-team-row')),
-              );
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-sheet-add-manually')),
-              );
+              // The team page, off (its drawing moves, so frames are
+              // pumped rather than settled): Enter its address.
+              final row = find.byKey(const ValueKey('plugins-ai-team-row'));
+              await reveal(tester, row);
+              await settle(tester);
+              await tester.tap(row);
+              await settle(tester);
+              final address = find.byKey(const ValueKey('team-intro-address'));
+              expect(address.hitTestable(), findsOneWidget);
+              await tester.tap(address);
+              await settle(tester);
               final url = find.byKey(const ValueKey('team-host-url'));
               // The address is a KitField of the url kind: left to right.
               expect(
@@ -319,20 +315,19 @@ void main() {
               );
               final team = find.byKey(const ValueKey('team-host-city'));
               await tester.ensureVisible(team);
-              await tester.pumpAndSettle();
+              await settle(tester);
               expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
               // Submit from the keyboard (the team name field's Done):
-              // opened over the plugins' team sheet at 2.5x, the kit
-              // sheet's body ends under the bottom edge, so its pinned-less
-              // primary cannot be hit-tested there (QA record,
-              // shared-team-1, "NOT proven").
+              // at 2.5x, the kit sheet's body ends under the bottom edge,
+              // so its pinned-less primary cannot be hit-tested there (QA
+              // record, shared-team-1, "NOT proven").
               await tester.showKeyboard(team);
               await tester.testTextInput.receiveAction(TextInputAction.done);
-              await tester.pumpAndSettle();
+              await settle(tester);
               final verdict = find.byKey(const ValueKey('team-host-verdict'));
               await tester.ensureVisible(verdict);
-              await tester.pumpAndSettle();
+              await settle(tester);
               expect(find.text(l10n.teamUiTailnetRequired), findsOneWidget);
             case 'guide':
               await reveal(

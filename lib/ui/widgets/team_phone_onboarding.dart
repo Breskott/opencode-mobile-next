@@ -661,12 +661,18 @@ class TeamPhoneKilledNotice extends StatefulWidget {
     super.key,
     required this.controller,
     this.runtime,
+    this.onKilledChanged,
   });
 
   final OrchestrationController controller;
 
   /// The Termux team runtime; tests pass a fake.
   final TermuxTeamRuntime? runtime;
+
+  /// Told whenever the notice starts or stops saying Android stopped the
+  /// team, so the page under it says nothing that contradicts it (no "not
+  /// answering, the app keeps trying" under "start the team again").
+  final ValueChanged<bool>? onKilledChanged;
 
   /// Whether [config] is the team Termux runs on this phone (the in-app
   /// team restarts by itself).
@@ -701,7 +707,12 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
     } catch (_) {
       killed = false;
     }
-    if (mounted && killed != _killed) setState(() => _killed = killed);
+    if (mounted && killed != _killed) _setKilled(killed);
+  }
+
+  void _setKilled(bool killed) {
+    setState(() => _killed = killed);
+    widget.onKilledChanged?.call(killed);
   }
 
   Future<void> _start() async {
@@ -714,7 +725,7 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
       final status = await _runtime.start();
       if (!mounted) return;
       if (status.isReady) {
-        setState(() => _killed = false);
+        _setKilled(false);
         await widget.controller.retry();
       } else {
         setState(() => _error = teamPhoneFailureText(l10n, status));

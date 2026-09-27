@@ -1447,13 +1447,13 @@
         {
           "id": "plugins-team-other",
           "type": "list-tile",
-          "label": "A team on a computer | Technical details",
+          "label": "A team on a computer | See the team’s tasks",
           "key": "plugins-team-other",
-          "line": 160,
-          "action": "open-sheet",
-          "target": "team-plugin-sheet",
-          "targetWidget": "TeamPluginSheet",
-          "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City (the sheet's Add manually); once the phone's team is on, its technical details and Turn off. Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
+          "line": 194,
+          "action": "navigate",
+          "target": "team-home",
+          "targetWidget": "TeamPage / editTeamAddress",
+          "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City opens the address form (team-host-sheet) straight away; once the phone's team is on, it opens the one AI Team page (openTeamPage, P3.4). Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
           "gates": [
             "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
           ],
@@ -1462,13 +1462,13 @@
         {
           "id": "plugins-settings-ai-team-row",
           "type": "list-tile",
-          "label": "AI Team · Gas City",
+          "label": "AI Team",
           "key": "plugins-ai-team-row",
-          "line": 166,
-          "action": "open-sheet",
-          "target": "team-plugin-sheet",
-          "targetWidget": "TeamPluginSheet",
-          "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
+          "line": 236,
+          "action": "navigate",
+          "target": "team-home",
+          "targetWidget": "TeamPage",
+          "effect": "openTeamPage(): the one AI Team page, on or off (P3.4; the AI Team sheet, team-plugin-sheet, is gone). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
           "gates": [
             "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
             "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
@@ -1525,130 +1525,6 @@
           "gates": [
             "controller.capabilities.pluginInventory"
           ]
-        }
-      ]
-    },
-    {
-      "id": "team-plugin-sheet",
-      "title": "AI Team · Gas City",
-      "kind": "sheet",
-      "file": "lib/ui/screens/settings/plugins_screen.dart",
-      "widget": "TeamPluginSheet",
-      "presentedBy": [
-        "_openSheet"
-      ],
-      "line": 264,
-      "purpose": "AI Team sheet: status, host identity, stream line, technical details, on-phone section and the Turn on / Refresh / Add manually / Turn off actions.",
-      "reachedFrom": [
-        {
-          "page": "plugins-settings",
-          "element": "plugins-settings-ai-team-row"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "team-plugin-sheet-how",
-          "type": "button",
-          "label": "How",
-          "key": "team-sheet-how",
-          "line": 552,
-          "action": "open-sheet",
-          "target": "team-host-guide-sheet",
-          "targetWidget": "showTeamHostGuideSheet",
-          "effect": "showTeamHostGuideSheet(context) (lib/ui/widgets/team_host_form.dart:434).",
-          "gates": [
-            "config != null && teamReadOnly(config, live)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-plugin-sheet-technical",
-          "type": "list-tile",
-          "label": "Technical details",
-          "key": "team-sheet-technical",
-          "line": 587,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ExpansionTile: expands provider / address / city / last answer values and the side-by-side terms list.",
-          "gates": [
-            "on || found != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-plugin-sheet-turn-on",
-          "type": "button",
-          "label": "Turn on",
-          "key": "team-sheet-turn-on",
-          "line": 647,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_turnOn() -> widget.discovery.turnOn() (saves the discovered host as the profile orchestration config). Disabled while _busy.",
-          "gates": [
-            "profile.orchestration == null && discovery.result != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-plugin-sheet-refresh",
-          "type": "button",
-          "label": "Refresh",
-          "key": "team-sheet-refresh",
-          "line": 653,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_refresh() -> controller.orchestration.refresh(). Disabled while _busy or live == null.",
-          "gates": [
-            "profile.orchestration != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-plugin-sheet-add-manually",
-          "type": "button",
-          "label": "Add manually / Change",
-          "key": "team-sheet-add-manually",
-          "line": 661,
-          "action": "open-sheet",
-          "target": "team-host-sheet",
-          "targetWidget": "showTeamHostSheet",
-          "effect": "_addManually(): showTeamHostSheet(context, initialUrl/initialCity/initialHostKind, probe) and, when it returns a config, _save(): current.remove() (old host cache), profile.orchestration = config, controller.store.upsert(profile), controller.syncOrchestration(), snackbar \"AI Team is on for {server}.\".",
-          "gates": [
-            "disabled when _busy || profile == null",
-            "label is \"Change\" when already on"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-plugin-sheet-turn-off",
-          "type": "button",
-          "label": "Turn off",
-          "key": "team-sheet-turn-off",
-          "line": 668,
-          "action": "open-sheet",
-          "target": "team-turn-off-sheet",
-          "targetWidget": "showTeamTurnOffSheet",
-          "effect": "_turnOff(): showTeamTurnOffSheet(context, profile.name) (a showConfirmSheet in team_host_form.dart:510); on confirm: orchestration.remove() or orchestrationStore.sweep(profile.id), profile.orchestration = null, store.upsert(profile), orchestrationStore.dismissDiscovery(profile.id), syncOrchestration(), pops the sheet (snackbar \"Turned off, but some cached data could not be removed from this phone.\" if cache removal failed).",
-          "gates": [
-            "profile.orchestration != null"
-          ],
-          "destructive": true
-        }
-      ],
-      "sheetKey": "team-plugin-sheet",
-      "embeds": [
-        {
-          "widget": "TeamPhoneSection",
-          "file": "lib/ui/widgets/team_phone_section.dart",
-          "line": 636,
-          "gates": [
-            "teamPhoneProfile(profile)"
-          ],
-          "contract": "onRemoved pops this sheet"
         }
       ]
     },
@@ -3198,10 +3074,8 @@
   "notes": [
     "pickers.dart contains a single picker, showModelPicker (pickers.dart:34) / ModelCatalogView; there are no other show* pickers in the file. The agent picker and variant selector are inline parts of it.",
     "ModelCatalogView is also embedded by CatalogScreen (lib/ui/screens/library/catalog_screen.dart:108, another area); elements are recorded once on model-picker-sheet with embeddedAlsoIn rather than duplicated as an embedded-* overlay.",
-    "plugins-settings embeds TeamDiscoveryCard (lib/ui/widgets/team_discovery_card.dart) and TeamPhoneReofferCard; team-plugin-sheet embeds TeamPhoneSection (lib/ui/widgets/team_phone_section.dart). Those files are not in this area, so their interactive elements are not recorded here (see the pages' \"embeds\" field).",
     "ServerSettingsScreen (lib/ui/screens/settings/server_settings_screen.dart, part of settings_screen.dart) is not in this area's assignment; only the inbound edge settings-category-server is recorded.",
     "Targets defined elsewhere and resolved by naming rule only: termux-setup, catalog, integrations (two tiles with different IntegrationsMode), capabilities, terminal (TerminalPage), session-import, shortcuts-help-dialog (showShortcutsHelp), server-settings, usage, provider-quota, voice-notices (showVoiceNotices -> VoiceNoticesPage), connection-help, team-host-sheet, team-host-guide-sheet, team-turn-off-sheet, run-command-dialog.",
-    "team-plugin-sheet Turn off: the confirmation surface (showTeamTurnOffSheet, team_host_form.dart:510) belongs to another area, but the destructive mutation itself runs in _turnOff (settings/plugins_screen.dart:348-380).",
     "plugins_screen.dart:466: after showRunCommandDialog returns a session id the screen does Navigator.pushNamed('/chat/$sessionID'); recorded in the effect of plugins-review-command.",
     "GuideScreen Cmd copy buttons share one definition (guide_screen.dart:335); three elements are recorded, one per instantiated command (lines 49, 119, 148).",
     "web_sources_screen.dart:76 has a hard-coded English error string (\"Enter an HTTP or HTTPS URL without credentials.\"), not from l10n.",

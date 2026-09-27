@@ -30,7 +30,7 @@ import '../widgets/team_discover.dart' show teamPossibleOn;
 import '../widgets/team_vocabulary.dart' show teamGatedRuns;
 import 'chat_screen.dart' show ChatScreen;
 import 'team_conversation/team_conversation.dart';
-import 'team/team_intro_screen.dart';
+import 'team/team_page.dart';
 import '../widgets/termux_phone_tools.dart';
 import '../widgets/work_status_line.dart';
 import '../../termux/bridge.dart';
@@ -1276,12 +1276,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     await _createSession();
   }
 
-  /// New team task: the team's conversation when it is on, else its intro
-  /// ("Set it up" for this kind of server).
+  /// New team task: the team's conversation when it is on, else the team
+  /// page, which sets it up for this kind of server while it is off.
   Future<void> _createTeamTask() async {
     final team = widget.controller.orchestration;
     if (team == null) {
-      await openTeamIntro(context, widget.controller);
+      await openTeamPage(context, widget.controller);
     } else {
       await TeamConversation.start(context, team);
     }

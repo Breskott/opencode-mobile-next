@@ -85,16 +85,25 @@ String teamHostPhrase(
   OrchestrationController controller, {
   bool working = false,
 }) {
+  final place = teamHostPlace(l10n, controller);
+  final condition = teamHostCondition(l10n, controller, working: working);
+  return condition == null ? place : '$place$teamUsageSeparator$condition';
+}
+
+/// Where the team runs, alone: "On this phone", "On pop-os" or "On your
+/// computer" ([teamHostPhrase] without its condition).
+String teamHostPlace(
+  AppLocalizations l10n,
+  OrchestrationController controller,
+) {
   final hostMode = controller.host?.hostMode ?? controller.config.hostMode;
-  final place = switch (hostMode) {
+  return switch (hostMode) {
     OrchestrationHostMode.phone => l10n.teamUiHostPhrasePhone,
     OrchestrationHostMode.computer => switch (teamComputerName(controller)) {
       final name? => l10n.teamUiHostPhraseComputerNamed(name),
       null => l10n.teamUiHostPhraseComputer,
     },
   };
-  final condition = teamHostCondition(l10n, controller, working: working);
-  return condition == null ? place : '$place$teamUsageSeparator$condition';
 }
 
 /// The four stages a task moves through, in order. At most these show,
