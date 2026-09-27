@@ -35816,6 +35816,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save file'**
   String get filePreviewSaveFailed;
+
+  /// Transcript display toggles: what the Reasoning switch does when on
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the model\'s reasoning opens under each answer.'**
+  String get transcriptTogglesReasoningOn;
+
+  /// Transcript display toggles: what the Timestamps & usage switch does when on
+  ///
+  /// In en, this message translates to:
+  /// **'When on, each message shows its time, tokens and cost.'**
+  String get transcriptTogglesUsageOn;
+
+  /// Transcript display toggles: the two switches are app-wide, not per conversation
+  ///
+  /// In en, this message translates to:
+  /// **'These apply to every conversation on this device.'**
+  String get transcriptTogglesScope;
+
+  /// Continue on computer sheet: copy button for the resume command
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get handoffSheetCopyCommand;
+
+  /// Continue on computer sheet: reload the conversation when the server did not report its folder
+  ///
+  /// In en, this message translates to:
+  /// **'Reload conversation'**
+  String get handoffSheetReloadConversation;
+
+  /// Open on another phone sheet: what happens on a phone without this server
+  ///
+  /// In en, this message translates to:
+  /// **'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.'**
+  String get handoffSheetPhoneServerNote;
+
+  /// Model picker: section label above the chosen model, thinking level and agent
+  ///
+  /// In en, this message translates to:
+  /// **'Your choice'**
+  String get modelPickerYourChoice;
+
+  /// Model picker: the choice row when no model is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'No model chosen'**
+  String get modelPickerNoneChosen;
+
+  /// Model picker: supporting line when no model is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one from the list below.'**
+  String get modelPickerNoneChosenHint;
+
+  /// Model picker: why the apply action cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model first.'**
+  String get modelPickerChooseFirst;
+
+  /// Model picker: the thinking level row title
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get modelPickerThinking;
+
+  /// Model picker: what the thinking level means
+  ///
+  /// In en, this message translates to:
+  /// **'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.'**
+  String get modelPickerThinkingExplain;
+
+  /// Model picker: the model offers no thinking levels to choose from
+  ///
+  /// In en, this message translates to:
+  /// **'This model has one thinking level'**
+  String get modelPickerThinkingOneLevel;
+
+  /// Model picker: what the agent choice means
+  ///
+  /// In en, this message translates to:
+  /// **'The agent decides what the model may do, such as edit files or only read and plan.'**
+  String get modelPickerAgentExplain;
+
+  /// Model picker: what the built-in build agent does
+  ///
+  /// In en, this message translates to:
+  /// **'Edits files and runs commands'**
+  String get modelPickerAgentBuild;
+
+  /// Model picker: what the built-in plan agent does
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and plans; does not change files'**
+  String get modelPickerAgentPlan;
+
+  /// Model picker details: context window in words
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens of context'**
+  String modelPickerDetailsContext(String count);
+
+  /// Model picker details: output limit in words
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count} tokens per answer'**
+  String modelPickerDetailsOutput(String count);
+
+  /// Model picker details: price in words
+  ///
+  /// In en, this message translates to:
+  /// **'{input} per million tokens read, {output} per million written'**
+  String modelPickerDetailsPrice(String input, String output);
+
+  /// Model picker details: the model reasons
+  ///
+  /// In en, this message translates to:
+  /// **'Thinks before answering'**
+  String get modelPickerCanThink;
+
+  /// Model picker details: the model can call tools
+  ///
+  /// In en, this message translates to:
+  /// **'Uses tools'**
+  String get modelPickerCanUseTools;
+
+  /// Model picker details: the model accepts attachments
+  ///
+  /// In en, this message translates to:
+  /// **'Reads images and files you attach'**
+  String get modelPickerCanReadAttachments;
+
+  /// Model picker details: label of the provider/model id
+  ///
+  /// In en, this message translates to:
+  /// **'Model id'**
+  String get modelPickerModelId;
+
+  /// Model picker: row menu item that copies the provider/model id
+  ///
+  /// In en, this message translates to:
+  /// **'Copy model id'**
+  String get modelPickerCopyId;
+
+  /// Model picker: the model in use now, first word of its row
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get modelPickerInUse;
+
+  /// Model picker: why a model or agent cannot be chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this server right now.'**
+  String get modelPickerUnavailableReason;
+
+  /// Model picker: spoken name of the All / Favorites / Recent choice
+  ///
+  /// In en, this message translates to:
+  /// **'Which models to show'**
+  String get modelPickerCollections;
+
+  /// Model picker: no models on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a provider'**
+  String get modelPickerSignInTitle;
+
+  /// Model picker: no models on the server, next step
+  ///
+  /// In en, this message translates to:
+  /// **'No provider on this server has models yet. Sign in to one, then come back to choose a model.'**
+  String get modelPickerSignInBody;
+
+  /// Model picker: grows the list by the next page of models
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more model} other{Show {count} more models}}'**
+  String modelPickerShowMore(int count);
+
+  /// Model picker: the built-in build agent by name
+  ///
+  /// In en, this message translates to:
+  /// **'Build'**
+  String get modelPickerAgentBuildName;
+
+  /// Model picker: the built-in plan agent by name
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get modelPickerAgentPlanName;
 }
 
 class _AppLocalizationsDelegate

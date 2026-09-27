@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -12,6 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _host(Widget child) => MaterialApp(
   theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
 
@@ -497,6 +500,8 @@ void main() {
       ModelPickerApplyScope scope,
     ) => MaterialApp(
       theme: AppTheme.light(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: ModelCatalogView(controller: controller, applyScope: scope),
       ),
@@ -522,8 +527,7 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Use for this conversation'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('model-picker-options')));
-      await tester.pumpAndSettle();
+      // The scope note sits under "Your choice" now; no options dialog.
       expect(
         find.byKey(const Key('model-picker-session-scope-note')),
         findsOneWidget,

@@ -6,10 +6,11 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff_sheets.dart';
 
-/// The two handoff sheets (F4-S1 command, F4-S2 QR) at 320 dp, in both
-/// directions and at 2.5x text: everything stays inside the viewport, the
-/// copy buttons keep their 48 dp target, copying writes exactly the command
-/// or link and nothing else happens.
+/// The two handoff sheets (F4-S1 command, F4-S2 QR) at 320 dp, at 1x and at
+/// 2x text, the largest the kit sheet supports (owner decision 2026-09-27:
+/// no Arabic): everything stays inside the viewport, the copy buttons keep
+/// their 48 dp target, copying writes exactly the command or link and
+/// nothing else happens.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -42,7 +43,7 @@ void main() {
   Future<void> pumpSheet(
     WidgetTester tester,
     Widget sheet, {
-    required bool rtl,
+    bool rtl = false,
     required bool large,
     void Function(String?)? onPopped,
   }) async {
@@ -59,7 +60,7 @@ void main() {
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
-          ).copyWith(textScaler: TextScaler.linear(large ? 2.5 : 1)),
+          ).copyWith(textScaler: TextScaler.linear(large ? 2 : 1)),
           child: child!,
         ),
         home: Builder(
@@ -102,9 +103,7 @@ void main() {
 
   for (final variant in [
     (name: 'ltr', rtl: false, large: false),
-    (name: 'rtl', rtl: true, large: false),
-    (name: 'ltr-2.5x', rtl: false, large: true),
-    (name: 'rtl-2.5x', rtl: true, large: true),
+    (name: 'ltr-2x', rtl: false, large: true),
   ]) {
     testWidgets('continue on computer stays reachable ${variant.name}', (
       tester,
@@ -112,27 +111,31 @@ void main() {
       await pumpSheet(
         tester,
         ContinueOnComputerSheet(command: command, exportAvailable: true),
-        rtl: variant.rtl,
         large: variant.large,
       );
       expect(
         find.byKey(const Key('continue-on-computer-sheet')),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('agent-command-block')), findsOneWidget);
+      final block = find.byKey(const Key('continue-on-computer-command'));
+      expect(block, findsOneWidget);
       expect(
-        find.text(
-          "cd '/home/dev/My Projects/acme' && opencode2 --session 'ses_0123456789abcdef'",
+        find.descendant(
+          of: block,
+          matching: find.textContaining(
+            "cd '/home/dev/My Projects/acme' && opencode2 --session 'ses_0123456789abcdef'",
+            findRichText: true,
+          ),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
-      final copy = find.byKey(const Key('agent-command-copy-0'));
+      final copy = find.byKey(const Key('continue-on-computer-copy'));
       await tester.ensureVisible(copy);
       await tester.pumpAndSettle();
       expectInside(tester, copy);
       expect(tester.getSize(copy).width, greaterThanOrEqualTo(48));
       expect(tester.getSize(copy).height, greaterThanOrEqualTo(48));
-      expectInside(tester, find.byKey(const Key('agent-command-block')));
+      expectInside(tester, block);
 
       await tester.tap(copy);
       await tester.pumpAndSettle();
@@ -158,7 +161,6 @@ void main() {
       await pumpSheet(
         tester,
         ContinueOnPhoneSheet(link: link),
-        rtl: variant.rtl,
         large: variant.large,
       );
       expect(find.byKey(const Key('continue-on-phone-sheet')), findsOneWidget);
@@ -178,9 +180,18 @@ void main() {
       expect(tester.getSize(copy).width, greaterThanOrEqualTo(48));
       expect(tester.getSize(copy).height, greaterThanOrEqualTo(48));
       expect(
-        find.text(
-          'opencode-mobile://session?profile=1757500000000000&session=ses_0123456789abcdef',
+        find.descendant(
+          of: find.byKey(const Key('continue-on-phone-link')),
+          matching: find.textContaining(
+            'opencode-mobile://session?profile=1757500000000000&session=ses_0123456789abcdef',
+            findRichText: true,
+          ),
         ),
+        findsWidgets,
+      );
+      // What a phone without this server does is said up front.
+      expect(
+        find.byKey(const Key('continue-on-phone-server-note')),
         findsOneWidget,
       );
       await tester.tap(copy);
@@ -244,7 +255,7 @@ void main() {
       rtl: false,
       large: false,
     );
-    expect(find.byKey(const Key('agent-command-block')), findsNothing);
+    expect(find.byKey(const Key('continue-on-computer-command')), findsNothing);
     expect(
       find.byKey(const Key('continue-on-computer-unavailable')),
       findsOneWidget,
@@ -270,7 +281,7 @@ void main() {
       rtl: false,
       large: false,
     );
-    expect(find.byKey(const Key('agent-command-block')), findsNothing);
+    expect(find.byKey(const Key('continue-on-computer-command')), findsNothing);
     expect(
       find.textContaining('did not report a project folder'),
       findsOneWidget,

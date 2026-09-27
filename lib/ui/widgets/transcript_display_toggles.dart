@@ -1,23 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../../l10n/app_localizations.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_row_parts.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../app_theme.dart';
+import '../app_iconography.dart';
 
 AppLocalizations _chatL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// The two transcript display switches — "Reasoning" and "Timestamps &
-/// usage" — named as nouns that describe the setting, not verbs that describe
-/// the next click. Each flip writes the preference straight to the connection
-/// and updates in place, so the sheet that hosts them stays open and a reader
-/// can set both without reopening it. Drop it under a "Transcript" label in
-/// any session menu.
+/// The two transcript display switches, "Reasoning" and "Timestamps &
+/// usage", as [KitSwitchRow]s on one panel. The supporting line says what
+/// "on" does and stays the same whichever way the switch sits (the switch
+/// already says on or off), and a line under the panel says they apply to
+/// every conversation, not only the open one.
+///
+/// Each flip writes the preference straight to the connection and updates
+/// in place, so the sheet that hosts them stays open and a reader can set
+/// both without reopening it.
 class TranscriptDisplayToggles extends StatefulWidget {
   const TranscriptDisplayToggles({
     super.key,
@@ -33,6 +39,9 @@ class TranscriptDisplayToggles extends StatefulWidget {
 
   final bool reasoningExpanded;
   final bool timestampsVisible;
+
+  /// Retired by shared-chat-1: the kit rows have one density. Kept so
+  /// existing callers compile; it no longer changes anything.
   final bool dense;
 
   @override
@@ -71,40 +80,45 @@ class _TranscriptDisplayTogglesState extends State<TranscriptDisplayToggles> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hint = theme.textTheme.bodySmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SwitchListTile(
-          key: const ValueKey('session-view-thinking'),
-          dense: widget.dense,
-          secondary: const Icon(AppIconography.model),
-          title: Text(_chatL10n(context).transcriptFindReasoning),
-          subtitle: Text(
-            _reasoning
-                ? _chatL10n(context).chatUiExpandedUnderEachAnswer
-                : _chatL10n(context).chatUiCollapsedUntilYouTapIt,
-            style: hint,
-          ),
-          value: _reasoning,
-          onChanged: (value) => unawaited(_setReasoning(value)),
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          children: [
+            KitSwitchRow(
+              key: const ValueKey('session-view-thinking'),
+              leading: KitRow.icon(context, AppIconography.model),
+              title: l10n.transcriptFindReasoning,
+              supporting: l10n.transcriptTogglesReasoningOn,
+              value: _reasoning,
+              onChanged: (value) => unawaited(_setReasoning(value)),
+            ),
+            KitSwitchRow(
+              key: const ValueKey('session-view-timestamps'),
+              leading: KitRow.icon(context, AppIconography.clock),
+              title: l10n.chatUiTimestampsUsage,
+              supporting: l10n.transcriptTogglesUsageOn,
+              value: _timestamps,
+              onChanged: (value) => unawaited(_setTimestamps(value)),
+            ),
+          ],
         ),
-        SwitchListTile(
-          key: const ValueKey('session-view-timestamps'),
-          dense: widget.dense,
-          secondary: const Icon(AppIconography.clock),
-          title: Text(_chatL10n(context).chatUiTimestampsUsage),
-          subtitle: Text(
-            _timestamps
-                ? _chatL10n(context).chatUiTimeTokensAndCostUnderEachMessage
-                : _chatL10n(context).chatUiHiddenToKeepTheTranscriptQuiet,
-            style: hint,
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space1,
+            end: tokens.space1,
+            top: tokens.labelGap,
           ),
-          value: _timestamps,
-          onChanged: (value) => unawaited(_setTimestamps(value)),
+          child: KitText(
+            l10n.transcriptTogglesScope,
+            key: const ValueKey('transcript-toggles-scope'),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
         ),
       ],
     );

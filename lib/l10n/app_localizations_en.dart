@@ -22578,4 +22578,123 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filePreviewSaveFailed => 'Couldn\'t save file';
+
+  @override
+  String get transcriptTogglesReasoningOn =>
+      'When on, the model\'s reasoning opens under each answer.';
+
+  @override
+  String get transcriptTogglesUsageOn =>
+      'When on, each message shows its time, tokens and cost.';
+
+  @override
+  String get transcriptTogglesScope =>
+      'These apply to every conversation on this device.';
+
+  @override
+  String get handoffSheetCopyCommand => 'Copy command';
+
+  @override
+  String get handoffSheetReloadConversation => 'Reload conversation';
+
+  @override
+  String get handoffSheetPhoneServerNote =>
+      'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.';
+
+  @override
+  String get modelPickerYourChoice => 'Your choice';
+
+  @override
+  String get modelPickerNoneChosen => 'No model chosen';
+
+  @override
+  String get modelPickerNoneChosenHint => 'Pick one from the list below.';
+
+  @override
+  String get modelPickerChooseFirst => 'Choose a model first.';
+
+  @override
+  String get modelPickerThinking => 'Thinking';
+
+  @override
+  String get modelPickerThinkingExplain =>
+      'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.';
+
+  @override
+  String get modelPickerThinkingOneLevel => 'This model has one thinking level';
+
+  @override
+  String get modelPickerAgentExplain =>
+      'The agent decides what the model may do, such as edit files or only read and plan.';
+
+  @override
+  String get modelPickerAgentBuild => 'Edits files and runs commands';
+
+  @override
+  String get modelPickerAgentPlan => 'Reads and plans; does not change files';
+
+  @override
+  String modelPickerDetailsContext(String count) {
+    return '$count tokens of context';
+  }
+
+  @override
+  String modelPickerDetailsOutput(String count) {
+    return 'Up to $count tokens per answer';
+  }
+
+  @override
+  String modelPickerDetailsPrice(String input, String output) {
+    return '$input per million tokens read, $output per million written';
+  }
+
+  @override
+  String get modelPickerCanThink => 'Thinks before answering';
+
+  @override
+  String get modelPickerCanUseTools => 'Uses tools';
+
+  @override
+  String get modelPickerCanReadAttachments =>
+      'Reads images and files you attach';
+
+  @override
+  String get modelPickerModelId => 'Model id';
+
+  @override
+  String get modelPickerCopyId => 'Copy model id';
+
+  @override
+  String get modelPickerInUse => 'In use';
+
+  @override
+  String get modelPickerUnavailableReason =>
+      'Not available on this server right now.';
+
+  @override
+  String get modelPickerCollections => 'Which models to show';
+
+  @override
+  String get modelPickerSignInTitle => 'Sign in to a provider';
+
+  @override
+  String get modelPickerSignInBody =>
+      'No provider on this server has models yet. Sign in to one, then come back to choose a model.';
+
+  @override
+  String modelPickerShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count more models',
+      one: 'Show 1 more model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelPickerAgentBuildName => 'Build';
+
+  @override
+  String get modelPickerAgentPlanName => 'Plan';
 }

@@ -25741,5 +25741,156 @@
   "filePreviewOpenInFiles": "Open in Files",
   "filePreviewViewMode": "Show file as",
   "filePreviewAttachFailed": "Couldn't attach file",
-  "filePreviewSaveFailed": "Couldn't save file"
+  "filePreviewSaveFailed": "Couldn't save file",
+  "transcriptTogglesReasoningOn": "When on, the model's reasoning opens under each answer.",
+  "@transcriptTogglesReasoningOn": {
+    "description": "Transcript display toggles: what the Reasoning switch does when on"
+  },
+  "transcriptTogglesUsageOn": "When on, each message shows its time, tokens and cost.",
+  "@transcriptTogglesUsageOn": {
+    "description": "Transcript display toggles: what the Timestamps & usage switch does when on"
+  },
+  "transcriptTogglesScope": "These apply to every conversation on this device.",
+  "@transcriptTogglesScope": {
+    "description": "Transcript display toggles: the two switches are app-wide, not per conversation"
+  },
+  "handoffSheetCopyCommand": "Copy command",
+  "@handoffSheetCopyCommand": {
+    "description": "Continue on computer sheet: copy button for the resume command"
+  },
+  "handoffSheetReloadConversation": "Reload conversation",
+  "@handoffSheetReloadConversation": {
+    "description": "Continue on computer sheet: reload the conversation when the server did not report its folder"
+  },
+  "handoffSheetPhoneServerNote": "If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.",
+  "@handoffSheetPhoneServerNote": {
+    "description": "Open on another phone sheet: what happens on a phone without this server"
+  },
+  "modelPickerYourChoice": "Your choice",
+  "@modelPickerYourChoice": {
+    "description": "Model picker: section label above the chosen model, thinking level and agent"
+  },
+  "modelPickerNoneChosen": "No model chosen",
+  "@modelPickerNoneChosen": {
+    "description": "Model picker: the choice row when no model is chosen"
+  },
+  "modelPickerNoneChosenHint": "Pick one from the list below.",
+  "@modelPickerNoneChosenHint": {
+    "description": "Model picker: supporting line when no model is chosen"
+  },
+  "modelPickerChooseFirst": "Choose a model first.",
+  "@modelPickerChooseFirst": {
+    "description": "Model picker: why the apply action cannot run"
+  },
+  "modelPickerThinking": "Thinking",
+  "@modelPickerThinking": {
+    "description": "Model picker: the thinking level row title"
+  },
+  "modelPickerThinkingExplain": "How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.",
+  "@modelPickerThinkingExplain": {
+    "description": "Model picker: what the thinking level means"
+  },
+  "modelPickerThinkingOneLevel": "This model has one thinking level",
+  "@modelPickerThinkingOneLevel": {
+    "description": "Model picker: the model offers no thinking levels to choose from"
+  },
+  "modelPickerAgentExplain": "The agent decides what the model may do, such as edit files or only read and plan.",
+  "@modelPickerAgentExplain": {
+    "description": "Model picker: what the agent choice means"
+  },
+  "modelPickerAgentBuild": "Edits files and runs commands",
+  "@modelPickerAgentBuild": {
+    "description": "Model picker: what the built-in build agent does"
+  },
+  "modelPickerAgentPlan": "Reads and plans; does not change files",
+  "@modelPickerAgentPlan": {
+    "description": "Model picker: what the built-in plan agent does"
+  },
+  "modelPickerDetailsContext": "{count} tokens of context",
+  "@modelPickerDetailsContext": {
+    "description": "Model picker details: context window in words",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerDetailsOutput": "Up to {count} tokens per answer",
+  "@modelPickerDetailsOutput": {
+    "description": "Model picker details: output limit in words",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerDetailsPrice": "{input} per million tokens read, {output} per million written",
+  "@modelPickerDetailsPrice": {
+    "description": "Model picker details: price in words",
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerCanThink": "Thinks before answering",
+  "@modelPickerCanThink": {
+    "description": "Model picker details: the model reasons"
+  },
+  "modelPickerCanUseTools": "Uses tools",
+  "@modelPickerCanUseTools": {
+    "description": "Model picker details: the model can call tools"
+  },
+  "modelPickerCanReadAttachments": "Reads images and files you attach",
+  "@modelPickerCanReadAttachments": {
+    "description": "Model picker details: the model accepts attachments"
+  },
+  "modelPickerModelId": "Model id",
+  "@modelPickerModelId": {
+    "description": "Model picker details: label of the provider/model id"
+  },
+  "modelPickerCopyId": "Copy model id",
+  "@modelPickerCopyId": {
+    "description": "Model picker: row menu item that copies the provider/model id"
+  },
+  "modelPickerInUse": "In use",
+  "@modelPickerInUse": {
+    "description": "Model picker: the model in use now, first word of its row"
+  },
+  "modelPickerUnavailableReason": "Not available on this server right now.",
+  "@modelPickerUnavailableReason": {
+    "description": "Model picker: why a model or agent cannot be chosen"
+  },
+  "modelPickerCollections": "Which models to show",
+  "@modelPickerCollections": {
+    "description": "Model picker: spoken name of the All / Favorites / Recent choice"
+  },
+  "modelPickerSignInTitle": "Sign in to a provider",
+  "@modelPickerSignInTitle": {
+    "description": "Model picker: no models on the server"
+  },
+  "modelPickerSignInBody": "No provider on this server has models yet. Sign in to one, then come back to choose a model.",
+  "@modelPickerSignInBody": {
+    "description": "Model picker: no models on the server, next step"
+  },
+  "modelPickerShowMore": "{count, plural, =1{Show 1 more model} other{Show {count} more models}}",
+  "@modelPickerShowMore": {
+    "description": "Model picker: grows the list by the next page of models",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelPickerAgentBuildName": "Build",
+  "@modelPickerAgentBuildName": {
+    "description": "Model picker: the built-in build agent by name"
+  },
+  "modelPickerAgentPlanName": "Plan",
+  "@modelPickerAgentPlanName": {
+    "description": "Model picker: the built-in plan agent by name"
+  }
 }
