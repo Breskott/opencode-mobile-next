@@ -957,10 +957,13 @@ class _KitMdList extends StatelessWidget {
       children: [
         for (var i = 0; i < items.length; i++)
           Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space4 * levels[i],
-              top: i == 0 ? 0 : tokens.space2,
-            ),
+            // The first item sits on the list's own top edge.
+            padding: i == 0
+                ? EdgeInsetsDirectional.only(start: tokens.space4 * levels[i])
+                : EdgeInsetsDirectional.only(
+                    start: tokens.space4 * levels[i],
+                    top: tokens.space2,
+                  ),
             // The marker ("1.", "•") is read before the item's words.
             child: MergeSemantics(
               child: Row(

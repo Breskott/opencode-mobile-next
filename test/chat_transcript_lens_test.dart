@@ -13,6 +13,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
@@ -258,11 +259,11 @@ void main() {
 
     // A running group starts summarized, with its status still visible.
     expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pump();
     expect(find.byKey(const Key('embedded-tool-row')), findsWidgets);
 
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pump();
     expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
 
@@ -310,7 +311,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('assistant-text-block')),
-        matching: find.byType(SelectableText),
+        matching: find.byType(KitSelectable),
       ),
       findsOneWidget,
     );
@@ -345,8 +346,10 @@ void main() {
     await tester.longPress(find.text('Fix the login bug'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsOneWidget);
+    // The bubble's own menu (KitMessage.prompt): the same entries as the
+    // right-click menu.
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsOneWidget);
   });
 
   testWidgets('copy complete reply includes its fragments but no other turn', (
@@ -490,15 +493,16 @@ void main() {
       controller.notifyListeners();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // A turn in progress has no footer yet; the menu is a long-press away
-      // (on the message's margin here, since prose itself is selectable).
+      // A turn in progress has no footer yet; the menu is a long-press away.
       expect(
         find.byKey(const ValueKey('message-actions-assistant-1')),
         findsNothing,
       );
+      // (Past the end of the prose's line here: the words themselves are
+      // selectable.)
       await tester.longPressAt(
-        tester.getTopLeft(find.byKey(const ValueKey('message-assistant-1'))) +
-            const Offset(2, 2),
+        tester.getTopRight(find.byKey(const ValueKey('message-assistant-1'))) +
+            const Offset(-2, 2),
       );
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -539,11 +543,11 @@ void main() {
       await _pumpChat(tester, api);
       await tester.pumpAndSettle();
 
-      expect(find.text('Read 1 file, 1 step was not run'), findsOneWidget);
+      expect(find.text('Read 1 file · 1 not run'), findsOneWidget);
       expect(find.text('Exploring'), findsNothing);
       expect(find.text('Explored'), findsNothing);
       expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
-      final group = find.byKey(const Key('tool-call-group'));
+      final group = find.byKey(const Key('work-group'));
       expect(
         find.descendant(
           of: group,
@@ -552,10 +556,8 @@ void main() {
         findsNothing,
       );
       expect(
-        tester
-            .getSemantics(find.byKey(const Key('tool-call-group-header')))
-            .label,
-        contains('includes steps not run'),
+        find.descendant(of: group, matching: find.byType(KitStatusMark)),
+        findsNothing,
       );
       semantics.dispose();
     },

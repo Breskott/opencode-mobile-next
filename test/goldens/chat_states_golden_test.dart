@@ -94,8 +94,9 @@ Future<void> _golden(
   Map<String, Object> prefs = const {},
   void Function(CaptureController controller)? setUp,
   Future<void> Function(CaptureController controller)? before,
+  Size size = const Size(412, 915),
 }) async {
-  tester.view.physicalSize = const Size(412, 915);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues(prefs);
@@ -235,6 +236,57 @@ void main() {
           },
       );
     });
+
+    // chat-1: a finished turn as the kit draws it: the prompt bubble, the
+    // work folded under one line, the reply, and the one footer.
+    for (final wide in [false, true]) {
+      testWidgets('chat · transcript${wide ? ' · 1280x800' : ''} · $mode', (
+        tester,
+      ) async {
+        await _golden(
+          tester,
+          wide ? 'chat_transcript_1280x800' : 'chat_transcript',
+          light: light,
+          size: wide ? const Size(1280, 800) : const Size(412, 915),
+          api: _Api()
+            ..busy = {}
+            ..messagesHandler = (_) async {
+              final now = DateTime.now().millisecondsSinceEpoch;
+              Part tool(String id, String name, Map<String, Object> input) =>
+                  Part(
+                    id: id,
+                    messageID: 'msg_assistant',
+                    type: 'tool',
+                    callID: 'call_$id',
+                    toolName: name,
+                    toolState: ToolState.fromJson({
+                      'status': 'completed',
+                      'input': input,
+                      'output': 'ok',
+                    }, toolName: name),
+                  );
+              return [
+                _turn(reply: false).single,
+                MessageWithParts(
+                  info: messageInfo(
+                    'msg_assistant',
+                    'assistant',
+                    created: now - 80 * 1000,
+                    completed: now - 4 * 1000,
+                  ),
+                  parts: [
+                    tool('t1', 'read', {'filePath': 'test/checkout_test.dart'}),
+                    tool('t2', 'read', {'filePath': 'lib/checkout_bloc.dart'}),
+                    tool('t3', 'read', {'filePath': 'lib/coupon.dart'}),
+                    tool('t4', 'edit', {'filePath': 'test/checkout_test.dart'}),
+                    textPart('part_intro', answerIntro),
+                  ],
+                ),
+              ];
+            },
+        );
+      });
+    }
 
     testWidgets('chat · permission request · $mode', (tester) async {
       await _golden(

@@ -83,31 +83,34 @@ void main() {
   });
 
   group('TranscriptMarker switches', () {
-    testWidgets('model switch renders the divider pill with tooltip detail', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(
-          V2TranscriptRow(
-            part: _tagged(
-              type: 'v2:switch',
-              kind: 'model',
-              text: 'gpt-5.6-sol · high',
-              header: 'gpt-5.6-sol',
+    testWidgets(
+      'model switch renders the divider line with what it switched to',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            V2TranscriptRow(
+              part: _tagged(
+                type: 'v2:switch',
+                kind: 'model',
+                text: 'gpt-5.6-sol · high',
+                header: 'gpt-5.6-sol',
+              ),
+              messageId: 'msg_1',
             ),
-            messageId: 'msg_1',
           ),
-        ),
-      );
-      expect(
-        find.byKey(const ValueKey('transcript-marker-model-switched-msg_1')),
-        findsOneWidget,
-      );
-      expect(find.text('Model → gpt-5.6-sol · high'), findsOneWidget);
-      expect(find.byIcon(AppIconography.processor), findsOneWidget);
-      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
-      expect(tooltip.message, 'Previously gpt-5.6-sol');
-    });
+        );
+        expect(
+          find.byKey(const ValueKey('transcript-marker-model-switched-msg_1')),
+          findsOneWidget,
+        );
+        expect(find.text('Model → gpt-5.6-sol · high'), findsOneWidget);
+        expect(find.byIcon(AppIconography.processor), findsOneWidget);
+        // The switch says what it switched to; the previous value is history
+        // (chat-1 rethink: a hover-only detail never reached touch).
+        expect(find.byType(Tooltip), findsNothing);
+        expect(find.textContaining('Previously'), findsNothing);
+      },
+    );
 
     testWidgets('agent switch renders its own icon and copy', (tester) async {
       await tester.pumpWidget(
@@ -128,9 +131,7 @@ void main() {
       expect(find.byType(Tooltip), findsNothing);
     });
 
-    testWidgets('location switch shows the basename with full-path detail', (
-      tester,
-    ) async {
+    testWidgets('location switch shows the folder it moved to', (tester) async {
       await tester.pumpWidget(
         _host(
           V2TranscriptRow(
@@ -149,11 +150,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Moved → other-project'), findsOneWidget);
-      expect(find.byIcon(Icons.drive_file_move_outline), findsOneWidget);
-      expect(
-        tester.widget<Tooltip>(find.byType(Tooltip)).message,
-        '/tmp/other-project',
-      );
+      expect(find.byIcon(AppIconography.folderOpen), findsOneWidget);
+      expect(find.byType(Tooltip), findsNothing);
     });
   });
 

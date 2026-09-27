@@ -26571,5 +26571,13 @@
   "teamHostFormSaveAnyway": "Save without an answer",
   "@teamHostFormSaveAnyway": {
     "description": "Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1)."
+  },
+  "messageViewSendAgain": "Send this message again",
+  "@messageViewSendAgain": {
+    "description": "Queued-message menu item and bubble action: sends again a message whose delivery was never confirmed (chat-1)."
+  },
+  "messageViewContinueReply": "Continue this reply",
+  "@messageViewContinueReply": {
+    "description": "Chat error action after an answer was cut off by the output limit: asks the agent to continue the same reply (chat-1)."
   }
 }

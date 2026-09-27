@@ -199,15 +199,17 @@ void main() {
     );
     await _settle(tester);
 
-    // One strip, both kinds, differentiated only by icon + status line.
+    // One bubble, "Waiting to send · 3", both kinds oldest first, each with
+    // its own state words (P4.3, KitQueuedMessage).
+    expect(find.text('Waiting to send · 3'), findsOneWidget);
     expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('pending-send-msg_1')), findsOneWidget);
     expect(find.byKey(const ValueKey('pending-send-msg_2')), findsOneWidget);
     expect(find.text('offline draft'), findsOneWidget);
     expect(find.text('pending server send'), findsOneWidget);
-    expect(find.text('Queued — will send when reconnected'), findsOneWidget);
-    expect(find.text('Waiting for this run to finish'), findsOneWidget);
-    expect(find.text('Steering at the next step'), findsOneWidget);
+    expect(find.text('Waiting to send'), findsOneWidget);
+    expect(find.text('Sends after this reply'), findsOneWidget);
+    expect(find.text('Adds to this turn'), findsOneWidget);
   });
 
   testWidgets('cancelling an inbox item returns its text to the composer', (
@@ -220,6 +222,9 @@ void main() {
     _enqueue(controller, inboxID: 'msg_1', text: 'bring me back');
     await _settle(tester);
 
+    // The item's own menu holds its actions.
+    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
+    await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('inbox-action-cancel')));
     await _settle(tester);
     // Confirm sheet: cancel-back-to-composer is destructive-confirmed.
@@ -247,15 +252,19 @@ void main() {
     _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
     await _settle(tester);
 
+    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
+    await _settle(tester);
     expect(find.byKey(const ValueKey('inbox-action-steer')), findsOneWidget);
     expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('inbox-action-steer')));
     await _settle(tester);
 
     expect(api.inboxSteers.single, ('session-1', 'msg_1'));
-    expect(find.text('Steering at the next step'), findsOneWidget);
+    expect(find.text('Adds to this turn'), findsOneWidget);
 
     // Now the opposite flip is the one on offer.
+    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
+    await _settle(tester);
     expect(find.byKey(const ValueKey('inbox-action-queue')), findsOneWidget);
     expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('inbox-action-queue')));
@@ -278,6 +287,8 @@ void main() {
     _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
     await _settle(tester);
 
+    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
+    await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('inbox-action-steer')));
     await _settle(tester);
 

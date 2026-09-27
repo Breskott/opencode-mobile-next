@@ -221,29 +221,35 @@ void main() {
       ], created: 2),
     ]);
 
-    // One line for the step: the agent's own name for it, then what it did.
+    // The run folds under the turn's one work line, which says what was
+    // done; opened, the agent's own name for the step titles its first call
+    // instead of a thinking block of its own.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('Read 1 file · edited 1 file'), findsOneWidget);
+    expect(find.text('Tools'), findsNothing);
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
     expect(find.text('Patching home shell'), findsOneWidget);
     expect(find.byKey(const Key('assistant-reasoning-block')), findsNothing);
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
-    expect(find.text('Tools'), findsNothing);
   });
 
-  testWidgets('a prompt is a ruled line, not a bubble', (tester) async {
+  testWidgets('a prompt is an end-aligned bubble; the reply has no frame', (
+    tester,
+  ) async {
     await _pump(tester, [
       _message('u1', 'user', [_text('u1-t', 'Hello there')], created: 1),
       _message('a1', 'assistant', [_text('a1-t', 'Hi.')], created: 2),
     ]);
-    final prompt = tester.widget<Container>(
-      find.byKey(const ValueKey('user-prompt-u1')),
-    );
-    final decoration = prompt.decoration! as BoxDecoration;
-    expect(decoration.color, isNull);
-    expect(decoration.borderRadius, isNull);
-    expect((decoration.border! as BorderDirectional).start.width, 3);
-    // Prompt and reply share a left edge.
+    // VL §5 / Appendix A #47: the person's words sit in a bubble at the end
+    // edge; the agent's prose starts at the start edge.
+    expect(find.byKey(const ValueKey('user-prompt-u1')), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Hello there')).dx,
-      lessThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+      greaterThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+    );
+    expect(
+      tester.getTopRight(find.byKey(const ValueKey('user-prompt-u1'))).dx,
+      greaterThan(tester.getTopRight(find.text('Hi.')).dx),
     );
   });
 

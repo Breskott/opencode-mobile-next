@@ -23493,4 +23493,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamHostFormSaveAnyway => 'Save without an answer';
+
+  @override
+  String get messageViewSendAgain => 'Send this message again';
+
+  @override
+  String get messageViewContinueReply => 'Continue this reply';
 }

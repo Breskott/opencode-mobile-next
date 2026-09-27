@@ -36842,6 +36842,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save without an answer'**
   String get teamHostFormSaveAnyway;
+
+  /// Queued-message menu item and bubble action: sends again a message whose delivery was never confirmed (chat-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Send this message again'**
+  String get messageViewSendAgain;
+
+  /// Chat error action after an answer was cut off by the output limit: asks the agent to continue the same reply (chat-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Continue this reply'**
+  String get messageViewContinueReply;
 }
 
 class _AppLocalizationsDelegate
