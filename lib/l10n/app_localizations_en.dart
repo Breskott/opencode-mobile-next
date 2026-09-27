@@ -26147,4 +26147,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String sessionDestinationNoChanges(String place) {
     return 'No working changes in $place, so only the conversation moves.';
   }
+
+  @override
+  String get settingsBackgroundOffFailed =>
+      'Android did not turn background mode off.';
 }

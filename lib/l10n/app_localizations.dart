@@ -41126,6 +41126,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No working changes in {place}, so only the conversation moves.'**
   String sessionDestinationNoChanges(String place);
+
+  /// Settings, Notifications: turning the keep-live-in-background switch off failed (Android's own message is under Copy details).
+  ///
+  /// In en, this message translates to:
+  /// **'Android did not turn background mode off.'**
+  String get settingsBackgroundOffFailed;
 }
 
 class _AppLocalizationsDelegate
