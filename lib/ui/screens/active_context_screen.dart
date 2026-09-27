@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../api/product_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/product_states.dart';
-import '../app_iconography.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../app_theme.dart';
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
 
+/// What the model reads on its next turn (map pages active-context and
+/// active-context-message): the messages the server keeps for this
+/// conversation after its latest compaction, searchable and filtered by
+/// kind, each opening its parts.
 class ActiveContextScreen extends StatefulWidget {
   const ActiveContextScreen({
     super.key,
@@ -24,6 +29,7 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
   List<ActiveContextMessage>? _messages;
   Object? _error;
   bool _loading = false;
+  DateTime? _loadStartedAt;
   int _generation = 0;
   late final int _location;
   late int _history;
@@ -33,7 +39,8 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
   final _search = TextEditingController();
   String? _type;
   bool get _sameLocation => widget.controller.locationRevision == _location;
-  AppLocalizations get _l10n => AppLocalizations.of(context);
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(Localizations.localeOf(context));
 
   @override
   void initState() {
@@ -76,6 +83,7 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
     final history = widget.controller.sessionHistoryRevision(widget.sessionID);
     setState(() {
       _loading = true;
+      _loadStartedAt = DateTime.now();
       _error = null;
     });
     try {
@@ -133,8 +141,30 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
         }
       : productErrorText(error);
 
+  void _clearSearch() {
+    _search.clear();
+    setState(() {
+      _query = '';
+      _type = null;
+    });
+  }
+
+  void _open(ActiveContextMessage message) => unawaited(
+    pushKitPage<void>(
+      context,
+      (_) => _ContextMessageScreen(
+        controller: widget.controller,
+        location: _location,
+        sessionID: widget.sessionID,
+        history: _history,
+        message: message,
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10n;
     final messages = _messages;
     final counts = <String, int>{};
     for (final message in messages ?? const <ActiveContextMessage>[]) {
@@ -148,185 +178,210 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
                   message.matches(_query),
             )
             .toList() ??
-        [];
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_l10n.activeContextTitle),
+        const <ActiveContextMessage>[];
+    final listed = _sameLocation && messages != null && messages.isNotEmpty;
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.activeContextTitle,
         actions: [
-          IconButton(
-            tooltip: _l10n.activeContextRefresh,
+          KitAction(
+            label: l10n.activeContextRefresh,
+            icon: AppIconography.retry,
             onPressed: _loading || !_sameLocation ? null : _load,
-            icon: const Icon(AppIconography.retry),
           ),
         ],
       ),
-      body: !_sameLocation
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(_l10n.activeContextChanged),
-              ),
+      width: KitScreenWidth.list,
+      loading: _loading && messages != null,
+      loadingLabel: l10n.activeContextLoading,
+      search: listed
+          ? KitSearchField(
+              label: l10n.activeContextSearch,
+              controller: _search,
+              fieldKey: const ValueKey('active-context-search'),
+              resultCount: visible.length,
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toLowerCase()),
+              filters: [
+                KitMenuItem(
+                  label: l10n.activeContextAllCount(messages.length),
+                  checked: _type == null,
+                  onSelected: () => setState(() => _type = null),
+                ),
+                for (final entry in counts.entries)
+                  KitMenuItem(
+                    key: ValueKey('active-context-filter-${entry.key}'),
+                    label: l10n.activeContextTypeCount(
+                      contextTypeLabel(l10n, entry.key),
+                      entry.value,
+                    ),
+                    checked: _type == entry.key,
+                    onSelected: () => setState(() => _type = entry.key),
+                  ),
+              ],
+              activeFilter: _type == null
+                  ? null
+                  : contextTypeLabel(l10n, _type!),
+              onClearFilter: () => setState(() => _type = null),
             )
-          : messages == null
-          ? _error != null
-                ? ProductErrorState(
-                    message: _errorText(_error!),
-                    onRetry: _load,
-                  )
-                : const LoadingList()
-          : KitRefresh(
-              onRefresh: _load,
-              child: CustomScrollView(
-                key: const ValueKey('active-context-list'),
-                physics: const AlwaysScrollableScrollPhysics(),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-                        if (_loading)
-                          const LinearProgressIndicator(minHeight: 2),
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              _l10n.activeContextRefreshFailed(
-                                _errorText(_error!),
-                              ),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                          child: Text(_l10n.activeContextHelp),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextField(
-                            controller: _search,
-                            key: const ValueKey('active-context-search'),
-                            onChanged: (value) => setState(
-                              () => _query = value.trim().toLowerCase(),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: _l10n.activeContextSearch,
-                              prefixIcon: const Icon(AppIconography.search),
-                              suffixIcon: _query.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: _l10n.commonClearSearch,
-                                      icon: const Icon(AppIconography.close),
-                                      onPressed: () {
-                                        _search.clear();
-                                        setState(() => _query = '');
-                                      },
-                                    ),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              ChoiceChip(
-                                label: Text(_l10n.activeContextAll),
-                                selected: _type == null,
-                                onSelected: (_) => setState(() => _type = null),
-                              ),
-                              for (final entry in counts.entries)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: ChoiceChip(
-                                    label: Text(
-                                      _l10n.activeContextTypeCount(
-                                        contextTypeLabel(_l10n, entry.key),
-                                        entry.value,
-                                      ),
-                                    ),
-                                    selected: _type == entry.key,
-                                    onSelected: (_) =>
-                                        setState(() => _type = entry.key),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              _l10n.activeContextCount(
-                                visible.length,
-                                messages.length,
-                              ),
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                          ),
-                        ),
+          : null,
+      body: _body(context, l10n, messages, visible),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<ActiveContextMessage>? messages,
+    List<ActiveContextMessage> visible,
+  ) {
+    if (!_sameLocation) {
+      return KitStateView(
+        key: const ValueKey('active-context-changed'),
+        icon: AppIconography.info,
+        title: l10n.activeContextChangedTitle,
+        body: l10n.activeContextChanged,
+      );
+    }
+    if (messages == null) {
+      final error = _error;
+      if (error != null) {
+        return KitStateView.error(
+          key: const ValueKey('active-context-failed'),
+          title: l10n.activeContextFailedTitle,
+          body: _errorText(error),
+          error: error,
+          retry: KitAction(label: l10n.commonRetry, onPressed: _load),
+        );
+      }
+      return KitStateView(
+        key: const ValueKey('active-context-loading'),
+        icon: AppIconography.layers,
+        title: l10n.activeContextLoading,
+        progress: const KitProgress.waiting(),
+        since: _loadStartedAt,
+        onSlow: [KitAction(label: l10n.commonRetry, onPressed: _load)],
+      );
+    }
+    final tokens = KitTokens.of(context);
+    final error = _error;
+    final filtered = _type != null;
+    return KitRefresh(
+      onRefresh: _load,
+      child: ListView(
+        key: const ValueKey('active-context-list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          // A failed refresh keeps the rows and says they are the last
+          // snapshot (STATE-2).
+          KitReveal(
+            child: error == null
+                ? null
+                : Padding(
+                    padding: EdgeInsetsDirectional.symmetric(
+                      horizontal: tokens.gutter,
+                      vertical: tokens.space2,
+                    ),
+                    child: KitNotice(
+                      key: const ValueKey('active-context-notice'),
+                      tone: AppStatusTone.failure,
+                      message: l10n.activeContextRefreshFailed(
+                        _errorText(error),
+                      ),
+                      actions: [
+                        KitAction(label: l10n.commonRetry, onPressed: _load),
                       ],
                     ),
                   ),
-                  visible.isEmpty
-                      ? SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              messages.isEmpty
-                                  ? _l10n.activeContextEmpty
-                                  : _l10n.activeContextNoMatches,
-                            ),
-                          ),
-                        )
-                      : SliverList.separated(
-                          itemCount: visible.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final message = visible[index];
-                            final preview = message.previewFor(_query);
-                            return ListTile(
-                              key: ValueKey('active-context-${message.id}'),
-                              title: Text(
-                                contextTypeLabel(_l10n, message.type),
-                              ),
-                              subtitle: Text(
-                                preview.isEmpty
-                                    ? _l10n.activeContextNoText
-                                    : preview,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: const Icon(AppIconography.chevronRight),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => _ContextMessageScreen(
-                                    controller: widget.controller,
-                                    location: _location,
-                                    sessionID: widget.sessionID,
-                                    history: _history,
-                                    message: message,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: MediaQuery.paddingOf(context).bottom,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          Padding(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: tokens.gutter,
+              vertical: tokens.space2,
             ),
+            child: KitText(
+              l10n.activeContextIntro,
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+          ),
+          if (messages.isEmpty)
+            KitStateView(
+              key: const ValueKey('active-context-empty'),
+              icon: AppIconography.layers,
+              title: l10n.activeContextEmpty,
+              body: l10n.activeContextEmptyDetail,
+              size: KitStateSize.inline,
+            )
+          else if (visible.isEmpty)
+            KitSearchNoMatch(
+              key: const ValueKey('active-context-no-match'),
+              query: _query.isEmpty
+                  ? contextTypeLabel(l10n, _type ?? '')
+                  : _search.text.trim(),
+              what: l10n.activeContextWhat,
+              onClear: _clearSearch,
+            )
+          else ...[
+            if (_query.isEmpty)
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.gutter,
+                  end: tokens.gutter,
+                  bottom: tokens.space2,
+                ),
+                child: KitText(
+                  filtered
+                      ? l10n.activeContextCount(visible.length, messages.length)
+                      : l10n.activeContextTotal(messages.length),
+                  role: KitTextRole.caption,
+                  tone: KitTextTone.secondary,
+                  tabular: true,
+                ),
+              ),
+            KitRowGroup(
+              leadingIcons: false,
+              children: [for (final message in visible) _row(l10n, message)],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(AppLocalizations l10n, ActiveContextMessage message) {
+    final preview = message.previewFor(_query);
+    final title = contextTypeLabel(l10n, message.type);
+    return KitRow(
+      key: ValueKey('active-context-${message.id}'),
+      title: title,
+      supporting: TextSpan(
+        text: preview.isEmpty ? l10n.activeContextNoText : preview,
+      ),
+      supportingMaxLines: 3,
+      trailing: const KitChevron(),
+      onTap: () => _open(message),
+      menuLabel: l10n.activeContextRowMenu(title),
+      menu: [
+        KitMenuItem(
+          label: l10n.activeContextOpenMessage(title),
+          icon: AppIconography.layers,
+          onSelected: () => _open(message),
+        ),
+        if (preview.isNotEmpty)
+          KitMenuItem.copy(
+            label: l10n.activeContextCopyMessage(title),
+            text: () => [
+              for (final part in message.content)
+                if (part.text.isNotEmpty) part.text,
+            ].join('\n\n'),
+          ),
+      ],
     );
   }
 }
@@ -345,6 +400,20 @@ String contextTypeLabel(AppLocalizations l10n, String type) => switch (type) {
   _ => type,
 };
 
+String _partKind(AppLocalizations l10n, ContextContentKind kind) =>
+    switch (kind) {
+      ContextContentKind.text => l10n.activeContextText,
+      ContextContentKind.reasoning => l10n.transcriptFindReasoning,
+      ContextContentKind.toolInput => l10n.activeContextToolInput,
+      ContextContentKind.toolOutput => l10n.activeContextToolOutput,
+      ContextContentKind.file => l10n.activeContextFile,
+      ContextContentKind.notice => l10n.activeContextNotice,
+      ContextContentKind.pruned => l10n.activeContextPruned,
+      ContextContentKind.truncated => l10n.activeContextTruncated,
+    };
+
+/// One message's parts, in order; the id sits in Details and the snapshot
+/// disclaimer is one muted line at the end (map active-context-message).
 class _ContextMessageScreen extends StatelessWidget {
   const _ContextMessageScreen({
     required this.controller,
@@ -358,93 +427,97 @@ class _ContextMessageScreen extends StatelessWidget {
   final ActiveContextMessage message;
   final String sessionID;
   final int history;
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(contextTypeLabel(l10n, message.type))),
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitScreen(
+      topBar: KitTopBar(title: contextTypeLabel(l10n, message.type)),
+      width: KitScreenWidth.list,
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
           if (controller.locationRevision != location ||
               controller.sessionHistoryRevision(sessionID) != history) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(l10n.activeContextChanged),
-              ),
+            return KitStateView(
+              key: const ValueKey('active-context-message-changed'),
+              icon: AppIconography.info,
+              title: l10n.activeContextChangedTitle,
+              body: l10n.activeContextChanged,
             );
           }
-          return ListView.separated(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              16 + MediaQuery.paddingOf(context).bottom,
-            ),
-            itemCount: message.content.length + 1,
-            separatorBuilder: (_, _) => const Divider(height: 32),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SelectableText(
-                      message.id,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(l10n.activeContextContentHelp),
-                  ],
-                );
-              }
-              final part = message.content[index - 1];
-              final kind = switch (part.kind) {
-                ContextContentKind.text => l10n.activeContextText,
-                ContextContentKind.reasoning => l10n.transcriptFindReasoning,
-                ContextContentKind.toolInput => l10n.activeContextToolInput,
-                ContextContentKind.toolOutput => l10n.activeContextToolOutput,
-                ContextContentKind.file => l10n.activeContextFile,
-                ContextContentKind.notice => l10n.activeContextNotice,
-                ContextContentKind.pruned => l10n.activeContextPruned,
-                ContextContentKind.truncated => l10n.activeContextTruncated,
-              };
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          part.name?.isNotEmpty == true
-                              ? l10n.activeContextPartHeading(kind, part.name!)
-                              : kind,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                      ),
-                      if (part.text.isNotEmpty)
-                        IconButton(
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).copyButtonLabel,
-                          icon: const Icon(AppIconography.copy),
-                          onPressed: () =>
-                              Clipboard.setData(ClipboardData(text: part.text)),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (part.kind != ContextContentKind.pruned &&
-                      part.kind != ContextContentKind.truncated)
-                    SelectableText(
-                      part.text.isEmpty ? l10n.activeContextNoText : part.text,
-                    ),
+          final tokens = KitTokens.of(context);
+          return ListView(
+            padding: KitScreen.padding(
+              context,
+            ).add(EdgeInsetsDirectional.only(top: tokens.space3)),
+            children: [
+              for (final part in message.content) ...[
+                _Part(part: part),
+                SizedBox(height: tokens.sectionGap),
+              ],
+              KitText(
+                l10n.activeContextContentHelp,
+                role: KitTextRole.caption,
+                tone: KitTextTone.secondary,
+              ),
+              SizedBox(height: tokens.space3),
+              KitDetailsFold(
+                values: [
+                  KitTechnicalValue(l10n.activeContextMessageId, message.id),
                 ],
-              );
-            },
+              ),
+            ],
           );
         },
       ),
+    );
+  }
+}
+
+class _Part extends StatelessWidget {
+  const _Part({required this.part});
+  final ContextContent part;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final kind = _partKind(l10n, part.kind);
+    final heading = part.name?.isNotEmpty == true
+        ? l10n.activeContextPartHeading(kind, part.name!)
+        : kind;
+    final technical =
+        part.kind == ContextContentKind.toolInput ||
+        part.kind == ContextContentKind.toolOutput;
+    final dropped =
+        part.kind == ContextContentKind.pruned ||
+        part.kind == ContextContentKind.truncated;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: KitText(heading, role: KitTextRole.label)),
+            if (part.text.isNotEmpty && !dropped)
+              KitIconButton.copy(
+                text: () => part.text,
+                tooltip: l10n.activeContextCopyPart(heading),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.space2),
+        if (!dropped)
+          part.text.isEmpty
+              ? KitText(
+                  l10n.activeContextNoText,
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
+                )
+              : technical
+              ? KitText.mono(part.text, selectable: true)
+              : KitText.selectable(part.text),
+      ],
     );
   }
 }

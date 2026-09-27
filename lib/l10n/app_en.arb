@@ -28530,5 +28530,366 @@
         "type": "int"
       }
     }
+  },
+  "activeContextLoading": "Reading the active context…",
+  "@activeContextLoading": {
+    "description": "Active context: loading state and loading bar label."
+  },
+  "activeContextAllCount": "All messages · {count}",
+  "@activeContextAllCount": {
+    "description": "Active context filter menu: show every kind of message, with the total.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activeContextChangedTitle": "This view is out of date",
+  "@activeContextChangedTitle": {
+    "description": "Active context: title when the server, project or conversation changed under the page."
+  },
+  "activeContextFailedTitle": "Couldn't read the active context",
+  "@activeContextFailedTitle": {
+    "description": "Active context: title of the load failure state."
+  },
+  "activeContextIntro": "What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.",
+  "@activeContextIntro": {
+    "description": "Active context: plain one-paragraph intro above the list."
+  },
+  "activeContextEmptyDetail": "Nothing is kept for the next turn yet. Pull down to check again.",
+  "@activeContextEmptyDetail": {
+    "description": "Active context: body of the empty state."
+  },
+  "activeContextWhat": "active context",
+  "@activeContextWhat": {
+    "description": "Active context: the list name inside \"Nothing in active context matches …\"."
+  },
+  "activeContextTotal": "{count, plural, one{1 message} other{{count} messages}}",
+  "@activeContextTotal": {
+    "description": "Active context: count line above the rows when nothing is filtered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activeContextRowMenu": "Actions for {type}",
+  "@activeContextRowMenu": {
+    "description": "Active context: accessible name of a row menu.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextOpenMessage": "Open {type}",
+  "@activeContextOpenMessage": {
+    "description": "Active context row menu: opens the message.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextCopyMessage": "Copy {type} text",
+  "@activeContextCopyMessage": {
+    "description": "Active context row menu: copies the message text.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextMessageId": "Message id",
+  "@activeContextMessageId": {
+    "description": "Active context message page: label of the message id in Details."
+  },
+  "activeContextCopyPart": "Copy {part}",
+  "@activeContextCopyPart": {
+    "description": "Active context message page: copy button of one part, naming it.",
+    "placeholders": {
+      "part": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionNoteDeleting": "Deleting the note…",
+  "@sessionNoteDeleting": {
+    "description": "Note for the agent: loading bar and button reason while deleting."
+  },
+  "sessionNoteSaving": "Saving the note…",
+  "@sessionNoteSaving": {
+    "description": "Note for the agent: loading bar and button reason while saving."
+  },
+  "sessionNoteLoading": "Reading the saved note…",
+  "@sessionNoteLoading": {
+    "description": "Note for the agent: loading state."
+  },
+  "sessionNoteLoadFailed": "Couldn't read the note",
+  "@sessionNoteLoadFailed": {
+    "description": "Note for the agent: title of the load failure state."
+  },
+  "sessionNoteSaveFailed": "Couldn't save the note",
+  "@sessionNoteSaveFailed": {
+    "description": "Note for the agent: title of the save failure notice."
+  },
+  "sessionNoteFieldLabel": "Note",
+  "@sessionNoteFieldLabel": {
+    "description": "Note for the agent: label above the text field."
+  },
+  "sessionNoteFieldLocked": "Refresh the saved note before editing.",
+  "@sessionNoteFieldLocked": {
+    "description": "Note for the agent: why the field and Save are unavailable after the note changed elsewhere."
+  },
+  "sessionNoteTooLong": "{over} bytes too long. A note can be up to {limit} bytes.",
+  "@sessionNoteTooLong": {
+    "description": "Note for the agent: error under the field when the note is over the server limit.",
+    "placeholders": {
+      "over": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionNoteWriteFirst": "Write a note to save it.",
+  "@sessionNoteWriteFirst": {
+    "description": "Note for the agent: why Save is unavailable while the field is empty."
+  },
+  "sessionNoteEmptyUseDelete": "To remove the note, use Delete saved note.",
+  "@sessionNoteEmptyUseDelete": {
+    "description": "Note for the agent: why Save is unavailable when the saved note was cleared in the field."
+  },
+  "sessionNoteUnchanged": "Change the note to save it.",
+  "@sessionNoteUnchanged": {
+    "description": "Note for the agent: why Save is unavailable when nothing changed."
+  },
+  "sessionRelationsTitle": "Subagents",
+  "@sessionRelationsTitle": {
+    "description": "Subagents page title."
+  },
+  "sessionRelationsStopTitle": "Stop {title}?",
+  "@sessionRelationsStopTitle": {
+    "description": "Subagents: stop question title naming the subagent conversation.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsStopBody": "The subagent stops its current step. What it already did stays in its conversation.",
+  "@sessionRelationsStopBody": {
+    "description": "Subagents: stop question body."
+  },
+  "sessionRelationsStopConfirm": "Stop subagent",
+  "@sessionRelationsStopConfirm": {
+    "description": "Subagents: stop question confirm button."
+  },
+  "sessionRelationsFailedTitle": "Couldn't load the subagents",
+  "@sessionRelationsFailedTitle": {
+    "description": "Subagents: title of the load failure state."
+  },
+  "sessionRelationsLoading": "Loading subagents…",
+  "@sessionRelationsLoading": {
+    "description": "Subagents: loading state."
+  },
+  "sessionRelationsStartedFrom": "Started from",
+  "@sessionRelationsStartedFrom": {
+    "description": "Subagents: label above the conversation the subagents were started from."
+  },
+  "sessionRelationsSubagentCount": "{count, plural, one{1 subagent} other{{count} subagents}}",
+  "@sessionRelationsSubagentCount": {
+    "description": "Subagents: label above the subagent rows.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionRelationsOpenToAnswer": "open to answer",
+  "@sessionRelationsOpenToAnswer": {
+    "description": "Subagents: after \"Needs you · \" on a row whose subagent waits for an answer."
+  },
+  "sessionRelationsIdle": "Idle",
+  "@sessionRelationsIdle": {
+    "description": "Subagents: state word of the parent conversation when it is not working."
+  },
+  "sessionRelationsThisConversation": "This conversation",
+  "@sessionRelationsThisConversation": {
+    "description": "Subagents: marks the row of the conversation the page was opened from."
+  },
+  "sessionRelationsOpening": "Opening…",
+  "@sessionRelationsOpening": {
+    "description": "Subagents: why rows are unavailable while one opens."
+  },
+  "sessionRelationsRowMenu": "Actions for {title}",
+  "@sessionRelationsRowMenu": {
+    "description": "Subagents: accessible name of a row menu.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsOpen": "Open {title}",
+  "@sessionRelationsOpen": {
+    "description": "Subagents row menu: opens the conversation.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsCopyHandoff": "Copy handoff for {title}",
+  "@sessionRelationsCopyHandoff": {
+    "description": "Subagents row menu: copies the handoff for the conversation.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsPin": "Pin {title}",
+  "@sessionRelationsPin": {
+    "description": "Subagents row menu: pins the conversation.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsUnpin": "Unpin {title}",
+  "@sessionRelationsUnpin": {
+    "description": "Subagents row menu: unpins the conversation.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionRelationsStop": "Stop {title}",
+  "@sessionRelationsStop": {
+    "description": "Subagents row menu: stops a working subagent.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "webSourcesInvalidUrl": "Enter an HTTP or HTTPS address without a user name or password.",
+  "@webSourcesInvalidUrl": {
+    "description": "Add web source: error under the address field."
+  },
+  "webSearchFailedTitle": "Search didn't finish",
+  "@webSearchFailedTitle": {
+    "description": "Add web source: title of the search failure notice."
+  },
+  "webSearchTryAgain": "Search again",
+  "@webSearchTryAgain": {
+    "description": "Add web source: retries the failed search."
+  },
+  "webSearchBusy": "Wait for the search to finish.",
+  "@webSearchBusy": {
+    "description": "Add web source: why the query and provider are unavailable during a search."
+  },
+  "webSearchQueryHint": "For example: flutter golden tests",
+  "@webSearchQueryHint": {
+    "description": "Add web source: example under the search label."
+  },
+  "webSearchNeedsProvider": "Set up a search provider on this server first.",
+  "@webSearchNeedsProvider": {
+    "description": "Add web source: why the query field is unavailable without a provider."
+  },
+  "webSearchEmptyDetail": "Try other words, or paste a link below.",
+  "@webSearchEmptyDetail": {
+    "description": "Add web source: body of the no-results state."
+  },
+  "webSearchResults": "{count, plural, one{1 result} other{{count} results}}",
+  "@webSearchResults": {
+    "description": "Add web source: label above the search results.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "webSourcesAdded": "Added",
+  "@webSourcesAdded": {
+    "description": "Add web source: mark on a result already added to the prompt."
+  },
+  "webSourcesAddNamed": "Add {title} to prompt",
+  "@webSourcesAddNamed": {
+    "description": "Add web source: adds one result to the prompt.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "webSourcesRowMenu": "Actions for {title}",
+  "@webSourcesRowMenu": {
+    "description": "Add web source: accessible name of a row menu.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "webSourcesOpenHost": "Open {host} in browser",
+  "@webSourcesOpenHost": {
+    "description": "Add web source: opens the page in the browser, naming its site.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "webSourcesAddLink": "Add link to prompt",
+  "@webSourcesAddLink": {
+    "description": "Add web source: adds the pasted link."
+  },
+  "webSourcesPasteDetail": "A public address, with an optional excerpt",
+  "@webSourcesPasteDetail": {
+    "description": "Add web source: line under \"Or paste a source\"."
+  },
+  "webSourcesAddedCount": "{count, plural, one{Added to prompt · 1 of 10} other{Added to prompt · {count} of 10}}",
+  "@webSourcesAddedCount": {
+    "description": "Add web source: label above the added sources.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "webSourcesRemoveNamed": "Remove {title} from prompt",
+  "@webSourcesRemoveNamed": {
+    "description": "Add web source: removes an added source.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "webSearchSearching": "Searching…",
+  "@webSearchSearching": {
+    "description": "Add web source: loading bar label while searching."
+  },
+  "webSearchFindingProviders": "Finding search providers…",
+  "@webSearchFindingProviders": {
+    "description": "Add web source: loading bar label while providers are discovered."
+  },
+  "webSourcesDone": "{count, plural, one{Done · 1 added} other{Done · {count} added}}",
+  "@webSourcesDone": {
+    "description": "Add web source: pinned primary that returns the added sources to the draft.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "webSourcesScopeChangedTitle": "The server changed",
+  "@webSourcesScopeChangedTitle": {
+    "description": "Add web source: title of the state when the server or project changed."
   }
 }

@@ -16,6 +16,7 @@ import 'package:opencode_mobile/api2/models.dart';
 import 'package:opencode_mobile/api2/transport.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/session_note_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tool/capture/fixtures.dart' show loadCaptureFonts, captureTheme;
@@ -408,13 +409,13 @@ void main() {
       h.controller.notifyListeners();
       await tester.pump();
 
-      final editor = tester.widget<TextField>(
+      final editor = tester.widget<TextFormField>(
         find.byKey(const ValueKey('session-note-editor')),
       );
-      final save = tester.widget<FilledButton>(
+      final save = tester.widget<KitButton>(
         find.byKey(const ValueKey('save-session-note')),
       );
-      expect(editor.readOnly, isTrue);
+      expect(editor.enabled, isFalse);
       expect(save.onPressed, isNull);
       expect(
         find.textContaining('The conversation or its instructions changed.'),
@@ -475,14 +476,14 @@ void main() {
     h.notes.writeGate!.complete();
     await tester.pumpAndSettle();
 
-    final editor = tester.widget<TextField>(
+    final editor = tester.widget<TextFormField>(
       find.byKey(const ValueKey('session-note-editor')),
     );
     expect(editor.controller!.text, 'session one draft');
-    expect(editor.readOnly, isTrue);
+    expect(editor.enabled, isFalse);
     expect(
       tester
-          .widget<FilledButton>(find.byKey(const ValueKey('save-session-note')))
+          .widget<KitButton>(find.byKey(const ValueKey('save-session-note')))
           .onPressed,
       isNull,
     );
@@ -687,12 +688,18 @@ void main() {
       );
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
+      // At 1.6x text on a small phone the field starts below the fold.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('session-note-editor')),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.enterText(
         find.byKey(const ValueKey('session-note-editor')),
         'a' * 8191,
       );
       await tester.pump();
-      final button = tester.widget<FilledButton>(
+      final button = tester.widget<KitButton>(
         find.byKey(const ValueKey('save-session-note')),
       );
       expect(button.onPressed, isNull);
