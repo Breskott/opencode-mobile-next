@@ -24001,5 +24001,545 @@
         "type": "int"
       }
     }
+  },
+  "kitCapServerAnyTitle": "A server to work on",
+  "@kitCapServerAnyTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"server.any\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapServerAnyWhy": "There's no server yet. Set one up on this phone or connect a computer.",
+  "@kitCapServerAnyWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"server.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapServerAnyEnable": "Add a server",
+  "@kitCapServerAnyEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"server.any\" on (a verb, COPY-8)"
+  },
+  "kitCapServerAnyOffer": "Add a server to start working with an agent.",
+  "@kitCapServerAnyOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"server.any\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapServerOc1Title": "OpenCode 1 server",
+  "@kitCapServerOc1Title": {
+    "description": "KitCapabilityExplainer: the name of the capability \"server.oc1\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapServerOc1Why": "Needs this phone's own server or a computer running OpenCode 1.",
+  "@kitCapServerOc1Why": {
+    "description": "KitCapabilityExplainer: why the capability \"server.oc1\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapServerOc2Title": "OpenCode 2 server",
+  "@kitCapServerOc2Title": {
+    "description": "KitCapabilityExplainer: the name of the capability \"server.oc2\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapServerOc2Why": "Needs a server running OpenCode 2. This phone's server can switch to it.",
+  "@kitCapServerOc2Why": {
+    "description": "KitCapabilityExplainer: why the capability \"server.oc2\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapServerOc2Enable": "Switch to OpenCode 2",
+  "@kitCapServerOc2Enable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"server.oc2\" on (a verb, COPY-8)"
+  },
+  "kitCapServerOc2Offer": "This needs OpenCode 2. Switch this phone's server to it?",
+  "@kitCapServerOc2Offer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"server.oc2\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapServerCodexTitle": "Codex server",
+  "@kitCapServerCodexTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"server.codex\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapServerCodexWhy": "Needs a computer running Codex.",
+  "@kitCapServerCodexWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"server.codex\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapServerCodexEnable": "Connect Codex",
+  "@kitCapServerCodexEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"server.codex\" on (a verb, COPY-8)"
+  },
+  "kitCapServerCodexOffer": "Connect a computer running Codex to use it here.",
+  "@kitCapServerCodexOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"server.codex\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapServerPaseoTitle": "Claude Code or Pi",
+  "@kitCapServerPaseoTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"server.paseo\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapServerPaseoWhy": "Needs Paseo, on a computer or on this phone.",
+  "@kitCapServerPaseoWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"server.paseo\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapServerPaseoEnable": "Connect Paseo",
+  "@kitCapServerPaseoEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"server.paseo\" on (a verb, COPY-8)"
+  },
+  "kitCapServerPaseoOffer": "Work with Claude Code or Pi. Connect Paseo?",
+  "@kitCapServerPaseoOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"server.paseo\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPhoneBuiltinTitle": "Server on this phone",
+  "@kitCapPhoneBuiltinTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"phone.builtin\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPhoneBuiltinWhy": "This phone has no server of its own yet.",
+  "@kitCapPhoneBuiltinWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"phone.builtin\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPhoneBuiltinEnable": "Set up this phone",
+  "@kitCapPhoneBuiltinEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"phone.builtin\" on (a verb, COPY-8)"
+  },
+  "kitCapPhoneBuiltinOffer": "Run agents right on this phone. Set it up?",
+  "@kitCapPhoneBuiltinOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"phone.builtin\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPhoneTermuxTitle": "Server in Termux",
+  "@kitCapPhoneTermuxTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"phone.termux\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPhoneTermuxWhy": "Needs Termux on this phone.",
+  "@kitCapPhoneTermuxWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"phone.termux\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPhoneTermuxEnable": "Set up with Termux",
+  "@kitCapPhoneTermuxEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"phone.termux\" on (a verb, COPY-8)"
+  },
+  "kitCapPhoneTermuxOffer": "Run this phone's server in Termux instead?",
+  "@kitCapPhoneTermuxOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"phone.termux\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPhoneAnyTitle": "A server on this phone",
+  "@kitCapPhoneAnyTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"phone.any\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPhoneAnyWhy": "Needs a server running on this phone.",
+  "@kitCapPhoneAnyWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"phone.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapModelAuthTitle": "Model sign-in",
+  "@kitCapModelAuthTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"model.auth\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapModelAuthWhy": "Sign in to a model provider so the agent can reply.",
+  "@kitCapModelAuthWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"model.auth\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapModelAuthEnable": "Sign in to a model",
+  "@kitCapModelAuthEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"model.auth\" on (a verb, COPY-8)"
+  },
+  "kitCapModelAuthOffer": "The agent needs a model to reply. Sign in to one?",
+  "@kitCapModelAuthOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"model.auth\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapTeamOnTitle": "AI Team",
+  "@kitCapTeamOnTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"team.on\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapTeamOnWhy": "AI Team is off on this server.",
+  "@kitCapTeamOnWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"team.on\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapTeamOnEnable": "Turn on AI Team",
+  "@kitCapTeamOnEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"team.on\" on (a verb, COPY-8)"
+  },
+  "kitCapTeamOnOffer": "This server can also run an AI team. Turn it on?",
+  "@kitCapTeamOnOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"team.on\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapTeamPhoneTitle": "AI Team on this phone",
+  "@kitCapTeamPhoneTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"team.phone\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapTeamPhoneWhy": "Runs only on this phone's own server.",
+  "@kitCapTeamPhoneWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"team.phone\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapTeamControlTitle": "Team controls",
+  "@kitCapTeamControlTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"team.control\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapTeamControlWhy": "Answer this on the computer that runs the team.",
+  "@kitCapTeamControlWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"team.control\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapTeamControlEnable": "See how to set it up",
+  "@kitCapTeamControlEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"team.control\" on (a verb, COPY-8)"
+  },
+  "kitCapTeamControlOffer": "Control the team from here once the computer is set up. See how?",
+  "@kitCapTeamControlOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"team.control\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapClaudeLocalTitle": "Claude Code on this phone",
+  "@kitCapClaudeLocalTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"claude.local\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapClaudeLocalWhy": "Needs Termux on this phone and a Claude subscription.",
+  "@kitCapClaudeLocalWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"claude.local\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapClaudeLocalEnable": "Add Claude Code",
+  "@kitCapClaudeLocalEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"claude.local\" on (a verb, COPY-8)"
+  },
+  "kitCapClaudeLocalOffer": "Add Claude Code to this phone? It needs a Claude subscription.",
+  "@kitCapClaudeLocalOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"claude.local\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapVoiceModelTitle": "Voice typing",
+  "@kitCapVoiceModelTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"voice.model\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapVoiceModelWhy": "Needs a voice model on this phone.",
+  "@kitCapVoiceModelWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"voice.model\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapVoiceModelEnable": "Download voice model",
+  "@kitCapVoiceModelEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"voice.model\" on (a verb, COPY-8)"
+  },
+  "kitCapVoiceModelOffer": "Type by voice on this phone. Download a voice model?",
+  "@kitCapVoiceModelOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"voice.model\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapMcpAnyTitle": "Extra tools",
+  "@kitCapMcpAnyTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"mcp.any\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapMcpAnyWhy": "No extra tools are added on this server yet.",
+  "@kitCapMcpAnyWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapMcpAnyEnable": "Add a tool",
+  "@kitCapMcpAnyEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"mcp.any\" on (a verb, COPY-8)"
+  },
+  "kitCapMcpAnyOffer": "Give the agent more tools. Add one?",
+  "@kitCapMcpAnyOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"mcp.any\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapProjectOpenTitle": "Project",
+  "@kitCapProjectOpenTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"project.open\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapProjectOpenWhy": "Choose a folder to work in first.",
+  "@kitCapProjectOpenWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"project.open\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapProjectOpenEnable": "Choose a project",
+  "@kitCapProjectOpenEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"project.open\" on (a verb, COPY-8)"
+  },
+  "kitCapProjectOpenOffer": "Choose a project folder to start working.",
+  "@kitCapProjectOpenOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"project.open\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapProjectGitTitle": "Git project",
+  "@kitCapProjectGitTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"project.git\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapProjectGitWhy": "This folder isn't a Git project yet.",
+  "@kitCapProjectGitWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"project.git\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapProjectGitEnable": "Make this a Git project",
+  "@kitCapProjectGitEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"project.git\" on (a verb, COPY-8)"
+  },
+  "kitCapProjectGitOffer": "This needs a Git project. Make this folder one?",
+  "@kitCapProjectGitOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"project.git\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPermNotificationsTitle": "Notifications",
+  "@kitCapPermNotificationsTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"perm.notifications\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPermNotificationsWhy": "Notifications are off for this app.",
+  "@kitCapPermNotificationsWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"perm.notifications\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPermNotificationsEnable": "Allow notifications",
+  "@kitCapPermNotificationsEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"perm.notifications\" on (a verb, COPY-8)"
+  },
+  "kitCapPermNotificationsOffer": "Hear when an agent needs you or finishes. Allow notifications?",
+  "@kitCapPermNotificationsOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"perm.notifications\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPermBatteryTitle": "Running in the background",
+  "@kitCapPermBatteryTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"perm.battery\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPermBatteryWhy": "Android may stop the app while it's in the background.",
+  "@kitCapPermBatteryWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"perm.battery\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPermBatteryEnable": "Allow background running",
+  "@kitCapPermBatteryEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"perm.battery\" on (a verb, COPY-8)"
+  },
+  "kitCapPermBatteryOffer": "Keep agents running when the app is closed?",
+  "@kitCapPermBatteryOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"perm.battery\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPermCameraTitle": "Camera",
+  "@kitCapPermCameraTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"perm.camera\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPermCameraWhy": "Camera access is off for this app.",
+  "@kitCapPermCameraWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"perm.camera\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPermCameraEnable": "Allow camera",
+  "@kitCapPermCameraEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"perm.camera\" on (a verb, COPY-8)"
+  },
+  "kitCapPermCameraOffer": "Scan pairing codes and add photos. Allow the camera?",
+  "@kitCapPermCameraOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"perm.camera\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapPermMicTitle": "Microphone",
+  "@kitCapPermMicTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"perm.mic\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapPermMicWhy": "Microphone access is off for this app.",
+  "@kitCapPermMicWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"perm.mic\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapPermMicEnable": "Allow microphone",
+  "@kitCapPermMicEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"perm.mic\" on (a verb, COPY-8)"
+  },
+  "kitCapPermMicOffer": "Speak your prompts. Allow the microphone?",
+  "@kitCapPermMicOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"perm.mic\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapNetworkTailscaleTitle": "Reach from anywhere",
+  "@kitCapNetworkTailscaleTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"network.tailscale\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapNetworkTailscaleWhy": "Your phone and computer aren't on the same network.",
+  "@kitCapNetworkTailscaleWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"network.tailscale\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapNetworkTailscaleEnable": "Set up Tailscale",
+  "@kitCapNetworkTailscaleEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"network.tailscale\" on (a verb, COPY-8)"
+  },
+  "kitCapNetworkTailscaleOffer": "Reach your computer from anywhere with Tailscale. Set it up?",
+  "@kitCapNetworkTailscaleOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"network.tailscale\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapQuotaCollectorTitle": "Remaining usage",
+  "@kitCapQuotaCollectorTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"quota.collector\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapQuotaCollectorWhy": "This server doesn't report what's left of your plan.",
+  "@kitCapQuotaCollectorWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"quota.collector\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapQuotaCollectorEnable": "See how to add it",
+  "@kitCapQuotaCollectorEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"quota.collector\" on (a verb, COPY-8)"
+  },
+  "kitCapQuotaCollectorOffer": "See what's left of your plan here. Add it on the server?",
+  "@kitCapQuotaCollectorOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"quota.collector\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapAgentA2aTitle": "Other agents",
+  "@kitCapAgentA2aTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"agent.a2a\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapAgentA2aWhy": "No other agents are added yet.",
+  "@kitCapAgentA2aWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"agent.a2a\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapAgentA2aEnable": "Add an agent",
+  "@kitCapAgentA2aEnable": {
+    "description": "KitCapabilityExplainer: the button that starts the flow turning \"agent.a2a\" on (a verb, COPY-8)"
+  },
+  "kitCapAgentA2aOffer": "Work with agents from other apps. Add one?",
+  "@kitCapAgentA2aOffer": {
+    "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"agent.a2a\" at the moment of need, beside its button and \"Not now\""
+  },
+  "kitCapFlagFileBrowsingTerminalTitle": "Files and Terminal",
+  "@kitCapFlagFileBrowsingTerminalTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:fileBrowsing+terminal\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagFileBrowsingTerminalWhy": "This server doesn't share its files or terminal.",
+  "@kitCapFlagFileBrowsingTerminalWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:fileBrowsing+terminal\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagSessionDiffTitle": "Review changes",
+  "@kitCapFlagSessionDiffTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:sessionDiff\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagSessionDiffWhy": "This server doesn't show the changes an agent made.",
+  "@kitCapFlagSessionDiffWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:sessionDiff\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagServerCatalogTitle": "Server settings",
+  "@kitCapFlagServerCatalogTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:serverCatalog\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagServerCatalogWhy": "This server doesn't share its providers, tools or commands.",
+  "@kitCapFlagServerCatalogWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:serverCatalog\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagUsageStatisticsTitle": "Spending",
+  "@kitCapFlagUsageStatisticsTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:usageStatistics\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagUsageStatisticsWhy": "This server doesn't report what was spent.",
+  "@kitCapFlagUsageStatisticsWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:usageStatistics\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagStagedRevertSessionNotesTitle": "Notes and step-by-step undo",
+  "@kitCapFlagStagedRevertSessionNotesTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:stagedRevert+sessionNotes\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagStagedRevertSessionNotesWhy": "This server can't take notes for the agent or undo step by step.",
+  "@kitCapFlagStagedRevertSessionNotesWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:stagedRevert+sessionNotes\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagWorktreeCreateSessionShareManagedWorkspacesTitle": "Isolated tasks and sharing",
+  "@kitCapFlagWorktreeCreateSessionShareManagedWorkspacesTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:worktreeCreate+sessionShare+managedWorkspaces\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagWorktreeCreateSessionShareManagedWorkspacesWhy": "This server can't run isolated tasks or share conversations.",
+  "@kitCapFlagWorktreeCreateSessionShareManagedWorkspacesWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:worktreeCreate+sessionShare+managedWorkspaces\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagDevelopmentServicesTitle": "Development services",
+  "@kitCapFlagDevelopmentServicesTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:developmentServices\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagDevelopmentServicesWhy": "This server can't start or stop development services.",
+  "@kitCapFlagDevelopmentServicesWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:developmentServices\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagRemoteUpgradeTitle": "Updating the server",
+  "@kitCapFlagRemoteUpgradeTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:remoteUpgrade\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagRemoteUpgradeWhy": "This server can't be updated from the app.",
+  "@kitCapFlagRemoteUpgradeWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:remoteUpgrade\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagPromptAttachmentsTitle": "Photos and files in prompts",
+  "@kitCapFlagPromptAttachmentsTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:promptAttachments\", shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagPromptAttachmentsWhy": "This server can't take photos or files with a prompt.",
+  "@kitCapFlagPromptAttachmentsWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:promptAttachments\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitHostThisPhone": "this phone",
+  "@kitHostThisPhone": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostTermux": "Termux",
+  "@kitHostTermux": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostOpenCode1": "computers with OpenCode 1",
+  "@kitHostOpenCode1": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostOpenCode2": "computers with OpenCode 2",
+  "@kitHostOpenCode2": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostCodex": "Codex",
+  "@kitHostCodex": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostPaseo": "Paseo",
+  "@kitHostPaseo": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostDemo": "the offline demo",
+  "@kitHostDemo": {
+    "description": "KitCapabilityExplainer: a place a capability can run, read after \"on\" (\"isn't available on …\", \"Works on …\")"
+  },
+  "kitHostOpenCode": "computers with OpenCode",
+  "@kitHostOpenCode": {
+    "description": "KitCapabilityExplainer: both OpenCode 1 and OpenCode 2 computers, when a capability works on both, read after \"on\""
+  },
+  "kitCapNotOnHost": "{count, plural, =1{{feature} isn't available on {host}} other{{feature} aren't available on {host}}}",
+  "@kitCapNotOnHost": {
+    "description": "KitCapabilityExplainer: the feature (a capability title) is missing on the current server's host; count is 1 for a singular title and 2 for a plural one",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "feature": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapWorksOn": "Works on {hosts}",
+  "@kitCapWorksOn": {
+    "description": "KitCapabilityExplainer: where a capability can run; hosts is a list of host words joined with kitCapComma and kitCapAnd",
+    "placeholders": {
+      "hosts": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapWhyElsewhere": "{notHere}. {worksOn}.",
+  "@kitCapWhyElsewhere": {
+    "description": "KitCapabilityExplainer: joins kitCapNotOnHost and kitCapWorksOn into the why line",
+    "placeholders": {
+      "notHere": {
+        "type": "String"
+      },
+      "worksOn": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapAnd": "{first} and {last}",
+  "@kitCapAnd": {
+    "description": "KitCapabilityExplainer: joins the last two host words of a list",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapComma": "{first}, {next}",
+  "@kitCapComma": {
+    "description": "KitCapabilityExplainer: joins host words before the last two",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapServerOnHost": "{server} ({host})",
+  "@kitCapServerOnHost": {
+    "description": "KitCapabilityExplainer: the current server's name followed by its host word, in the why line",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "kitCapNotNow": "Not now",
+  "@kitCapNotNow": {
+    "description": "KitCapabilityExplainer: folds a turn-on offer into one quiet row"
   }
 }

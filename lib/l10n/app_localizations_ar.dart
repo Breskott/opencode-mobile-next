@@ -21505,4 +21505,433 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitCapServerAnyTitle => 'A server to work on';
+
+  @override
+  String get kitCapServerAnyWhy =>
+      'There\'s no server yet. Set one up on this phone or connect a computer.';
+
+  @override
+  String get kitCapServerAnyEnable => 'Add a server';
+
+  @override
+  String get kitCapServerAnyOffer =>
+      'Add a server to start working with an agent.';
+
+  @override
+  String get kitCapServerOc1Title => 'OpenCode 1 server';
+
+  @override
+  String get kitCapServerOc1Why =>
+      'Needs this phone\'s own server or a computer running OpenCode 1.';
+
+  @override
+  String get kitCapServerOc2Title => 'OpenCode 2 server';
+
+  @override
+  String get kitCapServerOc2Why =>
+      'Needs a server running OpenCode 2. This phone\'s server can switch to it.';
+
+  @override
+  String get kitCapServerOc2Enable => 'Switch to OpenCode 2';
+
+  @override
+  String get kitCapServerOc2Offer =>
+      'This needs OpenCode 2. Switch this phone\'s server to it?';
+
+  @override
+  String get kitCapServerCodexTitle => 'Codex server';
+
+  @override
+  String get kitCapServerCodexWhy => 'Needs a computer running Codex.';
+
+  @override
+  String get kitCapServerCodexEnable => 'Connect Codex';
+
+  @override
+  String get kitCapServerCodexOffer =>
+      'Connect a computer running Codex to use it here.';
+
+  @override
+  String get kitCapServerPaseoTitle => 'Claude Code or Pi';
+
+  @override
+  String get kitCapServerPaseoWhy =>
+      'Needs Paseo, on a computer or on this phone.';
+
+  @override
+  String get kitCapServerPaseoEnable => 'Connect Paseo';
+
+  @override
+  String get kitCapServerPaseoOffer =>
+      'Work with Claude Code or Pi. Connect Paseo?';
+
+  @override
+  String get kitCapPhoneBuiltinTitle => 'Server on this phone';
+
+  @override
+  String get kitCapPhoneBuiltinWhy =>
+      'This phone has no server of its own yet.';
+
+  @override
+  String get kitCapPhoneBuiltinEnable => 'Set up this phone';
+
+  @override
+  String get kitCapPhoneBuiltinOffer =>
+      'Run agents right on this phone. Set it up?';
+
+  @override
+  String get kitCapPhoneTermuxTitle => 'Server in Termux';
+
+  @override
+  String get kitCapPhoneTermuxWhy => 'Needs Termux on this phone.';
+
+  @override
+  String get kitCapPhoneTermuxEnable => 'Set up with Termux';
+
+  @override
+  String get kitCapPhoneTermuxOffer =>
+      'Run this phone\'s server in Termux instead?';
+
+  @override
+  String get kitCapPhoneAnyTitle => 'A server on this phone';
+
+  @override
+  String get kitCapPhoneAnyWhy => 'Needs a server running on this phone.';
+
+  @override
+  String get kitCapModelAuthTitle => 'Model sign-in';
+
+  @override
+  String get kitCapModelAuthWhy =>
+      'Sign in to a model provider so the agent can reply.';
+
+  @override
+  String get kitCapModelAuthEnable => 'Sign in to a model';
+
+  @override
+  String get kitCapModelAuthOffer =>
+      'The agent needs a model to reply. Sign in to one?';
+
+  @override
+  String get kitCapTeamOnTitle => 'AI Team';
+
+  @override
+  String get kitCapTeamOnWhy => 'AI Team is off on this server.';
+
+  @override
+  String get kitCapTeamOnEnable => 'Turn on AI Team';
+
+  @override
+  String get kitCapTeamOnOffer =>
+      'This server can also run an AI team. Turn it on?';
+
+  @override
+  String get kitCapTeamPhoneTitle => 'AI Team on this phone';
+
+  @override
+  String get kitCapTeamPhoneWhy => 'Runs only on this phone\'s own server.';
+
+  @override
+  String get kitCapTeamControlTitle => 'Team controls';
+
+  @override
+  String get kitCapTeamControlWhy =>
+      'Answer this on the computer that runs the team.';
+
+  @override
+  String get kitCapTeamControlEnable => 'See how to set it up';
+
+  @override
+  String get kitCapTeamControlOffer =>
+      'Control the team from here once the computer is set up. See how?';
+
+  @override
+  String get kitCapClaudeLocalTitle => 'Claude Code on this phone';
+
+  @override
+  String get kitCapClaudeLocalWhy =>
+      'Needs Termux on this phone and a Claude subscription.';
+
+  @override
+  String get kitCapClaudeLocalEnable => 'Add Claude Code';
+
+  @override
+  String get kitCapClaudeLocalOffer =>
+      'Add Claude Code to this phone? It needs a Claude subscription.';
+
+  @override
+  String get kitCapVoiceModelTitle => 'Voice typing';
+
+  @override
+  String get kitCapVoiceModelWhy => 'Needs a voice model on this phone.';
+
+  @override
+  String get kitCapVoiceModelEnable => 'Download voice model';
+
+  @override
+  String get kitCapVoiceModelOffer =>
+      'Type by voice on this phone. Download a voice model?';
+
+  @override
+  String get kitCapMcpAnyTitle => 'Extra tools';
+
+  @override
+  String get kitCapMcpAnyWhy => 'No extra tools are added on this server yet.';
+
+  @override
+  String get kitCapMcpAnyEnable => 'Add a tool';
+
+  @override
+  String get kitCapMcpAnyOffer => 'Give the agent more tools. Add one?';
+
+  @override
+  String get kitCapProjectOpenTitle => 'Project';
+
+  @override
+  String get kitCapProjectOpenWhy => 'Choose a folder to work in first.';
+
+  @override
+  String get kitCapProjectOpenEnable => 'Choose a project';
+
+  @override
+  String get kitCapProjectOpenOffer =>
+      'Choose a project folder to start working.';
+
+  @override
+  String get kitCapProjectGitTitle => 'Git project';
+
+  @override
+  String get kitCapProjectGitWhy => 'This folder isn\'t a Git project yet.';
+
+  @override
+  String get kitCapProjectGitEnable => 'Make this a Git project';
+
+  @override
+  String get kitCapProjectGitOffer =>
+      'This needs a Git project. Make this folder one?';
+
+  @override
+  String get kitCapPermNotificationsTitle => 'Notifications';
+
+  @override
+  String get kitCapPermNotificationsWhy =>
+      'Notifications are off for this app.';
+
+  @override
+  String get kitCapPermNotificationsEnable => 'Allow notifications';
+
+  @override
+  String get kitCapPermNotificationsOffer =>
+      'Hear when an agent needs you or finishes. Allow notifications?';
+
+  @override
+  String get kitCapPermBatteryTitle => 'Running in the background';
+
+  @override
+  String get kitCapPermBatteryWhy =>
+      'Android may stop the app while it\'s in the background.';
+
+  @override
+  String get kitCapPermBatteryEnable => 'Allow background running';
+
+  @override
+  String get kitCapPermBatteryOffer =>
+      'Keep agents running when the app is closed?';
+
+  @override
+  String get kitCapPermCameraTitle => 'Camera';
+
+  @override
+  String get kitCapPermCameraWhy => 'Camera access is off for this app.';
+
+  @override
+  String get kitCapPermCameraEnable => 'Allow camera';
+
+  @override
+  String get kitCapPermCameraOffer =>
+      'Scan pairing codes and add photos. Allow the camera?';
+
+  @override
+  String get kitCapPermMicTitle => 'Microphone';
+
+  @override
+  String get kitCapPermMicWhy => 'Microphone access is off for this app.';
+
+  @override
+  String get kitCapPermMicEnable => 'Allow microphone';
+
+  @override
+  String get kitCapPermMicOffer => 'Speak your prompts. Allow the microphone?';
+
+  @override
+  String get kitCapNetworkTailscaleTitle => 'Reach from anywhere';
+
+  @override
+  String get kitCapNetworkTailscaleWhy =>
+      'Your phone and computer aren\'t on the same network.';
+
+  @override
+  String get kitCapNetworkTailscaleEnable => 'Set up Tailscale';
+
+  @override
+  String get kitCapNetworkTailscaleOffer =>
+      'Reach your computer from anywhere with Tailscale. Set it up?';
+
+  @override
+  String get kitCapQuotaCollectorTitle => 'Remaining usage';
+
+  @override
+  String get kitCapQuotaCollectorWhy =>
+      'This server doesn\'t report what\'s left of your plan.';
+
+  @override
+  String get kitCapQuotaCollectorEnable => 'See how to add it';
+
+  @override
+  String get kitCapQuotaCollectorOffer =>
+      'See what\'s left of your plan here. Add it on the server?';
+
+  @override
+  String get kitCapAgentA2aTitle => 'Other agents';
+
+  @override
+  String get kitCapAgentA2aWhy => 'No other agents are added yet.';
+
+  @override
+  String get kitCapAgentA2aEnable => 'Add an agent';
+
+  @override
+  String get kitCapAgentA2aOffer =>
+      'Work with agents from other apps. Add one?';
+
+  @override
+  String get kitCapFlagFileBrowsingTerminalTitle => 'Files and Terminal';
+
+  @override
+  String get kitCapFlagFileBrowsingTerminalWhy =>
+      'This server doesn\'t share its files or terminal.';
+
+  @override
+  String get kitCapFlagSessionDiffTitle => 'Review changes';
+
+  @override
+  String get kitCapFlagSessionDiffWhy =>
+      'This server doesn\'t show the changes an agent made.';
+
+  @override
+  String get kitCapFlagServerCatalogTitle => 'Server settings';
+
+  @override
+  String get kitCapFlagServerCatalogWhy =>
+      'This server doesn\'t share its providers, tools or commands.';
+
+  @override
+  String get kitCapFlagUsageStatisticsTitle => 'Spending';
+
+  @override
+  String get kitCapFlagUsageStatisticsWhy =>
+      'This server doesn\'t report what was spent.';
+
+  @override
+  String get kitCapFlagStagedRevertSessionNotesTitle =>
+      'Notes and step-by-step undo';
+
+  @override
+  String get kitCapFlagStagedRevertSessionNotesWhy =>
+      'This server can\'t take notes for the agent or undo step by step.';
+
+  @override
+  String get kitCapFlagWorktreeCreateSessionShareManagedWorkspacesTitle =>
+      'Isolated tasks and sharing';
+
+  @override
+  String get kitCapFlagWorktreeCreateSessionShareManagedWorkspacesWhy =>
+      'This server can\'t run isolated tasks or share conversations.';
+
+  @override
+  String get kitCapFlagDevelopmentServicesTitle => 'Development services';
+
+  @override
+  String get kitCapFlagDevelopmentServicesWhy =>
+      'This server can\'t start or stop development services.';
+
+  @override
+  String get kitCapFlagRemoteUpgradeTitle => 'Updating the server';
+
+  @override
+  String get kitCapFlagRemoteUpgradeWhy =>
+      'This server can\'t be updated from the app.';
+
+  @override
+  String get kitCapFlagPromptAttachmentsTitle => 'Photos and files in prompts';
+
+  @override
+  String get kitCapFlagPromptAttachmentsWhy =>
+      'This server can\'t take photos or files with a prompt.';
+
+  @override
+  String get kitHostThisPhone => 'this phone';
+
+  @override
+  String get kitHostTermux => 'Termux';
+
+  @override
+  String get kitHostOpenCode1 => 'computers with OpenCode 1';
+
+  @override
+  String get kitHostOpenCode2 => 'computers with OpenCode 2';
+
+  @override
+  String get kitHostCodex => 'Codex';
+
+  @override
+  String get kitHostPaseo => 'Paseo';
+
+  @override
+  String get kitHostDemo => 'the offline demo';
+
+  @override
+  String get kitHostOpenCode => 'computers with OpenCode';
+
+  @override
+  String kitCapNotOnHost(int count, String feature, String host) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$feature aren\'t available on $host',
+      one: '$feature isn\'t available on $host',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitCapWorksOn(String hosts) {
+    return 'Works on $hosts';
+  }
+
+  @override
+  String kitCapWhyElsewhere(String notHere, String worksOn) {
+    return '$notHere. $worksOn.';
+  }
+
+  @override
+  String kitCapAnd(String first, String last) {
+    return '$first and $last';
+  }
+
+  @override
+  String kitCapComma(String first, String next) {
+    return '$first, $next';
+  }
+
+  @override
+  String kitCapServerOnHost(String server, String host) {
+    return '$server ($host)';
+  }
+
+  @override
+  String get kitCapNotNow => 'Not now';
 }

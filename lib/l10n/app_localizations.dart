@@ -33688,6 +33688,744 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// KitCapabilityExplainer: the name of the capability "server.any", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'A server to work on'**
+  String get kitCapServerAnyTitle;
+
+  /// KitCapabilityExplainer: why the capability "server.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no server yet. Set one up on this phone or connect a computer.'**
+  String get kitCapServerAnyWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "server.any" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server'**
+  String get kitCapServerAnyEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "server.any" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server to start working with an agent.'**
+  String get kitCapServerAnyOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "server.oc1", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode 1 server'**
+  String get kitCapServerOc1Title;
+
+  /// KitCapabilityExplainer: why the capability "server.oc1" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs this phone\'s own server or a computer running OpenCode 1.'**
+  String get kitCapServerOc1Why;
+
+  /// KitCapabilityExplainer: the name of the capability "server.oc2", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode 2 server'**
+  String get kitCapServerOc2Title;
+
+  /// KitCapabilityExplainer: why the capability "server.oc2" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a server running OpenCode 2. This phone\'s server can switch to it.'**
+  String get kitCapServerOc2Why;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "server.oc2" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to OpenCode 2'**
+  String get kitCapServerOc2Enable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "server.oc2" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'This needs OpenCode 2. Switch this phone\'s server to it?'**
+  String get kitCapServerOc2Offer;
+
+  /// KitCapabilityExplainer: the name of the capability "server.codex", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Codex server'**
+  String get kitCapServerCodexTitle;
+
+  /// KitCapabilityExplainer: why the capability "server.codex" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a computer running Codex.'**
+  String get kitCapServerCodexWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "server.codex" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Codex'**
+  String get kitCapServerCodexEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "server.codex" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a computer running Codex to use it here.'**
+  String get kitCapServerCodexOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "server.paseo", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code or Pi'**
+  String get kitCapServerPaseoTitle;
+
+  /// KitCapabilityExplainer: why the capability "server.paseo" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Paseo, on a computer or on this phone.'**
+  String get kitCapServerPaseoWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "server.paseo" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Paseo'**
+  String get kitCapServerPaseoEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "server.paseo" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Work with Claude Code or Pi. Connect Paseo?'**
+  String get kitCapServerPaseoOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "phone.builtin", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Server on this phone'**
+  String get kitCapPhoneBuiltinTitle;
+
+  /// KitCapabilityExplainer: why the capability "phone.builtin" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no server of its own yet.'**
+  String get kitCapPhoneBuiltinWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "phone.builtin" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this phone'**
+  String get kitCapPhoneBuiltinEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "phone.builtin" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Run agents right on this phone. Set it up?'**
+  String get kitCapPhoneBuiltinOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "phone.termux", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Server in Termux'**
+  String get kitCapPhoneTermuxTitle;
+
+  /// KitCapabilityExplainer: why the capability "phone.termux" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Termux on this phone.'**
+  String get kitCapPhoneTermuxWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "phone.termux" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Set up with Termux'**
+  String get kitCapPhoneTermuxEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "phone.termux" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Run this phone\'s server in Termux instead?'**
+  String get kitCapPhoneTermuxOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "phone.any", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'A server on this phone'**
+  String get kitCapPhoneAnyTitle;
+
+  /// KitCapabilityExplainer: why the capability "phone.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a server running on this phone.'**
+  String get kitCapPhoneAnyWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "model.auth", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Model sign-in'**
+  String get kitCapModelAuthTitle;
+
+  /// KitCapabilityExplainer: why the capability "model.auth" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a model provider so the agent can reply.'**
+  String get kitCapModelAuthWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "model.auth" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a model'**
+  String get kitCapModelAuthEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "model.auth" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'The agent needs a model to reply. Sign in to one?'**
+  String get kitCapModelAuthOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "team.on", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get kitCapTeamOnTitle;
+
+  /// KitCapabilityExplainer: why the capability "team.on" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team is off on this server.'**
+  String get kitCapTeamOnWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "team.on" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team'**
+  String get kitCapTeamOnEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "team.on" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'This server can also run an AI team. Turn it on?'**
+  String get kitCapTeamOnOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "team.phone", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team on this phone'**
+  String get kitCapTeamPhoneTitle;
+
+  /// KitCapabilityExplainer: why the capability "team.phone" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Runs only on this phone\'s own server.'**
+  String get kitCapTeamPhoneWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "team.control", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Team controls'**
+  String get kitCapTeamControlTitle;
+
+  /// KitCapabilityExplainer: why the capability "team.control" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Answer this on the computer that runs the team.'**
+  String get kitCapTeamControlWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "team.control" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'See how to set it up'**
+  String get kitCapTeamControlEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "team.control" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Control the team from here once the computer is set up. See how?'**
+  String get kitCapTeamControlOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "claude.local", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code on this phone'**
+  String get kitCapClaudeLocalTitle;
+
+  /// KitCapabilityExplainer: why the capability "claude.local" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Termux on this phone and a Claude subscription.'**
+  String get kitCapClaudeLocalWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "claude.local" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Add Claude Code'**
+  String get kitCapClaudeLocalEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "claude.local" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Add Claude Code to this phone? It needs a Claude subscription.'**
+  String get kitCapClaudeLocalOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "voice.model", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing'**
+  String get kitCapVoiceModelTitle;
+
+  /// KitCapabilityExplainer: why the capability "voice.model" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a voice model on this phone.'**
+  String get kitCapVoiceModelWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "voice.model" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Download voice model'**
+  String get kitCapVoiceModelEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "voice.model" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Type by voice on this phone. Download a voice model?'**
+  String get kitCapVoiceModelOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "mcp.any", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Extra tools'**
+  String get kitCapMcpAnyTitle;
+
+  /// KitCapabilityExplainer: why the capability "mcp.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'No extra tools are added on this server yet.'**
+  String get kitCapMcpAnyWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "mcp.any" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tool'**
+  String get kitCapMcpAnyEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "mcp.any" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Give the agent more tools. Add one?'**
+  String get kitCapMcpAnyOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "project.open", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get kitCapProjectOpenTitle;
+
+  /// KitCapabilityExplainer: why the capability "project.open" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a folder to work in first.'**
+  String get kitCapProjectOpenWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "project.open" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project'**
+  String get kitCapProjectOpenEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "project.open" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project folder to start working.'**
+  String get kitCapProjectOpenOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "project.git", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Git project'**
+  String get kitCapProjectGitTitle;
+
+  /// KitCapabilityExplainer: why the capability "project.git" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This folder isn\'t a Git project yet.'**
+  String get kitCapProjectGitWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "project.git" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Make this a Git project'**
+  String get kitCapProjectGitEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "project.git" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'This needs a Git project. Make this folder one?'**
+  String get kitCapProjectGitOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "perm.notifications", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get kitCapPermNotificationsTitle;
+
+  /// KitCapabilityExplainer: why the capability "perm.notifications" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off for this app.'**
+  String get kitCapPermNotificationsWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "perm.notifications" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications'**
+  String get kitCapPermNotificationsEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "perm.notifications" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Hear when an agent needs you or finishes. Allow notifications?'**
+  String get kitCapPermNotificationsOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "perm.battery", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Running in the background'**
+  String get kitCapPermBatteryTitle;
+
+  /// KitCapabilityExplainer: why the capability "perm.battery" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop the app while it\'s in the background.'**
+  String get kitCapPermBatteryWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "perm.battery" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background running'**
+  String get kitCapPermBatteryEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "perm.battery" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Keep agents running when the app is closed?'**
+  String get kitCapPermBatteryOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "perm.camera", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get kitCapPermCameraTitle;
+
+  /// KitCapabilityExplainer: why the capability "perm.camera" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access is off for this app.'**
+  String get kitCapPermCameraWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "perm.camera" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera'**
+  String get kitCapPermCameraEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "perm.camera" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Scan pairing codes and add photos. Allow the camera?'**
+  String get kitCapPermCameraOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "perm.mic", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get kitCapPermMicTitle;
+
+  /// KitCapabilityExplainer: why the capability "perm.mic" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is off for this app.'**
+  String get kitCapPermMicWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "perm.mic" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone'**
+  String get kitCapPermMicEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "perm.mic" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Speak your prompts. Allow the microphone?'**
+  String get kitCapPermMicOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "network.tailscale", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Reach from anywhere'**
+  String get kitCapNetworkTailscaleTitle;
+
+  /// KitCapabilityExplainer: why the capability "network.tailscale" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone and computer aren\'t on the same network.'**
+  String get kitCapNetworkTailscaleWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "network.tailscale" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Tailscale'**
+  String get kitCapNetworkTailscaleEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "network.tailscale" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Reach your computer from anywhere with Tailscale. Set it up?'**
+  String get kitCapNetworkTailscaleOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "quota.collector", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining usage'**
+  String get kitCapQuotaCollectorTitle;
+
+  /// KitCapabilityExplainer: why the capability "quota.collector" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t report what\'s left of your plan.'**
+  String get kitCapQuotaCollectorWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "quota.collector" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'See how to add it'**
+  String get kitCapQuotaCollectorEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "quota.collector" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'See what\'s left of your plan here. Add it on the server?'**
+  String get kitCapQuotaCollectorOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "agent.a2a", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Other agents'**
+  String get kitCapAgentA2aTitle;
+
+  /// KitCapabilityExplainer: why the capability "agent.a2a" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'No other agents are added yet.'**
+  String get kitCapAgentA2aWhy;
+
+  /// KitCapabilityExplainer: the button that starts the flow turning "agent.a2a" on (a verb, COPY-8)
+  ///
+  /// In en, this message translates to:
+  /// **'Add an agent'**
+  String get kitCapAgentA2aEnable;
+
+  /// KitCapabilityExplainer: the one-sentence turn-on offer for "agent.a2a" at the moment of need, beside its button and "Not now"
+  ///
+  /// In en, this message translates to:
+  /// **'Work with agents from other apps. Add one?'**
+  String get kitCapAgentA2aOffer;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:fileBrowsing+terminal", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Files and Terminal'**
+  String get kitCapFlagFileBrowsingTerminalTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:fileBrowsing+terminal" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t share its files or terminal.'**
+  String get kitCapFlagFileBrowsingTerminalWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:sessionDiff", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get kitCapFlagSessionDiffTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:sessionDiff" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t show the changes an agent made.'**
+  String get kitCapFlagSessionDiffWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:serverCatalog", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Server settings'**
+  String get kitCapFlagServerCatalogTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:serverCatalog" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t share its providers, tools or commands.'**
+  String get kitCapFlagServerCatalogWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:usageStatistics", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Spending'**
+  String get kitCapFlagUsageStatisticsTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:usageStatistics" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t report what was spent.'**
+  String get kitCapFlagUsageStatisticsWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:stagedRevert+sessionNotes", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Notes and step-by-step undo'**
+  String get kitCapFlagStagedRevertSessionNotesTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:stagedRevert+sessionNotes" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t take notes for the agent or undo step by step.'**
+  String get kitCapFlagStagedRevertSessionNotesWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:worktreeCreate+sessionShare+managedWorkspaces", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Isolated tasks and sharing'**
+  String get kitCapFlagWorktreeCreateSessionShareManagedWorkspacesTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:worktreeCreate+sessionShare+managedWorkspaces" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t run isolated tasks or share conversations.'**
+  String get kitCapFlagWorktreeCreateSessionShareManagedWorkspacesWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:developmentServices", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Development services'**
+  String get kitCapFlagDevelopmentServicesTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:developmentServices" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t start or stop development services.'**
+  String get kitCapFlagDevelopmentServicesWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:remoteUpgrade", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Updating the server'**
+  String get kitCapFlagRemoteUpgradeTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:remoteUpgrade" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t be updated from the app.'**
+  String get kitCapFlagRemoteUpgradeWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:promptAttachments", shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Photos and files in prompts'**
+  String get kitCapFlagPromptAttachmentsTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:promptAttachments" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t take photos or files with a prompt.'**
+  String get kitCapFlagPromptAttachmentsWhy;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'this phone'**
+  String get kitHostThisPhone;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'Termux'**
+  String get kitHostTermux;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'computers with OpenCode 1'**
+  String get kitHostOpenCode1;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'computers with OpenCode 2'**
+  String get kitHostOpenCode2;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'Codex'**
+  String get kitHostCodex;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'Paseo'**
+  String get kitHostPaseo;
+
+  /// KitCapabilityExplainer: a place a capability can run, read after "on" ("isn't available on …", "Works on …")
+  ///
+  /// In en, this message translates to:
+  /// **'the offline demo'**
+  String get kitHostDemo;
+
+  /// KitCapabilityExplainer: both OpenCode 1 and OpenCode 2 computers, when a capability works on both, read after "on"
+  ///
+  /// In en, this message translates to:
+  /// **'computers with OpenCode'**
+  String get kitHostOpenCode;
+
+  /// KitCapabilityExplainer: the feature (a capability title) is missing on the current server's host; count is 1 for a singular title and 2 for a plural one
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{feature} isn\'t available on {host}} other{{feature} aren\'t available on {host}}}'**
+  String kitCapNotOnHost(int count, String feature, String host);
+
+  /// KitCapabilityExplainer: where a capability can run; hosts is a list of host words joined with kitCapComma and kitCapAnd
+  ///
+  /// In en, this message translates to:
+  /// **'Works on {hosts}'**
+  String kitCapWorksOn(String hosts);
+
+  /// KitCapabilityExplainer: joins kitCapNotOnHost and kitCapWorksOn into the why line
+  ///
+  /// In en, this message translates to:
+  /// **'{notHere}. {worksOn}.'**
+  String kitCapWhyElsewhere(String notHere, String worksOn);
+
+  /// KitCapabilityExplainer: joins the last two host words of a list
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {last}'**
+  String kitCapAnd(String first, String last);
+
+  /// KitCapabilityExplainer: joins host words before the last two
+  ///
+  /// In en, this message translates to:
+  /// **'{first}, {next}'**
+  String kitCapComma(String first, String next);
+
+  /// KitCapabilityExplainer: the current server's name followed by its host word, in the why line
+  ///
+  /// In en, this message translates to:
+  /// **'{server} ({host})'**
+  String kitCapServerOnHost(String server, String host);
+
+  /// KitCapabilityExplainer: folds a turn-on offer into one quiet row
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get kitCapNotNow;
 }
 
 class _AppLocalizationsDelegate
