@@ -484,7 +484,7 @@ void main() {
       );
       final row = find.byKey(const ValueKey('gated-git-init'));
       expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
+      expect(tester.widget<KitRow>(row).enabled, isFalse);
       expect(find.text('Run `git init` from a terminal'), findsOneWidget);
     });
   });
@@ -579,7 +579,7 @@ void main() {
       expect(find.byKey(const Key('server-updates-tile')), findsNothing);
       final row = find.byKey(const ValueKey('gated-remote-upgrade'));
       expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
+      expect(tester.widget<KitRow>(row).enabled, isFalse);
       expect(
         find.text('Upgrade from the machine running the server'),
         findsOneWidget,
@@ -675,14 +675,24 @@ void main() {
 
       final row = find.byKey(const ValueKey('gated-example'));
       expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
+      expect(tester.widget<KitRow>(row).enabled, isFalse);
       expect(find.text('Not available on OpenCode 2 servers'), findsOneWidget);
       // Capability gating, not plan gating: no upsell, no call to action.
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(KitButton), findsNothing);
 
+      // The generation is spoken with the row; a tap says nothing more (a
+      // snackbar is only for Undo, KIT-34).
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.hint == 'Needs an OpenCode 1 server',
+        ),
+        findsOneWidget,
+      );
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(find.text('Requires an OpenCode 1 server'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
   });
 }

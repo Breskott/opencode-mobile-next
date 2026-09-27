@@ -481,12 +481,16 @@ void main() {
       ),
     );
     await tester.tap(find.text('Blocked'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.textContaining('Link blocked'), findsOneWidget);
+    // The blocked answer is a blocking alert (a snackbar is only for Undo,
+    // KIT-34); it closes before anything else is tapped.
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('HTTP'));
     await tester.pumpAndSettle();
-    expect(find.text('docs.example'), findsOneWidget);
+    expect(find.text('Opens docs.example outside this app.'), findsOneWidget);
     expect(find.text('Open insecure HTTP link?'), findsOneWidget);
     expect(launched, isNull);
     await tester.tap(find.text('Open HTTP link'));

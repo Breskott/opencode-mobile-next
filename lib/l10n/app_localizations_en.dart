@@ -22578,4 +22578,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filePreviewSaveFailed => 'Couldn\'t save file';
+
+  @override
+  String get productStatesActionFailedTitle => 'Couldn\'t finish that';
+
+  @override
+  String get productStatesErrorTitle => 'Couldn\'t load this';
+
+  @override
+  String get productStatesNetworkErrorTitle => 'Can\'t reach the server';
+
+  @override
+  String get productStatesSwitchServer => 'Switch server';
+
+  @override
+  String productStatesRequiresServer(int generation) {
+    return 'Needs an OpenCode $generation server';
+  }
+
+  @override
+  String get externalLinkBlockedTitle => 'Link blocked';
+
+  @override
+  String get externalLinkBlockedBody =>
+      'This app opens only https:// links, and http:// links after you confirm.';
+
+  @override
+  String externalLinkOpensHost(String host) {
+    return 'Opens $host outside this app.';
+  }
+
+  @override
+  String get externalLinkDontOpen => 'Don\'t open';
+
+  @override
+  String get externalLinkCopy => 'Copy link';
+
+  @override
+  String get externalLinkAddress => 'Full address';
+
+  @override
+  String get externalLinkOpenFailedTitle => 'Couldn\'t open link';
+
+  @override
+  String get runCommandReconnecting =>
+      'OpenCode is reconnecting. Try again in a moment.';
+
+  @override
+  String runCommandArgumentsHelper(String command) {
+    return 'Text passed to /$command. Leave it empty if the command takes none.';
+  }
+
+  @override
+  String get runCommandRunsIn => 'Runs in';
+
+  @override
+  String runCommandFailedTitle(String command) {
+    return 'Couldn\'t run /$command';
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_effects.dart';
@@ -165,7 +166,10 @@ void main() {
   }
 
   for (final dark in [false, true]) {
-    testWidgets('error snackbar has readable ${dark ? 'dark' : 'light'} text', (
+    // A failure is a kit alert now, never a snackbar (KIT-34): the alert's
+    // own contrast is the kit's (KitDialog galleries); this checks the
+    // failure still reaches the person, readable, in both themes.
+    testWidgets('an action failure is an alert in ${dark ? 'dark' : 'light'}', (
       tester,
     ) async {
       final theme = dark ? AppTheme.dark() : AppTheme.light();
@@ -184,13 +188,17 @@ void main() {
       );
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
-      final snackbar = tester.widget<SnackBar>(find.byType(SnackBar));
-      final copy = tester.widget<Text>(find.text('Unable to save'));
-      expect(snackbar.backgroundColor, theme.colorScheme.error);
-      expect(copy.style?.color, theme.colorScheme.onError);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.text("Couldn't finish that"), findsOneWidget);
+      expect(find.text('Unable to save'), findsOneWidget);
+      final body = tester.renderObject<RenderParagraph>(
+        find.text('Unable to save'),
+      );
+      final colour = body.text.style?.color;
+      expect(colour, isNotNull);
       final luminances = [
-        snackbar.backgroundColor!.computeLuminance(),
-        copy.style!.color!.computeLuminance(),
+        colour!.computeLuminance(),
+        theme.colorScheme.surface.computeLuminance(),
       ]..sort();
       expect(
         (luminances.last + .05) / (luminances.first + .05),

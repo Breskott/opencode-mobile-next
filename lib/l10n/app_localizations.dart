@@ -35816,6 +35816,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save file'**
   String get filePreviewSaveFailed;
+
+  /// Shared product states: title of the alert shown when an action the person started failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t finish that'**
+  String get productStatesActionFailedTitle;
+
+  /// Shared product states: default title of a page that failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this'**
+  String get productStatesErrorTitle;
+
+  /// Shared product states: title of a page that failed to load because the server could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server'**
+  String get productStatesNetworkErrorTitle;
+
+  /// Shared product states: action on a network error that opens the server list
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server'**
+  String get productStatesSwitchServer;
+
+  /// Shared product states: spoken hint on a dimmed settings row naming the server generation the feature needs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an OpenCode {generation} server'**
+  String productStatesRequiresServer(int generation);
+
+  /// External link gate: title of the alert shown when a link was refused
+  ///
+  /// In en, this message translates to:
+  /// **'Link blocked'**
+  String get externalLinkBlockedTitle;
+
+  /// External link gate: body of the alert shown when a link was refused
+  ///
+  /// In en, this message translates to:
+  /// **'This app opens only https:// links, and http:// links after you confirm.'**
+  String get externalLinkBlockedBody;
+
+  /// External link gate: the confirmation's body naming the destination host
+  ///
+  /// In en, this message translates to:
+  /// **'Opens {host} outside this app.'**
+  String externalLinkOpensHost(String host);
+
+  /// External link gate: cancel action on the insecure http confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t open'**
+  String get externalLinkDontOpen;
+
+  /// External link gate: copies the link instead of opening it
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get externalLinkCopy;
+
+  /// External link gate: label of the full URL under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Full address'**
+  String get externalLinkAddress;
+
+  /// External link gate: title of the alert shown when no app could open the link or opening failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open link'**
+  String get externalLinkOpenFailedTitle;
+
+  /// Run command sheet: error when the server connection is not ready
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is reconnecting. Try again in a moment.'**
+  String get runCommandReconnecting;
+
+  /// Run command sheet: helper under the arguments field
+  ///
+  /// In en, this message translates to:
+  /// **'Text passed to /{command}. Leave it empty if the command takes none.'**
+  String runCommandArgumentsHelper(String command);
+
+  /// Run command sheet: row naming the conversation the command runs in
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in'**
+  String get runCommandRunsIn;
+
+  /// Run command sheet: title of the notice shown when the command failed to start
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t run /{command}'**
+  String runCommandFailedTitle(String command);
 }
 
 class _AppLocalizationsDelegate

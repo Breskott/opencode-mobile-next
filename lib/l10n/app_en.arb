@@ -25741,5 +25741,89 @@
   "filePreviewOpenInFiles": "Open in Files",
   "filePreviewViewMode": "Show file as",
   "filePreviewAttachFailed": "Couldn't attach file",
-  "filePreviewSaveFailed": "Couldn't save file"
+  "filePreviewSaveFailed": "Couldn't save file",
+  "productStatesActionFailedTitle": "Couldn't finish that",
+  "@productStatesActionFailedTitle": {
+    "description": "Shared product states: title of the alert shown when an action the person started failed"
+  },
+  "productStatesErrorTitle": "Couldn't load this",
+  "@productStatesErrorTitle": {
+    "description": "Shared product states: default title of a page that failed to load"
+  },
+  "productStatesNetworkErrorTitle": "Can't reach the server",
+  "@productStatesNetworkErrorTitle": {
+    "description": "Shared product states: title of a page that failed to load because the server could not be reached"
+  },
+  "productStatesSwitchServer": "Switch server",
+  "@productStatesSwitchServer": {
+    "description": "Shared product states: action on a network error that opens the server list"
+  },
+  "productStatesRequiresServer": "Needs an OpenCode {generation} server",
+  "@productStatesRequiresServer": {
+    "description": "Shared product states: spoken hint on a dimmed settings row naming the server generation the feature needs",
+    "placeholders": {
+      "generation": {
+        "type": "int"
+      }
+    }
+  },
+  "externalLinkBlockedTitle": "Link blocked",
+  "@externalLinkBlockedTitle": {
+    "description": "External link gate: title of the alert shown when a link was refused"
+  },
+  "externalLinkBlockedBody": "This app opens only https:// links, and http:// links after you confirm.",
+  "@externalLinkBlockedBody": {
+    "description": "External link gate: body of the alert shown when a link was refused"
+  },
+  "externalLinkOpensHost": "Opens {host} outside this app.",
+  "@externalLinkOpensHost": {
+    "description": "External link gate: the confirmation's body naming the destination host",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "externalLinkDontOpen": "Don't open",
+  "@externalLinkDontOpen": {
+    "description": "External link gate: cancel action on the insecure http confirmation"
+  },
+  "externalLinkCopy": "Copy link",
+  "@externalLinkCopy": {
+    "description": "External link gate: copies the link instead of opening it"
+  },
+  "externalLinkAddress": "Full address",
+  "@externalLinkAddress": {
+    "description": "External link gate: label of the full URL under Details"
+  },
+  "externalLinkOpenFailedTitle": "Couldn't open link",
+  "@externalLinkOpenFailedTitle": {
+    "description": "External link gate: title of the alert shown when no app could open the link or opening failed"
+  },
+  "runCommandReconnecting": "OpenCode is reconnecting. Try again in a moment.",
+  "@runCommandReconnecting": {
+    "description": "Run command sheet: error when the server connection is not ready"
+  },
+  "runCommandArgumentsHelper": "Text passed to /{command}. Leave it empty if the command takes none.",
+  "@runCommandArgumentsHelper": {
+    "description": "Run command sheet: helper under the arguments field",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "runCommandRunsIn": "Runs in",
+  "@runCommandRunsIn": {
+    "description": "Run command sheet: row naming the conversation the command runs in"
+  },
+  "runCommandFailedTitle": "Couldn't run /{command}",
+  "@runCommandFailedTitle": {
+    "description": "Run command sheet: title of the notice shown when the command failed to start",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  }
 }

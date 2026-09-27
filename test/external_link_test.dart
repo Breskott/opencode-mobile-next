@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/widgets/external_link.dart';
 
@@ -138,7 +139,7 @@ void main() {
         },
       );
       expect(find.text('Open external link?'), findsOneWidget);
-      expect(find.text('example.com'), findsOneWidget);
+      expect(find.text('Opens example.com outside this app.'), findsOneWidget);
       expect(launched, isNull);
 
       await tester.tap(find.text('Open link'));
@@ -180,7 +181,101 @@ void main() {
       );
       await tester.tap(find.text('Open link'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Could not open link'), findsOneWidget);
+      expect(find.text("Couldn't open link"), findsOneWidget);
+    });
+
+    testWidgets('never answers with a snackbar (KIT-34)', (tester) async {
+      await tap(tester, 'javascript:alert(1)');
+      expect(find.byType(SnackBar), findsNothing);
+      expect(
+        find.text(
+          'This app opens only https:// links, and http:// links after you '
+          'confirm.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('insecure http: "Don\'t open" is the way back', (tester) async {
+      var launched = false;
+      final outcome = tap(
+        tester,
+        'http://docs.example/path',
+        launcher: (_) async {
+          launched = true;
+          return true;
+        },
+      );
+      await outcome;
+      expect(find.text('Open insecure HTTP link?'), findsOneWidget);
+      expect(find.textContaining('HTTP is not encrypted'), findsOneWidget);
+      await tester.tap(find.text("Don't open"));
+      await tester.pumpAndSettle();
+      expect(launched, isFalse);
+    });
+
+    testWidgets('copy the link instead copies the full address and opens '
+        'nothing', (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      var launched = false;
+      ExternalLinkOutcome? outcome;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  outcome = await openExternalLink(
+                    context,
+                    'https://example.com/a?b=c',
+                    launcher: (_) async {
+                      launched = true;
+                      return true;
+                    },
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('external-link-copy')));
+      await tester.pumpAndSettle();
+      expect(copied, 'https://example.com/a?b=c');
+      expect(launched, isFalse);
+      expect(outcome, ExternalLinkOutcome.cancelled);
+    });
+
+    testWidgets('the full address is one tap away under Details', (
+      tester,
+    ) async {
+      await tap(tester, 'https://example.com/deep/path?x=1');
+      expect(find.text('https://example.com/deep/path?x=1'), findsNothing);
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Full address'), findsOneWidget);
+      expect(
+        find.textContaining('https://example.com/deep/path?x=1'),
+        findsOneWidget,
+      );
     });
   });
 }
