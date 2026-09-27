@@ -1,5 +1,5 @@
 {
- "generatedFrom": "72030f0babea231451acab0a8a3f7ef0a0a632a6",
+ "generatedFrom": "0273319f60e1201ab39ff4f3cd0f6cc3b323b256",
  "pages": [
   {
    "id": "system",
@@ -34073,6 +34073,97 @@
      "destructive": true
     },
     {
+     "id": "integrations-pending-resume",
+     "type": "button",
+     "label": "Resume / check status",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 139,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.pendingIntegrationAuth entry",
+      "!expired && controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-enter-code",
+     "type": "button",
+     "label": "Enter code",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 145,
+     "action": "open-dialog",
+     "target": "integrations-oauth-code-dialog",
+     "targetWidget": "_OAuthCodeDialog",
+     "effect": "_act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "!expired && supported",
+      "entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-cancel",
+     "type": "button",
+     "label": "Cancel sign-in",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 151,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-forget",
+     "type": "button",
+     "label": "Forget on this device",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 155,
+     "action": "open-sheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-uncertain-forget",
+     "type": "button",
+     "label": "Forget uncertain start",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 187,
+     "action": "open-sheet",
+     "target": "integrations-forget-uncertain-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.uncertainIntegrationAuth entry"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
      "id": "integrations-mcp-loopback-callback",
      "type": "gesture",
      "label": "[automatic OAuth loopback callback]",
@@ -34359,92 +34450,6 @@
       "resources.isEmpty && _servers?.isEmpty == true"
      ],
      "destructive": false
-    },
-    {
-     "id": "integrations-pending-resume",
-     "type": "button",
-     "label": "Resume / check status",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 139,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "one tile per controller.pendingIntegrationAuth entry",
-      "!expired && controller.integrationAuthRecoverySupported"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-pending-enter-code",
-     "type": "button",
-     "label": "Enter code",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 145,
-     "action": "open-dialog",
-     "target": "integrations-oauth-code-dialog",
-     "targetWidget": "_OAuthCodeDialog",
-     "effect": "_act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "!expired && supported",
-      "entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-pending-cancel",
-     "type": "button",
-     "label": "Cancel sign-in",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 151,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "controller.integrationAuthRecoverySupported"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "integrations-pending-forget",
-     "type": "button",
-     "label": "Forget on this device",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 155,
-     "action": "open-sheet",
-     "target": "integrations-forget-pending-auth-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "integrations-uncertain-forget",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 187,
-     "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "one tile per controller.uncertainIntegrationAuth entry"
-     ],
-     "destructive": true
     }
    ],
    "variants": [
@@ -34752,30 +34757,28 @@
      "type": "button",
      "label": "Forget on this device",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
      "gates": [],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": true
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": false
     }
    ]
   },
@@ -34804,30 +34807,28 @@
      "type": "button",
      "label": "Forget uncertain start",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
      "gates": [],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": true
     },
     {
      "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": false
     }
    ]
   },

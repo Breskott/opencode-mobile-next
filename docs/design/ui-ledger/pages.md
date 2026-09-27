@@ -5445,6 +5445,11 @@ Reached from: `catalog`, `chat`, `command-launcher-sheet`, `embedded-message-vie
 | Check \| Enter code \| Finish \| Dismiss | button | mutate -> `integrations-oauth-code-dialog` | _PendingOAuthTile ('Connecting {name}', key pending-provider-oauth) primary action. pending+auto mode: _checkOAuth() (repository.integrationOAuthStatus); pending+code mode: _enterOAuthCode() opens _OAuthCodeDialog then repository.completeIntegrationOAuth; complete: _finishOAuth() (refreshProviderRuntime when capabilities.providerRuntimeRefresh, _load, refreshCatalog, snackbar); failed/expired: label 'Dismiss' -> _cancelOAuth(). | _showProviders (widget.mode != IntegrationsMode.mcp); _pendingOAuth != null (legacy flow: !controller.integrationAuthRecoverySupported) | integration_tiles.dart:584 |
 | Authentication options | icon-button | other | opens overflow menu | _showProviders (widget.mode != IntegrationsMode.mcp); _pendingOAuth != null; !terminal && !checking | integration_tiles.dart:593 |
 | Cancel attempt ! | menu-item | mutate | _cancelOAuth(): repository.cancelIntegrationOAuth(attemptID) and clears _pendingOAuth. | _showProviders (widget.mode != IntegrationsMode.mcp); _pendingOAuth != null; !terminal && !checking | integration_tiles.dart:598 |
+| Resume / check status | button | mutate | _PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog). | _showProviders (widget.mode != IntegrationsMode.mcp); one tile per controller.pendingIntegrationAuth entry; !expired && controller.integrationAuthRecoverySupported | 139 |
+| Enter code | button | open-dialog -> `integrations-oauth-code-dialog` | _act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)). | _showProviders (widget.mode != IntegrationsMode.mcp); !expired && supported; entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code | 145 |
+| Cancel sign-in ! | button | mutate | _act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true). | _showProviders (widget.mode != IntegrationsMode.mcp); controller.integrationAuthRecoverySupported | 151 |
+| Forget on this device ! | button | open-sheet -> `integrations-forget-pending-auth-sheet` | _act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision). | _showProviders (widget.mode != IntegrationsMode.mcp) | 155 |
+| Forget uncertain start ! | button | open-sheet -> `integrations-forget-uncertain-auth-sheet` | _UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision). | _showProviders (widget.mode != IntegrationsMode.mcp); one tile per controller.uncertainIntegrationAuth entry | 187 |
 | [automatic OAuth loopback callback] | gesture | mutate | Non-UI: _watchMcpCallback awaits McpOAuthLoopbackListener.code and calls _completeMcpAuthentication without user input. | _showMcp (widget.mode != IntegrationsMode.providers); loopback listener bound | 365 |
 | Add MCP server | icon-button | navigate -> `mcp-setup` | _openMcpSetup(): pushes McpSetupScreen; when it pops true and the location is unchanged, _load() and snackbar (runtime added / saved in OpenCode). | _showMcp (widget.mode != IntegrationsMode.providers) | 564 |
 | [pull to refresh] | gesture | other | _load(): controller.prunePendingIntegrationAuth(), prepareActionRepository(), then listMcpServers / listMcpResources / listIntegrations for the visible sections. |  | 574 |
@@ -5462,11 +5467,6 @@ Reached from: `catalog`, `chat`, `command-launcher-sheet`, `embedded-message-vie
 | Add an MCP server | button | navigate -> `mcp-setup` | ProductInlineEmpty action -> _openMcpSetup(). | _showMcp (widget.mode != IntegrationsMode.providers); servers.isEmpty | 944 |
 | Remove ! | button | open-sheet -> `integrations-remove-mcp-sheet` | _removeMcp(server): confirm sheet then controller.removeMcpServer. Disabled while busy/removing/pending OAuth. | _showMcp (widget.mode != IntegrationsMode.providers); _canRemoveMcp: capabilities.mcpRuntimeRemovals && repository is McpRemovalGateway && profile readable && inventory from current location/repository | 974 |
 | Add an MCP server | button | navigate -> `mcp-setup` | ProductInlineEmpty action -> _openMcpSetup(). | _showMcp (widget.mode != IntegrationsMode.providers); resources.isEmpty && _servers?.isEmpty == true | 1039 |
-| Resume / check status | button | mutate | _PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog). | _showProviders (widget.mode != IntegrationsMode.mcp); one tile per controller.pendingIntegrationAuth entry; !expired && controller.integrationAuthRecoverySupported | pending_auth_recovery.dart:139 |
-| Enter code | button | open-dialog -> `integrations-oauth-code-dialog` | _act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)). | _showProviders (widget.mode != IntegrationsMode.mcp); !expired && supported; entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code | pending_auth_recovery.dart:145 |
-| Cancel sign-in ! | button | mutate | _act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true). | _showProviders (widget.mode != IntegrationsMode.mcp); controller.integrationAuthRecoverySupported | pending_auth_recovery.dart:151 |
-| Forget on this device ! | button | open-sheet -> `integrations-forget-pending-auth-sheet` | _act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision). | _showProviders (widget.mode != IntegrationsMode.mcp) | pending_auth_recovery.dart:155 |
-| Forget uncertain start ! | button | open-sheet -> `integrations-forget-uncertain-auth-sheet` | _UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision). | _showProviders (widget.mode != IntegrationsMode.mcp); one tile per controller.uncertainIntegrationAuth entry | pending_auth_recovery.dart:187 |
 
 ### integrations-remove-mcp-sheet
 
@@ -5547,8 +5547,8 @@ Reached from: `integrations`
 
 | Label | Type | Action -> target | Effect | Gates | Line |
 |---|---|---|---|---|---|
-| Forget on this device ! | button | mutate | controller.forgetIntegrationAuth(entry, locationRevision). |  | 69 |
-| Cancel | button | dismiss | Navigator.pop(context, false); nothing is changed. |  | 86 |
+| Forget on this device ! | button | mutate | controller.forgetIntegrationAuth(entry, locationRevision). |  | confirm_sheet.dart:69 |
+| Cancel | button | dismiss | Navigator.pop(context, false); nothing is changed. |  | confirm_sheet.dart:86 |
 
 ### integrations-forget-uncertain-auth-sheet
 
@@ -5560,8 +5560,8 @@ Reached from: `integrations`
 
 | Label | Type | Action -> target | Effect | Gates | Line |
 |---|---|---|---|---|---|
-| Forget uncertain start ! | button | mutate | controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws. |  | 69 |
-| Cancel | button | dismiss | Navigator.pop(context, false); nothing is changed. |  | 86 |
+| Forget uncertain start ! | button | mutate | controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws. |  | confirm_sheet.dart:69 |
+| Cancel | button | dismiss | Navigator.pop(context, false); nothing is changed. |  | confirm_sheet.dart:86 |
 
 ### references
 
