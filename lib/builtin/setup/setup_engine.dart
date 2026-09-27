@@ -14,8 +14,7 @@ import 'setup_contract.dart';
 import 'setup_scripts.dart';
 import 'termux_setup_host.dart';
 
-/// The installation and server host; runtime selects OpenCode's protocol.
-enum SetupHostKind { builtin, termux }
+export 'setup_contract.dart' show SetupHostKind;
 
 /// What the engine asks of the app once OpenCode is installed: start the
 /// server for [runtime] on [SetupFinishRequest.host] and connect to it.
@@ -95,7 +94,10 @@ class ChannelSetupEngine implements SetupEngine {
     linux: TermuxSetupHost(),
     finisher: finisher,
     strings: strings,
-    components: components,
+    components:
+        components ??
+        ((l10n, params) =>
+            setupComponents(l10n, params: params, host: SetupHostKind.termux)),
     pollInterval: pollInterval,
     readTimeout: readTimeout,
     clock: clock,

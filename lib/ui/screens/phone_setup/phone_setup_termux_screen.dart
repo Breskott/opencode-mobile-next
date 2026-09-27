@@ -16,6 +16,7 @@ import '../../widgets/external_link.dart';
 import '../../widgets/setup_progress_view.dart';
 import '../../widgets/setup_ui_messages.dart';
 import '../servers_screen.dart' show ServersRouteRequest;
+import 'phone_setup_termux_job_screen.dart';
 
 /// Where Termux comes from: the current F-Droid build.
 const termuxDownloadUrl = 'https://f-droid.org/en/packages/com.termux/';
@@ -61,18 +62,34 @@ class PhoneSetupTermuxScreen extends ConsumerStatefulWidget {
       _PhoneSetupTermuxScreenState();
 }
 
-/// Opens the Termux host's progress for [job].
+/// Opens the Termux host's progress for [job]. Installing is the v2 job
+/// with Termux as its host (P1.2, [PhoneSetupTermuxJobScreen]); updating,
+/// switching and starting still go through the Termux manager here until
+/// the old wizard retires (P1.3).
 Future<void> openPhoneSetupTermux(
   BuildContext context, {
   TermuxHostJob job = TermuxHostJob.install,
   TermuxRuntime? target,
   bool firstSetup = false,
-}) => pushKitPage<void>(
-  context,
-  (_) =>
-      PhoneSetupTermuxScreen(job: job, target: target, firstSetup: firstSetup),
-  settings: const RouteSettings(name: 'phone-setup-progress-termux'),
-);
+  Set<String>? selection,
+}) {
+  if (job == TermuxHostJob.install) {
+    return openPhoneSetupTermuxJob(
+      context,
+      selection: selection,
+      firstSetup: firstSetup,
+    );
+  }
+  return pushKitPage<void>(
+    context,
+    (_) => PhoneSetupTermuxScreen(
+      job: job,
+      target: target,
+      firstSetup: firstSetup,
+    ),
+    settings: const RouteSettings(name: phoneSetupProgressTermuxRouteName),
+  );
+}
 
 class _PhoneSetupTermuxScreenState extends ConsumerState<PhoneSetupTermuxScreen>
     with WidgetsBindingObserver {

@@ -345,10 +345,15 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     );
   }
 
-  /// The Termux host of the same setup: Termux and its permission are rows
-  /// only the person can do, then the manager installs and starts OpenCode.
+  /// The Termux host of the same v2 job (P1.2): Termux and its permission
+  /// are rows only the person can do, then the same components as here,
+  /// with the same Customize choice, install in Termux.
   Future<void> _useTermux() async {
-    await openPhoneSetupTermux(context, firstSetup: true);
+    await openPhoneSetupTermux(
+      context,
+      firstSetup: true,
+      selection: _selection,
+    );
     // Setting Termux up there changes what this screen should lead with.
     if (mounted) unawaited(_probeTermux());
   }

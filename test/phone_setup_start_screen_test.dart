@@ -14,7 +14,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_she
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
-import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -93,6 +93,8 @@ class _Harness {
     VoiceDeviceInfo? device,
   }) : engine = FakeSetupEngine(registry: registry) {
     PhoneSetup.engine = engine;
+    // "Use Termux instead" opens the Termux host's job: a fake here too.
+    PhoneSetup.termux = FakeSetupEngine(registry: registry);
     screen = PhoneSetupStartScreen(
       termuxProbe: () async => termux,
       inAppProbe: () async => inApp,
@@ -415,7 +417,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     // Termux is a host of phone setup (P1.3): its checklist, not a wizard.
-    expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
+    expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
     await tester.pageBack();
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -442,13 +444,28 @@ void main() {
     final totals = find.byKey(const ValueKey('phone-setup-customize-totals'));
     expect(_words(tester, totals), 'About 4 minutes · ~165 MB');
 
-    // Required: shown on, locked, with a reason.
+    // Required: shown on and locked, said once by the lock (nothing
+    // repeats "needed" under every row), before the optional tools.
     final node = tester.widget<KitSwitchRow>(
       find.byKey(const ValueKey('phone-setup-customize-node')),
     );
     expect(node.value, isTrue);
     expect(node.onChanged, isNull);
-    expect(find.text('Needed for the agent to run'), findsNWidgets(4));
+    expect(node.supporting, isNull);
+    expect(find.text('Required'), findsNWidgets(4));
+    expect(find.text('Needed for the agent to run'), findsNothing);
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('phone-setup-customize-node')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey('phone-setup-customize-python')),
+            )
+            .dy,
+      ),
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('phone-setup-customize-python')),

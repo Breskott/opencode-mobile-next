@@ -28757,12 +28757,6 @@ abstract class AppLocalizations {
   /// **'Add tools'**
   String get phoneSetupStartAddTitle;
 
-  /// Fallback reason a required component cannot be switched off
-  ///
-  /// In en, this message translates to:
-  /// **'Needed for the agent to run'**
-  String get phoneSetupStartRequiredWhy;
-
   /// A tool that is already on this phone, in add mode
   ///
   /// In en, this message translates to:
@@ -40617,17 +40611,11 @@ abstract class AppLocalizations {
   /// **'Add tools'**
   String get thisPhoneAddTools;
 
-  /// This phone: the line under Add tools for OpenCode inside the app
+  /// This phone: the line under Add tools, the optional tools phone setup can add (in the app or in Termux)
   ///
   /// In en, this message translates to:
-  /// **'Python, Node.js, AI Team and more'**
-  String get thisPhoneAddToolsInApp;
-
-  /// This phone: the line under Add tools for OpenCode in Termux
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team and Claude Code'**
-  String get thisPhoneAddToolsTermux;
+  /// **'Python, AI Team, voice typing and more'**
+  String get thisPhoneAddToolsDetail;
 
   /// This phone: the folded row that lists what setup installed
   ///
@@ -40688,6 +40676,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connecting'**
   String get phoneSetupTermuxConnecting;
+
+  /// Termux setup: the job installed one OpenCode generation but Termux serves the other; switching is This phone's job
+  ///
+  /// In en, this message translates to:
+  /// **'Termux already runs the other OpenCode. Switch it on This phone, then continue setup.'**
+  String get phoneSetupTermuxOtherRuntime;
 
   /// Termux setup checklist: the quiet line under the title while setup runs
   ///

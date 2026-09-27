@@ -4799,7 +4799,6 @@
   "phoneSetupStartEntryDetail": "شغّل وكيل برمجة هنا مباشرة. لا تحتاج إلى حاسوب.",
   "phoneSetupStartCustomizeTitle": "اختر ما تريد تثبيته",
   "phoneSetupStartAddTitle": "إضافة أدوات",
-  "phoneSetupStartRequiredWhy": "يحتاجه الوكيل ليعمل",
   "phoneSetupStartInstalled": "مثبّت",
   "phoneSetupStartTotals": "{time} · ~{size}",
   "phoneSetupStartApproxSize": "~{size}",

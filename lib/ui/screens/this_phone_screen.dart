@@ -17,12 +17,12 @@ import '../kit/kit.dart';
 import '../widgets/managed_server_recovery_option.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/safety_confirms.dart';
-import '../widgets/team_phone_onboarding.dart';
 import '../widgets/termux_phone_tools.dart';
 import 'keep_running_screen.dart';
 import 'local_agent_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_selection.dart';
+import 'phone_setup/phone_setup_termux_job_screen.dart';
 import 'phone_setup/phone_setup_termux_screen.dart';
 
 /// Which host This phone shows when nobody said: the one in use, else the
@@ -284,60 +284,31 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     if (_host.kind == PhoneHostKind.inApp) {
       return _inApp(PhoneServerAction.addTools);
     }
-    // Termux's own tools: the AI Team and Claude Code, each with its own
-    // cost and steps.
-    final profile = _host.profile;
-    final connection = _connection;
-    final l10n = _l10n;
-    await showKitSheet<void>(
+    // The same sheet and the same job as the in-app host (P1.2), with
+    // Termux's engine: it lists what Termux has as installed and adds the
+    // rest in Termux.
+    final ids = await showPhoneSetupCustomize(
       context,
-      title: l10n.thisPhoneAddTools,
-      icon: AppIconography.tools,
-      height: KitSheetHeight.full,
-      sheetKey: const ValueKey('this-phone-termux-tools'),
-      body: (sheetContext) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (profile != null && _host.state == PhoneHostState.running)
-            TeamPhoneOnboardingBlock(
-              key: ValueKey('team-phone-block-${profile.id}'),
-              connection: connection,
-              profile: profile,
-              onOpenWorkspace: () {
-                Navigator.of(sheetContext).pop();
-                unawaited(_connect());
-              },
-            ),
-          KitRowGroup(
-            margin: EdgeInsetsDirectional.zero,
-            children: [
-              KitRow(
-                key: const ValueKey('local-agent-row'),
-                leading: KitRow.icon(sheetContext, AppIconography.agent),
-                title: l10n.localAgentTitle,
-                supporting: TextSpan(text: l10n.localAgentRowOptional),
-                trailing: const KitChevron(),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  unawaited(
-                    pushKitPage<void>(
-                      context,
-                      (_) => LocalAgentScreen(
-                        onConnected: () => Navigator.of(
-                          context,
-                        ).pushNamedAndRemoveUntil('/home', (_) => false),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+      addMode: true,
+      host: SetupHostKind.termux,
     );
+    if (ids == null || ids.isEmpty || !mounted) return;
+    await openPhoneSetupTermuxJob(context, adding: ids);
+    if (mounted) unawaited(_load());
   }
+
+  /// Claude Code runs beside OpenCode in Termux: its own page, with its own
+  /// cost and steps.
+  void _openLocalAgent() => unawaited(
+    pushKitPage<void>(
+      context,
+      (_) => LocalAgentScreen(
+        onConnected: () => Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (_) => false),
+      ),
+    ),
+  );
 
   /// The server's log, read when Details opens and again while it stays
   /// open and the server runs.
@@ -610,15 +581,20 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             key: const ValueKey('this-phone-add-tools'),
             leading: icon(AppIconography.tools),
             title: l10n.thisPhoneAddTools,
-            supporting: TextSpan(
-              text: inApp
-                  ? l10n.thisPhoneAddToolsInApp
-                  : l10n.thisPhoneAddToolsTermux,
-            ),
+            supporting: TextSpan(text: l10n.thisPhoneAddToolsDetail),
             trailing: const KitChevron(),
             enabled: !busy,
             disabledReason: busyReason,
             onTap: () => unawaited(_addTools()),
+          ),
+        if (!inApp)
+          KitRow(
+            key: const ValueKey('local-agent-row'),
+            leading: icon(AppIconography.agent),
+            title: l10n.localAgentTitle,
+            supporting: TextSpan(text: l10n.localAgentRowOptional),
+            trailing: const KitChevron(),
+            onTap: _openLocalAgent,
           ),
         _installed(context, l10n),
         if (inApp)

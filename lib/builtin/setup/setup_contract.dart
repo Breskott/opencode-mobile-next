@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 /// particular component, so adding one (AI Team, Python, anything) never
 /// changes this file.
 
+/// Where a setup job installs and runs OpenCode: the app's own Linux, or
+/// Termux's. The components are the same; a few checks differ by host.
+enum SetupHostKind { builtin, termux }
+
 /// One installable piece: a check that says whether it is there, and an
 /// install that puts it there and reports progress with `::oc` lines.
 @immutable

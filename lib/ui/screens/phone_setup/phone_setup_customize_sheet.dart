@@ -14,8 +14,8 @@ import 'phone_setup_selection.dart';
 
 /// The Customize sheet of screen A, and "Add tools" from the phone's card.
 ///
-/// First setup ([addMode] false): every component, required ones on and
-/// locked with their reason, optional ones as switches. It returns the whole
+/// First setup ([addMode] false): every component, the required ones first
+/// and locked on, then the optional ones as switches. It returns the whole
 /// selection (required ids included) so the caller can hand it straight to
 /// `SetupEngine.run`.
 ///
@@ -345,15 +345,29 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
             ),
           ),
         ),
-      KitRowGroup(
-        margin: EdgeInsetsDirectional.zero,
-        leadingIcons: false,
-        children: [
+      // What is always installed first, then what the person chooses: the
+      // locks say "Required" once per row and nothing else repeats it.
+      for (final group in [
+        [
           for (final component in rows)
-            _row(context, l10n, component, checking: checking),
+            if (component.required) component,
         ],
-      ),
-      SizedBox(height: tokens.space4),
+        [
+          for (final component in rows)
+            if (!component.required) component,
+        ],
+      ])
+        if (group.isNotEmpty) ...[
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            leadingIcons: false,
+            children: [
+              for (final component in group)
+                _row(context, l10n, component, checking: checking),
+            ],
+          ),
+          SizedBox(height: tokens.space4),
+        ],
       // What the switches add up to, said once as they change. A problem
       // the phone has (P0.8) is a notice with its fix beside it.
       // A real install is priced with the kit's cost line (KIT-37, P1.5:
@@ -440,14 +454,15 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     final key = ValueKey('phone-setup-customize-${component.id}');
     if (component.required) {
       // Shown so nothing is installed behind the person's back, but locked
-      // on with its reason (KIT-30: an always-on setting is locked, not a
-      // disabled switch): switching it off would leave no working agent.
+      // on (KIT-30: an always-on setting is locked, not a disabled switch):
+      // switching it off would leave no working agent. Only a reason of its
+      // own is said; "Required" already says why it cannot be switched off.
       return KitSwitchRow(
         key: key,
         title: component.title,
         value: true,
         onChanged: null,
-        supporting: component.why ?? l10n.phoneSetupStartRequiredWhy,
+        supporting: component.why,
         locked: l10n.phoneSetupCustomizeIncluded,
       );
     }
