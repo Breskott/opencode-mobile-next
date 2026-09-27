@@ -29,7 +29,8 @@ const _wifi = NetworkReading(
 const _large = DownloadSize.exact(50000001);
 
 class _RefusingStore extends InMemorySharedPreferencesStore {
-  _RefusingStore() : super.withData({});
+  _RefusingStore()
+    : super.withData({'flutter.oc.profiles': '[{"id":"fresh"}]'});
   @override
   Future<bool> setValue(String valueType, String key, Object value) async =>
       false;
@@ -38,7 +39,9 @@ class _RefusingStore extends InMemorySharedPreferencesStore {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': '[{"id":"phone"},{"id":"other"}]',
+    });
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
@@ -262,7 +265,7 @@ void main() {
       expect(prefs.containsKey('oc.mobileDownloadConsent.phone'), false);
       transfer.complete('finished');
       expect((await running).value, 'finished');
-      expect((await owner()).choice, MobileDownloadChoice.unseen);
+      await expectLater(owner(), throwsStateError);
     },
   );
 
@@ -289,6 +292,7 @@ void main() {
     'corrupt and refused persistence never authorize or return prompts',
     () async {
       SharedPreferences.setMockInitialValues({
+        'oc.profiles': '[{"id":"phone"}]',
         'oc.mobileDownloadConsent.phone': 'broken',
       });
       await expectLater(owner(), throwsStateError);

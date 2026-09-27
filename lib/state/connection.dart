@@ -6237,6 +6237,7 @@ class ConnectionController extends ChangeNotifier {
             _closedQueueProfiles.remove(profileId);
             activity?.cancelDeletion();
             policy.cancelDeletion();
+            ConsentOwners.cancelDeletion(store.prefs, profileId);
             _profileMonitor?.cancelDeletion(profileId);
             _quotaMonitor?.cancelDeletion(profileId);
             _pendingAuth.cancelDeletion(profileId);
@@ -6358,7 +6359,10 @@ class ConnectionController extends ChangeNotifier {
         // Only now invalidate destructive owners and begin cleanup.
         await Future.wait<void>([
           BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
-          ManagedServerRecovery.prepareForProfileDeletion(store.prefs, profileId),
+          ManagedServerRecovery.prepareForProfileDeletion(
+            store.prefs,
+            profileId,
+          ),
         ]);
         // Keep the shared runtime owner through queue preflight failures.
         // Once preservation succeeds, prevent fallback to another profile.
