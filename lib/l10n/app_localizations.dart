@@ -33509,18 +33509,6 @@ abstract class AppLocalizations {
   /// **'waiting {age}'**
   String kitRequestAge(String age);
 
-  /// KitRequestSheet: why Send is unavailable on a question with several answers until one is chosen
-  ///
-  /// In en, this message translates to:
-  /// **'Choose at least one answer.'**
-  String get kitRequestChooseOneReason;
-
-  /// KitRequestSheet: the default label of a form's pinned submit button, which sends every typed answer to the agent
-  ///
-  /// In en, this message translates to:
-  /// **'Send answers'**
-  String get kitRequestSendAnswers;
-
   /// KitDiffView: how many files a diff covers, on the file picker row
   ///
   /// In en, this message translates to:
@@ -35416,6 +35404,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// KitMessage: the start of a sent prompt's screen-reader label, before the prompt's words
+  ///
+  /// In en, this message translates to:
+  /// **'You said'**
+  String get kitMessageYou;
+
+  /// KitMessage: the title of the agent's reasoning while it is still thinking
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get kitMessageThinking;
+
+  /// KitMessage: the title of the agent's finished reasoning when its length is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Thought'**
+  String get kitMessageThought;
+
+  /// KitMessage: the title of the agent's finished reasoning with how long it took, under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'Thought for {count, plural, =1{1 second} other{{count} seconds}}'**
+  String kitMessageThoughtForSeconds(int count);
+
+  /// KitMessage: the title of the agent's finished reasoning with how long it took, a minute or more
+  ///
+  /// In en, this message translates to:
+  /// **'Thought for {count, plural, =1{1 minute} other{{count} minutes}}'**
+  String kitMessageThoughtForMinutes(int count);
+
+  /// KitMessage: the name of a sent prompt's action menu
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get kitMessageActions;
+
+  /// KitMessage: the word that starts a failed notice's screen-reader label
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get kitMessageNoticeFailed;
+
+  /// KitRequestSheet: why Send is unavailable on a question with several answers until one is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one answer.'**
+  String get kitRequestChooseOneReason;
+
+  /// KitRequestSheet: the default label of a form's pinned submit button, which sends every typed answer to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send answers'**
+  String get kitRequestSendAnswers;
 }
 
 class _AppLocalizationsDelegate

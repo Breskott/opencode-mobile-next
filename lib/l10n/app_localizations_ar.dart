@@ -21329,12 +21329,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get kitRequestChooseOneReason => 'Choose at least one answer.';
-
-  @override
-  String get kitRequestSendAnswers => 'Send answers';
-
-  @override
   String kitDiffFiles(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -22603,4 +22597,47 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitMessageYou => 'You said';
+
+  @override
+  String get kitMessageThinking => 'Thinking…';
+
+  @override
+  String get kitMessageThought => 'Thought';
+
+  @override
+  String kitMessageThoughtForSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return 'Thought for $_temp0';
+  }
+
+  @override
+  String kitMessageThoughtForMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return 'Thought for $_temp0';
+  }
+
+  @override
+  String get kitMessageActions => 'Message actions';
+
+  @override
+  String get kitMessageNoticeFailed => 'Failed';
+
+  @override
+  String get kitRequestChooseOneReason => 'Choose at least one answer.';
+
+  @override
+  String get kitRequestSendAnswers => 'Send answers';
 }
