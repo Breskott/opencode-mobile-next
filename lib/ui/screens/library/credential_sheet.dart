@@ -209,12 +209,15 @@ class _CredentialManagementSheetState
           context,
           kind: KitConfirmKind.destructive,
           icon: AppIconography.personRemove,
-          title: _l10n.credentialRemoveTitle(label),
+          title: _l10n.credentialRemoveAccountTitle(
+            widget.integrationName,
+            label,
+          ),
           body: _l10n.credentialSheetRemoveBody(
             label,
             _integration?.name ?? widget.integrationName,
           ),
-          confirmLabel: _l10n.credentialSheetRemoveNamed(label),
+          confirmLabel: _l10n.credentialRemoveConfirmNamed(label),
           confirmKey: const ValueKey('credential-remove-confirm'),
         );
         if (!confirmed || !canFinish()) return;
@@ -317,23 +320,9 @@ class _CredentialManagementSheetState
             KitNotice(tone: AppStatusTone.ok, message: message),
             gap,
           ],
-          // What the app knows about which account is in use: nothing is
-          // marked until a server event says so.
-          if (credentials.isNotEmpty) ...[
-            Semantics(
-              liveRegion: true,
-              child: KitText(
-                !_activeKnown
-                    ? l10n.credentialActiveUnknown
-                    : _activeID == null
-                    ? l10n.credentialNoneActive
-                    : l10n.credentialActiveObserved,
-                role: KitTextRole.secondary,
-                tone: KitTextTone.secondary,
-              ),
-            ),
-            gap,
-          ],
+          // Which account is in use shows only as the row's "Active" mark,
+          // set once a server event says so; no paragraph explains an
+          // unknown (slice-P3.11a).
           if (!_loading && credentials.isEmpty && _error == null)
             KitStateView(
               key: const ValueKey('credential-empty'),

@@ -2778,14 +2778,14 @@
         },
         {
           "id": "provider-quota-enable-monitoring",
-          "type": "button",
-          "label": "Enable quota monitoring",
+          "type": "list-tile",
+          "label": "Alert me about {provider} on {server}",
           "key": null,
           "line": 342,
-          "action": "open-dialog",
-          "target": "provider-quota-enroll-dialog",
-          "targetWidget": "_enroll",
-          "effect": "_enroll(): opens the monitoring consent dialog.",
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_enroll(): quotaMonitor.enroll(profileID, snapshot, threshold: 90, shared notification rules) in place; the row gives way to the source's threshold row and named Stop (the enrol dialog merged into the page, slice-P3.11a).",
           "gates": [
             "_overview.consented && snapshot != null && snapshot.canShowWindows",
             "disabled when _overview.snapshotIsStale"
@@ -2912,66 +2912,6 @@
           "target": null,
           "targetWidget": null,
           "effect": "quotaMonitor.disable(profileID, provider): removes the source from monitoring.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "provider-quota-enroll-dialog",
-      "title": "Monitor this provider source?",
-      "kind": "dialog",
-      "file": "lib/ui/screens/provider_quota_screen.dart",
-      "widget": "_enroll",
-      "presentedBy": [
-        "_enroll"
-      ],
-      "line": 108,
-      "purpose": "Consent dialog for background quota monitoring of the current source, with its initial threshold.",
-      "reachedFrom": [
-        {
-          "page": "provider-quota",
-          "element": "provider-quota-enable-monitoring"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "provider-quota-enroll-dialog-threshold",
-          "type": "dropdown",
-          "label": "{percent}% used (50 / 75 / 90 / 100)",
-          "key": null,
-          "line": 124,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Local dialog state: threshold.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-enroll-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 143,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops with false.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-enroll-dialog-enable",
-          "type": "button",
-          "label": "Enable quota monitoring",
-          "key": null,
-          "line": 147,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, threshold) with alerts, Wi-Fi only and quiet hours taken from the shared notification rules; the new source appears in the monitoring section in place (snackbar on failure).",
           "gates": [],
           "destructive": false
         }

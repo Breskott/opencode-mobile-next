@@ -1649,26 +1649,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.';
 
   @override
-  String get handoffTitle => 'Copy handoff reference?';
-
-  @override
-  String get handoffDisclosure =>
-      'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.';
-
-  @override
-  String get handoffCopy => 'Copy reference';
-
-  @override
-  String get handoffCopied => 'Conversation metadata reference copied';
-
-  @override
-  String get handoffCopyFailed => 'Could not copy the handoff. Try again.';
-
-  @override
   String get sessionOpenRelated => 'Open related';
 
   @override
-  String get sessionCopyHandoff => 'Copy handoff';
+  String get sessionCopyHandoff => 'Continue on computer';
 
   @override
   String get sessionActions => 'Conversation actions';
@@ -1963,21 +1947,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Runs the provider\'s sign-in method on your selected server, not on this phone. You may need to finish interactive steps on the server.';
 
   @override
-  String get commandAuthConfirmTitle => 'Start sign-in on the server?';
-
-  @override
-  String get commandAuthConfirmDetail =>
-      'OpenCode will execute this provider\'s declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.';
-
-  @override
   String get commandAuthStart => 'Start server sign-in';
 
   @override
   String get commandAuthPending =>
       'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.';
-
-  @override
-  String get commandAuthCheck => 'Check sign-in';
 
   @override
   String get commandAuthCancel => 'Cancel sign-in';
@@ -2052,20 +2026,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get credentialManage => 'Manage accounts';
 
   @override
-  String get credentialMetadataOnly =>
-      'Only saved account labels are shown. API keys and login tokens stay on your server.';
-
-  @override
-  String get credentialActiveUnknown =>
-      'Active account unknown. The saved-account list does not report which account is active.';
-
-  @override
-  String get credentialNoneActive =>
-      'The server reported no active saved account.';
-
-  @override
-  String get credentialActiveObserved =>
-      'The Active badge reflects the latest server event.';
+  String get credentialMetadataOnly => 'Keys stay on your server.';
 
   @override
   String get credentialActiveUpdated =>
@@ -2089,11 +2050,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialSave => 'Save label';
-
-  @override
-  String credentialRemoveTitle(String label) {
-    return 'Remove $label?';
-  }
 
   @override
   String get credentialRemoveDetail =>
@@ -2870,16 +2826,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server may have started this sign-in without confirming it. Check on the server before you start again.';
 
   @override
-  String get uncertainAuthForgetTitle => 'Forget this sign-in on this phone?';
-
-  @override
-  String get uncertainAuthForgetDetail =>
-      'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.';
-
-  @override
-  String get uncertainAuthForget => 'Forget this sign-in';
-
-  @override
   String get uncertainAuthCloseHint =>
       'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.';
 
@@ -2948,21 +2894,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoSetUpServer => 'Set up your own server';
 
   @override
-  String get handoffCommandTitle => 'Continue on computer';
-
-  @override
-  String get handoffCommandDisclosure =>
-      'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.';
-
-  @override
   String get handoffCopyCommand => 'Copy command';
-
-  @override
-  String get handoffCommandCopied => 'Resume command copied';
-
-  @override
-  String get handoffCommandUnavailable =>
-      'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3474,23 +3406,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorTitle => 'Quota monitoring';
 
   @override
-  String get quotaMonitorConsentTitle => 'Monitor this provider source?';
-
-  @override
-  String quotaMonitorConsent(String provider, String server) {
-    return 'Keep checking $provider on $server in the background and alert me when use reaches:';
-  }
-
-  @override
   String get quotaMonitorRuntime =>
       'Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.';
 
   @override
   String get quotaMonitorEmpty =>
       'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.';
-
-  @override
-  String get quotaMonitorEnable => 'Enable quota monitoring';
 
   @override
   String get quotaMonitorDisabled => 'Monitoring is off.';
@@ -4920,11 +4841,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceDismissNotice => 'Dismiss';
 
   @override
-  String get workspaceManageProject => 'Manage project';
-
-  @override
   String get workspaceManageProjectHint =>
-      'Switch project, worktrees, and project health';
+      'Switch project, where it runs, and its folder';
 
   @override
   String get workspaceManage => 'Manage';
@@ -9945,41 +9863,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No project folder is open. Choose one from Work.';
 
   @override
-  String get e7LibraryProject => 'Project';
-
-  @override
   String get e7LibrarySwitchProject => 'Switch project';
-
-  @override
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer =>
-      'Choose another project opened by this server';
-
-  @override
-  String get e7LibraryCoding => 'Coding';
 
   @override
   String get e7LibraryWorktrees => 'Worktrees';
 
   @override
-  String get e7LibraryChooseAProjectFirst => 'Choose a project first';
-
-  @override
-  String get e7LibraryCreateAndManageIsolatedGitBranches =>
-      'Create and manage isolated Git branches';
-
-  @override
   String get e7LibraryManagedWorkspaces => 'Cloud environments';
 
   @override
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
-      'Create, discover, open, and remove adapter-backed environments';
-
-  @override
   String get e7LibraryProjectHealth => 'Project health';
-
-  @override
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters =>
-      'Branch, changed files, language services, and formatters';
 
   @override
   String get e7LibraryOpenCodeIsReconnecting => 'OpenCode is reconnecting.';
@@ -21825,7 +21718,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceChooserEnterPath => 'Enter a folder path';
 
   @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
+  String get workspaceChooserRecentProjects => 'Open a project you used before';
 
   @override
   String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
@@ -24626,7 +24519,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionRelationsCopyHandoff(String title) {
-    return 'Copy handoff for $title';
+    return 'Continue $title on computer';
   }
 
   @override
@@ -25685,10 +25578,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webSourcesPastedLinks => 'Links you added';
 
   @override
-  String get quotaMonitorConsentDetails =>
-      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
-
-  @override
   String get thisPhoneHostInApp => 'In the app';
 
   @override
@@ -26117,4 +26006,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatDraftCopy => 'Copy draft';
+
+  @override
+  String get handoffUiComputerUnsupported =>
+      'This server can’t give a command that continues a conversation on a computer.';
+
+  @override
+  String get handoffUiComputerChanged =>
+      'This conversation moved or its server changed. Go back and try again.';
+
+  @override
+  String commandAuthSheetIntro(String provider) {
+    return 'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and $provider. You may need to finish steps on the server.';
+  }
+
+  @override
+  String commandAuthCheckNamed(String provider) {
+    return 'Check $provider sign-in now';
+  }
+
+  @override
+  String credentialRemoveAccountTitle(String provider, String name) {
+    return 'Remove the $provider account “$name”?';
+  }
+
+  @override
+  String credentialRemoveConfirmNamed(String name) {
+    return 'Remove “$name”';
+  }
+
+  @override
+  String quotaMonitorOffer(String provider, String server) {
+    return 'Alert me about $provider on $server';
+  }
+
+  @override
+  String quotaMonitorOfferDetail(String percent) {
+    return 'Keeps checking in the background, including after a restart, and alerts when use reaches $percent. You can change the percentage once it’s on.';
+  }
+
+  @override
+  String workspaceChooserBody(String server) {
+    return 'Conversations run inside a folder on $server.';
+  }
+
+  @override
+  String get discoverServicesAliases =>
+      'services dev server preview logs run commands processes';
+
+  @override
+  String get discoverCloudEnvironmentsAliases =>
+      'cloud environments managed workspaces remote sandbox';
 }

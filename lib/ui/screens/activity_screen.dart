@@ -1257,6 +1257,18 @@ Future<void> showQuestionSheet(
     isPending: () => controller.isRequestPending(request),
   );
   final l10n = _l10n(context);
+  // Send is pinned to the sheet's foot, above the keyboard, and enables as
+  // the person answers: the form publishes it here (slice-P3.11a).
+  final send = ValueNotifier<KitAction?>(
+    _QuestionFormState.sendAction(
+      l10n,
+      reason: _canAnswer(controller)
+          ? (question.prompts.isEmpty ? null : l10n.activityAnswerEveryQuestion)
+          : l10n.activitySendOffline,
+      working: false,
+      onSend: null,
+    ),
+  );
   try {
     await showKitSheet<void>(
       context,
@@ -1265,11 +1277,13 @@ Future<void> showQuestionSheet(
       icon: AppIconography.question,
       routes: routes,
       sheetKey: const ValueKey('question-sheet'),
+      primaryListenable: send,
       body: (sheetContext) => _QuestionForm(
         question: question,
         controller: controller,
         request: request,
         routes: routes,
+        pinnedSend: send,
         onOpenConversation: onOpenConversation == null
             ? null
             : () {
@@ -1280,6 +1294,8 @@ Future<void> showQuestionSheet(
     );
   } finally {
     routes.close();
+    // Not disposed: the form may still publish while the sheet animates
+    // out, and a notifier with no listeners holds nothing.
   }
 }
 
@@ -1553,12 +1569,17 @@ class _QuestionForm extends StatefulWidget {
   final RequestRoutes routes;
   final VoidCallback? onOpenConversation;
 
+  /// In a sheet, where Send is pinned: the form publishes its Send here
+  /// instead of drawing it. Null in the wide detail pane, which draws it.
+  final ValueNotifier<KitAction?>? pinnedSend;
+
   const _QuestionForm({
     required this.question,
     required this.controller,
     required this.request,
     required this.routes,
     this.onOpenConversation,
+    this.pinnedSend,
   });
 
   @override
@@ -1582,10 +1603,41 @@ class _QuestionFormState extends State<_QuestionForm> {
   void initState() {
     super.initState();
     widget.controller.addListener(_changed);
+    // The sheet opened with a first Send; say the form's own at once.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _publish());
   }
 
   void _changed() {
     if (mounted) setState(() {});
+  }
+
+  /// Every change of the form's state also updates the pinned Send, from
+  /// the event that changed it (never from build).
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _publish();
+  }
+
+  void _publish() {
+    final pinned = widget.pinnedSend;
+    if (pinned == null || !mounted) return;
+    pinned.value = _send(_l10n(context));
+  }
+
+  /// The one Send: pinned in the sheet, inline in the detail pane.
+  KitAction _send(AppLocalizations l10n) {
+    final reason = !_canAnswer(widget.controller)
+        ? l10n.activitySendOffline
+        : !_complete
+        ? l10n.activityAnswerEveryQuestion
+        : null;
+    return sendAction(
+      l10n,
+      reason: reason,
+      working: _busy && !_confirming,
+      onSend: _busy ? null : _submit,
+    );
   }
 
   bool get _complete {
@@ -1685,17 +1737,26 @@ class _QuestionFormState extends State<_QuestionForm> {
     }
   }
 
+  /// A Send for [reason]: disabled with it, else sending with [onSend].
+  static KitAction sendAction(
+    AppLocalizations l10n, {
+    required String? reason,
+    required bool working,
+    required VoidCallback? onSend,
+  }) => KitAction(
+    key: const ValueKey('question-send'),
+    label: l10n.e7WorkspaceSendAnswers,
+    working: working,
+    disabledReason: reason,
+    onPressed: reason == null ? onSend : null,
+  );
+
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
     final tokens = KitTokens.of(context);
     final prompts = widget.question.prompts;
-    final connected = _canAnswer(widget.controller);
-    final sendReason = !connected
-        ? l10n.activitySendOffline
-        : !_complete
-        ? l10n.activityAnswerEveryQuestion
-        : null;
+    final pinned = widget.pinnedSend;
     final error = _error;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1746,13 +1807,7 @@ class _QuestionFormState extends State<_QuestionForm> {
         ],
         SizedBox(height: tokens.space5),
         KitActionBlock(
-          primary: KitAction(
-            key: const ValueKey('question-send'),
-            label: l10n.e7WorkspaceSendAnswers,
-            working: _busy && !_confirming,
-            disabledReason: sendReason,
-            onPressed: sendReason == null && !_busy ? _submit : null,
-          ),
+          primary: pinned == null ? _send(l10n) : null,
           tertiary: [
             if (widget.onOpenConversation case final open?)
               KitAction(

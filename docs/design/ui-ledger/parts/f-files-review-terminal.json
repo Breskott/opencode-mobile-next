@@ -59,9 +59,9 @@
           "action": "navigate",
           "target": "terminal",
           "targetWidget": "TerminalPage",
-          "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+          "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))). Without capabilities.terminal (and other tools present) the row stays, dimmed with the registry's reason (KitRow.unavailable, 'flag:terminal').",
           "gates": [
-            "capabilities.terminal"
+            "listed while the tab shows; enabled when capabilities.terminal"
           ],
           "destructive": false
         },
@@ -92,6 +92,36 @@
           "effect": "_openWorktrees(): resolves the catalog project that owns controller.directory (WorkspaceScreen.projectForDirectory over repository.listProjects()) and pushes WorktreesScreen; no matching project shows \"No project folder is open. Choose one from Work.\"",
           "gates": [
             "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-services",
+          "type": "list-tile",
+          "label": "Development services",
+          "key": "project-hub-services",
+          "line": 1,
+          "action": "navigate",
+          "target": "development-services",
+          "targetWidget": "DevelopmentServicesScreen",
+          "effect": "openProjectTool(services): pushes DevelopmentServicesScreen for the open project folder (moved from Manage project, slice-P3.11a).",
+          "gates": [
+            "capabilities.developmentServices"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-workspaces",
+          "type": "list-tile",
+          "label": "Cloud environments",
+          "key": "project-hub-workspaces",
+          "line": 1,
+          "action": "navigate",
+          "target": "managed-workspaces",
+          "targetWidget": "ManagedWorkspacesScreen",
+          "effect": "openProjectTool(workspaces): resolves the catalog project for controller.directory and pushes ManagedWorkspacesScreen (moved from Manage project, slice-P3.11a).",
+          "gates": [
+            "capabilities.projectManagement && capabilities.managedWorkspaces"
           ],
           "destructive": false
         },

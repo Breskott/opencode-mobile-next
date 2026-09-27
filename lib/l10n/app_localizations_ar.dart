@@ -1674,23 +1674,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكن فتح الخوادم هنا. ارجع إلى الرئيسية لاختيار خادم وعرض «الوارد».';
 
   @override
-  String get handoffTitle => 'هل تريد نسخ مرجع متابعة المحادثة؟';
-
-  @override
-  String get handoffDisclosure =>
-      'بيانات وصفية فقط، وليست أمرًا أو رابطًا. اتصل بالخادم نفسه على جهازك الآخر وابحث عن هذا المشروع وهذه المحادثة. لن يُنشر أو يُرسل شيء.\n\nستحتوي الحافظة على معرّفات المحادثة والمشروع. قد تتمكن تطبيقات أخرى من قراءتها؛ شاركها فقط مع أشخاص تثق بهم.';
-
-  @override
-  String get handoffCopy => 'نسخ المرجع';
-
-  @override
-  String get handoffCopied => 'نُسخ مرجع بيانات المحادثة';
-
-  @override
-  String get handoffCopyFailed =>
-      'تعذّر نسخ مرجع متابعة المحادثة. حاول مجددًا.';
-
-  @override
   String get sessionOpenRelated => 'فتح العناصر المرتبطة';
 
   @override
@@ -1989,21 +1972,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'تشغيل طريقة تسجيل الدخول الخاصة بمزوّد الخدمة على الخادم المحدّد، وليس على هذا الهاتف. قد تحتاج إلى إتمام خطوات تفاعلية على الخادم.';
 
   @override
-  String get commandAuthConfirmTitle => 'هل تريد بدء تسجيل الدخول على الخادم؟';
-
-  @override
-  String get commandAuthConfirmDetail =>
-      'سينفّذ OpenCode طريقة تسجيل الدخول المعلنة لهذا المزوّد على الخادم المحدّد. تابع فقط إذا كنت تثق بالخادم ومزوّد الخدمة. لا يشغّل التطبيق أمر صدفة على هاتفك ولا ينسخه إليه.';
-
-  @override
   String get commandAuthStart => 'بدء تسجيل الدخول على الخادم';
 
   @override
   String get commandAuthPending =>
       'تسجيل الدخول معلّق على الخادم. أكمل أي تفاعل مطلوب على الخادم، ثم تحقّق من حالته. إغلاق هذه اللوحة لا يلغيه.';
-
-  @override
-  String get commandAuthCheck => 'التحقق من تسجيل الدخول';
 
   @override
   String get commandAuthCancel => 'إلغاء تسجيل الدخول';
@@ -2082,16 +2055,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُعرض تسميات الحسابات المحفوظة فقط. تبقى مفاتيح API ورموز تسجيل الدخول على خادمك.';
 
   @override
-  String get credentialActiveUnknown =>
-      'الحساب النشط غير معروف. لا تبيّن قائمة الحسابات المحفوظة أي حساب نشط.';
-
-  @override
-  String get credentialNoneActive => 'أبلغ الخادم عن عدم وجود حساب محفوظ نشط.';
-
-  @override
-  String get credentialActiveObserved => 'تعكس شارة «نشط» أحدث حدث من الخادم.';
-
-  @override
   String get credentialActiveUpdated => 'حُدّث الحساب النشط من الخادم.';
 
   @override
@@ -2112,11 +2075,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get credentialSave => 'حفظ التسمية';
-
-  @override
-  String credentialRemoveTitle(String label) {
-    return 'هل تريد إزالة $label؟';
-  }
 
   @override
   String get credentialRemoveDetail =>
@@ -2907,16 +2865,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'ربما بدأ الخادم تسجيل الدخول، لكن لم يصل معرّف المحاولة. تحقّق على الخادم قبل البدء مجددًا.';
 
   @override
-  String get uncertainAuthForgetTitle => 'نسيان محاولة البدء غير المؤكدة؟';
-
-  @override
-  String get uncertainAuthForgetDetail =>
-      'يمحو هذا منع إعادة المحاولة المحلي فقط، ولا يلغي تسجيل الدخول على الخادم. تحقّق من الخادم أولًا لتجنب بدء تسجيل دخول ثانٍ. لن يبدأ تسجيل دخول جديد.';
-
-  @override
-  String get uncertainAuthForget => 'نسيان محاولة البدء غير المؤكدة';
-
-  @override
   String get uncertainAuthCloseHint =>
       'أغلق هذه اللوحة واستخدم صف تسجيل الدخول غير المؤكد لإزالة منع إعادة المحاولة المحلي بعد التحقق من الخادم.';
 
@@ -2983,21 +2931,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get demoSetUpServer => 'إعداد خادمك الخاص';
 
   @override
-  String get handoffCommandTitle => 'المتابعة على الكمبيوتر';
-
-  @override
-  String get handoffCommandDisclosure =>
-      'شغّل هذا الأمر في طرفية متوافقة مع POSIX على كمبيوتر مثبّت عليه OpenCode ويمكنه الوصول إلى هذا الخادم. اضبط OPENCODE_SERVER_PASSWORD بشكل خاص على ذلك الكمبيوتر إذا تطلّبه الخادم. ستتضمن الحافظة عنوان الخادم واسم المستخدم ومجلد المشروع ومعرّف المحادثة، دون كلمة المرور.';
-
-  @override
   String get handoffCopyCommand => 'نسخ الأمر';
-
-  @override
-  String get handoffCommandCopied => 'تم نسخ أمر الاستئناف';
-
-  @override
-  String get handoffCommandUnavailable =>
-      'أمر الاستئناف غير متاح لهذا الخادم أو هذه البيئة السحابية. تحتاج المتابعة على كمبيوتر آخر إلى أمر OpenCode مدعوم وخادم HTTPS يمكن الوصول إليه؛ يشير عنوان localhost إلى الجهاز نفسه على كل جهاز. لا يزال بإمكانك نسخ بيانات المحادثة الوصفية أدناه.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3515,23 +3449,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaMonitorTitle => 'مراقبة الحصص';
 
   @override
-  String get quotaMonitorConsentTitle => 'مراقبة مصدر مزوّد الخدمة هذا؟';
-
-  @override
-  String quotaMonitorConsent(String provider, String server) {
-    return 'اسمح للتطبيق بمواصلة قراءة جامع البيانات الموثوق لحساب مزوّد الخدمة هذا تحديدًا بعد مغادرة الصفحة، وحتى بعد إعادة تشغيل التطبيق. تفحص الدورة ثلاثة مصادر محفوظة كحد أقصى، كل خمس دقائق في المقدمة أو خمس عشرة دقيقة أثناء عمل خدمة الخلفية الحالية. عند وجود أكثر من ثلاثة مصادر، قد ينتظر كل مصدر عدة دورات. تتطلب تنبيهات الجهاز تفعيل «حدود الحصص» في إعدادات الإشعارات وقراءة حديثة لفترة بلغت نسبة الاستخدام المحددة أو تجاوزتها. يسجل التنبيه تلك القراءة السابقة؛ افتحه للتحقق من الاستخدام الحالي. حدود الصفحة الشخصية مستقلة. لا تبدأ أي خدمة هنا.';
-  }
-
-  @override
   String get quotaMonitorRuntime =>
       'تُفحص المصادر بالتناوب، ثلاثة مصادر كحد أقصى في الدورة؛ وتحتاج القوائم الأطول إلى عدة دورات. تتطلب القراءات في الخلفية أن تكون خدمة الاتصال الحالية نشطة؛ وقد يوقفها Android. تنتهي صلاحية القراءات المعروضة وفقًا لجامع البيانات. تسجل تنبيهات الجهاز قراءات سابقة بلغت الحد، ولا تعرض الرصيد المتبقي الحالي. لا تبدّل هذه الصفحة خادمك النشط مطلقًا.';
 
   @override
   String get quotaMonitorEmpty =>
       'لا توجد مصادر مزوّدي خدمة خاضعة للمراقبة. اقرأ الاستخدام المتبقي من جامع بيانات موثوق، ثم فعّل المراقبة لذلك المصدر.';
-
-  @override
-  String get quotaMonitorEnable => 'تفعيل مراقبة الحصص';
 
   @override
   String get quotaMonitorDisabled => 'المراقبة متوقفة.';
@@ -4955,9 +4878,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workspaceDismissNotice => 'تجاهل';
-
-  @override
-  String get workspaceManageProject => 'إدارة المشروع';
 
   @override
   String get workspaceManageProjectHint =>
@@ -10139,41 +10059,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد مجلد مشروع مفتوح. اختر مجلدًا من «العمل».';
 
   @override
-  String get e7LibraryProject => 'المشروع';
-
-  @override
   String get e7LibrarySwitchProject => 'تبديل المشروع';
-
-  @override
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer =>
-      'اختيار مشروع آخر مفتوح على هذا الخادم';
-
-  @override
-  String get e7LibraryCoding => 'البرمجة';
 
   @override
   String get e7LibraryWorktrees => 'أشجار العمل';
 
   @override
-  String get e7LibraryChooseAProjectFirst => 'اختر مشروعًا أولًا';
-
-  @override
-  String get e7LibraryCreateAndManageIsolatedGitBranches =>
-      'إنشاء فروع Git معزولة وإدارتها';
-
-  @override
   String get e7LibraryManagedWorkspaces => 'البيئات السحابية';
 
   @override
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
-      'إنشاء بيئات عبر المهايئات واكتشافها وفتحها وإزالتها';
-
-  @override
   String get e7LibraryProjectHealth => 'حالة المشروع';
-
-  @override
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters =>
-      'الفرع والملفات المتغيرة وخدمات اللغات وأدوات التنسيق';
 
   @override
   String get e7LibraryOpenCodeIsReconnecting => 'يعيد OpenCode الاتصال.';
@@ -22110,7 +22005,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workspaceChooserEnterPath => 'Enter a folder path';
 
   @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
+  String get workspaceChooserRecentProjects => 'Open a project you used before';
 
   @override
   String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
@@ -24911,7 +24806,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String sessionRelationsCopyHandoff(String title) {
-    return 'Copy handoff for $title';
+    return 'Continue $title on computer';
   }
 
   @override
@@ -25970,10 +25865,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get webSourcesPastedLinks => 'Links you added';
 
   @override
-  String get quotaMonitorConsentDetails =>
-      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
-
-  @override
   String get thisPhoneHostInApp => 'In the app';
 
   @override
@@ -26402,4 +26293,55 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatDraftCopy => 'Copy draft';
+
+  @override
+  String get handoffUiComputerUnsupported =>
+      'This server can’t give a command that continues a conversation on a computer.';
+
+  @override
+  String get handoffUiComputerChanged =>
+      'This conversation moved or its server changed. Go back and try again.';
+
+  @override
+  String commandAuthSheetIntro(String provider) {
+    return 'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and $provider. You may need to finish steps on the server.';
+  }
+
+  @override
+  String commandAuthCheckNamed(String provider) {
+    return 'Check $provider sign-in now';
+  }
+
+  @override
+  String credentialRemoveAccountTitle(String provider, String name) {
+    return 'Remove the $provider account “$name”?';
+  }
+
+  @override
+  String credentialRemoveConfirmNamed(String name) {
+    return 'Remove “$name”';
+  }
+
+  @override
+  String quotaMonitorOffer(String provider, String server) {
+    return 'Alert me about $provider on $server';
+  }
+
+  @override
+  String quotaMonitorOfferDetail(String percent) {
+    return 'Keeps checking in the background, including after a restart, and alerts when use reaches $percent. You can change the percentage once it’s on.';
+  }
+
+  @override
+  String workspaceChooserBody(String server) {
+    return 'Conversations run inside a folder on $server.';
+  }
+
+  @override
+  String get discoverServicesAliases =>
+      'services dev server preview logs run commands processes';
+
+  @override
+  String get discoverCloudEnvironmentsAliases =>
+      'cloud environments managed workspaces remote sandbox';
 }

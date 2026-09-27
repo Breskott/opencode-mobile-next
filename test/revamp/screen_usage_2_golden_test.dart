@@ -1,7 +1,8 @@
 // Golden renders of screen-usage-2's pages (wave 2b): Usage (usage-hub) on
 // its Remaining tab, Remaining usage (provider-quota) before consent, with a
-// reading and with that account monitored, and the monitoring sheet
-// (provider-quota-enroll-dialog), rebuilt from kit parts. Phone 412x915 and one wide window (1280x800), dark and
+// reading and with that account monitored, rebuilt from kit parts (the
+// monitoring sheet, provider-quota-enroll-dialog, merged into the page in
+// slice-P3.11a). Phone 412x915 and one wide window (1280x800), dark and
 // light (owner decision 2026-09-27: no Arabic), real fonts at DPR 1.
 //
 // Regenerate deliberately:
@@ -194,20 +195,6 @@ void main() {
         size: _wide,
         monitored: true,
         act: _readToTop,
-      );
-    });
-
-    testWidgets('quota enroll sheet, $theme', (tester) async {
-      await _shot(
-        tester,
-        'quota_enroll_sheet',
-        light: light,
-        act: (tester) async {
-          await _read(tester);
-          await _scrollTo(tester, _key('quota-enable-monitoring'));
-          await tester.tap(_key('quota-enable-monitoring'));
-          await tester.pumpAndSettle();
-        },
       );
     });
 

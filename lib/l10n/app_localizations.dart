@@ -2834,36 +2834,6 @@ abstract class AppLocalizations {
   /// **'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.'**
   String get attentionNavigationUnavailable;
 
-  /// No description provided for @handoffTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy handoff reference?'**
-  String get handoffTitle;
-
-  /// No description provided for @handoffDisclosure.
-  ///
-  /// In en, this message translates to:
-  /// **'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.'**
-  String get handoffDisclosure;
-
-  /// No description provided for @handoffCopy.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy reference'**
-  String get handoffCopy;
-
-  /// No description provided for @handoffCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation metadata reference copied'**
-  String get handoffCopied;
-
-  /// No description provided for @handoffCopyFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy the handoff. Try again.'**
-  String get handoffCopyFailed;
-
   /// No description provided for @sessionOpenRelated.
   ///
   /// In en, this message translates to:
@@ -2873,7 +2843,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionCopyHandoff.
   ///
   /// In en, this message translates to:
-  /// **'Copy handoff'**
+  /// **'Continue on computer'**
   String get sessionCopyHandoff;
 
   /// No description provided for @sessionActions.
@@ -3362,18 +3332,6 @@ abstract class AppLocalizations {
   /// **'Runs the provider\'s sign-in method on your selected server, not on this phone. You may need to finish interactive steps on the server.'**
   String get commandAuthMethodHint;
 
-  /// Explicit consent before executing a server-side authentication method
-  ///
-  /// In en, this message translates to:
-  /// **'Start sign-in on the server?'**
-  String get commandAuthConfirmTitle;
-
-  /// Trust boundary of executable provider authentication
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode will execute this provider\'s declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.'**
-  String get commandAuthConfirmDetail;
-
   /// Launch a command authentication attempt after confirmation
   ///
   /// In en, this message translates to:
@@ -3385,12 +3343,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.'**
   String get commandAuthPending;
-
-  /// Read the pinned command-auth attempt status
-  ///
-  /// In en, this message translates to:
-  /// **'Check sign-in'**
-  String get commandAuthCheck;
 
   /// Cancel the selected command-auth attempt, not all credentials
   ///
@@ -3515,26 +3467,8 @@ abstract class AppLocalizations {
   /// Describes the metadata-only credential list
   ///
   /// In en, this message translates to:
-  /// **'Only saved account labels are shown. API keys and login tokens stay on your server.'**
+  /// **'Keys stay on your server.'**
   String get credentialMetadataOnly;
-
-  /// Cold start or stream gap cannot establish an active credential
-  ///
-  /// In en, this message translates to:
-  /// **'Active account unknown. The saved-account list does not report which account is active.'**
-  String get credentialActiveUnknown;
-
-  /// An explicit nullable credential-switched event reported no active credential
-  ///
-  /// In en, this message translates to:
-  /// **'The server reported no active saved account.'**
-  String get credentialNoneActive;
-
-  /// Distinguishes event-confirmed activation from a successful command response
-  ///
-  /// In en, this message translates to:
-  /// **'The Active badge reflects the latest server event.'**
-  String get credentialActiveObserved;
 
   /// Live-region feedback after a valid credential-switched event
   ///
@@ -3577,12 +3511,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save label'**
   String get credentialSave;
-
-  /// Destructive confirmation naming the saved provider credential
-  ///
-  /// In en, this message translates to:
-  /// **'Remove {label}?'**
-  String credentialRemoveTitle(String label);
 
   /// Discloses server-wide credential removal and avoids promising successor activation
   ///
@@ -4802,24 +4730,6 @@ abstract class AppLocalizations {
   /// **'The server may have started this sign-in without confirming it. Check on the server before you start again.'**
   String get uncertainAuthDetail;
 
-  /// Confirm title before clearing an unconfirmed sign-in start on this phone.
-  ///
-  /// In en, this message translates to:
-  /// **'Forget this sign-in on this phone?'**
-  String get uncertainAuthForgetTitle;
-
-  /// No description provided for @uncertainAuthForgetDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.'**
-  String get uncertainAuthForgetDetail;
-
-  /// Confirm button that clears an unconfirmed sign-in start on this phone.
-  ///
-  /// In en, this message translates to:
-  /// **'Forget this sign-in'**
-  String get uncertainAuthForget;
-
   /// No description provided for @uncertainAuthCloseHint.
   ///
   /// In en, this message translates to:
@@ -4946,35 +4856,11 @@ abstract class AppLocalizations {
   /// **'Set up your own server'**
   String get demoSetUpServer;
 
-  /// No description provided for @handoffCommandTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue on computer'**
-  String get handoffCommandTitle;
-
-  /// No description provided for @handoffCommandDisclosure.
-  ///
-  /// In en, this message translates to:
-  /// **'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.'**
-  String get handoffCommandDisclosure;
-
   /// No description provided for @handoffCopyCommand.
   ///
   /// In en, this message translates to:
   /// **'Copy command'**
   String get handoffCopyCommand;
-
-  /// No description provided for @handoffCommandCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Resume command copied'**
-  String get handoffCommandCopied;
-
-  /// No description provided for @handoffCommandUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.'**
-  String get handoffCommandUnavailable;
 
   /// No description provided for @quotaMiniMax.
   ///
@@ -5839,18 +5725,6 @@ abstract class AppLocalizations {
   /// **'Quota monitoring'**
   String get quotaMonitorTitle;
 
-  /// No description provided for @quotaMonitorConsentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Monitor this provider source?'**
-  String get quotaMonitorConsentTitle;
-
-  /// One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'
-  ///
-  /// In en, this message translates to:
-  /// **'Keep checking {provider} on {server} in the background and alert me when use reaches:'**
-  String quotaMonitorConsent(String provider, String server);
-
   /// No description provided for @quotaMonitorRuntime.
   ///
   /// In en, this message translates to:
@@ -5862,12 +5736,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.'**
   String get quotaMonitorEmpty;
-
-  /// No description provided for @quotaMonitorEnable.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable quota monitoring'**
-  String get quotaMonitorEnable;
 
   /// No description provided for @quotaMonitorDisabled.
   ///
@@ -8263,16 +8131,10 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get workspaceDismissNotice;
 
-  /// No description provided for @workspaceManageProject.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage project'**
-  String get workspaceManageProject;
-
   /// No description provided for @workspaceManageProjectHint.
   ///
   /// In en, this message translates to:
-  /// **'Switch project, worktrees, and project health'**
+  /// **'Switch project, where it runs, and its folder'**
   String get workspaceManageProjectHint;
 
   /// No description provided for @workspaceManage.
@@ -16084,29 +15946,11 @@ abstract class AppLocalizations {
   /// **'No project folder is open. Choose one from Work.'**
   String get e7LibraryNoProjectFolderIsOpenChooseOne;
 
-  /// Library and project tools UI: Project
-  ///
-  /// In en, this message translates to:
-  /// **'Project'**
-  String get e7LibraryProject;
-
   /// Library and project tools UI: Switch project
   ///
   /// In en, this message translates to:
   /// **'Switch project'**
   String get e7LibrarySwitchProject;
-
-  /// Library and project tools UI: Choose another project opened by this server
-  ///
-  /// In en, this message translates to:
-  /// **'Choose another project opened by this server'**
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer;
-
-  /// Library and project tools UI: Coding
-  ///
-  /// In en, this message translates to:
-  /// **'Coding'**
-  String get e7LibraryCoding;
 
   /// Library and project tools UI: Worktrees
   ///
@@ -16114,41 +15958,17 @@ abstract class AppLocalizations {
   /// **'Worktrees'**
   String get e7LibraryWorktrees;
 
-  /// Library and project tools UI: Choose a project first
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a project first'**
-  String get e7LibraryChooseAProjectFirst;
-
-  /// Library and project tools UI: Create and manage isolated Git branches
-  ///
-  /// In en, this message translates to:
-  /// **'Create and manage isolated Git branches'**
-  String get e7LibraryCreateAndManageIsolatedGitBranches;
-
   /// Library and project tools UI: Managed workspaces
   ///
   /// In en, this message translates to:
   /// **'Cloud environments'**
   String get e7LibraryManagedWorkspaces;
 
-  /// Library and project tools UI: Create, discover, open, and remove adapter-backed environments
-  ///
-  /// In en, this message translates to:
-  /// **'Create, discover, open, and remove adapter-backed environments'**
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked;
-
   /// Library and project tools UI: Project health
   ///
   /// In en, this message translates to:
   /// **'Project health'**
   String get e7LibraryProjectHealth;
-
-  /// Library and project tools UI: Branch, changed files, language services, and formatters
-  ///
-  /// In en, this message translates to:
-  /// **'Branch, changed files, language services, and formatters'**
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters;
 
   /// Library and project tools UI: OpenCode is reconnecting.
   ///
@@ -34658,7 +34478,7 @@ abstract class AppLocalizations {
   /// Folder chooser: pick one of the projects already opened on this server
   ///
   /// In en, this message translates to:
-  /// **'Recent projects'**
+  /// **'Open a project you used before'**
   String get workspaceChooserRecentProjects;
 
   /// Folder chooser: title when the project list failed to load
@@ -38946,7 +38766,7 @@ abstract class AppLocalizations {
   /// Subagents row menu: copies the handoff for the conversation.
   ///
   /// In en, this message translates to:
-  /// **'Copy handoff for {title}'**
+  /// **'Continue {title} on computer'**
   String sessionRelationsCopyHandoff(String title);
 
   /// Subagents row menu: pins the conversation.
@@ -40557,12 +40377,6 @@ abstract class AppLocalizations {
   /// **'Links you added'**
   String get webSourcesPastedLinks;
 
-  /// Full terms of quota monitoring, under Details on the monitoring sheet
-  ///
-  /// In en, this message translates to:
-  /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
-  String get quotaMonitorConsentDetails;
-
   /// This phone: where OpenCode runs, when it runs inside this app's own Linux
   ///
   /// In en, this message translates to:
@@ -41228,6 +41042,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy draft'**
   String get chatDraftCopy;
+
+  /// Continue on computer from a conversation list, on a server without CLI session resume
+  ///
+  /// In en, this message translates to:
+  /// **'This server can’t give a command that continues a conversation on a computer.'**
+  String get handoffUiComputerUnsupported;
+
+  /// Continue on computer from a conversation list: the session could not be read again or changed place
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation moved or its server changed. Go back and try again.'**
+  String get handoffUiComputerChanged;
+
+  /// Server sign-in sheet: what Start does and whom it trusts (the confirm merged into the sheet)
+  ///
+  /// In en, this message translates to:
+  /// **'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and {provider}. You may need to finish steps on the server.'**
+  String commandAuthSheetIntro(String provider);
+
+  /// Server sign-in sheet: offered once the server has had a few seconds to finish the sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Check {provider} sign-in now'**
+  String commandAuthCheckNamed(String provider);
+
+  /// Accounts sheet: remove confirm title naming the provider and the account
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the {provider} account “{name}”?'**
+  String credentialRemoveAccountTitle(String provider, String name);
+
+  /// Accounts sheet: remove confirm button naming the account
+  ///
+  /// In en, this message translates to:
+  /// **'Remove “{name}”'**
+  String credentialRemoveConfirmNamed(String name);
+
+  /// Remaining: the row that turns on background monitoring for the account shown
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me about {provider} on {server}'**
+  String quotaMonitorOffer(String provider, String server);
+
+  /// Remaining: what the monitoring row does, with its starting percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps checking in the background, including after a restart, and alerts when use reaches {percent}. You can change the percentage once it’s on.'**
+  String quotaMonitorOfferDetail(String percent);
+
+  /// Work, no project folder yet: why a folder is needed, naming the server
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations run inside a folder on {server}.'**
+  String workspaceChooserBody(String server);
+
+  /// Search keywords for Development services (space separated)
+  ///
+  /// In en, this message translates to:
+  /// **'services dev server preview logs run commands processes'**
+  String get discoverServicesAliases;
+
+  /// Search keywords for Cloud environments (space separated)
+  ///
+  /// In en, this message translates to:
+  /// **'cloud environments managed workspaces remote sandbox'**
+  String get discoverCloudEnvironmentsAliases;
 }
 
 class _AppLocalizationsDelegate

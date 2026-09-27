@@ -402,13 +402,13 @@
         {
           "id": "session-relations-menu-handoff",
           "type": "menu-item",
-          "label": "Copy handoff",
+          "label": "Continue {title} on computer",
           "key": null,
           "line": 474,
-          "action": "open-dialog",
-          "target": "session-handoff-dialog",
-          "targetWidget": "showSessionHandoff",
-          "effect": "Calls showSessionHandoff(context, controller, sessionID, projectID) for that session (wired at lines 274/317).",
+          "action": "open-sheet",
+          "target": "continue-on-computer-sheet",
+          "targetWidget": "showContinueOnComputerSheet",
+          "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet (the handoff dialog merged into it, slice-P3.11a).",
           "gates": [],
           "destructive": false
         },
@@ -425,63 +425,6 @@
           "gates": [
             "widget.controller.canPinSessions"
           ],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "session-handoff-dialog",
-      "title": "Copy handoff reference? | Continue on computer",
-      "kind": "dialog",
-      "file": "lib/ui/widgets/session_handoff.dart",
-      "widget": "showSessionHandoff",
-      "presentedBy": [
-        "showSessionHandoff"
-      ],
-      "line": 85,
-      "purpose": "Previews the resume command (or a metadata reference when the repository cannot create one) and copies it to the clipboard on confirm.",
-      "reachedFrom": [
-        {
-          "page": "session-relations",
-          "element": "session-relations-menu-handoff"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_open(result, handoff: true)",
-          "file": "lib/ui/screens/global_sessions_screen.dart",
-          "line": 410
-        }
-      ],
-      "gates": [
-        "sessionID and projectID match ^[A-Za-z0-9_-]+$ (else product error)",
-        "command variant when repository is SessionCommandHandoffGateway"
-      ],
-      "elements": [
-        {
-          "id": "session-handoff-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 117,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "session-handoff-dialog-copy",
-          "type": "button",
-          "label": "Copy reference | Copy command",
-          "key": null,
-          "line": 121,
-          "action": "copy",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops true; showSessionHandoff revalidates session/location/command and Clipboard.setData(command ?? reference) (line 157), then shows a snackbar.",
-          "gates": [],
           "destructive": false
         }
       ]

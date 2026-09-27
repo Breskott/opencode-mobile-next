@@ -36,7 +36,7 @@ import '../widgets/work_status_line.dart';
 import '../../termux/bridge.dart';
 import 'global_sessions_screen.dart';
 import 'isolated_task_sheet.dart';
-import 'manage_project_screen.dart';
+import 'session_context_screen.dart';
 import 'new_conversation_sheet.dart';
 import 'project_folder_actions.dart';
 import 'projects_screen.dart';
@@ -706,7 +706,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           unreviewed: busy ? null : unreviewed(session),
           selected: session.id == detailID,
           onOpen: _openSession,
-          onDetails: _showSessionDetails,
+          onDetails: _openSessionContext,
           onReview: _review,
           onMarkReviewed: _markReviewed,
           onPin: _togglePin,
@@ -787,7 +787,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               KitBidi.ltr(_selectedDirectory!),
             ),
           ),
-          onTap: () => _showDirectoryDetails(_selectedDirectory!),
+          onTap: () => _openContextSheet(folder: _selectedDirectory),
         ),
       if (!capabilities.projectManagement &&
           controller.directory?.isNotEmpty == true)
@@ -797,7 +797,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           title: _basename(controller.directory!),
           // A path reads left to right in any interface: isolate it.
           supporting: TextSpan(text: KitBidi.ltr(controller.directory!)),
-          onTap: () => _showDirectoryDetails(controller.directory!),
+          onTap: () => _openContextSheet(folder: controller.directory),
         ),
     ];
 
@@ -1024,6 +1024,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final controller = widget.controller;
     return _WorkspaceFolderChooser(
       notice: controller.locationNotice,
+      server: controller.profile?.name,
       projectError: _projectError,
       canCreate: ProjectFolderActions.canCreate(controller),
       onCreate: _createProjectFolder,
@@ -1165,23 +1166,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       controller.refreshPendingQuestions(),
       if (controller.capabilities.forms) controller.refreshPendingForms(),
     ]);
-  }
-
-  // revamp: merge-into:workspace-context-sheet (P3.11)
-  /// The full folder path, copyable, until the project sheet's Details row
-  /// takes over (map `workspace-directory-details-dialog`).
-  Future<void> _showDirectoryDetails(String directory) {
-    final l10n = _l10n(context);
-    return showKitSheet<void>(
-      context,
-      title: _basename(directory),
-      icon: AppIconography.files,
-      sheetKey: const ValueKey('workspace-directory-details'),
-      body: (_) => KitDetailsFold(
-        initiallyExpanded: true,
-        values: [KitTechnicalValue(l10n.workspaceContextFolder, directory)],
-      ),
-    );
   }
 
   /// Opens [session]: beside the list from expanded, else as a page.
@@ -1339,17 +1323,25 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   /// One project switchboard (audit UX-P0-02; map `workspace-context-sheet`,
   /// proposal "fix"): titled with the project and the server it is on, it
-  /// switches project, starts a new one, manages it, chooses where it runs
-  /// ("Runs on", the current one marked in words), and keeps the folder
-  /// path under Details, last and collapsed.
-  Future<void> _openContextSheet() async {
+  /// switches project, starts a new one, chooses where it runs ("Runs on",
+  /// the current one marked in words), and keeps the folder path under
+  /// Details, last and collapsed. The project's tools live on the Project
+  /// tab (manage-project merged into project-hub, slice-P3.11a).
+  ///
+  /// Opened from a folder row ([folder] set: a conversation running outside
+  /// the project root, or a server that cannot manage projects), Details
+  /// shows that folder, open, instead of a separate folder dialog (map
+  /// `workspace-directory-details-dialog`, merged here).
+  Future<void> _openContextSheet({String? folder}) async {
     final controller = widget.controller;
     final l10n = _l10n(context);
-    final title =
-        _selectedProject?.name ??
-        (_selectedDirectory == null
-            ? l10n.e7WorkspaceNoProjectSelected
-            : _basename(_selectedDirectory!));
+    final manages = controller.capabilities.projectManagement;
+    final title = !manages && folder != null
+        ? _basename(folder)
+        : _selectedProject?.name ??
+              (_selectedDirectory == null
+                  ? l10n.e7WorkspaceNoProjectSelected
+                  : _basename(_selectedDirectory!));
     final server = controller.profile?.name;
     final workspace = _selectedWorkspace;
     final subtitle = [
@@ -1357,8 +1349,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         l10n.workspaceContextOn(KitBidi.auto(server)),
       if (workspace != null) KitBidi.auto(_workspaceName(workspace)),
     ].join(' · ');
-    final directory = _contextDirectory;
-    final canCreate = ProjectFolderActions.canCreate(controller);
+    final directory = folder ?? _contextDirectory;
+    final canCreate = manages && ProjectFolderActions.canCreate(controller);
     final choice = await showKitSheet<_ContextChoice>(
       context,
       title: title,
@@ -1405,41 +1397,34 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 icon: AppIconography.info,
                 liveRegion: false,
               ),
-            KitRowGroup(
-              children: [
-                KitRow(
-                  key: const ValueKey('context-switch-project'),
-                  leading: KitRow.icon(sheetContext, AppIconography.swap),
-                  title: l10n.e7WorkspaceSwitchProject,
-                  supporting: TextSpan(
-                    text: l10n.e7WorkspaceOpenProjectCount(
-                      _projects?.length ?? 0,
-                    ),
-                  ),
-                  trailing: const KitChevron(),
-                  onTap: () => pick(const _ContextChoice.switchProject()),
-                ),
-                if (canCreate)
+            if (manages)
+              KitRowGroup(
+                children: [
                   KitRow(
-                    key: const ValueKey('context-new-project'),
-                    leading: KitRow.icon(
-                      sheetContext,
-                      AppIconography.folderAdd,
+                    key: const ValueKey('context-switch-project'),
+                    leading: KitRow.icon(sheetContext, AppIconography.swap),
+                    title: l10n.e7WorkspaceSwitchProject,
+                    supporting: TextSpan(
+                      text: l10n.e7WorkspaceOpenProjectCount(
+                        _projects?.length ?? 0,
+                      ),
                     ),
-                    title: l10n.workspaceContextNewProject,
                     trailing: const KitChevron(),
-                    onTap: () => pick(const _ContextChoice.newProject()),
+                    onTap: () => pick(const _ContextChoice.switchProject()),
                   ),
-                if (ManageProjectScreen.isAvailable(controller.capabilities))
-                  KitRow(
-                    key: const ValueKey('manage-project-entry'),
-                    leading: KitRow.icon(sheetContext, AppIconography.settings),
-                    title: l10n.workspaceManageProject,
-                    trailing: const KitChevron(),
-                    onTap: () => pick(const _ContextChoice.manageProject()),
-                  ),
-              ],
-            ),
+                  if (canCreate)
+                    KitRow(
+                      key: const ValueKey('context-new-project'),
+                      leading: KitRow.icon(
+                        sheetContext,
+                        AppIconography.folderAdd,
+                      ),
+                      title: l10n.workspaceContextNewProject,
+                      trailing: const KitChevron(),
+                      onTap: () => pick(const _ContextChoice.newProject()),
+                    ),
+                ],
+              ),
             if (_workspaces.isNotEmpty)
               KitRowGroup(
                 label: l10n.workspaceContextRunsOn,
@@ -1464,6 +1449,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               ),
             KitDetailsFold(
               foldKey: const ValueKey('workspace-context-details'),
+              initiallyExpanded: folder != null,
               values: [
                 KitTechnicalValue(
                   l10n.workspaceContextFolder,
@@ -1479,10 +1465,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       },
     );
     if (!mounted || choice == null) return;
-    if (choice.manageProject) {
-      await _openManageProject();
-      return;
-    }
     if (choice.newProject) {
       await _createProjectFolder();
       return;
@@ -1492,17 +1474,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       return;
     }
     await _selectWorkspace(choice.workspace);
-  }
-
-  Future<void> _openManageProject() async {
-    await pushKitPage<bool>(
-      context,
-      (_) => ManageProjectScreen(
-        controller: widget.controller,
-        project: _selectedProject,
-      ),
-    );
-    if (mounted) await _load();
   }
 
   String _titleOf(Session session) {
@@ -1520,30 +1491,17 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     setState(() => _notice = error is String ? error : productErrorText(error));
   }
 
-  // revamp: merge-into:session-context (P3.11)
-  /// A conversation's facts until Session context takes them over (map
-  /// `workspace-session-details-sheet`): every value labelled and copyable.
-  Future<void> _showSessionDetails(Session session) {
-    final l10n = _l10n(context);
-    final directory = session.directory;
-    final share = session.shareUrl;
-    return showKitSheet<void>(
-      context,
-      title: _titleOf(session),
-      icon: AppIconography.info,
-      sheetKey: const ValueKey('workspace-session-details'),
-      body: (_) => KitDetailsFold(
-        initiallyExpanded: true,
-        notes: sessionUsageLabels(session, l10n: l10n),
-        values: [
-          if (directory?.isNotEmpty == true)
-            KitTechnicalValue(l10n.workspaceContextFolder, directory!),
-          if (share != null && share.isNotEmpty)
-            KitTechnicalValue(l10n.workspaceSessionSharedLink, share),
-        ],
-      ),
-    );
-  }
+  /// A conversation's facts, from its row's menu: Conversation context,
+  /// where the folder and shared link sit under Details beside how full
+  /// the conversation is (map `workspace-session-details-sheet`, merged
+  /// into session-context in slice-P3.11a).
+  Future<void> _openSessionContext(Session session) => pushKitPage<void>(
+    context,
+    (_) => SessionContextScreen(
+      controller: widget.controller,
+      sessionID: session.id,
+    ),
+  );
 
   /// The finished run [session] stands for, if it is still unreviewed.
   ReturnBriefRun? _unreviewedRun(Session session) {
@@ -1771,33 +1729,24 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 }
 
 /// What the context sheet was dismissed with: switch project, start a new
-/// one, manage it, or move to a workspace (`null` meaning the project's own
-/// local checkout).
+/// one, or move to a workspace (`null` meaning the project's own local
+/// checkout).
 class _ContextChoice {
   const _ContextChoice.switchProject()
     : workspace = null,
       switchProject = true,
-      newProject = false,
-      manageProject = false;
+      newProject = false;
   const _ContextChoice.newProject()
     : workspace = null,
       switchProject = false,
-      newProject = true,
-      manageProject = false;
-  const _ContextChoice.manageProject()
-    : workspace = null,
-      switchProject = false,
-      newProject = false,
-      manageProject = true;
+      newProject = true;
   const _ContextChoice.workspace(this.workspace)
     : switchProject = false,
-      newProject = false,
-      manageProject = false;
+      newProject = false;
 
   final WorkspaceInfo? workspace;
   final bool switchProject;
   final bool newProject;
-  final bool manageProject;
 }
 
 /// A section's count, in figures that line up.
@@ -1984,7 +1933,8 @@ class _SessionRow extends StatelessWidget {
         ),
         KitMenuItem(
           key: const ValueKey('session-menu-details'),
-          label: l10n.chatUiDetails,
+          // Opens Conversation context, which holds the folder and link.
+          label: l10n.e7SharedSessionContext,
           icon: AppIconography.info,
           onSelected: () => onDetails(session),
         ),
@@ -2173,6 +2123,7 @@ List<String> sessionUsageLabels(Session session, {AppLocalizations? l10n}) {
 class _WorkspaceFolderChooser extends StatelessWidget {
   const _WorkspaceFolderChooser({
     required this.notice,
+    required this.server,
     required this.projectError,
     required this.canCreate,
     required this.onCreate,
@@ -2183,6 +2134,9 @@ class _WorkspaceFolderChooser extends StatelessWidget {
   });
 
   final String? notice;
+
+  /// The saved server's name, for the one line under the title.
+  final String? server;
   final String? projectError;
   final bool canCreate;
   final VoidCallback onCreate;
@@ -2250,7 +2204,12 @@ class _WorkspaceFolderChooser extends StatelessWidget {
       // A place with nothing in it yet.
       illustration: const StatesFolderScene(),
       title: l10n.projectFolderChooserTitle,
-      body: notice ?? l10n.e7WorkspaceChooseFolderToStart,
+      // Why a folder, not the title again (slice-P3.11a).
+      body:
+          notice ??
+          (server?.trim().isNotEmpty == true
+              ? l10n.workspaceChooserBody(KitBidi.auto(server!.trim()))
+              : l10n.e7WorkspaceChooseFolderToStart),
       bodyKey: notice == null
           ? null
           : const ValueKey('location-recovery-notice'),

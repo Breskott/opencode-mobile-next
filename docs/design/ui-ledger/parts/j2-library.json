@@ -240,26 +240,6 @@
    ]
   },
   {
-   "id": "skills-preview-sheet",
-   "title": "<skill name>",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/skills_screen.dart",
-   "widget": "_showSkill",
-   "presentedBy": [],
-   "line": 173,
-   "purpose": "Read-only preview of a skill: name, selectable location path and rendered SKILL.md (FilePreviewBody, key 'skill-content-preview').",
-   "reachedFrom": [
-    {
-     "page": "skills",
-     "element": "skills-row"
-    }
-   ],
-   "gates": [
-    "widget.sessionID == null (library / capabilities entry)"
-   ],
-   "elements": []
-  },
-  {
    "id": "skill-activation-sheet",
    "title": "<skill name>",
    "kind": "sheet",
@@ -744,8 +724,8 @@
      "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 187,
      "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "_confirmForgetSignIn",
      "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
      "gates": [
       "_showProviders (widget.mode != IntegrationsMode.mcp)",
@@ -1681,11 +1661,15 @@
     "showConfirmSheet"
    ],
    "line": 59,
-   "purpose": "Confirms dropping a locally persisted pending sign-in attempt.",
+   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
    "reachedFrom": [
     {
      "page": "integrations",
      "element": "integrations-pending-forget"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
     }
    ],
    "gates": [],
@@ -1706,55 +1690,6 @@
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "integrations-forget-uncertain-auth-sheet",
-   "title": "Forget uncertain start?",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-   "widget": "_UncertainAuthRecoveryTile.build",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 191,
-   "purpose": "Confirms forgetting a sign-in start whose outcome was never confirmed.",
-   "reachedFrom": [
-    {
-     "page": "integrations",
-     "element": "integrations-uncertain-forget"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-confirm",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
@@ -1803,10 +1738,10 @@
      "label": "Start server sign-in",
      "key": null,
      "line": 203,
-     "action": "open-sheet",
-     "target": "command-auth-sheet-confirm-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_start(): confirm sheet, then controller.startIntegrationCommand(integration.id, method.id, locationRevision); on failure tries controller.pendingIntegrationCommand to recover the attempt.",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): controller.startIntegrationCommand(integration.id, method.id, locationRevision) directly; the sheet's intro is the question (the confirm merged into it, slice-P3.11a).",
      "gates": [
       "_current (source/profile unchanged)",
       "_attempt == null && !_uncertainStart && _status != complete"
@@ -1816,13 +1751,13 @@
     {
      "id": "command-auth-sheet-check",
      "type": "button",
-     "label": "Check status",
+     "label": "Check {provider} sign-in now",
      "key": null,
      "line": 208,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog().",
+     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog(). Offered 8 s after a start without an answer, or at once for an attempt found running.",
      "gates": [
       "_current",
       "_attempt != null"
@@ -1844,55 +1779,6 @@
       "_attempt != null"
      ],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "command-auth-sheet-confirm-sheet",
-   "title": "Start sign-in on the server?",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/command_auth_sheet.dart",
-   "widget": "_CommandAuthSheetState._start",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 65,
-   "purpose": "Confirms running the sign-in command on the server.",
-   "reachedFrom": [
-    {
-     "page": "command-auth-sheet",
-     "element": "command-auth-sheet-start"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "command-auth-sheet-confirm-sheet-confirm",
-     "type": "button",
-     "label": "Start server sign-in",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "command-auth-sheet-confirm-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
     }
    ]
   },
@@ -2005,7 +1891,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "line": 430,
+     "line": 178,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -2018,7 +1904,7 @@
      "type": "button",
      "label": "Save label",
      "key": null,
-     "line": 434,
+     "line": 182,
      "action": "submit",
      "target": null,
      "targetWidget": null,

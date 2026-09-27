@@ -115,29 +115,21 @@ void main() {
           EnginePhase.sendSemanticsUpdate,
           const Duration(seconds: 3),
         );
-        final enable = find.widgetWithText(TextButton, l10n.quotaMonitorEnable);
+        // Monitoring turns on from its row in place (the consent dialog
+        // merged into the page, slice-P3.11a).
+        final enable = find.byKey(const ValueKey('quota-enable-monitoring'));
         await tester.ensureVisible(enable);
-        await tester.tap(enable);
         await tester.pumpAndSettle(
           const Duration(milliseconds: 100),
           EnginePhase.sendSemanticsUpdate,
           const Duration(seconds: 3),
         );
-        expect(find.byType(AlertDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
         await writePng(
           'docs/qa/provider-quota/monitor-consent-${light ? 'light' : 'dark'}.png',
           await capturePng(tester, boundary, pixelRatio: 1),
         );
-        await tester.tap(
-          find.descendant(
-            of: find.byType(AlertDialog),
-            matching: find.widgetWithText(
-              FilledButton,
-              l10n.quotaMonitorEnable,
-            ),
-          ),
-        );
+        await tester.tap(enable);
         await tester.pumpAndSettle(
           const Duration(milliseconds: 100),
           EnginePhase.sendSemanticsUpdate,

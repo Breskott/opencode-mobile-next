@@ -120,10 +120,9 @@ class _ContinueOnComputerBody extends StatelessWidget {
           KitCodeBlock(
             text: text,
             // The command is what this sheet exists to show: all of it,
-            // wrapped, never cut at the sheet's edge. A `command` block
-            // never wraps (it scrolls sideways), so this one is shown as
-            // wrapped text with the command's own copy label.
-            kind: KitCodeKind.output,
+            // wrapped under its prompt, never cut at the sheet's edge
+            // (R3's hanging wrap), with the command's own copy label.
+            kind: KitCodeKind.command,
             caption: l10n.handoffUiComputerCommandLabel,
             wrap: true,
             showWrapToggle: false,

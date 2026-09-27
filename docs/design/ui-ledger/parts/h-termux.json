@@ -863,11 +863,8 @@
       "purpose": "Per-project registry of development commands and preview links: register, start/stop/restart tracked commands on the server, read logs, open the preview URL.",
       "reachedFrom": [
         {
-          "page": "?",
-          "element": null,
-          "widget": "ManageProjectScreen (ListTile \"Development services\")",
-          "file": "lib/ui/screens/manage_project_screen.dart",
-          "line": 95
+          "page": "project-hub",
+          "element": "project-hub-services"
         }
       ],
       "gates": [

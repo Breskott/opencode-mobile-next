@@ -1251,32 +1251,22 @@ void main() {
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(at: h.now));
       expect(h.connection.quotaMonitor.sources, isEmpty);
-      final enable = find.widgetWithText(TextButton, _l10n.quotaMonitorEnable);
+      // One row names what it turns on and what that does; no sheet or
+      // dialog asks again (the enrol dialog merged into the page,
+      // slice-P3.11a).
+      final enable = find.byKey(const ValueKey('quota-enable-monitoring'));
       await _reveal(tester, enable);
-      await tester.tap(enable);
-      await tester.pumpAndSettle();
-      final dialog = find.byType(AlertDialog);
       expect(
-        find.descendant(
-          of: dialog,
-          matching: find.text(
-            _l10n.quotaMonitorConsent(_l10n.quotaCodex, 'Synthetic collector'),
-          ),
+        find.text(
+          _l10n.quotaMonitorOffer(_l10n.quotaCodex, 'Synthetic collector'),
         ),
         findsOneWidget,
       );
-      await tester.tap(
-        find.descendant(of: dialog, matching: find.text(_l10n.workCancel)),
-      );
-      await tester.pumpAndSettle();
-      expect(h.connection.quotaMonitor.sources, isEmpty);
+      expect(find.byType(AlertDialog), findsNothing);
       await tester.tap(enable);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(FilledButton, _l10n.quotaMonitorEnable),
-        ),
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
       await tester.pumpAndSettle();
       expect(h.connection.quotaMonitor.sources, hasLength(1));
@@ -1297,8 +1287,7 @@ void main() {
         findsOneWidget,
       );
       expect(h.connection.store.activeId, 'quota-profile-a');
-      final disable = find.widgetWithText(
-        TextButton,
+      final disable = find.text(
         _l10n.quotaMonitorDisable(_l10n.quotaCodex, 'Synthetic collector'),
       );
       await _reveal(tester, disable);

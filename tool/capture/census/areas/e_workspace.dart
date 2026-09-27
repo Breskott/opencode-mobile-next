@@ -20,7 +20,6 @@ import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
@@ -338,8 +337,11 @@ final eWorkspaceArea = CensusArea(
         ),
       );
     }, note: 'The project list could not load.'),
+    // The folder dialog merged into the project sheet (slice-P3.11a): the
+    // folder row opens the sheet with its Details open on that folder.
     CensusShot(
-      'workspace-directory-details-dialog',
+      'workspace-context-sheet',
+      state: 'folder',
       (kit) async {
         final conn = await eController(
           directory: eApiDirectory,
@@ -347,8 +349,10 @@ final eWorkspaceArea = CensusArea(
         );
         await _work(kit, controller: conn);
         await kit.tapKey('active-session-directory');
-        kit.expectVisible(find.byType(AlertDialog));
-        kit.expectText('api');
+        kit.expectVisible(
+          find.byKey(const ValueKey('workspace-context-sheet')),
+        );
+        kit.expectTextContaining('api');
       },
       note:
           'Work open in packages/api inside shopfront; the folder row opened.',
@@ -359,15 +363,6 @@ final eWorkspaceArea = CensusArea(
       kit.expectVisible(find.byKey(const ValueKey('workspace-context-sheet')));
       kit.expectText('Switch project');
     }, note: 'Project header tapped; one cloud workspace listed.'),
-    CensusShot('workspace-session-details-sheet', (kit) async {
-      final conn = await eController(
-        otherProjects: true,
-        sessions: eSessions(shared: true),
-      );
-      await _work(kit, controller: conn);
-      await _rowMenu(kit, darkModeSessionID, 'Details');
-      kit.expectTextContaining('opncd.ai/share/k3v9Qd2m');
-    }, note: 'Row menu › Details on a shared conversation.'),
     CensusShot('workspace-rename-session-dialog', (kit) async {
       await _work(kit);
       await _rowMenu(kit, darkModeSessionID, 'Rename');
@@ -438,14 +433,6 @@ final eWorkspaceArea = CensusArea(
       );
       await kit.tapKey('rename-project-${eProject.id}');
       kit.expectVisible(find.byKey(const ValueKey('project-name-input')));
-    }),
-    CensusShot('manage-project', (kit) async {
-      await _overWork(
-        kit,
-        (conn) => ManageProjectScreen(controller: conn, project: eProject),
-      );
-      kit.expectText('Manage project');
-      kit.expectText('Worktrees');
     }),
     CensusShot('project-folder-new-dialog', (kit) async {
       await _chooser(kit);
