@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -134,8 +133,9 @@ void main() {
     var maskedAtListener = false;
     var maskedAtChange = false;
     controller.addListener(() {
-      if (controller.text.isNotEmpty)
+      if (controller.text.isNotEmpty) {
         maskedAtListener = !KitRedact.text(controller.text).contains(_secret);
+      }
     });
     await tester.pumpWidget(
       MaterialApp(

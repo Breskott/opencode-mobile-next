@@ -293,8 +293,9 @@ class InteractionDefaultsStore {
   }
 
   void _checkAdmission() {
-    if (_closed || !_present)
+    if (_closed || !_present) {
       throw StateError('Server defaults are unavailable');
+    }
   }
 
   String get _projectKey => 'oc.defaultProject.$profileID';

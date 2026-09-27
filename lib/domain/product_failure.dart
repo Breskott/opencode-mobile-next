@@ -199,10 +199,12 @@ bool _isSentence(String message) =>
 ProductFailureCategory _builtin(BuiltinLinuxException error) {
   final message = error.message.trim();
   if (message.isEmpty) return ProductFailureCategory.device;
-  if (_builtinWordCodes.contains(error.code))
+  if (_builtinWordCodes.contains(error.code)) {
     return ProductFailureCategory.words;
-  if (error.code == null && _isSentence(message))
+  }
+  if (error.code == null && _isSentence(message)) {
     return ProductFailureCategory.words;
+  }
   return _forText(message) ?? ProductFailureCategory.device;
 }
 
@@ -279,8 +281,9 @@ ProductFailureCategory _classify(Object error) {
     'ClientException',
     'WebSocketException',
     'WebSocketChannelException',
-  }.contains(type))
+  }.contains(type)) {
     return ProductFailureCategory.network;
+  }
   if (error is String) {
     if (error.trim().isEmpty) return ProductFailureCategory.unknown;
     if (!_technical.hasMatch(error)) return ProductFailureCategory.words;
