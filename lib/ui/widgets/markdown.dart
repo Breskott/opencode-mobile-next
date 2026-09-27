@@ -6,6 +6,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app_iconography.dart';
 import '../kit/chat/kit_markdown.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
@@ -227,6 +228,7 @@ class _CodeReaderPageState extends State<_CodeReaderPage> {
               actions: [
                 KitAction(
                   label: wrap ? l10n.markdownScrollCode : l10n.markdownWrapCode,
+                  icon: AppIconography.wrapText,
                   onPressed: () {
                     setState(() => _wrap = !wrap);
                     widget.onWrapChanged?.call(!wrap);
@@ -234,6 +236,7 @@ class _CodeReaderPageState extends State<_CodeReaderPage> {
                 ),
                 KitAction.copy(
                   label: l10n.kitCodeCopyCode,
+                  icon: AppIconography.copy,
                   text: () => widget.code,
                 ),
               ],
