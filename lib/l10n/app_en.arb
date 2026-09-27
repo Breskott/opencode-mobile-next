@@ -16147,125 +16147,21 @@
   "@teamUiPhoneOptionalTag": {
     "description": "On-device AI Team block: eyebrow label"
   },
-  "teamUiPhoneOfferTitle": "Also run an AI team on this phone",
-  "@teamUiPhoneOfferTitle": {
-    "description": "On-device AI Team block: title"
-  },
-  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.",
-  "@teamUiPhoneOfferBody": {
-    "description": "On-device AI Team block: body"
-  },
-  "teamUiPhoneOfferSize": "Downloads about {size} MB (Gas City, beads and Dolt, from each project's own releases).",
-  "@teamUiPhoneOfferSize": {
-    "description": "On-device AI Team block: download size line",
-    "placeholders": {
-      "size": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiPhoneOfferWarning": "Keep Termux open or hold its wake lock while the team works; Android may stop it in the background. Nothing is lost; runs resume when you start it again.",
-  "@teamUiPhoneOfferWarning": {
-    "description": "On-device AI Team block: lifecycle warning"
-  },
-  "teamUiPhoneSkip": "Skip for now",
-  "@teamUiPhoneSkip": {
-    "description": "On-device AI Team block: primary (skip) action"
-  },
-  "teamUiPhoneSetUp": "Set up AI Team on this phone",
-  "@teamUiPhoneSetUp": {
-    "description": "On-device AI Team block: set-up action"
-  },
-  "teamUiPhoneStepDownload": "Download & verify",
-  "@teamUiPhoneStepDownload": {
-    "description": "On-device setup step 1"
-  },
-  "teamUiPhoneStepPackages": "Install prerequisites",
-  "@teamUiPhoneStepPackages": {
-    "description": "On-device setup step 2"
-  },
-  "teamUiPhoneStepCity": "Create a city next to the project",
-  "@teamUiPhoneStepCity": {
-    "description": "On-device setup step 3"
-  },
-  "teamUiPhoneStepStart": "Start the supervisor on this phone",
-  "@teamUiPhoneStepStart": {
-    "description": "On-device setup step 4"
-  },
-  "teamUiPhoneStepConnect": "Connect",
-  "@teamUiPhoneStepConnect": {
-    "description": "On-device setup step 5"
-  },
-  "teamUiPhoneLeaveNote": "You can leave this screen and return to check progress.",
-  "@teamUiPhoneLeaveNote": {
-    "description": "On-device setup: the steps keep running while away"
-  },
-  "teamUiPhoneProjectLine": "Project: {path}",
-  "@teamUiPhoneProjectLine": {
-    "description": "On-device setup: which project folder the city is created next to",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiPhoneChooseProjectTitle": "Choose a project",
   "@teamUiPhoneChooseProjectTitle": {
     "description": "On-device setup: project picker title"
-  },
-  "teamUiPhoneChooseProjectBody": "The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team's merged work comes back into the folder by itself.",
-  "@teamUiPhoneChooseProjectBody": {
-    "description": "On-device setup: project picker body"
-  },
-  "teamUiPhoneNoProjects": "No project folder yet. Name one and it will be created under {directory}.",
-  "@teamUiPhoneNoProjects": {
-    "description": "On-device setup: project picker when the server has no folders",
-    "placeholders": {
-      "directory": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiPhoneNewFolderLabel": "Folder name",
-  "@teamUiPhoneNewFolderLabel": {
-    "description": "On-device setup: new project folder field label"
-  },
-  "teamUiPhoneCreateAndContinue": "Create and continue",
-  "@teamUiPhoneCreateAndContinue": {
-    "description": "On-device setup: create the folder and start the setup"
   },
   "teamUiPhoneContinue": "Continue",
   "@teamUiPhoneContinue": {
     "description": "On-device setup: continue with the chosen project"
   },
-  "teamUiPhoneSetupRunning": "Setting up the AI team",
-  "@teamUiPhoneSetupRunning": {
-    "description": "On-device setup: heading while the steps run"
-  },
   "teamUiPhoneSuccessTitle": "AI team is running on this phone",
   "@teamUiPhoneSuccessTitle": {
     "description": "On-device setup: success card title"
   },
-  "teamUiPhoneAgentsReady": "{count, plural, =0{no agents yet} =1{1 agent ready} other{{count} agents ready}}",
-  "@teamUiPhoneAgentsReady": {
-    "description": "On-device setup: success card agent count",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiPhoneOpenWorkspace": "Open Work",
-  "@teamUiPhoneOpenWorkspace": {
-    "description": "On-device setup: success card action"
-  },
   "teamUiPhoneRetry": "Try again",
   "@teamUiPhoneRetry": {
     "description": "On-device setup: retry after a failure"
-  },
-  "teamUiPhoneFailedTitle": "The AI team could not be set up.",
-  "@teamUiPhoneFailedTitle": {
-    "description": "On-device setup: failure heading"
   },
   "teamUiPhoneFailedChecksum": "The downloaded {name} did not match the checksum this build pins, so it was not installed. Nothing from it was kept; check the network and try again.",
   "@teamUiPhoneFailedChecksum": {
@@ -16501,10 +16397,6 @@
   "@teamUiPhoneKilled": {
     "description": "On this phone: killed by Android line (03-onboarding §5)"
   },
-  "teamUiPhoneStartAgain": "Start again",
-  "@teamUiPhoneStartAgain": {
-    "description": "On this phone: restart after Android killed the team"
-  },
   "teamUiPhoneKeepRunningTitle": "Keep it running",
   "@teamUiPhoneKeepRunningTitle": {
     "description": "On this phone: tips row title"
@@ -16585,10 +16477,6 @@
   "teamUiPhoneReofferAction": "Set up",
   "@teamUiPhoneReofferAction": {
     "description": "Settings › Plugins: open the setup screen from the re-offer"
-  },
-  "teamUiPhoneOpenSetup": "Open phone setup",
-  "@teamUiPhoneOpenSetup": {
-    "description": "On this phone: open the Termux setup screen to set up or resume"
   },
   "teamUiPhoneFailedNoSpace": "Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.",
   "@teamUiPhoneFailedNoSpace": {
@@ -20470,14 +20358,6 @@
   "teamDiscoverProjectBody": "Turn it on for each project you want it to work on.",
   "@teamDiscoverProjectBody": {
     "description": "AI Team intro, on this phone: the per-project row's line"
-  },
-  "teamDiscoverUnsupportedTitle": "This phone can't run the AI Team",
-  "@teamDiscoverUnsupportedTitle": {
-    "description": "AI Team intro, OpenCode in Termux on a phone that cannot run the team: the notice title"
-  },
-  "teamDiscoverUnsupportedBody": "It needs a 64-bit phone and an app build that carries the team's programs. A computer can run it for you instead.",
-  "@teamDiscoverUnsupportedBody": {
-    "description": "AI Team intro, phone that cannot run the team: what is possible instead"
   },
   "teamDiscoverComputerTitle": "Runs on {server}",
   "@teamDiscoverComputerTitle": {
@@ -30904,5 +30784,39 @@
   "automationValueOff": "Off",
   "@automationValueOff": {
     "description": "What runs by itself: a door row's state value."
+  },
+  "phoneSetupStartTermuxProgressHeadline": "Setup in Termux is {percent}% done",
+  "@phoneSetupStartTermuxProgressHeadline": {
+    "description": "Phone setup start screen: headline while a setup job in Termux is running or stopped part way. {percent} is a whole number.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhoneReadyChooseTitle": "Choose the team's project",
+  "@teamPhoneReadyChooseTitle": {
+    "description": "AI Team ready page (after Add tools installed AI Team): title when no project is open yet."
+  },
+  "teamPhoneReadyTurningOnTitle": "Turning on AI Team",
+  "@teamPhoneReadyTurningOnTitle": {
+    "description": "AI Team ready page: title while the team is turned on for the project; the stages below name the project."
+  },
+  "teamPhoneReadyFailedTitle": "AI Team didn't start",
+  "@teamPhoneReadyFailedTitle": {
+    "description": "AI Team ready page: title when turning the team on failed; the reason follows."
+  },
+  "teamPhoneReadyBody": "Give it a first task. It plans the work, shares it between its agents and brings the result back into {project}.",
+  "@teamPhoneReadyBody": {
+    "description": "AI Team ready page: line under the success title. {project} is the project's folder name.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "teamPhoneReadyFirstTask": "Give the team a first task",
+  "@teamPhoneReadyFirstTask": {
+    "description": "AI Team ready page: the primary action; opens the task sheet, and the task lands in its conversation."
   }
 }
