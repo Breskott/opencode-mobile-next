@@ -235,17 +235,20 @@ class _EntryLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final running = state == SetupState.running;
     final failure = this.failure;
+    // A setup that stopped part way is a state, not a request: amber means
+    // only "needs you" (LOOK-4), so it reads in the neutral tone with its
+    // words ("Setup on this phone is 42% done") and Continue.
     final tone = failure != null
         ? AppStatusTone.failure
         : switch (state) {
             SetupState.running => AppStatusTone.progress,
             SetupState.done => AppStatusTone.ok,
-            _ => AppStatusTone.attention,
+            _ => AppStatusTone.neutral,
           };
     final meter = this.meter;
     return KitStateView(
       size: KitStateSize.inline,
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsetsDirectional.only(bottom: KitTokens.of(context).space6),
       icon: AppIconography.phone,
       tone: tone,
       title: title,

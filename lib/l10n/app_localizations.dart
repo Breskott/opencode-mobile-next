@@ -35404,6 +35404,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// Built-in server, step 2: why the OpenCode 1 / OpenCode 2 choice is off while a step runs or the server is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the server and wait for the current step to switch.'**
+  String get builtinServerRuntimeLocked;
+
+  /// Built-in server log sheet: the log could not be read; the raw reason is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the server log.'**
+  String get builtinServerLogReadFailed;
+
+  /// Phone setup screen A, Other ways, when OpenCode is ready in the app and also set up in Termux: connect to the Termux one instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the one in Termux'**
+  String get phoneSetupStartUseTermuxOne;
+
+  /// Phone setup screen A, Other ways: the supporting line of "Use the one in Termux".
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is also set up in Termux. Connect to it instead.'**
+  String get phoneSetupStartUseTermuxOneDetail;
+
+  /// Phone setup screen A, Other ways: supporting line of "Use Termux instead" when Termux is installed but has not granted the run-command permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux is installed but hasn\'t let this app in yet. Finish its setup.'**
+  String get phoneSetupStartTermuxNotAllowed;
+
+  /// Add tools sheet: every optional tool is installed, so there is nothing to add.
+  ///
+  /// In en, this message translates to:
+  /// **'Every optional tool is already on this phone.'**
+  String get phoneSetupCustomizeAllInstalled;
+
+  /// Customize sheet: the word at the end of a required component's row, which cannot be switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get phoneSetupCustomizeIncluded;
 }
 
 class _AppLocalizationsDelegate

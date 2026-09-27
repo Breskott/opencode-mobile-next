@@ -22597,4 +22597,29 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get builtinServerRuntimeLocked =>
+      'Stop the server and wait for the current step to switch.';
+
+  @override
+  String get builtinServerLogReadFailed => 'Couldn\'t read the server log.';
+
+  @override
+  String get phoneSetupStartUseTermuxOne => 'Use the one in Termux';
+
+  @override
+  String get phoneSetupStartUseTermuxOneDetail =>
+      'OpenCode is also set up in Termux. Connect to it instead.';
+
+  @override
+  String get phoneSetupStartTermuxNotAllowed =>
+      'Termux is installed but hasn\'t let this app in yet. Finish its setup.';
+
+  @override
+  String get phoneSetupCustomizeAllInstalled =>
+      'Every optional tool is already on this phone.';
+
+  @override
+  String get phoneSetupCustomizeIncluded => 'Required';
 }

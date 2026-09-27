@@ -9,7 +9,6 @@ import '../../../domain/workspace_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
-import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../navigation/chat_route.dart';
 import '../../kit/scenes/setup_ready_scene.dart';
@@ -199,74 +198,64 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    final field = TextField(
-      key: const ValueKey('phone-setup-ready-name'),
+    // Folder names are Latin: a path field reads left to right in every
+    // locale (KitFieldKind.path).
+    final field = KitField(
+      fieldKey: const ValueKey('phone-setup-ready-name'),
+      label: l10n.phoneSetupReadyNameLabel,
+      helper: l10n.phoneSetupReadyNameHelp,
+      error: _problem,
       controller: _name,
       focusNode: _focus,
+      kind: KitFieldKind.path,
       enabled: !_busy,
-      autocorrect: false,
-      enableSuggestions: false,
+      disabledReason: _busy ? l10n.phoneSetupReadyCreating : null,
       textInputAction: TextInputAction.done,
-      // Folder names are Latin; typed in an Arabic interface they still
-      // read left to right.
-      textDirection: TextDirection.ltr,
       onChanged: (_) {
         if (_problem != null) setState(() => _problem = null);
       },
       onSubmitted: (_) => _create(),
-      decoration: InputDecoration(
-        labelText: l10n.phoneSetupReadyNameLabel,
-        helperText: l10n.phoneSetupReadyNameHelp,
-        helperMaxLines: 3,
-        errorText: _problem,
-        errorMaxLines: 5,
-      ),
     );
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && !_busy) _leave();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              key: const ValueKey('phone-setup-ready-close'),
-              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-              onPressed: _busy ? null : _leave,
-              icon: const Icon(AppIconography.close),
+      child: KitScreen(
+        // Close only (map chrome "close-only"): the celebration below is
+        // the page's title.
+        topBar: KitTopBar(
+          title: '',
+          exit: KitTopBarExit.close,
+          exitKey: const ValueKey('phone-setup-ready-close'),
+          onExit: _busy ? () {} : _leave,
+        ),
+        width: KitScreenWidth.reading,
+        // One step: the celebration, what is ready, the one way on (a
+        // name, then Create and open) and the quiet other way, a folder
+        // that exists, which opens the folder sheet only when asked.
+        body: PhoneSetupHero(
+          scene: const SetupReadyScene(),
+          // A finished moment: the longer celebration entrance (§10).
+          entranceDuration: KitMotion.celebration,
+          title: l10n.phoneSetupReadyTitle,
+          titleKey: const ValueKey('phone-setup-ready-title'),
+          body: l10n.phoneSetupReadyNameTitle,
+          liveRegion: false,
+          content: field,
+          primary: KitAction(
+            key: const ValueKey('phone-setup-ready-create'),
+            label: l10n.phoneSetupReadyCreateOpen,
+            onPressed: _busy ? null : _create,
+            working: _busy,
+          ),
+          tertiary: [
+            KitAction(
+              key: const ValueKey('phone-setup-ready-open-existing'),
+              label: l10n.phoneSetupReadyOpenFolderInstead,
+              onPressed: _busy ? null : _openExisting,
             ),
           ],
-        ),
-        body: SafeArea(
-          top: false,
-          // One step: the celebration, what is ready, the one way on (a
-          // name, then Create and open) and the quiet other way, a folder
-          // that exists, which opens the folder sheet only when asked.
-          child: PhoneSetupHero(
-            scene: const SetupReadyScene(),
-            // A finished moment: the longer celebration entrance (§10).
-            entranceDuration: KitMotion.celebration,
-            title: l10n.phoneSetupReadyTitle,
-            titleKey: const ValueKey('phone-setup-ready-title'),
-            body: l10n.phoneSetupReadyNameTitle,
-            liveRegion: false,
-            content: field,
-            primary: KitAction(
-              key: const ValueKey('phone-setup-ready-create'),
-              label: l10n.phoneSetupReadyCreateOpen,
-              onPressed: _busy ? null : _create,
-              working: _busy,
-            ),
-            tertiary: [
-              KitAction(
-                key: const ValueKey('phone-setup-ready-open-existing'),
-                label: l10n.phoneSetupReadyOpenFolderInstead,
-                onPressed: _busy ? null : _openExisting,
-              ),
-            ],
-          ),
         ),
       ),
     );

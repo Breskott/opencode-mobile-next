@@ -11,8 +11,6 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/setup_terminal.dart';
 import 'keep_running_screen.dart';
 
 /// "Run OpenCode inside the app — no Termux" (experimental, GitHub issue #87).
@@ -21,6 +19,12 @@ import 'keep_running_screen.dart';
 /// install OpenCode inside it, start the server on 127.0.0.1:4097, connect.
 /// Nothing here touches Termux: the server is a child of this app's process,
 /// and its profile's port keeps every Termux-only code path away from it.
+///
+/// Made kit-only with the least change (screen-phone-1): a [KitScreen] page,
+/// the steps on one [KitSurface] panel with a [KitStatusMark] each, the log
+/// in a [KitSheet] with a [KitLogPanel], and Remove through
+/// [showKitConfirm]. The page itself goes away into phone setup's screen A.
+// revamp: merge-into:phone-setup-start (slice-P1.3)
 class BuiltinServerScreen extends ConsumerStatefulWidget {
   const BuiltinServerScreen({
     super.key,
@@ -53,9 +57,8 @@ class BuiltinServerScreen extends ConsumerStatefulWidget {
 /// fallback the opening card offers when the in-app server will not start
 /// before the app is connected, where no card is shown; delete it once screen
 /// B's "Continue setup" covers that repair.
-Future<void> openBuiltinServerScreen(BuildContext context) => Navigator.of(
-  context,
-).push(MaterialPageRoute<void>(builder: (_) => const BuiltinServerScreen()));
+Future<void> openBuiltinServerScreen(BuildContext context) =>
+    pushKitPage<void>(context, (_) => const BuiltinServerScreen());
 
 /// Which OpenCode the built-in Ubuntu runs, kept across visits.
 const builtinRuntimePrefKey = 'builtin_linux_runtime';
@@ -65,7 +68,9 @@ enum _Step { idle, running, done, error }
 class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
   late final BuiltinLinux _linux =
       widget.linux ?? ref.read(builtinLinuxProvider);
-  final _outputScroll = ScrollController();
+
+  /// The failed OpenCode install's output, for its log panel.
+  final _openCodeLog = KitLogBuffer();
 
   BuiltinLinuxStatus? _status;
   String? _statusError;
@@ -84,6 +89,10 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
   bool _connecting = false;
   String? _connectError;
   bool _removing = false;
+
+  /// Remove finished: said once in place (a snackbar is only for Undo,
+  /// KIT-34, and Ubuntu cannot be put back).
+  bool _removed = false;
 
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
@@ -105,7 +114,7 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
   @override
   void dispose() {
     _poll?.cancel();
-    _outputScroll.dispose();
+    _openCodeLog.dispose();
     super.dispose();
   }
 
@@ -200,6 +209,7 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
       );
       if (!mounted) return;
       if (!result.ok) {
+        _openCodeLog.replaceText(result.output);
         setState(() {
           _openCodeError = _l10n.builtinServerOpenCodeFailed(result.exitCode);
           _openCodeOutput = result.output;
@@ -298,93 +308,79 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
   }
 
   Future<void> _showLog() async {
-    String log;
+    String log = '';
+    String? readError;
     try {
       log = await _linux.serverLog();
     } on BuiltinLinuxException catch (error) {
-      log = error.message;
+      readError = error.message;
     }
     if (!mounted) return;
-    final controller = ScrollController();
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .7,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _l10n.builtinServerLogTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(AppIconography.close),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SetupTerminal(
-                  key: const Key('builtin-server-log'),
-                  output: log.trim().isEmpty
-                      ? _l10n.builtinServerLogEmpty
-                      : log,
-                  running: false,
-                  controller: controller,
-                  expand: true,
-                ),
-              ),
-            ],
+    final l10n = _l10n;
+    final running = _status?.serverRunning == true;
+    final canStart = !running && _installedVersion != null && !_busy;
+    await showKitSheet<void>(
+      context,
+      title: l10n.builtinServerLogTitle,
+      icon: AppIconography.article,
+      height: KitSheetHeight.half,
+      // A log that ends because the server stopped offers the start right
+      // there (map actionsMissing "Restart when the log ends in a crash").
+      tertiary: [
+        if (canStart)
+          KitAction(
+            key: const Key('builtin-server-log-start'),
+            label: l10n.builtinServerStartAction,
+            icon: AppIconography.play,
+            onPressed: () {
+              Navigator.of(context).pop();
+              unawaited(_start());
+            },
           ),
-        ),
+      ],
+      body: (_) => _ServerLogBody(
+        linux: _linux,
+        initial: log,
+        readError: readError,
+        running: running,
       ),
     );
-    controller.dispose();
   }
 
   Future<void> _remove() async {
-    final confirmed = await showConfirmSheet(
+    setState(() => _removed = false);
+    var removed = false;
+    // Uninstall runs inside the question: it shows it is working, and a
+    // failure keeps it open with Try again (map statesMissing "remove
+    // failed", DATA-14).
+    final confirmed = await showKitConfirm(
       context,
       title: _l10n.builtinServerRemoveTitle,
-      message: _l10n.builtinServerRemoveBody,
+      body: _l10n.builtinServerRemoveBody,
       confirmLabel: _l10n.builtinServerRemove,
-      cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
       icon: AppIconography.delete,
-      destructive: true,
+      kind: KitConfirmKind.destructive,
       confirmKey: const Key('builtin-server-remove-confirm'),
+      action: () async {
+        if (mounted) setState(() => _removing = true);
+        try {
+          await _linux.uninstall();
+          removed = true;
+        } finally {
+          if (mounted) setState(() => _removing = false);
+        }
+      },
     );
-    if (!confirmed || !mounted) return;
-    setState(() => _removing = true);
-    try {
-      await _linux.uninstall();
-      if (!mounted) return;
-      setState(() {
-        _installedVersion = null;
-        _openCodeOutput = '';
-        _openCodeError = null;
-        _startError = null;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_l10n.builtinServerRemoved)));
-    } on BuiltinLinuxException catch (error) {
-      if (mounted) setState(() => _statusError = error.message);
-    }
-    if (!mounted) return;
+    if (!confirmed || !removed || !mounted) return;
+    _openCodeLog.clear();
+    setState(() {
+      _installedVersion = null;
+      _openCodeOutput = '';
+      _openCodeError = null;
+      _startError = null;
+      _removed = true;
+    });
     await _refresh();
-    if (mounted) setState(() => _removing = false);
   }
 
   static String _formatBytes(int bytes) {
@@ -405,23 +401,18 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = _l10n;
     if (!BuiltinLinux.supported) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.builtinServerTitle)),
-        body: Center(
-          child: Padding(
-            key: const Key('builtin-server-unsupported'),
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              l10n.builtinServerAndroidOnly,
-              textAlign: TextAlign.center,
-            ),
-          ),
+      return KitScreen(
+        topBar: KitTopBar(title: l10n.builtinServerTitle),
+        body: KitStateView(
+          key: const Key('builtin-server-unsupported'),
+          icon: AppIconography.phone,
+          title: l10n.builtinServerAndroidOnly,
         ),
       );
     }
+    final tokens = KitTokens.of(context);
     final status = _status;
     final ubuntuReady = status?.installed == true;
     final ubuntuInstalling = status?.phase == BuiltinLinuxPhase.installing;
@@ -432,287 +423,265 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
     final connected =
         connection.hasConnectedServer &&
         BuiltinLinux.managesServerUrl(connection.profile?.baseUrl);
-    final muted = theme.textTheme.bodySmall!.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
+    final statusError = _statusError;
+    final openCodeError = _openCodeError;
+    final startError = _startError;
+    final connectError = _connectError;
 
-    Widget error(String message) => Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Text(
-        message,
-        style: theme.textTheme.bodySmall!.copyWith(
-          color: theme.colorScheme.error,
-        ),
+    Widget muted(String text) =>
+        KitText(text, role: KitTextRole.secondary, tone: KitTextTone.secondary);
+    Widget gap() => SizedBox(height: tokens.space3);
+    Widget failure(String message) => KitNotice.error(message: message);
+
+    final steps = <Widget>[
+      _StepTile(
+        number: 1,
+        title: l10n.builtinServerStepUbuntu,
+        state: ubuntuReady
+            ? _Step.done
+            : ubuntuInstalling
+            ? _Step.running
+            : ubuntuFailed
+            ? _Step.error
+            : _Step.idle,
+        body: ubuntuReady
+            ? [muted(l10n.builtinServerUbuntuDone)]
+            : ubuntuInstalling
+            ? [muted(status?.message ?? l10n.builtinServerUbuntuWorking)]
+            : [
+                muted(l10n.builtinServerUbuntuHint),
+                if (ubuntuFailed) ...[
+                  gap(),
+                  failure(
+                    l10n.builtinServerUbuntuFailed(status?.message ?? ''),
+                  ),
+                ],
+                gap(),
+                KitActionBlock(
+                  primary: KitAction(
+                    key: const Key('builtin-install-ubuntu'),
+                    label: ubuntuFailed
+                        ? l10n.builtinServerRetry
+                        : l10n.builtinServerUbuntuAction,
+                    icon: AppIconography.download,
+                    onPressed: status == null || _busy ? null : _installUbuntu,
+                  ),
+                ),
+              ],
       ),
-    );
-
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.builtinServerTitle)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
-                children: [
-                  Icon(AppIconography.phone, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.builtinServerEntryTitle,
-                      style: theme.textTheme.titleMedium,
+      _StepTile(
+        number: 2,
+        title: l10n.builtinServerStepOpenCode,
+        enabled: ubuntuReady,
+        state: openCodeReady
+            ? _Step.done
+            : _installingOpenCode || _checkingVersion
+            ? _Step.running
+            : openCodeError != null
+            ? _Step.error
+            : _Step.idle,
+        body: !ubuntuReady
+            ? const []
+            : [
+                KitSegmented<TermuxRuntime>(
+                  key: const Key('builtin-runtime'),
+                  semanticsLabel: l10n.builtinServerChooseRuntime,
+                  segments: [
+                    KitSegment(
+                      value: TermuxRuntime.openCode1,
+                      label: l10n.setupRuntimeOne,
+                    ),
+                    KitSegment(
+                      value: TermuxRuntime.openCode2,
+                      label: l10n.setupRuntimeTwo,
+                    ),
+                  ],
+                  selected: _runtime,
+                  onChanged: _busy || running
+                      ? null
+                      : (value) => unawaited(_selectRuntime(value)),
+                  disabledReason: _busy || running
+                      ? l10n.builtinServerRuntimeLocked
+                      : null,
+                ),
+                gap(),
+                if (openCodeReady)
+                  muted(l10n.builtinServerOpenCodeInstalled(_installedVersion!))
+                else if (_installingOpenCode)
+                  muted(l10n.builtinServerOpenCodeWorking)
+                else ...[
+                  muted(l10n.builtinServerOpenCodeHint(_runtime.pinnedVersion)),
+                  if (openCodeError != null) ...[gap(), failure(openCodeError)],
+                  gap(),
+                  KitActionBlock(
+                    primary: KitAction(
+                      key: const Key('builtin-install-opencode'),
+                      label: openCodeError != null
+                          ? l10n.builtinServerRetry
+                          : l10n.builtinServerOpenCodeAction,
+                      icon: AppIconography.download,
+                      onPressed: _busy || _checkingVersion
+                          ? null
+                          : _installOpenCode,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: _ExperimentalBadge(
-                  label: l10n.builtinServerExperimental,
+                if (openCodeError != null && _openCodeOutput.isNotEmpty) ...[
+                  gap(),
+                  KitLogPanel(
+                    lines: _openCodeLog,
+                    ended: const KitLogEnd(failed: true),
+                  ),
+                ],
+              ],
+      ),
+      _StepTile(
+        number: 3,
+        title: l10n.builtinServerStepStart,
+        enabled: openCodeReady,
+        state: running && !_starting
+            ? _Step.done
+            : _starting
+            ? _Step.running
+            : startError != null
+            ? _Step.error
+            : _Step.idle,
+        body: !openCodeReady
+            ? const []
+            : [
+                muted(
+                  _starting
+                      ? l10n.builtinServerStarting
+                      : running
+                      ? l10n.builtinServerRunning(BuiltinLinux.serverPort)
+                      : l10n.builtinServerStopped,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(l10n.builtinServerIntro, style: muted),
-              if (_statusError != null)
-                error(l10n.builtinServerStatusFailed(_statusError!)),
-              const Divider(height: 32),
-              _StepTile(
-                number: 1,
-                title: l10n.builtinServerStepUbuntu,
-                state: ubuntuReady
-                    ? _Step.done
-                    : ubuntuInstalling
-                    ? _Step.running
-                    : ubuntuFailed
-                    ? _Step.error
-                    : _Step.idle,
-                body: ubuntuReady
-                    ? Text(l10n.builtinServerUbuntuDone, style: muted)
-                    : ubuntuInstalling
-                    ? Text(
-                        status?.message ?? l10n.builtinServerUbuntuWorking,
-                        style: muted,
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.builtinServerUbuntuHint, style: muted),
-                          if (ubuntuFailed)
-                            error(
-                              l10n.builtinServerUbuntuFailed(
-                                status?.message ?? '',
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          FilledButton.icon(
-                            key: const Key('builtin-install-ubuntu'),
-                            onPressed: status == null || _busy
-                                ? null
-                                : _installUbuntu,
-                            icon: const Icon(AppIconography.download),
-                            label: Text(
-                              ubuntuFailed
-                                  ? l10n.builtinServerRetry
-                                  : l10n.builtinServerUbuntuAction,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              _StepTile(
-                number: 2,
-                title: l10n.builtinServerStepOpenCode,
-                enabled: ubuntuReady,
-                state: openCodeReady
-                    ? _Step.done
-                    : _installingOpenCode || _checkingVersion
-                    ? _Step.running
-                    : _openCodeError != null
-                    ? _Step.error
-                    : _Step.idle,
-                body: !ubuntuReady
-                    ? null
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.builtinServerChooseRuntime, style: muted),
-                          const SizedBox(height: 6),
-                          SegmentedButton<TermuxRuntime>(
-                            key: const Key('builtin-runtime'),
-                            segments: [
-                              ButtonSegment(
-                                value: TermuxRuntime.openCode1,
-                                label: Text(l10n.setupRuntimeOne),
-                              ),
-                              ButtonSegment(
-                                value: TermuxRuntime.openCode2,
-                                label: Text(l10n.setupRuntimeTwo),
-                              ),
-                            ],
-                            selected: {_runtime},
-                            onSelectionChanged: _busy || running
-                                ? null
-                                : (value) => _selectRuntime(value.first),
-                          ),
-                          const SizedBox(height: 8),
-                          if (openCodeReady)
-                            Text(
-                              l10n.builtinServerOpenCodeInstalled(
-                                _installedVersion!,
-                              ),
-                              style: muted,
-                            )
-                          else if (_installingOpenCode)
-                            Text(
-                              l10n.builtinServerOpenCodeWorking,
-                              style: muted,
-                            )
-                          else ...[
-                            Text(
-                              l10n.builtinServerOpenCodeHint(
-                                _runtime.pinnedVersion,
-                              ),
-                              style: muted,
-                            ),
-                            if (_openCodeError != null) error(_openCodeError!),
-                            const SizedBox(height: 8),
-                            FilledButton.icon(
-                              key: const Key('builtin-install-opencode'),
-                              onPressed: _busy || _checkingVersion
-                                  ? null
-                                  : _installOpenCode,
-                              icon: const Icon(AppIconography.download),
-                              label: Text(
-                                _openCodeError != null
-                                    ? l10n.builtinServerRetry
-                                    : l10n.builtinServerOpenCodeAction,
-                              ),
-                            ),
-                          ],
-                          if (_openCodeError != null &&
-                              _openCodeOutput.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            SetupTerminal(
-                              output: _openCodeOutput,
-                              running: false,
-                              controller: _outputScroll,
-                            ),
-                          ],
-                        ],
-                      ),
-              ),
-              _StepTile(
-                number: 3,
-                title: l10n.builtinServerStepStart,
-                enabled: openCodeReady,
-                state: running && !_starting
-                    ? _Step.done
-                    : _starting
-                    ? _Step.running
-                    : _startError != null
-                    ? _Step.error
-                    : _Step.idle,
-                body: !openCodeReady
-                    ? null
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _starting
-                                ? l10n.builtinServerStarting
-                                : running
-                                ? l10n.builtinServerRunning(
-                                    BuiltinLinux.serverPort,
-                                  )
-                                : l10n.builtinServerStopped,
-                            style: muted,
-                          ),
-                          if (_startError != null) error(_startError!),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (running)
-                                OutlinedButton.icon(
-                                  key: const Key('builtin-stop'),
-                                  onPressed: _busy ? null : _stop,
-                                  icon: const Icon(AppIconography.stop),
-                                  label: Text(l10n.builtinServerStopAction),
-                                )
-                              else
-                                FilledButton.icon(
-                                  key: const Key('builtin-start'),
-                                  onPressed: _busy ? null : _start,
-                                  icon: const Icon(AppIconography.play),
-                                  label: Text(
-                                    _startError != null
-                                        ? l10n.builtinServerRetry
-                                        : l10n.builtinServerStartAction,
-                                  ),
-                                ),
-                              TextButton.icon(
-                                key: const Key('builtin-show-log'),
-                                onPressed: _showLog,
-                                icon: const Icon(AppIconography.article),
-                                label: Text(l10n.builtinServerShowLog),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-              ),
-              _StepTile(
-                number: 4,
-                title: l10n.builtinServerStepConnect,
-                enabled: running && !_starting,
-                state: connected
-                    ? _Step.done
-                    : _connecting
-                    ? _Step.running
-                    : _connectError != null
-                    ? _Step.error
-                    : _Step.idle,
-                body: !(running && !_starting)
-                    ? null
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            connected
-                                ? l10n.builtinServerConnected
-                                : _connecting
-                                ? l10n.builtinServerConnecting
-                                : l10n.builtinServerConnectHint(
-                                    _existingProfile()?.name ??
-                                        l10n.builtinServerProfileName(
-                                          _runtimeName,
-                                        ),
-                                  ),
-                            style: muted,
-                          ),
-                          if (_connectError != null) error(_connectError!),
-                          if (!connected) ...[
-                            const SizedBox(height: 8),
-                            FilledButton.icon(
-                              key: const Key('builtin-connect'),
-                              onPressed: _busy ? null : () => _connect(),
-                              icon: const Icon(AppIconography.link),
-                              label: Text(l10n.builtinServerConnectAction),
-                            ),
-                          ],
-                        ],
-                      ),
-              ),
-              if (ubuntuReady) ...[
-                const Divider(height: 32),
-                // The server lives in this app's process: what to allow so
-                // Android leaves it running.
+                if (startError != null) ...[gap(), failure(startError)],
+                gap(),
+                KitActionBlock(
+                  primary: running
+                      ? null
+                      : KitAction(
+                          key: const Key('builtin-start'),
+                          label: startError != null
+                              ? l10n.builtinServerRetry
+                              : l10n.builtinServerStartAction,
+                          icon: AppIconography.play,
+                          onPressed: _busy ? null : _start,
+                        ),
+                  secondary: running
+                      ? KitAction(
+                          key: const Key('builtin-stop'),
+                          label: l10n.builtinServerStopAction,
+                          icon: AppIconography.stop,
+                          onPressed: _busy ? null : _stop,
+                        )
+                      : null,
+                  tertiary: [
+                    KitAction(
+                      key: const Key('builtin-show-log'),
+                      label: l10n.builtinServerShowLog,
+                      icon: AppIconography.article,
+                      onPressed: _showLog,
+                    ),
+                  ],
+                ),
+              ],
+      ),
+      _StepTile(
+        number: 4,
+        title: l10n.builtinServerStepConnect,
+        enabled: running && !_starting,
+        state: connected
+            ? _Step.done
+            : _connecting
+            ? _Step.running
+            : connectError != null
+            ? _Step.error
+            : _Step.idle,
+        body: !(running && !_starting)
+            ? const []
+            : [
+                muted(
+                  connected
+                      ? l10n.builtinServerConnected
+                      : _connecting
+                      ? l10n.builtinServerConnecting
+                      : l10n.builtinServerConnectHint(
+                          _existingProfile()?.name ??
+                              l10n.builtinServerProfileName(_runtimeName),
+                        ),
+                ),
+                if (connectError != null) ...[gap(), failure(connectError)],
+                if (!connected) ...[
+                  gap(),
+                  KitActionBlock(
+                    primary: KitAction(
+                      key: const Key('builtin-connect'),
+                      label: l10n.builtinServerConnectAction,
+                      icon: AppIconography.link,
+                      onPressed: _busy ? null : () => _connect(),
+                    ),
+                  ),
+                ],
+              ],
+      ),
+    ];
+
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.builtinServerTitle),
+      width: KitScreenWidth.reading,
+      body: ListView(
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.gutter,
+          tokens.space2,
+          tokens.gutter,
+          KitScreen.endPadding(context),
+        ),
+        children: [
+          KitText(l10n.builtinServerEntryTitle, role: KitTextRole.headline),
+          SizedBox(height: tokens.space2),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitChip(label: l10n.builtinServerExperimental),
+          ),
+          SizedBox(height: tokens.space2),
+          muted(l10n.builtinServerIntro),
+          if (statusError != null) ...[
+            gap(),
+            failure(l10n.builtinServerStatusFailed(statusError)),
+          ],
+          if (_removed) ...[
+            gap(),
+            KitNotice(
+              key: const Key('builtin-server-removed'),
+              tone: AppStatusTone.ok,
+              icon: AppIconography.check,
+              message: l10n.builtinServerRemoved,
+            ),
+          ],
+          SizedBox(height: tokens.sectionGap),
+          KitSurface.panel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < steps.length; i++) ...[
+                  if (i > 0) const KitDivider(),
+                  steps[i],
+                ],
+              ],
+            ),
+          ),
+          if (ubuntuReady) ...[
+            SizedBox(height: tokens.sectionGap),
+            // The server lives in this app's process: what to allow so
+            // Android leaves it running.
+            KitRowGroup(
+              margin: EdgeInsetsDirectional.zero,
+              children: [
                 KitRow(
                   key: const Key('builtin-server-keep-running'),
-                  padding: const EdgeInsets.symmetric(vertical: 4),
                   leading: KitRow.icon(context, AppIconography.batteryCharging),
                   title: l10n.keepRunningTitle,
                   titleMaxLines: 2,
@@ -721,84 +690,132 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
                   trailing: const KitChevron(),
                   onTap: () => openKeepRunningScreen(context),
                 ),
-                const SizedBox(height: 8),
-                // Measured in the background: nothing until a real figure.
-                if ((status?.bytesUsed ?? 0) > 0)
-                  Text(
-                    l10n.builtinServerBytesUsed(
-                      _formatBytes(status!.bytesUsed!),
-                    ),
-                    style: muted,
-                  ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton.icon(
-                    key: const Key('builtin-remove'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: _busy ? null : _remove,
-                    icon: const Icon(AppIconography.delete),
-                    label: Text(l10n.builtinServerRemove),
-                  ),
+              ],
+            ),
+            // Measured in the background: nothing until a real figure.
+            if ((status?.bytesUsed ?? 0) > 0) ...[
+              gap(),
+              muted(
+                l10n.builtinServerBytesUsed(_formatBytes(status!.bytesUsed!)),
+              ),
+            ],
+            gap(),
+            KitActionBlock(
+              tertiary: [
+                KitAction(
+                  key: const Key('builtin-remove'),
+                  label: l10n.builtinServerRemove,
+                  icon: AppIconography.delete,
+                  destructive: true,
+                  onPressed: _busy ? null : _remove,
                 ),
               ],
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _ExperimentalBadge extends StatelessWidget {
-  const _ExperimentalBadge({required this.label});
+/// The server log in its sheet: the tail Android keeps, followed while the
+/// server runs (map statesMissing "live"), or the read's failure as a
+/// notice with Try again.
+class _ServerLogBody extends StatefulWidget {
+  const _ServerLogBody({
+    required this.linux,
+    required this.initial,
+    required this.readError,
+    required this.running,
+  });
 
-  final String label;
+  final BuiltinLinux linux;
+  final String initial;
+  final String? readError;
+  final bool running;
+
+  @override
+  State<_ServerLogBody> createState() => _ServerLogBodyState();
+}
+
+class _ServerLogBodyState extends State<_ServerLogBody> {
+  late final _lines = KitLogBuffer()..replaceText(widget.initial.trimRight());
+  late String? _error = widget.readError;
+
+  @override
+  void dispose() {
+    _lines.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    try {
+      final log = await widget.linux.serverLog();
+      if (!mounted) return;
+      _lines.replaceText(log.trimRight());
+      if (_error != null) setState(() => _error = null);
+    } on BuiltinLinuxException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        child: Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onTertiaryContainer,
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final error = _error;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (error != null) ...[
+          KitNotice.error(
+            key: const Key('builtin-server-log-error'),
+            message: l10n.builtinServerLogReadFailed,
+            details: error,
+            retry: KitAction(
+              label: l10n.builtinServerRetry,
+              onPressed: _reload,
+            ),
           ),
+          SizedBox(height: tokens.space3),
+        ],
+        KitLogPanel(
+          panelKey: const Key('builtin-server-log'),
+          lines: _lines,
+          title: l10n.builtinServerLogTitle,
+          emptyText: l10n.builtinServerLogEmpty,
+          live: widget.running,
+          onRefresh: widget.running ? _reload : null,
+          ended: widget.running ? null : const KitLogEnd(),
         ),
-      ),
+      ],
     );
   }
 }
 
 /// One numbered step, spoken as a single phrase ("Step 2 of 4, done. Install
-/// OpenCode") the way the Termux setup's steps are.
+/// OpenCode") the way the Termux setup's steps are: its mark, its title
+/// (muted while it is not yet available), then what it holds.
 class _StepTile extends StatelessWidget {
   const _StepTile({
     required this.number,
     required this.title,
     required this.state,
-    this.body,
+    this.body = const [],
     this.enabled = true,
   });
 
   final int number;
   final String title;
   final _Step state;
-  final Widget? body;
+  final List<Widget> body;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     final stateLabel = !enabled
         ? l10n.e7SetupStepUnavailable
         : switch (state) {
@@ -807,64 +824,39 @@ class _StepTile extends StatelessWidget {
             _Step.error => l10n.e7SetupStepFailed,
             _Step.idle => l10n.e7SetupStepTodo,
           };
-    final background = switch (state) {
-      _Step.done => AppTheme.successOf(theme),
-      _Step.running => theme.colorScheme.primary,
-      _Step.error => theme.colorScheme.error,
-      _Step.idle => theme.colorScheme.surfaceContainerHighest,
+    final mark = switch (state) {
+      _Step.done => KitMarkState.done,
+      _Step.running => KitMarkState.working,
+      _Step.error => KitMarkState.failed,
+      _Step.idle => KitMarkState.waiting,
     };
-    final foreground = state == _Step.idle
-        ? theme.colorScheme.onSurfaceVariant
-        : ThemeData.estimateBrightnessForColor(background) == Brightness.dark
-        ? Colors.white
-        : Colors.black87;
-    return Semantics(
-      container: true,
-      label: l10n.builtinServerStepSemantics(number, stateLabel, title),
-      child: Opacity(
-        opacity: enabled ? 1 : .6,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ExcludeSemantics(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 11,
-                      backgroundColor: background,
-                      child: state == _Step.done
-                          ? Icon(
-                              AppIconography.check,
-                              size: 14,
-                              color: foreground,
-                            )
-                          : Text(
-                              '$number',
-                              style: TextStyle(
-                                fontSize: AppTheme.codeFontSize,
-                                color: foreground,
-                              ),
-                            ),
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            container: true,
+            label: l10n.builtinServerStepSemantics(number, stateLabel, title),
+            child: ExcludeSemantics(
+              child: Row(
+                children: [
+                  KitStatusMark(state: mark),
+                  SizedBox(width: tokens.space3),
+                  Expanded(
+                    child: KitText(
+                      title,
+                      role: KitTextRole.rowTitle,
+                      tone: enabled ? null : KitTextTone.tertiary,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(title, style: theme.textTheme.titleSmall),
-                    ),
-                    if (state == _Step.running)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              if (body != null) ...[const SizedBox(height: 10), body!],
-            ],
+            ),
           ),
-        ),
+          if (body.isNotEmpty) ...[SizedBox(height: tokens.space3), ...body],
+        ],
       ),
     );
   }
