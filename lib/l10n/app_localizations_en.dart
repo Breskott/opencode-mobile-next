@@ -24334,4 +24334,1045 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bugReportLinkCopied => 'Bug form link copied';
+
+  @override
+  String get runningWorkTitle => 'Running now';
+
+  @override
+  String get runningWorkFailed => 'Failed';
+
+  @override
+  String runningWorkAgentState(String state) {
+    return 'Agent · $state';
+  }
+
+  @override
+  String runningWorkCommandState(String state) {
+    return 'Command · $state';
+  }
+
+  @override
+  String get runningWorkOffline =>
+      'Reconnecting. Try again once the server answers.';
+
+  @override
+  String runningWorkStopAgent(String title) {
+    return 'Stop “$title”';
+  }
+
+  @override
+  String runningWorkStopAgentTitle(String title) {
+    return 'Stop “$title”?';
+  }
+
+  @override
+  String get runningWorkStopAgentBody =>
+      'The agent stops where it is. Its conversation and the files it changed are kept.';
+
+  @override
+  String get runningWorkStopAgentConfirm => 'Stop agent';
+
+  @override
+  String get runningWorkScopeChangedTitle => 'The server or project changed';
+
+  @override
+  String get runningWorkAgentsFailed =>
+      'Couldn\'t load this conversation\'s agents.';
+
+  @override
+  String get runningWorkCommandsFailed =>
+      'Couldn\'t load this conversation\'s commands.';
+
+  @override
+  String get runningWorkEmptyTitle => 'Nothing running';
+
+  @override
+  String get runningWorkEmptyBody =>
+      'Agents and commands this conversation starts show here while they run and after they end.';
+
+  @override
+  String get runningWorkBackgroundBody =>
+      'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.';
+
+  @override
+  String get runningWorkBackgroundAction => 'Keep chatting while it runs';
+
+  @override
+  String get shellOutputCopyFirst => 'Copy output first';
+
+  @override
+  String get shellOutputLimitTitle => 'Stop it after…';
+
+  @override
+  String shellOutputStopsIn(String time) {
+    return 'stops in $time';
+  }
+
+  @override
+  String get shellOutputNoLimit => 'no time limit';
+
+  @override
+  String shellOutputAboutToStop(String time) {
+    return 'It stops in $time. Change timeout to give it longer.';
+  }
+
+  @override
+  String get shellOutputReadFailed => 'Couldn\'t read the output.';
+
+  @override
+  String get shellOutputLimitFailed => 'Couldn\'t change the time limit.';
+
+  @override
+  String get shellOutputDetailCommand => 'Command as typed';
+
+  @override
+  String get shellOutputDetailFolder => 'Folder';
+
+  @override
+  String get shellOutputDetailExit => 'Exit code';
+
+  @override
+  String get shellOutputDetailId => 'Command ID';
+
+  @override
+  String get shellOutputReading => 'Reading output';
+
+  @override
+  String get sessionDestinationWarpTitle => 'Move to a cloud machine';
+
+  @override
+  String get sessionDestinationSeparateCopy => 'Separate copy';
+
+  @override
+  String sessionDestinationCloudKind(String state) {
+    return 'Cloud machine · $state';
+  }
+
+  @override
+  String get sessionDestinationConnected => 'Connected';
+
+  @override
+  String get sessionDestinationNotConnected => 'Not connected';
+
+  @override
+  String get sessionDestinationNotConnectedWhy =>
+      'Not connected. It can be picked once it connects.';
+
+  @override
+  String sessionDestinationChangesGo(String destination) {
+    return 'With changes, they go with it to $destination.';
+  }
+
+  @override
+  String sessionDestinationChangesCopied(String destination) {
+    return 'With changes, a copy goes with it to $destination.';
+  }
+
+  @override
+  String sessionDestinationChangesStay(String place) {
+    return 'Without changes, they stay in $place.';
+  }
+
+  @override
+  String get sessionDestinationMoveWithout => 'Move without changes';
+
+  @override
+  String get sessionDestinationMoveFailed => 'Couldn\'t move the conversation.';
+
+  @override
+  String get sessionDestinationLoadFailed =>
+      'Couldn\'t load the places to move to';
+
+  @override
+  String get sessionDestinationNoneTitle => 'Nowhere else to move it yet';
+
+  @override
+  String get sessionDestinationNoneMoveBody =>
+      'This project has only this folder. A separate copy of the project shows here once it exists.';
+
+  @override
+  String get sessionDestinationNoneWarpBody =>
+      'This project has no cloud machine yet.';
+
+  @override
+  String get consoleOrganizationWhatChanges =>
+      'Models, providers and billing follow the organization you pick.';
+
+  @override
+  String consoleOrganizationSwitchBody(String organization) {
+    return '$organization becomes the organization for models, providers and billing. Models reload; nothing running is stopped.';
+  }
+
+  @override
+  String consoleOrganizationSwitchConfirm(String organization) {
+    return 'Switch to $organization';
+  }
+
+  @override
+  String get consoleOrganizationLoadFailed =>
+      'Couldn\'t load your organizations';
+
+  @override
+  String get consoleOrganizationNoneTitle => 'No organizations';
+
+  @override
+  String get consoleOrganizationOnlyOne =>
+      'This is your only organization, so there is nothing to switch to.';
+
+  @override
+  String get sessionContextLoading => 'Loading context';
+
+  @override
+  String get sessionContextMovedTitle => 'This conversation moved';
+
+  @override
+  String get sessionContextLoadFailed => 'Couldn\'t load the context';
+
+  @override
+  String get sessionContextRefreshFailed =>
+      'Couldn\'t refresh. The numbers below are from the last read.';
+
+  @override
+  String sessionContextVerdictPlenty(String percent) {
+    return '$percent % used · plenty left';
+  }
+
+  @override
+  String sessionContextVerdictUsed(String percent) {
+    return '$percent % used';
+  }
+
+  @override
+  String sessionContextVerdictNear(String percent) {
+    return '$percent % used · near the limit';
+  }
+
+  @override
+  String sessionContextVerdictFull(String percent) {
+    return '$percent % used · at the limit';
+  }
+
+  @override
+  String get sessionContextNearLimitTitle => 'Near the limit';
+
+  @override
+  String get sessionContextNearLimitBody =>
+      'Older details may be dropped from what the model sees. Compact the conversation to keep going, or start a new one.';
+
+  @override
+  String get sessionContextCompactAction => 'Compact this conversation';
+
+  @override
+  String get sessionContextCompactTitle => 'Compact this conversation?';
+
+  @override
+  String get sessionContextCompactBody =>
+      'OpenCode summarizes the conversation so far and continues from the summary, so it takes less of the model\'s limit.';
+
+  @override
+  String get sessionContextCompactKept => 'Every message stays in the history.';
+
+  @override
+  String get sessionContextCompactConfirm => 'Compact conversation';
+
+  @override
+  String get sessionContextCompactStarted =>
+      'Compacting started. The numbers update when it finishes.';
+
+  @override
+  String get sessionContextCompactBusy => 'Wait for the reply to finish.';
+
+  @override
+  String get sessionContextMakeupTitle => 'Latest request input';
+
+  @override
+  String sessionContextTokens(String count) {
+    return '$count tokens';
+  }
+
+  @override
+  String get sessionContextModelId => 'Model ID';
+
+  @override
+  String get demoScreenTitle => 'Try it offline';
+
+  @override
+  String get demoScreenSimulated => 'Simulated · nothing is saved';
+
+  @override
+  String get demoScreenFinished =>
+      'That\'s the whole loop: a prompt, a reply and a reviewed edit.';
+
+  @override
+  String sessionContextPercent(String percent) {
+    return '$percent %';
+  }
+
+  @override
+  String sessionDestinationChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changed files are present.',
+      one: '1 changed file is present.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activeContextLoading => 'Reading the active context…';
+
+  @override
+  String activeContextAllCount(int count) {
+    return 'All messages · $count';
+  }
+
+  @override
+  String get activeContextChangedTitle => 'This view is out of date';
+
+  @override
+  String get activeContextFailedTitle => 'Couldn\'t read the active context';
+
+  @override
+  String get activeContextIntro =>
+      'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.';
+
+  @override
+  String get activeContextEmptyDetail =>
+      'Nothing is kept for the next turn yet. Pull down to check again.';
+
+  @override
+  String get activeContextWhat => 'active context';
+
+  @override
+  String activeContextTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String activeContextRowMenu(String type) {
+    return 'Actions for $type';
+  }
+
+  @override
+  String activeContextOpenMessage(String type) {
+    return 'Open $type';
+  }
+
+  @override
+  String activeContextCopyMessage(String type) {
+    return 'Copy $type text';
+  }
+
+  @override
+  String get activeContextMessageId => 'Message id';
+
+  @override
+  String activeContextCopyPart(String part) {
+    return 'Copy $part';
+  }
+
+  @override
+  String get sessionNoteDeleting => 'Deleting the note…';
+
+  @override
+  String get sessionNoteSaving => 'Saving the note…';
+
+  @override
+  String get sessionNoteLoading => 'Reading the saved note…';
+
+  @override
+  String get sessionNoteLoadFailed => 'Couldn\'t read the note';
+
+  @override
+  String get sessionNoteSaveFailed => 'Couldn\'t save the note';
+
+  @override
+  String get sessionNoteFieldLabel => 'Note';
+
+  @override
+  String get sessionNoteFieldLocked => 'Refresh the saved note before editing.';
+
+  @override
+  String sessionNoteTooLong(int over, int limit) {
+    return '$over bytes too long. A note can be up to $limit bytes.';
+  }
+
+  @override
+  String get sessionNoteWriteFirst => 'Write a note to save it.';
+
+  @override
+  String get sessionNoteEmptyUseDelete =>
+      'To remove the note, use Delete saved note.';
+
+  @override
+  String get sessionNoteUnchanged => 'Change the note to save it.';
+
+  @override
+  String get sessionRelationsTitle => 'Subagents';
+
+  @override
+  String sessionRelationsStopTitle(String title) {
+    return 'Stop $title?';
+  }
+
+  @override
+  String get sessionRelationsStopBody =>
+      'The subagent stops its current step. What it already did stays in its conversation.';
+
+  @override
+  String get sessionRelationsStopConfirm => 'Stop subagent';
+
+  @override
+  String get sessionRelationsFailedTitle => 'Couldn\'t load the subagents';
+
+  @override
+  String get sessionRelationsLoading => 'Loading subagents…';
+
+  @override
+  String get sessionRelationsStartedFrom => 'Started from';
+
+  @override
+  String sessionRelationsSubagentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subagents',
+      one: '1 subagent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sessionRelationsOpenToAnswer => 'open to answer';
+
+  @override
+  String get sessionRelationsIdle => 'Idle';
+
+  @override
+  String get sessionRelationsThisConversation => 'This conversation';
+
+  @override
+  String get sessionRelationsOpening => 'Opening…';
+
+  @override
+  String sessionRelationsRowMenu(String title) {
+    return 'Actions for $title';
+  }
+
+  @override
+  String sessionRelationsOpen(String title) {
+    return 'Open $title';
+  }
+
+  @override
+  String sessionRelationsCopyHandoff(String title) {
+    return 'Copy handoff for $title';
+  }
+
+  @override
+  String sessionRelationsPin(String title) {
+    return 'Pin $title';
+  }
+
+  @override
+  String sessionRelationsUnpin(String title) {
+    return 'Unpin $title';
+  }
+
+  @override
+  String sessionRelationsStop(String title) {
+    return 'Stop $title';
+  }
+
+  @override
+  String get webSourcesInvalidUrl =>
+      'Enter an HTTP or HTTPS address without a user name or password.';
+
+  @override
+  String get webSearchFailedTitle => 'Search didn\'t finish';
+
+  @override
+  String get webSearchTryAgain => 'Search again';
+
+  @override
+  String get webSearchBusy => 'Wait for the search to finish.';
+
+  @override
+  String get webSearchQueryHint => 'For example: flutter golden tests';
+
+  @override
+  String get webSearchNeedsProvider =>
+      'Set up a search provider on this server first.';
+
+  @override
+  String get webSearchEmptyDetail => 'Try other words, or paste a link below.';
+
+  @override
+  String webSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get webSourcesAdded => 'Added';
+
+  @override
+  String webSourcesAddNamed(String title) {
+    return 'Add $title to prompt';
+  }
+
+  @override
+  String webSourcesRowMenu(String title) {
+    return 'Actions for $title';
+  }
+
+  @override
+  String webSourcesOpenHost(String host) {
+    return 'Open $host in browser';
+  }
+
+  @override
+  String get webSourcesAddLink => 'Add link to prompt';
+
+  @override
+  String get webSourcesPasteDetail =>
+      'A public address, with an optional excerpt';
+
+  @override
+  String webSourcesAddedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added to prompt · $count of 10',
+      one: 'Added to prompt · 1 of 10',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String webSourcesRemoveNamed(String title) {
+    return 'Remove $title from prompt';
+  }
+
+  @override
+  String get webSearchSearching => 'Searching…';
+
+  @override
+  String get webSearchFindingProviders => 'Finding search providers…';
+
+  @override
+  String webSourcesDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Done · $count added',
+      one: 'Done · 1 added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get webSourcesScopeChangedTitle => 'The server changed';
+
+  @override
+  String get sessionExportFormatLabel => 'Format';
+
+  @override
+  String get sessionExportJsonUnavailable =>
+      'This server can\'t send a complete copy. Save the readable transcript instead.';
+
+  @override
+  String get sessionExportPrivacyLabel => 'Privacy';
+
+  @override
+  String get sessionExportRedactKeeps =>
+      'Keeps who wrote each message; the words become placeholders. Not a backup.';
+
+  @override
+  String get sessionExportRedactBusy =>
+      'Wait until the file is saved to change this.';
+
+  @override
+  String get sessionExportRedactChanged =>
+      'Open export again from the conversation to change this.';
+
+  @override
+  String get sessionExportSaveJson => 'Save complete conversation';
+
+  @override
+  String get sessionExportSaveMarkdown => 'Save readable transcript';
+
+  @override
+  String get sessionExportSaveFailed =>
+      'Couldn\'t write the file on this device. Nothing changed on the server. Try again, or choose another folder.';
+
+  @override
+  String get capabilitiesToolsMissingTitle =>
+      'This server doesn\'t list its tools';
+
+  @override
+  String capabilitiesToolsMissingOnServer(String server) {
+    return '$server doesn\'t list its tools';
+  }
+
+  @override
+  String get mcpSetupWhere => 'Where it goes';
+
+  @override
+  String get mcpSetupHowItRuns => 'How it runs';
+
+  @override
+  String get mcpSetupHeaders => 'Headers';
+
+  @override
+  String get mcpSetupAdvanced => 'Advanced';
+
+  @override
+  String get mcpSetupAdvancedRemote => 'Sign-in detection and timeout';
+
+  @override
+  String get mcpSetupAdvancedLocal => 'Working folder, environment and timeout';
+
+  @override
+  String get mcpSetupNoProject => 'Open a project first';
+
+  @override
+  String get mcpSetupRuntimeNote =>
+      'It connects now and is gone when OpenCode restarts. For a lasting setup, edit the server configuration.';
+
+  @override
+  String mcpSetupSaveNamed(String name) {
+    return 'Save $name';
+  }
+
+  @override
+  String mcpSetupAddNamed(String name) {
+    return 'Add $name';
+  }
+
+  @override
+  String get mcpSetupLocationChangedShort => 'The server or project changed';
+
+  @override
+  String get mcpSetupSaveFailed => 'Couldn\'t add the MCP server';
+
+  @override
+  String get mcpSetupDiscardTitle => 'Discard this MCP server?';
+
+  @override
+  String get mcpSetupDiscardBody =>
+      'What you typed here isn\'t saved and will be lost.';
+
+  @override
+  String get mcpSetupDiscardConfirm => 'Discard server';
+
+  @override
+  String get externalAgentsEmptyTitle => 'No outside agents yet';
+
+  @override
+  String get externalAgentsEmptyBody =>
+      'Add one by its web address. You see what it says about itself before anything is saved.';
+
+  @override
+  String get externalAgentsBoundary =>
+      'Only the text you send reaches an outside agent. Your projects, files and other conversations stay on this phone.';
+
+  @override
+  String get externalAgentsRemovalIncomplete =>
+      'Removal didn\'t finish · tap to try again';
+
+  @override
+  String externalAgentsRemoveNamed(String name) {
+    return 'Remove $name from this phone';
+  }
+
+  @override
+  String externalAgentsRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get externalAgentsRemoveBody =>
+      'Its saved tasks and key leave this phone. Work it already started carries on, and what it keeps stays with it.';
+
+  @override
+  String get externalAgentsBusy => 'Wait for the current step to finish';
+
+  @override
+  String get externalAgentsAddressHelper =>
+      'Its web address, or the address of its Agent Card.';
+
+  @override
+  String get externalAgentsCheck => 'Check agent';
+
+  @override
+  String get externalAgentsCheckNeedsAddress => 'Type the agent address first';
+
+  @override
+  String get externalAgentsStopChecking => 'Stop checking';
+
+  @override
+  String get externalAgentsCheckFailedTitle => 'Couldn\'t check this agent';
+
+  @override
+  String externalAgentsSaveNamed(String name) {
+    return 'Save $name';
+  }
+
+  @override
+  String get externalAgentsSaveNeedsKey => 'Enter the agent key first';
+
+  @override
+  String get externalAgentsAboutLabel => 'What it says about itself';
+
+  @override
+  String get externalAgentsNoSkills => 'It lists no skills';
+
+  @override
+  String get externalAgentsUnverified =>
+      'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.';
+
+  @override
+  String get externalAgentsUnsupportedTitle =>
+      'This agent can\'t be used from this app';
+
+  @override
+  String get externalAgentsUnsupportedBody =>
+      'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.';
+
+  @override
+  String get externalAgentsKeyLabel => 'Agent key';
+
+  @override
+  String get externalAgentsKeyHelper =>
+      'The key its owner gave you. It stays in this phone\'s secure storage and is sent only to this agent.';
+
+  @override
+  String get externalAgentsNoKey =>
+      'This agent asks for no key. Don\'t send private information unless you trust it.';
+
+  @override
+  String get externalAgentsDetailCard => 'Agent Card';
+
+  @override
+  String get externalAgentsDetailEndpoint => 'Endpoint';
+
+  @override
+  String get externalAgentsDetailVersion => 'Version';
+
+  @override
+  String get externalAgentsDetailConnection => 'Connection';
+
+  @override
+  String externalAgentsNewTaskNamed(String name) {
+    return 'New task for $name';
+  }
+
+  @override
+  String externalAgentsReplaceKeyNamed(String name) {
+    return 'Replace key for $name';
+  }
+
+  @override
+  String externalAgentsReplaceKeyTitle(String name) {
+    return 'Replace the key for $name';
+  }
+
+  @override
+  String get externalAgentsSaveKey => 'Save key';
+
+  @override
+  String get externalAgentsTasksLabel => 'Tasks';
+
+  @override
+  String get externalAgentsNoTasksTitle => 'No tasks yet';
+
+  @override
+  String get externalAgentsNoTasksBody =>
+      'Write a task and read it over before it\'s sent. Opening a sent task checks on it; it is never sent twice.';
+
+  @override
+  String get externalAgentsUntitledTask => 'New task';
+
+  @override
+  String externalAgentsSendNamed(String name) {
+    return 'Send to $name';
+  }
+
+  @override
+  String externalAgentsReplyNamed(String name) {
+    return 'Reply to $name';
+  }
+
+  @override
+  String get externalAgentsSendNeedsText => 'Write the task first';
+
+  @override
+  String get externalAgentsReplyNeedsText => 'Write your reply first';
+
+  @override
+  String get externalAgentsSendNote =>
+      'Only this text is sent. The agent may use its own services and charge for them; check its terms.';
+
+  @override
+  String externalAgentsCheckedAt(String age) {
+    return 'Checked with the agent $age ago';
+  }
+
+  @override
+  String get externalAgentsPullToCheck =>
+      'Saved on this phone · pull down to check with the agent';
+
+  @override
+  String externalAgentsStopMenu(String name) {
+    return 'Ask $name to stop this task';
+  }
+
+  @override
+  String get externalAgentsStopUnavailable =>
+      'Check with the agent first; pull down to refresh';
+
+  @override
+  String get externalAgentsStopTitle => 'Stop this task?';
+
+  @override
+  String get externalAgentsForgetMenu => 'Forget this task on this phone';
+
+  @override
+  String get externalAgentsForgetTitle => 'Forget this task?';
+
+  @override
+  String get externalAgentsForgetBody =>
+      'It leaves this phone. Work the agent already started carries on, and its own copy stays with it.';
+
+  @override
+  String get externalAgentsForgetConfirm => 'Forget task';
+
+  @override
+  String mcpSetupSavedNamed(String name) {
+    return 'Saved $name in OpenCode';
+  }
+
+  @override
+  String mcpSetupSavedNotConnectedBody(String reason) {
+    return 'The app didn\'t reconnect afterwards. $reason';
+  }
+
+  @override
+  String get mcpSetupSavedElsewhere =>
+      'The server or project changed after saving, so this page can\'t reconnect for it. Close it and check MCP servers.';
+
+  @override
+  String get mcpSetupUnavailableTitle =>
+      'This server can\'t add MCP servers from here';
+
+  @override
+  String get mcpSetupUnavailableBody =>
+      'It doesn\'t accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.';
+
+  @override
+  String get commandAuthSheetWorking => 'Asking the server…';
+
+  @override
+  String get credentialSheetLoading => 'Reading saved accounts…';
+
+  @override
+  String credentialSheetEmptyBody(String provider) {
+    return 'Sign in to $provider again from Providers to add an account.';
+  }
+
+  @override
+  String credentialSheetActions(String label) {
+    return 'Actions for $label';
+  }
+
+  @override
+  String credentialSheetUseNamed(String label) {
+    return 'Use $label';
+  }
+
+  @override
+  String get credentialSheetInUse => 'Already in use';
+
+  @override
+  String credentialSheetRenameNamed(String label) {
+    return 'Rename $label…';
+  }
+
+  @override
+  String credentialSheetRemoveNamed(String label) {
+    return 'Remove $label';
+  }
+
+  @override
+  String credentialSheetRemoveBody(String label, String provider) {
+    return 'Removes $label from this server. Projects that use it will need another $provider account.';
+  }
+
+  @override
+  String credentialSheetRenamed(String label) {
+    return 'Renamed to $label.';
+  }
+
+  @override
+  String get credentialSheetLabelEmpty => 'Give the account a name.';
+
+  @override
+  String get credentialSheetLabelInvalid =>
+      'Use up to 128 characters, without line breaks or control characters.';
+
+  @override
+  String pendingAuthRecoveryForgetTitle(String integration) {
+    return 'Forget the $integration sign-in?';
+  }
+
+  @override
+  String get pendingAuthRecoveryForgetBody =>
+      'The app stops tracking it on this device. Nothing is cancelled on the server; an unfinished sign-in there expires on its own.';
+
+  @override
+  String get toolsScreenLoadFailed => 'Couldn\'t load this model\'s tools';
+
+  @override
+  String get toolsScreenSearchWhat => 'tools';
+
+  @override
+  String get toolsScreenRegisteredOnly =>
+      'Registered on this project · this model can’t call it';
+
+  @override
+  String get toolsDetailTakes => 'Takes';
+
+  @override
+  String get toolsDetailTakesNothing => 'Takes nothing.';
+
+  @override
+  String get toolsDetailRequired => 'required';
+
+  @override
+  String get toolsDetailOptional => 'optional';
+
+  @override
+  String get toolsDetailTypeText => 'text';
+
+  @override
+  String get toolsDetailTypeNumber => 'number';
+
+  @override
+  String get toolsDetailTypeYesNo => 'yes or no';
+
+  @override
+  String get toolsDetailTypeList => 'list';
+
+  @override
+  String get toolsDetailTypeGroup => 'group of values';
+
+  @override
+  String get toolsDetailTypeAny => 'any value';
+
+  @override
+  String get commandsScreenLoading => 'Loading commands';
+
+  @override
+  String get commandsScreenLoadFailed => 'Couldn’t load commands';
+
+  @override
+  String get commandsScreenWhat => 'commands';
+
+  @override
+  String commandsScreenRunsWith(String agent) {
+    return 'runs with $agent';
+  }
+
+  @override
+  String get commandsScreenMenuLabel => 'Command actions';
+
+  @override
+  String commandsScreenRun(String command) {
+    return 'Run $command…';
+  }
+
+  @override
+  String commandsScreenCopy(String command) {
+    return 'Copy $command';
+  }
+
+  @override
+  String get referencesScreenLoading => 'Loading references';
+
+  @override
+  String get referencesScreenLoadFailed => 'Couldn’t load references';
+
+  @override
+  String get referencesScreenIntro =>
+      'Folders this project points its agents to. Add one to a prompt and the agent can read what it holds.';
+
+  @override
+  String get referencesScreenEmptyBody =>
+      'A reference is a folder the project’s agents can read. References set up for this project appear here.';
+
+  @override
+  String get referencesScreenMenuLabel => 'Reference actions';
+
+  @override
+  String referencesScreenAdd(String mention) {
+    return 'Add $mention to the prompt';
+  }
+
+  @override
+  String referencesScreenShowDetails(String name) {
+    return 'Show $name details';
+  }
+
+  @override
+  String referencesScreenCopyMention(String mention) {
+    return 'Copy $mention';
+  }
+
+  @override
+  String get referencesScreenCopyPath => 'Copy path';
+
+  @override
+  String referencesScreenSheetBody(String mention) {
+    return 'Write $mention in a prompt and the agent reads this folder for that reply.';
+  }
+
+  @override
+  String get referencesScreenPathLabel => 'Path';
+
+  @override
+  String get skillsScreenLoading => 'Loading skills';
+
+  @override
+  String get skillsScreenLoadFailed => 'Couldn’t load skills';
+
+  @override
+  String get skillSheetViewLabel => 'How to show the skill';
+
+  @override
+  String get skillSheetLocation => 'File';
+
+  @override
+  String skillSheetCopyCommand(String command) {
+    return 'Copy $command';
+  }
+
+  @override
+  String get skillSheetCheckConversation =>
+      'Check the conversation before trying again.';
+
+  @override
+  String get skillSheetSending => 'Adding the skill…';
 }

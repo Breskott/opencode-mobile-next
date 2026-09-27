@@ -38498,6 +38498,1614 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bug form link copied'**
   String get bugReportLinkCopied;
+
+  /// Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks).
+  ///
+  /// In en, this message translates to:
+  /// **'Running now'**
+  String get runningWorkTitle;
+
+  /// Running now: the word for a command that ended with an error exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get runningWorkFailed;
+
+  /// Running now: an agent row's supporting line; state is Running, Idle or Status unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent · {state}'**
+  String runningWorkAgentState(String state);
+
+  /// Running now: a command row's supporting line; state is a word and the elapsed time, e.g. 'Failed · 2:00'.
+  ///
+  /// In en, this message translates to:
+  /// **'Command · {state}'**
+  String runningWorkCommandState(String state);
+
+  /// Running now and command output: why a row or action is unavailable while the connection is down.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting. Try again once the server answers.'**
+  String get runningWorkOffline;
+
+  /// Running now: row menu item that stops one running agent; title is the agent's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{title}”'**
+  String runningWorkStopAgent(String title);
+
+  /// Running now: the stop-agent confirmation's question.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{title}”?'**
+  String runningWorkStopAgentTitle(String title);
+
+  /// Running now: what stopping an agent does.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent stops where it is. Its conversation and the files it changed are kept.'**
+  String get runningWorkStopAgentBody;
+
+  /// Running now: the stop-agent confirmation's button.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop agent'**
+  String get runningWorkStopAgentConfirm;
+
+  /// Running now: title shown when the connection moved to another server or project while the sheet was open.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed'**
+  String get runningWorkScopeChangedTitle;
+
+  /// Running now: the agents could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation\'s agents.'**
+  String get runningWorkAgentsFailed;
+
+  /// Running now: the commands could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation\'s commands.'**
+  String get runningWorkCommandsFailed;
+
+  /// Running now: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing running'**
+  String get runningWorkEmptyTitle;
+
+  /// Running now: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents and commands this conversation starts show here while they run and after they end.'**
+  String get runningWorkEmptyBody;
+
+  /// Running now: shown only while running work holds the conversation; says what moving it to the background frees.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.'**
+  String get runningWorkBackgroundBody;
+
+  /// Running now: moves the work that holds the conversation to the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep chatting while it runs'**
+  String get runningWorkBackgroundAction;
+
+  /// Stop-command confirmation: the safer path that copies the output before anything is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy output first'**
+  String get shellOutputCopyFirst;
+
+  /// Command output: title of the sheet that sets how long the command may still run.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop it after…'**
+  String get shellOutputLimitTitle;
+
+  /// Command output status line: time left before the limit stops the command, e.g. 'stops in 12:46'.
+  ///
+  /// In en, this message translates to:
+  /// **'stops in {time}'**
+  String shellOutputStopsIn(String time);
+
+  /// Command output status line: the command has no time limit.
+  ///
+  /// In en, this message translates to:
+  /// **'no time limit'**
+  String get shellOutputNoLimit;
+
+  /// Command output: shown in the last minute before the time limit stops the command.
+  ///
+  /// In en, this message translates to:
+  /// **'It stops in {time}. Change timeout to give it longer.'**
+  String shellOutputAboutToStop(String time);
+
+  /// Command output: reading the output failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the output.'**
+  String get shellOutputReadFailed;
+
+  /// Command output: changing the time limit failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change the time limit.'**
+  String get shellOutputLimitFailed;
+
+  /// Command output Details: the full command with its environment and paths.
+  ///
+  /// In en, this message translates to:
+  /// **'Command as typed'**
+  String get shellOutputDetailCommand;
+
+  /// Command output Details: the folder the command runs in.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get shellOutputDetailFolder;
+
+  /// Command output Details: the command's exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit code'**
+  String get shellOutputDetailExit;
+
+  /// Command output Details: the server's id for the command.
+  ///
+  /// In en, this message translates to:
+  /// **'Command ID'**
+  String get shellOutputDetailId;
+
+  /// Command output: loading bar label while the output is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading output'**
+  String get shellOutputReading;
+
+  /// Title of the sheet that moves a conversation to a cloud machine (warp).
+  ///
+  /// In en, this message translates to:
+  /// **'Move to a cloud machine'**
+  String get sessionDestinationWarpTitle;
+
+  /// Move conversation: the kind of a folder that is a separate copy (worktree) of the project.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate copy'**
+  String get sessionDestinationSeparateCopy;
+
+  /// Move conversation: the kind of a cloud destination and whether it is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud machine · {state}'**
+  String sessionDestinationCloudKind(String state);
+
+  /// Move conversation: a cloud machine that can take the conversation now.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get sessionDestinationConnected;
+
+  /// Move conversation: a cloud machine that is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get sessionDestinationNotConnected;
+
+  /// Move conversation: why a cloud machine cannot be picked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected. It can be picked once it connects.'**
+  String get sessionDestinationNotConnectedWhy;
+
+  /// Move conversation confirmation: what happens to working changes when moving with them.
+  ///
+  /// In en, this message translates to:
+  /// **'With changes, they go with it to {destination}.'**
+  String sessionDestinationChangesGo(String destination);
+
+  /// Move to a cloud machine confirmation: what happens to working changes when copying them.
+  ///
+  /// In en, this message translates to:
+  /// **'With changes, a copy goes with it to {destination}.'**
+  String sessionDestinationChangesCopied(String destination);
+
+  /// Move conversation confirmation: what happens to working changes left behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Without changes, they stay in {place}.'**
+  String sessionDestinationChangesStay(String place);
+
+  /// Move conversation confirmation: moves the conversation and leaves working changes where they are.
+  ///
+  /// In en, this message translates to:
+  /// **'Move without changes'**
+  String get sessionDestinationMoveWithout;
+
+  /// Move conversation: the move failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t move the conversation.'**
+  String get sessionDestinationMoveFailed;
+
+  /// Move conversation: the destinations could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the places to move to'**
+  String get sessionDestinationLoadFailed;
+
+  /// Move conversation: there is no other destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Nowhere else to move it yet'**
+  String get sessionDestinationNoneTitle;
+
+  /// Move conversation: why there is no other folder.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has only this folder. A separate copy of the project shows here once it exists.'**
+  String get sessionDestinationNoneMoveBody;
+
+  /// Move to a cloud machine: why there is no other destination.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has no cloud machine yet.'**
+  String get sessionDestinationNoneWarpBody;
+
+  /// Switch organization sheet: what switching changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Models, providers and billing follow the organization you pick.'**
+  String get consoleOrganizationWhatChanges;
+
+  /// Switch organization confirmation body; organization is the organization's name.
+  ///
+  /// In en, this message translates to:
+  /// **'{organization} becomes the organization for models, providers and billing. Models reload; nothing running is stopped.'**
+  String consoleOrganizationSwitchBody(String organization);
+
+  /// Switch organization confirmation button.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {organization}'**
+  String consoleOrganizationSwitchConfirm(String organization);
+
+  /// Switch organization: the organizations could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your organizations'**
+  String get consoleOrganizationLoadFailed;
+
+  /// Switch organization: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No organizations'**
+  String get consoleOrganizationNoneTitle;
+
+  /// Switch organization: shown when the only organization is the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your only organization, so there is nothing to switch to.'**
+  String get consoleOrganizationOnlyOne;
+
+  /// Conversation context: loading label.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading context'**
+  String get sessionContextLoading;
+
+  /// Conversation context: the server, project or conversation changed while the page was open.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation moved'**
+  String get sessionContextMovedTitle;
+
+  /// Conversation context: the history could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the context'**
+  String get sessionContextLoadFailed;
+
+  /// Conversation context: a refresh failed while earlier numbers are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. The numbers below are from the last read.'**
+  String get sessionContextRefreshFailed;
+
+  /// Conversation context verdict under half of the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · plenty left'**
+  String sessionContextVerdictPlenty(String percent);
+
+  /// Conversation context verdict between half and the near-limit mark.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used'**
+  String sessionContextVerdictUsed(String percent);
+
+  /// Conversation context verdict near the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · near the limit'**
+  String sessionContextVerdictNear(String percent);
+
+  /// Conversation context verdict at or over the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · at the limit'**
+  String sessionContextVerdictFull(String percent);
+
+  /// Conversation context: title of the notice near the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Near the limit'**
+  String get sessionContextNearLimitTitle;
+
+  /// Conversation context: what being near the limit means and what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'Older details may be dropped from what the model sees. Compact the conversation to keep going, or start a new one.'**
+  String get sessionContextNearLimitBody;
+
+  /// Conversation context: starts compacting the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation'**
+  String get sessionContextCompactAction;
+
+  /// Conversation context: the compact confirmation's question.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation?'**
+  String get sessionContextCompactTitle;
+
+  /// Conversation context: what compacting does.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode summarizes the conversation so far and continues from the summary, so it takes less of the model\'s limit.'**
+  String get sessionContextCompactBody;
+
+  /// Conversation context: what compacting keeps.
+  ///
+  /// In en, this message translates to:
+  /// **'Every message stays in the history.'**
+  String get sessionContextCompactKept;
+
+  /// Conversation context: the compact confirmation's button.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact conversation'**
+  String get sessionContextCompactConfirm;
+
+  /// Conversation context: shown after compacting was started.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacting started. The numbers update when it finishes.'**
+  String get sessionContextCompactStarted;
+
+  /// Conversation context: why compacting is unavailable while a reply runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the reply to finish.'**
+  String get sessionContextCompactBusy;
+
+  /// Conversation context: title of the stacked bar of what fills the latest request's input.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest request input'**
+  String get sessionContextMakeupTitle;
+
+  /// Conversation context: a token count, e.g. '41,200 tokens'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String sessionContextTokens(String count);
+
+  /// Conversation context Details: the model's id as the server knows it.
+  ///
+  /// In en, this message translates to:
+  /// **'Model ID'**
+  String get sessionContextModelId;
+
+  /// Offline demo page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it offline'**
+  String get demoScreenTitle;
+
+  /// Offline demo status line.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated · nothing is saved'**
+  String get demoScreenSimulated;
+
+  /// Offline demo: shown when the demo is finished, above Set up your own server.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the whole loop: a prompt, a reply and a reviewed edit.'**
+  String get demoScreenFinished;
+
+  /// Conversation context: a share of the latest request's input, e.g. '42 %'.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String sessionContextPercent(String percent);
+
+  /// Move conversation confirmation: how many working changes there are; what happens to them is said under it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}}'**
+  String sessionDestinationChangesCount(int count);
+
+  /// Active context: loading state and loading bar label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the active context…'**
+  String get activeContextLoading;
+
+  /// Active context filter menu: show every kind of message, with the total.
+  ///
+  /// In en, this message translates to:
+  /// **'All messages · {count}'**
+  String activeContextAllCount(int count);
+
+  /// Active context: title when the server, project or conversation changed under the page.
+  ///
+  /// In en, this message translates to:
+  /// **'This view is out of date'**
+  String get activeContextChangedTitle;
+
+  /// Active context: title of the load failure state.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the active context'**
+  String get activeContextFailedTitle;
+
+  /// Active context: plain one-paragraph intro above the list.
+  ///
+  /// In en, this message translates to:
+  /// **'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.'**
+  String get activeContextIntro;
+
+  /// Active context: body of the empty state.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is kept for the next turn yet. Pull down to check again.'**
+  String get activeContextEmptyDetail;
+
+  /// Active context: the list name inside "Nothing in active context matches …".
+  ///
+  /// In en, this message translates to:
+  /// **'active context'**
+  String get activeContextWhat;
+
+  /// Active context: count line above the rows when nothing is filtered.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 message} other{{count} messages}}'**
+  String activeContextTotal(int count);
+
+  /// Active context: accessible name of a row menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {type}'**
+  String activeContextRowMenu(String type);
+
+  /// Active context row menu: opens the message.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {type}'**
+  String activeContextOpenMessage(String type);
+
+  /// Active context row menu: copies the message text.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {type} text'**
+  String activeContextCopyMessage(String type);
+
+  /// Active context message page: label of the message id in Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Message id'**
+  String get activeContextMessageId;
+
+  /// Active context message page: copy button of one part, naming it.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {part}'**
+  String activeContextCopyPart(String part);
+
+  /// Note for the agent: loading bar and button reason while deleting.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting the note…'**
+  String get sessionNoteDeleting;
+
+  /// Note for the agent: loading bar and button reason while saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the note…'**
+  String get sessionNoteSaving;
+
+  /// Note for the agent: loading state.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the saved note…'**
+  String get sessionNoteLoading;
+
+  /// Note for the agent: title of the load failure state.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the note'**
+  String get sessionNoteLoadFailed;
+
+  /// Note for the agent: title of the save failure notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the note'**
+  String get sessionNoteSaveFailed;
+
+  /// Note for the agent: label above the text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get sessionNoteFieldLabel;
+
+  /// Note for the agent: why the field and Save are unavailable after the note changed elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh the saved note before editing.'**
+  String get sessionNoteFieldLocked;
+
+  /// Note for the agent: error under the field when the note is over the server limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{over} bytes too long. A note can be up to {limit} bytes.'**
+  String sessionNoteTooLong(int over, int limit);
+
+  /// Note for the agent: why Save is unavailable while the field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note to save it.'**
+  String get sessionNoteWriteFirst;
+
+  /// Note for the agent: why Save is unavailable when the saved note was cleared in the field.
+  ///
+  /// In en, this message translates to:
+  /// **'To remove the note, use Delete saved note.'**
+  String get sessionNoteEmptyUseDelete;
+
+  /// Note for the agent: why Save is unavailable when nothing changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the note to save it.'**
+  String get sessionNoteUnchanged;
+
+  /// Subagents page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Subagents'**
+  String get sessionRelationsTitle;
+
+  /// Subagents: stop question title naming the subagent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {title}?'**
+  String sessionRelationsStopTitle(String title);
+
+  /// Subagents: stop question body.
+  ///
+  /// In en, this message translates to:
+  /// **'The subagent stops its current step. What it already did stays in its conversation.'**
+  String get sessionRelationsStopBody;
+
+  /// Subagents: stop question confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop subagent'**
+  String get sessionRelationsStopConfirm;
+
+  /// Subagents: title of the load failure state.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the subagents'**
+  String get sessionRelationsFailedTitle;
+
+  /// Subagents: loading state.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading subagents…'**
+  String get sessionRelationsLoading;
+
+  /// Subagents: label above the conversation the subagents were started from.
+  ///
+  /// In en, this message translates to:
+  /// **'Started from'**
+  String get sessionRelationsStartedFrom;
+
+  /// Subagents: label above the subagent rows.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 subagent} other{{count} subagents}}'**
+  String sessionRelationsSubagentCount(int count);
+
+  /// Subagents: after "Needs you · " on a row whose subagent waits for an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'open to answer'**
+  String get sessionRelationsOpenToAnswer;
+
+  /// Subagents: state word of the parent conversation when it is not working.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get sessionRelationsIdle;
+
+  /// Subagents: marks the row of the conversation the page was opened from.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation'**
+  String get sessionRelationsThisConversation;
+
+  /// Subagents: why rows are unavailable while one opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening…'**
+  String get sessionRelationsOpening;
+
+  /// Subagents: accessible name of a row menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {title}'**
+  String sessionRelationsRowMenu(String title);
+
+  /// Subagents row menu: opens the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {title}'**
+  String sessionRelationsOpen(String title);
+
+  /// Subagents row menu: copies the handoff for the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy handoff for {title}'**
+  String sessionRelationsCopyHandoff(String title);
+
+  /// Subagents row menu: pins the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin {title}'**
+  String sessionRelationsPin(String title);
+
+  /// Subagents row menu: unpins the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin {title}'**
+  String sessionRelationsUnpin(String title);
+
+  /// Subagents row menu: stops a working subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {title}'**
+  String sessionRelationsStop(String title);
+
+  /// Add web source: error under the address field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an HTTP or HTTPS address without a user name or password.'**
+  String get webSourcesInvalidUrl;
+
+  /// Add web source: title of the search failure notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Search didn\'t finish'**
+  String get webSearchFailedTitle;
+
+  /// Add web source: retries the failed search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search again'**
+  String get webSearchTryAgain;
+
+  /// Add web source: why the query and provider are unavailable during a search.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the search to finish.'**
+  String get webSearchBusy;
+
+  /// Add web source: example under the search label.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: flutter golden tests'**
+  String get webSearchQueryHint;
+
+  /// Add web source: why the query field is unavailable without a provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a search provider on this server first.'**
+  String get webSearchNeedsProvider;
+
+  /// Add web source: body of the no-results state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try other words, or paste a link below.'**
+  String get webSearchEmptyDetail;
+
+  /// Add web source: label above the search results.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 result} other{{count} results}}'**
+  String webSearchResults(int count);
+
+  /// Add web source: mark on a result already added to the prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get webSourcesAdded;
+
+  /// Add web source: adds one result to the prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {title} to prompt'**
+  String webSourcesAddNamed(String title);
+
+  /// Add web source: accessible name of a row menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {title}'**
+  String webSourcesRowMenu(String title);
+
+  /// Add web source: opens the page in the browser, naming its site.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {host} in browser'**
+  String webSourcesOpenHost(String host);
+
+  /// Add web source: adds the pasted link.
+  ///
+  /// In en, this message translates to:
+  /// **'Add link to prompt'**
+  String get webSourcesAddLink;
+
+  /// Add web source: line under "Or paste a source".
+  ///
+  /// In en, this message translates to:
+  /// **'A public address, with an optional excerpt'**
+  String get webSourcesPasteDetail;
+
+  /// Add web source: label above the added sources.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Added to prompt · 1 of 10} other{Added to prompt · {count} of 10}}'**
+  String webSourcesAddedCount(int count);
+
+  /// Add web source: removes an added source.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {title} from prompt'**
+  String webSourcesRemoveNamed(String title);
+
+  /// Add web source: loading bar label while searching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get webSearchSearching;
+
+  /// Add web source: loading bar label while providers are discovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding search providers…'**
+  String get webSearchFindingProviders;
+
+  /// Add web source: pinned primary that returns the added sources to the draft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Done · 1 added} other{Done · {count} added}}'**
+  String webSourcesDone(int count);
+
+  /// Add web source: title of the state when the server or project changed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server changed'**
+  String get webSourcesScopeChangedTitle;
+
+  /// Export conversation: section label above the two format choices (complete JSON copy, readable Markdown transcript)
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get sessionExportFormatLabel;
+
+  /// Export conversation: why the complete JSON choice is disabled on a server without the export endpoint
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t send a complete copy. Save the readable transcript instead.'**
+  String get sessionExportJsonUnavailable;
+
+  /// Export conversation: section label above the redaction switch (complete JSON copy only)
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get sessionExportPrivacyLabel;
+
+  /// Export conversation: what redaction keeps and what it replaces, shown under the Redact sensitive data switch
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps who wrote each message; the words become placeholders. Not a backup.'**
+  String get sessionExportRedactKeeps;
+
+  /// Export conversation: why the redaction switch cannot be changed while the export downloads or saves
+  ///
+  /// In en, this message translates to:
+  /// **'Wait until the file is saved to change this.'**
+  String get sessionExportRedactBusy;
+
+  /// Export conversation: why the redaction switch is disabled after the server or project changed under the page
+  ///
+  /// In en, this message translates to:
+  /// **'Open export again from the conversation to change this.'**
+  String get sessionExportRedactChanged;
+
+  /// Export conversation: bottom primary when the complete JSON copy is chosen; opens the system save picker
+  ///
+  /// In en, this message translates to:
+  /// **'Save complete conversation'**
+  String get sessionExportSaveJson;
+
+  /// Export conversation: bottom primary when the Markdown transcript is chosen; opens the system save picker
+  ///
+  /// In en, this message translates to:
+  /// **'Save readable transcript'**
+  String get sessionExportSaveMarkdown;
+
+  /// Export conversation: the file was made but writing it to the chosen place on the device failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t write the file on this device. Nothing changed on the server. Try again, or choose another folder.'**
+  String get sessionExportSaveFailed;
+
+  /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools (no server name known).
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t list its tools'**
+  String get capabilitiesToolsMissingTitle;
+
+  /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} doesn\'t list its tools'**
+  String capabilitiesToolsMissingOnServer(String server);
+
+  /// screen-library-2: Add MCP server: label of the where-to-save choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it goes'**
+  String get mcpSetupWhere;
+
+  /// screen-library-2: Add MCP server: label of the remote address / local command choice.
+  ///
+  /// In en, this message translates to:
+  /// **'How it runs'**
+  String get mcpSetupHowItRuns;
+
+  /// screen-library-2: Add MCP server: label above the HTTP header rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get mcpSetupHeaders;
+
+  /// screen-library-2: Add MCP server: the folded row holding the rarer settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get mcpSetupAdvanced;
+
+  /// screen-library-2: Add MCP server: what the Advanced fold holds for a remote server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in detection and timeout'**
+  String get mcpSetupAdvancedRemote;
+
+  /// screen-library-2: Add MCP server: what the Advanced fold holds for a local command.
+  ///
+  /// In en, this message translates to:
+  /// **'Working folder, environment and timeout'**
+  String get mcpSetupAdvancedLocal;
+
+  /// screen-library-2: Add MCP server: why "This project" cannot be chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project first'**
+  String get mcpSetupNoProject;
+
+  /// screen-library-2: Add MCP server: what a runtime add means, under the location row.
+  ///
+  /// In en, this message translates to:
+  /// **'It connects now and is gone when OpenCode restarts. For a lasting setup, edit the server configuration.'**
+  String get mcpSetupRuntimeNote;
+
+  /// screen-library-2: Add MCP server: the pinned primary once a name is typed (configuration write).
+  ///
+  /// In en, this message translates to:
+  /// **'Save {name}'**
+  String mcpSetupSaveNamed(String name);
+
+  /// screen-library-2: Add MCP server: the pinned primary once a name is typed (added until restart).
+  ///
+  /// In en, this message translates to:
+  /// **'Add {name}'**
+  String mcpSetupAddNamed(String name);
+
+  /// screen-library-2: Add MCP server: short reason under a disabled field or button after the location changed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed'**
+  String get mcpSetupLocationChangedShort;
+
+  /// screen-library-2: Add MCP server: status line when saving failed; the reason follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add the MCP server'**
+  String get mcpSetupSaveFailed;
+
+  /// screen-library-2: Add MCP server: question when leaving with unsaved input.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this MCP server?'**
+  String get mcpSetupDiscardTitle;
+
+  /// screen-library-2: Add MCP server: body of the discard question.
+  ///
+  /// In en, this message translates to:
+  /// **'What you typed here isn\'t saved and will be lost.'**
+  String get mcpSetupDiscardBody;
+
+  /// screen-library-2: Add MCP server: confirm button of the discard question.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard server'**
+  String get mcpSetupDiscardConfirm;
+
+  /// screen-library-2: External agents: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No outside agents yet'**
+  String get externalAgentsEmptyTitle;
+
+  /// screen-library-2: External agents: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one by its web address. You see what it says about itself before anything is saved.'**
+  String get externalAgentsEmptyBody;
+
+  /// screen-library-2: External agents: note under the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the text you send reaches an outside agent. Your projects, files and other conversations stay on this phone.'**
+  String get externalAgentsBoundary;
+
+  /// screen-library-2: External agents: supporting line of an agent whose removal did not finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Removal didn\'t finish · tap to try again'**
+  String get externalAgentsRemovalIncomplete;
+
+  /// screen-library-2: External agents: row and page menu item that removes the agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from this phone'**
+  String externalAgentsRemoveNamed(String name);
+
+  /// screen-library-2: External agents: removal question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String externalAgentsRemoveTitle(String name);
+
+  /// screen-library-2: External agents: removal question body.
+  ///
+  /// In en, this message translates to:
+  /// **'Its saved tasks and key leave this phone. Work it already started carries on, and what it keeps stays with it.'**
+  String get externalAgentsRemoveBody;
+
+  /// screen-library-2: External agents: why an action cannot run while another one runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current step to finish'**
+  String get externalAgentsBusy;
+
+  /// screen-library-2: Add agent: helper under the address field.
+  ///
+  /// In en, this message translates to:
+  /// **'Its web address, or the address of its Agent Card.'**
+  String get externalAgentsAddressHelper;
+
+  /// screen-library-2: Add agent: the pinned primary before the agent is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Check agent'**
+  String get externalAgentsCheck;
+
+  /// screen-library-2: Add agent: why Check agent cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the agent address first'**
+  String get externalAgentsCheckNeedsAddress;
+
+  /// screen-library-2: Add agent: stops waiting for the agent to answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop checking'**
+  String get externalAgentsStopChecking;
+
+  /// screen-library-2: Add agent: notice title when the check failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check this agent'**
+  String get externalAgentsCheckFailedTitle;
+
+  /// screen-library-2: Add agent: the pinned primary after the check.
+  ///
+  /// In en, this message translates to:
+  /// **'Save {name}'**
+  String externalAgentsSaveNamed(String name);
+
+  /// screen-library-2: Add agent and Replace key: why saving cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the agent key first'**
+  String get externalAgentsSaveNeedsKey;
+
+  /// screen-library-2: Add agent and the agent's page: label above the agent's own description and skills.
+  ///
+  /// In en, this message translates to:
+  /// **'What it says about itself'**
+  String get externalAgentsAboutLabel;
+
+  /// screen-library-2: Add agent: row when the agent lists no skills.
+  ///
+  /// In en, this message translates to:
+  /// **'It lists no skills'**
+  String get externalAgentsNoSkills;
+
+  /// screen-library-2: Add agent: note under the agent's description.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.'**
+  String get externalAgentsUnverified;
+
+  /// screen-library-2: Add agent: notice title when the card is not supported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent can\'t be used from this app'**
+  String get externalAgentsUnsupportedTitle;
+
+  /// screen-library-2: Add agent: why the card is not supported.
+  ///
+  /// In en, this message translates to:
+  /// **'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.'**
+  String get externalAgentsUnsupportedBody;
+
+  /// screen-library-2: Add agent and Replace key: the secret field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent key'**
+  String get externalAgentsKeyLabel;
+
+  /// screen-library-2: Add agent and Replace key: helper under the key field.
+  ///
+  /// In en, this message translates to:
+  /// **'The key its owner gave you. It stays in this phone\'s secure storage and is sent only to this agent.'**
+  String get externalAgentsKeyHelper;
+
+  /// screen-library-2: Add agent: notice when the agent needs no key.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent asks for no key. Don\'t send private information unless you trust it.'**
+  String get externalAgentsNoKey;
+
+  /// screen-library-2: Agent details fold: the card address label.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Card'**
+  String get externalAgentsDetailCard;
+
+  /// screen-library-2: Agent details fold: the endpoint label.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get externalAgentsDetailEndpoint;
+
+  /// screen-library-2: Agent details fold: the agent's version label.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get externalAgentsDetailVersion;
+
+  /// screen-library-2: Agent details fold: the protocol label.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get externalAgentsDetailConnection;
+
+  /// screen-library-2: Agent page: the pinned primary; opens a draft task.
+  ///
+  /// In en, this message translates to:
+  /// **'New task for {name}'**
+  String externalAgentsNewTaskNamed(String name);
+
+  /// screen-library-2: Agent page: menu item that replaces the stored key.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace key for {name}'**
+  String externalAgentsReplaceKeyNamed(String name);
+
+  /// screen-library-2: Replace key dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the key for {name}'**
+  String externalAgentsReplaceKeyTitle(String name);
+
+  /// screen-library-2: Replace key dialog confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Save key'**
+  String get externalAgentsSaveKey;
+
+  /// screen-library-2: Agent page: label above the task rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get externalAgentsTasksLabel;
+
+  /// screen-library-2: Agent page: no tasks title.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get externalAgentsNoTasksTitle;
+
+  /// screen-library-2: Agent page: no tasks body.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a task and read it over before it\'s sent. Opening a sent task checks on it; it is never sent twice.'**
+  String get externalAgentsNoTasksBody;
+
+  /// screen-library-2: A task that has no text yet.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get externalAgentsUntitledTask;
+
+  /// screen-library-2: Task page: the pinned primary for a draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {name}'**
+  String externalAgentsSendNamed(String name);
+
+  /// screen-library-2: Task page: the pinned primary when the agent asks a question.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {name}'**
+  String externalAgentsReplyNamed(String name);
+
+  /// screen-library-2: Task page: why Send cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the task first'**
+  String get externalAgentsSendNeedsText;
+
+  /// screen-library-2: Task page: why Reply cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your reply first'**
+  String get externalAgentsReplyNeedsText;
+
+  /// screen-library-2: Task page: helper under the draft field.
+  ///
+  /// In en, this message translates to:
+  /// **'Only this text is sent. The agent may use its own services and charge for them; check its terms.'**
+  String get externalAgentsSendNote;
+
+  /// screen-library-2: Task page: status line supporting text after a check.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked with the agent {age} ago'**
+  String externalAgentsCheckedAt(String age);
+
+  /// screen-library-2: Task page: status line supporting text before a check.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this phone · pull down to check with the agent'**
+  String get externalAgentsPullToCheck;
+
+  /// screen-library-2: Task page: menu item that asks the agent to stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {name} to stop this task'**
+  String externalAgentsStopMenu(String name);
+
+  /// screen-library-2: Task page: why stopping cannot be asked now.
+  ///
+  /// In en, this message translates to:
+  /// **'Check with the agent first; pull down to refresh'**
+  String get externalAgentsStopUnavailable;
+
+  /// screen-library-2: Stop question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this task?'**
+  String get externalAgentsStopTitle;
+
+  /// screen-library-2: Task page: menu item that removes the saved task from the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this task on this phone'**
+  String get externalAgentsForgetMenu;
+
+  /// screen-library-2: Forget question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this task?'**
+  String get externalAgentsForgetTitle;
+
+  /// screen-library-2: Forget question body.
+  ///
+  /// In en, this message translates to:
+  /// **'It leaves this phone. Work the agent already started carries on, and its own copy stays with it.'**
+  String get externalAgentsForgetBody;
+
+  /// screen-library-2: Forget question confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget task'**
+  String get externalAgentsForgetConfirm;
+
+  /// screen-library-2: Add MCP server: saved state title when the page stays open after saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {name} in OpenCode'**
+  String mcpSetupSavedNamed(String name);
+
+  /// screen-library-2: Add MCP server: saved state body when reconnecting failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The app didn\'t reconnect afterwards. {reason}'**
+  String mcpSetupSavedNotConnectedBody(String reason);
+
+  /// screen-library-2: Add MCP server: saved state body when the location changed after saving.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed after saving, so this page can\'t reconnect for it. Close it and check MCP servers.'**
+  String get mcpSetupSavedElsewhere;
+
+  /// screen-library-2: Add MCP server: title on a server that accepts neither configuration writes nor runtime adds.
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t add MCP servers from here'**
+  String get mcpSetupUnavailableTitle;
+
+  /// screen-library-2: Add MCP server: why the page cannot add one here.
+  ///
+  /// In en, this message translates to:
+  /// **'It doesn\'t accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.'**
+  String get mcpSetupUnavailableBody;
+
+  /// Command sign-in sheet: the loading bar label while the app talks to the server
+  ///
+  /// In en, this message translates to:
+  /// **'Asking the server…'**
+  String get commandAuthSheetWorking;
+
+  /// Manage accounts sheet: the loading bar label while accounts load or change
+  ///
+  /// In en, this message translates to:
+  /// **'Reading saved accounts…'**
+  String get credentialSheetLoading;
+
+  /// Manage accounts sheet: what to do when the server reports no saved accounts
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {provider} again from Providers to add an account.'**
+  String credentialSheetEmptyBody(String provider);
+
+  /// Manage accounts sheet: the name of the menu of one saved account
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {label}'**
+  String credentialSheetActions(String label);
+
+  /// Manage accounts sheet: menu item that makes this saved account the one in use
+  ///
+  /// In en, this message translates to:
+  /// **'Use {label}'**
+  String credentialSheetUseNamed(String label);
+
+  /// Manage accounts sheet: why "Use" is dimmed for the account the server reported in use
+  ///
+  /// In en, this message translates to:
+  /// **'Already in use'**
+  String get credentialSheetInUse;
+
+  /// Manage accounts sheet: menu item that opens the rename dialog for this account
+  ///
+  /// In en, this message translates to:
+  /// **'Rename {label}…'**
+  String credentialSheetRenameNamed(String label);
+
+  /// Manage accounts sheet: menu item and confirm button that remove this saved account from the server
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {label}'**
+  String credentialSheetRemoveNamed(String label);
+
+  /// Remove account confirmation: what happens, naming the account and the provider
+  ///
+  /// In en, this message translates to:
+  /// **'Removes {label} from this server. Projects that use it will need another {provider} account.'**
+  String credentialSheetRemoveBody(String label, String provider);
+
+  /// Manage accounts sheet: in-place result after a rename was saved
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed to {label}.'**
+  String credentialSheetRenamed(String label);
+
+  /// Rename account dialog: error when the label is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Give the account a name.'**
+  String get credentialSheetLabelEmpty;
+
+  /// Rename account dialog: error when the label is too long or has control characters
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 128 characters, without line breaks or control characters.'**
+  String get credentialSheetLabelInvalid;
+
+  /// Confirmation before forgetting an unfinished sign-in on this device
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the {integration} sign-in?'**
+  String pendingAuthRecoveryForgetTitle(String integration);
+
+  /// Forget unfinished sign-in confirmation: what happens and what does not
+  ///
+  /// In en, this message translates to:
+  /// **'The app stops tracking it on this device. Nothing is cancelled on the server; an unfinished sign-in there expires on its own.'**
+  String get pendingAuthRecoveryForgetBody;
+
+  /// Tools page: title when the tool list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this model\'s tools'**
+  String get toolsScreenLoadFailed;
+
+  /// Tools page: what the search looks through, in "Nothing in tools matches …"
+  ///
+  /// In en, this message translates to:
+  /// **'tools'**
+  String get toolsScreenSearchWhat;
+
+  /// Tools page: the worded state of a tool the project registers but the chosen model is not offered
+  ///
+  /// In en, this message translates to:
+  /// **'Registered on this project · this model can’t call it'**
+  String get toolsScreenRegisteredOnly;
+
+  /// Tool details sheet: label above the list of values the tool takes
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get toolsDetailTakes;
+
+  /// Tool details sheet: shown when the tool declares no parameters
+  ///
+  /// In en, this message translates to:
+  /// **'Takes nothing.'**
+  String get toolsDetailTakesNothing;
+
+  /// Tool details sheet: a parameter the tool needs, lower case after its type
+  ///
+  /// In en, this message translates to:
+  /// **'required'**
+  String get toolsDetailRequired;
+
+  /// Tool details sheet: a parameter the tool can do without, lower case after its type
+  ///
+  /// In en, this message translates to:
+  /// **'optional'**
+  String get toolsDetailOptional;
+
+  /// Tool details sheet: parameter type for a string
+  ///
+  /// In en, this message translates to:
+  /// **'text'**
+  String get toolsDetailTypeText;
+
+  /// Tool details sheet: parameter type for a number or integer
+  ///
+  /// In en, this message translates to:
+  /// **'number'**
+  String get toolsDetailTypeNumber;
+
+  /// Tool details sheet: parameter type for a boolean
+  ///
+  /// In en, this message translates to:
+  /// **'yes or no'**
+  String get toolsDetailTypeYesNo;
+
+  /// Tool details sheet: parameter type for an array
+  ///
+  /// In en, this message translates to:
+  /// **'list'**
+  String get toolsDetailTypeList;
+
+  /// Tool details sheet: parameter type for an object
+  ///
+  /// In en, this message translates to:
+  /// **'group of values'**
+  String get toolsDetailTypeGroup;
+
+  /// Tool details sheet: parameter type the schema does not name
+  ///
+  /// In en, this message translates to:
+  /// **'any value'**
+  String get toolsDetailTypeAny;
+
+  /// Server commands page: the loading bar label while the command list loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading commands'**
+  String get commandsScreenLoading;
+
+  /// Server commands page: title of the state shown when the first load of the commands failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load commands'**
+  String get commandsScreenLoadFailed;
+
+  /// Server commands page: what the search looked through, used in "Nothing in commands matches …".
+  ///
+  /// In en, this message translates to:
+  /// **'commands'**
+  String get commandsScreenWhat;
+
+  /// Server commands page: supporting line part naming the agent a command runs with, after its description.
+  ///
+  /// In en, this message translates to:
+  /// **'runs with {agent}'**
+  String commandsScreenRunsWith(String agent);
+
+  /// Server commands page: name of a command row menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Command actions'**
+  String get commandsScreenMenuLabel;
+
+  /// Server commands page: row menu item that asks where to run the command (the command is written /name).
+  ///
+  /// In en, this message translates to:
+  /// **'Run {command}…'**
+  String commandsScreenRun(String command);
+
+  /// Server commands page: row menu item that copies the command as /name.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {command}'**
+  String commandsScreenCopy(String command);
+
+  /// References page: the loading bar label while the list loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading references'**
+  String get referencesScreenLoading;
+
+  /// References page: title of the state shown when the first load failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load references'**
+  String get referencesScreenLoadFailed;
+
+  /// References page: one line above the list that says what a reference is.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders this project points its agents to. Add one to a prompt and the agent can read what it holds.'**
+  String get referencesScreenIntro;
+
+  /// References page: body of the empty state, saying what a reference is.
+  ///
+  /// In en, this message translates to:
+  /// **'A reference is a folder the project’s agents can read. References set up for this project appear here.'**
+  String get referencesScreenEmptyBody;
+
+  /// References page: name of a reference row menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference actions'**
+  String get referencesScreenMenuLabel;
+
+  /// References page: action that adds the reference (written @name) to the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {mention} to the prompt'**
+  String referencesScreenAdd(String mention);
+
+  /// References page (picker): row menu item that opens the reference details.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {name} details'**
+  String referencesScreenShowDetails(String name);
+
+  /// References page: action that copies the reference as @name for a prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {mention}'**
+  String referencesScreenCopyMention(String mention);
+
+  /// References page: row menu item that copies the folder path of the reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy path'**
+  String get referencesScreenCopyPath;
+
+  /// Reference details sheet: how to use the reference (written @name).
+  ///
+  /// In en, this message translates to:
+  /// **'Write {mention} in a prompt and the agent reads this folder for that reply.'**
+  String referencesScreenSheetBody(String mention);
+
+  /// Reference details sheet: label of the folder path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get referencesScreenPathLabel;
+
+  /// Skills page: the loading bar label while the list loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading skills'**
+  String get skillsScreenLoading;
+
+  /// Skills page: title of the state shown when the first load failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load skills'**
+  String get skillsScreenLoadFailed;
+
+  /// Skill sheet: name of the Rendered / Raw choice.
+  ///
+  /// In en, this message translates to:
+  /// **'How to show the skill'**
+  String get skillSheetViewLabel;
+
+  /// Skill sheet: label of the SKILL.md file path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get skillSheetLocation;
+
+  /// Skill sheet (no conversation): copies the skill slash command (written /name) to use in a prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {command}'**
+  String skillSheetCopyCommand(String command);
+
+  /// Skill sheet: why adding is no longer offered after an unconfirmed or moved result.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the conversation before trying again.'**
+  String get skillSheetCheckConversation;
+
+  /// Skill sheet: why the Run agent now switch cannot change while the skill is being added.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding the skill…'**
+  String get skillSheetSending;
 }
 
 class _AppLocalizationsDelegate
