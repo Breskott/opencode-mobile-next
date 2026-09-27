@@ -398,7 +398,10 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
     );
   }
 
-  KitActionBlock _actions(
+  /// Save note appears once the words differ from the saved note (and
+  /// stays while that save runs); Delete saved note whenever one exists.
+  /// Null when there is nothing to offer.
+  KitActionBlock? _actions(
     AppLocalizations l10n,
     SessionNoteReview review, {
     required bool current,
@@ -406,6 +409,7 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
   }) {
     final bytes = SessionNoteGateway.encodedBytes(_text.text);
     final enabled = current && !_loading && !saving;
+    final offerSave = _dirty || (saving && !_removing);
     final String? saveReason;
     if (saving) {
       saveReason = _removing
@@ -419,21 +423,23 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
           : l10n.sessionNoteEmptyUseDelete;
     } else if (bytes > _maxBytes) {
       saveReason = l10n.sessionNoteTooLarge;
-    } else if (!_dirty) {
-      saveReason = l10n.sessionNoteUnchanged;
     } else {
       saveReason = null;
     }
+    final remove = review.value != null;
+    if (!offerSave && !remove) return null;
     return KitActionBlock(
-      primary: KitAction(
-        key: const ValueKey('save-session-note'),
-        label: l10n.sessionNoteSave,
-        icon: AppIconography.check,
-        onPressed: enabled && saveReason == null ? _save : null,
-        disabledReason: _loading && !saving ? null : saveReason,
-      ),
+      primary: offerSave
+          ? KitAction(
+              key: const ValueKey('save-session-note'),
+              label: l10n.sessionNoteSave,
+              icon: AppIconography.check,
+              onPressed: enabled && saveReason == null ? _save : null,
+              disabledReason: _loading && !saving ? null : saveReason,
+            )
+          : null,
       tertiary: [
-        if (review.value != null)
+        if (remove)
           KitAction(
             key: const ValueKey('remove-session-note'),
             label: l10n.sessionNoteRemove,

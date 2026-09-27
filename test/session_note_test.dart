@@ -412,11 +412,9 @@ void main() {
       final editor = tester.widget<TextFormField>(
         find.byKey(const ValueKey('session-note-editor')),
       );
-      final save = tester.widget<KitButton>(
-        find.byKey(const ValueKey('save-session-note')),
-      );
       expect(editor.enabled, isFalse);
-      expect(save.onPressed, isNull);
+      // Nothing was edited, so Save note is not offered at all (R16).
+      expect(find.byKey(const ValueKey('save-session-note')), findsNothing);
       expect(
         find.textContaining('The conversation or its instructions changed.'),
         findsOneWidget,

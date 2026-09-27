@@ -24779,7 +24779,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activeContextIntro =>
-      'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.';
+      'What the model reads on its next turn, after the latest summary.';
 
   @override
   String get activeContextEmptyDetail =>
@@ -24854,9 +24854,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get sessionNoteEmptyUseDelete =>
       'To remove the note, use Delete saved note.';
-
-  @override
-  String get sessionNoteUnchanged => 'Change the note to save it.';
 
   @override
   String get sessionRelationsTitle => 'Subagents';
@@ -25978,4 +25975,35 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaMonitorConsentDetails =>
       'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
+
+  @override
+  String get demoScreenReset => 'Reset demo';
+
+  @override
+  String get demoScreenLeave => 'Leave demo';
+
+  @override
+  String get demoScreenDisclosure =>
+      'Everything here is simulated on this device. No server, provider, or files are accessed.';
+
+  @override
+  String capabilityScreenIntroWithGaps(String server) {
+    return '$server decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.';
+  }
+
+  @override
+  String activeContextMessageTitle(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'user': 'User message',
+      'assistant': 'Assistant message',
+      'system': 'System message',
+      'synthetic': 'Synthetic message',
+      'skill': 'Skill message',
+      'shell': 'Shell message',
+      'compaction': 'Summary message',
+      'change': 'Conversation change',
+      'other': 'Message',
+    });
+    return '$_temp0';
+  }
 }

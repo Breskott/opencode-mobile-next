@@ -265,7 +265,6 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
     }
     final tokens = KitTokens.of(context);
     final error = _error;
-    final filtered = _type != null;
     return KitRefresh(
       onRefresh: _load,
       child: ListView(
@@ -328,22 +327,7 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
               onClear: _clearSearch,
             )
           else ...[
-            if (_query.isEmpty)
-              Padding(
-                padding: EdgeInsetsDirectional.only(
-                  start: tokens.gutter,
-                  end: tokens.gutter,
-                  bottom: tokens.space2,
-                ),
-                child: KitText(
-                  filtered
-                      ? l10n.activeContextCount(visible.length, messages.length)
-                      : l10n.activeContextTotal(messages.length),
-                  role: KitTextRole.caption,
-                  tone: KitTextTone.secondary,
-                  tabular: true,
-                ),
-              ),
+            // No count line: the search field already says how many match.
             KitRowGroup(
               leadingIcons: false,
               children: [for (final message in visible) _row(l10n, message)],
@@ -400,6 +384,20 @@ String contextTypeLabel(AppLocalizations l10n, String type) => switch (type) {
   _ => type,
 };
 
+/// The [AppLocalizations.activeContextMessageTitle] selector for a message
+/// type: the three switch kinds read as one "Conversation change".
+String _roleSelector(String type) => switch (type) {
+  'user' ||
+  'assistant' ||
+  'system' ||
+  'synthetic' ||
+  'skill' ||
+  'shell' ||
+  'compaction' => type,
+  'agent-switched' || 'model-switched' || 'location-switched' => 'change',
+  _ => 'other',
+};
+
 String _partKind(AppLocalizations l10n, ContextContentKind kind) =>
     switch (kind) {
       ContextContentKind.text => l10n.activeContextText,
@@ -412,8 +410,9 @@ String _partKind(AppLocalizations l10n, ContextContentKind kind) =>
       ContextContentKind.truncated => l10n.activeContextTruncated,
     };
 
-/// One message's parts, in order; the id sits in Details and the snapshot
-/// disclaimer is one muted line at the end (map active-context-message).
+/// One message's parts, in order, under "{Role} message"; the id and the
+/// snapshot disclaimer fold under Details at the end (map
+/// active-context-message).
 class _ContextMessageScreen extends StatelessWidget {
   const _ContextMessageScreen({
     required this.controller,
@@ -432,7 +431,9 @@ class _ContextMessageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return KitScreen(
-      topBar: KitTopBar(title: contextTypeLabel(l10n, message.type)),
+      topBar: KitTopBar(
+        title: l10n.activeContextMessageTitle(_roleSelector(message.type)),
+      ),
       width: KitScreenWidth.list,
       body: ListenableBuilder(
         listenable: controller,
@@ -456,13 +457,10 @@ class _ContextMessageScreen extends StatelessWidget {
                 _Part(part: part),
                 SizedBox(height: tokens.sectionGap),
               ],
-              KitText(
-                l10n.activeContextContentHelp,
-                role: KitTextRole.caption,
-                tone: KitTextTone.secondary,
-              ),
-              SizedBox(height: tokens.space3),
+              // What the snapshot leaves out is a technical note, so it
+              // folds under Details with the id (KIT-33).
               KitDetailsFold(
+                notes: [l10n.activeContextContentHelp],
                 values: [
                   KitTechnicalValue(l10n.activeContextMessageId, message.id),
                 ],

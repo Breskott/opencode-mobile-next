@@ -260,8 +260,9 @@ final List<ServerFeature> serverFeatures = [
 ///
 /// Built from kit parts only (screen-system-1). People come here asking why
 /// something is missing, so it is one list ordered by urgency: what this
-/// server lacks first, each row saying so in words and which servers have
-/// it, then what the device lacks, then one row that unfolds everything
+/// server lacks first, each row saying so in words (the intro says once
+/// where missing features work; a row names its servers only when it is
+/// the focused one or its answer differs), then what the device lacks, then one row that unfolds everything
 /// that works here. Where the app can turn a missing thing on (another
 /// server), the list ends with that action; it appears only when the app
 /// registered the flow, so it never leads nowhere.
@@ -323,8 +324,43 @@ class ServerCapabilitiesScreen extends StatelessWidget {
           final canAddServer =
               serverGaps && KitCapabilities.canEnable('server.any');
 
-          Widget row(ServerFeature feature) =>
-              _FeatureRow(feature: feature, present: feature.available(facts));
+          // Which servers have a missing feature is said once: the intro
+          // covers the most common answer, and a row repeats it only when
+          // the person came about that feature or its answer differs.
+          String hosts(ServerFeature feature) => feature.capability == null
+              ? ''
+              : KitCapabilityExplainer.hostsLineOf(
+                  context,
+                  feature.capability!,
+                );
+          final tally = <String, int>{};
+          for (final feature in [...focused, ...onServer]) {
+            if (feature.available(facts) ||
+                feature.source != ServerFeatureSource.server) {
+              continue;
+            }
+            final line = hosts(feature);
+            if (line.isNotEmpty) {
+              tally.update(line, (n) => n + 1, ifAbsent: () => 1);
+            }
+          }
+          String? common;
+          for (final entry in tally.entries) {
+            if (common == null || entry.value > tally[common]!) {
+              common = entry.key;
+            }
+          }
+
+          Widget row(ServerFeature feature) {
+            final line = hosts(feature);
+            return _FeatureRow(
+              feature: feature,
+              present: feature.available(facts),
+              hosts: line.isEmpty || (!first(feature) && line == common)
+                  ? null
+                  : line,
+            );
+          }
 
           return ListView(
             key: const ValueKey('server-capabilities'),
@@ -340,7 +376,11 @@ class ServerCapabilitiesScreen extends StatelessWidget {
                   bottom: tokens.space4,
                 ),
                 child: KitText(
-                  l10n.capabilityScreenIntro(KitBidi.auto(serverName)),
+                  serverGaps
+                      ? l10n.capabilityScreenIntroWithGaps(
+                          KitBidi.auto(serverName),
+                        )
+                      : l10n.capabilityScreenIntro(KitBidi.auto(serverName)),
                   key: const ValueKey('server-capabilities-intro'),
                   role: KitTextRole.secondary,
                 ),
@@ -413,13 +453,17 @@ class ServerCapabilitiesScreen extends StatelessWidget {
 }
 
 /// One feature: present ones in a check tile; missing ones say where the
-/// gap is in words (this server or this device) and, for a server gap,
+/// gap is in words (this server or this device) and, when [hosts] is set,
 /// which servers have it. Read-only: nothing here is a control.
 class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({required this.feature, required this.present});
+  const _FeatureRow({required this.feature, required this.present, this.hosts});
 
   final ServerFeature feature;
   final bool present;
+
+  /// "Works on …" for a server gap, when the screen decided this row says
+  /// it (the focused feature, or an answer unlike the intro's).
+  final String? hosts;
 
   @override
   Widget build(BuildContext context) {
@@ -431,14 +475,11 @@ class _FeatureRow extends StatelessWidget {
         : device
         ? 'device'
         : 'unavailable';
-    final capability = feature.capability;
     final where = present
         ? null
         : device
         ? l10n.capabilityNeedsAndroid
-        : capability == null
-        ? null
-        : KitCapabilityExplainer.hostsLineOf(context, capability);
+        : hosts;
     final state = present
         ? l10n.capabilityStateHere
         : device
