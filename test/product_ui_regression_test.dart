@@ -1556,12 +1556,19 @@ void main() {
     await tester.tap(find.text('Run a shell command'));
     await tester.pumpAndSettle();
 
-    // The tile now opens the shared permission sheet; its triad is stacked
-    // full-width, so a 280dp screen must still render all three actions.
-    expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('permission-allow-once')), findsOneWidget);
+    // The tile opens the shared request sheet: its pinned Allow once and
+    // Reject and the "Always allow" switch must all render at 280dp.
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Reject')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('permission-allow-always')), findsOneWidget);
-    expect(find.byKey(const Key('permission-reject')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

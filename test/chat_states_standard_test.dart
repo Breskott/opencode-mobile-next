@@ -267,28 +267,42 @@ void main() {
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
   });
 
-  testWidgets('a permission request: Review is the one full-width primary', (
-    tester,
-  ) async {
-    await _chat(
-      tester,
-      _Api()..messagesHandler = (_) async => _turn(),
-      setUp: (controller) =>
-          controller.permissions = {samplePermission().id: samplePermission()},
-    );
-    final card = find.byKey(const ValueKey('kit-request-card'));
-    final review = find.byKey(const Key('permission-card-review'));
-    expect(card, findsOneWidget);
-    expect(find.descendant(of: card, matching: review), findsOneWidget);
-    // Full width inside the card (its 16 dp padding; the hairline border
-    // takes no room), not a right-aligned chip.
-    expect(
-      tester.getSize(review).width,
-      moreOrLessEquals(tester.getSize(card).width - 32, epsilon: 1),
-    );
-    expect(
-      find.descendant(of: card, matching: find.byType(FilledButton)),
-      findsOneWidget,
-    );
-  });
+  testWidgets(
+    'a permission request: Allow once is the one primary, answered in place',
+    (tester) async {
+      await _chat(
+        tester,
+        _Api()..messagesHandler = (_) async => _turn(),
+        setUp: (controller) => controller.permissions = {
+          samplePermission().id: samplePermission(),
+        },
+      );
+      final card = find.byKey(const ValueKey('kit-request-card'));
+      final allow = find.byKey(const Key('permission-card-allow'));
+      final reject = find.byKey(const Key('permission-card-reject'));
+      final details = find.byKey(const Key('permission-card-review'));
+      expect(card, findsOneWidget);
+      // Allow once and Reject answer in place; Details opens the sheet.
+      expect(find.descendant(of: card, matching: allow), findsOneWidget);
+      expect(find.descendant(of: card, matching: reject), findsOneWidget);
+      expect(find.descendant(of: card, matching: details), findsOneWidget);
+      // Inside the card's 16 dp padding, side by side or stacked.
+      for (final button in [allow, reject]) {
+        expect(
+          tester.getSize(button).width,
+          lessThanOrEqualTo(tester.getSize(card).width - 32 + 1),
+        );
+      }
+      // Allow once is the one primary on the card.
+      final primary = find.descendant(
+        of: card,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is KitButton && widget.role == KitButtonRole.primary,
+        ),
+      );
+      expect(primary, findsOneWidget);
+      expect(tester.widget(primary).key, const Key('permission-card-allow'));
+    },
+  );
 }

@@ -211,8 +211,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     // The exact resolver, not the related chat.
-    expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('permission-allow-once')));
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    await tester.tap(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 

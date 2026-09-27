@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -132,12 +133,17 @@ void _resolved(ConnectionController controller, {bool question = false}) {
 
 void main() {
   testWidgets(
-    'remote permission resolution removes its confirmation but preserves unrelated routes',
+    'remote permission resolution removes its always-allow step but preserves unrelated routes',
     (tester) async {
       final h = await _open(tester);
-      await tester.tap(find.byKey(const Key('permission-allow-always')));
+      // "Always allow" is a risky switch: turning it on first unfolds the
+      // step that states its scope (it replaced the confirmation dialog).
+      final always = find.byKey(const Key('permission-allow-always'));
+      await tester.ensureVisible(always);
       await tester.pumpAndSettle();
-      expect(find.text('Confirm broader access'), findsOneWidget);
+      await tester.tap(always);
+      await tester.pumpAndSettle();
+      expect(find.text('Turn on'), findsOneWidget);
       h.navigator.currentState!.push(
         MaterialPageRoute<void>(
           builder: (_) => const Scaffold(body: Text('Unrelated screen')),
@@ -149,19 +155,25 @@ void main() {
       expect(find.text('Unrelated screen'), findsOneWidget);
       h.navigator.currentState!.pop();
       await tester.pumpAndSettle();
-      expect(find.text('Confirm broader access'), findsNothing);
+      expect(find.text('Turn on'), findsNothing);
       expect(find.byKey(const Key('permission-sheet')), findsNothing);
       expect(h.api.replies, 0);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('remote resolution closes the permission full diff', (
+  testWidgets('remote resolution closes the permission sheet and its diff', (
     tester,
   ) async {
     final h = await _open(tester);
-    await tester.tap(find.byKey(const Key('permission-see-full-diff')));
-    await tester.pumpAndSettle();
+    // The change is shown read-only inside the sheet, not on its own route.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('permission-sheet')),
+        matching: find.byType(KitDiffView),
+      ),
+      findsOneWidget,
+    );
     _resolved(h.controller);
     await tester.pumpAndSettle();
     expect(h.navigator.currentState!.canPop(), isFalse);

@@ -366,7 +366,9 @@ void main() {
         await _connected(api: api),
         const ChatScreen(sessionID: darkModeSessionID),
       );
-      expect(find.byKey(const ValueKey('chat-start-caret')), findsOneWidget);
+      // The drawing carries the caret; the screen has no second blinking
+      // one (chat-5), so the fresh sheet is the only scene drawn.
+      expect(find.byKey(const ValueKey('chat-start-caret')), findsNothing);
       expect(_drawn(tester), [isA<StatesSheetScene>()]);
       await _unmount(tester);
     });
