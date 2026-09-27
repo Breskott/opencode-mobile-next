@@ -112,8 +112,6 @@ const _frozenBaseline = <String>{
   'KitLoadingBar / loading / system',
   'KitRefresh / pulled and released / effectsOff',
   'KitRefresh / pulled and released / system',
-  'KitRowMenu / menu opens / effectsOff',
-  'KitRowMenu / menu opens / system',
   'KitScreen / loading / effectsOff',
   'KitScreen / loading / system',
   'KitSheet / loading / effectsOff',
@@ -502,9 +500,8 @@ void _predatingParts() {
     changes: {
       'menu opens': KitMotionChange(
         build: menu,
-        act: (tester, stage) async => tester
-            .state<PopupMenuButtonState<int>>(find.byType(PopupMenuButton<int>))
-            .showButtonMenu(),
+        act: (tester, stage) =>
+            stage.press(find.byKey(const ValueKey('kit-row-menu-button'))),
         shows: 'Rename',
       ),
     },
@@ -749,9 +746,12 @@ void main() {
         if (p.kind != KitManifestKind.scope && p.exported) p.name,
       for (final o in manifest.openers) o.name,
     };
+    final withRetired = readKitManifest(includeRetired: true);
     final exported = <String>{
-      for (final p in manifest.parts) p.name,
-      for (final o in manifest.openers) o.name,
+      for (final p in withRetired.parts)
+        if (p.exported) p.name,
+      for (final o in withRetired.openers)
+        if (o.exported) o.name,
     };
 
     test('the G4 manifest is read (the parser still works)', () {
@@ -800,7 +800,7 @@ void main() {
             'Each part kit.dart exports needs kitMotionStillTests(\'<Name>\', '
             '...) in its own test/kit/kit_<snake>_test.dart '
             '(test/kit/kit_motion_still.dart shows how; a stateful part also '
-            'registers changes:).',
+            'registers changes:). Missing samples:\n${missing.join('\n')}',
       );
     });
 
