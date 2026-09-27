@@ -106,7 +106,7 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
     final storageRow = KitRow(
       key: const Key('termux-storage-row'),
       leading: KitRow.icon(context, AppIconography.database),
-      title: l10n.termuxStorageTitle,
+      title: l10n.thisPhoneStorage,
       supporting: TextSpan(text: storageSubtitle),
       supportingKey: const Key('termux-storage-row-subtitle'),
       trailing: const KitChevron(),

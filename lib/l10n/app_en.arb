@@ -30139,19 +30139,19 @@
   "@thisPhoneNeedsAttention": {
     "description": "This phone: the status word when a start or a switch between OpenCode versions failed or stopped half way"
   },
-  "thisPhoneSetUp": "Set up OpenCode on this phone",
+  "thisPhoneSetUp": "Set up OpenCode",
   "@thisPhoneSetUp": {
     "description": "This phone: the button when OpenCode is not set up yet"
   },
-  "thisPhoneStart": "Start the server on this phone",
+  "thisPhoneStart": "Start the server",
   "@thisPhoneStart": {
     "description": "This phone: the button that starts the stopped OpenCode server"
   },
-  "thisPhoneStop": "Stop the server on this phone",
+  "thisPhoneStop": "Stop the server",
   "@thisPhoneStop": {
     "description": "This phone: the button that stops the running OpenCode server (it asks first)"
   },
-  "thisPhoneUpdate": "Update OpenCode on this phone",
+  "thisPhoneUpdate": "Update OpenCode",
   "@thisPhoneUpdate": {
     "description": "This phone: the row that installs the pinned OpenCode version again"
   },
@@ -30164,7 +30164,7 @@
       }
     }
   },
-  "thisPhoneAddTools": "Add tools to this phone",
+  "thisPhoneAddTools": "Add tools",
   "@thisPhoneAddTools": {
     "description": "This phone: the row (and sheet title) that adds optional tools"
   },
@@ -30176,15 +30176,23 @@
   "@thisPhoneAddToolsTermux": {
     "description": "This phone: the line under Add tools for OpenCode in Termux"
   },
-  "thisPhoneInstalled": "Installed on this phone",
+  "thisPhoneInstalled": "Installed",
   "@thisPhoneInstalled": {
     "description": "This phone: the folded row that lists what setup installed"
   },
-  "thisPhoneTerminal": "Open a terminal on this phone",
+  "thisPhoneTerminal": "Open a terminal",
   "@thisPhoneTerminal": {
     "description": "This phone: the row that opens a shell in this phone's Linux"
   },
-  "thisPhoneRemove": "Remove OpenCode from this phone",
+  "thisPhoneStorage": "Storage",
+  "@thisPhoneStorage": {
+    "description": "This phone: the storage row. The page title already names the phone."
+  },
+  "thisPhoneConnect": "Connect",
+  "@thisPhoneConnect": {
+    "description": "This phone: the primary button that connects the app to this phone's running server. The page title names the phone."
+  },
+  "thisPhoneRemove": "Remove OpenCode",
   "@thisPhoneRemove": {
     "description": "This phone: the destructive row that removes OpenCode (it asks first)"
   },

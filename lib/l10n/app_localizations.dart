@@ -40602,25 +40602,25 @@ abstract class AppLocalizations {
   /// This phone: the button when OpenCode is not set up yet
   ///
   /// In en, this message translates to:
-  /// **'Set up OpenCode on this phone'**
+  /// **'Set up OpenCode'**
   String get thisPhoneSetUp;
 
   /// This phone: the button that starts the stopped OpenCode server
   ///
   /// In en, this message translates to:
-  /// **'Start the server on this phone'**
+  /// **'Start the server'**
   String get thisPhoneStart;
 
   /// This phone: the button that stops the running OpenCode server (it asks first)
   ///
   /// In en, this message translates to:
-  /// **'Stop the server on this phone'**
+  /// **'Stop the server'**
   String get thisPhoneStop;
 
   /// This phone: the row that installs the pinned OpenCode version again
   ///
   /// In en, this message translates to:
-  /// **'Update OpenCode on this phone'**
+  /// **'Update OpenCode'**
   String get thisPhoneUpdate;
 
   /// Technical: This phone: the line under Update, naming the pinned version it installs, e.g. 'Installs version 1.18.29'
@@ -40632,7 +40632,7 @@ abstract class AppLocalizations {
   /// This phone: the row (and sheet title) that adds optional tools
   ///
   /// In en, this message translates to:
-  /// **'Add tools to this phone'**
+  /// **'Add tools'**
   String get thisPhoneAddTools;
 
   /// This phone: the line under Add tools for OpenCode inside the app
@@ -40650,19 +40650,31 @@ abstract class AppLocalizations {
   /// This phone: the folded row that lists what setup installed
   ///
   /// In en, this message translates to:
-  /// **'Installed on this phone'**
+  /// **'Installed'**
   String get thisPhoneInstalled;
 
   /// This phone: the row that opens a shell in this phone's Linux
   ///
   /// In en, this message translates to:
-  /// **'Open a terminal on this phone'**
+  /// **'Open a terminal'**
   String get thisPhoneTerminal;
+
+  /// This phone: the storage row. The page title already names the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get thisPhoneStorage;
+
+  /// This phone: the primary button that connects the app to this phone's running server. The page title names the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get thisPhoneConnect;
 
   /// This phone: the destructive row that removes OpenCode (it asks first)
   ///
   /// In en, this message translates to:
-  /// **'Remove OpenCode from this phone'**
+  /// **'Remove OpenCode'**
   String get thisPhoneRemove;
 
   /// This phone: why a row is off while OpenCode starts, stops or installs

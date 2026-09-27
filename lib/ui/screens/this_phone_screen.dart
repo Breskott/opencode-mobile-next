@@ -467,9 +467,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           if (!connected && _host.profile != null) {
             primary = KitAction(
               key: const ValueKey('this-phone-connect'),
-              label: l10n.phoneServerCardConnect(
-                l10n.phoneServerNameInSentence,
-              ),
+              label: l10n.thisPhoneConnect,
               onPressed: () => unawaited(_connect()),
             );
           }
@@ -627,7 +625,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           KitRow(
             key: const ValueKey('this-phone-storage'),
             leading: icon(AppIconography.database),
-            title: l10n.termuxStorageTitle,
+            title: l10n.thisPhoneStorage,
             trailing: _host.bytesUsed == null
                 ? null
                 : KitRowValue(

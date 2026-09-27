@@ -25709,16 +25709,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisPhoneNeedsAttention => 'Needs you';
 
   @override
-  String get thisPhoneSetUp => 'Set up OpenCode on this phone';
+  String get thisPhoneSetUp => 'Set up OpenCode';
 
   @override
-  String get thisPhoneStart => 'Start the server on this phone';
+  String get thisPhoneStart => 'Start the server';
 
   @override
-  String get thisPhoneStop => 'Stop the server on this phone';
+  String get thisPhoneStop => 'Stop the server';
 
   @override
-  String get thisPhoneUpdate => 'Update OpenCode on this phone';
+  String get thisPhoneUpdate => 'Update OpenCode';
 
   @override
   String thisPhoneUpdateDetail(String version) {
@@ -25726,7 +25726,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get thisPhoneAddTools => 'Add tools to this phone';
+  String get thisPhoneAddTools => 'Add tools';
 
   @override
   String get thisPhoneAddToolsInApp => 'Python, Node.js, AI Team and more';
@@ -25735,13 +25735,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisPhoneAddToolsTermux => 'AI Team and Claude Code';
 
   @override
-  String get thisPhoneInstalled => 'Installed on this phone';
+  String get thisPhoneInstalled => 'Installed';
 
   @override
-  String get thisPhoneTerminal => 'Open a terminal on this phone';
+  String get thisPhoneTerminal => 'Open a terminal';
 
   @override
-  String get thisPhoneRemove => 'Remove OpenCode from this phone';
+  String get thisPhoneStorage => 'Storage';
+
+  @override
+  String get thisPhoneConnect => 'Connect';
+
+  @override
+  String get thisPhoneRemove => 'Remove OpenCode';
 
   @override
   String get thisPhoneBusy => 'Wait for the current step to finish';

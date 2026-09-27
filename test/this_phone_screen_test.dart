@@ -118,10 +118,7 @@ void main() {
     expect(_present(tester), _shared.toSet());
     // Every act names what it acts on.
     expect(find.text(_l10n.thisPhoneStop), findsOneWidget);
-    expect(
-      find.text(_l10n.phoneServerCardConnect(_l10n.phoneServerNameInSentence)),
-      findsOneWidget,
-    );
+    expect(find.text(_l10n.thisPhoneConnect), findsOneWidget);
     // Only the in-app Linux has a terminal and Remove.
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('this-phone-remove')),
