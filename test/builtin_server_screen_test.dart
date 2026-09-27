@@ -75,6 +75,7 @@ class _FakeLinux extends BuiltinLinux {
   int? serverPortArg;
   String? writtenPassword;
   int uninstallCalls = 0;
+  String? uninstallError;
 
   @override
   Future<BuiltinLinuxStatus> status() async {
@@ -134,6 +135,8 @@ class _FakeLinux extends BuiltinLinux {
   @override
   Future<void> uninstall() async {
     uninstallCalls++;
+    final error = uninstallError;
+    if (error != null) throw BuiltinLinuxException(error);
     serverRunning = false;
     installed = false;
     openCodeInstalled = false;
@@ -293,6 +296,15 @@ void main() {
     await tap(tester, 'builtin-show-log');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('builtin-server-log')), findsOneWidget);
+    // The log ends because the server stopped: Start is right there (map
+    // actionsMissing "Restart when the log ends in a crash").
+    expect(find.text('listening'), findsOneWidget);
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.18.29');
+    await tester.tap(find.byKey(const Key('builtin-server-log-start')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('builtin-server-log')), findsNothing);
+    expect(connection.connected, hasLength(1));
   });
 
   testWidgets('Stop stops a running server', (tester) async {
@@ -328,5 +340,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(linux.uninstallCalls, 1);
     expect(find.byKey(const Key('builtin-install-ubuntu')), findsOneWidget);
+    // Said once in place: a snackbar is only for Undo (KIT-34).
+    expect(find.text('Ubuntu was removed.'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('a failed remove keeps the question open with Try again', (
+    tester,
+  ) async {
+    linux
+      ..installed = true
+      ..phase = BuiltinLinuxPhase.ready
+      ..openCodeInstalled = true
+      ..uninstallError = 'rm: device busy';
+    await mount(tester);
+
+    await tap(tester, 'builtin-remove');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('builtin-server-remove-confirm')));
+    await tester.pumpAndSettle();
+    expect(linux.uninstallCalls, 1);
+    // Still asking, not closed on the error (DATA-14).
+    expect(find.text('Remove the built-in Ubuntu?'), findsOneWidget);
+    expect(find.text('Ubuntu was removed.'), findsNothing);
   });
 }

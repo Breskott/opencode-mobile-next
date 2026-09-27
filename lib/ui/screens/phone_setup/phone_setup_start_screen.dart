@@ -381,47 +381,31 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.phoneSetupStartScreenTitle)),
-      body: SafeArea(
-        top: false,
-        child: ValueListenableBuilder<SetupProgress>(
-          valueListenable: _engine.progress,
-          builder: (context, progress, _) {
-            final hero = _heroFor(progress);
-            // Until the job on disk is read the screen promises nothing: the
-            // one loading bar, and no state that might be the wrong one.
-            return KitScreen(
-              loading: hero == _Hero.loading,
-              loadingLabel: l10n.workLoadingLabel,
-              body: hero == _Hero.loading
+    return ValueListenableBuilder<SetupProgress>(
+      valueListenable: _engine.progress,
+      builder: (context, progress, _) {
+        final hero = _heroFor(progress);
+        // Until the job on disk is read the screen promises nothing: the
+        // one loading bar, and no state that might be the wrong one.
+        return KitScreen(
+          topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
+          loading: hero == _Hero.loading,
+          loadingLabel: l10n.workLoadingLabel,
+          // Each state cross-fades in and fills the body from the top: a
+          // centred swap would float it mid-screen (design regressions
+          // ledger row 1). Reduced motion swaps at once (KitSwap).
+          body: KitSwap(
+            pace: KitPace.standard,
+            alignment: AlignmentDirectional.topCenter,
+            child: KeyedSubtree(
+              key: ValueKey(hero),
+              child: hero == _Hero.loading
                   ? const SizedBox.shrink()
-                  : _Entrance(
-                      reduceMotion: reduceMotion,
-                      child: AnimatedSwitcher(
-                        duration: reduceMotion
-                            ? Duration.zero
-                            : KitMotion.standard,
-                        switchInCurve: KitMotion.enter,
-                        switchOutCurve: KitMotion.exit,
-                        // Each state fills the body from the top: the
-                        // default centring would float it mid-screen
-                        // (design regressions ledger row 1).
-                        layoutBuilder: (current, previous) => Stack(
-                          fit: StackFit.expand,
-                          children: [...previous, ?current],
-                        ),
-                        child: KeyedSubtree(
-                          key: ValueKey(hero),
-                          child: _state(context, l10n, hero, progress),
-                        ),
-                      ),
-                    ),
-            );
-          },
-        ),
-      ),
+                  : _state(context, l10n, hero, progress),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -433,7 +417,6 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     _Hero hero,
     SetupProgress progress,
   ) {
-    final theme = Theme.of(context);
     final install = expandSetupSelection(
       installableComponents(_engine.registry),
       _selection,
@@ -526,21 +509,15 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
           : preflight != null
           ? const ValueKey('phone-setup-start-preflight')
           : const ValueKey('phone-setup-start-body'),
-      bodyTone: failure != null && !_opening
-          ? AppStatusTone.failure
-          : preflight != null
-          ? AppStatusTone.attention
-          : null,
+      bodyTone: failure != null && !_opening ? AppStatusTone.failure : null,
       progress: _opening ? const KitProgress.waiting() : meter,
       // What Set up puts on the phone, next to the promise it counts.
       content: fresh && includesText != null
-          ? Text(
+          ? KitText(
               includesText,
               key: const ValueKey('phone-setup-start-includes'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                height: 1.4,
-              ),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
             )
           : null,
       primary: _opening
@@ -574,16 +551,16 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     );
   }
 
-  /// The less common ways in: folded under one quiet toggle (the same shape
-  /// as a state's Details), then plain rows.
+  /// The less common ways in: one row that unfolds in place (a rare
+  /// choice, [KitExpandRow]), then plain rows.
   Widget _otherWays(
     BuildContext context,
     AppLocalizations l10n,
     _Hero hero,
     String? includesText,
   ) {
-    final theme = Theme.of(context);
     final large = AppTheme.stackedActions(context);
+    final termux = _termux;
     Widget row({
       required Key key,
       required IconData icon,
@@ -592,98 +569,70 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       required VoidCallback onTap,
     }) => KitRow(
       key: key,
-      padding: const EdgeInsets.symmetric(vertical: 4),
       leading: KitRow.icon(context, icon),
       title: title,
       titleMaxLines: large ? 3 : 1,
       supporting: detail == null ? null : TextSpan(text: detail),
-      supportingMaxLines: large ? 3 : 1,
-      trailing: const SizedBox.square(
-        dimension: 48,
-        child: Icon(AppIconography.chevronRight, size: 20),
-      ),
+      supportingMaxLines: large ? 3 : 2,
+      trailing: const KitChevron(),
       onTap: _busy ? null : onTap,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Divider(height: 1, color: AppTheme.hairline(theme)),
-        const SizedBox(height: 8),
-        KitInset(
-          child: TextButton.icon(
-            key: const ValueKey('phone-setup-start-other-ways'),
-            onPressed: () => setState(() => _otherWaysOpen = !_otherWaysOpen),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.mutedOf(theme),
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(
-                horizontal: KitButton.tertiaryInset,
+        const KitDivider(),
+        KitExpandRow(
+          headerKey: const ValueKey('phone-setup-start-other-ways'),
+          title: l10n.phoneSetupStartOtherWays,
+          expanded: _otherWaysOpen,
+          onExpansionChanged: (open) => setState(() => _otherWaysOpen = open),
+          children: [
+            // Termux already runs OpenCode, so Connect leads; the in-app
+            // setup stays one tap away for someone who wants to move off
+            // Termux.
+            if (hero == _Hero.termux)
+              row(
+                key: const ValueKey('phone-setup-start-set-up-here'),
+                icon: AppIconography.phone,
+                title: l10n.phoneSetupStartSetUpHere,
+                detail: includesText,
+                onTap: () => unawaited(_run(_selection)),
               ),
+            // Both are on the phone: the app leads with the one inside it,
+            // and the one in Termux stays one tap away (map statesMissing
+            // "both in-app and Termux present").
+            if (hero == _Hero.ready && _termuxPresent)
+              row(
+                key: const ValueKey('phone-setup-start-connect-termux'),
+                icon: AppIconography.terminal,
+                title: l10n.phoneSetupStartUseTermuxOne,
+                detail: l10n.phoneSetupStartUseTermuxOneDetail,
+                onTap: _connectTermux,
+              ),
+            if (hero != _Hero.termux &&
+                !(hero == _Hero.ready && _termuxPresent))
+              row(
+                key: const ValueKey('phone-setup-start-use-termux'),
+                icon: AppIconography.terminal,
+                title: l10n.phoneSetupStartUseTermux,
+                // Termux is there but has not let the app in yet (map
+                // statesMissing "Termux installed but not yet allowed"):
+                // the Termux setup is where that permission is given.
+                detail: termux?.state == TermuxRunningServerState.denied
+                    ? l10n.phoneSetupStartTermuxNotAllowed
+                    : l10n.phoneSetupStartAdvanced,
+                onTap: () => unawaited(_useTermux()),
+              ),
+            row(
+              key: const ValueKey('phone-setup-start-by-address'),
+              icon: AppIconography.link,
+              title: l10n.phoneSetupStartByAddress,
+              onTap: _connectByAddress,
             ),
-            icon: Icon(
-              _otherWaysOpen
-                  ? AppIconography.chevronUp
-                  : AppIconography.chevronDown,
-              size: 18,
-            ),
-            label: Text(l10n.phoneSetupStartOtherWays),
-          ),
+          ],
         ),
-        if (_otherWaysOpen) ...[
-          // Termux already runs OpenCode, so Connect leads; the in-app setup
-          // stays one tap away for someone who wants to move off Termux.
-          if (hero == _Hero.termux)
-            row(
-              key: const ValueKey('phone-setup-start-set-up-here'),
-              icon: AppIconography.phone,
-              title: l10n.phoneSetupStartSetUpHere,
-              detail: includesText,
-              onTap: () => unawaited(_run(_selection)),
-            ),
-          if (hero != _Hero.termux)
-            row(
-              key: const ValueKey('phone-setup-start-use-termux'),
-              icon: AppIconography.terminal,
-              title: l10n.phoneSetupStartUseTermux,
-              detail: l10n.phoneSetupStartAdvanced,
-              onTap: () => unawaited(_useTermux()),
-            ),
-          row(
-            key: const ValueKey('phone-setup-start-by-address'),
-            icon: AppIconography.link,
-            title: l10n.phoneSetupStartByAddress,
-            onTap: _connectByAddress,
-          ),
-        ],
       ],
-    );
-  }
-}
-
-/// A short rise and fade the first time the page shows, so it arrives
-/// rather than blinks in. Reduce motion shows it in place at once.
-class _Entrance extends StatelessWidget {
-  const _Entrance({required this.reduceMotion, required this.child});
-
-  final bool reduceMotion;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (reduceMotion) return child;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: KitMotion.standard,
-      curve: KitMotion.enter,
-      child: child,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 12 * (1 - value)),
-          child: child,
-        ),
-      ),
     );
   }
 }

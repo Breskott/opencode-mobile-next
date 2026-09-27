@@ -13,6 +13,12 @@ import '../widgets/local_agent_onboarding.dart';
 /// server's details show it as one optional row, and everything about it
 /// (the offer, installing, signing in, the project folder, start and stop)
 /// lives here.
+///
+/// Built from kit parts only (screen-phone-1): a [KitScreen] page with its
+/// [KitTopBar], the onboarding block on the screen's gutters. The page's
+/// new structure (install into the in-app Ubuntu, resume, per-project
+/// agent choice) waits for its slice.
+// revamp: redesign (slice-P1.6b)
 class LocalAgentScreen extends ConsumerWidget {
   const LocalAgentScreen({super.key, required this.onConnected});
 
@@ -22,24 +28,37 @@ class LocalAgentScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.localAgentPageTitle)),
-      // A plain scroll view, not a lazy list: the block is empty while it
-      // checks the phone, and a lazy list would drop an empty child (and
-      // with it the check) before it had anything to show.
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, KitScreen.endPadding(context)),
-        child: LocalAgentOnboardingBlock(
-          key: const ValueKey('local-agent-block'),
-          connection: ref.read(connProvider),
-          onConnected: onConnected,
-          // Claude Code only runs through the Termux-hosted Ubuntu today
-          // (P1.6 adds the in-app Claude Code component): this is the only
-          // door that actually unblocks it, whether nothing is set up yet
-          // or the in-app Linux already is.
-          onOpenPhoneSetup: () =>
-              unawaited(Navigator.of(context).pushNamed('/termux-setup')),
-        ),
+    final tokens = KitTokens.of(context);
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.localAgentPageTitle),
+      width: KitScreenWidth.reading,
+      // One box in a sliver, not a lazy list of children: the block is
+      // empty while it checks the phone, and a lazy list could drop an
+      // empty child (and with it the check) before it had anything to show.
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.gutter,
+              tokens.space4,
+              tokens.gutter,
+              KitScreen.endPadding(context),
+            ),
+            sliver: SliverToBoxAdapter(
+              child: LocalAgentOnboardingBlock(
+                key: const ValueKey('local-agent-block'),
+                connection: ref.read(connProvider),
+                onConnected: onConnected,
+                // Claude Code only runs through the Termux-hosted Ubuntu
+                // today (P1.6 adds the in-app Claude Code component): this
+                // is the only door that actually unblocks it, whether
+                // nothing is set up yet or the in-app Linux already is.
+                onOpenPhoneSetup: () =>
+                    unawaited(Navigator.of(context).pushNamed('/termux-setup')),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

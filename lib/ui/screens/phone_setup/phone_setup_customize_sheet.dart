@@ -28,18 +28,23 @@ Future<Set<String>?> showSetupCustomizeSheet(
   required SetupEngine engine,
   bool addMode = false,
   Set<String>? selected,
-}) => showModalBottomSheet<Set<String>>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: true,
-  builder: (_) => SetupCustomizeSheet(
-    registry: installableComponents(engine.registry),
-    addMode: addMode,
-    selected: selected,
-    installedOptional: addMode ? engine.installedOptional() : null,
-  ),
-);
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return showKitSheet<Set<String>>(
+    context,
+    title: addMode
+        ? l10n.phoneSetupStartAddTitle
+        : l10n.phoneSetupStartCustomizeTitle,
+    icon: AppIconography.download,
+    body: (_) => SetupCustomizeSheet(
+      registry: installableComponents(engine.registry),
+      addMode: addMode,
+      selected: selected,
+      installedOptional: addMode ? engine.installedOptional() : null,
+      framed: true,
+    ),
+  );
+}
 
 class SetupCustomizeSheet extends StatefulWidget {
   const SetupCustomizeSheet({
@@ -50,9 +55,15 @@ class SetupCustomizeSheet extends StatefulWidget {
     this.installedOptional,
     this.deviceProbe,
     this.linux,
+    this.framed = false,
   });
 
   final List<SetupComponent> registry;
+
+  /// Drawn inside a [KitSheet] ([showSetupCustomizeSheet]), which already
+  /// shows the title and scrolls. False (the default, for a caller that
+  /// hosts the sheet itself) draws the title and its own scroll view.
+  final bool framed;
   final bool addMode;
 
   /// The current selection to start from; the registry defaults when null.
@@ -205,8 +216,8 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     final rows = widget.addMode ? _optional : widget.registry;
     final checking = widget.addMode && _installed == null;
     final install = _willInstall;
@@ -214,9 +225,18 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     // P0.8: told why before "Done"/"Add" starts a download, never after a
     // failed one.
     final preflight = checking ? null : _preflightFor(install);
+    // Add mode with every optional tool already on the phone (map
+    // statesMissing "everything optional installed"): nothing to choose.
+    final everythingInstalled =
+        widget.addMode &&
+        !checking &&
+        rows.isNotEmpty &&
+        rows.every((component) => _isInstalled(component.id));
     final String totalsText;
     if (checking) {
       totalsText = l10n.phoneSetupStartChecking;
+    } else if (everythingInstalled) {
+      totalsText = l10n.phoneSetupCustomizeAllInstalled;
     } else if (install.isEmpty) {
       totalsText = l10n.phoneSetupStartNothingChosen;
     } else if (preflight != null) {
@@ -227,74 +247,95 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
         setupSizeText(l10n, totals.bytes),
       );
     }
-    // One scroll for the whole sheet: at large text a pinned footer would
-    // leave no room for the rows it totals.
-    return ListView(
-      key: const ValueKey('phone-setup-customize-sheet'),
-      shrinkWrap: true,
-      children: [
+    final disabled =
+        checking || preflight != null || (widget.addMode && install.isEmpty);
+    final children = <Widget>[
+      if (!widget.framed)
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.gutter,
+            end: tokens.gutter,
+            bottom: tokens.space2,
+          ),
           child: Semantics(
             header: true,
-            child: Text(
+            child: KitText(
               widget.addMode
                   ? l10n.phoneSetupStartAddTitle
                   : l10n.phoneSetupStartCustomizeTitle,
-              style: theme.textTheme.titleLarge,
+              role: KitTextRole.title,
             ),
           ),
         ),
-        // On the sheet's 16 dp rails, like every list (standard §1).
-        for (final component in rows)
-          _row(context, l10n, component, checking: checking),
-        Divider(height: 1, color: AppTheme.hairline(theme)),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  totalsText,
-                  key: const ValueKey('phone-setup-customize-totals'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: preflight == null
-                        ? AppTheme.mutedOf(theme)
-                        : AppTheme.statusColor(theme, AppStatusTone.attention),
-                  ),
-                ),
-              ),
-              if (preflight?.issue == SetupPreflightIssue.lowSpace) ...[
-                const SizedBox(height: 8),
-                KitButton(
-                  key: const ValueKey('phone-setup-customize-open-storage'),
-                  role: KitButtonRole.secondary,
-                  label: l10n.phoneSetupPreflightOpenStorage,
-                  onPressed: _openStorageSettings,
-                ),
-              ],
-              const SizedBox(height: 12),
-              // The totals line right above is the reason when it is off
-              // ("Nothing chosen yet", "Checking…", a pre-flight problem).
-              KitButton.primary(
-                key: const ValueKey('phone-setup-customize-done'),
-                label: widget.addMode
-                    ? l10n.phoneSetupStartAdd
-                    : l10n.phoneSetupStartDone,
-                onPressed:
-                    checking ||
-                        preflight != null ||
-                        (widget.addMode && install.isEmpty)
-                    ? null
-                    : () => Navigator.of(context).pop(_result),
-              ),
-            ],
+      KitRowGroup(
+        margin: EdgeInsetsDirectional.zero,
+        leadingIcons: false,
+        children: [
+          for (final component in rows)
+            _row(context, l10n, component, checking: checking),
+        ],
+      ),
+      SizedBox(height: tokens.space4),
+      // What the switches add up to, said once as they change. A problem
+      // the phone has (P0.8) is a notice with its fix beside it.
+      if (preflight == null)
+        Semantics(
+          liveRegion: true,
+          child: KitText(
+            totalsText,
+            key: const ValueKey('phone-setup-customize-totals'),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
+        )
+      else
+        KitNotice(
+          key: const ValueKey('phone-setup-customize-preflight'),
+          messageKey: const ValueKey('phone-setup-customize-totals'),
+          icon: AppIconography.warning,
+          title: setupPreflightHeadline(l10n, preflight.issue!),
+          message: totalsText,
+          actions: [
+            if (preflight.issue == SetupPreflightIssue.lowSpace)
+              KitAction(
+                key: const ValueKey('phone-setup-customize-open-storage'),
+                label: l10n.phoneSetupPreflightOpenStorage,
+                onPressed: _openStorageSettings,
+              ),
+          ],
         ),
-      ],
+      SizedBox(height: tokens.space4),
+      // The line right above is the reason when it is off ("Nothing chosen
+      // yet", "Checking…", everything installed, a pre-flight problem): the
+      // visible reason next to the button (STATE-8), said once.
+      KitActionBlock(
+        primary: KitAction(
+          key: const ValueKey('phone-setup-customize-done'),
+          label: widget.addMode
+              ? l10n.phoneSetupStartAdd
+              : l10n.phoneSetupStartDone,
+          onPressed: disabled ? null : () => Navigator.of(context).pop(_result),
+        ),
+      ),
+    ];
+    final column = Column(
+      key: widget.framed ? const ValueKey('phone-setup-customize-sheet') : null,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+    if (widget.framed) return column;
+    // Hosted on its own: one scroll for the whole sheet, since at large
+    // text a pinned footer would leave no room for the rows it totals.
+    return ListView(
+      key: const ValueKey('phone-setup-customize-sheet'),
+      shrinkWrap: true,
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        bottom: tokens.space4,
+      ),
+      children: [column],
     );
   }
 
@@ -304,54 +345,39 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     SetupComponent component, {
     required bool checking,
   }) {
-    final theme = Theme.of(context);
     final key = ValueKey('phone-setup-customize-${component.id}');
     if (component.required) {
-      // Shown so nothing is installed behind the person's back, but locked:
-      // switching it off would leave no working agent.
-      return SwitchListTile(
+      // Shown so nothing is installed behind the person's back, but locked
+      // on with its reason (KIT-30: an always-on setting is locked, not a
+      // disabled switch): switching it off would leave no working agent.
+      return KitSwitchRow(
         key: key,
+        title: component.title,
         value: true,
         onChanged: null,
-        title: Text(component.title),
-        subtitle: Text(component.why ?? l10n.phoneSetupStartRequiredWhy),
+        supporting: component.why ?? l10n.phoneSetupStartRequiredWhy,
+        locked: l10n.phoneSetupCustomizeIncluded,
       );
     }
     if (widget.addMode && _isInstalled(component.id)) {
-      return ListTile(
+      return KitSwitchRow(
         key: key,
-        title: Text(component.title),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              AppIconography.check,
-              size: AppIconography.inlineSize,
-              color: AppTheme.successOf(theme),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              l10n.phoneSetupStartInstalled,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          ],
-        ),
+        title: component.title,
+        value: true,
+        onChanged: null,
+        locked: l10n.phoneSetupStartInstalled,
       );
     }
     final bytes = component.downloadBytes;
-    return SwitchListTile(
+    return KitSwitchRow(
       key: key,
+      title: component.title,
       value: _chosen.contains(component.id),
       onChanged: checking ? null : (on) => _toggle(component, on),
-      title: Text(component.title),
-      subtitle: bytes == null || bytes <= 0
+      disabledReason: checking ? l10n.phoneSetupStartChecking : null,
+      supporting: bytes == null || bytes <= 0
           ? null
-          : Text(
-              l10n.phoneSetupStartApproxSize(setupSizeText(l10n, bytes)),
-              style: TextStyle(color: AppTheme.mutedOf(theme)),
-            ),
+          : l10n.phoneSetupStartApproxSize(setupSizeText(l10n, bytes)),
     );
   }
 }

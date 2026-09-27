@@ -26092,5 +26092,33 @@
         "type": "int"
       }
     }
+  },
+  "builtinServerRuntimeLocked": "Stop the server and wait for the current step to switch.",
+  "@builtinServerRuntimeLocked": {
+    "description": "Built-in server, step 2: why the OpenCode 1 / OpenCode 2 choice is off while a step runs or the server is running."
+  },
+  "builtinServerLogReadFailed": "Couldn't read the server log.",
+  "@builtinServerLogReadFailed": {
+    "description": "Built-in server log sheet: the log could not be read; the raw reason is under Details."
+  },
+  "phoneSetupStartUseTermuxOne": "Use the one in Termux",
+  "@phoneSetupStartUseTermuxOne": {
+    "description": "Phone setup screen A, Other ways, when OpenCode is ready in the app and also set up in Termux: connect to the Termux one instead."
+  },
+  "phoneSetupStartUseTermuxOneDetail": "OpenCode is also set up in Termux. Connect to it instead.",
+  "@phoneSetupStartUseTermuxOneDetail": {
+    "description": "Phone setup screen A, Other ways: the supporting line of \"Use the one in Termux\"."
+  },
+  "phoneSetupStartTermuxNotAllowed": "Termux is installed but hasn't let this app in yet. Finish its setup.",
+  "@phoneSetupStartTermuxNotAllowed": {
+    "description": "Phone setup screen A, Other ways: supporting line of \"Use Termux instead\" when Termux is installed but has not granted the run-command permission."
+  },
+  "phoneSetupCustomizeAllInstalled": "Every optional tool is already on this phone.",
+  "@phoneSetupCustomizeAllInstalled": {
+    "description": "Add tools sheet: every optional tool is installed, so there is nothing to add."
+  },
+  "phoneSetupCustomizeIncluded": "Required",
+  "@phoneSetupCustomizeIncluded": {
+    "description": "Customize sheet: the word at the end of a required component's row, which cannot be switched off."
   }
 }

@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/storage.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/termux_storage_screen.dart';
 
 /// A phone-shaped tree under a temp directory.
@@ -725,7 +726,8 @@ void main() {
       fixture.log = '[oc] Measuring storage on this phone\n[oc] Build caches';
       await tester.pump(const Duration(milliseconds: 60));
       expect(find.byKey(const Key('termux-storage-scanning')), findsOneWidget);
-      expect(find.byKey(const Key('setup-live-output')), findsOneWidget);
+      // The scan's output is the kit's one log view (KIT-31).
+      expect(find.byKey(const ValueKey('kit-log-panel')), findsOneWidget);
       expect(find.textContaining('[oc] Build caches'), findsOneWidget);
       await tester.tap(find.byKey(const Key('termux-storage-cancel')));
       fixture.state = 'cancelled';
@@ -816,16 +818,30 @@ void main() {
       // Keep the previous scan visibly stale until it is measured again.
       expect(find.text('46 GB measured in Termux'), findsOneWidget);
       expect(
-        find.textContaining('Scan again before cleaning more'),
+        find.text(
+          'Previous scan · Scan again before cleaning more · Scanned 2 min ago',
+        ),
         findsOneWidget,
       );
       expect(
         tester
-            .widget<FilledButton>(
+            .widget<Text>(find.byKey(const ValueKey('kit-action-reason')))
+            .data,
+        'Previous scan · Scan again before cleaning more',
+      );
+      expect(
+        tester
+            .widget<KitButton>(
               find.byKey(const Key('termux-storage-clean-build_caches')),
             )
             .onPressed,
         isNull,
+      );
+      // The reason is said beside the disabled Clean (STATE-8), and the
+      // result offers the rescan (map actionsMissing "rescan after a clean").
+      expect(
+        find.byKey(const Key('termux-storage-rescan-after-clean')),
+        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     });
@@ -909,10 +925,19 @@ void main() {
         fixture.report = _fixtureReport();
         await fixture.mount(tester, textScale: 2.5, rtl: rtl, tall: false);
         await tester.pump(const Duration(milliseconds: 60));
+        // The page's own list (the top bar and the rows hold scrollables of
+        // their own).
+        final list = find
+            .descendant(
+              of: find.byKey(const ValueKey('termux-storage-list')),
+              matching: find.byType(Scrollable),
+            )
+            .first;
         expect(find.byKey(const Key('termux-storage-total')), findsOneWidget);
         await tester.scrollUntilVisible(
           find.byKey(const Key('termux-storage-cat-build_caches')),
           100,
+          scrollable: list,
         );
         await tester.pumpAndSettle();
         await tester.tap(
@@ -922,12 +947,14 @@ void main() {
         await tester.scrollUntilVisible(
           find.byKey(const Key('termux-storage-clean-build_caches')),
           100,
+          scrollable: list,
         );
         await tester.pumpAndSettle();
         await tester.pump();
         await tester.scrollUntilVisible(
           find.byKey(const Key('termux-storage-project-IPTV_King')),
           100,
+          scrollable: list,
         );
         await tester.pumpAndSettle();
         await tester.pump();
