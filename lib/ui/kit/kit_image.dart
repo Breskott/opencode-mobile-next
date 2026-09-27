@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/app_localizations_en.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../theme_roles.dart';
@@ -19,8 +20,18 @@ import 'kit_motion.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
-AppLocalizations _l10n(BuildContext context) =>
-    lookupAppLocalizations(Localizations.localeOf(context));
+/// The kit's words: the app's bound [AppLocalizations], else the locale's
+/// lookup, else English, so the part never throws in a bare harness with no
+/// localization delegates (R8).
+AppLocalizations _l10n(BuildContext context) {
+  final bound = Localizations.of<AppLocalizations>(context, AppLocalizations);
+  if (bound != null) return bound;
+  final locale = Localizations.maybeLocaleOf(context);
+  if (locale != null && AppLocalizations.delegate.isSupported(locale)) {
+    return lookupAppLocalizations(locale);
+  }
+  return AppLocalizationsEn();
+}
 
 /// docs/ux-system/kit-api/KitImage.md: unbounded constraints (no [KitImage]
 /// width/height and no bounded incoming constraint) cap decoding at this
@@ -421,9 +432,9 @@ enum KitAvatarSize { tile, mark }
 ///
 /// Both fall back to the initials, so the slot is never empty. Error also
 /// shows the failure glyph ([KitTokens.glyphFor], in its neutral tone) on a
-/// `ground` ring at the circle's bottom end, and says "Can't show this
-/// image" after the name: a shape and words, never a red dot (LOOK-5,
-/// STATE-9).
+/// `ground` ring on the bottom-end corner, clear of the initials, and says
+/// "Can't show this image" after the name: a shape and words, never a red
+/// dot (LOOK-5, STATE-9).
 class KitAvatar extends StatefulWidget {
   const KitAvatar({
     super.key,
@@ -482,7 +493,8 @@ class _KitAvatarState extends State<KitAvatar> {
         ? KitTextRole.label
         : KitTextRole.headline;
     final source = widget.image;
-    final identity = icon != null
+    final failed = _failed && source != null;
+    final identityMark = icon != null
         ? Icon(icon, size: tokens.smallIconSize, color: tokens.roles.text1)
         : MediaQuery.withClampedTextScaling(
             maxScaleFactor: KitTokens.monogramMaxTextScale,
@@ -495,6 +507,18 @@ class _KitAvatarState extends State<KitAvatar> {
               overflow: TextOverflow.clip,
             ),
           );
+    // A failed image's badge sits on the square's bottom-end corner; the
+    // initials step a ring's width towards the top start, so the badge
+    // never covers the second initial (R8).
+    final identity = failed
+        ? Padding(
+            padding: const EdgeInsetsDirectional.only(
+              end: 2 * KitTokens.avatarBadgeRing,
+              bottom: 2 * KitTokens.avatarBadgeRing,
+            ),
+            child: identityMark,
+          )
+        : identityMark;
     final content = ClipOval(
       child: ColoredBox(
         color: tokens.roles.surface3,
@@ -551,7 +575,10 @@ class _KitAvatarState extends State<KitAvatar> {
         ),
       ),
     );
-    final failed = _failed && source != null;
+    // The badge sits on the bottom-end diagonal, its ring overlapping the
+    // circle's edge by one ring width: far enough out that it never covers
+    // the second initial (R8), close enough to read as the avatar's.
+    final badgeInset = _avatarBadgeInset(diameter);
     final mark = failed
         ? SizedBox(
             width: diameter,
@@ -561,8 +588,8 @@ class _KitAvatarState extends State<KitAvatar> {
               children: [
                 content,
                 PositionedDirectional(
-                  end: -KitTokens.avatarBadgeRing,
-                  bottom: -KitTokens.avatarBadgeRing,
+                  end: badgeInset,
+                  bottom: badgeInset,
                   child: _KitAvatarErrorBadge(roles: tokens.roles),
                 ),
               ],
@@ -600,6 +627,18 @@ class _KitAvatarErrorBadge extends StatelessWidget {
       color: KitTokens.toneColor(roles, AppStatusTone.failure),
     ),
   );
+}
+
+/// [KitAvatar]'s error-badge offset from the bottom-end corner (negative:
+/// outside the box), in whole logical pixels: the badge's centre on the
+/// circle's bottom-end diagonal, [KitTokens.avatarBadgeRing] inside the
+/// point where the badge would only touch the circle.
+double _avatarBadgeInset(double diameter) {
+  const badge = KitTokens.avatarBadgeSize;
+  final radius = diameter / 2;
+  final centre =
+      radius + (radius + badge / 2 - KitTokens.avatarBadgeRing) * math.sqrt1_2;
+  return (diameter - centre - badge / 2).roundToDouble();
 }
 
 /// The first grapheme of [name]'s first two words, folded to upper case —
