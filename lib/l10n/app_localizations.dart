@@ -35458,6 +35458,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send answers'**
   String get kitRequestSendAnswers;
+
+  /// KitTurn: the quiet line under a sent prompt before anything has come back from the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the model…'**
+  String get kitTurnStarting;
+
+  /// KitTurn: the starting line once the model has not answered for a while; seconds is how long the turn has waited
+  ///
+  /// In en, this message translates to:
+  /// **'Still waiting for the model · {seconds} s'**
+  String kitTurnStillStarting(int seconds);
+
+  /// KitTurn: the end line of a turn the person stopped
+  ///
+  /// In en, this message translates to:
+  /// **'You stopped this reply.'**
+  String get kitTurnStopped;
+
+  /// KitTurn: the end line of a turn cut off by server or connection loss
+  ///
+  /// In en, this message translates to:
+  /// **'The connection dropped before this reply finished.'**
+  String get kitTurnInterrupted;
+
+  /// KitTurn: the footer button and menu item that copy the whole reply of a turn
+  ///
+  /// In en, this message translates to:
+  /// **'Copy reply'**
+  String get kitTurnCopy;
+
+  /// KitTurn: the footer button that opens a turn's actions menu
+  ///
+  /// In en, this message translates to:
+  /// **'More for this reply'**
+  String get kitTurnMore;
+
+  /// KitTurn: the screen-reader name of a turn's actions menu
+  ///
+  /// In en, this message translates to:
+  /// **'Reply actions'**
+  String get kitTurnActions;
 }
 
 class _AppLocalizationsDelegate

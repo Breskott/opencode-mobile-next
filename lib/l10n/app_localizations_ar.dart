@@ -22640,4 +22640,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitRequestSendAnswers => 'Send answers';
+
+  @override
+  String get kitTurnStarting => 'Starting the model…';
+
+  @override
+  String kitTurnStillStarting(int seconds) {
+    return 'Still waiting for the model · $seconds s';
+  }
+
+  @override
+  String get kitTurnStopped => 'You stopped this reply.';
+
+  @override
+  String get kitTurnInterrupted =>
+      'The connection dropped before this reply finished.';
+
+  @override
+  String get kitTurnCopy => 'Copy reply';
+
+  @override
+  String get kitTurnMore => 'More for this reply';
+
+  @override
+  String get kitTurnActions => 'Reply actions';
 }
