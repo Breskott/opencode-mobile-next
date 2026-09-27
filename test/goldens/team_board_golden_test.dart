@@ -1,5 +1,5 @@
 // Golden renders of the AI Team's board (docs/design/team-board-2026-09-26.md)
-// at 412x915, dark and light, the app's real fonts, the 16-task fixture of
+// at 412x915 (and the working board at 1280x800), dark and light, the app's real fonts, the 16-task fixture of
 // test/support/team_board_fixture.dart: each column, the move sheet, the
 // cancel confirmation, a move on its way, a refused move, read-only, empty,
 // loading and error.
@@ -16,6 +16,7 @@ import '../support/team_board_fixture.dart';
 
 enum BoardShot {
   working(BoardScene.loaded, 'team_board_working'),
+  wide(BoardScene.loaded, 'team_board_working_1280x800'),
   backlog(BoardScene.loaded, 'team_board_backlog'),
   ready(BoardScene.loaded, 'team_board_ready'),
   review(BoardScene.loaded, 'team_board_review'),
@@ -56,7 +57,9 @@ void main() {
     final mode = light ? 'light' : 'dark';
     for (final shot in BoardShot.values) {
       testWidgets('${shot.fileName} · $mode', (tester) async {
-        tester.view.physicalSize = const Size(412, 915);
+        tester.view.physicalSize = shot == BoardShot.wide
+            ? const Size(1280, 800)
+            : const Size(412, 915);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         final boundary = GlobalKey();
@@ -113,6 +116,7 @@ void main() {
           case BoardShot.loading:
             await tester.pump(const Duration(seconds: 1));
           case BoardShot.working ||
+              BoardShot.wide ||
               BoardShot.readOnly ||
               BoardShot.empty ||
               BoardShot.error:

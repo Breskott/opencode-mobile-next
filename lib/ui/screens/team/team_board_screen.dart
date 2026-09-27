@@ -1,11 +1,11 @@
 /// The AI Team's board (docs/design/team-board-2026-09-26.md): a project's
 /// tasks (Gas City beads) in five columns — Backlog · Ready · Working ·
-/// Review · Done — paged one at a time with the next one peeking, under a
-/// strip of column tabs with counts. It opens on Working.
+/// Review · Done — as [KitBoardLanes]: paged one at a time with the next one
+/// peeking on a phone, side by side on a wide window, under the strip of
+/// column tabs with counts. It opens on Working.
 ///
-/// - A card opens its team conversation ([openTeamBoardCard], the one swap
-///   point for `TeamConversation.open` once that lands; until then the task
-///   ([RunScreen]) or, for a card that belongs to no task, its Work sheet).
+/// - A card opens its team conversation ([openTeamBoardCard]); a card that
+///   belongs to no task opens its Work sheet.
 /// - A card's "⋯" and a long press open the move sheet. The person may start
 ///   a Backlog task, take a Ready one back, reprioritise either, cancel either
 ///   (confirmed), and put a cancelled one back; Working, Review and Done are
@@ -15,10 +15,11 @@
 /// - The host's bookkeeping beads never appear ([teamBoardIsBookkeeping]).
 /// - A host that allows no writes shows the board read-only and says so in
 ///   the one status line.
+/// - Old cards stay at full strength; the status line says how old they are
+///   (STATE-18, LOOK-14).
 library;
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -33,7 +34,6 @@ import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/grace_timer.dart';
 import '../../widgets/team_board_card.dart';
 import '../../widgets/team_board_move_sheet.dart';
-import '../../widgets/team_board_tabs.dart';
 import '../team_conversation/team_conversation.dart';
 import 'team_states.dart';
 import 'work_sheet.dart';
@@ -67,7 +67,7 @@ Future<void> openTeamBoard(
   OrchestrationController controller, {
   DateTime Function()? now,
 }) => Navigator.of(context).push(
-  MaterialPageRoute<void>(
+  KitPageRoute<void>(
     builder: (_) => TeamBoardScreen(controller: controller, now: now),
   ),
 );
@@ -105,8 +105,10 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
     widget.controller,
     edits: widget.edits,
   );
-  PageController? _pages;
   TeamBoardColumn _column = TeamBoardColumn.working;
+
+  /// The opening column is chosen once, from the first board with data.
+  bool _columnChosen = false;
   String? _project;
   bool _projectChosen = false;
   bool _refreshing = false;
@@ -135,7 +137,6 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
     for (final timer in _pendingTimers.values) {
       timer.cancel();
     }
-    _pages?.dispose();
     super.dispose();
   }
 
@@ -198,35 +199,43 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
     return TeamBoardColumn.working;
   }
 
-  PageController _pagesFor(BuildContext context, TeamBoard board) {
-    final existing = _pages;
-    if (existing != null) return existing;
-    _column = _openingColumn(board);
-    final width = MediaQuery.sizeOf(context).width;
-    // One column almost full width with its neighbours peeking (Jira,
-    // Notion); on a wide screen a column stays phone-sized.
-    final fraction = width <= 0
-        ? .9
-        : math.min((width - 40) / width, 400 / width).clamp(.3, .95);
-    return _pages = PageController(
-      initialPage: _column.index,
-      viewportFraction: fraction,
-    );
-  }
+  void _select(TeamBoardColumn column) => setState(() => _column = column);
 
-  void _select(TeamBoardColumn column) {
-    setState(() => _column = column);
-    final pages = _pages;
-    if (pages == null || !pages.hasClients) return;
-    if (KitMotion.reduced(context)) {
-      pages.jumpToPage(column.index);
-    } else {
-      pages.animateToPage(
-        column.index,
-        duration: KitMotion.standard,
-        curve: KitMotion.emphasized,
-      );
+  void _chooseProject(String id) => setState(() {
+    _project = id;
+    _pending.clear();
+    for (final t in _pendingTimers.values) {
+      t.cancel();
     }
+    _pendingTimers.clear();
+  });
+
+  /// The host's projects as one choice (the title's switcher).
+  Future<void> _showProjects(List<OrchestrationProject> projects) async {
+    final l10n = _copy(context);
+    final current = _projectFilter;
+    await showKitSheet<void>(
+      context,
+      title: l10n.teamBoardProjectTooltip,
+      icon: AppIconography.projects,
+      sheetKey: const ValueKey('team-board-project-sheet'),
+      body: (sheet) => KitChoiceList<String>.single(
+        semanticsLabel: l10n.teamBoardProjectTooltip,
+        choices: [
+          for (final project in projects)
+            KitChoice(
+              key: ValueKey('team-board-project-${project.id}'),
+              value: project.id,
+              title: project.name,
+            ),
+        ],
+        selected: current,
+        onSelected: (id) {
+          Navigator.of(sheet).pop();
+          if (id != current) _chooseProject(id);
+        },
+      ),
+    );
   }
 
   Future<void> _refresh() async {
@@ -338,15 +347,20 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        final theme = Theme.of(context);
+        final tokens = KitTokens.of(context);
         final controller = widget.controller;
         final ready = _ready;
         if (ready) _chooseDefaultProject();
         final board = ready ? _board() : null;
+        if (board != null && !board.isEmpty && !_columnChosen) {
+          _columnChosen = true;
+          _column = _openingColumn(board);
+        }
         final projects = controller.snapshot.projects;
         final project = projects
             .where((p) => p.id == _projectFilter)
             .firstOrNull;
+        final switchable = projects.length > 1 && project != null;
         // Once per screen (§6): an empty board offers it in its state instead.
         final canAdd =
             ready && _edits.canCreate && board != null && !board.isEmpty;
@@ -367,100 +381,75 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
                       : null)
             : null;
         final failure = _failure;
-        return Scaffold(
+        return KitScreen(
           key: const ValueKey('team-board'),
-          appBar: AppBar(
-            title: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.teamBoardTitle, maxLines: 1),
-                if (projects.length > 1 && project != null)
-                  _ProjectSwitcher(
-                    projects: projects,
-                    current: project,
-                    onSelect: (id) => setState(() {
-                      _project = id;
-                      _pending.clear();
-                      for (final t in _pendingTimers.values) {
-                        t.cancel();
-                      }
-                      _pendingTimers.clear();
-                    }),
-                  )
-                else if (projects.length == 1)
-                  Text(
-                    projects.single.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.mutedOf(theme),
-                    ),
-                  ),
-              ],
-            ),
+          topBar: KitTopBar(
+            title: l10n.teamBoardTitle,
+            // The project under the title ("oc_app ▾") switches the board.
+            subtitle: switchable
+                ? project.name
+                : projects.length == 1
+                ? projects.single.name
+                : null,
+            onTitleTap: switchable ? () => _showProjects(projects) : null,
+            titleTapLabel: switchable ? l10n.teamBoardProjectTooltip : null,
+            titleKey: const ValueKey('team-board-project'),
             actions: [
               if (canAdd)
-                IconButton(
+                KitAction(
                   key: const ValueKey('team-board-add'),
-                  tooltip: l10n.teamBoardAddTooltip,
+                  label: l10n.teamBoardAddTooltip,
+                  icon: AppIconography.add,
                   onPressed: _add,
-                  icon: const Icon(AppIconography.add),
                 ),
             ],
           ),
-          body: KitScreen(
-            header: [
-              ?line,
-              // While the first answer comes the columns are already
-              // there, without counts.
-              if (board == null && teamScreenLoading(controller))
-                TeamBoardTabs(
-                  counts: null,
-                  needsYou: const {},
-                  selected: TeamBoardColumn.working,
-                  onSelect: (_) {},
-                )
-              else if (board != null && !board.isEmpty)
-                TeamBoardTabs(
-                  counts: {
-                    for (final c in TeamBoardColumn.values) c: board.count(c),
-                  },
-                  needsYou: {
-                    for (final c in TeamBoardColumn.values)
-                      if (board.needsYou(c)) c,
-                  },
-                  selected: _column,
-                  onSelect: _select,
-                ),
-              KitReveal(
-                child: failure == null
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: KitNotice(
-                          key: const ValueKey('team-board-failure'),
-                          tone: AppStatusTone.attention,
-                          title: l10n.teamBoardMoveFailedTitle(failure.$1),
-                          message: l10n.teamBoardMoveFailedBody,
-                          notes: [
-                            if (failure.$2?.trim() case final m?
-                                when m.isNotEmpty)
-                              m,
-                          ],
-                          onDismiss: () => setState(() => _failure = null),
-                        ),
+          header: [
+            ?line,
+            KitReveal(
+              child: failure == null
+                  ? null
+                  : Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        start: tokens.gutter,
+                        end: tokens.gutter,
+                        bottom: tokens.space2,
                       ),
-              ),
-            ],
-            loading: teamScreenLoading(controller) || _refreshing || _busy > 0,
-            loadingLabel: l10n.teamUiCardLoading,
-            body: _body(context, board),
-          ),
+                      child: KitNotice(
+                        key: const ValueKey('team-board-failure'),
+                        tone: AppStatusTone.failure,
+                        title: l10n.teamBoardMoveFailedTitle(failure.$1),
+                        message: l10n.teamBoardMoveFailedBody,
+                        notes: [
+                          if (failure.$2?.trim() case final m?
+                              when m.isNotEmpty)
+                            m,
+                        ],
+                        onDismiss: () => setState(() => _failure = null),
+                      ),
+                    ),
+            ),
+          ],
+          loading: teamScreenLoading(controller) || _refreshing || _busy > 0,
+          loadingLabel: l10n.teamUiCardLoading,
+          body: _body(context, board),
         );
       },
     );
   }
+
+  static List<KitBoardColumn> _columns(
+    AppLocalizations l10n,
+    TeamBoard? board,
+  ) => [
+    for (final column in TeamBoardColumn.values)
+      KitBoardColumn(
+        label: teamBoardColumnWord(l10n, column),
+        count: board?.count(column),
+        needsYou: board != null && board.needsYou(column) ? 1 : 0,
+        tabKey: ValueKey('team-board-tab-${column.name}'),
+      ),
+  ];
 
   Widget _body(BuildContext context, TeamBoard? board) {
     final l10n = _copy(context);
@@ -475,15 +464,15 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
           const SizedBox.shrink();
     }
     if (board == null) {
-      // The first answer: skeleton cards in a lane (§4), and after 8 s
-      // the honest "isn't answering".
+      // The first answer: the columns without counts over skeleton cards
+      // (§4), and after 8 s the honest "isn't answering".
       return GraceTimer(
         waiting: true,
         builder: (context, overdue) => overdue
             ? KitStateView(
                 key: const ValueKey('team-board-not-answering'),
                 icon: AppIconography.cloudOff,
-                tone: AppStatusTone.attention,
+                tone: AppStatusTone.neutral,
                 title: l10n.teamUiStateNotAnsweringTitle,
                 body: l10n.workServerKeepsTrying,
                 secondary: KitAction(
@@ -493,23 +482,18 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
                   icon: AppIcons.retry,
                 ),
               )
-            : Padding(
+            : KeyedSubtree(
                 key: const ValueKey('team-board-loading'),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: _Lane(
-                  child: ListView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(8),
-                    children: [
-                      for (var i = 0; i < 4; i++)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 8),
-                          child: KitPanel(
-                            padding: EdgeInsets.symmetric(vertical: 4),
-                            child: KitSkeletonRows(count: 1),
-                          ),
-                        ),
-                    ],
+                child: KitBoardLanes(
+                  loading: true,
+                  columns: _columns(l10n, null),
+                  selected: TeamBoardColumn.working.index,
+                  onSelected: (_) {},
+                  stripKey: const ValueKey('team-board-tabs'),
+                  laneBuilder: (context, index) => KitBoardLane.loading(
+                    laneKey: ValueKey(
+                      'team-board-column-${TeamBoardColumn.values[index].name}',
+                    ),
                   ),
                 ),
               ),
@@ -521,7 +505,9 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
         child: ListView(
           key: const ValueKey('team-board-empty'),
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
+          padding: EdgeInsetsDirectional.only(
+            bottom: KitScreen.endPadding(context),
+          ),
           children: [
             KitStateView(
               icon: AppIconography.checklist,
@@ -541,186 +527,76 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
         ),
       );
     }
-    final pages = _pagesFor(context, board);
-    final stale = controller.isStale;
-    return Opacity(
-      // Stale cards dim; they stay readable (never colour-only).
-      opacity: stale ? .6 : 1,
-      child: PageView.builder(
-        key: const ValueKey('team-board-pages'),
-        controller: pages,
-        itemCount: TeamBoardColumn.values.length,
-        onPageChanged: (index) =>
-            setState(() => _column = TeamBoardColumn.values[index]),
-        itemBuilder: (context, index) {
-          final column = TeamBoardColumn.values[index];
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              4,
-              0,
-              4,
-              8 + MediaQuery.paddingOf(context).bottom,
-            ),
-            child: _Lane(
-              key: ValueKey('team-board-column-${column.name}'),
-              child: _columnView(context, board, column),
-            ),
-          );
-        },
-      ),
+    return KitBoardLanes(
+      columns: _columns(l10n, board),
+      selected: _column.index,
+      onSelected: (index) => _select(TeamBoardColumn.values[index]),
+      pagesKey: const ValueKey('team-board-pages'),
+      stripKey: const ValueKey('team-board-tabs'),
+      laneBuilder: (context, index) =>
+          _lane(context, board, TeamBoardColumn.values[index]),
     );
   }
 
-  Widget _columnView(
-    BuildContext context,
-    TeamBoard board,
-    TeamBoardColumn column,
-  ) {
+  Widget _lane(BuildContext context, TeamBoard board, TeamBoardColumn column) {
     final l10n = _copy(context);
     final cards = board.cards(column);
     final now = _now;
-    final Widget content;
-    if (cards.isEmpty) {
-      final (icon, title, body) = switch (column) {
-        TeamBoardColumn.backlog => (
-          AppIconography.inbox,
-          l10n.teamBoardEmptyBacklogTitle,
-          l10n.teamBoardEmptyBacklogBody,
-        ),
-        TeamBoardColumn.ready => (
-          AppIconography.queueAdd,
-          l10n.teamBoardEmptyReadyTitle,
-          l10n.teamBoardEmptyReadyBody,
-        ),
-        TeamBoardColumn.working => (
-          AppIconography.agent,
-          l10n.teamBoardEmptyWorkingTitle,
-          l10n.teamBoardEmptyWorkingBody,
-        ),
-        TeamBoardColumn.review => (
-          AppIconography.review,
-          l10n.teamBoardEmptyReviewTitle,
-          l10n.teamBoardEmptyReviewBody,
-        ),
-        TeamBoardColumn.done => (
-          AppIconography.checkCircle,
-          l10n.teamBoardEmptyDoneTitle,
-          l10n.teamBoardEmptyDoneBody,
-        ),
-      };
-      content = KitStateView(
+    final (icon, title, body) = switch (column) {
+      TeamBoardColumn.backlog => (
+        AppIconography.inbox,
+        l10n.teamBoardEmptyBacklogTitle,
+        l10n.teamBoardEmptyBacklogBody,
+      ),
+      TeamBoardColumn.ready => (
+        AppIconography.queueAdd,
+        l10n.teamBoardEmptyReadyTitle,
+        l10n.teamBoardEmptyReadyBody,
+      ),
+      TeamBoardColumn.working => (
+        AppIconography.agent,
+        l10n.teamBoardEmptyWorkingTitle,
+        l10n.teamBoardEmptyWorkingBody,
+      ),
+      TeamBoardColumn.review => (
+        AppIconography.review,
+        l10n.teamBoardEmptyReviewTitle,
+        l10n.teamBoardEmptyReviewBody,
+      ),
+      TeamBoardColumn.done => (
+        AppIconography.checkCircle,
+        l10n.teamBoardEmptyDoneTitle,
+        l10n.teamBoardEmptyDoneBody,
+      ),
+    };
+    return KitBoardLane(
+      laneKey: ValueKey('team-board-column-${column.name}'),
+      listKey: ValueKey('team-board-list-${column.name}'),
+      rowsKey: ValueKey('team-board-rows-${column.name}-$_projectFilter'),
+      // Pull to refresh on the lane in view only: one per screen (LAY-12,
+      // PERF-4).
+      onRefresh: column == _column ? _refresh : null,
+      empty: KitStateView(
         key: ValueKey('team-board-column-empty-${column.name}'),
         size: KitStateSize.inline,
         liveRegion: false,
         icon: icon,
         title: title,
         body: body,
-      );
-    } else {
-      content = KitAnimatedRows(
-        key: ValueKey('team-board-rows-${column.name}-$_projectFilter'),
-        children: [
-          for (final card in cards)
-            Padding(
-              key: ValueKey('team-board-slot-${card.id}'),
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TeamBoardCardView(
-                card: card,
-                now: now,
-                onOpen: () => _open(card),
-                onMoves: _edits.movesFor(card).isEmpty
-                    ? null
-                    : () => _showMoves(card),
-                onLongPress: () => _showMoves(card),
-              ),
-            ),
-        ],
-      );
-    }
-    return KitRefresh(
-      onRefresh: _refresh,
-      child: ListView(
-        key: ValueKey('team-board-list-${column.name}'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-        children: [content],
       ),
-    );
-  }
-}
-
-/// A column's lane: a faint surface the cards sit on, so the neighbour
-/// that peeks reads as another column.
-class _Lane extends StatelessWidget {
-  const _Lane({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? scheme.surfaceContainerLowest
-            : scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppTheme.radiusCard + 4),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.radiusCard + 4),
-        child: child,
-      ),
-    );
-  }
-}
-
-/// The project under the title ("oc_app ▾"), opening the host's projects.
-class _ProjectSwitcher extends StatelessWidget {
-  const _ProjectSwitcher({
-    required this.projects,
-    required this.current,
-    required this.onSelect,
-  });
-
-  final List<OrchestrationProject> projects;
-  final OrchestrationProject current;
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    return PopupMenuButton<String>(
-      key: const ValueKey('team-board-project'),
-      tooltip: l10n.teamBoardProjectTooltip,
-      initialValue: current.id,
-      position: PopupMenuPosition.under,
-      onSelected: onSelect,
-      itemBuilder: (context) => [
-        for (final project in projects)
-          CheckedPopupMenuItem<String>(
-            key: ValueKey('team-board-project-${project.id}'),
-            value: project.id,
-            checked: project.id == current.id,
-            child: Text(project.name),
+      cards: [
+        for (final card in cards)
+          TeamBoardCardView(
+            key: ValueKey('team-board-slot-${card.id}'),
+            card: card,
+            now: now,
+            onOpen: () => _open(card),
+            onMoves: _edits.movesFor(card).isEmpty
+                ? null
+                : () => _showMoves(card),
+            onLongPress: () => _showMoves(card),
           ),
       ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              current.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
-            ),
-          ),
-          Icon(AppIconography.chevronDown, size: 16, color: muted),
-        ],
-      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 /// Start a run (TEAM-204; 02-ux-flows-and-screens §7, 06-decisions §A.3):
-/// the sheet behind the AI Team home's FAB. **Objective** (multi-line),
-/// **Project** (rig picker, "Let the planner choose" by default),
+/// the sheet behind the AI Team home's primary button, in the kit's one
+/// sheet frame ([showKitSheet]). **Objective** (multi-line, kept as a
+/// draft), **Project** ("Let the planner choose" by default),
 /// **Supervision** (High / Balanced / Autonomous with their descriptions),
 /// **Planner** (shown, not chosen: the Mayor), **Boundaries** (read-only
 /// host policy from `controller.policy`, TEAM-207; the row is absent when
@@ -18,11 +19,17 @@
 /// (`createWork`) slung at the project's worker pool
 /// (`<rig>/gastown.polecat`, [teamWorkerPoolId]) through
 /// [OrchestrationController.giveTask]. A planner with no live session is
-/// woken (`controlAgent(start)`)
-/// before the message goes. The home then shows [TeamPlanningCard]
-/// ("Planning… (Mayor)") until a run carrying the objective appears, or
-/// "Still planning — check the planner's output" after 30 minutes.
+/// woken (`controlAgent(start)`) before the message goes.
+///
+/// Data safety (DATA-1, DATA-2): what the person typed is a [KitDraft] per
+/// server profile (`oc.draft.team.objective.<profileId>` and the direct
+/// task's two fields), so a swipe, Back or a refusal loses nothing and the
+/// next open brings it back; it is cleared once the host took the task, and
+/// the profile deletion sweep removes it. A refusal keeps the sheet open
+/// with the host's words, so the person edits and sends again.
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -41,19 +48,27 @@ import 'policy_block.dart';
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
+/// The draft targets of the sheet's fields ([KitDraft.keyFor]).
+const teamStartRunObjectiveDraft = 'team.objective';
+const teamStartRunTaskDraft = 'team.task';
+const teamStartRunDetailsDraft = 'team.taskDetails';
+
 /// Opens the sheet; resolves with the message record once sent (the
 /// `createWork` record for a direct task), null when the person backed
 /// out or the planner was off with no direct path.
 Future<MutationRecord?> showStartRunSheet(
   BuildContext context,
   OrchestrationController controller,
-) => showModalBottomSheet<MutationRecord>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (_) => StartRunSheet(controller: controller),
-);
+) {
+  final l10n = _copy(context);
+  return showKitSheet<MutationRecord>(
+    context,
+    title: l10n.teamUiStartRunTitle,
+    icon: AppIconography.agent,
+    sheetKey: const ValueKey('team-start-run-sheet'),
+    body: (_) => StartRunSheet(controller: controller),
+  );
+}
 
 /// The supervision level's name and description.
 (String, String) teamSupervisionCopy(
@@ -74,6 +89,11 @@ Future<MutationRecord?> showStartRunSheet(
   ),
 };
 
+/// "Let the planner choose": the project choice with no project.
+const _anyProject = '';
+
+/// The sheet's body: the planner form, the direct task, or why neither.
+/// Its actions sit at its end, so it also works on its own in a page.
 class StartRunSheet extends StatefulWidget {
   const StartRunSheet({super.key, required this.controller});
 
@@ -95,6 +115,29 @@ class _StartRunSheetState extends State<StartRunSheet> {
   bool _showEmpty = false;
   bool _showTaskEmpty = false;
   String? _directError;
+
+  /// The planner's refusal of the last send: the host's words.
+  String? _refused;
+
+  late final KitDraft? _objectiveDraft = _draft(
+    teamStartRunObjectiveDraft,
+    _objective,
+  );
+  late final KitDraft? _taskDraft = _draft(teamStartRunTaskDraft, _task);
+  late final KitDraft? _detailsDraft = _draft(
+    teamStartRunDetailsDraft,
+    _details,
+  );
+
+  KitDraft? _draft(String target, TextEditingController controller) {
+    final profileId = widget.controller.profileId;
+    if (profileId.isEmpty) return null;
+    return KitDraft(
+      target: target,
+      profileId: profileId,
+      controller: controller,
+    );
+  }
 
   @override
   void initState() {
@@ -122,6 +165,21 @@ class _StartRunSheetState extends State<StartRunSheet> {
     return null;
   }
 
+  /// The host took the task: nothing typed needs keeping.
+  Future<void> _clearDrafts() async {
+    await Future.wait([
+      ?_objectiveDraft?.clear(),
+      ?_taskDraft?.clear(),
+      ?_detailsDraft?.clear(),
+    ]);
+  }
+
+  void _close(MutationRecord record) {
+    unawaited(_clearDrafts());
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop(record);
+  }
+
   Future<void> _send(OrchestrationAgent planner) async {
     final objective = _objective.text.trim();
     if (objective.isEmpty) {
@@ -129,7 +187,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
       return;
     }
     if (_sending) return;
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _refused = null;
+    });
     final controller = widget.controller;
     try {
       if (planner.sessionId == null || planner.sessionId!.isEmpty) {
@@ -149,7 +210,12 @@ class _StartRunSheetState extends State<StartRunSheet> {
         ),
       );
       if (!mounted) return;
-      Navigator.of(context).pop(record);
+      if (record.status == MutationStatus.rejected) {
+        // Refused: stay, say why, keep the words for another try.
+        setState(() => _refused = record.receipt?.message?.trim() ?? '');
+        return;
+      }
+      _close(record);
     } finally {
       if (mounted) {
         setState(() {
@@ -209,7 +275,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
       // The bead exists; a refused sling comes back as its own record so
       // the home says so instead of "sent".
       final assigned = result.assigned;
-      Navigator.of(context).pop(
+      _close(
         assigned != null && assigned.status == MutationStatus.rejected
             ? assigned
             : created,
@@ -224,409 +290,250 @@ class _StartRunSheetState extends State<StartRunSheet> {
     listenable: widget.controller,
     builder: (context, _) {
       final l10n = _copy(context);
-      final theme = Theme.of(context);
-      final inset = MediaQuery.viewInsetsOf(context).bottom;
       final planner = teamPlannerAgent(widget.controller.snapshot.agents);
-      final Widget body;
-      Widget? action;
-      if (_direct) {
-        body = _directForm(context);
-        action = _directAction(context);
-      } else if (planner == null) {
-        body = _PlannerOff(
+      if (_direct) return _directForm(context);
+      if (planner == null) {
+        return _PlannerOff(
           key: const ValueKey('team-start-run-planner-missing'),
           title: l10n.teamUiStartRunPlannerMissingTitle,
           message: l10n.teamUiStartRunPlannerMissingBody,
         );
-      } else if (teamPlannerIsOff(planner)) {
-        body = _PlannerOff(
+      }
+      if (teamPlannerIsOff(planner)) {
+        return _PlannerOff(
           key: const ValueKey('team-start-run-planner-off'),
           title: l10n.teamUiStartRunPlannerOffTitle,
           message: l10n.teamUiStartRunPlannerOffBody,
         );
-      } else {
-        body = _form(context, planner);
-        action = _formAction(context, planner);
       }
-      final bottom = 16 + MediaQuery.paddingOf(context).bottom;
-      // The form scrolls; its action stays pinned under it, so Send is on
-      // screen however long the form or large the text (design standard
-      // §1: the primary is pinned, never scrolled away).
-      return Padding(
-        key: const ValueKey('team-start-run-sheet'),
-        padding: EdgeInsets.only(bottom: inset),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  0,
-                  16,
-                  action == null ? bottom : 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.teamUiStartRunTitle,
-                      key: const ValueKey('team-start-run-title'),
-                      style: theme.textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    body,
-                  ],
-                ),
-              ),
-            ),
-            if (action != null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
-                child: action,
-              ),
-          ],
-        ),
-      );
+      return _form(context, planner);
     },
+  );
+
+  /// A field's or a group's name, above it.
+  Widget _label(KitTokens tokens, String text) => Padding(
+    padding: EdgeInsetsDirectional.only(bottom: tokens.labelGap),
+    child: KitText(text, role: KitTextRole.label, tone: KitTextTone.secondary),
   );
 
   Widget _form(BuildContext context, OrchestrationAgent planner) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final projects = widget.controller.snapshot.projects;
+    final refused = _refused;
     return Column(
+      key: const ValueKey('team-start-run-form'),
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionLabel.inline(l10n.teamUiStartRunObjectiveLabel),
-        TextField(
-          key: const ValueKey('team-start-run-objective'),
-          controller: _objective,
+        KitField(
+          label: l10n.teamUiStartRunObjectiveLabel,
+          kind: KitFieldKind.multiline,
+          controller: _objectiveDraft == null ? _objective : null,
+          draft: _objectiveDraft,
+          hint: l10n.teamUiStartRunObjectiveHint,
           autofocus: true,
-          minLines: 3,
-          maxLines: 8,
-          textCapitalization: TextCapitalization.sentences,
           enabled: !_sending,
-          decoration: InputDecoration(
-            hintText: l10n.teamUiStartRunObjectiveHint,
-            border: const OutlineInputBorder(),
-            errorText: _showEmpty && _objective.text.trim().isEmpty
-                ? l10n.teamUiStartRunObjectiveEmpty
-                : null,
-          ),
+          error: _showEmpty && _objective.text.trim().isEmpty
+              ? l10n.teamUiStartRunObjectiveEmpty
+              : null,
+          fieldKey: const ValueKey('team-start-run-objective'),
         ),
         if (projects.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          SectionLabel.inline(l10n.teamUiStartRunProjectLabel),
-          DropdownButtonFormField<String?>(
+          SizedBox(height: tokens.space4),
+          _label(tokens, l10n.teamUiStartRunProjectLabel),
+          KitChoiceList<String>.single(
             key: const ValueKey('team-start-run-project'),
-            initialValue: _projectId,
-            isExpanded: true,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            items: [
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text(l10n.teamUiStartRunProjectAny),
+            semanticsLabel: l10n.teamUiStartRunProjectLabel,
+            actsOnTap: false,
+            choices: [
+              KitChoice(
+                key: const ValueKey('team-start-run-project-any'),
+                value: _anyProject,
+                title: l10n.teamUiStartRunProjectAny,
               ),
               for (final project in projects)
-                DropdownMenuItem<String?>(
+                KitChoice(
                   key: ValueKey('team-start-run-project-${project.id}'),
                   value: project.id,
-                  child: Text(
-                    project.name,
-                    textDirection: TextDirection.ltr,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  title: project.name,
                 ),
             ],
-            onChanged: _sending
-                ? null
-                : (value) => setState(() => _projectId = value),
+            selected: _projectId ?? _anyProject,
+            onSelected: (value) {
+              if (_sending) return;
+              setState(() => _projectId = value == _anyProject ? null : value);
+            },
           ),
         ],
-        const SizedBox(height: 16),
-        SectionLabel.inline(l10n.teamUiStartRunSupervisionLabel),
-        for (final level in TeamSupervision.values)
-          _SupervisionRow(
-            key: ValueKey('team-start-run-supervision-${level.name}'),
-            level: level,
-            selected: _supervision == level,
-            onSelected: _sending
-                ? null
-                : () => setState(() => _supervision = level),
-          ),
-        const SizedBox(height: 12),
-        SectionLabel.inline(l10n.teamUiStartRunPlannerLabel),
-        Row(
-          key: const ValueKey('team-start-run-planner'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(AppIconography.agent, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 6,
-                    children: [
-                      Text(
-                        l10n.teamUiStartRunPlannerMayor,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      Text(
-                        planner.id,
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                          fontFamily: AppTheme.monoFamily,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    l10n.teamUiStartRunPlannerHint,
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                  ),
-                ],
+        SizedBox(height: tokens.space4),
+        _label(tokens, l10n.teamUiStartRunSupervisionLabel),
+        KitChoiceList<TeamSupervision>.single(
+          semanticsLabel: l10n.teamUiStartRunSupervisionLabel,
+          actsOnTap: false,
+          choices: [
+            for (final level in TeamSupervision.values)
+              KitChoice(
+                key: ValueKey('team-start-run-supervision-${level.name}'),
+                value: level,
+                title: teamSupervisionCopy(l10n, level).$1,
+                supporting: teamSupervisionCopy(l10n, level).$2,
               ),
+          ],
+          selected: _supervision,
+          onSelected: (level) {
+            if (_sending) return;
+            setState(() => _supervision = level);
+          },
+        ),
+        SizedBox(height: tokens.space4),
+        KitRowGroup(
+          label: l10n.teamUiStartRunPlannerLabel,
+          margin: EdgeInsets.zero,
+          children: [
+            KitRow(
+              key: const ValueKey('team-start-run-planner'),
+              leading: KitRow.icon(context, AppIconography.agent),
+              title: l10n.teamUiStartRunPlannerMayor,
+              supporting: TextSpan(text: l10n.teamUiStartRunPlannerHint),
+              supportingMaxLines: 3,
+              below: KitText.mono(planner.id, tone: KitTextTone.secondary),
             ),
           ],
         ),
         if (widget.controller.policy case final policy?) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.space4),
           TeamBoundariesRow(policy: policy),
         ],
-        const SizedBox(height: 20),
-        if (_waking)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              key: const ValueKey('team-start-run-waking'),
-              children: [
-                Icon(AppIconography.waiting, size: 16, color: muted),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.teamUiStartRunWaking,
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                  ),
-                ),
-              ],
-            ),
+        if (_waking) ...[
+          SizedBox(height: tokens.space3),
+          KitNotice(
+            key: const ValueKey('team-start-run-waking'),
+            tone: AppStatusTone.progress,
+            icon: AppIconography.waiting,
+            message: l10n.teamUiStartRunWaking,
           ),
+        ],
+        if (refused != null) ...[
+          SizedBox(height: tokens.space3),
+          KitNotice(
+            key: const ValueKey('team-start-run-refused'),
+            tone: AppStatusTone.failure,
+            icon: AppIconography.error,
+            title: refused.isEmpty
+                ? l10n.teamUiGateAnswerRejectedNoMessage
+                : l10n.teamUiStartRunRefused(refused),
+            message: l10n.teamStartRunRefusedKept,
+          ),
+        ],
+        SizedBox(height: tokens.space5),
+        // The form's one primary; Sending shows on it (STATE-10).
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-start-run-send'),
+            label: l10n.teamUiStartRunSend,
+            icon: AppIconography.send,
+            working: _sending,
+            onPressed: _sending ? null : () => _send(planner),
+          ),
+        ),
       ],
     );
   }
-
-  /// The planner form's action, pinned under the scrolling form.
-  Widget _formAction(BuildContext context, OrchestrationAgent planner) =>
-      KitButton.primary(
-        key: const ValueKey('team-start-run-send'),
-        onPressed: _sending ? null : () => _send(planner),
-        working: _sending,
-        icon: AppIconography.send,
-        label: _copy(context).teamUiStartRunSend,
-      );
 
   /// The direct task (TEAM-306): intro, project, title, details, Send to
   /// an agent, the host's refusal when any, and the host guide below for
   /// the person who would rather wake the planner.
   Widget _directForm(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final projects = widget.controller.snapshot.projects;
     final error = _directError;
-    final failure = AppTheme.statusColor(theme, AppStatusTone.failure);
     return Column(
       key: const ValueKey('team-start-run-direct'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(AppIconography.agent, size: 20, color: muted),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.teamUiStartRunDirectIntro,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SectionLabel.inline(l10n.teamUiStartRunProjectLabel),
-        DropdownButtonFormField<String>(
-          key: const ValueKey('team-start-run-direct-project'),
-          initialValue: _directProject,
-          isExpanded: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          items: [
-            for (final project in projects)
-              DropdownMenuItem<String>(
-                key: ValueKey('team-start-run-direct-project-${project.id}'),
-                value: project.id,
-                child: Text(
-                  project.name,
-                  textDirection: TextDirection.ltr,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: _sending
-              ? null
-              : (value) => setState(() => _directProjectId = value),
-        ),
-        const SizedBox(height: 16),
-        SectionLabel.inline(l10n.teamUiStartRunDirectTitle),
-        TextField(
-          key: const ValueKey('team-start-run-direct-title'),
-          controller: _task,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.next,
-          enabled: !_sending,
-          decoration: InputDecoration(
-            hintText: l10n.teamUiStartRunDirectTitleHint,
-            border: const OutlineInputBorder(),
-            errorText: _showTaskEmpty && _task.text.trim().isEmpty
-                ? l10n.teamUiStartRunDirectTitleRequired
-                : null,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SectionLabel.inline(l10n.teamUiStartRunDirectDetails),
-        TextField(
-          key: const ValueKey('team-start-run-direct-details'),
-          controller: _details,
-          minLines: 2,
-          maxLines: 6,
-          textCapitalization: TextCapitalization.sentences,
-          enabled: !_sending,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: 12),
-          Row(
-            key: const ValueKey('team-start-run-direct-error'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(AppIconography.error, size: 18, color: failure),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  error.isEmpty
-                      ? l10n.teamUiGateAnswerRejectedNoMessage
-                      : l10n.teamUiStartRunDirectRefused(error),
-                  style: theme.textTheme.bodySmall?.copyWith(color: failure),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// The direct task's actions, pinned under the scrolling form: Send is
-  /// the sheet's one primary; the host guide is the rare other path
-  /// (design standard §2).
-  Widget _directAction(BuildContext context) {
-    final l10n = _copy(context);
-    return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        KitButton.primary(
-          key: const ValueKey('team-start-run-direct-send'),
-          onPressed: _sending ? null : _sendDirect,
-          working: _sending,
-          icon: AppIconography.send,
-          label: l10n.teamUiStartRunDirectSend,
+        KitNotice(
+          icon: AppIconography.agent,
+          message: l10n.teamUiStartRunDirectIntro,
+          liveRegion: false,
         ),
-        const SizedBox(height: 4),
-        KitInset(
-          child: KitButton.tertiary(
-            key: const ValueKey('team-start-run-host-guide'),
-            onPressed: () => showTeamHostGuideSheet(context),
-            icon: AppIconography.guide,
-            label: l10n.teamUiStartRunHostGuide,
+        SizedBox(height: tokens.space4),
+        _label(tokens, l10n.teamUiStartRunProjectLabel),
+        KitChoiceList<String>.single(
+          key: const ValueKey('team-start-run-direct-project'),
+          semanticsLabel: l10n.teamUiStartRunProjectLabel,
+          actsOnTap: false,
+          choices: [
+            for (final project in projects)
+              KitChoice(
+                key: ValueKey('team-start-run-direct-project-${project.id}'),
+                value: project.id,
+                title: project.name,
+              ),
+          ],
+          selected: _directProject,
+          onSelected: (value) {
+            if (_sending) return;
+            setState(() => _directProjectId = value);
+          },
+        ),
+        SizedBox(height: tokens.space4),
+        KitField(
+          label: l10n.teamUiStartRunDirectTitle,
+          controller: _taskDraft == null ? _task : null,
+          draft: _taskDraft,
+          hint: l10n.teamUiStartRunDirectTitleHint,
+          autofocus: true,
+          textInputAction: TextInputAction.next,
+          enabled: !_sending,
+          error: _showTaskEmpty && _task.text.trim().isEmpty
+              ? l10n.teamUiStartRunDirectTitleRequired
+              : null,
+          fieldKey: const ValueKey('team-start-run-direct-title'),
+        ),
+        SizedBox(height: tokens.space3),
+        KitField(
+          label: l10n.teamUiStartRunDirectDetails,
+          kind: KitFieldKind.multiline,
+          controller: _detailsDraft == null ? _details : null,
+          draft: _detailsDraft,
+          enabled: !_sending,
+          fieldKey: const ValueKey('team-start-run-direct-details'),
+        ),
+        if (error != null) ...[
+          SizedBox(height: tokens.space3),
+          KitNotice(
+            key: const ValueKey('team-start-run-direct-error'),
+            tone: AppStatusTone.failure,
+            icon: AppIconography.error,
+            message: error.isEmpty
+                ? l10n.teamUiGateAnswerRejectedNoMessage
+                : l10n.teamUiStartRunDirectRefused(error),
           ),
+        ],
+        SizedBox(height: tokens.space5),
+        // Send is the sheet's one primary; the host guide is the rare
+        // other path (design standard §2).
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-start-run-direct-send'),
+            label: l10n.teamUiStartRunDirectSend,
+            icon: AppIconography.send,
+            working: _sending,
+            onPressed: _sending ? null : _sendDirect,
+          ),
+          tertiary: [
+            KitAction(
+              key: const ValueKey('team-start-run-host-guide'),
+              label: l10n.teamUiStartRunHostGuide,
+              icon: AppIconography.guide,
+              onPressed: () => showTeamHostGuideSheet(context),
+            ),
+          ],
         ),
       ],
-    );
-  }
-}
-
-/// One supervision level: radio, name, description; the whole row taps.
-class _SupervisionRow extends StatelessWidget {
-  const _SupervisionRow({
-    super.key,
-    required this.level,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final TeamSupervision level;
-  final bool selected;
-  final VoidCallback? onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final (name, hint) = teamSupervisionCopy(l10n, level);
-    return Semantics(
-      inMutuallyExclusiveGroup: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onSelected,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                selected
-                    ? AppIconography.radioSelected
-                    : AppIconography.radioEmpty,
-                size: 22,
-                color: selected
-                    ? theme.colorScheme.primary
-                    : AppTheme.mutedOf(theme),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: selected ? FontWeight.w600 : null,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -646,7 +553,6 @@ class _PlannerOff extends StatelessWidget {
     return KitStateView(
       size: KitStateSize.inline,
       icon: AppIconography.warning,
-      tone: AppStatusTone.attention,
       title: title,
       body: message,
       secondary: KitAction(
@@ -663,6 +569,7 @@ class _PlannerOff extends StatelessWidget {
 // The pending card on the home
 // ---------------------------------------------------------------------------
 
+// revamp: merge-into:team-conversation (slice-P6.3)
 /// "Planning… (Mayor)" for one Start-a-run request: the objective, the
 /// state line, "Planner output" (the Mayor's live output page) and
 /// Dismiss. Resolved requests (a run appeared) are not shown at all — the
@@ -686,7 +593,7 @@ class TeamPlanningCard extends StatelessWidget {
 
   void _openPlannerOutput(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) => AgentOutputScreen(
           controller: controller,
           agentId: request.plannerId,
@@ -698,8 +605,7 @@ class TeamPlanningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final waiting =
         request.status == TeamPlanningStatus.planning ||
         request.status == TeamPlanningStatus.stillPlanning;
@@ -711,12 +617,12 @@ class TeamPlanningCard extends StatelessWidget {
       ),
       TeamPlanningStatus.stillPlanning => (
         AppIconography.timer,
-        AppStatusTone.attention,
+        AppStatusTone.progress,
         l10n.teamUiStartRunStillPlanning,
       ),
       TeamPlanningStatus.unconfirmed => (
         AppIconography.warning,
-        AppStatusTone.attention,
+        AppStatusTone.neutral,
         l10n.teamUiStartRunUnconfirmed,
       ),
       TeamPlanningStatus.refused => (
@@ -736,7 +642,6 @@ class TeamPlanningCard extends StatelessWidget {
       icon: icon,
       title: title,
       titleKey: const ValueKey('team-planning-title'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -747,26 +652,25 @@ class TeamPlanningCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    KitText(
                       request.objective,
                       key: const ValueKey('team-planning-objective'),
-                      style: theme.textTheme.bodyMedium,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: tokens.space1),
                     if (request.status == TeamPlanningStatus.planning)
-                      Text(
+                      KitText(
                         l10n.teamUiStartRunPlanningHint,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
+                        role: KitTextRole.secondary,
+                        tone: KitTextTone.secondary,
                       ),
-                    Text(
+                    KitText(
                       l10n.teamUiStartRunSentAt(
                         teamClockLabel(context, request.sentAt),
                       ),
-                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                      role: KitTextRole.secondary,
+                      tone: KitTextTone.secondary,
                     ),
                   ],
                 ),
@@ -774,7 +678,7 @@ class TeamPlanningCard extends StatelessWidget {
               // While the planner plans: two agents pass the task's card
               // between them (a wait, so it moves).
               if (waiting) ...[
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.space3),
                 KitIllustration(
                   key: const ValueKey('team-planning-drawing'),
                   scene: const TeamPlanningScene(),
@@ -784,10 +688,10 @@ class TeamPlanningCard extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.space1),
           KitInset(
             child: Wrap(
-              spacing: 4,
+              spacing: tokens.space1,
               children: [
                 KitButton.tertiary(
                   key: const ValueKey('team-planning-output'),
