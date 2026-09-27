@@ -143,6 +143,9 @@ void main() {
       'planned, no drawing of its own, and the board steps aside '
       '(slice-P5.1)', (tester) async {
     await open(tester, TeamScene.empty, home);
+    // Tall enough for the whole start sheet and its Send.
+    tester.view.physicalSize = const Size(412, 1400);
+    await _settle(tester);
     await tester.tap(_key('team-home-start-run'));
     await _settle(tester);
     await tester.enterText(

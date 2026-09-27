@@ -163,11 +163,17 @@ class TeamNowLineView extends StatefulWidget {
     this.explains = true,
     this.keyPrefix = 'team-now-line',
     this.watchCycles,
+    this.watchWorkId,
   });
 
   /// A team whose dispatch cycles this line keeps fresh while it shows
   /// (a sheet over a page that does not already watch them).
   final OrchestrationController? watchCycles;
+
+  /// The step whose cycle [watchCycles] reads again once watched, so the
+  /// agent's transcript is probed (a usage limit is seen) even though
+  /// the page derived it before the line started watching.
+  final String? watchWorkId;
 
   final TeamNowInput input;
 
@@ -205,7 +211,14 @@ class _TeamNowLineViewState extends State<TeamNowLineView> {
   @override
   void initState() {
     super.initState();
-    widget.watchCycles?.watchCycles();
+    _watch(widget);
+  }
+
+  void _watch(TeamNowLineView line) {
+    final team = line.watchCycles;
+    if (team == null) return;
+    team.watchCycles();
+    if (line.watchWorkId case final id?) team.cycleFor(id);
   }
 
   @override
@@ -217,7 +230,7 @@ class _TeamNowLineViewState extends State<TeamNowLineView> {
     }
     if (oldWidget.watchCycles != widget.watchCycles) {
       oldWidget.watchCycles?.unwatchCycles();
-      widget.watchCycles?.watchCycles();
+      _watch(widget);
     }
     _controller.update(widget.input);
   }

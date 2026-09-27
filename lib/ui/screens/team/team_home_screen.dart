@@ -951,7 +951,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
               ? l10n.emptyTeachTeamRunsMessage
               : l10n.teamUiCardEmptyHint,
         )
-      else if (visible.isEmpty)
+      // A task still being planned is a row of its own: the list is not
+      // empty, so no "No tasks match" over it.
+      else if (visible.isEmpty && planned.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty-filtered'),
           size: KitStateSize.inline,
@@ -960,7 +962,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           title: l10n.teamUiHomeRunsEmptyFiltered,
           body: l10n.teamUiHomeRunsEmptyHint,
         ),
-      if ((runs.isEmpty && planning.isEmpty) || visible.isEmpty) gap,
+      if (visible.isEmpty && planned.isEmpty) gap,
       if (listed.isNotEmpty || loose.isNotEmpty || planned.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),

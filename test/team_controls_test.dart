@@ -1155,7 +1155,8 @@ void main() {
 
     testWidgets('after 31 minutes: a reason and a way out, never "Still '
         'planning" alone (slice-P5.1)', (tester) async {
-      await size(tester, const Size(400, 900));
+      // Tall enough for the whole start sheet and its Send.
+      await size(tester, const Size(400, 1400));
       final (controller, _) = await boot(timeout: const Duration(seconds: 30));
       await pumpHome(tester, controller);
       await tester.tap(key('team-home-start-run'));
@@ -1195,7 +1196,7 @@ void main() {
       await tester.tap(key('team-conversation-now-why'));
       await tester.pumpAndSettle();
       await tester.tap(key('team-conversation-now-dismiss'));
-      await settle(tester);
+      await tester.pumpAndSettle();
       expect(find.byType(TeamConversationScreen), findsNothing);
       expect(key('team-home-planning-key-1'), findsNothing);
       expect(controller.isPlanningDismissed('key-1'), isTrue);

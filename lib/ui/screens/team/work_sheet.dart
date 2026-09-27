@@ -2,8 +2,9 @@
 /// graph, a gate chip, the merge changes or a board card opens. The sheet
 /// is titled with the item's title and its Gas City term ("Work · bead
 /// oc-loy"); then the step's Now line (slice-P5.1: what is happening to
-/// it, since when, what comes next, and why it waits after 8 s), owner, the description as markdown, what
-/// it depends on and what waits on it as rows that open the other item's
+/// it, since when, what comes next, and why it waits after 8 s), owner,
+/// the description as markdown, what it depends on and what waits on it
+/// as rows that open the other item's
 /// sheet in this one's place, "Open this step's conversation" only when the
 /// adapter can link sessions and this item carries one (Gas City never
 /// does) or else the working agent's conversation, the output excerpt and
@@ -396,9 +397,9 @@ class _Body extends StatelessWidget {
         // no task says its state on the owner line instead.
         if (run != null) ...[
           TeamNowLineView(
-            key: const ValueKey('team-work-sheet-now'),
             keyPrefix: 'team-work-sheet',
             watchCycles: controller,
+            watchWorkId: item.id,
             clock: clock,
             input: TeamNowInput.forRun(
               activityKey: '${controller.profileId}:work:${item.id}',

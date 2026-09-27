@@ -76,6 +76,10 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   final _expansion = <String, bool>{};
   final _message = TextEditingController();
   final _focus = FocusNode();
+
+  /// The transcript's scroll: a message just sent is brought into view
+  /// (the Now line above can take room and leave it under the fold).
+  final _scroll = ScrollController();
   Timer? _tick;
   String? _runId;
 
@@ -118,6 +122,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       ..removeListener(_keepDraft)
       ..dispose();
     _focus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -209,9 +214,29 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       if (!mounted) return;
       _sentHere.add(record.key);
       _message.clear();
+      _showLatest();
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  /// Scrolls the transcript to its end once the sent message is laid out.
+  void _showLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final position = _scroll.position;
+      if (KitMotion.reduced(context)) {
+        position.jumpTo(position.maxScrollExtent);
+      } else {
+        unawaited(
+          position.animateTo(
+            position.maxScrollExtent,
+            duration: KitMotion.standard,
+            curve: KitMotion.emphasized,
+          ),
+        );
+      }
+    });
   }
 
   Future<void> _openAgent(OrchestrationAgent agent) {
@@ -778,6 +803,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     return Builder(
       builder: (context) => ListView(
         key: const ValueKey('team-conversation-list'),
+        controller: _scroll,
         padding: EdgeInsetsDirectional.fromSTEB(
           tokens.gutter,
           tokens.space3,

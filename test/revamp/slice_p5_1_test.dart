@@ -350,6 +350,7 @@ void main() {
       // No card, no drawing of its own, no empty state beside it.
       expect(find.byType(KitPanel), findsNothing);
       expect(_key('team-home-runs-empty'), findsNothing);
+      expect(_key('team-home-runs-empty-filtered'), findsNothing);
       await tester.tap(row);
       await tester.pumpAndSettle();
       expect(find.byType(TeamConversationScreen), findsOneWidget);

@@ -390,6 +390,8 @@ void main() {
 
     _test('a step in the transcript opens its Work sheet', (tester) async {
       await pump(tester);
+      await tester.ensureVisible(_key('team-conversation-step-ma-2'));
+      await tester.pumpAndSettle();
       await tester.tap(_key('team-conversation-step-ma-2'));
       await tester.pumpAndSettle();
       expect(_key('team-work-sheet'), findsOneWidget);
