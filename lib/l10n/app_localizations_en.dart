@@ -25692,4 +25692,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaMonitorConsentDetails =>
       'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
+
+  @override
+  String get monitorBackgroundChecks => 'Background checks';
+
+  @override
+  String monitorRowLastChecked(String when) {
+    return 'Last checked $when';
+  }
+
+  @override
+  String get monitorRowNotChecked => 'Not checked yet';
+
+  @override
+  String get monitorRowOff => 'Off for every server';
+
+  @override
+  String get settingsTryDemo => 'Try the demo';
+
+  @override
+  String quotaMonitorCheckNow(String provider, String server) {
+    return 'Check $provider on $server now';
+  }
+
+  @override
+  String get searchArchivedConversations => 'Archived conversations';
 }

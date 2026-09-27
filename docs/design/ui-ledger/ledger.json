@@ -1,5 +1,5 @@
 {
- "generatedFrom": "72030f0babea231451acab0a8a3f7ef0a0a632a6",
+ "generatedFrom": "bef7c215c39d070932c920fdd04c3e2a3da3b986",
  "pages": [
   {
    "id": "system",
@@ -1986,57 +1986,6 @@
      "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
      "gates": [],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "attention-overview",
-   "title": "Server attention",
-   "kind": "screen",
-   "area": "shell",
-   "file": "lib/ui/screens/attention_overview_screen.dart",
-   "widget": "AttentionOverviewScreen",
-   "presentedBy": [],
-   "line": 12,
-   "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
-   "reachedFrom": [
-    {
-     "page": "servers",
-     "element": "servers-attention"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "attention-overview-monitor-settings",
-     "type": "icon-button",
-     "label": "Monitoring settings",
-     "key": null,
-     "file": "lib/ui/screens/attention_overview_screen.dart",
-     "line": 34,
-     "action": "navigate",
-     "target": "profile-monitor",
-     "targetWidget": "ProfileMonitorScreen",
-     "effect": "Pushes ProfileMonitorScreen(controller).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "attention-overview-open-profile",
-     "type": "button",
-     "label": "Open server / Choose server…",
-     "key": null,
-     "file": "lib/ui/screens/attention_overview_screen.dart",
-     "line": 141,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
-     "gates": [
-      "onOpenProfile != null",
-      "controller.isProfileReadable(item.profileID)"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -20912,7 +20861,7 @@
   },
   {
    "id": "profile-monitor",
-   "title": "Saved-server attention",
+   "title": "Background checks",
    "kind": "screen",
    "area": "servers",
    "file": "lib/ui/screens/profile_monitor_screen.dart",
@@ -20922,12 +20871,8 @@
    "purpose": "Live saved-server attention list: each readable server with its monitor status, last and next check, pending requests and observed busy intervals. Its settings live in Notifications, one link away.",
    "reachedFrom": [
     {
-     "page": "attention-overview",
-     "element": "attention-overview-monitor-settings"
-    },
-    {
-     "page": "embedded-profile-monitor-inbox",
-     "element": "embedded-profile-monitor-inbox-summary"
+     "page": "servers",
+     "element": "servers-background-checks"
     }
    ],
    "gates": [],
@@ -21005,7 +20950,7 @@
    "widget": "ProfileMonitorInbox",
    "presentedBy": [],
    "line": 134,
-   "purpose": "Embedded inbox of pending requests and due check-ins from other monitored saved servers, plus a summary row that opens the monitor screen.",
+   "purpose": "Embedded inbox rows: pending requests and due check-ins from other monitored saved servers.",
    "reachedFrom": [
     {
      "page": "activity",
@@ -21028,20 +20973,6 @@
     "activity"
    ],
    "elements": [
-    {
-     "id": "embedded-profile-monitor-inbox-summary",
-     "type": "list-tile",
-     "label": "Saved servers (compact) | Saved-server attention — pending/unknown counts",
-     "key": null,
-     "file": "lib/ui/screens/profile_monitor_screen.dart",
-     "line": 147,
-     "action": "navigate",
-     "target": "profile-monitor",
-     "targetWidget": "ProfileMonitorScreen",
-     "effect": "Pushes ProfileMonitorScreen(controller). Rendered first when !compact, last when compact.",
-     "gates": [],
-     "destructive": false
-    },
     {
      "id": "embedded-profile-monitor-inbox-request-row",
      "type": "list-tile",
@@ -21527,19 +21458,33 @@
    ],
    "elements": [
     {
-     "id": "servers-attention",
-     "type": "icon-button",
-     "label": "Server attention",
-     "key": null,
+     "id": "servers-background-checks",
+     "type": "list-tile",
+     "label": "Background checks · Last checked {when}",
+     "key": "servers-background-checks",
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 385,
      "action": "navigate",
-     "target": "attention-overview",
-     "targetWidget": "AttentionOverviewScreen",
-     "effect": "Pushes AttentionOverviewScreen(controller: connProvider, onOpenProfile pops with the profile id); when a readable profile id comes back it calls _connect(profile) for that saved profile.",
+     "target": "profile-monitor",
+     "targetWidget": "ProfileMonitorScreen",
+     "effect": "Pushes ProfileMonitorScreen(controller): each saved server's last and next check and \"Check monitored servers\". The row says \"Off for every server\" when none is monitored.",
      "gates": [
       "bootstrap.store.profiles.isNotEmpty",
-      "disabled while _busy"
+      "!connection.isIsolated"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-report-bug",
+     "type": "menu-item",
+     "label": "Report a bug",
+     "key": "servers-report-bug",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Top-bar menu: openBugReport(context), the same flow as Settings › Report a bug.",
+     "gates": [
+      "the page is the root route (no shell, so no Settings)"
      ],
      "destructive": false
     },
@@ -21559,17 +21504,17 @@
     },
     {
      "id": "servers-guide",
-     "type": "icon-button",
+     "type": "menu-item",
      "label": "Setup guide",
-     "key": null,
+     "key": "servers-setup-guide",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 422,
      "action": "navigate",
      "target": "guide",
-     "targetWidget": "/guide",
-     "effect": "Navigator.pushNamed(context, '/guide').",
+     "targetWidget": "GuideScreen",
+     "effect": "Top-bar menu: pushes GuideScreen(embedded: false).",
      "gates": [
-      "bootstrap.store.profiles.isNotEmpty (absent on the first-run welcome)"
+      "the page is the root route (no shell, so no Settings)"
      ],
      "destructive": false
     },
@@ -33187,27 +33132,6 @@
    ]
   },
   {
-   "id": "catalog",
-   "title": "Models and agents",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/library/catalog_screen.dart",
-   "widget": "CatalogScreen",
-   "presentedBy": [],
-   "line": 51,
-   "purpose": "Full-screen host for the shared ModelCatalogView (lib/ui/widgets/pickers.dart:113, showHeader: false) where the default model and agent for new chats are browsed and chosen.",
-   "reachedFrom": [
-    {
-     "page": "settings",
-     "element": "settings-models"
-    }
-   ],
-   "gates": [
-    "controller.capabilities.serverCatalog (SettingsScreen row gate, library_screen.dart:91)"
-   ],
-   "elements": []
-  },
-  {
    "id": "command-auth-sheet",
    "title": "<provider name> / <method label>",
    "kind": "sheet",
@@ -33882,11 +33806,6 @@
    "purpose": "Provider connections (connect via API key / OAuth / server command, disconnect, manage accounts, recover pending sign-ins) and MCP servers (connect, disconnect, authenticate, remove, add) plus MCP resources; mode selects providers, mcp or both.",
    "reachedFrom": [
     {
-     "page": "catalog",
-     "element": null,
-     "note": "opener id 'catalog-legacy-provider-row' not found; page-level edge"
-    },
-    {
      "page": "chat",
      "element": "chat-message-error-open-providers"
     },
@@ -34071,6 +33990,97 @@
       "!terminal && !checking"
      ],
      "destructive": true
+    },
+    {
+     "id": "integrations-pending-resume",
+     "type": "button",
+     "label": "Resume / check status",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 139,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.pendingIntegrationAuth entry",
+      "!expired && controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-enter-code",
+     "type": "button",
+     "label": "Enter code",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 145,
+     "action": "open-dialog",
+     "target": "integrations-oauth-code-dialog",
+     "targetWidget": "_OAuthCodeDialog",
+     "effect": "_act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "!expired && supported",
+      "entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-cancel",
+     "type": "button",
+     "label": "Cancel sign-in",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 151,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-pending-forget",
+     "type": "button",
+     "label": "Forget on this device",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 155,
+     "action": "open-sheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
+    },
+    {
+     "id": "integrations-uncertain-forget",
+     "type": "button",
+     "label": "Forget uncertain start",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 187,
+     "action": "open-sheet",
+     "target": "integrations-forget-uncertain-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.uncertainIntegrationAuth entry"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/screens/library/pending_auth_recovery.dart"
     },
     {
      "id": "integrations-mcp-loopback-callback",
@@ -34359,92 +34369,6 @@
       "resources.isEmpty && _servers?.isEmpty == true"
      ],
      "destructive": false
-    },
-    {
-     "id": "integrations-pending-resume",
-     "type": "button",
-     "label": "Resume / check status",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 139,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "one tile per controller.pendingIntegrationAuth entry",
-      "!expired && controller.integrationAuthRecoverySupported"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-pending-enter-code",
-     "type": "button",
-     "label": "Enter code",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 145,
-     "action": "open-dialog",
-     "target": "integrations-oauth-code-dialog",
-     "targetWidget": "_OAuthCodeDialog",
-     "effect": "_act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "!expired && supported",
-      "entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-pending-cancel",
-     "type": "button",
-     "label": "Cancel sign-in",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 151,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "controller.integrationAuthRecoverySupported"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "integrations-pending-forget",
-     "type": "button",
-     "label": "Forget on this device",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 155,
-     "action": "open-sheet",
-     "target": "integrations-forget-pending-auth-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "integrations-uncertain-forget",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-     "line": 187,
-     "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "one tile per controller.uncertainIntegrationAuth entry"
-     ],
-     "destructive": true
     }
    ],
    "variants": [
@@ -34752,30 +34676,28 @@
      "type": "button",
      "label": "Forget on this device",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
      "gates": [],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": true
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": false
     }
    ]
   },
@@ -34804,30 +34726,28 @@
      "type": "button",
      "label": "Forget uncertain start",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
      "gates": [],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": true
     },
     {
      "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
+     "destructive": false
     }
    ]
   },
@@ -36851,10 +36771,10 @@
      "key": "settings-models",
      "file": "lib/ui/screens/settings_screen.dart",
      "line": 354,
-     "action": "navigate",
-     "target": "catalog",
-     "targetWidget": "CatalogScreen",
-     "effect": "Pushes CatalogScreen(controller) via _open. Subtitle shows the default model label (defaultModelLabel).",
+     "action": "open-sheet",
+     "target": "model-picker-sheet",
+     "targetWidget": "showModelPicker",
+     "effect": "Search result (Models & agents): opens the model picker sheet, which is the catalogue.",
      "gates": [
       "capabilities.serverCatalog",
       "row hidden when it does not match the search query (_HubRow.matches(_query))"
@@ -38116,6 +38036,10 @@
     {
      "page": "settings",
      "element": "settings-model-and-mode"
+    },
+    {
+     "page": "settings",
+     "element": "settings-models"
     },
     {
      "page": "tools",
@@ -40122,11 +40046,6 @@
     "to": "references"
    },
    {
-    "from": "attention-overview",
-    "element": "attention-overview-monitor-settings",
-    "to": "profile-monitor"
-   },
-   {
     "from": "chat",
     "element": "chat-watching-message",
     "to": "chat-watching-message-sheet"
@@ -41383,8 +41302,8 @@
    },
    {
     "from": "servers",
-    "element": "servers-attention",
-    "to": "attention-overview"
+    "element": "servers-background-checks",
+    "to": "profile-monitor"
    },
    {
     "from": "servers",
@@ -41635,11 +41554,6 @@
     "from": "profile-monitor",
     "element": "profile-monitor-busy-row",
     "to": "chat"
-   },
-   {
-    "from": "embedded-profile-monitor-inbox",
-    "element": "embedded-profile-monitor-inbox-summary",
-    "to": "profile-monitor"
    },
    {
     "from": "embedded-profile-monitor-inbox",
@@ -42459,7 +42373,7 @@
    {
     "from": "settings",
     "element": "settings-models",
-    "to": "catalog"
+    "to": "model-picker-sheet"
    },
    {
     "from": "settings",
@@ -44151,11 +44065,6 @@
     "from": "chat",
     "element": null,
     "to": "tools"
-   },
-   {
-    "from": "catalog",
-    "element": null,
-    "to": "integrations"
    },
    {
     "from": "chat",

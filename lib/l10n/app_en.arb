@@ -30113,5 +30113,46 @@
   "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
   "@quotaMonitorConsentDetails": {
     "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
+  },
+  "monitorBackgroundChecks": "Background checks",
+  "@monitorBackgroundChecks": {
+    "description": "Title of the page that lists every saved server's last and next background check, and of the Servers page row that opens it"
+  },
+  "monitorRowLastChecked": "Last checked {when}",
+  "@monitorRowLastChecked": {
+    "description": "Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorRowNotChecked": "Not checked yet",
+  "@monitorRowNotChecked": {
+    "description": "Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet"
+  },
+  "monitorRowOff": "Off for every server",
+  "@monitorRowOff": {
+    "description": "Supporting line of the Servers page's Background checks row when no saved server is monitored"
+  },
+  "settingsTryDemo": "Try the demo",
+  "@settingsTryDemo": {
+    "description": "Settings › Help row (and search result) that opens the offline demo conversation"
+  },
+  "quotaMonitorCheckNow": "Check {provider} on {server} now",
+  "@quotaMonitorCheckNow": {
+    "description": "Row that reads one monitored provider account's quota again right away, e.g. 'Check Codex on Workstation now'",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "searchArchivedConversations": "Archived conversations",
+  "@searchArchivedConversations": {
+    "description": "Search result that opens All conversations filtered to archived ones"
   }
 }

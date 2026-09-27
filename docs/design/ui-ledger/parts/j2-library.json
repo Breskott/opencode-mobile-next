@@ -2,30 +2,6 @@
  "area": "j2-library",
  "pages": [
   {
-   "id": "catalog",
-   "title": "Models and agents",
-   "kind": "screen",
-   "file": "lib/ui/screens/library/catalog_screen.dart",
-   "widget": "CatalogScreen",
-   "presentedBy": [],
-   "line": 51,
-   "purpose": "Full-screen host for the shared ModelCatalogView (lib/ui/widgets/pickers.dart:113, showHeader: false) where the default model and agent for new chats are browsed and chosen.",
-   "reachedFrom": [
-    {
-     "page": "?",
-     "element": null,
-     "widget": "SettingsScreen",
-     "file": "lib/ui/screens/library_screen.dart",
-     "line": 101,
-     "note": "row \"Models & agents\""
-    }
-   ],
-   "gates": [
-    "controller.capabilities.serverCatalog (SettingsScreen row gate, library_screen.dart:91)"
-   ],
-   "elements": []
-  },
-  {
    "id": "commands",
    "title": "Server commands",
    "kind": "screen",
@@ -710,10 +686,6 @@
      "file": "lib/ui/screens/chat_screen.dart",
      "line": 5217,
      "note": "_ChatCommandAction.integrations; mode all"
-    },
-    {
-     "page": "catalog",
-     "element": "catalog-legacy-provider-row"
     }
    ],
    "gates": [

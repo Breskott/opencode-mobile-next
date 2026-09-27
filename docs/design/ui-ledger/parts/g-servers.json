@@ -83,18 +83,17 @@
    ],
    "elements": [
     {
-     "id": "servers-attention",
-     "type": "icon-button",
-     "label": "Server attention",
-     "key": null,
-     "line": 385,
+     "id": "servers-background-checks",
+     "type": "list-tile",
+     "label": "Background checks · Last checked {when}",
+     "key": "servers-background-checks",
      "action": "navigate",
-     "target": "attention-overview",
-     "targetWidget": "AttentionOverviewScreen",
-     "effect": "Pushes AttentionOverviewScreen(controller: connProvider, onOpenProfile pops with the profile id); when a readable profile id comes back it calls _connect(profile) for that saved profile.",
+     "target": "profile-monitor",
+     "targetWidget": "ProfileMonitorScreen",
+     "effect": "Pushes ProfileMonitorScreen(controller): each saved server's last and next check and \"Check monitored servers\". The row says \"Off for every server\" when none is monitored.",
      "gates": [
       "bootstrap.store.profiles.isNotEmpty",
-      "disabled while _busy"
+      "!connection.isIsolated"
      ],
      "destructive": false
     },
@@ -113,16 +112,30 @@
     },
     {
      "id": "servers-guide",
-     "type": "icon-button",
+     "type": "menu-item",
      "label": "Setup guide",
-     "key": null,
+     "key": "servers-setup-guide",
      "line": 422,
      "action": "navigate",
      "target": "guide",
-     "targetWidget": "/guide",
-     "effect": "Navigator.pushNamed(context, '/guide').",
+     "targetWidget": "GuideScreen",
+     "effect": "Top-bar menu: pushes GuideScreen(embedded: false).",
      "gates": [
-      "bootstrap.store.profiles.isNotEmpty (absent on the first-run welcome)"
+      "the page is the root route (no shell, so no Settings)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-report-bug",
+     "type": "menu-item",
+     "label": "Report a bug",
+     "key": "servers-report-bug",
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Top-bar menu: openBugReport(context), the same flow as Settings › Report a bug.",
+     "gates": [
+      "the page is the root route (no shell, so no Settings)"
      ],
      "destructive": false
     },
@@ -2486,7 +2499,7 @@
   },
   {
    "id": "profile-monitor",
-   "title": "Saved-server attention",
+   "title": "Background checks",
    "kind": "screen",
    "file": "lib/ui/screens/profile_monitor_screen.dart",
    "widget": "ProfileMonitorScreen",
@@ -2495,18 +2508,8 @@
    "purpose": "Live saved-server attention list: each readable server with its monitor status, last and next check, pending requests and observed busy intervals. Its settings live in Notifications, one link away.",
    "reachedFrom": [
     {
-     "page": "?",
-     "element": null,
-     "widget": "AttentionOverviewScreen (app bar configure button)",
-     "file": "lib/ui/screens/attention_overview_screen.dart",
-     "line": 41
-    },
-    {
-     "page": "?",
-     "element": null,
-     "widget": "ProfileMonitorInbox summary tile (embedded in ActivityScreen)",
-     "file": "lib/ui/screens/profile_monitor_screen.dart",
-     "line": 167
+     "page": "servers",
+     "element": "servers-background-checks"
     }
    ],
    "gates": [],
@@ -2641,7 +2644,7 @@
    "widget": "ProfileMonitorInbox",
    "presentedBy": [],
    "line": 134,
-   "purpose": "Embedded inbox of pending requests and due check-ins from other monitored saved servers, plus a summary row that opens the monitor screen.",
+   "purpose": "Embedded inbox rows: pending requests and due check-ins from other monitored saved servers.",
    "reachedFrom": [
     {
      "page": "?",
@@ -2662,20 +2665,6 @@
     "!controller.isIsolated"
    ],
    "elements": [
-    {
-     "id": "embedded-profile-monitor-inbox-summary",
-     "type": "list-tile",
-     "label": "Saved servers (compact) | Saved-server attention — pending/unknown counts",
-     "key": null,
-     "file": "lib/ui/screens/profile_monitor_screen.dart",
-     "line": 147,
-     "action": "navigate",
-     "target": "profile-monitor",
-     "targetWidget": "ProfileMonitorScreen",
-     "effect": "Pushes ProfileMonitorScreen(controller). Rendered first when !compact, last when compact.",
-     "gates": [],
-     "destructive": false
-    },
     {
      "id": "embedded-profile-monitor-inbox-request-row",
      "type": "list-tile",

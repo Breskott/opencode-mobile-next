@@ -5,7 +5,6 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 
@@ -165,37 +164,6 @@ void main() {
       expect(projects.renamed, 'مشروع جديد');
       expect(tester.takeException(), isNull);
     });
-
-    testWidgets(
-      '320dp 2.5x $direction attention unknown and open action survive',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 740);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        final store = await monitorStore(count: 1);
-        final controller = ConnectionController(store);
-        addTearDown(controller.dispose);
-        String? opened;
-        await tester.pumpWidget(
-          _app(
-            AttentionOverviewScreen(
-              controller: controller,
-              onOpenProfile: (id) => opened = id,
-            ),
-            direction,
-          ),
-        );
-        await tester.pumpAndSettle();
-        await _reveal(tester, find.byType(OutlinedButton));
-        expect(find.text('Pending requests: unknown'), findsOneWidget);
-        expect(find.text('Running conversations: unknown'), findsOneWidget);
-        await _captureScreen(tester, 'attention-${direction.name}');
-        await tester.tap(find.byType(OutlinedButton).hitTestable());
-        expect(opened, 'profile-1');
-        expect(tester.takeException(), isNull);
-      },
-    );
 
     testWidgets(
       '320dp 2.5x $direction monitor quiet time and reminder remain usable',

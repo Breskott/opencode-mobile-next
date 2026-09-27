@@ -456,12 +456,21 @@ void main() {
     await tester.pumpAndSettle();
     for (final key in [
       'settings-setup-guide',
+      // The demo stays reachable once a server is saved.
+      'settings-try-demo',
       'settings-server-capabilities',
       'settings-show-tips-again',
       'app-diagnostics-entry',
     ]) {
       expect(_row(key), findsOneWidget, reason: key);
     }
+    expect(
+      find.descendant(
+        of: _row('settings-try-demo'),
+        matching: find.text(_en.settingsTryDemo),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keyboard shortcuts are a Help row on desktop only', (

@@ -112,16 +112,6 @@
       "SingleChildScrollView": 1,
       "Text": 3
     },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      "AppBar": 1,
-      "Card": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "MaterialPageRoute": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "Text": 10
-    },
     "lib/ui/screens/chat/approvals_sheet.dart": {
       "ActionChip": 1,
       "Container": 1,
@@ -463,9 +453,6 @@
     "lib/ui/kit/scenes/team_scenes.dart": {
       "Curves. in kit": 13
     },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      "ProductEmptyState(": 1
-    },
     "lib/ui/screens/chat/approvals_sheet.dart": {
       "showConfirmSheet(": 1
     },
@@ -558,9 +545,6 @@
     },
     "lib/ui/screens/agent_choice_screen.dart": {
       ".colorScheme": 1,
-      ".textTheme": 2
-    },
-    "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
     },
     "lib/ui/screens/chat/approvals_sheet.dart": {
@@ -761,10 +745,6 @@
     "lib/ui/screens/agent_choice_screen.dart": {
       "EdgeInsets numeric": 1,
       "SizedBox numeric": 2
-    },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 7
     },
     "lib/ui/screens/chat/approvals_sheet.dart": {
       "EdgeInsets numeric": 5,

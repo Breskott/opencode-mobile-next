@@ -40580,6 +40580,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
   String get quotaMonitorConsentDetails;
+
+  /// Title of the page that lists every saved server's last and next background check, and of the Servers page row that opens it
+  ///
+  /// In en, this message translates to:
+  /// **'Background checks'**
+  String get monitorBackgroundChecks;
+
+  /// Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {when}'**
+  String monitorRowLastChecked(String when);
+
+  /// Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get monitorRowNotChecked;
+
+  /// Supporting line of the Servers page's Background checks row when no saved server is monitored
+  ///
+  /// In en, this message translates to:
+  /// **'Off for every server'**
+  String get monitorRowOff;
+
+  /// Settings › Help row (and search result) that opens the offline demo conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Try the demo'**
+  String get settingsTryDemo;
+
+  /// Row that reads one monitored provider account's quota again right away, e.g. 'Check Codex on Workstation now'
+  ///
+  /// In en, this message translates to:
+  /// **'Check {provider} on {server} now'**
+  String quotaMonitorCheckNow(String provider, String server);
+
+  /// Search result that opens All conversations filtered to archived ones
+  ///
+  /// In en, this message translates to:
+  /// **'Archived conversations'**
+  String get searchArchivedConversations;
 }
 
 class _AppLocalizationsDelegate
