@@ -262,12 +262,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // One door, under Agent setup.
+    // One door, in the server's group.
     final row = find.byKey(const ValueKey('settings-commands-tools'));
     expect(find.text('Commands & tools'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-group-agent-setup')),
+        of: find.byKey(const ValueKey('settings-group-server')),
         matching: row,
       ),
       findsOneWidget,

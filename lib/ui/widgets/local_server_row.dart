@@ -58,7 +58,12 @@ class LocalServerRow extends StatelessWidget {
     this.onStop,
     this.onOpen,
     this.running = true,
+    this.dividerAbove = false,
   });
+
+  /// In a list of rows: the panel's hairline above this one, inset to where
+  /// the words start. The row draws it because it alone knows it shows.
+  final bool dividerAbove;
 
   final String keyPrefix;
 
@@ -177,7 +182,7 @@ class LocalServerRow extends StatelessWidget {
           items: items,
         ),
     ];
-    return KeyedSubtree(
+    final row = KeyedSubtree(
       key: ValueKey(keyPrefix),
       child: Semantics(
         container: true,
@@ -215,6 +220,15 @@ class LocalServerRow extends StatelessWidget {
               : Row(mainAxisSize: MainAxisSize.min, children: trailing),
         ),
       ),
+    );
+    if (!dividerAbove) return row;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const KitDivider(inset: KitDividerInset.text),
+        row,
+      ],
     );
   }
 }

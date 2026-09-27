@@ -43,14 +43,15 @@ Future<void> openMonitoredRequest(
       among: profiles,
     );
     // Names both servers and what keeps running (map: switch dialog "fix").
+    final target = nameOf(route.profileID);
     final accepted = await showKitConfirm(
       context,
-      title: l10n.monitorSwitchTitle,
+      title: l10n.monitorSwitchToTitle(target),
       body: l10n.profileMonitorSwitchBody(
         nameOf(controller.profile?.id),
-        nameOf(route.profileID),
+        target,
       ),
-      confirmLabel: l10n.monitorSwitch,
+      confirmLabel: l10n.monitorSwitchTo(target),
       icon: AppIconography.swap,
     );
     if (!accepted || !context.mounted) return;
@@ -208,69 +209,95 @@ class ProfileMonitorInbox extends StatelessWidget {
     this.compact = false,
   });
   final ConnectionController controller;
+
+  /// The Inbox's form: only the rows, no summary row (owner rule R4: the
+  /// counts sit on the server switcher and the monitor screen, not as a
+  /// settings row among requests).
   final bool compact;
+
+  /// What other saved servers wait on, as rows for one list (owner rule
+  /// R1): [requests] each lead with the needs-you mark, the server that
+  /// checked most recently first; [checkIns] are reminders about long
+  /// runs, not requests. The connected server's own requests are the
+  /// Inbox's; they are never listed twice.
+  static ({List<Widget> requests, List<Widget> checkIns}) rowsFor(
+    ConnectionController controller,
+  ) {
+    if (controller.isIsolated) return (requests: const [], checkIns: const []);
+    final monitor = controller.profileMonitor;
+    final current = [
+      for (final profile in controller.store.profiles)
+        if (controller.isProfileReadable(profile.id))
+          if (monitor.snapshotFor(profile.id) case final snapshot
+              when snapshot.isCurrent)
+            (profile: profile, snapshot: snapshot),
+    ];
+    final byTime = [...current]
+      ..sort((a, b) {
+        final at = a.snapshot.checkedAt, bt = b.snapshot.checkedAt;
+        if (at == null || bt == null) return 0;
+        return bt.compareTo(at);
+      });
+    return (
+      requests: [
+        for (final (:profile, :snapshot) in byTime)
+          if (profile.id != controller.profile?.id)
+            for (final request in snapshot.requests)
+              _MonitorRequestRow(
+                key: ValueKey(('monitor-row', request.identity)),
+                controller: controller,
+                profile: profile,
+                request: request,
+              ),
+      ],
+      checkIns: [
+        for (final (:profile, :snapshot) in current)
+          for (final interval in snapshot.dueCheckIns(
+            monitor.rulesFor(profile.id),
+          ))
+            _MonitorRequestRow(
+              key: ValueKey(('monitor-row', interval.toRequest().identity)),
+              controller: controller,
+              profile: profile,
+              request: interval.toRequest(),
+            ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (controller.isIsolated) return const SizedBox.shrink();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
-    final monitor = controller.profileMonitor;
-    final summary = KitRow(
-      leading: KitRow.icon(context, AppIconography.server),
-      title: compact ? l10n.activitySavedServers : l10n.monitorTitle,
-      supporting: TextSpan(
-        text: compact
-            ? [
-                if (controller.unifiedAttentionCount > 0)
-                  l10n.activityPendingCount(controller.unifiedAttentionCount),
-                if (controller.unknownAttentionProfileCount > 0)
-                  l10n.activityUnknownCount(
-                    controller.unknownAttentionProfileCount,
-                  ),
-                l10n.activitySelectedLocationsOnly,
-              ].join(' · ')
-            : l10n.monitorPendingSummary(
-                controller.unifiedAttentionCount,
-                controller.unknownAttentionProfileCount,
-              ),
-      ),
-      supportingMaxLines: 2,
-      trailing: const _Chevron(),
-      onTap: () => pushKitPage<void>(
-        context,
-        (_) => ProfileMonitorScreen(controller: controller),
-      ),
-    );
+    final rows = rowsFor(controller);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!compact) summary,
-        if (!compact)
+        if (!compact) ...[
+          KitRow(
+            leading: KitRow.icon(context, AppIconography.server),
+            title: l10n.monitorTitle,
+            supporting: TextSpan(
+              text: l10n.monitorPendingSummary(
+                controller.unifiedAttentionCount,
+                controller.unknownAttentionProfileCount,
+              ),
+            ),
+            supportingMaxLines: 2,
+            trailing: const _Chevron(),
+            onTap: () => pushKitPage<void>(
+              context,
+              (_) => ProfileMonitorScreen(controller: controller),
+            ),
+          ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
             child: KitText(l10n.monitorScope, role: KitTextRole.secondary),
           ),
-        for (final profile in controller.store.profiles)
-          if (controller.isProfileReadable(profile.id))
-            if (monitor.snapshotFor(profile.id) case final snapshot
-                when snapshot.isCurrent) ...[
-              if (profile.id != controller.profile?.id)
-                for (final request in snapshot.requests)
-                  _MonitorRequestRow(
-                    controller: controller,
-                    profile: profile,
-                    request: request,
-                  ),
-              for (final interval in snapshot.dueCheckIns(
-                monitor.rulesFor(profile.id),
-              ))
-                _MonitorRequestRow(
-                  controller: controller,
-                  profile: profile,
-                  request: interval.toRequest(),
-                ),
-            ],
-        if (compact) summary,
+        ],
+        ...rows.requests,
+        ...rows.checkIns,
       ],
     );
   }
@@ -281,6 +308,7 @@ class ProfileMonitorInbox extends StatelessWidget {
 /// check-in reminder is not a request, so it stays a plain row.
 class _MonitorRequestRow extends StatelessWidget {
   const _MonitorRequestRow({
+    super.key,
     required this.controller,
     required this.profile,
     required this.request,

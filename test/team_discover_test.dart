@@ -218,39 +218,52 @@ void main() {
     debugBuiltinTeam = null;
   });
 
-  group('the Work tab', () {
-    Future<WorkController> pumpWork(WidgetTester tester) async {
+  group('the offer', () {
+    // A computer: the tests' platform is Android, where the fixture's
+    // 127.0.0.1:4096 would be the Termux server.
+    Future<WorkController> computer(WidgetTester tester) async {
       _tallScreen(tester);
       _mockChannels();
-      // A computer: the tests' platform is Android, where the fixture's
-      // 127.0.0.1:4096 would be the Termux server.
       final controller = await workController(
         name: 'pop-os',
         baseUrl: 'http://100.100.1.2:4096',
       );
       addTearDown(controller.dispose);
+      return controller;
+    }
+
+    Future<WorkController> pumpWork(WidgetTester tester) async {
+      final controller = await computer(tester);
       await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
+        _app(Scaffold(body: TeamDiscoverEntry(controller: controller))),
       );
       await _settle(tester);
       return controller;
     }
 
-    testWidgets('shows the AI Team while it is off, below the work', (
+    testWidgets('Work lists conversations only; the offer is not there', (
+      tester,
+    ) async {
+      // Owner rule R4 (2026-09-27): the AI Team is reached from Settings ›
+      // AI Team, not from a row among the person's conversations.
+      final controller = await computer(tester);
+      await tester.pumpWidget(
+        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
+      );
+      await _settle(tester);
+      expect(_key('team-discover-open'), findsNothing);
+      expect(_key('team-discover-row'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the offer: a drawing and one line the first time', (
       tester,
     ) async {
       await pumpWork(tester);
-      final entry = _key('team-discover-open');
-      expect(entry, findsOneWidget);
+      expect(_key('team-discover-open'), findsOneWidget);
       expect(find.text(_en.teamDiscoverEntryTitle), findsOneWidget);
       expect(find.text(_en.teamDiscoverEntryBody), findsOneWidget);
       expect(_key('team-discover-drawing'), findsOneWidget);
-      // After the person's own list, never above it.
-      final recent = find.text(_en.workspaceConversations);
-      expect(
-        tester.getTopLeft(entry).dy,
-        greaterThan(tester.getTopLeft(recent).dy),
-      );
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -264,10 +277,10 @@ void main() {
       expect(_key('team-discover-row'), findsOneWidget);
       expect(find.text(_en.teamDiscoverRowLine), findsOneWidget);
 
-      // Remembered: a fresh Work tab (a restart) opens folded.
+      // Remembered: a fresh offer (a restart) opens folded.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
+        _app(Scaffold(body: TeamDiscoverEntry(controller: controller))),
       );
       await _settle(tester);
       expect(_key('team-discover-open'), findsNothing);
@@ -360,14 +373,10 @@ void main() {
       addTearDown(team.dispose);
       await pumpWork(tester, team: team);
       // The recorded convoy waits for a worker: a running row in the one
-      // Conversations list (no Running section), marked.
+      // list (no Running section, no caption), marked.
       expect(_key('workspace-running'), findsNothing);
-      expect(_key('workspace-conversations'), findsOneWidget);
+      expect(_key('workspace-conversations'), findsNothing);
       expect(_key('team-work-task-oc-xru'), findsOneWidget);
-      expect(
-        tester.getTopLeft(_key('team-work-task-oc-xru')).dy,
-        greaterThan(tester.getTopLeft(_key('workspace-conversations')).dy),
-      );
       expect(_key('team-work-task-mark-oc-xru'), findsOneWidget);
       expect(
         tester
@@ -376,9 +385,10 @@ void main() {
             .toPlainText(),
         startsWith('${_en.teamTaskMark} · ${_en.teamUiCardRunStateWaiting}'),
       );
-      // No separate card; one quiet door to the team's page.
+      // No separate card and no door row: the team's page is reached from
+      // Settings (owner rule R4).
       expect(_key('team-card'), findsNothing);
-      expect(_key('team-work-door'), findsOneWidget);
+      expect(_key('team-work-door'), findsNothing);
       await tester.tap(_key('team-work-task-oc-xru'));
       await _settle(tester);
       // A team task opens as its conversation
@@ -622,10 +632,15 @@ void main() {
       await _settle(tester);
     }
 
-    String line(WidgetTester tester) {
-      final row = tester.widget<KitRow>(_key('settings-ai-team'));
-      return row.supporting!.toPlainText();
-    }
+    // The state is the row's short value at its end (canvas Settings.png).
+    String line(WidgetTester tester) => tester
+        .widget<KitRowValue>(
+          find.descendant(
+            of: _key('settings-ai-team'),
+            matching: find.byType(KitRowValue),
+          ),
+        )
+        .value;
 
     testWidgets('has an AI Team row that reads Off and what it is for, and '
         'opens the intro', (tester) async {
@@ -634,7 +649,7 @@ void main() {
       await pumpSettings(tester, controller);
       await tester.ensureVisible(_key('settings-ai-team'));
       await _settle(tester);
-      expect(line(tester), _en.teamDiscoverRowLine);
+      expect(line(tester), startsWith(_en.teamUiRowOff));
       await tester.tap(_key('settings-ai-team'));
       await _settle(tester);
       expect(find.byType(TeamIntroScreen), findsOneWidget);
@@ -727,9 +742,13 @@ void main() {
       await tester.ensureVisible(_key('settings-ai-team'));
       await _settle(tester);
       String line() => tester
-          .widget<KitRow>(_key('settings-ai-team'))
-          .supporting!
-          .toPlainText();
+          .widget<KitRowValue>(
+            find.descendant(
+              of: _key('settings-ai-team'),
+              matching: find.byType(KitRowValue),
+            ),
+          )
+          .value;
       expect(line(), _en.teamDiscoverTurningOn);
 
       // Done installing: the card offers to turn it on; Settings reads Off.
@@ -762,9 +781,13 @@ void main() {
       await tester.ensureVisible(_key('settings-ai-team'));
       await _settle(tester);
       final line = tester
-          .widget<KitRow>(_key('settings-ai-team'))
-          .supporting!
-          .toPlainText();
+          .widget<KitRowValue>(
+            find.descendant(
+              of: _key('settings-ai-team'),
+              matching: find.byType(KitRowValue),
+            ),
+          )
+          .value;
       expect(line, teamStateLine(_en, controller));
       expect(line, isNot(startsWith(_en.teamUiRowOff)));
       await tester.pumpWidget(const SizedBox.shrink());

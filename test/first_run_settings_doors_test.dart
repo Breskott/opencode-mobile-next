@@ -67,6 +67,8 @@ Future<ConnectionController> _controller() async {
     ..status = StreamStatus.connected;
 }
 
+final _en = lookupAppLocalizations(const Locale('en'));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final messenger =
@@ -119,26 +121,37 @@ void main() {
       }
     }
 
-    await open('settings-tailscale');
+    // What left the welcome is found by search: Tailscale and External
+    // agents as ways of Saved servers › Add server, the guide inside Help.
+    Future<void> searchAndOpen(String query, String id) async {
+      await tester.enterText(find.byKey(const Key('library-search')), query);
+      // The field settles its query after a short pause.
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      await open('search-result-$id');
+    }
+
+    await searchAndOpen(_en.tailscaleTitle, 'settings-tailscale');
     expect(find.byType(TailscaleSetupScreen), findsOneWidget);
     await tester.pageBack();
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    await open('settings-setup-guide');
+    await searchAndOpen(_en.onboardingSetupGuide, 'settings-setup-guide');
     expect(find.byType(GuideScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    final externalAgents = find.byKey(
-      const ValueKey('settings-external-agents'),
+    await tester.enterText(
+      find.byKey(const Key('library-search')),
+      _en.a2aTitle,
     );
-    await tester.scrollUntilVisible(
-      externalAgents,
-      -200,
-      scrollable: find.byType(Scrollable).first,
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('search-result-settings-external-agents')),
+      findsOneWidget,
     );
-    expect(externalAgents, findsOneWidget);
   });
 }

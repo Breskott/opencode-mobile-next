@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/product_repository.dart' show ProductException;
 import '../../api/server_probe.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
-import '../../demo/demo_copy.dart';
+import '../../domain/profile_monitor.dart' show ProfileAttentionSnapshot;
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
@@ -35,7 +35,6 @@ import 'agent_choice_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_welcome_entry.dart';
 import 'demo_screen.dart';
-import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
 import 'pairing_scanner_screen.dart';
 import 'tailscale_setup_screen.dart';
@@ -244,8 +243,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// unconditionally and stay platform-gated through it.
   Widget _runningServerEntry(
     List<ServerProfile> profiles,
-    ConnectionController connection,
-  ) {
+    ConnectionController connection, {
+    bool dividerAbove = false,
+  }) {
     // Both servers this app can run on the phone lead the list and are
     // controlled in place: OpenCode first, then the Claude Code daemon. Each
     // entry decides on its own whether it has anything to show.
@@ -253,8 +253,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _openCodeServerEntry(profiles, connection),
+        _openCodeServerEntry(profiles, connection, dividerAbove: dividerAbove),
         LocalAgentServerEntry(
+          // In a list, a hairline above it whenever a row may precede it.
+          dividerAbove:
+              dividerAbove || savedManagedPhoneProfile(profiles) != null,
           profiles: profiles,
           busy: _busy,
           revision: _termuxRevision,
@@ -277,9 +280,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   Widget _openCodeServerEntry(
     List<ServerProfile> profiles,
-    ConnectionController connection,
-  ) {
+    ConnectionController connection, {
+    bool dividerAbove = false,
+  }) {
     return TermuxRunningServerEntry(
+      dividerAbove: dividerAbove,
       profiles: profiles,
       busy: _busy,
       revision: _termuxRevision,
@@ -445,6 +450,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           initialUrl: initialUrl,
           openCode2Intent: openCode2Intent,
           presetBackend: presetBackend,
+          // A new server's "Connect to" also offers the other ways in, so
+          // the list holds no second panel of them (R3).
+          onPhoneSetup: isNew && platformCapabilities.supportsTermux
+              ? _openPhoneSetup
+              : null,
+          onTailscale: isNew && platformCapabilities.supportsTailscaleHandoff
+              ? _tailscale
+              : null,
+          onExternalAgents: isNew ? _externalAgents : null,
           onSubmit: (profile) => _saveAndConnect(
             profile,
             isNew: isNew,
@@ -664,34 +678,19 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final store = bootstrap.store;
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final hasServers = store.profiles.isNotEmpty;
-    // A root page (§1.18): the product mark and name, and the page's few
-    // actions — the attention overview and the guide once there are servers
-    // to manage (first run asks one question; the guide is reference
-    // material, UX plan 5.4), and About always.
+    // A root page (§1.18): the product mark and name, and About. Which
+    // server needs the person is said on its own row (R1), and the guide
+    // lives in Settings › Help (R3), so neither is a second door here.
     final topBar = KitTopBar(
       title: copy.openCodeConnectionLabel,
       brand: true,
       actions: [
-        if (hasServers)
-          KitAction(
-            key: const ValueKey('servers-attention'),
-            label: copy.attentionTitle,
-            icon: AppIconography.activity,
-            onPressed: _busy ? null : _openAttention,
-          ),
         KitAction(
           key: const ValueKey('servers-about'),
           label: copy.e7SetupAboutNotices,
           icon: AppIconography.info,
           onPressed: () => Navigator.pushNamed(context, '/about'),
         ),
-        if (hasServers)
-          KitAction(
-            key: const ValueKey('servers-guide'),
-            label: copy.onboardingSetupGuide,
-            icon: AppIconography.question,
-            onPressed: () => Navigator.pushNamed(context, '/guide'),
-          ),
       ],
     );
     if (!hasServers) {
@@ -728,6 +727,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p)) p,
     ];
     final tokens = KitTokens.of(context);
+    // The other servers' words come from the one attention source, which an
+    // isolated profile never reads.
+    final monitor = accountConnection.isIsolated
+        ? null
+        : accountConnection.profileMonitor;
     return KitScreen(
       topBar: topBar,
       width: KitScreenWidth.list,
@@ -736,6 +740,8 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       loadingLabel: copy.e7SetupServerOperation,
       // Adding a server is what this screen offers beyond its rows:
       // the one primary, pinned below the list (§1, §2).
+      // The demo is the welcome's "Just show me"; with servers saved it
+      // would be a second, lesser way in (R3).
       bottom: KitActionBlock(
         primary: KitAction(
           key: const ValueKey('servers-add'),
@@ -743,14 +749,6 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           icon: AppIconography.add,
           onPressed: _busy ? null : () => _edit(),
         ),
-        tertiary: [
-          KitAction(
-            key: const ValueKey('servers-try-demo'),
-            label: DemoCopy.tryDemo,
-            icon: AppIconography.playCircle,
-            onPressed: _busy ? null : _demo,
-          ),
-        ],
       ),
       body: ListView(
         padding: EdgeInsetsDirectional.only(
@@ -791,12 +789,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               null => null,
             },
           ),
-          // The phone's own servers lead the list, one row each; the
-          // saved sign-ins they stand for are not listed again below.
-          _runningServerEntry(store.profiles, accountConnection),
-          // OpenCode inside this app is "This phone", managed in place;
-          // its saved entries are how the app reaches it, so they are
-          // not listed again below.
+          // OpenCode inside this app is "This phone", managed in place with
+          // its own controls; its saved entries are how the app reaches it,
+          // so they are not listed again below.
           if (phoneServer != null)
             _Rails(
               child: PhoneServerCard(
@@ -812,101 +807,120 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 },
               ),
             ),
-          // The saved servers, one panel of rows (VL §5). A server added
-          // or forgotten while the list is open unfolds in or folds away
-          // where it was (design standard §10); the first paint shows the
-          // rows at once.
-          if (saved.isNotEmpty) ...[
-            SizedBox(height: tokens.space4),
-            KitRowGroup(
-              label: copy.e7SetupServers,
-              children: [
-                KitAnimatedRows(
-                  key: const ValueKey('saved-server-rows'),
-                  children: [
-                    for (final (i, p) in saved.indexed)
-                      KeyedSubtree(
-                        key: ValueKey('saved-server-${p.id}'),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (i > 0)
-                              const KitDivider(inset: KitDividerInset.text),
-                            _ServerRow(
-                              profile: p,
-                              connected:
-                                  accountConnection.api != null &&
-                                  accountConnection.profile?.id == p.id,
-                              busy: _busy,
-                              showAccount:
-                                  p.id == activeId &&
-                                  accountConnection.isConnected &&
-                                  accountConnection.capabilities.agentAccount,
-                              onConnect: () => _connect(p),
-                              onEdit: () => _edit(existing: p),
-                              onRemove: () => _delete(p),
-                              onAccount: () => pushKitPage<void>(
-                                context,
-                                (_) => AgentAccountScreen(
-                                  connection: accountConnection,
+          SizedBox(height: tokens.space4),
+          // Every server in one list (R1): the rows ordered by urgency,
+          // each saying first what it needs ("Needs you"), what runs there
+          // or that its password must be entered again, then the phone's own
+          // servers, which decide on their own whether they show. A server
+          // added or forgotten while the list is open unfolds in or folds
+          // away where it was (design standard §10).
+          ListenableBuilder(
+            listenable: Listenable.merge([accountConnection, ?monitor]),
+            builder: (context, _) {
+              final ordered = _byUrgency(saved, accountConnection);
+              return KitRowGroup(
+                key: const ValueKey('servers-list'),
+                children: [
+                  KitAnimatedRows(
+                    key: const ValueKey('saved-server-rows'),
+                    children: [
+                      for (final (i, p) in ordered.indexed)
+                        KeyedSubtree(
+                          key: ValueKey('saved-server-${p.id}'),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (i > 0)
+                                const KitDivider(inset: KitDividerInset.text),
+                              _ServerRow(
+                                profile: p,
+                                connected:
+                                    accountConnection.api != null &&
+                                    accountConnection.profile?.id == p.id,
+                                snapshot: _snapshotFor(p, accountConnection),
+                                working:
+                                    accountConnection.api != null &&
+                                        accountConnection.profile?.id == p.id
+                                    ? accountConnection.busySessions.length
+                                    : null,
+                                busy: _busy,
+                                showAccount:
+                                    p.id == activeId &&
+                                    accountConnection.isConnected &&
+                                    accountConnection.capabilities.agentAccount,
+                                onConnect: () => _connect(p),
+                                onEdit: () => _edit(existing: p),
+                                onRemove: () => _delete(p),
+                                onAccount: () => pushKitPage<void>(
+                                  context,
+                                  (_) => AgentAccountScreen(
+                                    connection: accountConnection,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-          // Other ways in, as their own panel so they never read as more
-          // servers (§6): the OpenCode 2 shortcut, this phone, and the
-          // rarer setups folded under one row.
-          SizedBox(height: tokens.sectionGap),
-          KitRowGroup(
-            label: copy.serversOtherWays,
-            children: [
-              _OpenCode2Entry(
-                onTap: _busy ? null : () => _edit(openCode2Intent: true),
-              ),
-              if (platformCapabilities.supportsTermux)
-                _PhoneSetupEntry(
-                  key: const ValueKey('quick-add-phone-card'),
-                  onTap: _busy ? null : _openPhoneSetup,
-                ),
-              _SetupOptions(
-                busy: _busy,
-                onTailscale: _tailscale,
-                onGuide: () => Navigator.pushNamed(context, '/guide'),
-                onExternalAgents: _externalAgents,
-              ),
-            ],
+                    ],
+                  ),
+                  // The phone's own servers close the list, a row each.
+                  _runningServerEntry(
+                    store.profiles,
+                    accountConnection,
+                    dividerAbove: saved.isNotEmpty,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  /// The attention overview across saved servers; choosing one connects it.
-  Future<void> _openAttention() async {
-    final bootstrap = ref.read(bootstrapProvider);
-    final controller = ref.read(connProvider);
-    final chosen = await pushKitPage<String>(
-      context,
-      (pageContext) => AttentionOverviewScreen(
-        controller: controller,
-        onOpenProfile: (id) => Navigator.of(pageContext).pop(id),
-      ),
-    );
-    if (!mounted || chosen == null || !controller.isProfileReadable(chosen)) {
-      return;
+  /// The monitor's current words about [profile], or null when it has none
+  /// (isolated, unreadable or stale): a row then says nothing rather than
+  /// something old.
+  ProfileAttentionSnapshot? _snapshotFor(
+    ServerProfile profile,
+    ConnectionController connection,
+  ) {
+    if (connection.isIsolated || !connection.isProfileReadable(profile.id)) {
+      return null;
     }
-    final matches = bootstrap.store.profiles
-        .where((profile) => profile.id == chosen)
-        .toList();
-    if (matches.length != 1) return;
-    await _connect(matches.single);
+    final snapshot = connection.profileMonitor.snapshotFor(profile.id);
+    return snapshot.isCurrent ? snapshot : null;
+  }
+
+  /// [profiles] most urgent first (R1): what waits on the person, then
+  /// what is working, then the rest in the order they were saved.
+  List<ServerProfile> _byUrgency(
+    List<ServerProfile> profiles,
+    ConnectionController connection,
+  ) {
+    int rank(ServerProfile profile) {
+      final snapshot = _snapshotFor(profile, connection);
+      final connected =
+          connection.api != null && connection.profile?.id == profile.id;
+      if ((snapshot?.requests.length ?? 0) > 0 ||
+          (connected &&
+              (connection.awaitingPermissions.isNotEmpty ||
+                  connection.questions.isNotEmpty))) {
+        return 0;
+      }
+      if ((snapshot?.runningCount ?? 0) > 0 ||
+          (connected && connection.busySessions.isNotEmpty)) {
+        return 1;
+      }
+      return 2;
+    }
+
+    final indexed = [for (final (i, p) in profiles.indexed) (i, p, rank(p))];
+    indexed.sort((a, b) {
+      final byRank = a.$3.compareTo(b.$3);
+      return byRank != 0 ? byRank : a.$1.compareTo(b.$1);
+    });
+    return [for (final entry in indexed) entry.$2];
   }
 }
 
@@ -940,6 +954,8 @@ class _ServerRow extends StatelessWidget {
   const _ServerRow({
     required this.profile,
     required this.connected,
+    required this.snapshot,
+    required this.working,
     required this.busy,
     required this.showAccount,
     required this.onConnect,
@@ -950,6 +966,13 @@ class _ServerRow extends StatelessWidget {
 
   final ServerProfile profile;
   final bool connected;
+
+  /// The monitor's current words about this server; null says nothing.
+  final ProfileAttentionSnapshot? snapshot;
+
+  /// Conversations running on the connected server; null for the others,
+  /// whose count comes from [snapshot].
+  final int? working;
   final bool busy;
   final bool showAccount;
   final VoidCallback onConnect;
@@ -971,29 +994,38 @@ class _ServerRow extends StatelessWidget {
         : p.requiresCodexTokenReentry
         ? copy.e7SetupTokenRequired
         : null;
+    final waiting = connected ? 0 : (snapshot?.requests.length ?? 0);
+    final running = working ?? snapshot?.runningCount ?? 0;
+    final wordStyle = KitText.styleOf(
+      context,
+      KitTextRole.label,
+      tone: KitTextTone.primary,
+    );
+    // The state first, in words (R1, the switcher's words): "Needs you",
+    // "2 working", a credential to enter again, then what it is and where.
     return KitRow(
       key: ValueKey('server-row-${p.id}'),
-      leading: KitRowIcon(
-        isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
-            ? AppIconography.phone
-            : AppIconography.server,
-        current: connected,
-      ),
+      leading: waiting > 0
+          ? KitNeedsYou.mark()
+          : KitRowIcon(
+              isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+                  ? AppIconography.phone
+                  : AppIconography.server,
+              current: connected,
+            ),
       title: p.name,
       supporting: TextSpan(
         children: [
+          if (connected) kitCurrentSpan(context, copy.serverRowConnected),
+          if (waiting > 0) KitNeedsYou.span(context, count: waiting),
+          if (running > 0)
+            TextSpan(
+              text: '${copy.otherServerWorking(running)} · ',
+              style: wordStyle,
+            ),
           // LOOK-5 interim: a credential to re-enter is said in words, in
           // the strong label weight, never in the danger colour.
-          if (reentry != null)
-            TextSpan(
-              text: '$reentry · ',
-              style: KitText.styleOf(
-                context,
-                KitTextRole.label,
-                tone: KitTextTone.primary,
-              ),
-            ),
-          if (connected) kitCurrentSpan(context, copy.serverRowConnected),
+          if (reentry != null) TextSpan(text: '$reentry · ', style: wordStyle),
           if (kind != null) TextSpan(text: '$kind · '),
           TextSpan(text: _shortAddress(p.baseUrl)),
         ],
@@ -1199,27 +1231,6 @@ String _knownOpenCodeGeneration(ServerProfile profile) =>
       _ => 'OpenCode',
     };
 
-/// A discovery shortcut into the same autodetecting editor, not a flavor override.
-class _OpenCode2Entry extends StatelessWidget {
-  const _OpenCode2Entry({required this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => KitRow(
-    key: const ValueKey('connect-existing-opencode2'),
-    leading: KitRow.icon(context, AppIconography.server),
-    title: _connectionL10n(context).oc2DiscoveryConnect,
-    supporting: TextSpan(text: _connectionL10n(context).oc2DiscoveryExisting),
-    supportingMaxLines: 2,
-    trailing: const KitChevron(),
-    enabled: onTap != null,
-    disabledReason: onTap == null
-        ? _connectionL10n(context).e7SetupServerOperation
-        : null,
-    onTap: onTap,
-  );
-}
-
 /// A phone feature must stay discoverable when the current server is remote.
 /// One entry for every way of running an agent on this phone: it opens phone
 /// setup (screen A), where the in-app setup leads and Termux is one of the
@@ -1245,59 +1256,6 @@ class _PhoneSetupEntry extends StatelessWidget {
   );
 }
 
-/// Advanced setup remains discoverable without competing with connect or demo.
-class _SetupOptions extends StatelessWidget {
-  const _SetupOptions({
-    required this.busy,
-    required this.onTailscale,
-    required this.onGuide,
-    required this.onExternalAgents,
-  });
-  final bool busy;
-  final VoidCallback onTailscale;
-  final VoidCallback onGuide;
-  final VoidCallback onExternalAgents;
-
-  @override
-  Widget build(BuildContext context) {
-    final copy = _connectionL10n(context);
-    final busyReason = busy ? copy.e7SetupServerOperation : null;
-    return KitExpandRow(
-      key: const ValueKey('servers-more-setup'),
-      leading: KitRow.icon(context, AppIconography.tools),
-      title: copy.onboardingMoreSetup,
-      children: [
-        if (platformCapabilities.supportsTailscaleHandoff)
-          KitRow(
-            key: const ValueKey('welcome-tailscale-card'),
-            leading: KitRow.icon(context, AppIconography.secureNetwork),
-            title: copy.tailscaleTitle,
-            supporting: TextSpan(text: copy.onboardingPrivateNetwork),
-            supportingMaxLines: 2,
-            enabled: !busy,
-            disabledReason: busyReason,
-            onTap: onTailscale,
-          ),
-        KitRow(
-          key: const ValueKey('welcome-guide-card'),
-          leading: KitRow.icon(context, AppIconography.guide),
-          title: copy.onboardingSetupGuide,
-          enabled: !busy,
-          disabledReason: busyReason,
-          onTap: onGuide,
-        ),
-        KitRow(
-          leading: KitRow.icon(context, AppIconography.network),
-          title: copy.a2aTitle,
-          enabled: !busy,
-          disabledReason: busyReason,
-          onTap: onExternalAgents,
-        ),
-      ],
-    );
-  }
-}
-
 class _ProfileEditorScreen extends StatefulWidget {
   final ServerProfile? existing;
   final bool tailscale;
@@ -1310,6 +1268,12 @@ class _ProfileEditorScreen extends StatefulWidget {
   /// (they already answered), the command to run leads, and the private
   /// network link sits under the address. Null everywhere else.
   final ServerBackend? presetBackend;
+
+  /// The other ways in, offered under "Connect to" for a new server (null
+  /// hides each): the editor closes, then the way opens.
+  final VoidCallback? onPhoneSetup;
+  final VoidCallback? onTailscale;
+  final VoidCallback? onExternalAgents;
 
   /// Focus the password field on open — the path taken from the connection
   /// banner after a mid-session 401 (the serve password rotated).
@@ -1331,6 +1295,9 @@ class _ProfileEditorScreen extends StatefulWidget {
     this.openCode2Intent = false,
     this.initialUrl,
     this.presetBackend,
+    this.onPhoneSetup,
+    this.onTailscale,
+    this.onExternalAgents,
     this.focusPassword = false,
     required this.onSubmit,
     this.secureStorageProbe,
@@ -2713,6 +2680,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     ],
   );
 
+  /// Closes the editor (nothing is saved yet), then takes the other way.
+  VoidCallback? _leaveFor(VoidCallback? way) {
+    if (way == null) return null;
+    return () {
+      if (_submitting) return;
+      Navigator.of(context).pop();
+      way();
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final copy = _connectionL10n(context);
@@ -2936,6 +2913,15 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                         SizedBox(height: tokens.space1),
                         _moreOptions(copy, tokens),
                       ],
+                      // The other ways in (R3: once, on Add server, not a
+                      // panel on the list), after the main path so it
+                      // stays first.
+                      if (asksType)
+                        _OtherWays(
+                          onPhoneSetup: _leaveFor(widget.onPhoneSetup),
+                          onTailscale: _leaveFor(widget.onTailscale),
+                          onExternalAgents: _leaveFor(widget.onExternalAgents),
+                        ),
                     ],
                   ),
                 ),
@@ -3284,6 +3270,65 @@ class _BackendChoice extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Add server's other ways in, one row each (R3: they live here, not as a
+/// second panel on the servers list): this phone, Tailscale and external
+/// agents. Each closes the form and opens its own setup; null hides a row.
+class _OtherWays extends StatelessWidget {
+  const _OtherWays({
+    required this.onPhoneSetup,
+    required this.onTailscale,
+    required this.onExternalAgents,
+  });
+
+  final VoidCallback? onPhoneSetup;
+  final VoidCallback? onTailscale;
+  final VoidCallback? onExternalAgents;
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final phone = onPhoneSetup;
+    final tailscale = onTailscale;
+    final external = onExternalAgents;
+    if (phone == null && tailscale == null && external == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.sectionGap),
+      child: KitRowGroup(
+        key: const ValueKey('server-editor-other-ways'),
+        label: copy.serversAddOtherWays,
+        children: [
+          if (phone != null)
+            _PhoneSetupEntry(
+              key: const ValueKey('quick-add-phone-card'),
+              onTap: phone,
+            ),
+          if (tailscale != null)
+            KitRow(
+              key: const ValueKey('welcome-tailscale-card'),
+              leading: KitRow.icon(context, AppIconography.secureNetwork),
+              title: copy.tailscaleTitle,
+              supporting: TextSpan(text: copy.onboardingPrivateNetwork),
+              supportingMaxLines: 2,
+              trailing: const KitChevron(),
+              onTap: tailscale,
+            ),
+          if (external != null)
+            KitRow(
+              key: const ValueKey('server-editor-external-agents'),
+              leading: KitRow.icon(context, AppIconography.network),
+              title: copy.a2aTitle,
+              trailing: const KitChevron(),
+              onTap: external,
+            ),
         ],
       ),
     );

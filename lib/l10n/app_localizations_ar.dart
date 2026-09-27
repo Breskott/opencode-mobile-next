@@ -25666,4 +25666,101 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skillSheetSending => 'Adding the skill…';
+
+  @override
+  String activityFinishedRow(String when) {
+    return 'Finished · $when';
+  }
+
+  @override
+  String get activityOfflineRequests =>
+      'Requests can\'t load while you\'re offline.';
+
+  @override
+  String connectionReconnectTo(String server) {
+    return 'Reconnect to $server';
+  }
+
+  @override
+  String workspaceIsolatedTaskRow(String project) {
+    return 'New task in a fresh worktree of $project';
+  }
+
+  @override
+  String get workspaceIsolatedTaskRowDetail =>
+      'Works on a separate copy so your main folder stays untouched.';
+
+  @override
+  String get workspaceSearchAllDetail =>
+      'Every project on this server, archived ones too';
+
+  @override
+  String serverDisconnectFrom(String server) {
+    return 'Disconnect from $server';
+  }
+
+  @override
+  String get localAgentStopNamed => 'Stop Claude Code';
+
+  @override
+  String get localAgentStartNamed => 'Start Claude Code';
+
+  @override
+  String monitorSwitchToTitle(String server) {
+    return 'Switch to $server?';
+  }
+
+  @override
+  String monitorSwitchTo(String server) {
+    return 'Switch to $server';
+  }
+
+  @override
+  String servicesStartNamed(String service) {
+    return 'Start $service';
+  }
+
+  @override
+  String servicesStopNamed(String service) {
+    return 'Stop $service';
+  }
+
+  @override
+  String get teamDiscoverTurnOnNamed => 'Turn on AI Team';
+
+  @override
+  String serverSettingsChangeSignIn(String server) {
+    return 'Change sign-in for $server';
+  }
+
+  @override
+  String serverSettingsAuthBasic(String user) {
+    return 'Basic authentication as $user';
+  }
+
+  @override
+  String get serverSettingsUpdateHint =>
+      'Uses OpenCode\'s official installer; restart the server afterwards.';
+
+  @override
+  String get settingsHubThisPhone => 'This phone';
+
+  @override
+  String get settingsHubHelpRow => 'Help';
+
+  @override
+  String get settingsHubHelpSubtitle =>
+      'Guide, tips, shortcuts and diagnostics';
+
+  @override
+  String get settingsHubModelRow => 'Model';
+
+  @override
+  String get notifyTurnOnInAndroid => 'Turn on notifications in Android';
+
+  @override
+  String get serversAddOtherWays => 'Or connect another way';
+
+  @override
+  String get libraryImportAConversation => 'Import a conversation';
 }

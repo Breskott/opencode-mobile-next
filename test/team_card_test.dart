@@ -453,9 +453,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       // docs/design/team-conversation-2026-09-26.md: the team's tasks are
-      // rows in the Work tab's lists and its page is one quiet door.
+      // rows in the Work tab's one list; its page is reached from Settings
+      // (owner rule R4), so Work has no door row.
       expect(find.byType(TeamCard), findsNothing);
-      expect(find.byKey(const ValueKey('team-work-door')), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
       expect(
         find.byKey(const ValueKey('team-work-task-oc-xru')),
         findsOneWidget,

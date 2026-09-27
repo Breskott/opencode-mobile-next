@@ -277,23 +277,10 @@ void main() {
         find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
       );
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Archived conversations'),
-        180,
-        scrollable: find
-            .descendant(
-              of: find.byType(CustomScrollView),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.tap(find.text('Archived conversations'));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('archived-session-archived')),
-        findsOneWidget,
-      );
-      expect(find.text('Older archived chat'), findsOneWidget);
+      // Archived conversations are a filter of All conversations (R3, R4):
+      // the older page loads, and Work grows no archived row of its own.
+      expect(find.text('Archived conversations'), findsNothing);
+      expect(controller.archivedSessions(), isNotEmpty);
     },
   );
 

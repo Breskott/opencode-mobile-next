@@ -216,7 +216,9 @@ void main() {
       final line = tester.widget<KitStatusLine>(find.byType(KitStatusLine));
       expect(line.tone, AppStatusTone.failure);
       expect(find.text('Connection lost'), findsOneWidget);
-      expect(find.text('Try again'), findsOneWidget);
+      // The one action names what it retries (R2).
+      expect(find.textContaining('Reconnect to '), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
     });
 
     testWidgets('Change server is one tap away in the line\'s menu', (
@@ -270,7 +272,7 @@ void main() {
       expect(restarts, 1);
     });
 
-    testWidgets('without a restart hand-over the line keeps Try again', (
+    testWidgets('without a restart hand-over the line keeps Reconnect', (
       tester,
     ) async {
       final controller = await lost();
@@ -289,7 +291,7 @@ void main() {
         find.byKey(const ValueKey('connection-banner-restart')),
         findsNothing,
       );
-      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('Reconnect to '), findsOneWidget);
     });
   });
 

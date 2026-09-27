@@ -56,6 +56,16 @@ Future<void> done(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// A row's start or stop button: its tooltip names the service (R2),
+/// "Start Web app".
+Finder _tip(String verb) => find.byWidgetPredicate(
+  (widget) =>
+      widget is Tooltip &&
+      (widget.message ?? widget.richMessage?.toPlainText() ?? '').startsWith(
+        '$verb ',
+      ),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
@@ -234,7 +244,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(rich('Not started'), findsOneWidget);
       expect(rich('npm run dev'), findsOneWidget);
-      await tester.tap(find.byTooltip('Start'));
+      await tester.tap(_tip('Start'));
       await tester.pumpAndSettle();
       expect(gateway.starts, 1);
       expect(rich('Running command'), findsOneWidget);
@@ -270,7 +280,7 @@ void main() {
       app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Start'));
+    await tester.tap(_tip('Start'));
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('development-services-undo-start')),
@@ -318,7 +328,7 @@ void main() {
       app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Start'));
+    await tester.tap(_tip('Start'));
     await tester.pumpAndSettle();
     KitUndo.commitPending();
     await tester.pumpAndSettle();
@@ -352,7 +362,7 @@ void main() {
         find.textContaining('cannot start and track development commands'),
         findsOneWidget,
       );
-      expect(find.byTooltip('Start'), findsNothing);
+      expect(_tip('Start'), findsNothing);
       await openMenu(tester);
       expect(find.text('Start'), findsNothing);
       expect(find.text('Copy command'), findsOneWidget);
@@ -382,7 +392,7 @@ void main() {
     connection.notifyListeners();
     await tester.pumpAndSettle();
     expect(find.textContaining('Reopen Development services'), findsOneWidget);
-    expect(find.byTooltip('Start'), findsNothing);
+    expect(_tip('Start'), findsNothing);
     expect(find.text('Shopfront preview'), findsNothing);
     await done(tester);
   });
@@ -416,7 +426,7 @@ void main() {
     connection.notifyListeners();
     await tester.pumpAndSettle();
     expect(find.textContaining('Reopen Development services'), findsOneWidget);
-    expect(find.byTooltip('Start'), findsNothing);
+    expect(_tip('Start'), findsNothing);
     await done(tester);
   });
 
@@ -431,7 +441,7 @@ void main() {
       app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Start'));
+    await tester.tap(_tip('Start'));
     await tester.pumpAndSettle();
     KitUndo.commitPending();
     gateway.failReads = true;
@@ -439,7 +449,7 @@ void main() {
     connection.notifyListeners();
     await tester.pumpAndSettle();
     expect(rich('Status unknown'), findsOneWidget);
-    expect(find.byTooltip('Stop'), findsNothing);
+    expect(_tip('Stop'), findsNothing);
     await openMenu(tester);
     expect(find.text('Forget last run'), findsOneWidget);
     await done(tester);
@@ -467,7 +477,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Start'));
+      await tester.tap(_tip('Start'));
       await tester.pumpAndSettle();
       KitUndo.commitPending();
       await tester.pumpAndSettle();

@@ -5590,13 +5590,13 @@ abstract class AppLocalizations {
   /// No description provided for @monitorCheckInDetail.
   ///
   /// In en, this message translates to:
-  /// **'Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.'**
+  /// **'Remind me when a run has been busy this long.'**
   String get monitorCheckInDetail;
 
   /// No description provided for @monitorCheckInDetailForeground.
   ///
   /// In en, this message translates to:
-  /// **'Shows a check-in row when busy checks span the chosen time. Work may pause or restart between checks. This device cannot deliver reminders in the background.'**
+  /// **'Show a reminder row when a run has been busy this long.'**
   String get monitorCheckInDetailForeground;
 
   /// No description provided for @monitorCheckInAfter.
@@ -25832,7 +25832,7 @@ abstract class AppLocalizations {
   /// Subtitle of the Quota thresholds toggle.
   ///
   /// In en, this message translates to:
-  /// **'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.'**
+  /// **'When a monitored provider passes the threshold you set in Usage.'**
   String get notifyQuotaAlertsDetail;
 
   /// Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted).
@@ -25868,7 +25868,7 @@ abstract class AppLocalizations {
   /// Subtitle of the single Quiet hours toggle on the Notifications screen.
   ///
   /// In en, this message translates to:
-  /// **'No notifications during these local times, for every server and for quota alerts. Checks continue.'**
+  /// **'Silence notifications during these hours.'**
   String get notifyQuietDetail;
 
   /// Notifications screen section header: the background connection, battery access and service state.
@@ -40106,6 +40106,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding the skill…'**
   String get skillSheetSending;
+
+  /// Inbox: a conversation that finished while the person was away, with how long ago.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished · {when}'**
+  String activityFinishedRow(String when);
+
+  /// Inbox: the empty state while the server is away; the connection line above holds Reconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests can\'t load while you\'re offline.'**
+  String get activityOfflineRequests;
+
+  /// Connection line: the action that tries the lost server again, naming it.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect to {server}'**
+  String connectionReconnectTo(String server);
+
+  /// Work project sheet: start a task on a separate Git worktree of the named project.
+  ///
+  /// In en, this message translates to:
+  /// **'New task in a fresh worktree of {project}'**
+  String workspaceIsolatedTaskRow(String project);
+
+  /// Work project sheet: what the fresh-worktree task does.
+  ///
+  /// In en, this message translates to:
+  /// **'Works on a separate copy so your main folder stays untouched.'**
+  String get workspaceIsolatedTaskRowDetail;
+
+  /// Work: under Search all conversations, what the search covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Every project on this server, archived ones too'**
+  String get workspaceSearchAllDetail;
+
+  /// A menu item or confirm button that disconnects from the named server.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from {server}'**
+  String serverDisconnectFrom(String server);
+
+  /// Confirm button and menu item that stop Claude Code on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Claude Code'**
+  String get localAgentStopNamed;
+
+  /// Row action that starts Claude Code on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Claude Code'**
+  String get localAgentStartNamed;
+
+  /// Confirm title before switching to the saved server whose request the person opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {server}?'**
+  String monitorSwitchToTitle(String server);
+
+  /// Confirm button that switches to the named saved server.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {server}'**
+  String monitorSwitchTo(String server);
+
+  /// Development services: the start button of the named service.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {service}'**
+  String servicesStartNamed(String service);
+
+  /// Development services: the stop button of the named service.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {service}'**
+  String servicesStopNamed(String service);
+
+  /// AI Team offer card: the button that turns the AI Team on.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team'**
+  String get teamDiscoverTurnOnNamed;
+
+  /// Server settings: the row that opens this server in the editor to change its password.
+  ///
+  /// In en, this message translates to:
+  /// **'Change sign-in for {server}'**
+  String serverSettingsChangeSignIn(String server);
+
+  /// Server settings: how the app signs in to this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic authentication as {user}'**
+  String serverSettingsAuthBasic(String user);
+
+  /// Server settings: under the update row, what installing does.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses OpenCode\'s official installer; restart the server afterwards.'**
+  String get serverSettingsUpdateHint;
+
+  /// Settings hub: the group of settings that belong to this phone and app.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get settingsHubThisPhone;
+
+  /// Settings hub: the row that opens help, tips, shortcuts and diagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get settingsHubHelpRow;
+
+  /// Settings hub: what the Help page holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide, tips, shortcuts and diagnostics'**
+  String get settingsHubHelpSubtitle;
+
+  /// Settings hub: the default model row.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get settingsHubModelRow;
+
+  /// Notifications: the banner action that opens Android settings for this app.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications in Android'**
+  String get notifyTurnOnInAndroid;
+
+  /// Add server editor: the label above other ways to connect (this phone, Tailscale, external agents).
+  ///
+  /// In en, this message translates to:
+  /// **'Or connect another way'**
+  String get serversAddOtherWays;
+
+  /// All conversations menu: import a conversation from a file.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a conversation'**
+  String get libraryImportAConversation;
 }
 
 class _AppLocalizationsDelegate

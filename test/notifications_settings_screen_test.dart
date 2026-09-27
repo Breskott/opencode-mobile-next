@@ -172,7 +172,8 @@ void main() {
       expect(inside('servers', key), findsOneWidget, reason: key);
     }
     // Exactly one of each shared control on the whole screen.
-    expect(find.text(_en.monitorQuiet), findsNWidgets(2)); // header + switch
+    // The switch names itself; no section header repeats it (R4).
+    expect(find.text(_en.monitorQuiet), findsOneWidget);
     expect(find.text(_en.notifyWifiOnly), findsOneWidget);
     // "Check in after" and "Notify" appear only once they apply.
     expect(_key('notify-check-in-after'), findsNothing);
@@ -493,7 +494,10 @@ void main() {
       await tester.pump();
 
       expect(_key('notifications-blocked-notice'), findsOneWidget);
+      // Said once, in the notice (R3); each switch keeps its own line.
       expect(find.text(_en.notifyBlockedTitle), findsOneWidget);
+      expect(find.text(_en.notifyFinishedRunsDetail), findsOneWidget);
+      expect(find.text(_en.notifyTurnOnInAndroid), findsOneWidget);
       final finishedRuns = tester.widget<SwitchListTile>(
         _key('notify-finished-runs'),
       );

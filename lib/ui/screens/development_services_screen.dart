@@ -544,7 +544,9 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
           ),
         )
       else ...[
+        // One rail (R5): the list's gutter, none of the panel's own.
         KitRowGroup(
+          margin: EdgeInsets.zero,
           children: [for (final service in services) _row(context, l, service)],
         ),
         SizedBox(height: tokens.space2),
@@ -642,14 +644,14 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
         ? KitIconButton(
             key: ValueKey('development-service-stop-${service.id}'),
             icon: AppIconography.stop,
-            tooltip: l.servicesStop,
+            tooltip: l.servicesStopNamed(service.name),
             onPressed: () => unawaited(_stop(service)),
           )
         : _startable(service)
         ? KitIconButton(
             key: ValueKey('development-service-start-${service.id}'),
             icon: AppIconography.play,
-            tooltip: l.servicesStart,
+            tooltip: l.servicesStartNamed(service.name),
             onPressed: () => unawaited(_start(service)),
           )
         : null;

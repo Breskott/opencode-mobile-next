@@ -143,7 +143,7 @@ void main() {
       expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
       expect(
         find.byKey(const ValueKey('workspace-conversations')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('Active conversations'), findsNothing);
       final subtitle = find.textContaining('Permission needed');

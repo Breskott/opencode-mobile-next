@@ -117,6 +117,20 @@ class ServerSwitcherSheet extends StatelessWidget {
     // in use: their saved sign-ins are never listed again (owner's phone,
     // 2026-09-25: "This device (Termux)" above "This phone", one server).
     final currentIsPhoneRow = current != null && shownAsPhoneRow(current);
+    ProfileAttentionSnapshot? snapshotOf(ServerProfile profile) =>
+        monitor != null && controller.isProfileReadable(profile.id)
+        ? monitor.snapshotFor(profile.id)
+        : null;
+    // Most urgent first (R1): waiting on the person, then working, then
+    // the rest in the order they were saved.
+    int rank(ServerProfile profile) {
+      final snapshot = snapshotOf(profile);
+      if (snapshot == null || !snapshot.isCurrent) return 2;
+      if (snapshot.requests.isNotEmpty) return 0;
+      if ((snapshot.runningCount ?? 0) > 0) return 1;
+      return 2;
+    }
+
     final others = [
       for (final profile in profiles)
         if (profile.id != current?.id &&
@@ -124,6 +138,11 @@ class ServerSwitcherSheet extends StatelessWidget {
             !shownAsPhoneRow(profile))
           profile,
     ];
+    final order = {for (final (i, p) in others.indexed) p.id: i};
+    others.sort((a, b) {
+      final byRank = rank(a).compareTo(rank(b));
+      return byRank != 0 ? byRank : order[a.id]!.compareTo(order[b.id]!);
+    });
 
     // A phone row leaves in place and keeps its server running.
     Future<void> disconnectInPlace() async {
@@ -236,24 +255,39 @@ class ServerSwitcherSheet extends StatelessWidget {
       ),
     ];
 
+    // Every saved server in one panel, no label (R1): the one in use first
+    // with its current mark and state word, then the rest by urgency.
+    final showCurrent =
+        current != null && !currentIsPhone && !currentIsPhoneRow;
+    final serverRows = [
+      if (showCurrent)
+        _CurrentServerRow(
+          profile: current,
+          status: controller.status,
+          onDisconnect: () => unawaited(leave()),
+        ),
+      for (final profile in others)
+        _SavedServerRow(
+          key: ValueKey('server-switcher-profile-${profile.id}'),
+          profile: profile,
+          snapshot: snapshotOf(profile),
+          onTap: () => navigator.pop(
+            ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)),
+          ),
+        ),
+    ];
+
     return Column(
       key: const ValueKey('server-switcher-sheet'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (currentIsPhone) ...[
-          phoneCard(current),
-          gap,
-        ] else if (current != null && !currentIsPhoneRow) ...[
+        if (currentIsPhone) ...[phoneCard(current), gap],
+        if (serverRows.isNotEmpty) ...[
           KitRowGroup(
+            key: const ValueKey('server-switcher-saved'),
             margin: EdgeInsets.zero,
-            children: [
-              _CurrentServerRow(
-                profile: current,
-                status: controller.status,
-                onDisconnect: () => unawaited(leave()),
-              ),
-            ],
+            children: serverRows,
           ),
           gap,
         ],
@@ -265,31 +299,6 @@ class ServerSwitcherSheet extends StatelessWidget {
             margin: EdgeInsetsDirectional.only(bottom: tokens.space1),
             children: [row],
           ),
-        if (others.isNotEmpty) ...[
-          SizedBox(height: tokens.space2),
-          KitRowGroup(
-            key: const ValueKey('server-switcher-saved'),
-            margin: EdgeInsets.zero,
-            label: l10n.activitySavedServers,
-            children: [
-              for (final profile in others)
-                _SavedServerRow(
-                  key: ValueKey('server-switcher-profile-${profile.id}'),
-                  profile: profile,
-                  snapshot:
-                      monitor != null &&
-                          controller.isProfileReadable(profile.id)
-                      ? monitor.snapshotFor(profile.id)
-                      : null,
-                  onTap: () => navigator.pop(
-                    ServerSwitcherOpenServers(
-                      ServersRouteRequest.connect(profile.id),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
         gap,
         KitRowGroup(margin: EdgeInsets.zero, children: ways),
       ],
@@ -321,24 +330,20 @@ class _CurrentServerRow extends StatelessWidget {
         key: const ValueKey('server-switcher-current'),
         leading: KitRowIcon(_serverIcon(profile), current: true),
         title: profile.name,
-        supporting: TextSpan(
-          children: [
-            if (status == StreamStatus.connected)
-              kitCurrentSpan(context, word)
-            else
-              TextSpan(
-                text: '$word · ',
+        // The name identifies the server; the address is technical and
+        // lives in its editor, so it is not cut off here.
+        supporting: status == StreamStatus.connected
+            ? _withoutSeparator(kitCurrentSpan(context, word))
+            : TextSpan(
+                text: word,
                 style: KitText.styleOf(context, KitTextRole.label),
               ),
-            _addressSpan(context, profile),
-          ],
-        ),
         supportingKey: const ValueKey('server-switcher-current-status'),
         menuLabel: l10n.serverSwitcherCurrentMenu,
         menu: [
           KitMenuItem(
             key: const ValueKey('server-switcher-disconnect'),
-            label: l10n.e7SettingsUi8,
+            label: l10n.serverDisconnectFrom(profile.name),
             icon: AppIconography.unlink,
             onSelected: onDisconnect,
           ),
@@ -381,23 +386,30 @@ class _SavedServerRow extends StatelessWidget {
       KitTextRole.label,
       tone: KitTextTone.primary,
     );
+    // What it needs or does, in words; the name identifies it (the
+    // address is technical and lives in its editor).
+    final words = [
+      if (running > 0) l10n.otherServerWorking(running),
+      ?reentry,
+    ].join(' · ');
     return KitRow(
       leading: waiting > 0
           ? KitNeedsYou.mark()
           : KitRow.icon(context, _serverIcon(profile)),
       title: profile.name,
-      supporting: TextSpan(
-        children: [
-          if (waiting > 0) KitNeedsYou.span(context, count: waiting),
-          if (running > 0)
-            TextSpan(
-              text: '${l10n.otherServerWorking(running)} · ',
-              style: wordStyle,
+      supporting: waiting == 0 && words.isEmpty
+          ? null
+          : TextSpan(
+              children: [
+                if (waiting > 0)
+                  words.isEmpty
+                      ? _withoutSeparator(
+                          KitNeedsYou.span(context, count: waiting),
+                        )
+                      : KitNeedsYou.span(context, count: waiting),
+                if (words.isNotEmpty) TextSpan(text: words, style: wordStyle),
+              ],
             ),
-          if (reentry != null) TextSpan(text: '$reentry · ', style: wordStyle),
-          _addressSpan(context, profile),
-        ],
-      ),
       supportingKey: ValueKey('server-switcher-profile-${profile.id}-status'),
       onTap: onTap,
     );
@@ -409,16 +421,10 @@ IconData _serverIcon(ServerProfile profile) =>
     ? AppIconography.phone
     : AppIconography.server;
 
-/// The address as the app did not write it (KIT-32): isolated left to
-/// right, in mono.
-TextSpan _addressSpan(BuildContext context, ServerProfile profile) => TextSpan(
-  text: KitBidi.ltr(profile.baseUrl),
-  semanticsLabel: profile.baseUrl,
-  style: KitText.styleOf(
-    context,
-    KitTextRole.mono,
-    tone: KitTextTone.secondary,
-  ),
+/// A needs-you span with no trailing " · ", for a line with nothing after.
+TextSpan _withoutSeparator(TextSpan span) => TextSpan(
+  text: span.text?.replaceFirst(RegExp(r'\s*·\s*$'), ''),
+  style: span.style,
 );
 
 String _statusLabel(AppLocalizations l10n, StreamStatus status) =>

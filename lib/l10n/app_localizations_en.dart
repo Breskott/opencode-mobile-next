@@ -3333,11 +3333,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorCheckInDetail =>
-      'Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.';
+      'Remind me when a run has been busy this long.';
 
   @override
   String get monitorCheckInDetailForeground =>
-      'Shows a check-in row when busy checks span the chosen time. Work may pause or restart between checks. This device cannot deliver reminders in the background.';
+      'Show a reminder row when a run has been busy this long.';
 
   @override
   String get monitorCheckInAfter => 'Check in after';
@@ -16004,7 +16004,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifyQuotaAlertsDetail =>
-      'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
+      'When a monitored provider passes the threshold you set in Usage.';
 
   @override
   String get notifyBlockedTitle => 'Notifications are off for this app';
@@ -16024,8 +16024,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Confirms whether Android is actually delivering this app\'s notifications right now.';
 
   @override
-  String get notifyQuietDetail =>
-      'No notifications during these local times, for every server and for quota alerts. Checks continue.';
+  String get notifyQuietDetail => 'Silence notifications during these hours.';
 
   @override
   String get notifySectionBackground => 'Background';
@@ -25375,4 +25374,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillSheetSending => 'Adding the skill…';
+
+  @override
+  String activityFinishedRow(String when) {
+    return 'Finished · $when';
+  }
+
+  @override
+  String get activityOfflineRequests =>
+      'Requests can\'t load while you\'re offline.';
+
+  @override
+  String connectionReconnectTo(String server) {
+    return 'Reconnect to $server';
+  }
+
+  @override
+  String workspaceIsolatedTaskRow(String project) {
+    return 'New task in a fresh worktree of $project';
+  }
+
+  @override
+  String get workspaceIsolatedTaskRowDetail =>
+      'Works on a separate copy so your main folder stays untouched.';
+
+  @override
+  String get workspaceSearchAllDetail =>
+      'Every project on this server, archived ones too';
+
+  @override
+  String serverDisconnectFrom(String server) {
+    return 'Disconnect from $server';
+  }
+
+  @override
+  String get localAgentStopNamed => 'Stop Claude Code';
+
+  @override
+  String get localAgentStartNamed => 'Start Claude Code';
+
+  @override
+  String monitorSwitchToTitle(String server) {
+    return 'Switch to $server?';
+  }
+
+  @override
+  String monitorSwitchTo(String server) {
+    return 'Switch to $server';
+  }
+
+  @override
+  String servicesStartNamed(String service) {
+    return 'Start $service';
+  }
+
+  @override
+  String servicesStopNamed(String service) {
+    return 'Stop $service';
+  }
+
+  @override
+  String get teamDiscoverTurnOnNamed => 'Turn on AI Team';
+
+  @override
+  String serverSettingsChangeSignIn(String server) {
+    return 'Change sign-in for $server';
+  }
+
+  @override
+  String serverSettingsAuthBasic(String user) {
+    return 'Basic authentication as $user';
+  }
+
+  @override
+  String get serverSettingsUpdateHint =>
+      'Uses OpenCode\'s official installer; restart the server afterwards.';
+
+  @override
+  String get settingsHubThisPhone => 'This phone';
+
+  @override
+  String get settingsHubHelpRow => 'Help';
+
+  @override
+  String get settingsHubHelpSubtitle =>
+      'Guide, tips, shortcuts and diagnostics';
+
+  @override
+  String get settingsHubModelRow => 'Model';
+
+  @override
+  String get notifyTurnOnInAndroid => 'Turn on notifications in Android';
+
+  @override
+  String get serversAddOtherWays => 'Or connect another way';
+
+  @override
+  String get libraryImportAConversation => 'Import a conversation';
 }

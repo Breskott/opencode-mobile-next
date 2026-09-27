@@ -51,9 +51,13 @@ class TermuxRunningServerEntry extends StatefulWidget {
     this.onForget,
     this.onManage,
     this.onOpenSaved,
+    this.dividerAbove = false,
   });
 
   final List<ServerProfile> profiles;
+
+  /// Shown in a list after other rows: the hairline above this row.
+  final bool dividerAbove;
 
   /// True while the host screen runs its own server operation.
   final bool busy;
@@ -311,6 +315,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     // The look is shared with the Claude Code daemon's row; what this entry
     // owns is the OpenCode server's state and what its controls do.
     return LocalServerRow(
+      dividerAbove: widget.dividerAbove,
       keyPrefix: 'termux-running-server',
       title: l10n.phoneServerTermuxTitle,
       status: l10n.phoneServerRowStatus(runtime, state),
@@ -361,6 +366,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     ServerProfile? saved,
     String state,
   ) => LocalServerRow(
+    dividerAbove: widget.dividerAbove,
     keyPrefix: 'termux-running-server',
     title: l10n.phoneServerTermuxTitle,
     status: state,

@@ -122,19 +122,15 @@ void main() {
   });
   tearDown(() => debugPlatformCapabilities = null);
 
-  testWidgets('the five groups appear in order, each keyed', (tester) async {
+  testWidgets('the three groups appear in order, each keyed', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    const slugs = [
-      'connection',
-      'conversation-defaults',
-      'agent-setup',
-      'this-app',
-      'help',
-    ];
+    // As the approved canvas draws them (Settings.png): the server under
+    // its own name, this phone, then an unlabelled last panel.
+    const slugs = ['server', 'this-phone', 'help'];
     expect(SettingsGroup.values.map((group) => group.slug), slugs);
     var previous = double.negativeInfinity;
     for (final slug in slugs) {
@@ -158,6 +154,8 @@ void main() {
       expect(_row('settings-disconnect'), findsNothing);
       expect(find.text(_en.e7SettingsUi8), findsNothing);
 
+      await tester.ensureVisible(_row('settings-category-server'));
+      await tester.pumpAndSettle();
       await tester.tap(_row('settings-category-server'));
       await tester.pumpAndSettle();
 
@@ -195,9 +193,13 @@ void main() {
       expect(
         tester.getTopLeft(disconnect).dy,
         greaterThan(
-          tester.getBottomLeft(find.byKey(const Key('server-identity'))).dy,
+          tester
+              .getBottomLeft(find.byKey(const Key('server-authentication')))
+              .dy,
         ),
       );
+      // The page is titled with the server; no identity row repeats it.
+      expect(find.byKey(const Key('server-identity')), findsNothing);
     },
   );
 
@@ -249,44 +251,46 @@ void main() {
       // Titles.
       _en.settingsHubThisServer: ['settings-category-server'],
       _en.activitySavedServers: ['settings-saved-servers'],
-      _en.onboardingTermuxSetup: ['settings-on-this-phone'],
+      _en.onboardingTermuxSetup: ['search-result-settings-on-this-phone'],
       _en.settingsHubAccounts: ['settings-accounts'],
-      _en.a2aTitle: ['settings-external-agents'],
-      _en.tailscaleTitle: ['settings-tailscale'],
+      _en.a2aTitle: ['search-result-settings-external-agents'],
+      _en.tailscaleTitle: ['search-result-settings-tailscale'],
       _en.e7SettingsUi8: ['search-result-inside-server-disconnect'],
+      _en.settingsHubModelRow: ['settings-model-and-mode'],
       _en.settingsHubModelAndMode: ['settings-model-and-mode'],
+      _en.settingsHubHelpRow: ['settings-help'],
       _en.e7SettingsUi35: ['default-shell-settings-entry'],
       _en.e7SettingsUi74: ['saved-permissions-entry'],
       _en.chatUiTranscriptDisplay: ['settings-transcript-display'],
       _en.settingsHubVoice: ['settings-voice'],
       _en.settingsHubGroupNotifications: ['settings-category-background'],
       _en.e7AppearanceTitle: ['settings-category-appearance'],
-      _en.libraryModelsAgentsTitle: ['settings-models'],
+      _en.libraryModelsAgentsTitle: ['search-result-settings-models'],
       _en.libraryProvidersTitle: ['settings-providers'],
       _en.libraryMcpTitle: ['settings-mcp'],
       _en.libraryCommandsToolsTitle: ['settings-commands-tools'],
       _en.teamUiPluginsTitle: ['settings-category-plugins'],
-      _en.importTitle: ['library-import-session'],
+      _en.importTitle: ['search-result-library-import-session'],
       _en.settingsHubGroupUsage: ['settings-category-usage'],
       _en.usageSectionSpent: ['settings-category-usage'],
       _en.usageSectionRemaining: ['settings-category-usage'],
       _en.settingsHubPrivacyRow: ['settings-category-privacy'],
-      _en.onboardingSetupGuide: ['settings-setup-guide'],
-      _en.capabilityScreenTitle: ['settings-server-capabilities'],
-      'not available': ['settings-server-capabilities'],
+      _en.onboardingSetupGuide: ['search-result-settings-setup-guide'],
+      _en.capabilityScreenTitle: ['search-result-settings-server-capabilities'],
+      'not available': ['search-result-settings-server-capabilities'],
       _en.e7LibraryReportABug: ['library-report-bug'],
-      _en.e7SettingsUi88: ['app-diagnostics-entry'],
-      _en.e7SettingsUi92: ['settings-privacy-data-use'],
-      _en.e7SettingsUi94: ['settings-voice-notices'],
+      _en.e7SettingsUi88: ['search-result-app-diagnostics-entry'],
+      _en.e7SettingsUi92: ['search-result-settings-privacy-data-use'],
+      _en.e7SettingsUi94: ['search-result-settings-voice-notices'],
       _en.e7SettingsUi96: ['settings-about-notices'],
       // Keywords from the phase 2 spec.
       'host': ['settings-category-server', 'settings-saved-servers'],
       'url': ['settings-category-server', 'settings-saved-servers'],
       'password': ['settings-category-server', 'settings-saved-servers'],
       'profile': ['settings-category-server', 'settings-saved-servers'],
-      'termux': ['settings-on-this-phone'],
-      'local': ['settings-on-this-phone'],
-      'on-device': ['settings-on-this-phone'],
+      'termux': ['search-result-settings-on-this-phone'],
+      'local': ['search-result-settings-on-this-phone'],
+      'on-device': ['search-result-settings-on-this-phone'],
       'alerts': ['settings-category-background'],
       'quiet': ['settings-category-background'],
       'battery': ['settings-category-background'],
@@ -303,7 +307,7 @@ void main() {
       'language': ['settings-category-appearance'],
       'arabic': ['settings-category-appearance'],
       'font': ['settings-category-appearance'],
-      'provider': ['settings-models', 'settings-providers'],
+      'provider': ['search-result-settings-models', 'settings-providers'],
       'api key': ['settings-providers'],
       'mcp': ['settings-mcp'],
       'tools': ['settings-commands-tools', 'settings-mcp'],
@@ -318,11 +322,14 @@ void main() {
       'drafts': ['settings-category-privacy'],
       'queue': ['settings-category-privacy'],
       'read state': ['settings-category-privacy'],
-      'guide': ['settings-setup-guide'],
+      'guide': ['search-result-settings-setup-guide'],
       'bug': ['library-report-bug'],
-      'diagnostics': ['app-diagnostics-entry'],
+      'diagnostics': ['search-result-app-diagnostics-entry'],
       'version': ['settings-about-notices'],
-      'licenses': ['settings-voice-notices', 'settings-about-notices'],
+      'licenses': [
+        'search-result-settings-voice-notices',
+        'settings-about-notices',
+      ],
     };
 
     final search = find.byKey(const Key('library-search'));
@@ -343,8 +350,8 @@ void main() {
     // A title search is specific: unrelated groups drop out entirely.
     await tester.enterText(search, _en.settingsHubModelAndMode);
     await _settleSearch(tester);
-    expect(_row('settings-group-conversation-defaults'), findsOneWidget);
-    expect(_row('settings-group-connection'), findsNothing);
+    expect(_row('settings-group-server'), findsOneWidget);
+    expect(_row('settings-group-this-phone'), findsNothing);
     expect(_row('settings-group-help'), findsNothing);
   });
 
@@ -359,7 +366,7 @@ void main() {
     for (final word in ['session', 'chat', 'conversation']) {
       await tester.enterText(search, word);
       await _settleSearch(tester);
-      expect(find.text('Model and mode'), findsOneWidget, reason: word);
+      expect(_row('settings-model-and-mode'), findsOneWidget, reason: word);
     }
     for (final word in ['profile', 'connection']) {
       await tester.enterText(search, word);
@@ -383,27 +390,78 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
+    // It lives on the Help page now (R4); search still finds it there.
+    expect(_row('settings-show-tips-again'), findsNothing);
     final search = find.byKey(const Key('library-search'));
     for (final query in [_en.discoverShowTipsAgain, 'tips', 'hints']) {
       await tester.enterText(search, query);
       await _settleSearch(tester);
-      expect(_row('settings-show-tips-again'), findsOneWidget, reason: query);
+      expect(
+        _row('search-result-settings-show-tips-again'),
+        findsOneWidget,
+        reason: query,
+      );
     }
-    expect(
-      find.descendant(
-        of: _row('settings-group-help'),
-        matching: _row('settings-show-tips-again'),
-      ),
-      findsOneWidget,
-    );
+    await tester.tap(find.byTooltip('Clear search'));
+    await tester.pumpAndSettle();
 
+    final help = _row('settings-help');
+    await tester.ensureVisible(help);
+    await tester.pumpAndSettle();
+    await tester.tap(help);
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsHelpScreen), findsOneWidget);
     await tester.tap(_row('settings-show-tips-again'));
     await tester.pumpAndSettle();
     expect(find.text(_en.discoverShowTipsDone), findsOneWidget);
-    // It acts in place: no screen was pushed.
-    expect(find.byType(SettingsScreen), findsOneWidget);
+    // It acts in place: no further screen was pushed.
+    expect(find.byType(SettingsHelpScreen), findsOneWidget);
     expect(nudges.wasShown(NudgeId.compact), isFalse);
     expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isTrue);
+  });
+
+  testWidgets('Help holds the guide, capabilities, diagnostics and notices', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    // The last panel is three rows (canvas): Report a bug, Help, About.
+    final last = _row('settings-group-help');
+    for (final key in [
+      'library-report-bug',
+      'settings-help',
+      'settings-about-notices',
+    ]) {
+      expect(find.descendant(of: last, matching: _row(key)), findsOneWidget);
+    }
+    for (final key in [
+      'settings-setup-guide',
+      'settings-server-capabilities',
+      'app-diagnostics-entry',
+      'settings-show-tips-again',
+      'settings-privacy-data-use',
+      'settings-models',
+      'settings-on-this-phone',
+      'settings-tailscale',
+      'settings-external-agents',
+      'library-import-session',
+    ]) {
+      expect(_row(key), findsNothing, reason: '$key is not a hub row');
+    }
+    await tester.ensureVisible(_row('settings-help'));
+    await tester.pumpAndSettle();
+    await tester.tap(_row('settings-help'));
+    await tester.pumpAndSettle();
+    for (final key in [
+      'settings-setup-guide',
+      'settings-server-capabilities',
+      'settings-show-tips-again',
+      'app-diagnostics-entry',
+    ]) {
+      expect(_row(key), findsOneWidget, reason: key);
+    }
   });
 
   testWidgets('keyboard shortcuts are a Help row on desktop only', (
@@ -424,10 +482,10 @@ void main() {
     final search = find.byKey(const Key('library-search'));
     await tester.enterText(search, _en.e7LibraryKeyboardShortcuts);
     await _settleSearch(tester);
-    expect(_row('library-keyboard-shortcuts'), findsOneWidget);
+    expect(_row('search-result-library-keyboard-shortcuts'), findsOneWidget);
     await tester.enterText(search, 'hotkeys');
     await _settleSearch(tester);
-    expect(_row('library-keyboard-shortcuts'), findsOneWidget);
+    expect(_row('search-result-library-keyboard-shortcuts'), findsOneWidget);
   });
 
   testWidgets('search recovers from no results and clears', (tester) async {
@@ -485,10 +543,8 @@ void main() {
         expect(_row('library-terminal'), findsNothing);
         // Neither runtime keeps a list of standing grants the app can read.
         expect(_row('saved-permissions-entry'), findsNothing);
-        expect(
-          _row('library-import-session'),
-          capabilities.sessionImportExport ? findsOneWidget : findsNothing,
-        );
+        // Import lives in All conversations' menu, not in Settings.
+        expect(_row('library-import-session'), findsNothing);
         expect(
           _row('default-shell-settings-entry'),
           capabilities.shellSettings ? findsOneWidget : findsNothing,
@@ -496,7 +552,7 @@ void main() {
         // No exception any more: the shell row is absent, not disabled, and
         // Help → "Available on this server" says why (rule 7).
         expect(_row('gated-shell-settings'), findsNothing);
-        expect(_row('settings-server-capabilities'), findsOneWidget);
+        expect(_row('settings-help'), findsOneWidget);
         expect(
           _row('settings-accounts'),
           capabilities.agentAccount ? findsOneWidget : findsNothing,
@@ -532,7 +588,7 @@ void main() {
         expect(_row(key), findsNothing, reason: key);
       }
       // Plugins ("In this app") still needs only a saved server.
-      expect(_row('settings-group-agent-setup'), findsOneWidget);
+      expect(_row('settings-group-server'), findsOneWidget);
       // Notifications stays off Android: saved-server monitoring and
       // check-ins work in the open app, so its one row is never empty. The
       // background summary is what goes.
@@ -584,10 +640,10 @@ void main() {
       );
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
-      // Once as the conversation default, once on the Models door.
-      expect(find.textContaining('Nemotron Ultra'), findsNWidgets(2));
+      // Once, as the Model row's value (one Model row, R3).
+      expect(find.textContaining('Nemotron Ultra'), findsOneWidget);
       expect(find.textContaining('opencode/nemotron-free'), findsNothing);
-      expect(find.textContaining('New conversations:'), findsOneWidget);
+      expect(find.textContaining('New conversations:'), findsNothing);
     },
   );
 
@@ -645,10 +701,7 @@ void main() {
     final help = tester.getRect(_row('settings-group-help'));
     expect(help.top, lessThan(700));
     expect(help.top, greaterThanOrEqualTo(0));
-    expect(
-      tester.getRect(_row('settings-group-connection')).bottom,
-      lessThan(0),
-    );
+    expect(tester.getRect(_row('settings-group-server')).bottom, lessThan(0));
   });
 
   group('screen-settings-1: two panes from expanded', () {
@@ -686,12 +739,12 @@ void main() {
         find.descendant(of: detail, matching: _row('settings-saved-servers')),
         findsOneWidget,
       );
-      expect(_row('settings-show-tips-again'), findsNothing);
+      expect(_row('settings-help'), findsNothing);
 
       await tester.tap(_row('settings-index-help'));
       await tester.pumpAndSettle();
       expect(
-        find.descendant(of: detail, matching: _row('settings-show-tips-again')),
+        find.descendant(of: detail, matching: _row('settings-help')),
         findsOneWidget,
       );
       expect(_row('settings-saved-servers'), findsNothing);
@@ -728,7 +781,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('settings-list-pane')),
-          matching: _row('settings-show-tips-again'),
+          matching: _row('search-result-settings-show-tips-again'),
         ),
         findsOneWidget,
       );
@@ -742,7 +795,7 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('settings-list-pane')), findsNothing);
-      expect(_row('settings-group-connection'), findsOneWidget);
+      expect(_row('settings-group-server'), findsOneWidget);
     });
 
     testWidgets('Show tips again says so on its row, not in a snackbar', (
@@ -750,7 +803,13 @@ void main() {
     ) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsHelpScreen(controller: controller),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.ensureVisible(_row('settings-show-tips-again'));
       await tester.pumpAndSettle();

@@ -25,9 +25,9 @@ import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
 import '../widgets/session_inventory_footer.dart';
-import '../widgets/team_discover.dart';
 import '../widgets/team_task_row.dart';
-import '../widgets/team_vocabulary.dart' show teamGatedRuns, teamHostPhrase;
+import '../widgets/team_discover.dart' show TeamNewMode, teamPossibleOn;
+import '../widgets/team_vocabulary.dart' show teamGatedRuns;
 import 'chat_screen.dart' show ChatScreen;
 import 'team_conversation/team_conversation.dart';
 import 'team/team_intro_screen.dart';
@@ -40,8 +40,6 @@ import 'manage_project_screen.dart';
 import 'project_folder_actions.dart';
 import 'projects_screen.dart';
 import 'run_result_screen.dart';
-import 'settings_screen.dart';
-import 'team/team_home_screen.dart';
 import '../app_theme.dart';
 import '../../domain/team_directories.dart';
 
@@ -747,6 +745,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final showEmpty = head.isEmpty && recent.isEmpty && !partial && !firstLoad;
 
     final notice = _notice;
+    // No project on this server yet: the empty state says so and holds
+    // the search itself.
+    final noProjects =
+        capabilities.projectManagement &&
+        _projects?.isEmpty == true &&
+        headerDirectory == null;
     final header = <Widget>[
       // Which project this is stays put while the list scrolls (UX plan
       // 5.7), and it is there from the first frame: the folder is known
@@ -823,9 +827,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               ),
-            if (capabilities.projectManagement &&
-                _projects?.isEmpty == true &&
-                headerDirectory == null)
+            if (noProjects)
               SliverToBoxAdapter(
                 child: KitStateView(
                   size: KitStateSize.inline,
@@ -868,26 +870,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               ),
-            // 2. This project's conversations: one list, one header (owner
-            // decision 2026-09-27, no state sections). Search stays a
-            // one-tap icon; the occasional actions sit behind one labelled
-            // menu so the caption keeps its width on a phone at large text.
-            SliverToBoxAdapter(
-              child: SectionLabel(
-                l10n.workspaceConversations,
-                key: const ValueKey('workspace-conversations'),
-                trailing: _SectionActions(
-                  controller: controller,
-                  onSearch: capabilities.globalSessionSearch
-                      ? _openAllSessions
-                      : null,
-                  onOpenBackgroundSettings:
-                      platformCapabilities.supportsBackgroundService
-                      ? _openBackgroundSettings
-                      : null,
-                ),
-              ),
-            ),
             // Ordered by urgency: what waits on the person (amber mark and
             // the words "Needs you"), then running work (spinner and
             // "Working"), then pins, then the rest newest first. The row's
@@ -937,48 +919,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               SliverToBoxAdapter(
                 child: SessionInventoryFooter(controller: controller),
               ),
-            // The AI Team plugin's card follows the person's own
-            // conversations (UX plan 5.5, 5.7); what its agents need
-            // from the person already reaches Inbox. While the team is
-            // off the same place holds its door (TeamDiscoverEntry): a
-            // small drawing and one line the first time, one quiet row
-            // once seen, never above the person's own work.
-            // With the team on, its tasks are in the lists above; here is
-            // one quiet door to the team's own page (agents, where it
-            // runs, on/off).
-            if (team != null)
+            // One way to every other conversation (R3, R4): All
+            // conversations spans every project on the server and holds the
+            // Archived filter, so no separate archived row or menu repeats
+            // it. The AI Team keeps its own door in Settings.
+            if (capabilities.globalSessionSearch && !noProjects)
               SliverToBoxAdapter(
                 child: KitRow(
-                  key: const ValueKey('team-work-door'),
-                  leading: KitRow.icon(context, AppIconography.agent),
-                  title: l10n.teamUiHomeTitle,
-                  supporting: TextSpan(text: teamHostPhrase(l10n, team)),
+                  key: const ValueKey('search-all-sessions'),
+                  leading: KitRow.icon(context, AppIconography.searchList),
+                  title: l10n.workspaceSearchAllSessions,
+                  supporting: TextSpan(text: l10n.workspaceSearchAllDetail),
                   trailing: const KitChevron(),
-                  onTap: () => _openTeamHome(team),
-                ),
-              )
-            else
-              SliverToBoxAdapter(
-                child: TeamDiscoverEntry(controller: controller),
-              ),
-            // Archived conversations are a filter of All conversations
-            // (P3.12): this row opens it; the old archived sheet is gone.
-            if (archived.isNotEmpty && capabilities.globalSessionSearch)
-              SliverToBoxAdapter(
-                child: KitRow(
-                  key: const ValueKey('workspace-archived'),
-                  leading: KitRow.icon(context, AppIconography.archive),
-                  title: l10n.e7WorkspaceArchivedSessions,
-                  // The footer owns partial-inventory truth. A count
-                  // here would suggest every archived one was known.
-                  supporting: TextSpan(
-                    text: partial
-                        ? l10n.workspaceArchivedInAll
-                        : '${l10n.e7WorkspaceArchivedCount(archived.length)}'
-                              ' · ${l10n.workspaceArchivedInAll}',
-                  ),
-                  trailing: const KitChevron(),
-                  onTap: _openArchivedSessions,
+                  onTap: _openAllSessions,
                 ),
               ),
             // 5. Everything else going on: the other projects on this
@@ -1020,14 +973,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           : teamMode
           ? _createTeamTask
           : _createSession,
-      onIsolatedTask: _isolatedTaskProject == null || teamMode
-          ? null
-          : _startIsolatedTask,
-      isolatedTaskLabel: l10n.isolatedTaskAction,
       teamMode: teamPossible ? teamMode : null,
       onTeamMode: _setTeamMode,
-      // The list pane is a phone's width, whatever the window.
-      narrow: wide,
     );
 
     if (!wide) {
@@ -1245,12 +1192,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     Navigator.of(context).pushNamed('/chat/${session.id}');
   }
 
-  void _openTeamHome(OrchestrationController team) {
-    unawaited(
-      pushKitPage<void>(context, (_) => TeamHomeScreen(controller: team)),
-    );
-  }
-
   /// Asks once per server whether it can run a team; the answer shows or
   /// hides the Solo · Team choice.
   bool _teamPossibleNow() {
@@ -1301,24 +1242,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   void _openTeamTask(OrchestrationController team, String runId) =>
       unawaited(TeamConversation.open(context, team, runId: runId));
 
-  void _openBackgroundSettings() {
-    unawaited(
-      pushKitPage<void>(
-        context,
-        (_) => NotificationsSettingsScreen(controller: widget.controller),
-      ),
-    );
-  }
-
   Future<void> _openAllSessions() => pushKitPage<void>(
     context,
     (_) => GlobalSessionsScreen(controller: widget.controller),
-  );
-
-  // The Archived row opens All conversations already on its Archived filter.
-  Future<void> _openArchivedSessions() => pushKitPage<void>(
-    context,
-    (_) => GlobalSessionsScreen(controller: widget.controller, archived: true),
   );
 
   Future<void> _createProjectFolder() async {
@@ -1370,6 +1296,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     ].join(' · ');
     final directory = _contextDirectory;
     final canCreate = ProjectFolderActions.canCreate(controller);
+    // A task in a fresh worktree acts on this project, so it lives on the
+    // project's own sheet and names it (R2). Not while a team is chosen:
+    // the team works in its own worktrees.
+    final isolated = _teamPossibleNow() && _teamMode
+        ? null
+        : _isolatedTaskProject;
     final choice = await showKitSheet<_ContextChoice>(
       context,
       title: title,
@@ -1441,6 +1373,22 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     trailing: const KitChevron(),
                     onTap: () => pick(const _ContextChoice.newProject()),
                   ),
+                if (isolated != null)
+                  KitRow(
+                    key: const ValueKey('workspace-isolated-task'),
+                    leading: KitRow.icon(sheetContext, AppIconography.branch),
+                    title: l10n.workspaceIsolatedTaskRow(
+                      KitBidi.auto(isolated.name),
+                    ),
+                    titleMaxLines: 2,
+                    supporting: TextSpan(
+                      text: l10n.workspaceIsolatedTaskRowDetail,
+                    ),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
+                    enabled: !_creating,
+                    onTap: () => pick(const _ContextChoice.isolatedTask()),
+                  ),
                 if (ManageProjectScreen.isAvailable(controller.capabilities))
                   KitRow(
                     key: const ValueKey('manage-project-entry'),
@@ -1490,6 +1438,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       },
     );
     if (!mounted || choice == null) return;
+    if (choice.isolatedTask) {
+      await _startIsolatedTask();
+      return;
+    }
     if (choice.manageProject) {
       await _openManageProject();
       return;
@@ -1789,26 +1741,37 @@ class _ContextChoice {
     : workspace = null,
       switchProject = true,
       newProject = false,
-      manageProject = false;
+      manageProject = false,
+      isolatedTask = false;
   const _ContextChoice.newProject()
     : workspace = null,
       switchProject = false,
       newProject = true,
-      manageProject = false;
+      manageProject = false,
+      isolatedTask = false;
   const _ContextChoice.manageProject()
     : workspace = null,
       switchProject = false,
       newProject = false,
-      manageProject = true;
+      manageProject = true,
+      isolatedTask = false;
+  const _ContextChoice.isolatedTask()
+    : workspace = null,
+      switchProject = false,
+      newProject = false,
+      manageProject = false,
+      isolatedTask = true;
   const _ContextChoice.workspace(this.workspace)
     : switchProject = false,
       newProject = false,
-      manageProject = false;
+      manageProject = false,
+      isolatedTask = false;
 
   final WorkspaceInfo? workspace;
   final bool switchProject;
   final bool newProject;
   final bool manageProject;
+  final bool isolatedTask;
 }
 
 /// A section's count, in figures that line up.
@@ -2129,98 +2092,16 @@ class _ProjectHeader extends StatelessWidget {
   }
 }
 
-enum _SectionAction { refresh, background }
-
-/// The Recent-sessions caption's controls: Search as a one-tap icon, and the
-/// occasional actions (reload, background updates) behind a single menu
-/// with visible labels. Two 48px targets leave the caption most of a 320px
-/// row even at 2x text.
-class _SectionActions extends StatelessWidget {
-  const _SectionActions({
-    required this.controller,
-    required this.onSearch,
-    required this.onOpenBackgroundSettings,
-  });
-
-  final ConnectionController controller;
-
-  /// Null hides the icon: the server has no cross-directory session search.
-  final VoidCallback? onSearch;
-
-  /// Null omits the entry: this platform has no background service.
-  final VoidCallback? onOpenBackgroundSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _l10n(context);
-    final keepLive = controller.keepLiveInBackground;
-    void run(_SectionAction action) {
-      switch (action) {
-        case _SectionAction.refresh:
-          unawaited(controller.refreshSessions());
-        case _SectionAction.background:
-          onOpenBackgroundSettings?.call();
-      }
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Named in full, because this search spans every folder on the
-        // server while it sits beside a list scoped to one project.
-        if (onSearch case final onSearch?)
-          KitIconButton(
-            key: const ValueKey('search-all-sessions'),
-            icon: AppIconography.searchList,
-            tooltip: l10n.e7WorkspaceSearchServer,
-            onPressed: onSearch,
-          ),
-        KitRowMenu(
-          key: const ValueKey('workspace-section-menu'),
-          menuLabel: l10n.workspaceConversations,
-          items: [
-            KitMenuItem(
-              key: const ValueKey('workspace-refresh-sessions'),
-              label: l10n.sessionsReload,
-              icon: AppIconography.retry,
-              enabled: !controller.sessionsLoading,
-              onSelected: () => run(_SectionAction.refresh),
-            ),
-            // Whether runs keep updating after the app closes was only
-            // discoverable two levels into Settings; say it where the runs
-            // are.
-            if (onOpenBackgroundSettings != null)
-              KitMenuItem(
-                key: const ValueKey('workspace-background-toggle'),
-                label: keepLive
-                    ? l10n.e7WorkspaceBackgroundOn
-                    : l10n.e7WorkspaceBackgroundOff,
-                icon: keepLive ? AppIconography.sync : AppIconography.cloudOff,
-                onSelected: () => run(_SectionAction.background),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// New conversation, docked to the workspace: one primary, the isolated
-/// task beside it, and the Solo · Team choice above it where a team can run.
+/// New conversation, docked to the workspace: the one primary, and the
+/// Solo · Team choice above it where a team can run. A task in a fresh
+/// worktree starts from the project sheet, which names the project (R2).
 class _QuickAskPill extends StatelessWidget {
   const _QuickAskPill({
     required this.creating,
     required this.onTap,
-    this.onIsolatedTask,
-    this.isolatedTaskLabel,
     this.teamMode,
     this.onTeamMode,
-    this.narrow = false,
   });
-
-  /// Docked in the two-pane list pane (296 wide): the isolated task is an
-  /// icon, as on a phone.
-  final bool narrow;
 
   final bool creating;
   final VoidCallback? onTap;
@@ -2231,21 +2112,10 @@ class _QuickAskPill extends StatelessWidget {
   final bool? teamMode;
   final ValueChanged<bool>? onTeamMode;
 
-  /// Explicit fresh-worktree launch, its own 48dp target beside the
-  /// primary. Null hides it (capability or project missing).
-  final VoidCallback? onIsolatedTask;
-  final String? isolatedTaskLabel;
-
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
-    final isolated = onIsolatedTask;
     final l10n = _l10n(context);
-    // An icon on a phone or at large text, a labelled button with room.
-    final compact =
-        narrow ||
-        KitLayout.windowOf(context) == KitWindow.compact ||
-        MediaQuery.textScalerOf(context).scale(1) > 1.25;
     final team = teamMode == true;
     // Tapping here creates a conversation and leaves the page, so the
     // control says so. Two lines before an ellipsis: the primary action's
@@ -2257,31 +2127,6 @@ class _QuickAskPill extends StatelessWidget {
       icon: team ? AppIconography.agent : AppIconography.add,
       label: team ? l10n.teamNewTask : l10n.workspaceNewSession,
     );
-    final Widget dock = isolated == null
-        ? primary
-        : Row(
-            children: [
-              Expanded(child: primary),
-              SizedBox(width: tokens.space2),
-              if (compact)
-                KitIconButton(
-                  key: const ValueKey('workspace-isolated-task'),
-                  icon: AppIconography.branch,
-                  tooltip: isolatedTaskLabel ?? l10n.workspaceIsolatedTask,
-                  onPressed: creating ? null : isolated,
-                )
-              else
-                Flexible(
-                  child: KitButton.secondary(
-                    key: const ValueKey('workspace-isolated-task'),
-                    expand: false,
-                    icon: AppIconography.branch,
-                    label: l10n.workspaceIsolatedTask,
-                    onPressed: creating ? null : isolated,
-                  ),
-                ),
-            ],
-          );
     final choice = teamMode;
     return KeyedSubtree(
       key: const ValueKey('workspace-quick-ask'),
@@ -2313,7 +2158,7 @@ class _QuickAskPill extends StatelessWidget {
             ),
             SizedBox(height: tokens.space2),
           ],
-          dock,
+          primary,
         ],
       ),
     );

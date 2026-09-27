@@ -169,8 +169,9 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
+      await tester.pumpAndSettle();
+      // One of Add server's ways in (R3).
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
       await tester.pumpAndSettle();
 
       expect(
@@ -189,13 +190,14 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('quick-add-phone-card')), findsNothing);
       expect(find.text('On-device (Termux)'), findsNothing);
-      expect(find.text('Add server'), findsOneWidget);
+      // The editor, titled Add server.
+      expect(find.text('Add server'), findsWidgets);
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/background/live_background.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
@@ -59,7 +60,7 @@ Future<_Controller> _controller({required bool enabled}) async {
 }
 
 void main() {
-  testWidgets('an empty inbox points at background updates when they are off', (
+  testWidgets('an empty inbox holds no settings row, even with updates off', (
     tester,
   ) async {
     final controller = await _controller(enabled: false);
@@ -74,19 +75,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('activity-all-clear')), findsOneWidget);
+    // Background updates live in Settings › Notifications (owner rule R4):
+    // the Inbox lists requests and work only.
     expect(
       find.byKey(const ValueKey('activity-background-hint')),
-      findsOneWidget,
+      findsNothing,
     );
-
-    await tester.tap(
+    expect(
       find.byKey(const ValueKey('activity-background-settings')),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-    expect(find.text('Stay connected in the background'), findsOneWidget);
-    expect(find.byKey(const ValueKey('background-status-row')), findsOneWidget);
-    expect(find.text('Off'), findsOneWidget);
   });
 
   testWidgets('the hint disappears once background updates are on', (
@@ -116,9 +114,14 @@ void main() {
     final controller = await _controller(enabled: true);
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
+    // The state as the row's short value (canvas Settings.png).
     expect(find.text('Background: On · running now'), findsOneWidget);
 
     final row = find.byKey(const ValueKey('settings-category-background'));

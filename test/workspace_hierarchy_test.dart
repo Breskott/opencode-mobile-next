@@ -205,9 +205,11 @@ void main() {
           ),
         );
         await _pumpFrames(tester);
+        // One named search row after the list (R2, R4).
         expect(
-          find.byTooltip(
-            'Search conversation titles across every project on this server',
+          find.byKey(
+            const ValueKey('search-all-sessions'),
+            skipOffstage: false,
           ),
           findsOneWidget,
         );
@@ -410,13 +412,13 @@ void main() {
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
 
-          // One list under one header; no state sections (owner decision
+          // One list, no header and no state sections (owner decision
           // 2026-09-27). Both blocked rows are in it, each once.
           expect(
             find.byKey(const ValueKey('workspace-conversations')),
-            findsOneWidget,
+            findsNothing,
           );
-          expect(find.text('Conversations'), findsOneWidget);
+          expect(find.text('Conversations'), findsNothing);
           expect(
             find.byKey(const ValueKey('workspace-needs-you')),
             findsNothing,
@@ -450,7 +452,7 @@ void main() {
           // state.
           final header = _top(
             tester,
-            find.byKey(const ValueKey('workspace-conversations')),
+            find.byKey(const ValueKey('current-project-entry')),
           );
           final running = _top(tester, _row('busy-working'));
           final pinned = _top(tester, _row('pinned-idle'));
@@ -463,17 +465,21 @@ void main() {
           expect(running, lessThan(pinned));
           expect(pinned, lessThan(recent));
 
-          // The caption's actions still fit and open a labelled menu.
+          // One named search after the list; no caption menu (reload is
+          // pull to refresh, background updates live in Settings; R4).
           expect(
             find.byKey(const ValueKey('search-all-sessions')),
             findsOneWidget,
           );
-          await tester.tap(
+          expect(find.text('Search all conversations'), findsOneWidget);
+          expect(
             find.byKey(const ValueKey('workspace-section-menu')),
+            findsNothing,
           );
-          await _pumpFrames(tester);
-          expect(tester.takeException(), isNull);
-          expect(find.text('Refresh recent conversations'), findsOneWidget);
+          expect(
+            _top(tester, find.byKey(const ValueKey('search-all-sessions'))),
+            greaterThan(recent),
+          );
           // Terminal is a Project tool now, not a Work menu entry.
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
@@ -700,7 +706,9 @@ void main() {
     await _pumpFrames(tester);
     expect(tester.takeException(), isNull);
 
-    final header = find.byKey(const ValueKey('workspace-conversations'));
+    // No caption above the one list (R4): the project header leads it.
+    expect(find.byKey(const ValueKey('workspace-conversations')), findsNothing);
+    final header = find.byKey(const ValueKey('current-project-entry'));
     expect(header, findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
     expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
@@ -787,7 +795,9 @@ void main() {
     );
   });
 
-  testWidgets('Archived closes the list, after Recent', (tester) async {
+  testWidgets('archived ones are a filter of the one search, not a row', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -803,17 +813,22 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    final archived = find.text('Archived conversations');
-    expect(archived, findsOneWidget);
+    // All conversations holds the Archived filter, so Work has one search
+    // entry and no archived row repeating it (R3, R4).
+    expect(find.text('Archived conversations'), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-archived')), findsNothing);
     expect(_row('old'), findsNothing);
+    final search = find.byKey(const ValueKey('search-all-sessions'));
+    expect(search, findsOneWidget);
     expect(
-      _top(tester, archived),
+      _top(tester, search),
       greaterThan(_top(tester, _row('recent-idle'))),
     );
   });
 
-  testWidgets('the section menu reloads sessions and omits Terminal when the '
-      'server has none', (tester) async {
+  testWidgets('no caption menu: reload is pull to refresh, no Terminal', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -823,16 +838,10 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    // Menu entries exist only while the menu is open, so absence has to be
-    // checked with it open.
-    await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
-    await _pumpFrames(tester);
-    expect(find.text('Refresh recent conversations'), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-section-menu')), findsNothing);
+    expect(find.text('Refresh recent conversations'), findsNothing);
     expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
     expect(find.text('Terminal'), findsNothing);
-    await tester.tap(find.text('Refresh recent conversations'));
-    await _pumpFrames(tester);
-    expect(find.text('Refresh recent conversations'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

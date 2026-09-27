@@ -48,10 +48,14 @@ class LocalAgentServerEntry extends StatefulWidget {
     this.onForget,
     this.onManage,
     this.onOpenSaved,
+    this.dividerAbove = false,
     this.runtime,
   });
 
   final List<ServerProfile> profiles;
+
+  /// Shown in a list after other rows: the hairline above this row.
+  final bool dividerAbove;
 
   /// True while the host screen runs its own server operation.
   final bool busy;
@@ -309,6 +313,7 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
     if (status == null || !status.installed) {
       if (profile == null) return const SizedBox.shrink();
       return LocalServerRow(
+        dividerAbove: widget.dividerAbove,
         keyPrefix: 'local-agent-server',
         title: l10n.localAgentTitle,
         status: status == null
@@ -343,9 +348,9 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
               onSelected: () => widget.onForget!(profile),
             ),
         ],
-        startLabel: l10n.phoneServerStart,
+        startLabel: l10n.localAgentStartNamed,
         restartLabel: l10n.termuxRestartConfirm,
-        stopLabel: l10n.phoneServerStop,
+        stopLabel: l10n.localAgentStopNamed,
         onOpen: widget.onOpenSaved != null
             ? () => widget.onOpenSaved!(profile)
             : widget.onManage ?? () => unawaited(_check()),
@@ -392,6 +397,7 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
           _Operation.signingIn || null => l10n.phoneServerCardStopped,
         };
         return LocalServerRow(
+          dividerAbove: widget.dividerAbove,
           keyPrefix: 'local-agent-server',
           title: l10n.localAgentTitle,
           status: signedOut ? l10n.localAgentEntrySignedOut(state) : state,
@@ -439,9 +445,9 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
               onSelected: () => unawaited(_remove()),
             ),
           ],
-          startLabel: l10n.phoneServerStart,
+          startLabel: l10n.localAgentStartNamed,
           restartLabel: l10n.termuxRestartConfirm,
-          stopLabel: l10n.phoneServerStop,
+          stopLabel: l10n.localAgentStopNamed,
           onStart: () => unawaited(_start()),
           onConnect: () => unawaited(_connect()),
           onRestart: () => unawaited(_restart()),

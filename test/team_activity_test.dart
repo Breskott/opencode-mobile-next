@@ -550,23 +550,25 @@ void main() {
             reason: 'row $i below row ${i - 1}',
           );
         }
-        // One section for all of them.
-        expect(find.text('Needs attention'), findsOneWidget);
-        // Row: kind, what it belongs to, the server and the age.
+        // One list with no section header (owner rule R1).
+        expect(find.text('Needs attention'), findsNothing);
+        // Row: the needs-you word, kind, what it belongs to, the server and
+        // the age.
         expect(
-          find.text('Decision · Agent Wolf · Workstation · 2m ago'),
+          find.text('Needs you · Decision · Agent Wolf · Workstation · 2m ago'),
           findsOneWidget,
         );
         expect(
           find.text(
-            'Run failed · Run Add subtract() to calc.py · Workstation · 1d ago',
+            'Needs you · Run failed · Run Add subtract() to calc.py · '
+            'Workstation · 1d ago',
           ),
           findsOneWidget,
         );
         expect(
           find.text(
-            'Agent blocked · Work Write tests for calc.py · Workstation · '
-            '9m ago',
+            'Needs you · Agent blocked · Work Write tests for calc.py · '
+            'Workstation · 9m ago',
           ),
           findsOneWidget,
         );

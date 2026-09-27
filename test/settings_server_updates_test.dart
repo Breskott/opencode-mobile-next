@@ -162,7 +162,8 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(controller: controller),
+        // Diagnostics is a row of Settings › Help (R4).
+        home: SettingsHelpScreen(controller: controller),
       ),
     );
     await tester.pumpAndSettle();
@@ -253,7 +254,13 @@ void main() {
     await _openCategory(tester, 'settings-category-server');
 
     expect(find.text('Update OpenCode to 1.19.0'), findsOneWidget);
-    expect(find.textContaining('Current server: 1.18.23'), findsOneWidget);
+    // The running version is said once, on the health row (R3).
+    expect(
+      find.text(
+        "Uses OpenCode's official installer; restart the server afterwards.",
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('server-updates-tile')));
     await tester.pumpAndSettle();
 
@@ -388,12 +395,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // Durable grants are a Conversation defaults row of the hub: they are
-    // about how the agent works, not about privacy.
+    // Durable grants are a row of the server's group: they are about how
+    // the agent works there, not about privacy.
     final entry = find.byKey(const ValueKey('saved-permissions-entry'));
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-group-conversation-defaults')),
+        of: find.byKey(const ValueKey('settings-group-server')),
         matching: entry,
       ),
       findsOneWidget,
@@ -537,7 +544,10 @@ void main() {
 
     expect(find.textContaining('Shell endpoint unavailable'), findsOneWidget);
     // Scoped: the neighbouring default still renders.
-    expect(find.text('Model and mode'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-model-and-mode')),
+      findsOneWidget,
+    );
     repository.shellError = null;
     await tester.tap(entry);
     await tester.pumpAndSettle();
@@ -706,14 +716,14 @@ void main() {
       findsOneWidget,
     );
     for (final key in const [
-      'settings-category-server',
       'settings-model-and-mode',
+      'settings-category-plugins',
       'default-shell-settings-entry',
+      'settings-category-server',
       'settings-category-background',
       'settings-category-appearance',
-      'settings-category-plugins',
       'settings-category-privacy',
-      'app-diagnostics-entry',
+      'settings-help',
       'settings-about-notices',
     ]) {
       await tester.scrollUntilVisible(

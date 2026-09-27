@@ -231,8 +231,15 @@ void main() {
         _app(ServerSettingsScreen(controller: controller)),
       );
       await tester.pumpAndSettle();
-      // The row reads the health probe, not the connection's older word.
-      expect(find.textContaining('Current server: 1.19.5'), findsOneWidget);
+      // The health row reads the probe's version, once on the page (R3);
+      // the update row says what installing does instead of repeating it.
+      expect(find.textContaining('1.19.5'), findsOneWidget);
+      expect(
+        find.text(
+          "Uses OpenCode's official installer; restart the server afterwards.",
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('server-updates-tile')));
       await tester.pumpAndSettle();
       expect(find.textContaining('(now 1.19.5)'), findsOneWidget);
@@ -415,6 +422,9 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The question and its button name where it goes (R2).
+      expect(find.text('Switch to Server 2?'), findsOneWidget);
+      expect(find.text('Switch to Server 2'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('kit-confirm-cancel')));
       await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox.shrink());

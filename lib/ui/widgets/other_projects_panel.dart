@@ -7,8 +7,6 @@ import '../../domain/workspace_paths.dart' show managedProjectsDirectory;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_theme.dart';
-import '../kit/kit_icon_button.dart';
-import '../kit/kit_menu.dart';
 import '../kit/kit_needs_you.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
@@ -391,23 +389,22 @@ class _OtherProjectTile extends StatelessWidget {
           ? KitNeedsYou.mark()
           : KitRow.icon(context, AppIconography.files),
       supporting: supporting,
-      trailing: onOpenLive == null
-          ? null
-          : KitIconButton(
-              key: ValueKey('other-project-open-${entry.directory}'),
-              icon: AppIconography.chevronRight,
-              size: 20,
-              tooltip: strings.workOpenLiveConversation(liveTitle!),
-              onPressed: busy ? null : onOpenLive,
-            ),
       onTap: busy ? null : onTap,
-      // Long-press takes a project off the list; nothing is deleted.
-      onLongPress: () => showKitMenu(
-        context,
-        items: [
-          KitMenuItem(label: strings.otherProjectsForget, onSelected: onForget),
-        ],
-      ),
+      // A tap switches to the project; its rarer acts are on long-press or
+      // right-click, each naming what it acts on (R2): open its live
+      // conversation, or take the project off the list (nothing is
+      // deleted).
+      menuLabel: name,
+      menu: [
+        if (onOpenLive != null && liveTitle != null)
+          KitMenuItem(
+            key: ValueKey('other-project-open-${entry.directory}'),
+            label: strings.workOpenLiveConversation(liveTitle),
+            enabled: !busy,
+            onSelected: onOpenLive!,
+          ),
+        KitMenuItem(label: strings.otherProjectsForget, onSelected: onForget),
+      ],
     );
   }
 }

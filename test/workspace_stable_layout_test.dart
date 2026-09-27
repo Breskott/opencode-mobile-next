@@ -230,23 +230,14 @@ void main() {
         expect(facts, findsOneWidget);
         expect(tester.widget<Text>(facts).maxLines, 3);
 
-        // The primary action has the whole dock width with the isolated
-        // action as a labelled button above it; neither is an ellipsis.
+        // The primary action has the whole dock width and is the dock's
+        // only control (R2): the task in a fresh worktree lives on the
+        // project sheet, which names the project.
         expect(_primary, findsOneWidget);
         expect(tester.getTopLeft(_primary).dx, 16);
         expect(tester.getSize(_primary).width, 288);
         expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
-        expect(_isolated, findsOneWidget);
-        expect(tester.widget<TextButton>(_isolated).onPressed, isNotNull);
-        expect(
-          find.descendant(of: _isolated, matching: find.text('Isolated task')),
-          findsOneWidget,
-        );
-        expect(tester.getSize(_isolated).height, greaterThanOrEqualTo(48));
-        expect(
-          tester.getBottomLeft(_isolated).dy,
-          lessThanOrEqualTo(tester.getTopLeft(_primary).dy),
-        );
+        expect(_isolated, findsNothing);
         // The kit pins the block 8 dp above the shell's bottom inset.
         expect(tester.getBottomLeft(_pill).dy, 900 - 8);
 
@@ -288,7 +279,7 @@ void main() {
     expect(_manage, findsNothing);
     expect(_primary, findsOneWidget);
     expect(tester.getSize(_primary).width, 288);
-    expect(_isolated, findsOneWidget);
+    expect(_isolated, findsNothing);
   });
 
   // The test font paints every glyph 1em wide. At 2.5x the rungs are 60, 50
@@ -421,17 +412,28 @@ void main() {
       );
       expect(tester.widget<Text>(facts).maxLines, 2);
 
-      // Primary beside the isolated icon, the icon at the end of the dock.
+      // The dock holds New conversation alone, across the gutter (R2).
       expect(_primary, findsOneWidget);
-      expect(_isolated, findsOneWidget);
-      expect(tester.widget<IconButton>(_isolated).onPressed, isNotNull);
+      expect(_isolated, findsNothing);
       expect(find.text('Isolated task'), findsNothing);
-      expect(
-        tester.getTopRight(_primary).dx,
-        lessThan(tester.getTopLeft(_isolated).dx),
-      );
-      expect(tester.getTopRight(_isolated).dx, 390 - 16);
+      expect(tester.getTopRight(_primary).dx, 390 - 16);
       expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
+
+      // The task in a fresh worktree is a row of the project's own sheet,
+      // naming the project and what it does.
+      await tester.tap(_header);
+      await _pumpFrames(tester);
+      expect(_isolated, findsOneWidget);
+      expect(
+        find.textContaining('New task in a fresh worktree of '),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Works on a separate copy so your main folder stays untouched.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

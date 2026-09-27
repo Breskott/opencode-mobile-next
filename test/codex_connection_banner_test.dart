@@ -90,6 +90,7 @@ void main() {
       find.textContaining('nothing is sent automatically'),
       findsOneWidget,
     );
-    expect(find.text('Try again'), findsOneWidget);
+    // The retry names the server it reconnects to (R2).
+    expect(find.textContaining('Reconnect to '), findsOneWidget);
   });
 }
