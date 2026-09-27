@@ -24,9 +24,8 @@ extension WorktreeInspectionCapabilities on ServerCapabilities {
 class WorktreeInspection {
   const WorktreeInspection({
     required HostGateway gateway,
-    required ServerCapabilities capabilities,
-  }) : _gateway = gateway,
-       capabilities = capabilities;
+    required this.capabilities,
+  }) : _gateway = gateway;
 
   final HostGateway _gateway;
 
