@@ -13808,24 +13808,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiGateAnswerRejectedNoMessage => 'لم يقبل المضيف هذه الإجابة.';
 
   @override
-  String get teamUiGateAnswerChipSent => 'أُرسل';
-
-  @override
-  String get teamUiGateAnswerChipUnconfirmed => 'غير مؤكد';
-
-  @override
-  String get teamUiGateAnswerChipRejected => 'لم يُقبل';
-
-  @override
   String get teamUiGateAnswerChipUnconfirmedSemantics =>
       'غير مؤكد، افتح لإعادة المحاولة';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyTitle => 'رفض هذا الطلب؟';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyBody =>
-      'يُبلَّغ الوكيل بالرفض ويواصل من دونه.';
 
   @override
   String get teamUiGateAnswerConfirmApproveTitle =>
@@ -17709,9 +17693,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiHomeNeedsYouAnswer => 'أجب';
-
-  @override
-  String get teamUiHomeNeedsYouMore => 'المزيد';
 
   @override
   String get teamUiHomeNeedsYouFallbackTitle => 'لدى الفريق سؤال';
@@ -24647,8 +24628,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get promptStashDeleted => 'Saved prompt deleted';
 
   @override
-  String get promptStashIntro =>
-      'Newest first · kept on this device for this server';
+  String get promptStashIntro => 'Newest first · kept on this device';
 
   @override
   String get promptStashEmptyTitle => 'No saved prompts yet';
@@ -26441,4 +26421,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get defaultModelChange => 'Choose another model';
+
+  @override
+  String teamControlReceiptSending(String control) {
+    return '$control · Sending…';
+  }
+
+  @override
+  String get teamGateCardRunFailedOpen => 'Choose what to do';
+
+  @override
+  String get teamGateCardIfIgnored =>
+      'The team waits until you answer. Nothing is lost.';
+
+  @override
+  String get teamGateCardIfIgnoredFailed =>
+      'The task stays stopped until someone acts on it.';
+
+  @override
+  String get teamGateCardIfIgnoredReview =>
+      'The work waits for review. Nothing is lost.';
 }
