@@ -6,11 +6,12 @@ import '../../domain/server_gateway.dart';
 import '../../api2/transport.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/product_states.dart';
-import '../app_iconography.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import '../app_theme.dart';
 import '../kit/kit.dart';
 
-/// One editor for the mobile-owned note, never a generic instruction browser.
+/// One editor for the mobile-owned note, never a generic instruction browser
+/// (map pages session-note and session-note-discard-dialog).
 class SessionNoteScreen extends StatefulWidget {
   final ConnectionController controller;
   final String sessionID;
@@ -31,8 +32,17 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
   SessionNoteReview? _review;
   Object? _reviewRepository;
   Object? _error;
+
+  /// The last failure came from a save or delete (offer Try again), not
+  /// from reading the saved note (offer Refresh).
+  bool _errorFromSave = false;
   bool _loading = true;
+  DateTime? _loadStartedAt;
   bool _saving = false;
+  bool _removing = false;
+
+  /// What the last failed write was, so Try again repeats it.
+  bool _lastWriteRemoved = false;
   bool _allowLeave = false;
   bool _reviewRefreshed = false;
   int _maxBytes = SessionNoteGateway.maxBytes;
@@ -64,6 +74,7 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
     final keepDraft = _review != null;
     setState(() {
       _loading = true;
+      _loadStartedAt = DateTime.now();
       _error = null;
     });
     try {
@@ -79,13 +90,24 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
       });
     } catch (error) {
       if (mounted && _sameLocation && loadGeneration == _loadGeneration) {
-        setState(() => _error = error);
+        setState(() {
+          _error = error;
+          _errorFromSave = false;
+        });
       }
     } finally {
       if (mounted && loadGeneration == _loadGeneration) {
         setState(() => _loading = false);
       }
     }
+  }
+
+  /// Reads the saved note again as if the editor had just opened: the field
+  /// shows what the server holds, with no "saved version" comparison.
+  Future<void> _reload() {
+    _review = null;
+    _reviewRefreshed = false;
+    return _load();
   }
 
   Future<void> _leave({bool Function()? stillTargetsThisEditor}) async {
@@ -115,7 +137,9 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
       title: l10n.sessionNoteDiscard,
       body: l10n.sessionNoteDiscardDetail,
       confirmLabel: l10n.sessionNoteDiscardAction,
+      cancelLabel: l10n.sessionNoteKeepEditing,
       kind: KitConfirmKind.discard,
+      icon: AppIconography.note,
     );
     if (mounted && discard) await _leave();
   }
@@ -127,6 +151,7 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
     final saveSessionID = _boundSessionID;
     final saveRepository = saveController.repository;
     final saveGeneration = ++_saveGeneration;
+    final previous = review.value;
     bool saveStillTargetsThisEditor() =>
         mounted &&
         saveGeneration == _saveGeneration &&
@@ -136,17 +161,28 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
         _sameLocation;
     setState(() {
       _saving = true;
+      _removing = remove;
+      _lastWriteRemoved = remove;
       _error = null;
     });
     try {
       await saveController.saveSessionNote(review, remove ? null : _text.text);
-      if (saveStillTargetsThisEditor()) {
+      if (!saveStillTargetsThisEditor()) return;
+      if (remove) {
+        // Delete stays on the page, shows the empty note and offers Undo,
+        // which writes the deleted words back (DATA-11: act now, undo is
+        // the inverse call).
+        _saving = false;
+        unawaited(_reload());
+        if (previous != null && mounted) _offerUndo(previous);
+      } else {
         await _leave(stillTargetsThisEditor: saveStillTargetsThisEditor);
       }
     } catch (error) {
       if (saveStillTargetsThisEditor()) {
         setState(() {
           _error = error;
+          _errorFromSave = true;
           if (error is SessionNoteException &&
               error.failure == SessionNoteFailure.tooLarge) {
             _maxBytes = error.maxBytes.clamp(1, SessionNoteGateway.maxBytes);
@@ -155,9 +191,28 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
       }
     } finally {
       if (mounted && saveGeneration == _saveGeneration) {
-        setState(() => _saving = false);
+        setState(() {
+          _saving = false;
+          _removing = false;
+        });
       }
     }
+  }
+
+  void _offerUndo(String previous) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final controller = _boundController;
+    final sessionID = _boundSessionID;
+    showKitUndo(
+      context,
+      key: const ValueKey('session-note-undo'),
+      message: l10n.sessionNoteRemoved,
+      onUndo: () async {
+        final review = await controller.loadSessionNote(sessionID);
+        await controller.saveSessionNote(review, previous);
+        if (mounted && _sameLocation) await _reload();
+      },
+    );
   }
 
   String _errorText(Object error, AppLocalizations l10n) {
@@ -197,124 +252,196 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
                     _boundController.isSessionNoteReviewCurrent(_review!)));
         final loading = _loading && _sameLocation;
         final saving = _savingForScope;
-        final bytes = SessionNoteGateway.encodedBytes(_text.text);
-        final enabled = current && !loading && !saving && _review != null;
+        final review = _review;
         return PopScope(
           canPop: _allowLeave || (!saving && !_dirty),
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) unawaited(_confirmLeave());
           },
-          child: Scaffold(
-            appBar: AppBar(title: Text(l10n.sessionNoteTitle)),
-            body: SafeArea(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(l10n.sessionNoteDescription),
-                        const SizedBox(height: 20),
-                        if (loading) const LinearProgressIndicator(),
-                        if (!current)
-                          Text(
-                            l10n.sessionNoteChanged,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                        if (_error case final error?) ...[
-                          Text(
-                            _errorText(error, l10n),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (_reviewRefreshed && _review != null) ...[
-                          Text(
-                            l10n.sessionNoteSavedVersion,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          SelectableText(
-                            _review!.value ?? l10n.sessionNoteNone,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        if (_review != null) ...[
-                          TextField(
-                            key: const ValueKey('session-note-editor'),
-                            controller: _text,
-                            readOnly: saving || !current,
-                            minLines: 5,
-                            maxLines: 12,
-                            textCapitalization: TextCapitalization.sentences,
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              labelText: l10n.sessionNoteTitle,
-                              hintText: l10n.sessionNoteHint,
-                              alignLabelWithHint: true,
-                              border: const OutlineInputBorder(),
-                              counterText: l10n.sessionNoteBytes(
-                                bytes,
-                                _maxBytes,
-                              ),
-                              errorText: bytes > _maxBytes
-                                  ? l10n.sessionNoteTooLarge
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton.icon(
-                            key: const ValueKey('save-session-note'),
-                            onPressed:
-                                enabled &&
-                                    _dirty &&
-                                    _text.text.trim().isNotEmpty &&
-                                    bytes <= _maxBytes
-                                ? _save
-                                : null,
-                            icon: saving
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(AppIconography.check),
-                            label: Text(l10n.sessionNoteSave),
-                          ),
-                          if (_review!.value != null)
-                            TextButton(
-                              key: const ValueKey('remove-session-note'),
-                              onPressed: enabled
-                                  ? () => _save(remove: true)
-                                  : null,
-                              child: Text(l10n.sessionNoteRemove),
-                            ),
-                        ],
-                        if (_sameLocation &&
-                            !loading &&
-                            !saving &&
-                            (_error != null || !current))
-                          TextButton(
-                            onPressed: _load,
-                            child: Text(l10n.sessionNoteRefresh),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          child: KitScreen(
+            topBar: KitTopBar(title: l10n.sessionNoteTitle),
+            width: KitScreenWidth.list,
+            loading: review != null && (loading || saving),
+            loadingLabel: saving
+                ? (_removing
+                      ? l10n.sessionNoteDeleting
+                      : l10n.sessionNoteSaving)
+                : l10n.sessionNoteLoading,
+            bottom: review == null
+                ? null
+                : _actions(l10n, review, current: current, saving: saving),
+            body: review == null
+                ? _placeholder(l10n)
+                : _editor(context, l10n, review, current: current),
           ),
         );
       },
+    );
+  }
+
+  /// Before the saved note has been read: waiting, or why it could not be.
+  Widget _placeholder(AppLocalizations l10n) {
+    final error = _error;
+    if (error != null || !_sameLocation) {
+      return KitStateView.error(
+        key: const ValueKey('session-note-load-failed'),
+        title: l10n.sessionNoteLoadFailed,
+        body: error == null ? l10n.sessionNoteChanged : _errorText(error, l10n),
+        error: error,
+        retry: _sameLocation
+            ? KitAction(label: l10n.sessionNoteRefresh, onPressed: _load)
+            : null,
+      );
+    }
+    return KitStateView(
+      key: const ValueKey('session-note-loading'),
+      icon: AppIconography.note,
+      title: l10n.sessionNoteLoading,
+      progress: const KitProgress.waiting(),
+      since: _loadStartedAt,
+      onSlow: [KitAction(label: l10n.commonRetry, onPressed: _load)],
+    );
+  }
+
+  Widget _editor(
+    BuildContext context,
+    AppLocalizations l10n,
+    SessionNoteReview review, {
+    required bool current,
+  }) {
+    final tokens = KitTokens.of(context);
+    final saving = _savingForScope;
+    final bytes = SessionNoteGateway.encodedBytes(_text.text);
+    final tooLong = bytes > _maxBytes;
+    // The size shows only near the limit (KIT-21); bytes, because the
+    // server's limit is in bytes.
+    final nearLimit = bytes * 5 >= _maxBytes * 4;
+    final error = _error;
+    final notice = !current
+        ? KitNotice(
+            key: const ValueKey('session-note-stale'),
+            tone: AppStatusTone.neutral,
+            message: l10n.sessionNoteChanged,
+            actions: [
+              if (_sameLocation && !_loading && !saving)
+                KitAction(label: l10n.sessionNoteRefresh, onPressed: _load),
+            ],
+          )
+        : error != null
+        ? KitNotice(
+            key: const ValueKey('session-note-error'),
+            tone: AppStatusTone.failure,
+            title: _errorFromSave ? l10n.sessionNoteSaveFailed : null,
+            message: _errorText(error, l10n),
+            actions: [
+              if (_sameLocation && !_loading && !saving)
+                _errorFromSave &&
+                        !(error is SessionNoteException &&
+                            error.failure == SessionNoteFailure.changed)
+                    ? KitAction(
+                        label: l10n.commonRetry,
+                        onPressed: () => _save(remove: _lastWriteRemoved),
+                      )
+                    : KitAction(
+                        label: l10n.sessionNoteRefresh,
+                        onPressed: _load,
+                      ),
+            ],
+          )
+        : null;
+    return ListView(
+      padding: KitScreen.padding(
+        context,
+      ).add(EdgeInsetsDirectional.only(top: tokens.space3)),
+      children: [
+        KitText(
+          l10n.sessionNoteDescription,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        SizedBox(height: tokens.space4),
+        KitReveal(
+          child: notice == null
+              ? null
+              : Padding(
+                  padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+                  child: notice,
+                ),
+        ),
+        if (_reviewRefreshed) ...[
+          KitNotice(
+            key: const ValueKey('session-note-saved-version'),
+            title: l10n.sessionNoteSavedVersion,
+            message: review.value ?? l10n.sessionNoteNone,
+          ),
+          SizedBox(height: tokens.space3),
+        ],
+        KitField(
+          fieldKey: const ValueKey('session-note-editor'),
+          label: l10n.sessionNoteFieldLabel,
+          controller: _text,
+          kind: KitFieldKind.multiline,
+          hint: l10n.sessionNoteHint,
+          enabled: current && !saving,
+          disabledReason: saving
+              ? l10n.sessionNoteSaving
+              : l10n.sessionNoteFieldLocked,
+          helper: nearLimit && !tooLong
+              ? l10n.sessionNoteBytes(bytes, _maxBytes)
+              : null,
+          error: tooLong
+              ? l10n.sessionNoteTooLong(bytes - _maxBytes, _maxBytes)
+              : null,
+          onChanged: (_) => setState(() {}),
+        ),
+      ],
+    );
+  }
+
+  KitActionBlock _actions(
+    AppLocalizations l10n,
+    SessionNoteReview review, {
+    required bool current,
+    required bool saving,
+  }) {
+    final bytes = SessionNoteGateway.encodedBytes(_text.text);
+    final enabled = current && !_loading && !saving;
+    final String? saveReason;
+    if (saving) {
+      saveReason = _removing
+          ? l10n.sessionNoteDeleting
+          : l10n.sessionNoteSaving;
+    } else if (!current) {
+      saveReason = l10n.sessionNoteFieldLocked;
+    } else if (_text.text.trim().isEmpty) {
+      saveReason = review.value == null
+          ? l10n.sessionNoteWriteFirst
+          : l10n.sessionNoteEmptyUseDelete;
+    } else if (bytes > _maxBytes) {
+      saveReason = l10n.sessionNoteTooLarge;
+    } else if (!_dirty) {
+      saveReason = l10n.sessionNoteUnchanged;
+    } else {
+      saveReason = null;
+    }
+    return KitActionBlock(
+      primary: KitAction(
+        key: const ValueKey('save-session-note'),
+        label: l10n.sessionNoteSave,
+        icon: AppIconography.check,
+        onPressed: enabled && saveReason == null ? _save : null,
+        disabledReason: _loading && !saving ? null : saveReason,
+      ),
+      tertiary: [
+        if (review.value != null)
+          KitAction(
+            key: const ValueKey('remove-session-note'),
+            label: l10n.sessionNoteRemove,
+            icon: AppIconography.delete,
+            destructive: true,
+            onPressed: enabled ? () => _save(remove: true) : null,
+          ),
+      ],
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/screens/session_relations_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -167,8 +168,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Subagent conversations'), findsOneWidget);
-      expect(find.textContaining('2 delegated conversations'), findsOneWidget);
+      expect(find.text('Subagents'), findsOneWidget);
+      expect(find.text('2 subagents'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('session-relation-parent')),
         findsOneWidget,
@@ -178,15 +179,28 @@ void main() {
         120,
         scrollable: find.byType(Scrollable).first,
       );
-      final current = tester.widget<ListTile>(
+      final current = tester.widget<KitRow>(
         find.byKey(const ValueKey('session-relation-child-2')),
       );
-      final first = tester.widget<ListTile>(
-        find.byKey(const ValueKey('session-relation-child-1')),
-      );
       expect(current.selected, isTrue);
-      expect((first.subtitle! as Text).data, startsWith('1 of 2'));
-      expect((current.subtitle! as Text).data, startsWith('2 of 2'));
+      // One list by urgency: neither works or needs you, so newest first.
+      expect(
+        tester
+                .getTopLeft(
+                  find.byKey(const ValueKey('session-relation-child-2')),
+                )
+                .dy <
+            tester
+                .getTopLeft(
+                  find.byKey(const ValueKey('session-relation-child-1')),
+                )
+                .dy,
+        isTrue,
+      );
+      expect(
+        (current.supporting! as TextSpan).text,
+        contains('This conversation'),
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -231,10 +245,10 @@ void main() {
       );
       addTearDown(selectedController.dispose);
       void expectParentTileTitle(String title) {
-        final tile = tester.widget<ListTile>(
+        final tile = tester.widget<KitRow>(
           find.byKey(const ValueKey('session-relation-parent')),
         );
-        expect((tile.title! as Text).data, title);
+        expect(tile.title, title);
       }
 
       await tester.pumpWidget(
@@ -282,10 +296,10 @@ void main() {
       await tester.pumpAndSettle();
       repository.detailsGate!.complete();
       await tester.pumpAndSettle();
-      expect(find.text('Subagent conversations'), findsOneWidget);
+      expect(find.text('Subagents'), findsOneWidget);
       expect(
         tester
-            .widget<ListTile>(
+            .widget<KitRow>(
               find.byKey(const ValueKey('session-relation-child-2')),
             )
             .selected,
@@ -295,9 +309,11 @@ void main() {
       repository.delayNextDetails = true;
       repository.detailsEntered = Completer<void>();
       repository.detailsGate = Completer<void>();
-      await tester.tap(find.byType(PopupMenuButton<String>).at(1));
+      await tester.longPress(
+        find.byKey(const ValueKey('session-relation-child-1')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Pin conversation'));
+      await tester.tap(find.byKey(const ValueKey('session-relation-pin')));
       await repository.detailsEntered!.future;
       selectedSession.value = 'parent';
       await tester.pumpAndSettle();
