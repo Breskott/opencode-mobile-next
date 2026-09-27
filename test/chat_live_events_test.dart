@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
-    show KitMarkdown, KitMotion, KitTurn;
+    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -2363,15 +2363,26 @@ void main() {
     expect(find.text('Shell'), findsOneWidget);
     expect(find.text('Edit'), findsNothing);
 
-    for (final row in tester.widgetList<Container>(
-      find.byKey(const Key('embedded-tool-row')),
+    // KitToolRow: a grouped row is a line on the ground surface, never a
+    // nested card; at rest it paints no fill of its own.
+    final rows = find.byKey(const Key('embedded-tool-row'));
+    expect(rows, findsWidgets);
+    for (final box in tester.widgetList<AnimatedContainer>(
+      find.descendant(of: rows, matching: find.byType(AnimatedContainer)),
     )) {
-      expect(
-        row.decoration,
-        isNull,
-        reason: 'Grouped tool rows must not render nested cards.',
-      );
+      final decoration = box.decoration;
+      if (decoration is ShapeDecoration) {
+        expect(
+          decoration.color?.a ?? 0,
+          0,
+          reason: 'Grouped tool rows must not render nested cards.',
+        );
+      }
     }
+    expect(
+      find.descendant(of: rows, matching: find.byType(Card)),
+      findsNothing,
+    );
   });
 
   testWidgets('renders grouped tool failures as flat inline results', (
@@ -2417,17 +2428,20 @@ void main() {
     expect(find.text('Process exited before completion'), findsOneWidget);
     expect(find.byKey(const Key('standalone-tool-error-output')), findsNothing);
 
-    for (final result in tester.widgetList<Container>(
-      find.byKey(const Key('embedded-tool-error-output')),
-    )) {
-      final decoration = result.decoration! as BoxDecoration;
-      expect(decoration.color, isNull);
-      expect(decoration.borderRadius, isNull);
-      expect((decoration.border! as Border).top.style, BorderStyle.none);
-      expect((decoration.border! as Border).right.style, BorderStyle.none);
-      expect((decoration.border! as Border).bottom.style, BorderStyle.none);
-      expect((decoration.border! as Border).left.width, 2);
-    }
+    // Each failure is the step's own capped output block (KitCodeBlock)
+    // under its row, carrying the error text; the row already says Failed.
+    final outputs = find.byKey(const Key('embedded-tool-error-output'));
+    expect(
+      find.descendant(of: outputs, matching: find.byType(KitCodeBlock)),
+      findsNWidgets(2),
+    );
+    expect(
+      find.descendant(
+        of: outputs,
+        matching: find.text('Process exited before completion'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps a tool chain growing across assistant records', (

@@ -14,6 +14,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitTappable;
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
@@ -869,13 +870,27 @@ void main() {
         ),
       ),
     );
-    final target = find.byType(InkWell).first;
+    // KitToolRow: the whole line is one KitTappable (48 dp floor) whose
+    // label reads title, command, state in that order.
+    final target = find.byType(KitTappable).first;
     expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
-    expect(find.bySemanticsLabel(RegExp('Shell, Running')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Shell, flutter test, Running')),
+      findsOneWidget,
+    );
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.tap(target);
     await tester.pump();
-    expect(find.text(r'$ flutter test'), findsOneWidget);
+    // KitCodeBlock(command) draws the $ prompt outside the command text.
+    final command = find.byKey(const Key('tool-shell-command'));
+    expect(command, findsOneWidget);
+    expect(
+      find.descendant(
+        of: command,
+        matching: find.textContaining('flutter test', findRichText: true),
+      ),
+      findsWidgets,
+    );
     expect(find.text('INPUT'), findsNothing);
     semantics.dispose();
   });
