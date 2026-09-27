@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../domain/phone_agent_context.dart';
 import '../domain/workspace_paths.dart';
 import '../platform/platform_capabilities.dart';
+import '../ui/kit/kit_redact.dart';
 import 'opencode_ubuntu_setup.dart';
 import 'team_scripts.dart';
 
@@ -100,6 +101,181 @@ class TermuxBridge {
   static Future<bool> openTermux() => _invokeFlag('openTermux');
 
   static Future<bool> openAppSettings() => _invokeFlag('openAppSettings');
+
+  /// Durable v2 setup. Scripts travel in memory only; metadata is allowlisted
+  /// and redacted before the native host stores it. A lost callback never
+  /// implies that the independently owned Termux process has stopped.
+  static Future<void> startSetup({
+    required String jobId,
+    required List<Map<String, Object?>> components,
+    Map<String, Map<String, String>> params = const {},
+    Map<String, String> texts = const {},
+  }) async {
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,96}$').hasMatch(jobId)) {
+      throw const TermuxBridgeException(
+        'Invalid setup job id.',
+        code: 'invalid_setup',
+      );
+    }
+    final safeParams = <String, Map<String, String>>{};
+    const allowed = {
+      'opencode': {'runtime', 'version'},
+      '_job': {'first', 'adding'},
+    };
+    for (final entry in params.entries) {
+      final keys = allowed[entry.key];
+      if (keys == null || entry.value.keys.any((key) => !keys.contains(key))) {
+        throw const TermuxBridgeException(
+          'Unsupported setup parameter.',
+          code: 'invalid_setup',
+        );
+      }
+      for (final value in entry.value.entries) {
+        final valid = switch (value.key) {
+          'runtime' => {'opencode1', 'opencode2'}.contains(value.value),
+          'version' => RegExp(
+            r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$',
+          ).hasMatch(value.value),
+          'first' => {'0', '1'}.contains(value.value),
+          'adding' =>
+            value.value.isEmpty ||
+                RegExp(
+                  r'^[a-z][a-z0-9_-]*(?:,[a-z][a-z0-9_-]*)*$',
+                ).hasMatch(value.value),
+          _ => false,
+        };
+        if (!valid || KitRedact.containsSecret(value.value)) {
+          throw const TermuxBridgeException(
+            'Invalid setup parameter.',
+            code: 'invalid_setup',
+          );
+        }
+      }
+      safeParams[entry.key] = {
+        for (final value in entry.value.entries)
+          if (keys.contains(value.key)) value.key: KitRedact.text(value.value),
+      };
+    }
+    final safeComponents = <Map<String, Object?>>[];
+    for (final component in components) {
+      final id = component['id'];
+      if (id is! String || !RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(id)) {
+        throw const TermuxBridgeException(
+          'Invalid setup component.',
+          code: 'invalid_setup',
+        );
+      }
+      final native = component['native'] == true;
+      if (native && id != 'linux') {
+        throw const TermuxBridgeException(
+          'Unsupported native component.',
+          code: 'invalid_setup',
+        );
+      }
+      final data = component['data'];
+      safeComponents.add({
+        'id': id,
+        'script': native ? setupBaseScript : component['script'],
+        'native': native,
+        'step': component['step'] == true,
+        'skipped': component['skipped'] == true,
+        'weight': component['weight'],
+        'version': component['version'] is String
+            ? KitRedact.text(component['version'] as String)
+            : null,
+        'data': data is Map
+            ? {
+                for (final key in ['runtime', 'openCodeChanged'])
+                  if (data[key] is String)
+                    key: KitRedact.text(data[key] as String),
+              }
+            : <String, String>{},
+      });
+    }
+    await _setupInvoke<void>('startSetup', {
+      'jobId': jobId,
+      'components': safeComponents,
+      'params': safeParams,
+    });
+  }
+
+  static Future<String?> setupStatus() => _setupInvoke<String>('setupStatus');
+
+  static Future<void> cancelSetup() => _setupInvoke<void>('cancelSetup');
+
+  static Future<void> completeSetupStep({
+    required String jobId,
+    required String id,
+    required bool ok,
+    String? error,
+    String? version,
+  }) => _setupInvoke<void>('completeSetupStep', {
+    'jobId': jobId, 'id': id, 'ok': ok,
+    // Native persists fixed failure copy; arbitrary errors never cross here.
+    'version': version == null ? null : KitRedact.text(version),
+  });
+
+  static Future<bool> setupHostInstalled() async =>
+      await _setupInvoke<bool>('setupHostInstalled') ?? false;
+
+  /// Runs a check in the same app-managed Ubuntu container as the v1 manager.
+  static Future<TermuxCommandResult> setupRun(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    final raw = await _setupInvoke<Map<Object?, Object?>>('setupRun', {
+      'script': script,
+      'timeoutMs': timeout.inMilliseconds,
+    });
+    return TermuxCommandResult.fromMap(
+      raw?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  static Future<T?> _setupInvoke<T>(String method, [Object? args]) async {
+    if (!supported) throw _unsupported;
+    try {
+      return await _channel.invokeMethod<T>(method, args);
+    } on MissingPluginException {
+      throw _unsupported;
+    } on PlatformException catch (error) {
+      throw TermuxBridgeException(
+        KitRedact.text(error.message ?? 'Termux setup failed.'),
+        code: error.code,
+      );
+    }
+  }
+
+  /// Pinned Canonical base; leaves any unknown existing container untouched.
+  /// No credentials or generated manager scripts are written by this step.
+  @visibleForTesting
+  static const setupBaseScript = r'''set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+if command -v proot-distro >/dev/null 2>&1 &&
+   proot-distro login opencode-ubuntu -- /bin/true >/dev/null 2>&1; then exit 0; fi
+apt-get update
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" --fix-broken install
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" install proot-distro curl openssl
+case "$(uname -m)" in
+  aarch64|arm64) arch=arm64; sha=04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2 ;;
+  arm|armv7l|armv8l) arch=armhf; sha=991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4 ;;
+  x86_64|amd64) arch=amd64; sha=c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58 ;;
+  *) exit 64 ;;
+esac
+mkdir -p "$HOME/.oc/setup-v2"
+archive="$HOME/.oc/setup-v2/ubuntu-base.tar.gz"
+root="$PREFIX/var/lib/proot-distro/installed-rootfs/opencode-ubuntu"
+# Never erase an existing container, including one from an interrupted setup.
+# A damaged extraction needs explicit recovery rather than risking projects.
+[ ! -d "$root" ] &&
+  [ ! -d "$PREFIX/var/lib/proot-distro/containers/opencode-ubuntu/rootfs" ] || exit 65
+curl --fail --location --retry 5 --connect-timeout 20 \
+  "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-$arch.tar.gz" -o "$archive"
+printf '%s  %s\n' "$sha" "$archive" | sha256sum -c -
+proot-distro install "$archive" --name opencode-ubuntu
+proot-distro login opencode-ubuntu -- /bin/true
+rm -f "$archive"
+''';
 
   /// Every one of these answers "did the platform do the thing?", so a
   /// missing channel is simply `false` — never an exception a caller that
