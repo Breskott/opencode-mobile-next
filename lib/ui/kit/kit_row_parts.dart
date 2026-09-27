@@ -495,6 +495,7 @@ class KitExpandRow extends StatefulWidget {
     this.onExpansionChanged,
     this.supportingMaxLines = 1,
     this.maintainState = false,
+    this.titleMaxLines = 1,
   }) : assert(
          expanded == null || !initiallyExpanded,
          'controlled rows take expanded, not initiallyExpanded',
@@ -517,6 +518,11 @@ class KitExpandRow extends StatefulWidget {
 
   /// 2 where the fold's line explains itself (§6).
   final int supportingMaxLines;
+
+  /// One line by default (§6); 2 where the title names a failure in words
+  /// ("Couldn't reach the server at the office") that one line would cut
+  /// (slice-R4). From 1.3× text [KitRow] gives it two anyway.
+  final int titleMaxLines;
 
   /// Keeps folded children alive (a form inside). The fold is then instant:
   /// the children stay mounted, only hidden.
@@ -568,6 +574,7 @@ class _KitExpandRowState extends State<KitExpandRow> {
               leading: widget.leading,
               supporting: widget.supporting,
               supportingMaxLines: widget.supportingMaxLines,
+              titleMaxLines: widget.titleMaxLines,
               onTap: () => _set(!open),
               trailing: SizedBox.square(
                 dimension: tokens.minTarget,
