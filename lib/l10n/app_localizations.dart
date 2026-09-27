@@ -818,18 +818,6 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get fileCopy;
 
-  /// No description provided for @fileReference.
-  ///
-  /// In en, this message translates to:
-  /// **'Reference'**
-  String get fileReference;
-
-  /// No description provided for @fileAttach.
-  ///
-  /// In en, this message translates to:
-  /// **'Attach'**
-  String get fileAttach;
-
   /// No description provided for @fileSave.
   ///
   /// In en, this message translates to:
@@ -2648,24 +2636,6 @@ abstract class AppLocalizations {
   /// **'The latest turn has no assistant step yet, so there is nothing to show.'**
   String get runResultsEmpty;
 
-  /// Run identity header; the id is the tail of the first assistant message id
-  ///
-  /// In en, this message translates to:
-  /// **'Run …{id}'**
-  String runResultsRunLabel(String id);
-
-  /// No description provided for @runResultsSteps.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1 {1 assistant step} other {{count} assistant steps}}'**
-  String runResultsSteps(int count);
-
-  /// Step count when the run's start was not found in the loaded history
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1 {At least 1 assistant step loaded} other {At least {count} assistant steps loaded}}'**
-  String runResultsStepsAtLeast(int count);
-
   /// No description provided for @runResultsStarted.
   ///
   /// In en, this message translates to:
@@ -2828,30 +2798,6 @@ abstract class AppLocalizations {
   /// **'(command text not recorded)'**
   String get runResultsCommandEmpty;
 
-  /// No description provided for @runResultsExit.
-  ///
-  /// In en, this message translates to:
-  /// **'Exit code {code}'**
-  String runResultsExit(int code);
-
-  /// No description provided for @runResultsExitUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Exit code not recorded'**
-  String get runResultsExitUnknown;
-
-  /// No description provided for @runResultsCommandFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Tool reported failure'**
-  String get runResultsCommandFailed;
-
-  /// Source-derived label; says nothing about whether tests ran or passed
-  ///
-  /// In en, this message translates to:
-  /// **'Looks like a test command (from the command text only)'**
-  String get runResultsLooksLikeTest;
-
   /// No description provided for @runResultsOutputPruned.
   ///
   /// In en, this message translates to:
@@ -2875,12 +2821,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Everything here is copied from the server\'s message and tool records. Nothing is summarised by a model.'**
   String get runResultsSourceNote;
-
-  /// No description provided for @runResultsOutputTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recorded tool output'**
-  String get runResultsOutputTitle;
 
   /// No description provided for @runResultsOpenConversation.
   ///
@@ -3038,35 +2978,17 @@ abstract class AppLocalizations {
   /// **'No records match these filters. Clear or change the filters to see more.'**
   String get usageNoMatchingRecords;
 
-  /// Recovery card for a saved sign-in attempt
+  /// Sign-in sheet: what to do with a sign-in this phone saved.
   ///
   /// In en, this message translates to:
-  /// **'Pending sign-in: {integration}'**
-  String pendingAuthTitle(String integration);
-
-  /// No description provided for @pendingAuthDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue the existing browser sign-in, then explicitly check its status or enter its code. The browser link is not saved.'**
+  /// **'Finish signing in in the browser, then come back and finish here. The browser link isn\'t saved.'**
   String get pendingAuthDetail;
-
-  /// No description provided for @pendingAuthResume.
-  ///
-  /// In en, this message translates to:
-  /// **'Resume / check sign-in'**
-  String get pendingAuthResume;
 
   /// No description provided for @pendingAuthEnterCode.
   ///
   /// In en, this message translates to:
   /// **'Enter code'**
   String get pendingAuthEnterCode;
-
-  /// No description provided for @pendingAuthComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign-in complete.'**
-  String get pendingAuthComplete;
 
   /// No description provided for @pendingAuthStillPending.
   ///
@@ -3080,10 +3002,10 @@ abstract class AppLocalizations {
   /// **'The server reported that sign-in failed. Provider error details are hidden.'**
   String get pendingAuthServerFailed;
 
-  /// No description provided for @pendingAuthExpired.
+  /// Sign-in sheet or notice: the saved sign-in expired.
   ///
   /// In en, this message translates to:
-  /// **'This attempt is expired or outside the device’s recovery window. Cancellation is a separate server action.'**
+  /// **'This sign-in has expired. Start a new one, or forget this one.'**
   String get pendingAuthExpired;
 
   /// No description provided for @pendingAuthFailed.
@@ -3104,10 +3026,10 @@ abstract class AppLocalizations {
   /// **'Try saving recovery again'**
   String get pendingAuthRetrySave;
 
-  /// No description provided for @pendingAuthForget.
+  /// Confirm button that removes this phone's record of a sign-in (nothing is cancelled on the server).
   ///
   /// In en, this message translates to:
-  /// **'Forget on this device'**
+  /// **'Forget this sign-in'**
   String get pendingAuthForget;
 
   /// No description provided for @pendingAuthForgetDetail.
@@ -4886,22 +4808,16 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get setupCheckAgain;
 
-  /// No description provided for @uncertainAuthTitle.
+  /// Sign-in sheet: a start the server may have taken without confirming it.
   ///
   /// In en, this message translates to:
-  /// **'Unconfirmed sign-in: {integrationID}'**
-  String uncertainAuthTitle(String integrationID);
-
-  /// No description provided for @uncertainAuthDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'The server may have started sign-in, but no attempt ID was received. Check on the server before starting again.'**
+  /// **'The server may have started this sign-in without confirming it. Check on the server before you start again.'**
   String get uncertainAuthDetail;
 
-  /// No description provided for @uncertainAuthForgetTitle.
+  /// Confirm title before clearing an unconfirmed sign-in start on this phone.
   ///
   /// In en, this message translates to:
-  /// **'Forget uncertain start?'**
+  /// **'Forget this sign-in on this phone?'**
   String get uncertainAuthForgetTitle;
 
   /// No description provided for @uncertainAuthForgetDetail.
@@ -4910,10 +4826,10 @@ abstract class AppLocalizations {
   /// **'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.'**
   String get uncertainAuthForgetDetail;
 
-  /// No description provided for @uncertainAuthForget.
+  /// Confirm button that clears an unconfirmed sign-in start on this phone.
   ///
   /// In en, this message translates to:
-  /// **'Forget uncertain start'**
+  /// **'Forget this sign-in'**
   String get uncertainAuthForget;
 
   /// No description provided for @uncertainAuthCloseHint.
@@ -5899,10 +5815,10 @@ abstract class AppLocalizations {
   /// **'Low priority'**
   String get mobileTaskPriorityLow;
 
-  /// No description provided for @pluginMappingClearAll.
+  /// Plugins page: top bar menu item that asks, then clears every personal command link for this server.
   ///
   /// In en, this message translates to:
-  /// **'Clear personal links'**
+  /// **'Clear personal command links'**
   String get pluginMappingClearAll;
 
   /// No description provided for @pluginMappingClearTitle.
@@ -16087,12 +16003,6 @@ abstract class AppLocalizations {
   /// **'Choose model'**
   String get e7LibraryChooseModel;
 
-  /// Library and project tools UI: Change
-  ///
-  /// In en, this message translates to:
-  /// **'Change'**
-  String get e7LibraryChange;
-
   /// Library and project tools UI: Search tools
   ///
   /// In en, this message translates to:
@@ -16104,30 +16014,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search {detail1} tools'**
   String e7LibrarySearchTools2(String detail1);
-
-  /// Library and project tools UI: {detail1} usable
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} usable'**
-  String e7LibraryUsable(String detail1);
-
-  /// Library and project tools UI: {detail1} registered
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} registered'**
-  String e7LibraryRegistered(String detail1);
-
-  /// Library and project tools UI: Background subagents enabled
-  ///
-  /// In en, this message translates to:
-  /// **'Background subagents enabled'**
-  String get e7LibraryBackgroundSubagentsEnabled;
-
-  /// Library and project tools UI: Background subagents unavailable
-  ///
-  /// In en, this message translates to:
-  /// **'Background subagents unavailable'**
-  String get e7LibraryBackgroundSubagentsUnavailable;
 
   /// Library and project tools UI: registered inventory unavailable
   ///
@@ -16951,24 +16837,6 @@ abstract class AppLocalizations {
   /// **'Finish authentication in the browser, then check its status.'**
   String get e7LibraryFinishAuthenticationInTheBrowserThenCheck;
 
-  /// Library and project tools UI: Finish
-  ///
-  /// In en, this message translates to:
-  /// **'Finish'**
-  String get e7LibraryFinish;
-
-  /// Library and project tools UI: Check
-  ///
-  /// In en, this message translates to:
-  /// **'Check'**
-  String get e7LibraryCheck;
-
-  /// Library and project tools UI: Connecting {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Connecting {detail1}'**
-  String e7LibraryConnecting2(String detail1);
-
   /// Library and project tools UI: Authentication options
   ///
   /// In en, this message translates to:
@@ -17107,17 +16975,11 @@ abstract class AppLocalizations {
   /// **'MCP unavailable'**
   String get e7LibraryMCPUnavailable;
 
-  /// Library and project tools UI: MCP and integrations
+  /// Providers and MCP page title (the combined page: model providers, MCP servers and their resources).
   ///
   /// In en, this message translates to:
-  /// **'MCP and integrations'**
+  /// **'Providers and MCP'**
   String get e7LibraryMCPAndIntegrations;
-
-  /// Library and project tools UI: The model providers this OpenCode server can use. Connect one to start chatting.
-  ///
-  /// In en, this message translates to:
-  /// **'The model providers this OpenCode server can use. Connect one to start chatting.'**
-  String get e7LibraryTheModelProvidersThisOpenCodeServerCan;
 
   /// Library and project tools UI: Could not save sign-in recovery.
   ///
@@ -17214,12 +17076,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resources'**
   String get e7LibraryResources;
-
-  /// Library and project tools UI: Files and data that connected MCP servers expose to the agent.
-  ///
-  /// In en, this message translates to:
-  /// **'Files and data that connected MCP servers expose to the agent.'**
-  String get e7LibraryFilesAndDataThatConnectedMCPServers;
 
   /// Library and project tools UI: Loading available resources
   ///
@@ -25931,24 +25787,6 @@ abstract class AppLocalizations {
   /// **'Project'**
   String get shellTabProject;
 
-  /// Project tab: subtitle of the Files row.
-  ///
-  /// In en, this message translates to:
-  /// **'Browse and preview project files'**
-  String get projectHubFilesSubtitle;
-
-  /// Project tab: subtitle of the Changes row, which opens the working-tree review.
-  ///
-  /// In en, this message translates to:
-  /// **'Review uncommitted changes'**
-  String get projectHubChangesSubtitle;
-
-  /// Project tab: subtitle of the Search files row, which opens Files with the search field focused.
-  ///
-  /// In en, this message translates to:
-  /// **'Find a file by name'**
-  String get projectHubSearchSubtitle;
-
   /// Server switcher row that opens the Servers screen.
   ///
   /// In en, this message translates to:
@@ -29962,18 +29800,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Found on {server}'**
   String pluginsTeamRowFound(String server);
-
-  /// Tooltip of the On the server section menu
-  ///
-  /// In en, this message translates to:
-  /// **'More plugin actions'**
-  String get pluginsSectionMore;
-
-  /// One line under On the server in Settings › Plugins
-  ///
-  /// In en, this message translates to:
-  /// **'Loaded by the server for this project.'**
-  String get pluginsDescriptionShort;
 
   /// Label of the loading bar while the plugin list loads
   ///
@@ -36687,12 +36513,6 @@ abstract class AppLocalizations {
   /// **'Remove OpenCode'**
   String get phoneServerCardRemoveOpenCode;
 
-  /// Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results.
-  ///
-  /// In en, this message translates to:
-  /// **'What it did'**
-  String get runResultViewOutputTitle;
-
   /// Shared product states: title of the alert shown when an action the person started failed
   ///
   /// In en, this message translates to:
@@ -37335,13 +37155,13 @@ abstract class AppLocalizations {
   /// **'Can\'t reach the server right now. This is the list it last sent.'**
   String get catalogScreenOfflineStale;
 
-  /// Models page: notice body under the no-provider title.
+  /// Models page: body under 'No models yet'.
   ///
   /// In en, this message translates to:
-  /// **'Only signed-in providers\' models are listed. Connect one to choose a model.'**
+  /// **'Connect a provider to choose a model.'**
   String get catalogScreenNoProviderBody;
 
-  /// Models page: notice action that opens the Providers page.
+  /// Models page: the no-models state's primary; opens the Providers page.
   ///
   /// In en, this message translates to:
   /// **'Connect a provider'**
@@ -37965,46 +37785,28 @@ abstract class AppLocalizations {
   /// **'{folder} · {lines}'**
   String reviewRevertFileSupporting(String folder, String lines);
 
-  /// Review the undo page: label above the two outcomes (put everything back, keep the undo).
-  ///
-  /// In en, this message translates to:
-  /// **'Choose what happens'**
-  String get reviewRevertChooseLabel;
-
   /// Review the undo page: outcome row, and its confirmation button, that clears the staged undo and brings the conversation and files back.
   ///
   /// In en, this message translates to:
   /// **'Put everything back'**
   String get reviewRevertRestoreTitle;
 
-  /// Review the undo page: one line under Put everything back saying what happens.
+  /// Review the undo page: the destructive tertiary in the bottom block; deletes the hidden prompt and everything after it for good.
   ///
   /// In en, this message translates to:
-  /// **'Bring back the hidden messages and the files as they were.'**
-  String get reviewRevertRestoreLine;
-
-  /// Review the undo page: outcome row that makes the undo permanent.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep the undo'**
+  /// **'Delete the hidden messages'**
   String get reviewRevertKeepTitle;
 
-  /// Review the undo page: one line under Keep the undo saying what happens and that it is permanent.
+  /// Review the undo page: title of the question before the hidden messages are deleted.
   ///
   /// In en, this message translates to:
-  /// **'Delete the hidden messages for good. This can\'t be undone.'**
-  String get reviewRevertKeepLine;
-
-  /// Confirmation before making the undo permanent.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep the undo for good?'**
+  /// **'Delete the hidden messages for good?'**
   String get reviewRevertKeepConfirmTitle;
 
-  /// Confirmation before making the undo permanent: what happens and that it cannot be undone.
+  /// Review the undo page: body of the delete-hidden-messages question.
   ///
   /// In en, this message translates to:
-  /// **'The hidden prompt and everything after it are deleted from this conversation. This can\'t be undone.'**
+  /// **'This can\'t be undone.'**
   String get reviewRevertKeepConfirmBody;
 
   /// Confirmation before making the undo permanent: the confirm button.
@@ -38013,10 +37815,10 @@ abstract class AppLocalizations {
   /// **'Delete hidden messages'**
   String get reviewRevertKeepConfirmAction;
 
-  /// Confirmation before making the undo permanent: what is lost.
+  /// Review the undo page: consequence line (lost) in the delete-hidden-messages question.
   ///
   /// In en, this message translates to:
-  /// **'The hidden messages are deleted'**
+  /// **'The hidden prompt and every message after it are deleted'**
   String get reviewRevertKeepConsequenceMessages;
 
   /// Confirmation before making the undo permanent: what is kept.
@@ -40106,6 +39908,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding the skill…'**
   String get skillSheetSending;
+
+  /// Models page: title of the one state shown when no provider is signed in.
+  ///
+  /// In en, this message translates to:
+  /// **'No models yet'**
+  String get catalogScreenNoProviderTitle;
+
+  /// Run results: step count in the facts line under the outcome ('2 steps · 5 min · gpt-5').
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
+  String runResultsStepsShort(int count);
+
+  /// Run results: step count when the run's start was not found in the loaded history.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{At least 1 step} other{At least {count} steps}}'**
+  String runResultsStepsShortAtLeast(int count);
+
+  /// Run results: how long the run took, when under one minute (facts line).
+  ///
+  /// In en, this message translates to:
+  /// **'under a minute'**
+  String get runResultsUnderAMinute;
+
+  /// Run results: how long the run took, in minutes (facts line).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String runResultsMinutes(int minutes);
+
+  /// Run results: how long the run took, in hours and minutes (facts line).
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String runResultsHoursMinutes(int hours, int minutes);
+
+  /// Run results: the fold at the end holding the run id, times, finish reason and where each list comes from.
+  ///
+  /// In en, this message translates to:
+  /// **'How this was put together'**
+  String get runResultsHowMade;
+
+  /// Run results: label of the run id in the 'How this was put together' fold.
+  ///
+  /// In en, this message translates to:
+  /// **'Run id'**
+  String get runResultsRunIdLabel;
+
+  /// Run results: label of the agent name in the 'How this was put together' fold.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get runResultsAgentLabel;
+
+  /// Run results: a command's state line when it failed with a recorded exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed · exit {code}'**
+  String runResultsCommandFailedExit(int code);
+
+  /// Run results: a command's state line when it exited 0.
+  ///
+  /// In en, this message translates to:
+  /// **'Passed · exit {code}'**
+  String runResultsCommandPassedExit(int code);
+
+  /// Run results: a command's state line when the tool reported failure but no exit code was recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed · exit not recorded'**
+  String get runResultsCommandFailedNoExit;
+
+  /// Run results: a command's state line when no exit code was recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit not recorded'**
+  String get runResultsExitNotRecorded;
+
+  /// Project tab: under Project health, what it checks (the changed files are the Changes row's job).
+  ///
+  /// In en, this message translates to:
+  /// **'Branch, language services and formatters'**
+  String get projectHubHealthSubtitle;
+
+  /// Project tab: the project menu item that copies the project folder's path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy folder path'**
+  String get projectHubCopyFolderPath;
+
+  /// Terminal page: title of the state when the connected server (with no name) keeps no terminals.
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t share a terminal'**
+  String get terminalScreenNoTerminalThisServer;
+
+  /// Terminal page: title of the state when the named server keeps no terminals.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} doesn\'t share a terminal'**
+  String terminalScreenNoTerminalNamed(String server);
+
+  /// Terminal page: why the server's terminals are missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminals open here only on servers that share them.'**
+  String get terminalScreenNoTerminalWhy;
+
+  /// Providers: the state word of a provider whose sign-in waits on the person (needs-you row).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in waiting'**
+  String get integrationsSignInWaiting;
+
+  /// Providers: the state word of a provider whose sign-in start the server did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in may not have started'**
+  String get integrationsSignInMayNotHaveStarted;
+
+  /// Providers: the state word of a provider whose waiting sign-in expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in expired'**
+  String get integrationsSignInExpired;
+
+  /// Providers: the state word of a provider whose sign-in the server reported as failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed'**
+  String get integrationsSignInFailed;
+
+  /// Providers: the state word of a provider signed in whose connection still needs finishing here.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in · tap to finish'**
+  String get integrationsSignInComplete;
+
+  /// Sign-in sheet: the primary that checks or completes the named provider's sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in to {provider}'**
+  String integrationsFinishSigningIn(String provider);
+
+  /// Sign-in sheet and row menu: enter the code the named provider's browser page showed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code for {provider}'**
+  String integrationsEnterCodeFor(String provider);
+
+  /// Sign-in sheet and row menu: cancel the named provider's sign-in on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {provider} sign-in'**
+  String integrationsCancelSignInFor(String provider);
+
+  /// Sign-in sheet and row menu: stop tracking this sign-in on this phone (nothing is cancelled on the server).
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this sign-in on this phone'**
+  String get integrationsForgetSignInOnPhone;
+
+  /// Providers: the name of a waiting sign-in row's menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in actions for {provider}'**
+  String integrationsSignInActions(String provider);
+
+  /// Providers: a provider row's second line when it holds more than one stored account ('2 accounts · Server environment').
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 account} other{{count} accounts}}'**
+  String integrationsAccountCount(int count);
+
+  /// Tools page: appended to the model row's second line ('Anthropic · no background subagents') when the server runs no background subagents.
+  ///
+  /// In en, this message translates to:
+  /// **'no background subagents'**
+  String get toolsScreenNoBackgroundSubagents;
 }
 
 class _AppLocalizationsDelegate

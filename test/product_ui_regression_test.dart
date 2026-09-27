@@ -13,6 +13,7 @@ import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
@@ -699,9 +700,8 @@ void main() {
     );
   });
 
-  testWidgets('changes card opens the changed set grouped by status', (
-    tester,
-  ) async {
+  testWidgets('changes card opens the changed set as one list, the state '
+      'word first on each row', (tester) async {
     final api = _TestApi(
       files: (_) async => [
         FileNode(name: 'README.md', path: 'README.md', isDir: false),
@@ -757,9 +757,27 @@ void main() {
 
     expect(find.byKey(const ValueKey('files-changes-sheet')), findsOneWidget);
     expect(find.text('2 files · +42 −2'), findsOneWidget);
-    expect(find.text('lib/main.dart · +34 −0'), findsOneWidget);
-    expect(find.text('Modified · 1'), findsOneWidget);
-    expect(find.text('Added · 1'), findsOneWidget);
+    // One list by path, never split by status: no "Modified · 1" group
+    // labels; each row's second line starts with its state word.
+    expect(find.text('Modified · 1'), findsNothing);
+    expect(find.text('Added · 1'), findsNothing);
+    expect(find.text('Modified · ${KitBidi.ltr('+8 −2')}'), findsOneWidget);
+    expect(
+      find.text('Added · ${KitBidi.ltr('lib')} · ${KitBidi.ltr('+34 −0')}'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('changed-file-README.md')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey('changed-file-lib/main.dart')),
+            )
+            .dy,
+      ),
+    );
     expect(find.byKey(const ValueKey('review-all-changes')), findsOneWidget);
 
     // A changed file stages as a reference without opening review.

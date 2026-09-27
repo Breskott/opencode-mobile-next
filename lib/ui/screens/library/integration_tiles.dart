@@ -10,16 +10,21 @@ part of '../library_screen.dart';
 AppLocalizations _libraryCopy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// The state word leads the supporting line (STATE-9), in the label role.
-TextSpan _stateWord(BuildContext context, String word, {bool last = false}) =>
-    TextSpan(
-      text: last ? word : '$word · ',
-      style: KitText.styleOf(
-        context,
-        KitTextRole.label,
-        tone: KitTextTone.primary,
-      ),
-    );
+/// The state word leads the supporting line (STATE-9). A state that needs
+/// the person reads in the needs-you tone, a failure in the danger tone,
+/// both at label weight; an ordinary state keeps the line's muted tone, so
+/// the list scans by colour.
+TextSpan _stateWord(
+  BuildContext context,
+  String word, {
+  bool last = false,
+  KitTextTone tone = KitTextTone.secondary,
+}) => TextSpan(
+  text: last ? word : '$word · ',
+  style: tone == KitTextTone.secondary
+      ? null
+      : KitText.styleOf(context, KitTextRole.label, tone: tone),
+);
 
 /// How urgent an MCP server's state is: what needs the person first, then
 /// what failed, then what runs, then the rest (owner rule 2026-09-27: one
@@ -84,6 +89,29 @@ class _McpServerRow extends StatelessWidget {
     _ => AppIconography.unlink,
   };
 
+  bool get _needsYou =>
+      server.status == 'needs_auth' ||
+      server.status == 'needs_client_registration';
+
+  bool get _failed => server.status == 'failed';
+
+  /// The yellow needs-you mark for a server waiting on sign-in, a
+  /// failure-toned icon for one that failed, the plain icon otherwise.
+  Widget _leading(BuildContext context) {
+    if (_needsYou) return KitNeedsYou.mark();
+    if (_failed) {
+      return KitRow.icon(
+        context,
+        _icon,
+        color: KitTokens.toneColor(
+          KitTokens.of(context).roles,
+          AppStatusTone.failure,
+        ),
+      );
+    }
+    return KitRow.icon(context, _icon);
+  }
+
   /// The act the state calls for, or null when there is none to offer
   /// here (connected: Disconnect lives in the menu).
   String? _actLabel(AppLocalizations l10n) {
@@ -112,7 +140,7 @@ class _McpServerRow extends StatelessWidget {
                 child: KitTaskMark(state: KitTaskState.working),
               ),
             )
-          : KitRow.icon(context, _icon),
+          : _leading(context),
       title: server.name,
       supportingKey: authGated ? const ValueKey('gated-mcp-oauth') : null,
       supporting: TextSpan(
@@ -121,6 +149,13 @@ class _McpServerRow extends StatelessWidget {
             context,
             authorizing ? l10n.e7LibraryAuthorizing : statusLabel,
             last: !authGated,
+            tone: authorizing
+                ? KitTextTone.secondary
+                : _needsYou
+                ? KitTextTone.attention
+                : _failed
+                ? KitTextTone.danger
+                : KitTextTone.secondary,
           ),
           if (authGated) TextSpan(text: l10n.integrationsMcpSignInOnServer),
         ],
@@ -386,78 +421,105 @@ class _PendingIntegrationOAuth {
       );
 }
 
-/// A provider sign-in in flight (this server cannot resume it after the
-/// screen closes): what to do next, the next step, and Cancel.
-class _PendingOAuthNotice extends StatelessWidget {
-  final _PendingIntegrationOAuth pending;
-  final bool checking;
-  final bool recoverable;
-  final Future<void> Function() onContinue;
-  final Future<void> Function() onCancel;
+/// A provider sign-in that waits on the person, folded into the provider
+/// list (owner rule 2026-09-27: no state sections): the yellow needs-you
+/// mark, the provider's name and its worded state ("Sign-in waiting",
+/// "Sign-in may not have started"). A tap opens [_showSignInSheet]; the
+/// same acts are the row's menu.
+class _SignInRow extends StatelessWidget {
+  final String integrationID;
+  final String name;
+  final String word;
+  final bool busy;
+  final VoidCallback onOpen;
+  final List<KitMenuItem> menu;
+  final Key? rowKey;
 
-  const _PendingOAuthNotice({
-    required this.pending,
-    required this.checking,
-    required this.recoverable,
-    required this.onContinue,
-    required this.onCancel,
+  const _SignInRow({
+    required this.integrationID,
+    required this.name,
+    required this.word,
+    required this.busy,
+    required this.onOpen,
+    required this.menu,
+    this.rowKey,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = _libraryCopy(context);
-    final state = pending.status?.state ?? IntegrationAuthState.pending;
-    final terminal =
-        state == IntegrationAuthState.failed ||
-        state == IntegrationAuthState.expired;
-    final message = switch (state) {
-      IntegrationAuthState.failed => l10n.e7LibraryAuthenticationFailed,
-      IntegrationAuthState.expired =>
-        l10n.e7LibraryAuthenticationAttemptExpired,
-      IntegrationAuthState.complete => l10n.e7LibraryAuthenticationComplete,
-      IntegrationAuthState.pending =>
-        pending.launch.mode == IntegrationAuthMode.code
-            ? l10n.e7LibraryReturnFromTheBrowserAndEnterThe
-            : l10n.e7LibraryFinishAuthenticationInTheBrowserThenCheck,
-    };
-    final continueLabel = state == IntegrationAuthState.complete
-        ? l10n.e7LibraryFinish
-        : pending.launch.mode == IntegrationAuthMode.code
-        ? l10n.pendingAuthEnterCode
-        : l10n.e7LibraryCheck;
-    return KitNotice(
-      key: const ValueKey('pending-provider-oauth'),
-      tone: terminal ? AppStatusTone.failure : AppStatusTone.progress,
-      icon: terminal ? AppIconography.error : AppIconography.login,
-      title: l10n.e7LibraryConnecting2(pending.integrationName),
-      message: message,
-      // Moved here from the top of the page: the limitation matters only
-      // while a sign-in is in flight.
-      notes: [
-        if (!recoverable && !terminal) l10n.integrationsPendingNotRecoverable,
-      ],
-      actions: terminal
-          ? [
-              KitAction(
-                label: l10n.workspaceDismissNotice,
-                onPressed: checking ? null : () => unawaited(onCancel()),
-              ),
-            ]
-          : [
-              KitAction(
-                key: const ValueKey('continue-provider-oauth'),
-                label: continueLabel,
-                working: checking,
-                onPressed: checking ? null : () => unawaited(onContinue()),
-              ),
-              KitAction(
-                key: const ValueKey('cancel-provider-oauth'),
-                label: l10n.integrationsCancelSignIn,
-                onPressed: checking ? null : () => unawaited(onCancel()),
-              ),
-            ],
+    return KitRow(
+      key: rowKey ?? ValueKey('pending-auth-$integrationID'),
+      leading: KitNeedsYou.mark(),
+      title: name,
+      supporting: TextSpan(
+        children: [
+          _stateWord(context, word, last: true, tone: KitTextTone.attention),
+        ],
+      ),
+      trailing: busy
+          ? const KitTaskMark(state: KitTaskState.working)
+          : const KitChevron(),
+      onTap: busy ? null : onOpen,
+      menuLabel: l10n.integrationsSignInActions(name),
+      menu: busy ? const [] : menu,
     );
   }
+}
+
+/// What the person chose in a sign-in's sheet or menu.
+enum _SignInChoice { finish, enterCode, cancel, forget }
+
+/// One sign-in's sheet: the provider as the title, its state under it, one
+/// line on what to do, and its acts: one primary ("Finish signing in to
+/// Cloud") and the rest as tertiary actions named for what they act on.
+/// Returns the choice, or null when closed.
+Future<_SignInChoice?> _showSignInSheet(
+  BuildContext context, {
+  required String name,
+  required String word,
+  required String message,
+  List<String> notes = const [],
+  required List<(_SignInChoice, KitAction)> actions,
+  _SignInChoice? primary,
+}) {
+  final navigator = Navigator.of(context);
+  KitAction bind(_SignInChoice choice, KitAction action) => KitAction(
+    key: action.key,
+    label: action.label,
+    destructive: action.destructive,
+    onPressed: () => navigator.pop(choice),
+  );
+  final primaryAction = [
+    for (final (choice, action) in actions)
+      if (choice == primary) bind(choice, action),
+  ].firstOrNull;
+  return showKitSheet<_SignInChoice>(
+    context,
+    title: name,
+    subtitle: word,
+    icon: AppIconography.login,
+    sheetKey: const ValueKey('sign-in-sheet'),
+    primary: primaryAction,
+    tertiary: [
+      for (final (choice, action) in actions)
+        if (choice != primary) bind(choice, action),
+    ],
+    body: (context) {
+      final tokens = KitTokens.of(context);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitText(message, tone: KitTextTone.secondary),
+          for (final note in notes) ...[
+            SizedBox(height: tokens.space2),
+            KitText(note, role: KitTextRole.secondary),
+          ],
+        ],
+      );
+    },
+  );
 }
 
 /// The one "Finish signing in" dialog for providers and MCP servers
@@ -498,63 +560,6 @@ Future<String?> _showFinishSignInDialog(
     },
   );
   return raw == null ? null : code;
-}
-
-/// Retired by screen-library-1: call [_showFinishSignInDialog]. Kept, built
-/// from kit parts, only so `pending_auth_recovery.dart` (screen-library-3's
-/// file) still compiles until its unit moves to the one dialog; it pops the
-/// trimmed code, or nothing.
-class _OAuthCodeDialog extends StatefulWidget {
-  final String integrationName;
-  final String instructions;
-
-  const _OAuthCodeDialog({
-    required this.integrationName,
-    required this.instructions,
-  });
-
-  @override
-  State<_OAuthCodeDialog> createState() => _OAuthCodeDialogState();
-}
-
-class _OAuthCodeDialogState extends State<_OAuthCodeDialog> {
-  final _controller = TextEditingController();
-
-  void _complete() {
-    final value = _controller.text.trim();
-    if (value.isNotEmpty) Navigator.of(context).pop(value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _libraryCopy(context);
-    final instructions = widget.instructions.trim();
-    return KitSheet(
-      title: l10n.integrationsFinishSignInTitle,
-      subtitle: widget.integrationName,
-      onClose: () => Navigator.of(context).pop(),
-      primary: KitAction(
-        label: l10n.integrationsFinishSignInAction,
-        onPressed: _complete,
-      ),
-      child: KitField.secret(
-        label: l10n.e7LibraryAuthorizationCode,
-        helper: instructions.isNotEmpty
-            ? instructions
-            : l10n.integrationsFinishSignInProviderHelper,
-        controller: _controller,
-        autofocus: true,
-        fieldKey: const ValueKey('oauth-completion-code'),
-        onSubmitted: (_) => _complete(),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 }
 
 bool _isPromptVisible(Map<String, dynamic> prompt, Map<String, String> values) {
@@ -761,63 +766,4 @@ String providerOAuthCompletionCode(String value) {
   final trimmed = value.trim();
   final fromUrl = Uri.tryParse(trimmed)?.queryParameters['code']?.trim();
   return fromUrl?.isNotEmpty == true ? fromUrl! : trimmed;
-}
-
-/// A section's name above its panel, with the term explained in place
-/// ("MCP servers" ⓘ) and a count at the end.
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final String? explanation;
-  final String? trailing;
-  final Key? trailingKey;
-
-  const _SectionLabel(
-    this.text, {
-    this.explanation,
-    this.trailing,
-    this.trailingKey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final explanation = this.explanation;
-    final trailing = this.trailing;
-    return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        tokens.gutter,
-        tokens.sectionGap,
-        tokens.gutter + tokens.space1,
-        tokens.labelGap,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: explanation == null
-                  ? KitText(
-                      text,
-                      role: KitTextRole.label,
-                      tone: KitTextTone.secondary,
-                    )
-                  : KitTerm(
-                      text,
-                      explanation: explanation,
-                      role: KitTextRole.label,
-                    ),
-            ),
-          ),
-          if (trailing != null)
-            KitText(
-              trailing,
-              key: trailingKey,
-              role: KitTextRole.label,
-              tone: KitTextTone.secondary,
-              tabular: true,
-            ),
-        ],
-      ),
-    );
-  }
 }

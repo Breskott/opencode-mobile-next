@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/widgets/diff_view.dart';
 
 // DiffView is a forwarding wrapper over KitDiffView (kit-KitDiffView,
@@ -54,8 +55,22 @@ void main() {
       find.byKey(const Key('diff-file-header-lib/ui/widgets/markdown.dart')),
       findsOneWidget,
     );
-    expect(find.textContaining('markdown.dart'), findsOneWidget);
-    expect(find.text('Review'), findsOneWidget);
+    // The kit top bar names the one file (name, folder under it).
+    expect(
+      find.descendant(
+        of: find.byType(KitTopBar),
+        matching: find.text('markdown.dart'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(KitTopBar),
+        matching: find.text('lib/ui/widgets'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Review'), findsNothing);
     expect(find.textContaining('lib/ui/widgets/'), findsOneWidget);
     expect(find.text('+2 −1'), findsOneWidget);
     // Unified shows the old and the new number: old 11 (removed) and new 11
@@ -214,7 +229,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied, 'new');
     expect(find.byType(SnackBar), findsNothing);
-    await tester.tap(find.byType(CloseButton));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Review changes'), findsOneWidget);
     expect(find.byType(DiffView), findsNothing);
@@ -294,8 +309,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('welcome_message.dart'), findsOneWidget);
-      expect(find.text('Review'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(KitTopBar),
+          matching: find.text('welcome_message.dart'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('+1 −1'), findsOneWidget);
       if (captureDir != null) {
         final boundary = tester.renderObject<RenderRepaintBoundary>(

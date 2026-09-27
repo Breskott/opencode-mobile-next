@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
@@ -7,6 +7,8 @@ import '../kit/kit_copy.dart';
 import '../kit/kit_diff_view.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_page_route.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_top_bar.dart';
 import 'reader_preferences.dart';
 
 /// Retired by kit-KitDiffView: use KitDiffView (slice-P3.7a deletes this
@@ -14,9 +16,11 @@ import 'reader_preferences.dart';
 ///
 /// The full-screen diff reader shared by the Changes sheet and review
 /// surfaces, now a forwarding wrapper: it converts [FileDiff] (lib/api) to
-/// [KitDiffFile], passes the reader wrap preference in, and keeps its route
-/// frame and the `diff-view` key. Copy is the file header's More menu,
-/// verbatim (SEC-13), never a SnackBar.
+/// [KitDiffFile], passes the reader wrap preference in, and keeps the
+/// `diff-view` key. The route is a kit page: a single file names itself in
+/// the top bar (file name, folder under it) with Close; several files keep
+/// [title] (or "Review"). Copy is the file header's More menu, verbatim
+/// (SEC-13), never a SnackBar.
 class DiffView extends StatelessWidget {
   const DiffView({
     super.key,
@@ -31,8 +35,8 @@ class DiffView extends StatelessWidget {
   final List<FileDiff> diffs;
   final bool allowCopy;
 
-  /// Optional route title; defaults to the localized "Review".
-  /// File identity belongs to the file header.
+  /// Optional route title for several files; defaults to the localized
+  /// "Review". A single file is titled with its own name instead.
   final String? title;
 
   /// Lines wrap below this width (the compact window, KitLayout).
@@ -92,41 +96,45 @@ class DiffView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final store = ReaderPreferencesScope.maybeOf(context);
-    return Scaffold(
+    final single = diffs.length == 1 ? diffs.single.file : null;
+    final slash = single?.lastIndexOf('/') ?? -1;
+    final folder = single != null && slash > 0
+        ? single.substring(0, slash)
+        : null;
+    return KitScreen(
       key: const Key('diff-view'),
-      appBar: AppBar(
-        leading: const CloseButton(),
-        centerTitle: true,
-        title: Text(title ?? l10n.reviewTitle, overflow: TextOverflow.ellipsis),
+      topBar: KitTopBar(
+        title: single == null
+            ? title ?? l10n.reviewTitle
+            : single.substring(slash + 1),
+        subtitle: folder,
+        exit: KitTopBarExit.close,
       ),
-      body: SafeArea(
-        top: false,
-        child: KitDiffView(
-          keyPrefix: 'diff',
-          files: [for (final diff in diffs) kitFileOf(diff)],
-          wrap: store?.value.wrapCode,
-          onWrapChanged: store == null
-              ? null
-              : (wrap) => saveReaderPreferences(context, wrapCode: wrap),
-          fileActions: allowCopy
-              ? (file) => [
-                  if (file.fullText case final text? when text.isNotEmpty)
-                    KitMenuItem(
-                      label: l10n.reviewCopyFile,
-                      icon: AppIconography.copy,
-                      onSelected: () =>
-                          KitCopy.copy(context, text, redact: false),
-                    )
-                  else if (file.patch case final patch? when patch.isNotEmpty)
-                    KitMenuItem(
-                      label: l10n.reviewCopyPatch,
-                      icon: AppIconography.copy,
-                      onSelected: () =>
-                          KitCopy.copy(context, patch, redact: false),
-                    ),
-                ]
-              : null,
-        ),
+      body: KitDiffView(
+        keyPrefix: 'diff',
+        files: [for (final diff in diffs) kitFileOf(diff)],
+        wrap: store?.value.wrapCode,
+        onWrapChanged: store == null
+            ? null
+            : (wrap) => saveReaderPreferences(context, wrapCode: wrap),
+        fileActions: allowCopy
+            ? (file) => [
+                if (file.fullText case final text? when text.isNotEmpty)
+                  KitMenuItem(
+                    label: l10n.reviewCopyFile,
+                    icon: AppIconography.copy,
+                    onSelected: () =>
+                        KitCopy.copy(context, text, redact: false),
+                  )
+                else if (file.patch case final patch? when patch.isNotEmpty)
+                  KitMenuItem(
+                    label: l10n.reviewCopyPatch,
+                    icon: AppIconography.copy,
+                    onSelected: () =>
+                        KitCopy.copy(context, patch, redact: false),
+                  ),
+              ]
+            : null,
       ),
     );
   }

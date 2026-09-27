@@ -9,7 +9,10 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/widgets/pickers.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -265,6 +268,93 @@ void main() {
     );
   });
 
+  testWidgets('MCP rows scan by colour: needs-you mark for sign-in, a '
+      'failure-toned mark for failed; the page groups carry plain labels', (
+    tester,
+  ) async {
+    final repository = _Repository()
+      ..servers = const [
+        McpServerInfo(name: 'browser', status: 'connected'),
+        McpServerInfo(name: 'github', status: 'failed'),
+        McpServerInfo(name: 'linear', status: 'needs_auth'),
+      ]
+      ..integrations = const [
+        IntegrationInfo(
+          id: 'anthropic',
+          name: 'Anthropic',
+          methods: [IntegrationMethodInfo(type: 'key', label: 'API key')],
+          connections: [
+            IntegrationConnectionInfo(
+              type: 'credential',
+              id: 'cred-1',
+              label: 'Work',
+            ),
+            IntegrationConnectionInfo(
+              type: 'credential',
+              id: 'cred-2',
+              label: 'Personal',
+            ),
+            IntegrationConnectionInfo(type: 'env', label: 'ANTHROPIC_API_KEY'),
+          ],
+          connectionCount: 3,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(IntegrationsScreen(controller: controller)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Providers and MCP'), findsOneWidget);
+    // Plain group labels, no counts ("2 of 4 connected", "3").
+    expect(find.text('Providers'), findsOneWidget);
+    expect(find.text('MCP servers'), findsOneWidget);
+    expect(find.textContaining(' connected'), findsNothing);
+    // Several accounts collapse to a count.
+    expect(
+      find.textContaining(
+        '2 accounts · Server environment',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Stored credential', findRichText: true),
+      findsNothing,
+    );
+
+    // Needs you first, then failed, then the rest.
+    final linear = find.byKey(const ValueKey('mcp-server-linear'));
+    final github = find.byKey(const ValueKey('mcp-server-github'));
+    final browser = find.byKey(const ValueKey('mcp-server-browser'));
+    await tester.ensureVisible(browser);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(linear).dy,
+      lessThan(tester.getTopLeft(github).dy),
+    );
+    expect(
+      tester.getTopLeft(github).dy,
+      lessThan(tester.getTopLeft(browser).dy),
+    );
+    expect(
+      find.descendant(of: linear, matching: find.byType(KitTaskMark)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: browser, matching: find.byType(KitTaskMark)),
+      findsNothing,
+    );
+    // The failed server's glyph takes the failure tone.
+    final failedGlyph = tester.widget<Icon>(
+      find.descendant(of: github, matching: find.byIcon(AppIconography.error)),
+    );
+    final context = tester.element(github);
+    expect(
+      failedGlyph.color,
+      KitTokens.toneColor(KitTokens.of(context).roles, AppStatusTone.failure),
+    );
+  });
+
   testWidgets('a server without a catalog explains instead of loading', (
     tester,
   ) async {
@@ -302,13 +392,13 @@ void main() {
     await tester.pumpWidget(_app(CatalogScreen(controller: controller)));
     await tester.pumpAndSettle();
     expect(find.text('Models'), findsWidgets);
-    expect(
-      find.text(
-        'Only signed-in providers\' models are listed. Connect one to choose '
-        'a model.',
-      ),
-      findsOneWidget,
-    );
+    // One state, one way out: no notice, no catalog empty state, no
+    // "Browse all models", no basic-catalog card.
+    expect(find.text('No models yet'), findsOneWidget);
+    expect(find.text('Connect a provider to choose a model.'), findsOneWidget);
+    expect(find.text('Connect a provider'), findsOneWidget);
+    expect(find.byType(ModelCatalogView), findsNothing);
+    expect(find.text('Browse all models'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('catalog-connect-provider')));
     await tester.pumpAndSettle();
     expect(find.byType(IntegrationsScreen), findsOneWidget);

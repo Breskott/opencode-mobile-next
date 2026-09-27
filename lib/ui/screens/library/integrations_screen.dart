@@ -55,6 +55,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   int _serverLoadGeneration = 0;
   int _resourceLoadGeneration = 0;
   int _integrationLoadGeneration = 0;
+
+  /// Sign-ins whose explicit act is running, and what the server last said
+  /// about each persisted one (keyed by [PendingAuthAttempt.key]).
+  final Set<Object> _signInBusy = {};
+  final Map<Object, IntegrationAuthState> _signInStatus = {};
   final TextEditingController _providerSearch = TextEditingController();
   String _providerQuery = '';
   _IntegrationsNotice? _notice;
@@ -709,25 +714,24 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final credentialsSupported =
         widget.controller.capabilities.integrationCredentials &&
         widget.controller.repository is IntegrationCredentialGateway;
-    final connected = integrations
-        ?.where((integration) => integration.connectionCount > 0)
-        .length;
+    // Sign-ins waiting on the person are rows of the one provider list,
+    // sorted first (owner rule 2026-09-27: no state sections), never cards
+    // above it.
+    final signIns = _signInRows(integrations);
+    final signInIDs = {for (final row in signIns) row.integrationID};
+    final others = [
+      for (final presented in matching)
+        if (!signInIDs.contains(presented.integration.id)) presented,
+    ];
+    final label = widget.mode == IntegrationsMode.all
+        ? l10n.usageProviders
+        : null;
     return [
-      if (widget.mode == IntegrationsMode.all)
-        _SectionLabel(
-          l10n.usageProviders,
-          explanation: l10n.e7LibraryTheModelProvidersThisOpenCodeServerCan,
-          trailing: integrations == null || integrations.isEmpty
-              ? null
-              : l10n.integrationsProvidersSummary(
-                  connected ?? 0,
-                  integrations.length,
-                ),
-          trailingKey: const ValueKey('provider-summary'),
-        )
-      else
-        SizedBox(height: KitTokens.of(context).space3),
-      // Sign-ins waiting on the person lead the section (urgency first).
+      SizedBox(
+        height: widget.mode == IntegrationsMode.all
+            ? KitTokens.of(context).space2
+            : KitTokens.of(context).space3,
+      ),
       if (widget.controller.pendingAuthPersistenceUncertain)
         _railed(
           KitNotice(
@@ -754,35 +758,6 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             ],
           ),
         ),
-      for (final entry in widget.controller.uncertainIntegrationAuth)
-        _UncertainAuthRecoveryTile(
-          controller: widget.controller,
-          integrationID: entry.integrationID,
-          kind: entry.kind,
-        ),
-      for (final entry in widget.controller.pendingIntegrationAuth)
-        _PendingAuthRecoveryTile(
-          key: ValueKey(entry.key),
-          controller: widget.controller,
-          entry: entry,
-          onComplete: () async {
-            await Future.wait([_load(), widget.controller.refreshCatalog()]);
-          },
-        ),
-      if (_pendingOAuth case final pending?)
-        _railed(
-          _PendingOAuthNotice(
-            pending: pending,
-            checking: _checkingOAuth,
-            recoverable: widget.controller.integrationAuthRecoverySupported,
-            onContinue: pending.status?.state == IntegrationAuthState.complete
-                ? () => _finishOAuth(pending)
-                : pending.launch.mode == IntegrationAuthMode.code
-                ? _enterOAuthCode
-                : _checkOAuth,
-            onCancel: _cancelOAuth,
-          ),
-        ),
       if (_pendingOAuth != null && _pendingOAuth!.source != _mcpSource)
         _railed(
           KitNotice(
@@ -798,6 +773,15 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             message: l10n.pendingAuthOtherSource,
           ),
         ),
+      // Until the list itself shows, the sign-ins still lead on their own.
+      if (signIns.isNotEmpty &&
+          (staleSource ||
+              _integrationError != null ||
+              integrations == null ||
+              integrations.isEmpty)) ...[
+        KitRowGroup(label: label, children: signIns),
+        SizedBox(height: KitTokens.of(context).space3),
+      ],
       if (staleSource)
         _railed(
           KitStateView.error(
@@ -853,7 +837,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             onChanged: (value) => setState(() => _providerQuery = value),
           ),
         ),
-        if (matching.isEmpty)
+        if (others.isEmpty && signIns.isEmpty)
           _railed(
             KitSearchNoMatch(
               key: const ValueKey('providers-search-empty'),
@@ -864,8 +848,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           )
         else
           KitRowGroup(
+            label: label,
             children: [
-              for (final presented in matching)
+              ...signIns,
+              for (final presented in others)
                 _ProviderRow(
                   commandAuthSupported: commandAuthSupported,
                   credentialsSupported: credentialsSupported,
@@ -886,6 +872,415 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           ),
       ],
     ];
+  }
+
+  /// The provider's name for a sign-in row: the listed one when the
+  /// provider is in the list, otherwise its presented name.
+  String _providerName(String id, List<IntegrationInfo>? integrations) {
+    final listed = integrations?.where((i) => i.id == id).firstOrNull;
+    if (listed != null) {
+      return presentIntegrations([listed]).firstOrNull?.name ?? listed.name;
+    }
+    return presentedProviderName(
+      id,
+      widget.controller.catalog?.providers ?? const <CatalogProvider>[],
+    );
+  }
+
+  /// Every sign-in waiting on the person, one row each (one per provider),
+  /// in urgency order: this screen's live one, then the saved ones, then
+  /// the uncertain starts.
+  List<_SignInRow> _signInRows(List<IntegrationInfo>? integrations) {
+    final l10n = _l10n;
+    final controller = widget.controller;
+    final rows = <_SignInRow>[];
+    final seen = <String>{};
+    if (_pendingOAuth case final pending?) {
+      seen.add(pending.integrationID);
+      final state = pending.status?.state ?? IntegrationAuthState.pending;
+      final name = pending.integrationName;
+      rows.add(
+        _SignInRow(
+          rowKey: const ValueKey('pending-provider-oauth'),
+          integrationID: pending.integrationID,
+          name: name,
+          word: _signInWord(state),
+          busy: _checkingOAuth,
+          onOpen: () => unawaited(_openLiveSignIn(pending)),
+          menu: _signInMenu(
+            _liveSignInActions(pending),
+            (choice) => _runLiveSignIn(pending, choice),
+          ),
+        ),
+      );
+    }
+    for (final entry in controller.pendingIntegrationAuth) {
+      if (!seen.add(entry.integrationID)) continue;
+      final name = _providerName(entry.integrationID, integrations);
+      final status = entry.expired
+          ? IntegrationAuthState.expired
+          : _signInStatus[entry.key];
+      rows.add(
+        _SignInRow(
+          integrationID: entry.integrationID,
+          name: name,
+          word: _signInWord(status ?? IntegrationAuthState.pending),
+          busy: _signInBusy.contains(entry.key),
+          onOpen: () => unawaited(_openSavedSignIn(entry, name)),
+          menu: _signInMenu(
+            _savedSignInActions(entry, name),
+            (choice) => _runSavedSignIn(entry, name, choice),
+          ),
+        ),
+      );
+    }
+    for (final entry in controller.uncertainIntegrationAuth) {
+      if (!seen.add(entry.integrationID)) continue;
+      final name = _providerName(entry.integrationID, integrations);
+      rows.add(
+        _SignInRow(
+          integrationID: entry.integrationID,
+          name: name,
+          word: l10n.integrationsSignInMayNotHaveStarted,
+          busy: false,
+          onOpen: () => unawaited(_openUncertainSignIn(entry, name)),
+          menu: _signInMenu(
+            _uncertainSignInActions(),
+            (_) => _forgetUncertain(entry),
+          ),
+        ),
+      );
+    }
+    return rows;
+  }
+
+  String _signInWord(IntegrationAuthState state) => switch (state) {
+    IntegrationAuthState.pending => _l10n.integrationsSignInWaiting,
+    IntegrationAuthState.complete => _l10n.integrationsSignInComplete,
+    IntegrationAuthState.failed => _l10n.integrationsSignInFailed,
+    IntegrationAuthState.expired => _l10n.integrationsSignInExpired,
+  };
+
+  List<KitMenuItem> _signInMenu(
+    List<(_SignInChoice, KitAction)> actions,
+    Future<void> Function(_SignInChoice choice) run,
+  ) => [
+    for (final (choice, action) in actions)
+      KitMenuItem(
+        label: action.label,
+        icon: switch (choice) {
+          _SignInChoice.finish => AppIconography.login,
+          _SignInChoice.enterCode => AppIconography.permissions,
+          _SignInChoice.cancel => AppIconography.close,
+          _SignInChoice.forget => AppIconography.delete,
+        },
+        destructive: choice == _SignInChoice.forget,
+        onSelected: () => unawaited(run(choice)),
+      ),
+  ];
+
+  /// This screen's own sign-in (the server cannot resume it later).
+  List<(_SignInChoice, KitAction)> _liveSignInActions(
+    _PendingIntegrationOAuth pending,
+  ) {
+    final l10n = _l10n;
+    final state = pending.status?.state ?? IntegrationAuthState.pending;
+    final name = pending.integrationName;
+    final terminal =
+        state == IntegrationAuthState.failed ||
+        state == IntegrationAuthState.expired;
+    return [
+      if (!terminal)
+        (
+          _SignInChoice.finish,
+          KitAction(
+            key: const ValueKey('continue-provider-oauth'),
+            label: l10n.integrationsFinishSigningIn(name),
+            onPressed: () {},
+          ),
+        ),
+      (
+        _SignInChoice.cancel,
+        KitAction(
+          key: const ValueKey('cancel-provider-oauth'),
+          label: l10n.integrationsCancelSignInFor(name),
+          onPressed: () {},
+        ),
+      ),
+    ];
+  }
+
+  Future<void> _openLiveSignIn(_PendingIntegrationOAuth pending) async {
+    final l10n = _l10n;
+    final state = pending.status?.state ?? IntegrationAuthState.pending;
+    final terminal =
+        state == IntegrationAuthState.failed ||
+        state == IntegrationAuthState.expired;
+    final choice = await _showSignInSheet(
+      context,
+      name: pending.integrationName,
+      word: _signInWord(state),
+      message: switch (state) {
+        IntegrationAuthState.failed => l10n.e7LibraryAuthenticationFailed,
+        IntegrationAuthState.expired =>
+          l10n.e7LibraryAuthenticationAttemptExpired,
+        IntegrationAuthState.complete => l10n.e7LibraryAuthenticationComplete,
+        IntegrationAuthState.pending =>
+          pending.launch.mode == IntegrationAuthMode.code
+              ? l10n.e7LibraryReturnFromTheBrowserAndEnterThe
+              : l10n.e7LibraryFinishAuthenticationInTheBrowserThenCheck,
+      },
+      notes: [
+        if (!widget.controller.integrationAuthRecoverySupported && !terminal)
+          l10n.integrationsPendingNotRecoverable,
+      ],
+      actions: _liveSignInActions(pending),
+      primary: terminal ? null : _SignInChoice.finish,
+    );
+    if (choice == null || !mounted || _pendingOAuth != pending) return;
+    await _runLiveSignIn(pending, choice);
+  }
+
+  Future<void> _runLiveSignIn(
+    _PendingIntegrationOAuth pending,
+    _SignInChoice choice,
+  ) async {
+    if (_pendingOAuth != pending || _checkingOAuth) return;
+    if (choice == _SignInChoice.cancel) return _cancelOAuth();
+    if (pending.status?.state == IntegrationAuthState.complete) {
+      setState(() => _checkingOAuth = true);
+      try {
+        await _finishOAuth(pending);
+      } catch (error) {
+        if (mounted) _showError(error);
+      } finally {
+        if (mounted) setState(() => _checkingOAuth = false);
+      }
+      return;
+    }
+    if (pending.launch.mode == IntegrationAuthMode.code) {
+      return _enterOAuthCode();
+    }
+    return _checkOAuth();
+  }
+
+  /// A sign-in this device saved and can pick up again.
+  List<(_SignInChoice, KitAction)> _savedSignInActions(
+    PendingAuthAttempt entry,
+    String name,
+  ) {
+    final l10n = _l10n;
+    final supported = widget.controller.integrationAuthRecoverySupported;
+    final expired =
+        entry.expired ||
+        _signInStatus[entry.key] == IntegrationAuthState.expired;
+    final canResume = supported && !expired;
+    final codeEntry =
+        entry.kind == PendingAuthKind.oauth &&
+        entry.mode == IntegrationAuthMode.code;
+    return [
+      if (canResume)
+        (
+          _SignInChoice.finish,
+          KitAction(
+            key: const ValueKey('pending-auth-resume'),
+            label: l10n.integrationsFinishSigningIn(name),
+            onPressed: () {},
+          ),
+        ),
+      if (canResume && codeEntry)
+        (
+          _SignInChoice.enterCode,
+          KitAction(
+            key: const ValueKey('pending-auth-enter-code'),
+            label: l10n.integrationsEnterCodeFor(name),
+            onPressed: () {},
+          ),
+        ),
+      if (supported)
+        (
+          _SignInChoice.cancel,
+          KitAction(
+            key: const ValueKey('pending-auth-cancel'),
+            label: l10n.integrationsCancelSignInFor(name),
+            onPressed: () {},
+          ),
+        ),
+      (
+        _SignInChoice.forget,
+        KitAction(
+          key: const ValueKey('pending-auth-forget'),
+          label: l10n.integrationsForgetSignInOnPhone,
+          onPressed: () {},
+        ),
+      ),
+    ];
+  }
+
+  Future<void> _openSavedSignIn(PendingAuthAttempt entry, String name) async {
+    final l10n = _l10n;
+    final status = entry.expired
+        ? IntegrationAuthState.expired
+        : _signInStatus[entry.key] ?? IntegrationAuthState.pending;
+    final actions = _savedSignInActions(entry, name);
+    final choice = await _showSignInSheet(
+      context,
+      name: name,
+      word: _signInWord(status),
+      message: entry.kind == PendingAuthKind.command
+          ? l10n.commandAuthPending
+          : l10n.pendingAuthDetail,
+      notes: [
+        if (!widget.controller.integrationAuthRecoverySupported)
+          l10n.pendingAuthUnsupported,
+        if (status == IntegrationAuthState.expired) l10n.pendingAuthExpired,
+        if (status == IntegrationAuthState.failed) l10n.pendingAuthServerFailed,
+      ],
+      actions: actions,
+      primary: actions.any((a) => a.$1 == _SignInChoice.finish)
+          ? _SignInChoice.finish
+          : null,
+    );
+    if (choice == null || !mounted) return;
+    await _runSavedSignIn(entry, name, choice);
+  }
+
+  Future<void> _runSavedSignIn(
+    PendingAuthAttempt entry,
+    String name,
+    _SignInChoice choice,
+  ) async {
+    if (_signInBusy.contains(entry.key)) return;
+    final l10n = _l10n;
+    final controller = widget.controller;
+    final source = _authSourceFor(controller);
+    final location = controller.locationRevision;
+    final route = ModalRoute.of(context);
+    bool current() =>
+        mounted &&
+        source == _authSourceFor(controller) &&
+        controller.isProfileReadable(entry.profileID) &&
+        (route?.isCurrent ?? true);
+    if (choice == _SignInChoice.forget) {
+      final confirmed = await showKitConfirm(
+        context,
+        icon: AppIconography.delete,
+        title: l10n.pendingAuthRecoveryForgetTitle(name),
+        body: l10n.pendingAuthRecoveryForgetBody,
+        confirmLabel: l10n.pendingAuthForget,
+        confirmKey: const ValueKey('pending-auth-forget-confirm'),
+      );
+      if (!confirmed || !current()) return;
+      try {
+        await controller.forgetIntegrationAuth(
+          entry,
+          locationRevision: location,
+        );
+      } catch (_) {
+        if (current()) {
+          _say(l10n.pendingAuthFailed, tone: AppStatusTone.failure);
+        }
+      }
+      return;
+    }
+    String? code;
+    if (choice == _SignInChoice.enterCode) {
+      // The one finish-sign-in dialog: the code is parsed in place, entered
+      // as a secret and never echoed.
+      code = await _showFinishSignInDialog(
+        context,
+        label: l10n.e7LibraryAuthorizationCode,
+        helper: l10n.integrationsFinishSignInProviderHelper,
+        parse: providerOAuthCompletionCode,
+        fieldKey: const ValueKey('oauth-completion-code'),
+      );
+      if (code == null || !current()) return;
+    }
+    setState(() => _signInBusy.add(entry.key));
+    try {
+      final result = await controller.recoverIntegrationAuth(
+        entry,
+        cancel: choice == _SignInChoice.cancel,
+        code: code,
+        locationRevision: location,
+      );
+      if (!current()) return;
+      setState(() => _signInStatus[entry.key] = result.state);
+      switch (result.state) {
+        case IntegrationAuthState.complete:
+          await Future.wait([_load(), controller.refreshCatalog()]);
+          if (mounted) _say(l10n.e7LibraryIsConnected(name));
+        case IntegrationAuthState.pending:
+          _say(l10n.pendingAuthStillPending);
+        case IntegrationAuthState.failed:
+          _say(l10n.pendingAuthServerFailed, tone: AppStatusTone.failure);
+        case IntegrationAuthState.expired:
+          _say(l10n.pendingAuthExpired, tone: AppStatusTone.failure);
+      }
+    } catch (_) {
+      if (current()) _say(l10n.pendingAuthFailed, tone: AppStatusTone.failure);
+    } finally {
+      if (mounted) setState(() => _signInBusy.remove(entry.key));
+    }
+  }
+
+  /// A start the server may have taken without confirming it: the app
+  /// blocks a second start until the person clears it here.
+  List<(_SignInChoice, KitAction)> _uncertainSignInActions() => [
+    (
+      _SignInChoice.forget,
+      KitAction(
+        key: const ValueKey('uncertain-auth-forget'),
+        label: _l10n.integrationsForgetSignInOnPhone,
+        onPressed: () {},
+      ),
+    ),
+  ];
+
+  Future<void> _openUncertainSignIn(
+    ({String integrationID, PendingAuthKind kind}) entry,
+    String name,
+  ) async {
+    final l10n = _l10n;
+    final choice = await _showSignInSheet(
+      context,
+      name: name,
+      word: l10n.integrationsSignInMayNotHaveStarted,
+      message: l10n.uncertainAuthDetail,
+      actions: _uncertainSignInActions(),
+    );
+    if (choice == null || !mounted) return;
+    await _forgetUncertain(entry);
+  }
+
+  Future<void> _forgetUncertain(
+    ({String integrationID, PendingAuthKind kind}) entry,
+  ) async {
+    final controller = widget.controller;
+    final l10n = _l10n;
+    final source = _authSourceFor(controller);
+    final location = controller.locationRevision;
+    final confirmed = await showKitConfirm(
+      context,
+      icon: AppIconography.delete,
+      title: l10n.uncertainAuthForgetTitle,
+      body: l10n.uncertainAuthForgetDetail,
+      confirmLabel: l10n.uncertainAuthForget,
+    );
+    if (!confirmed || !mounted || source != _authSourceFor(controller)) {
+      return;
+    }
+    try {
+      controller.forgetUncertainIntegrationAuth(
+        entry.integrationID,
+        entry.kind,
+        locationRevision: location,
+      );
+    } catch (_) {
+      if (mounted) {
+        _say(l10n.e7LibraryTheSignInSourceChanged, tone: AppStatusTone.failure);
+      }
+    }
   }
 
   Future<void> _openCredentials(
@@ -927,16 +1322,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final pending = _pendingMcpOAuth;
     final scopeChanged = _serversSource != null && _serversSource != _mcpSource;
     return [
-      if (widget.mode == IntegrationsMode.all)
-        _SectionLabel(
-          l10n.integrationsMcpServersLabel,
-          explanation: Glossary.mcp.explanation,
-          trailing: servers == null || servers.isEmpty
-              ? null
-              : '${servers.length}',
-        )
-      else
-        SizedBox(height: KitTokens.of(context).space3),
+      SizedBox(
+        height: widget.mode == IntegrationsMode.all
+            ? KitTokens.of(context).sectionGap
+            : KitTokens.of(context).space3,
+      ),
       if (pending != null)
         _railed(
           _PendingMcpOAuthNotice(
@@ -986,6 +1376,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         )
       else if (servers != null)
         KitRowGroup(
+          label: widget.mode == IntegrationsMode.all
+              ? l10n.integrationsMcpServersLabel
+              : null,
           children: [
             for (final server in servers)
               _McpServerRow(
@@ -1012,13 +1405,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final l10n = _l10n;
     final resources = _resources;
     return [
-      _SectionLabel(
-        l10n.e7LibraryResources,
-        explanation: l10n.e7LibraryFilesAndDataThatConnectedMCPServers,
-        trailing: resources == null || resources.isEmpty
-            ? null
-            : '${resources.length}',
-      ),
+      SizedBox(height: KitTokens.of(context).sectionGap),
       if (_resourceError != null)
         _railed(
           KitStateView.error(
@@ -1046,6 +1433,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         )
       else if (resources != null)
         KitRowGroup(
+          label: l10n.e7LibraryResources,
           children: [
             for (final resource in resources)
               KitRow(
@@ -1169,6 +1557,21 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
 
   String _integrationSubtitle(IntegrationInfo integration) {
     final l10n = _l10n;
+    final credentials = integration.connections
+        .where((connection) => connection.type == 'credential')
+        .length;
+    if (credentials > 1) {
+      // "2 accounts · Server environment": the accounts are counted, their
+      // names live in Manage accounts.
+      return <String>{
+        l10n.integrationsAccountCount(credentials),
+        for (final connection in integration.connections)
+          if (connection.type == 'env')
+            l10n.e7LibraryServerEnvironment
+          else if (connection.type != 'credential')
+            connection.label,
+      }.join(' · ');
+    }
     if (integration.connections.isNotEmpty) {
       return integration.connections
           .map((connection) {

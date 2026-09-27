@@ -3,9 +3,10 @@ part of '../library_screen.dart';
 /// "Models": the server's model catalog as a page (map `catalog`, proposal
 /// fix), built from kit parts (screen-library-1). The list itself is the
 /// shared [ModelCatalogView] the chat's model picker also uses; this page
-/// adds what the map found missing around it: the offer to connect a
-/// provider when none is signed in, the loading bar, the offline line, and
-/// an explanation on servers that do not share a catalog.
+/// adds what the map found missing around it: one "No models yet" state
+/// that offers to connect a provider when none is signed in (in place of
+/// the list), the loading bar, the offline line, and an explanation on
+/// servers that do not share a catalog.
 class CatalogScreen extends StatefulWidget {
   final ConnectionController controller;
   const CatalogScreen({super.key, required this.controller});
@@ -87,28 +88,35 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           : l10n.catalogScreenOfflineStale,
                     ),
                   ),
+                // No provider signed in: one state with one way out, and
+                // the catalog view (its own empty state, notices and
+                // browse link) waits until a model exists.
                 if (noProvider)
-                  Padding(
-                    padding: rails,
-                    child: KitNotice(
-                      key: const ValueKey('catalog-no-provider'),
-                      icon: AppIconography.login,
-                      message: l10n.catalogScreenNoProviderBody,
-                      actions: [
-                        KitAction(
-                          key: const ValueKey('catalog-connect-provider'),
-                          label: l10n.catalogScreenConnectProvider,
-                          onPressed: _connectProvider,
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+                      children: [
+                        KitStateView(
+                          key: const ValueKey('catalog-no-provider'),
+                          icon: AppIconography.login,
+                          title: l10n.catalogScreenNoProviderTitle,
+                          body: l10n.catalogScreenNoProviderBody,
+                          primary: KitAction(
+                            key: const ValueKey('catalog-connect-provider'),
+                            label: l10n.catalogScreenConnectProvider,
+                            onPressed: _connectProvider,
+                          ),
                         ),
                       ],
                     ),
+                  )
+                else
+                  Expanded(
+                    child: ModelCatalogView(
+                      controller: controller,
+                      showHeader: false,
+                    ),
                   ),
-                Expanded(
-                  child: ModelCatalogView(
-                    controller: controller,
-                    showHeader: false,
-                  ),
-                ),
               ],
             ),
     );

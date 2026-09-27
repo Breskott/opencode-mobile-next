@@ -656,7 +656,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (widget.handoff != null) {
       return KitAction(
         key: const Key('project-file-add-reference'),
-        label: l10n.fileReference,
+        label: l10n.readerUiAddReference,
         icon: AppIconography.link,
         onPressed: () => _stageProjectFile(session.path, session.initialLine),
       );
@@ -664,7 +664,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (widget.onAttachFile != null) {
       return KitAction(
         key: const Key('project-file-attach'),
-        label: l10n.fileAttach,
+        label: l10n.readerUiAttachPrompt,
         icon: AppIconography.attach,
         working: _attaching,
         onPressed: () => unawaited(_attachFromViewer(session)),
@@ -685,7 +685,7 @@ class _FilesScreenState extends State<FilesScreen> {
           key: const Key('project-file-attach'),
           // Named apart from "Add to prompt": this one uploads the file's
           // contents with the message.
-          label: l10n.fileAttach,
+          label: l10n.readerUiAttachPrompt,
           icon: AppIconography.attach,
           enabled: !_attaching,
           onSelected: () => unawaited(_attachFromViewer(session)),
@@ -1802,76 +1802,68 @@ class _ChangeChoice {
 }
 
 // revamp: merge-into:review-workspace (slice-P3.7a)
-/// The changed set, grouped by version-control status, in the kit's sheet
-/// (Review all is its primary). Tapping a row opens Review at that file; the
-/// add action stages the file as a prompt reference instead of opening
-/// anything.
+/// The changed set as one list ordered by path, in the kit's sheet (Review
+/// all is its primary). Each row's second line starts with its state word
+/// ("Modified · lib/cart · +1 −1"), so the list is never split by status.
+/// Tapping a row opens Review at that file; the add action stages the file
+/// as a prompt reference instead of opening anything.
 class _ChangesList extends StatelessWidget {
   const _ChangesList({required this.changes, required this.canStage});
 
   final List<VersionControlFile> changes;
   final bool canStage;
 
-  static const _order = ['modified', 'added', 'deleted'];
-
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final l10n = readerL10n(context);
-    final groups = <String, List<VersionControlFile>>{};
-    for (final change in changes) {
-      groups.putIfAbsent(change.status, () => []).add(change);
-    }
-    final statuses = groups.keys.toList()
-      ..sort((a, b) {
-        final left = _order.indexOf(a);
-        final right = _order.indexOf(b);
-        return (left < 0 ? _order.length : left).compareTo(
-          right < 0 ? _order.length : right,
-        );
-      });
+    final ordered = [...changes]..sort((a, b) => a.path.compareTo(b.path));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final status in statuses) ...[
-          SizedBox(height: tokens.space3),
-          KitRowGroup(
-            margin: EdgeInsetsDirectional.zero,
-            leadingIcons: false,
-            label:
-                '${_fileStatusLabel(context, status)} · ${groups[status]!.length}',
-            children: [
-              for (final change in groups[status]!)
-                KitRow(
-                  key: ValueKey('changed-file-${change.path}'),
-                  title: change.path.split('/').last,
-                  supporting: TextSpan(
-                    text:
-                        '${KitBidi.ltr(change.path)} · '
-                        '${KitBidi.ltr('+${change.additions} −${change.deletions}')}',
-                  ),
-                  trailing: canStage
-                      ? KitIconButton(
-                          key: ValueKey('stage-change-${change.path}'),
-                          icon: AppIconography.link,
-                          size: 20,
-                          tooltip: l10n.readerUiAddPath(change.path),
-                          onPressed: () => KitSheet.close(
-                            context,
-                            _ChangeChoice(_ChangeAction.stage, change.path),
-                          ),
-                        )
-                      : const KitChevron(),
-                  onTap: () => KitSheet.close(
-                    context,
-                    _ChangeChoice(_ChangeAction.review, change.path),
-                  ),
+        SizedBox(height: tokens.space3),
+        KitRowGroup(
+          margin: EdgeInsetsDirectional.zero,
+          leadingIcons: false,
+          children: [
+            for (final change in ordered)
+              KitRow(
+                key: ValueKey('changed-file-${change.path}'),
+                title: change.path.split('/').last,
+                supporting: TextSpan(text: _changeLine(context, change)),
+                trailing: canStage
+                    ? KitIconButton(
+                        key: ValueKey('stage-change-${change.path}'),
+                        icon: AppIconography.link,
+                        size: 20,
+                        tooltip: l10n.readerUiAddPath(change.path),
+                        onPressed: () => KitSheet.close(
+                          context,
+                          _ChangeChoice(_ChangeAction.stage, change.path),
+                        ),
+                      )
+                    : const KitChevron(),
+                onTap: () => KitSheet.close(
+                  context,
+                  _ChangeChoice(_ChangeAction.review, change.path),
                 ),
-            ],
-          ),
-        ],
+              ),
+          ],
+        ),
       ],
     );
+  }
+
+  /// "Modified · lib/cart · +1 −1": the state word first, then the folder
+  /// (left out for a file at the root), then the line counts.
+  static String _changeLine(BuildContext context, VersionControlFile change) {
+    final slash = change.path.lastIndexOf('/');
+    final folder = slash > 0 ? change.path.substring(0, slash) : '';
+    return [
+      _fileStatusLabel(context, change.status),
+      if (folder.isNotEmpty) KitBidi.ltr(folder),
+      KitBidi.ltr('+${change.additions} −${change.deletions}'),
+    ].join(' · ');
   }
 }
 

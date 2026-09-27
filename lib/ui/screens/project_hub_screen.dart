@@ -348,7 +348,9 @@ class _ProjectHubState extends State<ProjectHub> {
                   ),
                 ),
               ),
-            if (tools.isNotEmpty)
+            // The tools act on a project: with none open the chooser above
+            // is the only thing on the tab.
+            if (tools.isNotEmpty && directory != null && directory.isNotEmpty)
               KitRowGroup(
                 children: [
                   for (final tool in tools) _toolRow(context, l10n, tool),
@@ -395,7 +397,7 @@ class _ProjectHubState extends State<ProjectHub> {
                 ),
               KitMenuItem.copy(
                 key: const ValueKey('project-hub-copy-path'),
-                label: l10n.readerUiCopyPath,
+                label: l10n.projectHubCopyFolderPath,
                 text: () => directory,
               ),
             ],
@@ -405,6 +407,9 @@ class _ProjectHubState extends State<ProjectHub> {
     );
   }
 
+  /// Title-only rows until each tool has a live line to show ("3
+  /// changed", "1 running"); Project health keeps one line saying what it
+  /// checks, since its name does not.
   Widget _toolRow(
     BuildContext context,
     AppLocalizations l10n,
@@ -414,42 +419,37 @@ class _ProjectHubState extends State<ProjectHub> {
       tool,
       icon: AppIconography.files,
       title: l10n.readerUiFiles,
-      subtitle: l10n.projectHubFilesSubtitle,
       onTap: _openFiles,
     ),
     ProjectTool.changes => _row(
       tool,
       icon: AppIconography.review,
       title: l10n.readerUiChanges,
-      subtitle: l10n.projectHubChangesSubtitle,
       onTap: () => _openTool(tool),
     ),
     ProjectTool.terminal => _row(
       tool,
       icon: AppIconography.terminal,
       title: l10n.libraryTerminalTitle,
-      subtitle: l10n.chatUiOpenPersistentWorkspaceTerminals,
       onTap: () => _openTool(tool),
     ),
     ProjectTool.health => _row(
       tool,
       icon: AppIconography.diagnostics,
       title: l10n.e7LibraryProjectHealth,
-      subtitle: l10n.e7LibraryBranchChangedFilesLanguageServicesAndFormatters,
+      subtitle: l10n.projectHubHealthSubtitle,
       onTap: () => _openTool(tool),
     ),
     ProjectTool.worktrees => _row(
       tool,
       icon: AppIconography.branch,
       title: l10n.e7LibraryWorktrees,
-      subtitle: l10n.e7LibraryCreateAndManageIsolatedGitBranches,
       onTap: () => _openTool(tool),
     ),
     ProjectTool.search => _row(
       tool,
       icon: AppIconography.search,
       title: l10n.readerUiSearchFiles,
-      subtitle: l10n.projectHubSearchSubtitle,
       onTap: _searchFiles,
     ),
   };
@@ -458,13 +458,13 @@ class _ProjectHubState extends State<ProjectHub> {
     ProjectTool tool, {
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
+    String? subtitle,
   }) => KitRow(
     key: ValueKey('project-hub-${tool.name}'),
     leading: KitRow.icon(context, icon),
     title: title,
-    supporting: TextSpan(text: subtitle),
+    supporting: subtitle == null ? null : TextSpan(text: subtitle),
     supportingMaxLines: 2,
     trailing: const KitChevron(),
     onTap: onTap,

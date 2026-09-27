@@ -162,9 +162,8 @@ void main() {
   });
 
   group('the gate explains itself', () {
-    testWidgets('a server with no terminals says why and offers this phone', (
-      tester,
-    ) async {
+    testWidgets('a server with no terminals says so about the terminal only, '
+        'and the source choice is the one way to this phone', (tester) async {
       await _phone(tester);
       final backend = FakeLocalTerminalBackend();
       final sessions = LocalTerminalSessions(backend: backend);
@@ -198,9 +197,13 @@ void main() {
         find.byKey(const ValueKey('terminal-unavailable')),
         findsOneWidget,
       );
-      expect(find.text('Files and Terminal'), findsOneWidget);
+      // The Terminal page talks about the terminal, not Files.
+      expect(find.text("This server doesn't share a terminal"), findsOneWidget);
+      expect(find.text('Files and Terminal'), findsNothing);
       expect(find.byKey(const ValueKey('terminal-session-rows')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('terminal-use-phone')));
+      // One control for the switch: the source choice, no second button.
+      expect(find.byKey(const ValueKey('terminal-use-phone')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('terminal-source-phone')));
       await tester.pumpAndSettle();
       // This phone without Linux: the gate explains and offers setup.
       expect(find.byType(LocalTerminalView), findsOneWidget);

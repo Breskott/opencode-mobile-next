@@ -201,8 +201,6 @@
   "composerReuseTitle": "Reuse a prompt",
   "queueSaveFailed": "Could not save the queued draft on this device. Your text is still here. Check available storage and try again.",
   "fileCopy": "Copy",
-  "fileReference": "Reference",
-  "fileAttach": "Attach",
   "fileSave": "Save",
   "fileReload": "Refresh",
   "queueRemoveFailed": "Could not remove this draft from device storage. It is still queued. Check available storage and try again.",
@@ -734,32 +732,6 @@
   "@runResultsEmpty": {
     "description": "Run results empty state: the newest user message has no assistant reply after it"
   },
-  "runResultsRunLabel": "Run …{id}",
-  "@runResultsRunLabel": {
-    "description": "Run identity header; the id is the tail of the first assistant message id",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
-  "runResultsSteps": "{count, plural, =1 {1 assistant step} other {{count} assistant steps}}",
-  "@runResultsSteps": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "runResultsStepsAtLeast": "{count, plural, =1 {At least 1 assistant step loaded} other {At least {count} assistant steps loaded}}",
-  "@runResultsStepsAtLeast": {
-    "description": "Step count when the run's start was not found in the loaded history",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "runResultsStarted": "Started {time}",
   "@runResultsStarted": {
     "placeholders": {
@@ -828,20 +800,6 @@
   "runResultsCommandsSource": "From bash and shell tools in this run. Exit codes appear only when the server recorded them.",
   "runResultsNoCommands": "No commands were run in this run.",
   "runResultsCommandEmpty": "(command text not recorded)",
-  "runResultsExit": "Exit code {code}",
-  "@runResultsExit": {
-    "placeholders": {
-      "code": {
-        "type": "int"
-      }
-    }
-  },
-  "runResultsExitUnknown": "Exit code not recorded",
-  "runResultsCommandFailed": "Tool reported failure",
-  "runResultsLooksLikeTest": "Looks like a test command (from the command text only)",
-  "@runResultsLooksLikeTest": {
-    "description": "Source-derived label; says nothing about whether tests ran or passed"
-  },
   "runResultsOutputPruned": "Output pruned by the server",
   "runResultsPrunedTools": "{count, plural, =1 {1 tool output was pruned by the server and cannot be opened.} other {{count} tool outputs were pruned by the server and cannot be opened.}}",
   "@runResultsPrunedTools": {
@@ -853,7 +811,6 @@
   },
   "runResultsTruncated": "Lists are capped at 50 entries. Open the conversation for the rest.",
   "runResultsSourceNote": "Everything here is copied from the server's message and tool records. Nothing is summarised by a model.",
-  "runResultsOutputTitle": "Recorded tool output",
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
@@ -888,26 +845,15 @@
     }
   },
   "usageNoMatchingRecords": "No records match these filters. Clear or change the filters to see more.",
-  "pendingAuthTitle": "Pending sign-in: {integration}",
-  "@pendingAuthTitle": {
-    "description": "Recovery card for a saved sign-in attempt",
-    "placeholders": {
-      "integration": {
-        "type": "String"
-      }
-    }
-  },
-  "pendingAuthDetail": "Continue the existing browser sign-in, then explicitly check its status or enter its code. The browser link is not saved.",
-  "pendingAuthResume": "Resume / check sign-in",
+  "pendingAuthDetail": "Finish signing in in the browser, then come back and finish here. The browser link isn't saved.",
   "pendingAuthEnterCode": "Enter code",
-  "pendingAuthComplete": "Sign-in complete.",
   "pendingAuthStillPending": "Sign-in is still pending. No new attempt was started.",
   "pendingAuthServerFailed": "The server reported that sign-in failed. Provider error details are hidden.",
-  "pendingAuthExpired": "This attempt is expired or outside the device’s recovery window. Cancellation is a separate server action.",
+  "pendingAuthExpired": "This sign-in has expired. Start a new one, or forget this one.",
   "pendingAuthFailed": "Could not confirm the action. Check pending sign-ins before trying again. No new sign-in was started.",
   "pendingAuthSaveUncertain": "Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.",
   "pendingAuthRetrySave": "Try saving recovery again",
-  "pendingAuthForget": "Forget on this device",
+  "pendingAuthForget": "Forget this sign-in",
   "pendingAuthForgetDetail": "Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.",
   "pendingAuthUnsupported": "This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
   "pendingAuthOtherSource": "Other pending sign-ins belong to another server or project. Return to their original source to manage them.",
@@ -1712,18 +1658,10 @@
   "setupScreenTitle": "On this phone",
   "setupInstallStart": "Install & start",
   "setupCheckAgain": "Try again",
-  "uncertainAuthTitle": "Unconfirmed sign-in: {integrationID}",
-  "@uncertainAuthTitle": {
-    "placeholders": {
-      "integrationID": {
-        "type": "String"
-      }
-    }
-  },
-  "uncertainAuthDetail": "The server may have started sign-in, but no attempt ID was received. Check on the server before starting again.",
-  "uncertainAuthForgetTitle": "Forget uncertain start?",
+  "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
+  "uncertainAuthForgetTitle": "Forget this sign-in on this phone?",
   "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
-  "uncertainAuthForget": "Forget uncertain start",
+  "uncertainAuthForget": "Forget this sign-in",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
@@ -2030,7 +1968,7 @@
   "mobileTaskPriorityHigh": "High priority",
   "mobileTaskPriorityMedium": "Medium priority",
   "mobileTaskPriorityLow": "Low priority",
-  "pluginMappingClearAll": "Clear personal links",
+  "pluginMappingClearAll": "Clear personal command links",
   "pluginMappingClearTitle": "Clear all personal command links?",
   "pluginMappingClearDescription": "Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.",
   "pluginMappingClearConfirm": "Clear links",
@@ -9148,10 +9086,6 @@
   "@e7LibraryChooseModel": {
     "description": "Library and project tools UI: Choose model"
   },
-  "e7LibraryChange": "Change",
-  "@e7LibraryChange": {
-    "description": "Library and project tools UI: Change"
-  },
   "e7LibrarySearchTools": "Search tools",
   "@e7LibrarySearchTools": {
     "description": "Library and project tools UI: Search tools"
@@ -9165,34 +9099,6 @@
         "description": "Server or project detail displayed verbatim in this message."
       }
     }
-  },
-  "e7LibraryUsable": "{detail1} usable",
-  "@e7LibraryUsable": {
-    "description": "Library and project tools UI: {detail1} usable",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryRegistered": "{detail1} registered",
-  "@e7LibraryRegistered": {
-    "description": "Library and project tools UI: {detail1} registered",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryBackgroundSubagentsEnabled": "Background subagents enabled",
-  "@e7LibraryBackgroundSubagentsEnabled": {
-    "description": "Library and project tools UI: Background subagents enabled"
-  },
-  "e7LibraryBackgroundSubagentsUnavailable": "Background subagents unavailable",
-  "@e7LibraryBackgroundSubagentsUnavailable": {
-    "description": "Library and project tools UI: Background subagents unavailable"
   },
   "e7LibraryRegisteredInventoryUnavailable": "registered inventory unavailable",
   "@e7LibraryRegisteredInventoryUnavailable": {
@@ -9884,24 +9790,6 @@
   "@e7LibraryFinishAuthenticationInTheBrowserThenCheck": {
     "description": "Library and project tools UI: Finish authentication in the browser, then check its status."
   },
-  "e7LibraryFinish": "Finish",
-  "@e7LibraryFinish": {
-    "description": "Library and project tools UI: Finish"
-  },
-  "e7LibraryCheck": "Check",
-  "@e7LibraryCheck": {
-    "description": "Library and project tools UI: Check"
-  },
-  "e7LibraryConnecting2": "Connecting {detail1}",
-  "@e7LibraryConnecting2": {
-    "description": "Library and project tools UI: Connecting {detail1}",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
   "e7LibraryAuthenticationOptions": "Authentication options",
   "@e7LibraryAuthenticationOptions": {
     "description": "Library and project tools UI: Authentication options"
@@ -10016,13 +9904,9 @@
   "@e7LibraryMCPUnavailable": {
     "description": "Library and project tools UI: MCP unavailable"
   },
-  "e7LibraryMCPAndIntegrations": "MCP and integrations",
+  "e7LibraryMCPAndIntegrations": "Providers and MCP",
   "@e7LibraryMCPAndIntegrations": {
-    "description": "Library and project tools UI: MCP and integrations"
-  },
-  "e7LibraryTheModelProvidersThisOpenCodeServerCan": "The model providers this OpenCode server can use. Connect one to start chatting.",
-  "@e7LibraryTheModelProvidersThisOpenCodeServerCan": {
-    "description": "Library and project tools UI: The model providers this OpenCode server can use. Connect one to start chatting."
+    "description": "Providers and MCP page title (the combined page: model providers, MCP servers and their resources)."
   },
   "e7LibraryCouldNotSaveSignInRecovery": "Could not save sign-in recovery.",
   "@e7LibraryCouldNotSaveSignInRecovery": {
@@ -10093,10 +9977,6 @@
   "e7LibraryResources": "Resources",
   "@e7LibraryResources": {
     "description": "Library and project tools UI: Resources"
-  },
-  "e7LibraryFilesAndDataThatConnectedMCPServers": "Files and data that connected MCP servers expose to the agent.",
-  "@e7LibraryFilesAndDataThatConnectedMCPServers": {
-    "description": "Library and project tools UI: Files and data that connected MCP servers expose to the agent."
   },
   "e7LibraryLoadingAvailableResources": "Loading available resources",
   "@e7LibraryLoadingAvailableResources": {
@@ -17398,18 +17278,6 @@
   "@shellTabProject": {
     "description": "Bottom navigation label and app bar title of the third tab: tools scoped to the current project."
   },
-  "projectHubFilesSubtitle": "Browse and preview project files",
-  "@projectHubFilesSubtitle": {
-    "description": "Project tab: subtitle of the Files row."
-  },
-  "projectHubChangesSubtitle": "Review uncommitted changes",
-  "@projectHubChangesSubtitle": {
-    "description": "Project tab: subtitle of the Changes row, which opens the working-tree review."
-  },
-  "projectHubSearchSubtitle": "Find a file by name",
-  "@projectHubSearchSubtitle": {
-    "description": "Project tab: subtitle of the Search files row, which opens Files with the search field focused."
-  },
   "serverSwitcherManage": "Manage servers",
   "@serverSwitcherManage": {
     "description": "Server switcher row that opens the Servers screen."
@@ -20477,14 +20345,6 @@
         "type": "String"
       }
     }
-  },
-  "pluginsSectionMore": "More plugin actions",
-  "@pluginsSectionMore": {
-    "description": "Tooltip of the On the server section menu"
-  },
-  "pluginsDescriptionShort": "Loaded by the server for this project.",
-  "@pluginsDescriptionShort": {
-    "description": "One line under On the server in Settings › Plugins"
   },
   "pluginsLoading": "Loading plugins",
   "@pluginsLoading": {
@@ -26448,10 +26308,6 @@
   "@phoneServerCardRemoveOpenCode": {
     "description": "Remove OpenCode from this phone sheet: confirm button"
   },
-  "runResultViewOutputTitle": "What it did",
-  "@runResultViewOutputTitle": {
-    "description": "Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results."
-  },
   "productStatesActionFailedTitle": "Couldn't finish that",
   "@productStatesActionFailedTitle": {
     "description": "Shared product states: title of the alert shown when an action the person started failed"
@@ -27052,13 +26908,13 @@
   "@catalogScreenOfflineStale": {
     "description": "Models page: notice while the server is unreachable; the shown list is the last one received."
   },
-  "catalogScreenNoProviderBody": "Only signed-in providers' models are listed. Connect one to choose a model.",
+  "catalogScreenNoProviderBody": "Connect a provider to choose a model.",
   "@catalogScreenNoProviderBody": {
-    "description": "Models page: notice body under the no-provider title."
+    "description": "Models page: body under 'No models yet'."
   },
   "catalogScreenConnectProvider": "Connect a provider",
   "@catalogScreenConnectProvider": {
-    "description": "Models page: notice action that opens the Providers page."
+    "description": "Models page: the no-models state's primary; opens the Providers page."
   },
   "integrationsMcpTitle": "MCP servers",
   "@integrationsMcpTitle": {
@@ -27681,41 +27537,29 @@
       }
     }
   },
-  "reviewRevertChooseLabel": "Choose what happens",
-  "@reviewRevertChooseLabel": {
-    "description": "Review the undo page: label above the two outcomes (put everything back, keep the undo)."
-  },
   "reviewRevertRestoreTitle": "Put everything back",
   "@reviewRevertRestoreTitle": {
     "description": "Review the undo page: outcome row, and its confirmation button, that clears the staged undo and brings the conversation and files back."
   },
-  "reviewRevertRestoreLine": "Bring back the hidden messages and the files as they were.",
-  "@reviewRevertRestoreLine": {
-    "description": "Review the undo page: one line under Put everything back saying what happens."
-  },
-  "reviewRevertKeepTitle": "Keep the undo",
+  "reviewRevertKeepTitle": "Delete the hidden messages",
   "@reviewRevertKeepTitle": {
-    "description": "Review the undo page: outcome row that makes the undo permanent."
+    "description": "Review the undo page: the destructive tertiary in the bottom block; deletes the hidden prompt and everything after it for good."
   },
-  "reviewRevertKeepLine": "Delete the hidden messages for good. This can't be undone.",
-  "@reviewRevertKeepLine": {
-    "description": "Review the undo page: one line under Keep the undo saying what happens and that it is permanent."
-  },
-  "reviewRevertKeepConfirmTitle": "Keep the undo for good?",
+  "reviewRevertKeepConfirmTitle": "Delete the hidden messages for good?",
   "@reviewRevertKeepConfirmTitle": {
-    "description": "Confirmation before making the undo permanent."
+    "description": "Review the undo page: title of the question before the hidden messages are deleted."
   },
-  "reviewRevertKeepConfirmBody": "The hidden prompt and everything after it are deleted from this conversation. This can't be undone.",
+  "reviewRevertKeepConfirmBody": "This can't be undone.",
   "@reviewRevertKeepConfirmBody": {
-    "description": "Confirmation before making the undo permanent: what happens and that it cannot be undone."
+    "description": "Review the undo page: body of the delete-hidden-messages question."
   },
   "reviewRevertKeepConfirmAction": "Delete hidden messages",
   "@reviewRevertKeepConfirmAction": {
     "description": "Confirmation before making the undo permanent: the confirm button."
   },
-  "reviewRevertKeepConsequenceMessages": "The hidden messages are deleted",
+  "reviewRevertKeepConsequenceMessages": "The hidden prompt and every message after it are deleted",
   "@reviewRevertKeepConsequenceMessages": {
-    "description": "Confirmation before making the undo permanent: what is lost."
+    "description": "Review the undo page: consequence line (lost) in the delete-hidden-messages question."
   },
   "reviewRevertKeepConsequenceFiles": "Files stay as they are now",
   "@reviewRevertKeepConsequenceFiles": {
@@ -29592,5 +29436,209 @@
   "skillSheetSending": "Adding the skill…",
   "@skillSheetSending": {
     "description": "Skill sheet: why the Run agent now switch cannot change while the skill is being added."
+  },
+  "catalogScreenNoProviderTitle": "No models yet",
+  "@catalogScreenNoProviderTitle": {
+    "description": "Models page: title of the one state shown when no provider is signed in."
+  },
+  "runResultsStepsShort": "{count, plural, =1{1 step} other{{count} steps}}",
+  "@runResultsStepsShort": {
+    "description": "Run results: step count in the facts line under the outcome ('2 steps · 5 min · gpt-5').",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsStepsShortAtLeast": "{count, plural, =1{At least 1 step} other{At least {count} steps}}",
+  "@runResultsStepsShortAtLeast": {
+    "description": "Run results: step count when the run's start was not found in the loaded history.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsUnderAMinute": "under a minute",
+  "@runResultsUnderAMinute": {
+    "description": "Run results: how long the run took, when under one minute (facts line)."
+  },
+  "runResultsMinutes": "{minutes} min",
+  "@runResultsMinutes": {
+    "description": "Run results: how long the run took, in minutes (facts line).",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsHoursMinutes": "{hours} h {minutes} min",
+  "@runResultsHoursMinutes": {
+    "description": "Run results: how long the run took, in hours and minutes (facts line).",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsHowMade": "How this was put together",
+  "@runResultsHowMade": {
+    "description": "Run results: the fold at the end holding the run id, times, finish reason and where each list comes from."
+  },
+  "runResultsRunIdLabel": "Run id",
+  "@runResultsRunIdLabel": {
+    "description": "Run results: label of the run id in the 'How this was put together' fold."
+  },
+  "runResultsAgentLabel": "Agent",
+  "@runResultsAgentLabel": {
+    "description": "Run results: label of the agent name in the 'How this was put together' fold."
+  },
+  "runResultsCommandFailedExit": "Failed · exit {code}",
+  "@runResultsCommandFailedExit": {
+    "description": "Run results: a command's state line when it failed with a recorded exit code.",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsCommandPassedExit": "Passed · exit {code}",
+  "@runResultsCommandPassedExit": {
+    "description": "Run results: a command's state line when it exited 0.",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "runResultsCommandFailedNoExit": "Failed · exit not recorded",
+  "@runResultsCommandFailedNoExit": {
+    "description": "Run results: a command's state line when the tool reported failure but no exit code was recorded."
+  },
+  "runResultsExitNotRecorded": "Exit not recorded",
+  "@runResultsExitNotRecorded": {
+    "description": "Run results: a command's state line when no exit code was recorded."
+  },
+  "projectHubHealthSubtitle": "Branch, language services and formatters",
+  "@projectHubHealthSubtitle": {
+    "description": "Project tab: under Project health, what it checks (the changed files are the Changes row's job)."
+  },
+  "projectHubCopyFolderPath": "Copy folder path",
+  "@projectHubCopyFolderPath": {
+    "description": "Project tab: the project menu item that copies the project folder's path."
+  },
+  "terminalScreenNoTerminalThisServer": "This server doesn't share a terminal",
+  "@terminalScreenNoTerminalThisServer": {
+    "description": "Terminal page: title of the state when the connected server (with no name) keeps no terminals."
+  },
+  "terminalScreenNoTerminalNamed": "{server} doesn't share a terminal",
+  "@terminalScreenNoTerminalNamed": {
+    "description": "Terminal page: title of the state when the named server keeps no terminals.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "terminalScreenNoTerminalWhy": "Terminals open here only on servers that share them.",
+  "@terminalScreenNoTerminalWhy": {
+    "description": "Terminal page: why the server's terminals are missing."
+  },
+  "@pendingAuthDetail": {
+    "description": "Sign-in sheet: what to do with a sign-in this phone saved."
+  },
+  "@pendingAuthExpired": {
+    "description": "Sign-in sheet or notice: the saved sign-in expired."
+  },
+  "@pendingAuthForget": {
+    "description": "Confirm button that removes this phone's record of a sign-in (nothing is cancelled on the server)."
+  },
+  "@uncertainAuthDetail": {
+    "description": "Sign-in sheet: a start the server may have taken without confirming it."
+  },
+  "@uncertainAuthForgetTitle": {
+    "description": "Confirm title before clearing an unconfirmed sign-in start on this phone."
+  },
+  "@uncertainAuthForget": {
+    "description": "Confirm button that clears an unconfirmed sign-in start on this phone."
+  },
+  "integrationsSignInWaiting": "Sign-in waiting",
+  "@integrationsSignInWaiting": {
+    "description": "Providers: the state word of a provider whose sign-in waits on the person (needs-you row)."
+  },
+  "integrationsSignInMayNotHaveStarted": "Sign-in may not have started",
+  "@integrationsSignInMayNotHaveStarted": {
+    "description": "Providers: the state word of a provider whose sign-in start the server did not confirm."
+  },
+  "integrationsSignInExpired": "Sign-in expired",
+  "@integrationsSignInExpired": {
+    "description": "Providers: the state word of a provider whose waiting sign-in expired."
+  },
+  "integrationsSignInFailed": "Sign-in failed",
+  "@integrationsSignInFailed": {
+    "description": "Providers: the state word of a provider whose sign-in the server reported as failed."
+  },
+  "integrationsSignInComplete": "Signed in · tap to finish",
+  "@integrationsSignInComplete": {
+    "description": "Providers: the state word of a provider signed in whose connection still needs finishing here."
+  },
+  "integrationsFinishSigningIn": "Finish signing in to {provider}",
+  "@integrationsFinishSigningIn": {
+    "description": "Sign-in sheet: the primary that checks or completes the named provider's sign-in.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsEnterCodeFor": "Enter code for {provider}",
+  "@integrationsEnterCodeFor": {
+    "description": "Sign-in sheet and row menu: enter the code the named provider's browser page showed.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsCancelSignInFor": "Cancel {provider} sign-in",
+  "@integrationsCancelSignInFor": {
+    "description": "Sign-in sheet and row menu: cancel the named provider's sign-in on the server.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsForgetSignInOnPhone": "Forget this sign-in on this phone",
+  "@integrationsForgetSignInOnPhone": {
+    "description": "Sign-in sheet and row menu: stop tracking this sign-in on this phone (nothing is cancelled on the server)."
+  },
+  "integrationsSignInActions": "Sign-in actions for {provider}",
+  "@integrationsSignInActions": {
+    "description": "Providers: the name of a waiting sign-in row's menu.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsAccountCount": "{count, plural, =1{1 account} other{{count} accounts}}",
+  "@integrationsAccountCount": {
+    "description": "Providers: a provider row's second line when it holds more than one stored account ('2 accounts · Server environment').",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolsScreenNoBackgroundSubagents": "no background subagents",
+  "@toolsScreenNoBackgroundSubagents": {
+    "description": "Tools page: appended to the model row's second line ('Anthropic · no background subagents') when the server runs no background subagents."
+  },
+  "@pluginMappingClearAll": {
+    "description": "Plugins page: top bar menu item that asks, then clears every personal command link for this server."
   }
 }

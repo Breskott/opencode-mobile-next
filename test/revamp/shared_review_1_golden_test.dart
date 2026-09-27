@@ -215,7 +215,7 @@ void main() {
           size: size,
           result: loaded,
           open: (tester) async {
-            final row = find.text('Exit code 0');
+            final row = find.text('Passed · exit 0');
             await tester.ensureVisible(row);
             await tester.pumpAndSettle();
             await tester.tap(row);

@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/pending_auth.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
@@ -204,21 +206,73 @@ void main() {
   });
 
   group('unfinished sign-ins', () {
-    testWidgets('the card offers resume, the code, cancel and forget; '
-        'forget asks first', (tester) async {
+    testWidgets('a waiting sign-in is the provider\'s own row, first and '
+        'marked; its sheet finishes, and forget asks first', (tester) async {
       final c = await library3Server()
-        ..pending = [library3Pending()];
+        ..pending = [library3Pending()]
+        ..uncertain = const [
+          (integrationID: 'openai', kind: PendingAuthKind.command),
+        ];
       addTearDown(c.dispose);
       await _providers(tester, c);
 
-      expect(find.text('Pending sign-in: cloud'), findsOneWidget);
+      // No cards above the list: the sign-ins are rows of it, sorted first,
+      // each with the needs-you mark and its state in words.
+      expect(find.text('Pending sign-in: cloud'), findsNothing);
+      expect(find.textContaining('attempt ID'), findsNothing);
+      final cloud = find.byKey(const ValueKey('pending-auth-cloud'));
+      final openai = find.byKey(const ValueKey('pending-auth-openai'));
+      expect(cloud, findsOneWidget);
+      expect(openai, findsOneWidget);
+      expect(
+        find.descendant(of: cloud, matching: find.byType(KitTaskMark)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: cloud,
+          matching: find.text('Sign-in waiting', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: openai,
+          matching: find.text(
+            'Sign-in may not have started',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      final anthropic = find.byKey(const ValueKey('provider-anthropic'));
+      expect(
+        tester.getTopLeft(cloud).dy,
+        lessThan(tester.getTopLeft(anthropic).dy),
+      );
+      // The provider is listed once: no second "Cloud · Not connected" row.
+      expect(
+        find.byKey(const ValueKey('connect-provider-cloud')),
+        findsNothing,
+      );
+
+      await tester.tap(cloud);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('sign-in-sheet')), findsOneWidget);
+      expect(find.text('Finish signing in to Cloud'), findsOneWidget);
+      expect(find.text('Enter code for Cloud'), findsOneWidget);
+      expect(find.text('Cancel Cloud sign-in'), findsOneWidget);
+      expect(find.text('Resume / check sign-in'), findsNothing);
       expect(find.byKey(const ValueKey('pending-auth-resume')), findsOne);
       expect(find.byKey(const ValueKey('pending-auth-enter-code')), findsOne);
       expect(find.byKey(const ValueKey('pending-auth-cancel')), findsOne);
 
-      await tester.tap(find.byKey(const ValueKey('pending-auth-forget')));
+      // The rarest act waits in the sheet's More, named for what it does.
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
       await tester.pumpAndSettle();
-      expect(find.text('Forget the cloud sign-in?'), findsOneWidget);
+      await tester.tap(find.text('Forget this sign-in on this phone'));
+      await tester.pumpAndSettle();
+      expect(find.text('Forget the Cloud sign-in?'), findsOneWidget);
       expect(c.forgotten, 0);
       await tester.tap(
         find.byKey(const ValueKey('pending-auth-forget-confirm')),
@@ -244,7 +298,10 @@ void main() {
       addTearDown(c.dispose);
       await tools(tester, c);
       expect(find.text('Claude Sonnet 4'), findsOneWidget);
-      expect(find.text('Anthropic'), findsOneWidget);
+      // The provider, with the missing subagents in the same line (no
+      // counts line under the model).
+      expect(find.text('Anthropic · no background subagents'), findsOneWidget);
+      expect(find.byKey(const ValueKey('tools-change-model')), findsNothing);
       // Plain description as the title, the id beside it.
       expect(
         find.text('Run a shell command in the active project.'),

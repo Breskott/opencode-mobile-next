@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../api/models.dart' show ToolState;
 import '../../domain/run_result.dart';
-import '../../domain/session_title_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../agent_error_words.dart';
 import '../app_theme.dart';
@@ -13,6 +12,7 @@ import '../kit/kit_layout.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_sheet.dart';
+import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import 'tool_card.dart';
@@ -20,8 +20,14 @@ import 'tool_card.dart';
 /// Pure presentation of one [RunResult], built from kit parts only
 /// (STANDARDS KIT-1). Every line is either copied from a server record or an
 /// explicit "unknown"; the only actions are opening the conversation and
-/// opening a tool's own recorded output ("What it did", sized to that one
-/// record and already open).
+/// opening a tool's own recorded output (a sheet titled with the command or
+/// file, sized to that one record and already open).
+///
+/// The page's top bar carries the conversation's title, so the body opens
+/// with the outcome row ("Completed" over "2 steps · 5 min · gpt-5"). The
+/// run id, the provider's finish reason, whether this phone saw the run end
+/// live, the times and where each list comes from sit in one fold at the
+/// end, "How this was put together".
 class RunResultView extends StatelessWidget {
   const RunResultView({
     super.key,
@@ -39,14 +45,10 @@ class RunResultView extends StatelessWidget {
   final VoidCallback onOpenConversation;
   final String? sessionTitle;
 
-  static String shortID(String id) =>
-      id.length <= 10 ? id : id.substring(id.length - 8);
-
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
-    final title = displaySessionTitleText(sessionTitle);
     Widget onRails(Widget child) => Padding(
       padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
       child: child,
@@ -82,9 +84,7 @@ class RunResultView extends StatelessWidget {
             tokens.space6,
           ),
           children: [
-            onRails(_identity(context, l10n, title)),
             if (!result.boundaryKnown) ...[
-              SizedBox(height: tokens.space4),
               onRails(
                 KitNotice(
                   key: const Key('run-result-partial'),
@@ -93,8 +93,8 @@ class RunResultView extends StatelessWidget {
                   liveRegion: false,
                 ),
               ),
+              gap,
             ],
-            gap,
             _outcome(context, l10n),
             gap,
             if (!result.hasToolEvidence)
@@ -121,7 +121,6 @@ class RunResultView extends StatelessWidget {
                       _fileRow(context, l10n, file),
                 ],
               ),
-              source(l10n.runResultsChangedFilesSource),
               gap,
               KitRowGroup(
                 label: l10n.runResultsCommandsTitle,
@@ -137,19 +136,12 @@ class RunResultView extends StatelessWidget {
                       _commandRow(context, l10n, command),
                 ],
               ),
-              source(l10n.runResultsCommandsSource),
               if (result.prunedToolCount > 0)
                 source(l10n.runResultsPrunedTools(result.prunedToolCount)),
               if (result.truncated) source(l10n.runResultsTruncated),
             ],
             gap,
-            onRails(
-              KitText(
-                l10n.runResultsSourceNote,
-                role: KitTextRole.caption,
-                tone: KitTextTone.tertiary,
-              ),
-            ),
+            onRails(_howMade(context, l10n)),
             SizedBox(height: tokens.space4),
             onRails(
               KitActionBlock(
@@ -167,41 +159,68 @@ class RunResultView extends StatelessWidget {
     );
   }
 
-  /// The run's name and facts: the conversation's title, the cut run id,
-  /// then two lines of what the server recorded (steps and who; when).
-  Widget _identity(BuildContext context, AppLocalizations l10n, String title) {
-    final tokens = KitTokens.of(context);
+  /// The run in one line under the outcome: steps, how long it took and
+  /// the model ("2 steps · 5 min · gpt-5"); an unknown time is left out.
+  String _facts(AppLocalizations l10n) {
     final steps = result.boundaryKnown
-        ? l10n.runResultsSteps(result.stepCount)
-        : l10n.runResultsStepsAtLeast(result.stepCount);
-    final who = [
-      result.agent,
-      result.model,
-    ].whereType<String>().where((s) => s.trim().isNotEmpty).join(' · ');
-    final started = result.startedAt == null
-        ? l10n.runResultsStartedUnknown
-        : l10n.runResultsStarted(_when(context, result.startedAt!));
-    final finished = result.finishedAt == null
-        ? l10n.runResultsFinishedUnknown
-        : l10n.runResultsFinished(_when(context, result.finishedAt!));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty) ...[
-          KitText(title, role: KitTextRole.headline),
-          SizedBox(height: tokens.space1),
-        ],
-        KitText(
-          l10n.runResultsRunLabel(shortID(result.runID)),
+        ? l10n.runResultsStepsShort(result.stepCount)
+        : l10n.runResultsStepsShortAtLeast(result.stepCount);
+    final model = result.model?.trim();
+    final duration = switch ((result.startedAt, result.finishedAt)) {
+      (final start?, final end?) when !end.isBefore(start) => _duration(
+        l10n,
+        end.difference(start),
+      ),
+      _ => null,
+    };
+    return [
+      steps,
+      ?duration,
+      if (model != null && model.isNotEmpty) model,
+    ].join(' · ');
+  }
+
+  static String _duration(AppLocalizations l10n, Duration elapsed) {
+    final minutes = elapsed.inMinutes;
+    if (minutes < 1) return l10n.runResultsUnderAMinute;
+    if (minutes < 60) return l10n.runResultsMinutes(minutes);
+    return l10n.runResultsHoursMinutes(minutes ~/ 60, minutes % 60);
+  }
+
+  /// Where this page's words come from, folded at the end: the run id, the
+  /// agent, the times, the provider's finish reason, whether this phone saw
+  /// the newest step complete, and the source of each list.
+  Widget _howMade(BuildContext context, AppLocalizations l10n) {
+    final finish = result.outcome.finish?.trim();
+    final agent = result.agent?.trim();
+    return KitDetailsFold(
+      foldKey: const Key('run-result-how-made'),
+      label: l10n.runResultsHowMade,
+      values: [
+        KitTechnicalValue(
+          l10n.runResultsRunIdLabel,
+          result.runID,
           key: const Key('run-result-id'),
-          role: KitTextRole.label,
         ),
-        SizedBox(height: tokens.space1),
-        KitText(
-          [steps, if (who.isNotEmpty) who].join(' · '),
-          role: KitTextRole.secondary,
-        ),
-        KitText('$started · $finished', role: KitTextRole.secondary),
+        if (agent != null && agent.isNotEmpty)
+          KitTechnicalValue(l10n.runResultsAgentLabel, agent, copyable: false),
+      ],
+      notes: [
+        result.startedAt == null
+            ? l10n.runResultsStartedUnknown
+            : l10n.runResultsStarted(_when(context, result.startedAt!)),
+        result.finishedAt == null
+            ? l10n.runResultsFinishedUnknown
+            : l10n.runResultsFinished(_when(context, result.finishedAt!)),
+        finish == null || finish.isEmpty
+            ? l10n.runResultsFinishReasonMissing
+            : l10n.runResultsFinishReason(finish),
+        observedLive ? l10n.runResultsObservedLive : l10n.runResultsFromHistory,
+        if (result.hasToolEvidence) ...[
+          l10n.runResultsChangedFilesSource,
+          l10n.runResultsCommandsSource,
+        ],
+        l10n.runResultsSourceNote,
       ],
     );
   }
@@ -245,12 +264,8 @@ class RunResultView extends StatelessWidget {
         AppStatusTone.neutral,
       ),
     };
-    final finish = outcome.finish?.trim();
-    final reason = finish == null || finish.isEmpty
-        ? l10n.runResultsFinishReasonMissing
-        : l10n.runResultsFinishReason(finish);
-    // What went wrong leads when there is an error; the provider's finish
-    // reason then follows it.
+    // What went wrong leads the second line when there is an error; the
+    // run's facts then follow it.
     final error = switch (outcome.errorHeadline) {
       final headline? => agentErrorWords(
         headline,
@@ -258,6 +273,7 @@ class RunResultView extends StatelessWidget {
       ).headline,
       null => null,
     };
+    final facts = _facts(l10n);
     return KitRowGroup(
       children: [
         KitRow(
@@ -269,34 +285,35 @@ class RunResultView extends StatelessWidget {
           title: label,
           titleKey: const Key('run-result-outcome'),
           titleMaxLines: 2,
-          supporting: TextSpan(text: error ?? reason),
-          supportingKey: error == null ? null : const Key('run-result-error'),
+          supporting: TextSpan(text: error ?? facts),
+          supportingKey: error == null
+              ? const Key('run-result-facts')
+              : const Key('run-result-error'),
           supportingMaxLines: 3,
-          below: Padding(
-            padding: EdgeInsetsDirectional.only(top: tokens.space1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (error != null) KitText(reason, role: KitTextRole.secondary),
-                if (result.earlierStepErrors > 0)
-                  KitText(
-                    l10n.runResultsEarlierErrors(result.earlierStepErrors),
-                    key: const Key('run-result-earlier-errors'),
-                    role: KitTextRole.secondary,
+          below: error == null && result.earlierStepErrors == 0
+              ? null
+              : Padding(
+                  padding: EdgeInsetsDirectional.only(top: tokens.space1),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (error != null)
+                        KitText(
+                          facts,
+                          key: const Key('run-result-facts'),
+                          role: KitTextRole.secondary,
+                        ),
+                      if (result.earlierStepErrors > 0)
+                        KitText(
+                          l10n.runResultsEarlierErrors(
+                            result.earlierStepErrors,
+                          ),
+                          key: const Key('run-result-earlier-errors'),
+                          role: KitTextRole.secondary,
+                        ),
+                    ],
                   ),
-                KitText(
-                  observedLive
-                      ? l10n.runResultsObservedLive
-                      : l10n.runResultsFromHistory,
-                  key: Key(
-                    observedLive ? 'run-result-observed' : 'run-result-history',
-                  ),
-                  role: KitTextRole.caption,
-                  tone: KitTextTone.tertiary,
                 ),
-              ],
-            ),
-          ),
         ),
       ],
     );
@@ -338,59 +355,78 @@ class RunResultView extends StatelessWidget {
           : () => _openOutput(
               context,
               AppIconography.editNote,
+              name.isEmpty ? file.path : name,
               file.toolName,
               file.state,
             ),
     );
   }
 
-  /// One command: how it ended first (exit code or an explicit unknown),
-  /// the command itself as a technical value, then what else is known.
+  /// One command: the command itself as the title, then how it ended,
+  /// state word first ("Failed · exit 1", "Passed · exit 0", "Exit not
+  /// recorded"). A failed command's mark takes the failure tone.
   Widget _commandRow(
     BuildContext context,
     AppLocalizations l10n,
     RunCommand command,
   ) {
-    final exit = command.exitCode == null
-        ? l10n.runResultsExitUnknown
-        : l10n.runResultsExit(command.exitCode!);
-    final failed = command.failed || (command.exitCode ?? 0) != 0;
-    final notes = [
-      if (command.failed) l10n.runResultsCommandFailed,
-      if (command.looksLikeTest) l10n.runResultsLooksLikeTest,
-      if (command.outputPruned) l10n.runResultsOutputPruned,
-    ];
+    final code = command.exitCode;
+    final failed = command.failed || (code ?? 0) != 0;
+    final state = switch (code) {
+      final code? when failed => l10n.runResultsCommandFailedExit(code),
+      final code? => l10n.runResultsCommandPassedExit(code),
+      null when failed => l10n.runResultsCommandFailedNoExit,
+      null => l10n.runResultsExitNotRecorded,
+    };
+    final text = command.command.trim();
+    final title = text.isEmpty ? l10n.runResultsCommandEmpty : text;
     final glyph = failed ? AppIconography.error : AppIconography.terminal;
+    final roles = ThemeRoles.of(context);
     return KitRow(
       key: Key('run-result-command-${command.partID ?? command.command}'),
-      leading: KitRow.icon(context, glyph),
-      title: exit,
-      supporting: notes.isEmpty ? null : TextSpan(text: notes.join(' · ')),
+      leading: KitRow.icon(
+        context,
+        glyph,
+        color: failed
+            ? KitTokens.toneColor(roles, AppStatusTone.failure)
+            : null,
+      ),
+      title: title,
+      titleMaxLines: 3,
+      supporting: TextSpan(
+        text: command.outputPruned
+            ? '$state · ${l10n.runResultsOutputPruned}'
+            : state,
+      ),
       supportingMaxLines: 2,
-      below: command.command.isEmpty
-          ? KitText(l10n.runResultsCommandEmpty, role: KitTextRole.secondary)
-          : KitText.mono(command.command, maxLines: 3),
       trailing: command.outputPruned ? null : const KitRowValue(''),
       onTap: command.outputPruned
           ? null
-          : () => _openOutput(context, glyph, command.toolName, command.state),
+          : () => _openOutput(
+              context,
+              glyph,
+              title,
+              command.toolName,
+              command.state,
+            ),
     );
   }
 
-  /// "What it did": the underlying record, rendered by the same ToolCard the
-  /// transcript uses and already open, in a sheet as tall as that one
-  /// record. Nothing is re-fetched or re-summarised.
+  /// The underlying record, rendered by the same ToolCard the transcript
+  /// uses and already open, in a sheet titled with what it is (the command,
+  /// or the file's name) and as tall as that one record. Nothing is
+  /// re-fetched or re-summarised.
   Future<void> _openOutput(
     BuildContext context,
     IconData icon,
+    String title,
     String toolName,
     ToolState state,
   ) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     const opened = 'run-result-output';
     return showKitSheet<void>(
       context,
-      title: l10n.runResultViewOutputTitle,
+      title: title,
       icon: icon,
       sheetKey: const Key('run-result-output-sheet'),
       body: (_) => ToolCard(
