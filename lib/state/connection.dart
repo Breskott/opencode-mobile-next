@@ -6358,7 +6358,7 @@ class ConnectionController extends ChangeNotifier {
         // Only now invalidate destructive owners and begin cleanup.
         await Future.wait<void>([
           BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
-          ManagedServerRecovery.disableForProfile(store.prefs, profileId),
+          ManagedServerRecovery.prepareForProfileDeletion(store.prefs, profileId),
         ]);
         // Keep the shared runtime owner through queue preflight failures.
         // Once preservation succeeds, prevent fallback to another profile.

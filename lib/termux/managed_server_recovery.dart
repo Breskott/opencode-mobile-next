@@ -63,6 +63,10 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   static final _knownProfiles = Map<SharedPreferences, Set<String>>.identity();
   static final _retiredProfiles =
       Map<SharedPreferences, Set<String>>.identity();
+  // Deletion admission survives disposal of the last runtime facade. A saved
+  // profile is reopened only by syncProfiles after the deletion transaction.
+  static final _deletingProfiles =
+      Map<SharedPreferences, Set<String>>.identity();
   static final _runtimes =
       Map<SharedPreferences, Map<String, TermuxRuntime>>.identity();
   // Registration belongs to the connection scope, even before the person
@@ -116,6 +120,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     _knownProfiles[prefs] = ids;
+    _deletingProfiles[prefs]?.removeAll(ids);
     _retiredProfiles[prefs]?.removeAll(ids);
     _runtimes[prefs] = Map.of(runtimes);
     if (onRestart != null) _recorders[prefs] = onRestart;
@@ -156,6 +161,38 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       return current._disableForDeletion();
     }
     return _disableStored(prefs, profileID);
+  }
+
+  /// Deletion already pauses the automation policy owner. Revoke recovery
+  /// without editing that policy: failed cleanup must retain the user's choice.
+  static Future<void> prepareForProfileDeletion(
+    SharedPreferences prefs,
+    String profileID,
+  ) async {
+    (_deletingProfiles[prefs] ??= {}).add(profileID);
+    (_retiredProfiles[prefs] ??= {}).add(profileID);
+    final current = _instances[prefs]?[profileID];
+    if (current != null) {
+      current._admissionClosed = true;
+      ++current._epoch;
+      current._timer?.cancel();
+      current._armed = false;
+      current._notify();
+      await current._initialization;
+      if (current.ownsInstallation) await current._revokePermit();
+      await current._inFlightCheck;
+    } else {
+      final raw = prefs.getString(preferenceKey(profileID));
+      if (raw != null &&
+          (_owners[prefs] == null || _owners[prefs] == profileID)) {
+        final token = (jsonDecode(raw) as Map)['token'];
+        if (token is String && token.isNotEmpty) {
+          await TermuxBridge.run(
+            TermuxBridge.recoveryControlScript(token, enable: false),
+          );
+        }
+      }
+    }
   }
 
   /// An intentional stop/runtime switch suspends this installation without
