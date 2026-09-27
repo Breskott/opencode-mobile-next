@@ -1,0 +1,31 @@
+{
+  "base_revision": "23bce72dc50883113a993cca4ec7556f4a924781",
+  "dart_files": {
+    "lib/api/setup_config_adapter.dart": "4117e7d1993f32e5c9fda43ef6a7cf728c267fd6c2fe2180d3871931fef99a80",
+    "lib/api2/gateway_mappers.dart": "ab583522a60431fe1dca2450537530410b24bd9c80dcaafe798c898ef7166ded",
+    "lib/api2/setup_config_adapter.dart": "fbc11f8262aeee59a222e3669158f6d60920c92d8398f8b573e0cfba53ab3e1d",
+    "lib/domain/server_gateway.dart": "c93fe34006a003d9b7a5c7e92e94f2dfa09bbeaf16adeb237a21fc3e52927500",
+    "lib/domain/setup_assistant.dart": "7c712a9b9b979a37d699c49d787cbbd3e67c3d2378f36d3fda04b87ae974e062",
+    "lib/domain/setup_planner.dart": "e9ec3e30565207c1cd30a69df1d96c9937a098142b9ca4fd7c499b66010d2329",
+    "lib/domain/setup_registry.dart": "84a587768ce42b778f77adea670a9a4ce50f84f869aa4175fef8fb6dfdfb011f",
+    "lib/state/setup_controller.dart": "1ec0b1bec351a6126d1ee205f0cc6658d7525ae9be5f4b759bef0ad56dc3a58a",
+    "lib/state/setup_registry_store.dart": "16d070e5db1ae294769a6275a90daf55ec6da4ca68c57475a2937a695d2c75cc",
+    "test/setup_component_removal_test.dart": "d31bd89bc929d1407feaf9cc6720d9be6ad6d3450a42d1d3d21609eda250d7c4",
+    "test/setup_config_adapter_test.dart": "03e79df0066feaa082f590039db9e8ff5231fe585c63313b53ccce2610b14842",
+    "test/setup_controller_test.dart": "88ef36bd0c8ccf941f8eac5e644dbd26d2b3b5e355932352e4e2dbdaeebe7835",
+    "test/setup_engine_test.dart": "b8355f615bbe58fc87051d97074babc6d09b24c7832883841dbb817320c92850",
+    "test/setup_planner_test.dart": "dae8cb24d753211e5eb4facade225875cc18b60888c66ac79f8df246b752e00b",
+    "test/setup_preflight_test.dart": "ca8ac7a1f5099dcc278ac67667b5c381862103351149ca00ac0c0e20ed609e20",
+    "test/setup_registry_test.dart": "534900a77e102d5809a7f79c01f8aa9316430f9581584482dd5d6936f3519030",
+    "test/setup_scenes_test.dart": "3019013bdd69b139e13c385eec978114a7611afd5f1d2abff2b20a6f016d9c11",
+    "test/setup_scripts_test.dart": "0336cfd3da16b484026ce72d6ba21c7c497b4e55d17800b80fc4f7491085d824",
+    "test/setup_ui_messages_test.dart": "5911ead005595e7f0e8c91e3286579d91931158065e9a1a2fe990ca059244650"
+  },
+  "focused_tests": [
+    "test/setup_controller_test.dart",
+    "test/setup_config_adapter_test.dart",
+    "test/setup_planner_test.dart",
+    "test/setup_registry_test.dart"
+  ],
+  "full_suite": false
+}

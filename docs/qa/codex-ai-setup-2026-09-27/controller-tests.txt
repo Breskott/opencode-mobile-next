@@ -1,0 +1,16 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app-codex-aiset/test/setup_controller_test.dart
+00:00 +0: redacted read strips arbitrary environment credentials and server errors
+00:00 +1: propose requires review and apply verifies outcome then undo restores
+00:00 +2: unsupported production writes never call transport
+00:00 +3: changed server configuration prevents apply and undo overwrites
+00:00 +4: offline cannot dispatch writes; proposals remain reviewable
+00:00 +5: secret inputs and overlapping patches fail validation
+00:00 +6: new keys and removals are proposals only without reversible deletion
+00:00 +7: unknown write outcome records uncertainty and prevents blind retry
+00:00 +8: profile deletion sweep includes audit and preserves another profile
+00:00 +9: controller serializes concurrent actions and exposes loading stream
+00:00 +10: offline transition during refresh cannot publish ready state
+00:00 +11: layered source config cannot masquerade as an effective diff
+00:00 +12: basic shape validation rejects malformed scalar and MCP inputs
+00:00 +13: setup mutation capabilities default off for unknown servers
+00:00 +14: All tests passed!
