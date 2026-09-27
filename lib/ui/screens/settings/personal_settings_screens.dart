@@ -3,9 +3,11 @@ part of '../settings_screen.dart';
 /// The parts of Appearance a search result can mean.
 enum AppearanceSection { mode, language, effects, theme }
 
-/// Appearance category: light/dark mode and language, the effects the
-/// person controls (glass, animations, celebrations, vibration; design
-/// standard §10) and the theme-pack picker with live swatch previews.
+/// Appearance category (`appearance-settings`): light or dark in one tap,
+/// the language, the effects the person controls (glass, animations,
+/// celebrations, vibration; design standard §10) and the theme packs as
+/// swatches. Kit only (screen-settings-1): KitRowGroup panels of KitRow,
+/// KitSegmented, KitPickerRow and KitSwitchRow, and a KitSwatchGrid.
 class AppearanceSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -29,6 +31,9 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
       section: GlobalKey(debugLabel: 'appearance-${section.name}'),
   };
 
+  /// A display choice (light or dark, language) the device refused to save.
+  bool _displayFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,86 +45,227 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
     }
   }
 
+  Future<void> _saveDisplay(Future<void> Function() write) async {
+    setState(() => _displayFailed = false);
+    try {
+      await write();
+    } catch (_) {
+      if (mounted) setState(() => _displayFailed = true);
+    }
+  }
+
+  static String _localeLabel(AppLocalizations l10n, String code) =>
+      switch (code) {
+        'ar' => l10n.e7LocaleUiArabic,
+        'en' => l10n.e7LocaleUiEnglish,
+        _ => l10n.e7LocaleUiSystem,
+      };
+
+  Widget _display(BuildContext context) {
+    final controller = widget.controller;
+    final copy = _settingsCopy(context);
+    final tokens = KitTokens.of(context);
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        controller.appearance,
+        controller.appLocale,
+      ]),
+      builder: (context, _) {
+        final appearance = controller.appearance.value;
+        final locale = controller.appLocale.value?.languageCode ?? '';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_displayFailed)
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.gutter,
+                  end: tokens.gutter,
+                  bottom: tokens.space3,
+                ),
+                child: KitNotice(
+                  key: const ValueKey('appearance-display-failed'),
+                  tone: AppStatusTone.failure,
+                  message: copy.effectsSaveFailed,
+                ),
+              ),
+            KitRowGroup(
+              label: copy.appearanceDisplaySection,
+              children: [
+                // Light or dark in one tap (map actionsMissing).
+                KeyedSubtree(
+                  key: _sectionKeys[AppearanceSection.mode],
+                  child: KitRow(
+                    key: const ValueKey('appearance-settings-entry'),
+                    leading: KitRow.icon(context, AppIconography.contrast),
+                    title: copy.e7SettingsUi69,
+                    below: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        top: tokens.space2,
+                        bottom: tokens.space1,
+                      ),
+                      child: KitSegmented<AppAppearance>(
+                        semanticsLabel: copy.e7SettingsUi69,
+                        selected: appearance,
+                        segments: [
+                          for (final value in AppAppearance.values)
+                            KitSegment(
+                              key: ValueKey('appearance-mode-${value.name}'),
+                              value: value,
+                              label: switch (value) {
+                                AppAppearance.system =>
+                                  copy.appearanceModeSystem,
+                                _ => appearanceLabel(value, context),
+                              },
+                            ),
+                        ],
+                        onChanged: (value) =>
+                            _saveDisplay(() => controller.setAppearance(value)),
+                      ),
+                    ),
+                  ),
+                ),
+                KeyedSubtree(
+                  key: _sectionKeys[AppearanceSection.language],
+                  child: KitPickerRow<String>(
+                    rowKey: const ValueKey('appearance-language'),
+                    leading: KitRow.icon(context, AppIconography.globe),
+                    title: copy.e7LocaleUiLanguage,
+                    valueLabel: _localeLabel(copy, locale),
+                    choices: [
+                      for (final code in const ['', 'en', 'ar'])
+                        KitChoice(
+                          value: code,
+                          title: _localeLabel(copy, code),
+                          key: ValueKey('appearance-language-$code'),
+                        ),
+                    ],
+                    selected: locale,
+                    onSelected: (code) => _saveDisplay(
+                      () => controller.setAppLocale(
+                        code.isEmpty ? null : Locale(code),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _themes(BuildContext context) {
+    final controller = widget.controller;
+    final copy = _settingsCopy(context);
+    final tokens = KitTokens.of(context);
+    final brightness = Theme.of(context).brightness;
+    final current = ThemeRoles.of(context);
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        controller.themePack,
+        harvestedDynamicPack,
+      ]),
+      builder: (context, _) {
+        final selected = controller.themePack.value;
+        // Thirty themes as list rows is a very long page. They are a grid of
+        // swatches instead: each is a miniature of the theme, so choosing is
+        // looking, not reading.
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.space1,
+                  end: tokens.space1,
+                  bottom: tokens.labelGap,
+                ),
+                child: Semantics(
+                  header: true,
+                  child: KitText(copy.e7SettingsUi70, role: KitTextRole.label),
+                ),
+              ),
+              KitSwatchGrid(
+                label: copy.e7SettingsUi70,
+                children: [
+                  for (final id in ThemePackId.values)
+                    _swatch(context, id, selected, brightness, current),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  KitSwatch _swatch(
+    BuildContext context,
+    ThemePackId id,
+    ThemePackId selected,
+    Brightness brightness,
+    ThemeRoles current,
+  ) {
+    final pack = id == ThemePackId.dynamic
+        ? harvestedDynamicPack.value
+        : themePack(id);
+    final available = pack != null;
+    return KitSwatch(
+      swatchKey: ValueKey('theme-pack-${id.name}'),
+      // An unharvested Material You pack has no colours of its own yet: it
+      // shows the current theme, disabled with the reason in words.
+      roles: pack?.palette(brightness).themeRoles ?? current,
+      label: themePackLabels[id]!,
+      selected: selected == id,
+      disabledReason: available
+          ? null
+          : _settingsCopy(context).e7AppearanceDynamicUnavailable,
+      onPressed: available
+          ? () => showThemePackPreview(
+              context,
+              controller: widget.controller,
+              pack: id,
+            )
+          : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
-    return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).e7AppearanceTitle)),
-      // Not a lazy list: a dozen rows, and a search result that means one
-      // part must find it laid out.
-      body: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionLabel(_settingsCopy(context).appearanceDisplaySection),
-            ValueListenableBuilder<AppAppearance>(
-              key: _sectionKeys[AppearanceSection.mode],
-              valueListenable: controller.appearance,
-              builder: (context, appearance, _) => _CategoryRow(
-                rowKey: 'appearance-settings-entry',
-                icon: AppIconography.contrast,
-                title: _settingsCopy(context).e7SettingsUi69,
-                subtitle: appearanceLabel(appearance, context),
-                onTap: () =>
-                    showAppearancePicker(context, controller: controller),
-              ),
-            ),
-            KeyedSubtree(
-              key: _sectionKeys[AppearanceSection.language],
-              // The kit row's geometry: a 32 dp icon, 12 dp to the title.
-              child: ListTileTheme.merge(
-                horizontalTitleGap: 12,
-                minLeadingWidth: 32,
-                child: LanguageSettingsTile(controller: controller),
-              ),
-            ),
-            KeyedSubtree(
-              key: _sectionKeys[AppearanceSection.effects],
-              child: _EffectsSection(controller: controller),
-            ),
-            KeyedSubtree(
-              key: _sectionKeys[AppearanceSection.theme],
-              child: SectionLabel(_settingsCopy(context).e7SettingsUi70),
-            ),
-            ListenableBuilder(
-              listenable: Listenable.merge([
-                controller.themePack,
-                harvestedDynamicPack,
-              ]),
-              builder: (context, _) {
-                final selected = controller.themePack.value;
-                final brightness = Theme.of(context).brightness;
-                // Thirty themes as list rows is a very long page. They are a
-                // grid of swatches instead: each card is a miniature of the
-                // theme, so choosing is looking, not reading.
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (final id in ThemePackId.values)
-                        _ThemePackTile(
-                          id: id,
-                          selected: selected == id,
-                          brightness: brightness,
-                          available:
-                              id != ThemePackId.dynamic ||
-                              harvestedDynamicPack.value != null,
-                          onSelect: () => showThemePackPreview(
-                            context,
-                            controller: controller,
-                            pack: id,
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
+    final tokens = KitTokens.of(context);
+    return KitScreen(
+      topBar: KitTopBar(title: _settingsCopy(context).e7AppearanceTitle),
+      width: KitScreenWidth.reading,
+      // Not a lazy list: a dozen rows in one Column, and a search result
+      // that means one part must find it laid out.
+      body: ListView(
+        key: const ValueKey('appearance-settings'),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
         ),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _display(context),
+              SizedBox(height: tokens.sectionGap),
+              KeyedSubtree(
+                key: _sectionKeys[AppearanceSection.effects],
+                child: _EffectsSection(controller: controller),
+              ),
+              SizedBox(height: tokens.sectionGap),
+              KeyedSubtree(
+                key: _sectionKeys[AppearanceSection.theme],
+                child: _themes(context),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -162,8 +308,18 @@ class _EffectsSectionState extends State<_EffectsSection> {
           effects: effects,
           child: Builder(
             builder: (context) {
-              final systemStill = MediaQuery.disableAnimationsOf(context);
-              final glassSupporting = KitGlass.reduceEffects(context)
+              final tokens = KitTokens.of(context);
+              // Reduced with Animations not Off: the system setting wins.
+              final systemStill =
+                  KitMotion.reduced(context) &&
+                  effects.motion != KitMotionLevel.off;
+              // The system settings under which the kit keeps glass solid:
+              // high contrast, a screen reader, remove animations.
+              final systemSolid =
+                  MediaQuery.highContrastOf(context) ||
+                  MediaQuery.accessibleNavigationOf(context) ||
+                  systemStill;
+              final glassSupporting = systemSolid
                   ? copy.effectsGlassSystem
                   : KitGlassShader.supported
                   ? copy.effectsGlassOn
@@ -171,12 +327,14 @@ class _EffectsSectionState extends State<_EffectsSection> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SectionLabel(copy.effectsSection),
-                  _EffectsPreview(effects: effects),
                   KitReveal(
                     child: _failed
                         ? Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                            padding: EdgeInsetsDirectional.only(
+                              start: tokens.gutter,
+                              end: tokens.gutter,
+                              bottom: tokens.space3,
+                            ),
                             child: KitNotice(
                               tone: AppStatusTone.failure,
                               message: copy.effectsSaveFailed,
@@ -184,82 +342,101 @@ class _EffectsSectionState extends State<_EffectsSection> {
                           )
                         : null,
                   ),
-                  KitSwitchRow(
-                    key: const ValueKey('effects-glass'),
-                    leading: KitRow.icon(context, AppIconography.layers),
-                    title: copy.effectsGlass,
-                    supporting: glassSupporting,
-                    value: effects.glass,
-                    onChanged: (value) =>
-                        _choose(effects.copyWith(glass: value)),
-                  ),
-                  KitRow(
-                    key: const ValueKey('effects-motion'),
-                    leading: KitRow.icon(context, AppIconography.playCircle),
-                    title: copy.effectsAnimations,
-                    supporting: TextSpan(
-                      text: switch (effects.motion) {
-                        KitMotionLevel.full => copy.effectsMotionFullHint,
-                        KitMotionLevel.calm => copy.effectsMotionCalmHint,
-                        KitMotionLevel.off => copy.effectsMotionOffHint,
-                      },
-                    ),
-                    supportingMaxLines: 2,
-                    below: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 10),
-                        SegmentedButton<KitMotionLevel>(
-                          showSelectedIcon: false,
-                          segments: [
-                            for (final (level, label) in [
-                              (KitMotionLevel.full, copy.effectsMotionFull),
-                              (KitMotionLevel.calm, copy.effectsMotionCalm),
-                              (KitMotionLevel.off, copy.effectsMotionOff),
-                            ])
-                              ButtonSegment(
-                                value: level,
-                                label: Text(
-                                  label,
-                                  key: ValueKey('effects-motion-${level.name}'),
-                                ),
-                              ),
-                          ],
-                          selected: {effects.motion},
-                          onSelectionChanged: (choice) =>
-                              _choose(effects.copyWith(motion: choice.single)),
+                  KitRowGroup(
+                    label: copy.effectsSection,
+                    children: [
+                      _EffectsPreview(effects: effects),
+                      KitSwitchRow(
+                        key: const ValueKey('effects-glass'),
+                        leading: KitRow.icon(context, AppIconography.layers),
+                        title: copy.effectsGlass,
+                        supporting: glassSupporting,
+                        value: effects.glass,
+                        onChanged: (value) =>
+                            _choose(effects.copyWith(glass: value)),
+                      ),
+                      KitRow(
+                        key: const ValueKey('effects-motion'),
+                        leading: KitRow.icon(
+                          context,
+                          AppIconography.playCircle,
                         ),
-                        if (systemStill)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              copy.effectsMotionSystemOff,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: AppTheme.mutedOf(Theme.of(context)),
-                                  ),
-                            ),
+                        title: copy.effectsAnimations,
+                        supporting: TextSpan(
+                          text: switch (effects.motion) {
+                            KitMotionLevel.full => copy.effectsMotionFullHint,
+                            KitMotionLevel.calm => copy.effectsMotionCalmHint,
+                            KitMotionLevel.off => copy.effectsMotionOffHint,
+                          },
+                        ),
+                        supportingMaxLines: 2,
+                        below: Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            top: tokens.space2,
+                            bottom: tokens.space1,
                           ),
-                      ],
-                    ),
-                  ),
-                  KitSwitchRow(
-                    key: const ValueKey('effects-celebrations'),
-                    leading: KitRow.icon(context, AppIconography.sparkle),
-                    title: copy.effectsCelebrations,
-                    supporting: copy.effectsCelebrationsHint,
-                    value: effects.celebrations,
-                    onChanged: (value) =>
-                        _choose(effects.copyWith(celebrations: value)),
-                  ),
-                  KitSwitchRow(
-                    key: const ValueKey('effects-vibration'),
-                    leading: KitRow.icon(context, AppIconography.touch),
-                    title: copy.effectsVibration,
-                    supporting: copy.effectsVibrationHint,
-                    value: effects.haptics,
-                    onChanged: (value) =>
-                        _choose(effects.copyWith(haptics: value)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              KitSegmented<KitMotionLevel>(
+                                semanticsLabel: copy.effectsAnimations,
+                                selected: effects.motion,
+                                segments: [
+                                  for (final (level, label) in [
+                                    (
+                                      KitMotionLevel.full,
+                                      copy.effectsMotionFull,
+                                    ),
+                                    (
+                                      KitMotionLevel.calm,
+                                      copy.effectsMotionCalm,
+                                    ),
+                                    (KitMotionLevel.off, copy.effectsMotionOff),
+                                  ])
+                                    KitSegment(
+                                      key: ValueKey(
+                                        'effects-motion-${level.name}',
+                                      ),
+                                      value: level,
+                                      label: label,
+                                    ),
+                                ],
+                                onChanged: (level) =>
+                                    _choose(effects.copyWith(motion: level)),
+                              ),
+                              if (systemStill)
+                                Padding(
+                                  padding: EdgeInsetsDirectional.only(
+                                    top: tokens.space2,
+                                  ),
+                                  child: KitText(
+                                    copy.effectsMotionSystemOff,
+                                    role: KitTextRole.secondary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      KitSwitchRow(
+                        key: const ValueKey('effects-celebrations'),
+                        leading: KitRow.icon(context, AppIconography.sparkle),
+                        title: copy.effectsCelebrations,
+                        supporting: copy.effectsCelebrationsHint,
+                        value: effects.celebrations,
+                        onChanged: (value) =>
+                            _choose(effects.copyWith(celebrations: value)),
+                      ),
+                      KitSwitchRow(
+                        key: const ValueKey('effects-vibration'),
+                        leading: KitRow.icon(context, AppIconography.touch),
+                        title: copy.effectsVibration,
+                        supporting: copy.effectsVibrationHint,
+                        value: effects.haptics,
+                        onChanged: (value) =>
+                            _choose(effects.copyWith(haptics: value)),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -273,8 +450,9 @@ class _EffectsSectionState extends State<_EffectsSection> {
 
 /// A small live sample of the effects: the brand's portal drawing itself in
 /// (again on each Animations change; finished at once under Off) beside a
-/// chip of the app's glass floating over colour. Decorative: the rows say
-/// everything in words. No loop, so the page rests.
+/// miniature of the app's floating tab bar, the one place glass lives
+/// (LOOK-27), built by the kit. Decorative: the rows say everything in
+/// words. No loop, so the page rests.
 class _EffectsPreview extends StatelessWidget {
   const _EffectsPreview({required this.effects});
 
@@ -282,74 +460,37 @@ class _EffectsPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tokens = KitTokens.of(context);
+    final copy = _settingsCopy(context);
     return ExcludeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        child: SizedBox(
-          height: 96,
+      child: IgnorePointer(
+        child: Padding(
+          padding: EdgeInsets.all(tokens.panelInset),
           child: Row(
             children: [
               KitIllustration(
                 key: ValueKey('effects-preview-${effects.motion.name}'),
                 scene: const KitPortalScene(),
-                width: 96,
+                width: KitTokens.illustrationInline,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.space3),
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              scheme.primaryContainer,
-                              scheme.tertiaryContainer,
-                              scheme.secondaryContainer,
-                            ],
-                          ),
-                        ),
+                child: KeyedSubtree(
+                  key: const ValueKey('effects-preview-glass'),
+                  child: KitNavBar(
+                    destinations: [
+                      KitNavDestination(
+                        label: copy.effectsPreviewWork,
+                        icon: AppIconography.workspace,
+                        selectedIcon: AppIconography.workspaceSelected,
                       ),
-                      // Stripes for the glass to bend at its edge.
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var i = 0; i < 9; i++)
-                            Expanded(
-                              child: ColoredBox(
-                                color: i.isEven
-                                    ? Colors.transparent
-                                    : scheme.surface.withValues(alpha: .4),
-                              ),
-                            ),
-                        ],
-                      ),
-                      Center(
-                        child: SizedBox(
-                          width: 112,
-                          height: 44,
-                          child: KitGlass(
-                            key: const ValueKey('effects-preview-glass'),
-                            borderRadius: BorderRadius.circular(22),
-                            shadow: false,
-                            child: Center(
-                              child: Icon(
-                                AppIconography.layers,
-                                size: 20,
-                                color: KitGlass.foregroundColor(
-                                  Theme.of(context),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                      KitNavDestination(
+                        label: copy.effectsPreviewSettings,
+                        icon: AppIconography.settings,
                       ),
                     ],
+                    selected: 0,
+                    onSelected: (_) {},
                   ),
                 ),
               ),
@@ -361,162 +502,11 @@ class _EffectsPreview extends StatelessWidget {
   }
 }
 
-class _ThemePackTile extends StatelessWidget {
-  final ThemePackId id;
-  final bool selected;
-  final bool available;
-  final Brightness brightness;
-  final VoidCallback onSelect;
-
-  const _ThemePackTile({
-    required this.id,
-    required this.selected,
-    required this.available,
-    required this.brightness,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final pack = id == ThemePackId.dynamic
-        ? harvestedDynamicPack.value
-        : themePack(id);
-    final palette = pack?.palette(brightness);
-    final theme = Theme.of(context);
-    final label = themePackLabels[id]!;
-    final description = !available
-        ? _settingsCopy(context).e7AppearanceDynamicUnavailable
-        : _themeDescription(context, id);
-    // Three to a row on a phone, more on a wide window.
-    final width = MediaQuery.sizeOf(context).width;
-    final columns = (width / 130).floor().clamp(2, 6);
-    // A hair under the exact share so rounding never drops a card to the
-    // next row.
-    final cardWidth =
-        (width.clamp(0, 900) - 32 - 10 * (columns - 1)) / columns - .5;
-    return Semantics(
-      button: true,
-      selected: selected,
-      enabled: available,
-      label: description == null ? label : '$label. $description',
-      excludeSemantics: true,
-      child: Opacity(
-        opacity: available ? 1 : .5,
-        child: InkWell(
-          key: ValueKey('theme-pack-${id.name}'),
-          borderRadius: BorderRadius.circular(14),
-          onTap: available ? onSelect : null,
-          child: Container(
-            width: cardWidth,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: selected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // The miniature: the theme's page, a surface on it, a line
-                // of its text, and its accent and success colours.
-                Container(
-                  height: 56,
-                  color: palette?.background ?? theme.colorScheme.surface,
-                  padding: const EdgeInsets.all(8),
-                  child: palette == null
-                      ? const Center(child: Icon(AppIconography.sparkle))
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: palette.scheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                alignment: AlignmentDirectional.centerStart,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                child: Container(
-                                  height: 4,
-                                  width: 28,
-                                  decoration: BoxDecoration(
-                                    color: palette.scheme.onSurface,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            for (final color in [
-                              palette.scheme.primary,
-                              palette.scheme.secondary,
-                              palette.success,
-                            ])
-                              Container(
-                                width: 12,
-                                height: 12,
-                                margin: const EdgeInsetsDirectional.only(
-                                  start: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 6, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelLarge,
-                        ),
-                      ),
-                      if (selected)
-                        Icon(
-                          AppIconography.check,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                    ],
-                  ),
-                ),
-                // Disabled with the truth: a card that cannot be chosen says
-                // why, in words, not only by looking faded.
-                if (!available && description != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 8),
-                    child: Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Privacy category: read-state sync and the unsent work this device is
-/// holding on the user's behalf. Durable grants ("Always allowed actions")
-/// live under Conversation defaults in the hub: they are about how the agent
-/// works, not about privacy.
+/// Privacy and local data (`privacy-settings`): read-state sync, the unsent
+/// work this device holds on the person's behalf with its size and a way
+/// to delete it, and the privacy policy. Durable grants ("Always allowed
+/// actions") live under Conversation defaults in the hub: they are about
+/// how the agent works, not about privacy.
 class PrivacySettingsScreen extends StatefulWidget {
   final ConnectionController controller;
   const PrivacySettingsScreen({super.key, required this.controller});
@@ -528,6 +518,10 @@ class PrivacySettingsScreen extends StatefulWidget {
 class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   bool _busy = false;
   bool _readPreferenceFailed = false;
+
+  /// What the last delete did, said on the page (KIT-34: no snackbar for a
+  /// delete that cannot be undone).
+  ({String message, bool ok})? _result;
 
   ConnectionController get _controller => widget.controller;
 
@@ -545,88 +539,122 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   Future<void> _confirmAndClear({
     required String title,
     required String body,
+    required String confirmLabel,
+    required String confirmKey,
     required Future<bool> Function() clear,
     required String cleared,
     required String failed,
   }) async {
-    final ok = await showConfirmSheet(
+    final ok = await showKitConfirm(
       context,
       title: title,
-      message: body,
-      confirmLabel: _settingsCopy(context).promptStashDelete,
+      body: body,
+      confirmLabel: confirmLabel,
       icon: AppIconography.delete,
-      destructive: true,
+      kind: KitConfirmKind.destructive,
+      confirmKey: ValueKey(confirmKey),
     );
     if (!ok || !mounted) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _result = null;
+    });
     final succeeded = await clear();
     if (!mounted) return;
-    setState(() => _busy = false);
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(succeeded ? cleared : failed),
-        backgroundColor: succeeded ? null : Theme.of(context).colorScheme.error,
-      ),
-    );
+    setState(() {
+      _busy = false;
+      _result = (message: succeeded ? cleared : failed, ok: succeeded);
+    });
   }
+
+  Widget _readState(BuildContext context) => ListenableBuilder(
+    listenable: _controller,
+    builder: (context, _) {
+      if (!_controller.supportsSessionReadState) {
+        return const SizedBox.shrink();
+      }
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+          lookupAppLocalizations(const Locale('en'));
+      final tokens = KitTokens.of(context);
+      final saving = _controller.savingReadPrivacy;
+      return Padding(
+        padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
+        child: KitRowGroup(
+          label: l10n.privacySharedSection,
+          children: [
+            KitSwitchRow(
+              key: const ValueKey('share-session-views'),
+              leading: KitRow.icon(context, AppIconography.visible),
+              title: l10n.shareSessionViewsTitle,
+              supporting: _controller.shareSessionViews
+                  ? l10n.shareSessionViewsOn
+                  : l10n.shareSessionViewsOff,
+              value: _controller.shareSessionViews,
+              disabledReason: saving ? l10n.privacySaving : null,
+              onChanged: saving
+                  ? null
+                  : (value) async {
+                      setState(() => _readPreferenceFailed = false);
+                      try {
+                        await _controller.setShareSessionViews(value);
+                      } catch (_) {
+                        if (mounted) {
+                          setState(() => _readPreferenceFailed = true);
+                        }
+                      }
+                    },
+              below: _readPreferenceFailed
+                  ? KitNotice(
+                      tone: AppStatusTone.failure,
+                      message: l10n.shareSessionViewsSaveError,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      );
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).settingsHubPrivacyRow)),
+    final copy = _settingsCopy(context);
+    final tokens = KitTokens.of(context);
+    final scope = SearchScope.of(context, _controller);
+    final policy = searchIndex(
+      copy,
+      scope,
+    ).where((entry) => entry.id == 'settings-privacy-data-use').firstOrNull;
+    final result = _result;
+    return KitScreen(
+      topBar: KitTopBar(title: copy.settingsHubPrivacyRow),
+      width: KitScreenWidth.reading,
+      loading: _busy,
+      loadingLabel: copy.privacyDeleting,
       body: ListView(
-        padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
+        key: const ValueKey('privacy-settings'),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
+        ),
         children: [
-          ListenableBuilder(
-            listenable: _controller,
-            builder: (context, _) {
-              if (!_controller.supportsSessionReadState) {
-                return const SizedBox.shrink();
-              }
-              final l10n =
-                  Localizations.of<AppLocalizations>(
-                    context,
-                    AppLocalizations,
-                  ) ??
-                  lookupAppLocalizations(const Locale('en'));
-              return Column(
-                children: [
-                  SwitchListTile.adaptive(
-                    key: const ValueKey('share-session-views'),
-                    title: Text(l10n.shareSessionViewsTitle),
-                    subtitle: Text(
-                      _controller.shareSessionViews
-                          ? l10n.shareSessionViewsOn
-                          : l10n.shareSessionViewsOff,
-                    ),
-                    value: _controller.shareSessionViews,
-                    onChanged: _controller.savingReadPrivacy
-                        ? null
-                        : (value) async {
-                            setState(() => _readPreferenceFailed = false);
-                            try {
-                              await _controller.setShareSessionViews(value);
-                            } catch (_) {
-                              if (mounted) {
-                                setState(() => _readPreferenceFailed = true);
-                              }
-                            }
-                          },
-                  ),
-                  if (_readPreferenceFailed)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: KitNotice(
-                        tone: AppStatusTone.failure,
-                        message: l10n.shareSessionViewsSaveError,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          SectionLabel(_settingsCopy(context).e7SettingsUi76),
+          if (result != null)
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.gutter,
+                end: tokens.gutter,
+                bottom: tokens.sectionGap,
+              ),
+              child: KitNotice(
+                key: const ValueKey('privacy-clear-result'),
+                tone: result.ok ? AppStatusTone.ok : AppStatusTone.failure,
+                message: result.message,
+                onDismiss: () => setState(() => _result = null),
+                dismissLabel: copy.notifyDismiss,
+              ),
+            ),
+          _readState(context),
           // Queued prompts carry attachment data URLs and drafts carry
           // whatever was typed but never sent. Both are the user's content,
           // held indefinitely until a server answers, so both get a size and
@@ -642,17 +670,17 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 Localizations.localeOf(context),
               );
               final draftBytes = _controller.sessionDraftBytes;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              return KitRowGroup(
+                label: copy.e7SettingsUi76,
                 children: [
                   KitRow(
                     key: const ValueKey('local-storage-usage'),
-                    leading: KitRow.icon(context, Icons.sd_storage_outlined),
-                    title: _settingsCopy(context).e7SettingsUi77,
+                    leading: KitRow.icon(context, AppIconography.database),
+                    title: copy.e7SettingsUi77,
                     supporting: TextSpan(
                       text: !queueReadable
                           ? l10n.queueStorageCountUnknown
-                          : _settingsCopy(context).e7SettingsStorageSummary(
+                          : copy.e7SettingsStorageSummary(
                               formatBytes(queuedBytes + draftBytes),
                               queued,
                               formatBytes(queuedBytes),
@@ -664,57 +692,73 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                     // A readout, not a door: the whole sentence stays.
                     supportingMaxLines: 4,
                   ),
-                  // Destructive (§2): error-coloured, confirmed first, never
-                  // primary. With nothing to clear the row rests, and its
-                  // own line says so.
+                  // Destructive (§2): confirmed first, never primary. With
+                  // nothing to delete the row rests, and its own line says
+                  // so.
                   _DestructiveRow(
                     rowKey: 'clear-queued-prompts',
                     icon: AppIconography.outbox,
-                    title: _settingsCopy(context).e7SettingsUi78,
+                    title: copy.e7SettingsUi78,
                     subtitle: !queueReadable
                         ? l10n.queueStorageUnreadable
                         : queued == 0
-                        ? _settingsCopy(context).e7SettingsUi79
-                        : _settingsCopy(
-                            context,
-                          ).e7SettingsQueueDeleteSummary(queued),
+                        ? copy.e7SettingsUi79
+                        : copy.e7SettingsQueueDeleteSummary(queued),
                     enabled: (queued > 0 || !queueReadable) && !_busy,
                     onTap: () => _confirmAndClear(
-                      title: _settingsCopy(context).e7SettingsUi80,
+                      title: copy.e7SettingsUi80,
                       body: !queueReadable
                           ? l10n.queueStorageDiscardUnreadable
-                          : _settingsCopy(
-                              context,
-                            ).e7SettingsQueueDeleteBody(queued),
+                          : copy.e7SettingsQueueDeleteBody(queued),
+                      // The counted verb (privacy-settings-clear-queued-sheet).
+                      confirmLabel: queueReadable
+                          ? copy.privacyDeleteQueuedCount(queued)
+                          : copy.promptStashDelete,
+                      confirmKey: 'privacy-clear-queued-confirm',
                       clear: _controller.clearAllQueuedPrompts,
-                      cleared: _settingsCopy(context).e7SettingsUi81,
-                      failed: _settingsCopy(context).e7SettingsUi82,
+                      cleared: copy.e7SettingsUi81,
+                      failed: copy.e7SettingsUi82,
                     ),
                   ),
                   _DestructiveRow(
                     rowKey: 'clear-session-drafts',
                     icon: AppIconography.editNote,
-                    title: _settingsCopy(context).e7SettingsUi83,
+                    title: copy.e7SettingsUi83,
                     subtitle: drafts == 0
-                        ? _settingsCopy(context).e7SettingsUi84
-                        : _settingsCopy(
-                            context,
-                          ).e7SettingsDraftDeleteSummary(drafts),
+                        ? copy.e7SettingsUi84
+                        : copy.e7SettingsDraftDeleteSummary(drafts),
                     enabled: drafts > 0 && !_busy,
                     onTap: () => _confirmAndClear(
-                      title: _settingsCopy(context).e7SettingsUi85,
-                      body: _settingsCopy(
-                        context,
-                      ).e7SettingsDraftDeleteBody(drafts),
+                      title: copy.e7SettingsUi85,
+                      body: copy.e7SettingsDraftDeleteBody(drafts),
+                      confirmLabel: copy.privacyDeleteDraftsCount(drafts),
+                      confirmKey: 'privacy-clear-drafts-confirm',
                       clear: _controller.clearAllSessionDrafts,
-                      cleared: _settingsCopy(context).e7SettingsUi86,
-                      failed: _settingsCopy(context).e7SettingsUi87,
+                      cleared: copy.e7SettingsUi86,
+                      failed: copy.e7SettingsUi87,
                     ),
                   ),
                 ],
               );
             },
           ),
+          // The policy, from here as well as Help (map actionsMissing).
+          if (policy != null) ...[
+            SizedBox(height: tokens.sectionGap),
+            KitRowGroup(
+              children: [
+                KitRow(
+                  key: const ValueKey('privacy-policy'),
+                  leading: KitRow.icon(context, policy.icon),
+                  title: policy.title,
+                  supporting: TextSpan(text: copy.e7SettingsUi93),
+                  supportingMaxLines: 2,
+                  trailing: const KitChevron(),
+                  onTap: () => policy.open(context, scope),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -722,7 +766,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
 }
 
 /// A row that deletes something this device holds (design standard §2):
-/// error-coloured, always confirmed by its action, never a primary button.
+/// the kit's destructive row, always confirmed by its action, never a
+/// primary button.
 class _DestructiveRow extends StatelessWidget {
   const _DestructiveRow({
     required this.rowKey,
@@ -743,11 +788,7 @@ class _DestructiveRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => KitRow(
     key: ValueKey(rowKey),
-    leading: KitRow.icon(
-      context,
-      icon,
-      color: Theme.of(context).colorScheme.error,
-    ),
+    leading: KitRow.icon(context, icon),
     title: title,
     supporting: TextSpan(text: subtitle),
     supportingMaxLines: 2,
@@ -756,13 +797,3 @@ class _DestructiveRow extends StatelessWidget {
     onTap: onTap,
   );
 }
-
-String? _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
-  ThemePackId.opencode => _settingsCopy(context).e7AppearancePackOpencode,
-  ThemePackId.catppuccin => _settingsCopy(context).e7AppearancePackCatppuccin,
-  ThemePackId.gruvbox => _settingsCopy(context).e7AppearancePackGruvbox,
-  ThemePackId.solarized => _settingsCopy(context).e7AppearancePackSolarized,
-  ThemePackId.dynamic => _settingsCopy(context).e7AppearancePackDynamic,
-  // A generated theme is its name and its colours.
-  _ => null,
-};

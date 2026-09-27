@@ -4,6 +4,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -278,6 +279,9 @@ void main() {
       find.text('Material You colors are not available on this device.'),
       findsNothing,
     );
+    // Centre the swatch: the grid's last row can sit under the fold.
+    await Scrollable.ensureVisible(tester.element(dynamicTile), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(dynamicTile);
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.opencode);
@@ -292,5 +296,69 @@ void main() {
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.dynamic);
+  });
+
+  group('screen-settings-1: appearance', () {
+    Widget page(ConnectionController controller) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: AppTheme.light(),
+      home: AppearanceSettingsScreen(controller: controller),
+    );
+
+    testWidgets('light or dark is one tap on the page', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Light'));
+      await tester.pumpAndSettle();
+      expect(controller.appearance.value, AppAppearance.light);
+      // No sheet opened on the way.
+      expect(find.byKey(const Key('appearance-picker')), findsNothing);
+
+      await tester.tap(find.text('Dark'));
+      await tester.pumpAndSettle();
+      expect(controller.appearance.value, AppAppearance.dark);
+    });
+
+    testWidgets('the language is a picker row with its value', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Language'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('appearance-language')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('appearance-language-ar')));
+      await tester.pumpAndSettle();
+      expect(controller.appLocale.value, const Locale('ar'));
+      // The row shows the value now in force.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('appearance-language')),
+          matching: find.textContaining('العربية'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('effects preview glass through the kit tab bar', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+      final preview = find.byKey(const ValueKey('effects-preview-glass'));
+      await tester.ensureVisible(preview);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: preview, matching: find.byType(KitNavBar)),
+        findsOneWidget,
+      );
+    });
   });
 }

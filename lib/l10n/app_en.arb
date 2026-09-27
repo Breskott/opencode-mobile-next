@@ -25263,5 +25263,149 @@
   "isolatedTaskUsually": "Usually 1–3 minutes",
   "@isolatedTaskUsually": {
     "description": "New task in a fresh worktree: how long creating and setting up a worktree usually takes"
+  },
+  "savedPermissionsIntro": "Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.",
+  "@savedPermissionsIntro": {
+    "description": "Always allowed actions: one line under the bar saying what the page is for."
+  },
+  "savedPermissionsCount": "{count, plural, one{1 action} other{{count} actions}}",
+  "@savedPermissionsCount": {
+    "description": "Always allowed actions: how many actions are allowed in the current project.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedPermissionsLoadFailed": "Could not load the always allowed actions",
+  "@savedPermissionsLoadFailed": {
+    "description": "Always allowed actions: title of the state when the list could not be loaded."
+  },
+  "savedPermissionsRevokeBody": "The agent will ask you again the next time it wants to do this. Work that is already running keeps going.",
+  "@savedPermissionsRevokeBody": {
+    "description": "Always allowed actions: body of the destructive confirmation that revokes one action."
+  },
+  "savedPermissionsRevokedDetail": "{action} now asks you first again.",
+  "@savedPermissionsRevokedDetail": {
+    "description": "Always allowed actions: the line after a revoke; action is the kind of action, such as \"Run a shell command\".",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "savedPermissionsDismiss": "Dismiss",
+  "@savedPermissionsDismiss": {
+    "description": "Always allowed actions: closes the notice that an action was revoked."
+  },
+  "savedPermissionsCopyPattern": "Copy pattern",
+  "@savedPermissionsCopyPattern": {
+    "description": "Always allowed actions: row menu item that copies the command or file pattern of an allowed action."
+  },
+  "savedPermissionsBusy": "Wait for the current change to finish",
+  "@savedPermissionsBusy": {
+    "description": "Always allowed actions: why refresh or revoke cannot run while another change is in progress."
+  },
+  "savedPermissionsLoading": "Loading always allowed actions",
+  "@savedPermissionsLoading": {
+    "description": "Always allowed actions: accessible name of the loading bar while the list refreshes."
+  },
+  "savedPermissionsAllResources": "Anything this kind of action touches",
+  "@savedPermissionsAllResources": {
+    "description": "Always allowed actions: shown for an allowed action that has no command or file pattern."
+  },
+  "settingsHubDetailEmpty": "Choose a group of settings",
+  "@settingsHubDetailEmpty": {
+    "description": "Settings on a wide window: the detail pane before a group is chosen."
+  },
+  "settingsHubDetailSearching": "Search results are in the list",
+  "@settingsHubDetailSearching": {
+    "description": "Settings on a wide window: the detail pane while a search is showing results in the list pane."
+  },
+  "notifyQuietStartPicker": "Set when quiet hours start",
+  "@notifyQuietStartPicker": {
+    "description": "Notifications: title of the time picker that sets the start of quiet hours."
+  },
+  "notifyQuietEndPicker": "Set when quiet hours end",
+  "@notifyQuietEndPicker": {
+    "description": "Notifications: title of the time picker that sets the end of quiet hours."
+  },
+  "notifyQuietSet": "Set",
+  "@notifyQuietSet": {
+    "description": "Notifications: confirm button of the quiet hours time picker."
+  },
+  "notifyQuietAllDay": "Start and end are the same, so notifications stay quiet all day.",
+  "@notifyQuietAllDay": {
+    "description": "Notifications: shown under quiet hours end when it equals the start."
+  },
+  "notifySendingTest": "Sending a test notification…",
+  "@notifySendingTest": {
+    "description": "Notifications: why the send test row is resting while a test is on its way."
+  },
+  "notifyNoServersTitle": "No saved servers to watch",
+  "@notifyNoServersTitle": {
+    "description": "Notifications: row in the saved servers section when there are none."
+  },
+  "notifyNoServersDetail": "Servers you save can be watched from here, so a request on one reaches you.",
+  "@notifyNoServersDetail": {
+    "description": "Notifications: second line of the row shown when there are no saved servers."
+  },
+  "notifyDismiss": "Dismiss",
+  "@notifyDismiss": {
+    "description": "Settings pages: closes a notice about a change that failed or finished."
+  },
+  "notifySaving": "Saving",
+  "@notifySaving": {
+    "description": "Notifications: accessible name of the loading bar while a choice is saved."
+  },
+  "notifyMonitorDetails": "How watching servers works",
+  "@notifyMonitorDetails": {
+    "description": "Notifications: label of the folded details about saved-server monitoring."
+  },
+  "notifyRestartBackground": "Restart the live connection",
+  "@notifyRestartBackground": {
+    "description": "Notifications: icon button that turns the background connection back on after Android stopped it."
+  },
+  "appearanceModeSystem": "System",
+  "@appearanceModeSystem": {
+    "description": "Appearance: segment that makes light or dark follow the device."
+  },
+  "effectsPreviewWork": "Work",
+  "@effectsPreviewWork": {
+    "description": "Appearance › Effects: first tab of the miniature tab bar that shows glass."
+  },
+  "effectsPreviewSettings": "Settings",
+  "@effectsPreviewSettings": {
+    "description": "Appearance › Effects: second tab of the miniature tab bar that shows glass."
+  },
+  "privacySharedSection": "Shared with your server",
+  "@privacySharedSection": {
+    "description": "Privacy and local data: section holding choices that send something to the server."
+  },
+  "privacySaving": "Saving…",
+  "@privacySaving": {
+    "description": "Privacy and local data: why the read state switch rests while it saves."
+  },
+  "privacyDeleting": "Deleting",
+  "@privacyDeleting": {
+    "description": "Privacy and local data: accessible name of the loading bar while a delete runs."
+  },
+  "privacyDeleteQueuedCount": "{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}",
+  "@privacyDeleteQueuedCount": {
+    "description": "Privacy and local data: confirm button that deletes the queued prompts, with their count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyDeleteDraftsCount": "{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}",
+  "@privacyDeleteDraftsCount": {
+    "description": "Privacy and local data: confirm button that deletes the unsent drafts, with their count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
