@@ -21054,6 +21054,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String kitDiffFilePosition(int index, int count) {
+    return '$index of $count';
+  }
+
+  @override
+  String kitDiffFilePositionSpoken(int index, int count) {
+    return 'file $index of $count';
+  }
+
+  @override
+  String get kitDiffViewed => 'Viewed';
+
+  @override
+  String get kitDiffSelectHunk => 'Select these lines';
+
+  @override
   String kitBoardLane(String column, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

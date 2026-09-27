@@ -33473,6 +33473,30 @@ abstract class AppLocalizations {
   /// **'Line {number}'**
   String kitDiffLine(int number);
 
+  /// KitDiffView: the phone file switcher's position after the file name, e.g. 'checkout_page.dart · 1 of 3'
+  ///
+  /// In en, this message translates to:
+  /// **'{index} of {count}'**
+  String kitDiffFilePosition(int index, int count);
+
+  /// KitDiffView: the file switcher's position as read by a screen reader, after the path and counts
+  ///
+  /// In en, this message translates to:
+  /// **'file {index} of {count}'**
+  String kitDiffFilePositionSpoken(int index, int count);
+
+  /// KitDiffView: screen-reader name of the tick on a file already viewed in the wide file list
+  ///
+  /// In en, this message translates to:
+  /// **'Viewed'**
+  String get kitDiffViewed;
+
+  /// KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk
+  ///
+  /// In en, this message translates to:
+  /// **'Select these lines'**
+  String get kitDiffSelectHunk;
+
   /// KitBoardLanes: a board lane's screen-reader label, the column's name and how many tasks it holds
   ///
   /// In en, this message translates to:
