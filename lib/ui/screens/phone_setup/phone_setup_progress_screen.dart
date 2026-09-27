@@ -7,7 +7,7 @@ import '../../../builtin/setup/setup_contract.dart';
 import '../../../builtin/setup/setup_engine.dart' show setupAddingTitle;
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
-import '../../widgets/confirm_sheet.dart';
+import '../../kit/kit.dart';
 import '../../widgets/setup_progress_view.dart';
 import 'phone_setup_routes.dart';
 
@@ -101,15 +101,24 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
     });
   }
 
+  /// "Stop setup?" (phone-setup-progress-stop-sheet): a stop, since it
+  /// ends running work; it says what is kept and where to pick it up.
   Future<void> _cancel() async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final stop = await showConfirmSheet(
+    final stop = await showKitConfirm(
       context,
       title: l10n.phoneSetupProgressStopTitle,
-      message: l10n.phoneSetupProgressStopMessage,
+      body: l10n.phoneSetupProgressStopMessage,
       confirmLabel: l10n.phoneSetupProgressStopConfirm,
       cancelLabel: l10n.phoneSetupProgressKeepGoing,
       icon: AppIconography.stop,
+      kind: KitConfirmKind.stop,
+      consequenceItems: [
+        KitConsequence(
+          l10n.phoneSetupProgressStopContinueLater,
+          key: const Key('phone-setup-progress-stop-later'),
+        ),
+      ],
       confirmKey: const Key('phone-setup-progress-stop-confirm'),
     );
     if (!stop || !mounted) return;
@@ -131,35 +140,35 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      // Back just leaves; the job carries on in the background and the
-      // notification brings the person back here.
-      appBar: AppBar(),
-      body: SafeArea(
-        top: false,
-        child: ValueListenableBuilder<SetupProgress>(
-          valueListenable: _engine.progress,
-          builder: (context, progress, _) {
-            final ids = _defaultIds();
-            return SetupProgressView(
-              progress: progress,
-              title: progress.adding.isEmpty
-                  ? l10n.phoneSetupProgressTitle
-                  : setupAddingTitle(l10n, _engine.registry, progress.adding),
-              // Before the first poll the job's own list is not known yet;
-              // the default selection is the best honest guess.
-              components: progress.components.isNotEmpty
-                  ? _engine.registry
-                  : [
-                      for (final c in _engine.registry)
-                        if (ids.contains(c.id)) c,
-                    ],
-              note: l10n.phoneSetupProgressLeaveHint,
-              onCancel: progress.state == SetupState.running ? _cancel : null,
-              onContinue: progress.canContinue ? _continue : null,
-            );
-          },
-        ),
+    // Back just leaves; the job carries on in the background and the
+    // notification brings the person back here. The bar names the place
+    // the job belongs to, as the start screen does; the job's own title is
+    // the view's headline.
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
+      width: KitScreenWidth.reading,
+      body: ValueListenableBuilder<SetupProgress>(
+        valueListenable: _engine.progress,
+        builder: (context, progress, _) {
+          final ids = _defaultIds();
+          return SetupProgressView(
+            progress: progress,
+            title: progress.adding.isEmpty
+                ? l10n.phoneSetupProgressTitle
+                : setupAddingTitle(l10n, _engine.registry, progress.adding),
+            // Before the first poll the job's own list is not known yet;
+            // the default selection is the best honest guess.
+            components: progress.components.isNotEmpty
+                ? _engine.registry
+                : [
+                    for (final c in _engine.registry)
+                      if (ids.contains(c.id)) c,
+                  ],
+            note: l10n.phoneSetupProgressLeaveHint,
+            onCancel: progress.state == SetupState.running ? _cancel : null,
+            onContinue: progress.canContinue ? _continue : null,
+          );
+        },
       ),
     );
   }

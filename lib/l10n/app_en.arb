@@ -26120,5 +26120,73 @@
   "phoneSetupCustomizeIncluded": "Required",
   "@phoneSetupCustomizeIncluded": {
     "description": "Customize sheet: the word at the end of a required component's row, which cannot be switched off."
+  },
+  "termuxProcsLoading": "Reading what runs on this phone",
+  "@termuxProcsLoading": {
+    "description": "Running now: loading label while the process list is read"
+  },
+  "termuxProcsLoadFailedTitle": "Couldn't read what's running",
+  "@termuxProcsLoadFailedTitle": {
+    "description": "Running now: title when the process list could not be read"
+  },
+  "termuxProcsEmptyBody": "When OpenCode, the AI Team or a build runs here, it shows up in this list.",
+  "@termuxProcsEmptyBody": {
+    "description": "Running now: body of the empty state"
+  },
+  "termuxProcsNotStoppedTitle": "Not everything stopped",
+  "@termuxProcsNotStoppedTitle": {
+    "description": "Running now: title of the result when some processes did not stop"
+  },
+  "termuxProcsCopyCommand": "Copy command",
+  "@termuxProcsCopyCommand": {
+    "description": "Copies a process's command line"
+  },
+  "termuxProcsOpenControls": "Open On this phone",
+  "@termuxProcsOpenControls": {
+    "description": "Opens the phone server controls for a protected process"
+  },
+  "termuxProcsProcessId": "Process ID",
+  "@termuxProcsProcessId": {
+    "description": "Details label for a process's ID"
+  },
+  "termuxProcsParentId": "Parent process ID",
+  "@termuxProcsParentId": {
+    "description": "Details label for the parent process's ID"
+  },
+  "termuxProcsAboutOpenCode": "Part of the OpenCode server on this phone.",
+  "@termuxProcsAboutOpenCode": {
+    "description": "Process details: what a process in the OpenCode server group is"
+  },
+  "termuxProcsAboutAiTeam": "Part of the AI Team. Stopping it stops the work the team is doing.",
+  "@termuxProcsAboutAiTeam": {
+    "description": "Process details: what a process in the AI Team group is"
+  },
+  "termuxProcsAboutBuild": "A build helper. The next build starts it again when it needs it.",
+  "@termuxProcsAboutBuild": {
+    "description": "Process details: what a build daemon is"
+  },
+  "termuxProcsAboutOrphan": "Nothing is waiting on it, so stopping it is safe.",
+  "@termuxProcsAboutOrphan": {
+    "description": "Process details: why an orphan is safe to stop"
+  },
+  "termuxProcsAboutOther": "Started by something else on this phone.",
+  "@termuxProcsAboutOther": {
+    "description": "Process details: what a process in the Other group is"
+  },
+  "termuxProcsNoRestart": "It can't be started again from here.",
+  "@termuxProcsNoRestart": {
+    "description": "Stop confirmation: a stopped process has no undo"
+  },
+  "termuxProcsStopGroupTeamLost": "Any task the team is working on stops too.",
+  "@termuxProcsStopGroupTeamLost": {
+    "description": "Stop AI Team group confirmation: what is lost"
+  },
+  "termuxProcsStopGroupTeamRestart": "You can start the team again from AI Team.",
+  "@termuxProcsStopGroupTeamRestart": {
+    "description": "Stop AI Team group confirmation: how to start it again"
+  },
+  "phoneSetupProgressStopContinueLater": "Continue any time from On this phone.",
+  "@phoneSetupProgressStopContinueLater": {
+    "description": "In the Stop setup confirmation: where the person can pick setup up again"
   }
 }
