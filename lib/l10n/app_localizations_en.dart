@@ -22506,4 +22506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bootstrapResetFailedBody =>
       'Some saved sign-ins could not be removed. Try again.';
+
+  @override
+  String get workStalled => 'Stalled';
 }

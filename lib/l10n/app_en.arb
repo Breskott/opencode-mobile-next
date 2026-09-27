@@ -26996,5 +26996,6 @@
   "bootstrapResettingTitle": "Removing saved sign-ins…",
   "bootstrapResettingBody": "Keep the app open while this finishes.",
   "bootstrapResetFailedTitle": "Sign-in reset failed",
-  "bootstrapResetFailedBody": "Some saved sign-ins could not be removed. Try again."
+  "bootstrapResetFailedBody": "Some saved sign-ins could not be removed. Try again.",
+  "workStalled": "Stalled"
 }

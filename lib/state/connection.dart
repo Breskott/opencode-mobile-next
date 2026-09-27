@@ -24,6 +24,9 @@ import '../termux/managed_server_recovery.dart';
 import 'notification_preferences.dart';
 import 'nudges.dart';
 import 'profile_monitor.dart';
+import 'attention_feed.dart';
+import 'monitor_attention_reader.dart';
+import '../domain/work_row_status.dart';
 import 'provider_quota_monitor.dart';
 import '../quota/provider_quota_client.dart';
 import '../api/sse.dart';
@@ -381,9 +384,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   final MonitorGatewayFactory? _monitorGatewayFactory;
+  final _monitorAttentionReader = MonitorAttentionReader();
   ProfileMonitor get profileMonitor => _profileMonitor ??= ProfileMonitor(
     store: store,
     createGateway: _monitorGatewayFactory ?? _buildTransportPair,
+    readAttention: _readMonitorAttention,
     isReadable: (id) => !isIsolated && isProfileReadable(id),
     networkWifi: backgroundLive.monitorWifiAvailable,
     dismiss: backgroundLive.dismissCodingAlert,
@@ -402,6 +407,34 @@ class ConnectionController extends ChangeNotifier {
       monitorToken: token,
     ),
   )..addListener(_monitorChanged);
+  Future<MonitorAttentionDetails> _readMonitorAttention(
+    ServerProfile saved,
+    MonitorGatewayPair pair,
+    List<Session> sessions,
+    Map<String, String> statuses,
+    bool Function() current,
+  ) async {
+    final generation = _generation;
+    final began = DateTime.now();
+    final details = await _monitorAttentionReader.read(
+      saved,
+      pair,
+      sessions,
+      statuses,
+      current,
+    );
+    if (current() && generation == _generation && profile?.id == saved.id) {
+      // A complete observation of a later turn may retire an SSE failure.
+      // A failure arriving during this read remains authoritative.
+      _failedAttentionSessions.removeWhere(
+        (id, failure) =>
+            details.checkedSessionIDs.contains(id) &&
+            failure.at.isBefore(began),
+      );
+    }
+    return details;
+  }
+
   void _monitorChanged() {
     if (_disposed) return;
     if (_lifecycleWasBackgrounded && !_canShowCodingAlert) {
@@ -586,32 +619,189 @@ class ConnectionController extends ChangeNotifier {
         isProfileReadable(target.profileID);
   }
 
-  int get unknownAttentionProfileCount => store.profiles
-      .where(
-        (p) =>
-            isProfileReadable(p.id) &&
-            !(p.id == profile?.id && isConnected) &&
-            !profileMonitor.snapshotFor(p.id).isCurrent,
-      )
-      .length;
+  // Receipt times belong to gateway reads/events, never to a widget rebuild.
+  final _attentionReads = <AttentionKind, DateTime>{};
+  final _attentionEvents = <AttentionKind, DateTime>{};
+  final _attentionReadRevisions = <AttentionKind, int>{};
+  final _failedAttentionSessions = <String, ({DateTime at, int revision})>{};
+  int _attentionTransportRevision = 0;
 
-  int get unifiedAttentionCount {
-    final selected = profile?.id;
-    return awaitingPermissionCount +
-        questions.length +
-        forms.length +
-        (orchestration?.attentionCount ?? 0) +
-        // This server's other projects: the Inbox badge counts what needs
-        // you wherever it is.
-        waitingElsewhereCount +
-        store.profiles
-            .where((p) => p.id != selected && isProfileReadable(p.id))
-            .fold<int>(
-              0,
-              (sum, p) =>
-                  sum + (profileMonitor.snapshotFor(p.id).pendingCount ?? 0),
+  void _observeAttentionRead(AttentionKind kind) {
+    _attentionReads[kind] = DateTime.now();
+    _attentionReadRevisions[kind] = _attentionTransportRevision;
+  }
+
+  /// One read-only projection for Inbox, Work and their badge. Merely reading
+  /// it never polls, switches servers, acknowledges work or records an act.
+  AttentionFeed get attentionFeed {
+    final now = DateTime.now();
+    return AttentionFeed.fromServers([
+      for (final saved in store.profiles)
+        if (isProfileReadable(saved.id))
+          AttentionServer(
+            profileID: saved.id,
+            name: saved.name,
+            snapshot:
+                saved.id == profile?.id &&
+                    !isIsolated &&
+                    _attentionUsesSavedSource(saved)
+                ? _activeAttentionSnapshot(saved.id, now)
+                : profileMonitor.snapshotFor(saved.id),
+          ),
+    ], now: now);
+  }
+
+  bool _attentionUsesSavedSource(ServerProfile saved) {
+    final connected = _connectedProfile;
+    return connected == null ||
+        (
+              connected.baseUrl,
+              connected.username,
+              connected.password,
+              connected.backend,
+              connected.codexToken,
+              connected.flavor,
+              connected.orchestration,
+            ) ==
+            (
+              saved.baseUrl,
+              saved.username,
+              saved.password,
+              saved.backend,
+              saved.codexToken,
+              saved.flavor,
+              saved.orchestration,
             );
   }
+
+  ProfileAttentionSnapshot _activeAttentionSnapshot(String id, DateTime now) {
+    final monitored = profileMonitor.snapshotFor(id);
+    final sameLocation =
+        monitored.directory == directory && monitored.workspace == workspace;
+    final dates = [..._attentionReads.values, ..._attentionEvents.values]
+      ..sort();
+    final checkedAt = dates.lastOrNull ?? monitored.checkedAt;
+    bool readCurrent(AttentionKind kind) =>
+        _attentionReadRevisions[kind] == _attentionTransportRevision;
+    final requestsComplete =
+        readCurrent(AttentionKind.permission) &&
+        readCurrent(AttentionKind.question) &&
+        (!supportsForms || readCurrent(AttentionKind.form));
+    final requestsFailed =
+        permissionsError != null ||
+        questionsError != null ||
+        formsError != null;
+    final observations = <AttentionObservation>[];
+    void request(String requestID, String sessionID, AttentionKind kind) {
+      final session = sessionsById[sessionID];
+      final receipts = [?_attentionEvents[kind], ?_attentionReads[kind]]
+        ..sort();
+      final at = receipts.lastOrNull;
+      observations.add(
+        AttentionObservation(
+          id: requestID,
+          kind: kind,
+          facts: const WorkRowFacts(phase: WorkRowPhase.needsYou),
+          observedAt: at ?? DateTime.fromMillisecondsSinceEpoch(0),
+          isFresh: at != null && readCurrent(kind),
+          sessionID: sessionID,
+          requestID: requestID,
+          title: session?.title,
+          directory: session?.directory ?? directory,
+          workspace: session?.workspaceID ?? workspace,
+        ),
+      );
+    }
+
+    for (final permission in awaitingPermissions) {
+      request(permission.id, permission.sessionID, AttentionKind.permission);
+    }
+    for (final question in questions.values) {
+      request(question.id, question.sessionID, AttentionKind.question);
+    }
+    for (final form in forms.values) {
+      request(form.id, form.sessionID, AttentionKind.form);
+    }
+    if (_elsewhereProfileID == id) {
+      observations.addAll(elsewhereAttention.observations(except: directory));
+    }
+    if (sameLocation) {
+      observations.addAll(
+        monitored.attention.where(
+          (item) =>
+              item.kind == AttentionKind.failedRun &&
+              item.taskID == null &&
+              item.runID == null &&
+              !busySessions.contains(item.sessionID) &&
+              !_deletedSessionIDs.contains(item.sessionID) &&
+              !_failedAttentionSessions.containsKey(item.sessionID),
+        ),
+      );
+    }
+    for (final failure in _failedAttentionSessions.entries) {
+      if (busySessions.contains(failure.key)) continue;
+      final session = sessionsById[failure.key];
+      observations.add(
+        AttentionObservation(
+          id: 'session-failure:${failure.key}',
+          kind: AttentionKind.failedRun,
+          facts: const WorkRowFacts(phase: WorkRowPhase.failed),
+          observedAt: failure.value.at,
+          isFresh: failure.value.revision == _attentionTransportRevision,
+          sessionID: failure.key,
+          title: session?.title,
+          directory: session?.directory ?? directory,
+          workspace: session?.workspaceID ?? workspace,
+        ),
+      );
+    }
+    final team = orchestration;
+    final teamAt = team?.snapshot.refreshedAt;
+    if (team != null && team.profileId == id && teamAt != null) {
+      observations.addAll(
+        MonitorAttentionReader.teamObservations(
+          gates: team.snapshot.gates,
+          work: team.snapshot.work,
+          runs: team.snapshot.runs,
+          observedAt: teamAt,
+          directory: directory,
+          workspace: workspace,
+          isFresh:
+              team.phase == OrchestrationPhase.ready &&
+              !team.isStale &&
+              !team.dirtyScopes.contains('gates') &&
+              !team.dirtyScopes.contains('work'),
+        ),
+      );
+    }
+    return ProfileAttentionSnapshot(
+      profileID: id,
+      status: !isConnected
+          ? ProfileMonitorStatus.paused
+          : requestsFailed
+          ? ProfileMonitorStatus.unavailable
+          : requestsComplete
+          ? ProfileMonitorStatus.current
+          : ProfileMonitorStatus.checking,
+      checkedAt: checkedAt,
+      directory: directory,
+      workspace: workspace,
+      attention: List.unmodifiable(observations),
+      complete: requestsComplete,
+      // The selected transport does not enumerate all run histories. Its
+      // requests can be current while the wider failed-run inventory is not.
+      attentionComplete:
+          sameLocation &&
+          monitored.attentionComplete &&
+          monitored.isCurrent &&
+          (team == null || !team.isStale),
+    );
+  }
+
+  int get unknownAttentionProfileCount =>
+      attentionFeed.servers.where((server) => !server.isCurrent).length;
+
+  int get unifiedAttentionCount => attentionFeed.knownAttentionCount;
 
   final WidgetSessionSnapshot _widgetSnapshot;
 
@@ -678,6 +868,9 @@ class ConnectionController extends ChangeNotifier {
   StreamStatus _status = StreamStatus.disconnected;
   StreamStatus get status => _status;
   set status(StreamStatus value) {
+    if (_status != value && value != StreamStatus.connected) {
+      _attentionTransportRevision++;
+    }
     _status = value;
     _syncConnectionStatusClock();
   }
@@ -1465,6 +1658,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _markSessionAttentionActive(String sessionID) {
+    _failedAttentionSessions.remove(sessionID);
     if (sessionID.isEmpty) return;
     _attentionActiveSessions.add(sessionID);
     if (_alertedStatusSessions.remove(sessionID)) {
@@ -2752,6 +2946,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _startGlobalEvents(int generation, ServerGateway currentApi) {
+    elsewhereAttention.markStale();
     late final LiveEventChannel stream;
     // What this server's other projects are doing is only knowable from
     // here; a different server's tally would be wrong.
@@ -2774,6 +2969,7 @@ class ConnectionController extends ChangeNotifier {
     void handleStatus(StreamStatus value) {
       if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
       _globalStreamStatus = value;
+      if (value != StreamStatus.connected) elsewhereAttention.markStale();
       if ((value == StreamStatus.reconnecting ||
               value == StreamStatus.disconnected) &&
           !automationPolicy.allows(AutomationBehavior.reconnect)) {
@@ -3028,6 +3224,14 @@ class ConnectionController extends ChangeNotifier {
   void _onEvent(EventEnvelope env) {
     if (_disposed) return;
     final props = env.properties;
+    final attentionKind = env.type.startsWith('permission.')
+        ? AttentionKind.permission
+        : env.type.startsWith('question.')
+        ? AttentionKind.question
+        : env.type.startsWith('form.')
+        ? AttentionKind.form
+        : null;
+    if (attentionKind != null) _attentionEvents[attentionKind] = DateTime.now();
     PromptTrace.observe(env.type, props);
     switch (env.type) {
       case 'server.connected':
@@ -3374,6 +3578,10 @@ class ConnectionController extends ChangeNotifier {
       case 'session.error':
         final sid = props['sessionID']?.toString();
         if (sid != null) {
+          _failedAttentionSessions[sid] = (
+            at: DateTime.now(),
+            revision: _attentionTransportRevision,
+          );
           _markSessionChanged(sid);
           busySessions.remove(sid);
           retryStates.remove(sid);
@@ -3789,6 +3997,7 @@ class ConnectionController extends ChangeNotifier {
       }
       permissionsLoading = false;
       permissionsError = null;
+      _observeAttentionRead(AttentionKind.permission);
       _syncInputAlerts();
       notifyListeners();
     } catch (error) {
@@ -4141,6 +4350,7 @@ class ConnectionController extends ChangeNotifier {
         }
       }
       questionsLoading = false;
+      _observeAttentionRead(AttentionKind.question);
       _syncInputAlerts();
       notifyListeners();
     } catch (error) {
@@ -4957,6 +5167,7 @@ class ConnectionController extends ChangeNotifier {
         hydrated.removeWhere((id, _) => _resolvedFormIDs.contains(id));
       }
       forms = hydrated;
+      _observeAttentionRead(AttentionKind.form);
       formsLoading = false;
       _syncInputAlerts();
       notifyListeners();
@@ -5283,6 +5494,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _removeSession(String id) {
+    _failedAttentionSessions.remove(id);
     _markSessionChanged(id);
     _deletedSessionIDs.add(id);
     sessionsById.remove(id);
@@ -6197,6 +6409,7 @@ class ConnectionController extends ChangeNotifier {
     _deletingReadProfiles.add(profileId);
     _profileDeletionRevisions[profileId] =
         (_profileDeletionRevisions[profileId] ?? 0) + 1;
+    _monitorAttentionReader.forget(profileId);
     _profileMonitor?.removeProfile(profileId, retainIdentity: true);
     _quotaMonitor?.removeProfile(profileId, retainIdentity: true);
     _pendingAuth.block(profileId);
@@ -9759,6 +9972,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
+    elsewhereAttention.markStale();
     final policyListener = _streamPolicyChanged;
     if (policyListener != null) _streamPolicy?.removeListener(policyListener);
     _streamPolicy = null;
@@ -9781,6 +9995,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _clearLocationData() {
+    _attentionReads.clear();
+    _attentionEvents.clear();
+    _attentionReadRevisions.clear();
+    _failedAttentionSessions.clear();
+    _attentionTransportRevision++;
     _noteRevisions.clear();
     _noteReceipts.clear();
     _dismissAllCodingAlerts(clearActive: true);
@@ -9890,6 +10109,7 @@ class ConnectionController extends ChangeNotifier {
       history.removeListener(_automaticActivityChanged);
     }
     _watchedActivity.clear();
+    _monitorAttentionReader.dispose();
     _profileMonitor?.removeListener(_monitorChanged);
     _profileMonitor?.dispose();
     _quotaMonitor?.removeListener(_quotaMonitorChanged);

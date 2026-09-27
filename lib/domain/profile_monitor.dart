@@ -1,3 +1,5 @@
+import 'attention_feed.dart';
+
 /// Metadata for the last selected location of one explicitly monitored profile.
 /// These objects never contain transport credentials or raw server errors.
 enum ProfileMonitorStatus {
@@ -230,6 +232,8 @@ class ProfileAttentionSnapshot {
     this.workspace,
     this.requests = const [],
     this.busyIntervals = const [],
+    this.attention = const [],
+    this.attentionComplete = false,
     this.runningCount,
     this.complete = false,
     this.nextCheckAt,
@@ -241,6 +245,11 @@ class ProfileAttentionSnapshot {
   final String? directory;
   final String? workspace;
   final List<MonitoredRequest> requests;
+
+  /// Supplemental failed-run and team-gate observations. Partial reads keep
+  /// their original timestamps and must be presented as stale.
+  final List<AttentionObservation> attention;
+  final bool attentionComplete;
 
   /// Sessions seen busy on the latest successful poll, oldest first. Kept
   /// apart from [requests]: a long run is something to check in on, not a

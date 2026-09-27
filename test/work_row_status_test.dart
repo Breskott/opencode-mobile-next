@@ -192,6 +192,85 @@ void main() {
     },
   );
 
+  test('team stall evidence is static and yields to requests and outcomes', () {
+    WorkRowFacts facts(WorkState state, {bool needsYou = false}) =>
+        WorkRowFacts.team(
+          item: WorkItem(id: 'task', title: '', state: state),
+          needsYou: needsYou,
+          stalled: true,
+          startedAt: now.subtract(const Duration(hours: 2)),
+        );
+    for (final state in [
+      WorkState.working,
+      WorkState.waiting,
+      WorkState.review,
+    ]) {
+      final status = view(facts(state));
+      expect(status.facts.phase, WorkRowPhase.stalled);
+      expect(status.word(en), 'Stalled');
+      expect(status.line(en, now: now), 'Stalled');
+      expect(status.showLiveMark, false);
+    }
+    expect(
+      facts(WorkState.working, needsYou: true).phase,
+      WorkRowPhase.needsYou,
+    );
+    expect(facts(WorkState.needsInput).phase, WorkRowPhase.needsYou);
+    expect(facts(WorkState.completed).phase, WorkRowPhase.done);
+    expect(facts(WorkState.failed).phase, WorkRowPhase.failed);
+    expect(facts(WorkState.cancelled).phase, WorkRowPhase.stopped);
+  });
+
+  test('old task timestamps alone never turn a row into a stalled task', () {
+    final facts = WorkRowFacts.team(
+      item: WorkItem(
+        id: 'task',
+        title: '',
+        state: WorkState.working,
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+      ),
+    );
+    expect(facts.phase, WorkRowPhase.working);
+    expect(view(facts).line(en, now: now), 'Working');
+  });
+
+  test('stalled team evidence stays stale until this server is checked', () {
+    final controller = WorkRowStatusController();
+    addTearDown(controller.dispose);
+    controller.setConnected(true);
+    controller.observe(
+      'team:task',
+      WorkRowFacts.team(
+        item: const WorkItem(id: 'task', title: '', state: WorkState.working),
+        stalled: true,
+      ),
+      observedAt: now,
+      generation: controller.generation,
+    );
+    controller.setConnected(false);
+    final stale = controller.statusFor('team:task')!;
+    expect(stale.isFresh, false);
+    expect(stale.showLiveMark, false);
+    expect(stale.line(en, now: now), startsWith('Stalled · as of'));
+    expect(
+      stale.line(en, now: now.add(const Duration(days: 1))),
+      stale.line(en, now: now),
+    );
+    controller.setConnected(true);
+    expect(controller.statusFor('team:task')!.isFresh, false);
+    controller.observe(
+      'team:task',
+      WorkRowFacts.team(
+        item: const WorkItem(id: 'task', title: '', state: WorkState.working),
+      ),
+      observedAt: now.add(const Duration(minutes: 1)),
+      generation: controller.generation,
+    );
+    expect(controller.statusFor('team:task')!.showLiveMark, true);
+    expect(controller.statusFor('team:task')!.word(en), 'Working');
+  });
+
   test('scope deletion and stale replies cannot resurrect rows', () {
     final controller = WorkRowStatusController();
     addTearDown(controller.dispose);
