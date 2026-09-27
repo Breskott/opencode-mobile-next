@@ -2018,11 +2018,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readAloudChooseVoice => 'Choose a reading voice';
 
   @override
-  String get readAloudConsentTitle => 'Use the system speech engine?';
+  String get readAloudConsentTitle => 'Read replies aloud?';
 
   @override
   String get readAloudConsentDetail =>
-      'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.';
+      'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.';
 
   @override
   String get readAloudContinue => 'Choose voice';
@@ -8924,7 +8924,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiTodoList => 'Todo list';
 
   @override
-  String get chatUiTodos => 'Todos';
+  String get chatUiTodos => 'Tasks';
 
   @override
   String get chatUiToggleCreationTimesBesideTranscriptEntries =>
@@ -9264,7 +9264,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatUiSubagentCount(Object count) {
-    return 'Subagent · $count';
+    return 'Delegated conversation · $count';
   }
 
   @override
@@ -16389,7 +16389,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nudgeReviewChanges =>
-      'This run changed files: review what changed before you continue.';
+      'OpenCode changed files. Look them over before you go on.';
 
   @override
   String get nudgeLeave =>
@@ -25984,4 +25984,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchArchivedConversations => 'Archived conversations';
+
+  @override
+  String get readAloudConsentEngine =>
+      'Only offline voices are offered, but the speech engine is separate software with its own privacy terms.';
+
+  @override
+  String get readAloudConsentHeard =>
+      'People near you may hear it. Reading stops when you leave this conversation or the app.';
+
+  @override
+  String get transcriptFindStopSearchingAll => 'Stop searching older messages';
+
+  @override
+  String nudgeReviewChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'OpenCode changed $count files. Look them over before you go on.',
+      one: 'OpenCode changed 1 file. Look it over before you go on.',
+    );
+    return '$_temp0';
+  }
 }

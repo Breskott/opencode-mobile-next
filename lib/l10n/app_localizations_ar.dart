@@ -26268,4 +26268,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get searchArchivedConversations => 'Archived conversations';
+
+  @override
+  String get readAloudConsentEngine =>
+      'Only offline voices are offered, but the speech engine is separate software with its own privacy terms.';
+
+  @override
+  String get readAloudConsentHeard =>
+      'People near you may hear it. Reading stops when you leave this conversation or the app.';
+
+  @override
+  String get transcriptFindStopSearchingAll => 'Stop searching older messages';
+
+  @override
+  String nudgeReviewChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'OpenCode changed $count files. Look them over before you go on.',
+      one: 'OpenCode changed 1 file. Look it over before you go on.',
+    );
+    return '$_temp0';
+  }
 }
