@@ -363,9 +363,9 @@ void main() {
       ),
     );
     await _pump(tester, sidebar(onProject: () {}), size: const Size(1280, 800));
-    final pillY = tester
-        .getCenter(find.textContaining('Connected', findRichText: true))
-        .dy;
+    // R1: the sidebar leaves "Connected" to the green dot; the name marks
+    // the pill.
+    final pillY = tester.getCenter(find.textContaining('Laptop')).dy;
     final projectY = tester.getCenter(find.textContaining('shopfront')).dy;
     final searchY = tester.getCenter(find.text('Search')).dy;
     expect(pillY < projectY && projectY < searchY, isTrue);

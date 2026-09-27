@@ -454,8 +454,30 @@ class KitViewer extends StatefulWidget {
   final String name;
   final KitViewerSource source;
 
-  /// A muted subtitle, left to right, cut in the middle.
+  /// The file's full path. The header shows only its parent folder
+  /// ([folderOf]); the full value stays in semantics, and "Copy path"
+  /// (the caller's [more] item) copies it whole.
   final String? path;
+
+  /// The header's subtitle for [path]: the parent folder with its trailing
+  /// slash ("docs/"), keeping anything after the name ("src/ · Line 12").
+  /// Null for a root file, so the name never shows twice
+  /// ("README.md / README.md"). A [path] whose last segment is not [name]
+  /// (a caption such as "MIT License") is shown as it is.
+  static String? folderOf(String path, String name) {
+    final slash = math.max(path.lastIndexOf('/'), path.lastIndexOf(r'\'));
+    final last = path.substring(slash + 1);
+    if (name.isEmpty || !last.startsWith(name)) {
+      return path.isEmpty ? null : path;
+    }
+    final folder = path.substring(0, slash + 1);
+    var rest = last.substring(name.length).trim();
+    if (folder.isEmpty) {
+      rest = rest.replaceFirst(RegExp(r'^[\s·:,-]+'), '');
+      return rest.isEmpty ? null : rest;
+    }
+    return rest.isEmpty ? folder : '$folder $rest';
+  }
 
   /// At most one labelled action: "Add to prompt".
   final KitAction? primary;
@@ -933,30 +955,12 @@ class _KitViewerState extends State<KitViewer> {
   ) {
     final compact = KitLayout.windowOf(context) == KitWindow.compact;
     final path = widget.path;
+    final folder = path == null ? null : KitViewer.folderOf(path, widget.name);
     final routeNamed = _KitViewerRouteScope.of(context);
     // Binary content offers the caller's action in its own state instead.
     final primary = _content?.kind == KitViewerKind.binary
         ? null
         : widget.primary;
-    Widget? primaryButton;
-    if (primary != null) {
-      final reason = primary.enabled ? null : primary.disabledReason;
-      primaryButton = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          KeyedSubtree(
-            key: const ValueKey('kit-viewer-primary'),
-            child: KitButton.fromAction(
-              primary,
-              role: compact ? KitButtonRole.tertiary : KitButtonRole.secondary,
-              expand: false,
-            ),
-          ),
-          if (reason != null) KitText(reason, role: KitTextRole.secondary),
-        ],
-      );
-    }
     final title = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -966,35 +970,29 @@ class _KitViewerState extends State<KitViewer> {
           namesRoute: routeNamed,
           child: KitText(widget.name, role: KitTextRole.headline),
         ),
-        if (path != null) ...[
+        // The parent folder only: the name is already the title, so a root
+        // file shows no second line. The full path stays in semantics.
+        if (folder != null) ...[
           SizedBox(height: tokens.space1 / 2),
-          KitText.mono(
-            path,
-            cut: KitMonoCut.middle,
-            tone: KitTextTone.secondary,
-          ),
-        ],
-        if (compact && primaryButton != null) ...[
-          SizedBox(height: tokens.space1),
-          Transform.translate(
-            // The tertiary button's words line up with the name.
-            offset: Offset(
-              Directionality.of(context) == TextDirection.rtl
-                  ? KitButton.tertiaryInset
-                  : -KitButton.tertiaryInset,
-              0,
+          Semantics(
+            label: path,
+            child: ExcludeSemantics(
+              child: KitText.mono(
+                folder,
+                cut: KitMonoCut.middle,
+                tone: KitTextTone.secondary,
+              ),
             ),
-            child: primaryButton,
           ),
         ],
       ],
     );
-    return Padding(
+    final top = Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         tokens.gutter,
         widget.onClose == null ? tokens.space3 : tokens.space1,
         tokens.space2,
-        tokens.space2,
+        primary == null ? tokens.space2 : 0,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1008,27 +1006,80 @@ class _KitViewerState extends State<KitViewer> {
               child: title,
             ),
           ),
-          if (!compact && primaryButton != null)
-            Padding(
-              padding: EdgeInsetsDirectional.only(end: tokens.space1),
-              child: primaryButton,
-            ),
-          Builder(
-            builder: (anchor) => KitIconButton(
-              key: const ValueKey('kit-viewer-more'),
-              icon: AppIconography.more,
-              tooltip: l10n.kitMore,
-              onPressed: () => unawaited(_openMenu(anchor)),
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(2),
+            child: Builder(
+              builder: (anchor) => KitIconButton(
+                key: const ValueKey('kit-viewer-more'),
+                icon: AppIconography.more,
+                tooltip: l10n.kitMore,
+                onPressed: () => unawaited(_openMenu(anchor)),
+              ),
             ),
           ),
           if (widget.onClose case final close?)
-            KitIconButton(
-              key: const ValueKey('kit-viewer-close'),
-              icon: AppIconography.close,
-              tooltip: l10n.kitSheetClose,
-              onPressed: close,
+            FocusTraversalOrder(
+              order: const NumericFocusOrder(3),
+              child: KitIconButton(
+                key: const ValueKey('kit-viewer-close'),
+                icon: AppIconography.close,
+                tooltip: l10n.kitSheetClose,
+                onPressed: close,
+              ),
             ),
         ],
+      ),
+    );
+    if (primary == null) return top;
+    // The one labelled action has its own full-width row under the name,
+    // starting where the name starts: never squeezed beside More and Close,
+    // never wrapped to two centred lines.
+    final reason = primary.enabled ? null : primary.disabledReason;
+    final button = KeyedSubtree(
+      key: const ValueKey('kit-viewer-primary'),
+      child: KitButton.fromAction(
+        primary,
+        role: compact ? KitButtonRole.tertiary : KitButtonRole.secondary,
+        expand: false,
+      ),
+    );
+    final primaryRow = Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space2,
+        tokens.gutter,
+        tokens.space2,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(1),
+            child: compact
+                ? Transform.translate(
+                    // The tertiary button's words line up with the name.
+                    offset: Offset(
+                      Directionality.of(context) == TextDirection.rtl
+                          ? KitButton.tertiaryInset
+                          : -KitButton.tertiaryInset,
+                      0,
+                    ),
+                    child: button,
+                  )
+                : button,
+          ),
+          if (reason != null) KitText(reason, role: KitTextRole.secondary),
+        ],
+      ),
+    );
+    // Tab still reaches the primary first, then More and Close (LAY-10).
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [top, primaryRow],
       ),
     );
   }
@@ -1254,9 +1305,11 @@ class _KitViewerState extends State<KitViewer> {
     };
   }
 
+  // The inline KitStateView brings its own gutter at the sides; adding
+  // another would put it at twice the gutter, off the name's line.
   Widget _centred(KitTokens tokens, Widget child) => Center(
     child: SingleChildScrollView(
-      padding: EdgeInsets.all(tokens.gutter),
+      padding: EdgeInsets.symmetric(vertical: tokens.gutter),
       child: child,
     ),
   );
@@ -1281,8 +1334,9 @@ class _KitViewerState extends State<KitViewer> {
       activeMark: _findOpen && _marks.isNotEmpty ? _active : null,
       initialLine: initialLine,
     );
+    // The body starts on the same gutter as the header's name.
     final inset = EdgeInsetsDirectional.symmetric(
-      horizontal: tokens.space3,
+      horizontal: tokens.gutter,
       vertical: tokens.space2,
     );
     Widget body;
@@ -1304,7 +1358,7 @@ class _KitViewerState extends State<KitViewer> {
         maxLines: 1,
       )..layout();
       final natural =
-          (painter.width + tokens.space2 + tokens.space3 * 2 + tokens.space4)
+          (painter.width + tokens.space2 + tokens.gutter * 2 + tokens.space4)
               .ceilToDouble();
       painter.dispose();
       body = LayoutBuilder(
