@@ -1060,21 +1060,26 @@ void main() {
       expect(tester.getSize(sheet).width, 320);
     }
 
-    /// Scrolls the sheet until [target] is on screen and within its width.
+    /// Scrolls body content or the sheet's scrolling header into view.
     Future<void> reveal(WidgetTester tester, Finder target) async {
-      await tester.scrollUntilVisible(
-        target,
-        150,
-        scrollable: find
-            .descendant(of: sheet, matching: find.byType(Scrollable))
-            .first,
-      );
+      final scrollable = find
+          .descendant(of: sheet, matching: find.byType(Scrollable))
+          .first;
+      await tester.scrollUntilVisible(target, 150, scrollable: scrollable);
       await tester.pumpAndSettle();
+      // KitSheet keeps its header outside the scrollable render subtree,
+      // moving it with the body's offset at large text. ensureVisible alone
+      // cannot bring that header back: scroll the body toward the top.
+      for (var i = 0; i < 30 && target.hitTestable().evaluate().isEmpty; i++) {
+        await tester.drag(scrollable, const Offset(0, 250));
+        await tester.pumpAndSettle();
+      }
       expect(tester.takeException(), isNull);
       expect(target, findsOneWidget);
       final rect = tester.getRect(target);
       expect(rect.left, greaterThanOrEqualTo(0));
       expect(rect.right, lessThanOrEqualTo(320));
+      expect(target.hitTestable(), findsOneWidget);
     }
 
     for (final direction in TextDirection.values) {

@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
+import 'support/voice_device_channel.dart';
 
 class _OneProfileStore extends ProfileStore {
   _OneProfileStore({required super.prefs, required this.profile});
@@ -237,7 +238,10 @@ void main() {
     final previous = PhoneSetup.engine;
     final previousTermux = PhoneSetup.termux;
     PhoneSetup.engine = FakeSetupEngine();
+    // Phone setup now observes both hosts. Neither should poll a native
+    // channel in this route test.
     PhoneSetup.termux = FakeSetupEngine();
+    answerVoiceDeviceProbe();
     addTearDown(() {
       PhoneSetup.engine = previous;
       PhoneSetup.termux = previousTermux;

@@ -9,9 +9,11 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/context_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_viewer.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -77,6 +79,10 @@ class _MenuApi extends OpenCodeApi with CompleteMessageHistory {
 
   @override
   Future<Session> session(String id) async => Session(id: id);
+
+  @override
+  Future<FileContent> fileContent(String path) async =>
+      const FileContent('void main() {}', mimeType: 'text/plain');
 
   @override
   Future<List<FileNode>> listFiles([String path = '']) async => [
@@ -231,13 +237,17 @@ void main() {
     expect(clipboard, ['hello desktop']);
   });
 
-  desktopTest('a file row offers open and copy path', (tester) async {
+  desktopTest('a file row opens on tap and offers copy path in its menu', (
+    tester,
+  ) async {
     final clipboard = _captureClipboard();
     final connection = await _controller(_MenuApi());
     addTearDown(connection.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: connection)),
       ),
     );
@@ -247,7 +257,9 @@ void main() {
       tester,
       find.byKey(const ValueKey('project-file-main.dart')),
     );
-    expect(find.byKey(const ValueKey('file-menu-open')), findsOneWidget);
+    // Files revamp: Open is the row's primary tap, not a duplicate menu item.
+    expect(find.byKey(const ValueKey('file-menu-open')), findsNothing);
+    expect(find.byKey(const ValueKey('file-menu-copy-name')), findsOneWidget);
     expect(find.byKey(const ValueKey('file-menu-copy-path')), findsOneWidget);
     // No chat handoff was supplied, so neither add-to-prompt entry appears.
     expect(find.byKey(const ValueKey('file-menu-attach')), findsNothing);
@@ -256,6 +268,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('file-menu-copy-path')));
     await tester.pumpAndSettle();
     expect(clipboard, ['main.dart']);
+
+    await tester.tap(find.byKey(const ValueKey('project-file-main.dart')));
+    await tester.pumpAndSettle();
+    expect(find.byType(KitViewer), findsOneWidget);
+    expect(find.textContaining('void main() {}'), findsOneWidget);
   });
 
   desktopTest('a session row offers the same actions as its overflow menu', (

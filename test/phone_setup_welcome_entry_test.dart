@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
@@ -81,6 +82,11 @@ void main() {
   late FakeSetupEngine engine;
 
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
     engine = FakeSetupEngine();
     PhoneSetup.engine = engine;
     // The welcome's phone choice opens phone setup, whose pre-flight reads
@@ -337,6 +343,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    // The welcome is lazy; at large text the setup line is below its hero.
+    await tester.scrollUntilVisible(
+      _action,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('اكتمل الإعداد على هذا الهاتف بنسبة 60٪'), findsOneWidget);
     await tester.ensureVisible(_action);
     await tester.pumpAndSettle();

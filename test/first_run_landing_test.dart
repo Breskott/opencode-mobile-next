@@ -9,6 +9,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/navigation/chat_route.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
@@ -137,8 +138,10 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
-String _tab(WidgetTester tester) =>
-    tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data!;
+String _tab(WidgetTester tester) {
+  final nav = tester.widget<KitNav>(find.byType(KitNav));
+  return nav.destinations[nav.selected].label;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

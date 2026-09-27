@@ -292,7 +292,8 @@ void main() {
         agents: [_worker(), _reviewer()],
       );
       await pumpHome(tester, controller);
-      expect(text(tester, 'team-home-host'), _en.teamUiHostPhrasePhone);
+      expect(find.text(_en.teamUiHostPhrasePhone), findsOneWidget);
+      expect(find.textContaining(_en.teamUiHostPhrasePaused), findsNothing);
       expect(
         find.text(
           '${_en.teamUiHomeAgentsRowCount(2)} · ${_en.teamNowAgentsAsleep}',
@@ -314,8 +315,10 @@ void main() {
       );
       await pumpHome(tester, controller);
       expect(
-        text(tester, 'team-home-host'),
-        '${_en.teamUiHostPhrasePhone} · ${_en.teamUiHostPhrasePaused}',
+        find.text(
+          '${_en.teamUiHostPhrasePhone} · ${_en.teamUiHostPhrasePaused}',
+        ),
+        findsOneWidget,
       );
       expect(text(tester, 'team-home-now-paused'), _en.teamNowPausedLine);
       await tester.tap(find.text(_en.teamUiControlResume));
@@ -440,7 +443,13 @@ void main() {
         agents: [_worker()],
       );
       await pumpAgent(tester, controller);
-      expect(text(tester, 'team-agent-title'), 'Worker · furiosa');
+      expect(
+        find.descendant(
+          of: _key('team-agent-title'),
+          matching: find.text('Worker · furiosa'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('demo-app/gastown.furiosa'), findsNothing);
       expect(find.text('demo-app/gastown.polecat'), findsNothing);
       expect(find.text(_en.teamUiAgentValueUnknown), findsNothing);

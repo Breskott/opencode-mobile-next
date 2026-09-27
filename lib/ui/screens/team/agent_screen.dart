@@ -52,6 +52,7 @@ import '../../../state/orchestration.dart';
 import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../widgets/team_controls.dart' show teamControlReceipt;
 import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_now.dart';
 import '../../widgets/team_vocabulary.dart';
@@ -287,8 +288,24 @@ class _AgentScreenState extends State<AgentScreen> {
   /// Pause, then "Paused fox · Undo" (DATA-11: undo, not a confirmation).
   Future<void> _pause(OrchestrationAgent agent) async {
     final l10n = _copy(context);
-    await _control(agent.id, AgentControlAction.pause);
-    if (!mounted) return;
+    MutationRecord? record;
+    await _run(() async {
+      final result = await _controller.controlAgent(
+        agent.id,
+        AgentControlAction.pause,
+      );
+      record = result;
+      return result;
+    });
+    // A refused or unconfirmed request has nothing to undo. Keep its
+    // receipt visible instead of claiming the agent was paused.
+    final status = record?.status;
+    if (!mounted ||
+        status == null ||
+        status == MutationStatus.rejected ||
+        status == MutationStatus.unconfirmed) {
+      return;
+    }
     showKitUndo(
       context,
       message: l10n.teamAgentScreenPaused(agent.name),
@@ -603,18 +620,15 @@ class _AgentScreenState extends State<AgentScreen> {
           // 4. The newest control.
           if (receipt != null)
             pad(
-              KitReceipt(
+              teamControlReceipt(
+                context,
+                receipt,
                 key: const ValueKey('team-agent-receipt'),
-                state: _receiptState(receipt.status),
-                reason: receipt.receipt?.message,
-                since: receipt.createdAt,
                 onRetry: receipt.canRetry
-                    ? () => unawaited(
-                        _run(
-                          () async =>
-                              (await _controller.retryMutation(receipt.key)) ??
-                              receipt,
-                        ),
+                    ? () => _run(
+                        () async =>
+                            (await _controller.retryMutation(receipt.key)) ??
+                            receipt,
                       )
                     : null,
                 retryKey: const ValueKey('team-agent-receipt-retry'),
@@ -862,10 +876,3 @@ class _AgentScreenState extends State<AgentScreen> {
     ];
   }
 }
-
-KitReceiptState _receiptState(MutationStatus status) => switch (status) {
-  MutationStatus.sent => KitReceiptState.sent,
-  MutationStatus.confirmed => KitReceiptState.confirmed,
-  MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
-  MutationStatus.rejected => KitReceiptState.refused,
-};

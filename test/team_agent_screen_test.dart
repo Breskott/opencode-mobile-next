@@ -637,9 +637,12 @@ void main() {
         '/home/eslam/city/.gc/worktrees/ocproof/polecats/fox',
       );
       expect(workDir, findsOneWidget);
-      expect(tester.widget<Text>(workDir).textDirection, TextDirection.ltr);
       expect(
-        tester.widget<Text>(workDir).style?.fontFamily,
+        tester.widget<EditableText>(workDir).textDirection,
+        TextDirection.ltr,
+      );
+      expect(
+        tester.widget<EditableText>(workDir).style.fontFamily,
         AppTheme.monoFamily,
       );
       expect(find.text('polecat/oc-cq6'), findsWidgets);
@@ -1032,6 +1035,12 @@ void main() {
                   .first,
             )
             .position;
+        // The kit list builds lazily. A return to an earlier section must
+        // scroll back before looking for its now-unmounted row.
+        if (target.evaluate().isEmpty) {
+          position.jumpTo(0);
+          await tester.pump();
+        }
         while (target.evaluate().isEmpty &&
             position.pixels < position.maxScrollExtent) {
           position.jumpTo(

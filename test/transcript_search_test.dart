@@ -16,6 +16,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart' show ServerPage;
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:opencode_mobile/ui/widgets/transcript_highlight.dart';
@@ -274,10 +275,13 @@ void main() {
       expect(MarkdownText.debugParseCount, parsed);
       expect(
         tester
-            .widgetList<SelectableText>(find.byType(SelectableText))
-            .any(
-              (w) => w.textSpan?.toPlainText().contains('final cache') == true,
-            ),
+            .widgetList<RichText>(
+              find.descendant(
+                of: find.byType(KitCodeBlock),
+                matching: find.byType(RichText),
+              ),
+            )
+            .any((w) => w.text.toPlainText().contains('final cache = 1;')),
         isTrue,
       );
     },
@@ -297,7 +301,13 @@ void main() {
       api.failOlder = true;
       await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
       await tester.pumpAndSettle();
-      expect(find.text('Older history unavailable'), findsWidgets);
+      expect(
+        find.text(
+          'The server had a problem (error 503). Try again in a moment.',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Older history unavailable'), findsNothing);
       expect(find.text('4 of 4 matches'), findsWidgets);
       api.failOlder = false;
       await tester.tap(find.byKey(const ValueKey('transcript-find-older')));

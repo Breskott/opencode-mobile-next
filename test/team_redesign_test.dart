@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -108,10 +109,10 @@ void main() {
     await _pump(tester, _home);
     final question = find.text(_question);
     expect(question, findsOneWidget);
-    expect(
-      _top(tester, question),
-      lessThan(_top(tester, _key('team-home-run-oc-xru'))),
-    );
+    // The question is also its task's row (team-home-one-list, Sept 27).
+    expect(_key('team-home-run-oc-xru'), findsNothing);
+    expect(_key('team-home-gate-req-schema-1-task'), findsOneWidget);
+    expect(find.textContaining('Offline-first sessions'), findsOneWidget);
     expect(
       _top(tester, question),
       lessThan(_top(tester, _key('team-home-run-mol-upgrade'))),
@@ -140,7 +141,7 @@ void main() {
     await _pump(tester, _home, scene: TeamScene.busy);
     expect(find.byType(TextField), findsNothing);
     final open = find.descendant(
-      of: find.byType(AppBar),
+      of: find.byType(KitTopBar),
       matching: find.byTooltip('Search tasks'),
     );
     expect(open, findsOneWidget);
@@ -148,6 +149,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'follow-up task 3');
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      _key('team-home-run-busy-3'),
+      200,
+      scrollable: find.descendant(
+        of: _key('team-home-runs'),
+        matching: find.byType(Scrollable),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(_key('team-home-run-busy-3'), findsOneWidget);
     expect(_key('team-home-run-busy-4'), findsNothing);
@@ -171,7 +181,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_key('team-home-agents-row'));
     await tester.pumpAndSettle();
-    expect(find.text('Worker'), findsNWidgets(2));
+    expect(find.text('fox · Worker'), findsOneWidget);
+    expect(find.text('wolf · Worker'), findsOneWidget);
     expect(find.text('Planner'), findsOneWidget);
     expect(_engineWordsIn(find.byType(MaterialApp)), isEmpty);
     expect(tester.takeException(), isNull);

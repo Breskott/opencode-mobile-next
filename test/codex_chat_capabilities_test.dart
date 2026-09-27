@@ -12,6 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
@@ -92,20 +93,27 @@ Future<void> _pumpChat(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Codex prompt tools hide attachment transports', (tester) async {
+  testWidgets('Codex prompt tools explain unavailable attachment transports', (
+    tester,
+  ) async {
     await _pumpChat(tester, _CodexApi());
 
-    final tooltip = tester.widget<Tooltip>(
-      find.byKey(const Key('prompt-tools-tooltip')),
-    );
-    expect(tooltip.message, 'Prompt tools');
+    expect(find.byTooltip('Attach and more'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('composer-tools-button')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('composer-tool-attach')), findsNothing);
+    final attach = tester.widget<KitRow>(
+      find.byKey(const Key('composer-tool-attach')),
+    );
+    expect(attach.enabled, isFalse);
+    expect(attach.onTap, isNull);
+    expect(find.text('This server takes text only'), findsOneWidget);
     expect(find.byKey(const Key('composer-tool-gallery')), findsNothing);
     expect(find.byKey(const Key('composer-tool-camera')), findsNothing);
+    await tester.tap(find.byKey(const Key('composer-tools-advanced')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('composer-tool-web-sources')), findsNothing);
     expect(find.text('Add web source'), findsNothing);
   });
 
@@ -146,7 +154,7 @@ void main() {
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
 
-    final field = tester.widget<TextField>(
+    final field = tester.widget<TextFormField>(
       find.byKey(const Key('chat-composer-field')),
     );
     expect(field.controller!.text, 'keep this offline draft');
@@ -317,7 +325,7 @@ void main() {
 
     expect(find.byKey(const Key('prompt-editor-attach')), findsNothing);
     expect(find.text('draft.txt'), findsOneWidget);
-    await tester.tap(find.byTooltip('Remove attachment draft.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove draft.txt'));
     await tester.enterText(
       find.byKey(const Key('prompt-editor-field')),
       'Edited text-only draft',
@@ -329,7 +337,7 @@ void main() {
     expect(find.text('draft.txt'), findsNothing);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextFormField>(find.byKey(const Key('chat-composer-field')))
           .controller!
           .text,
       'Edited text-only draft',

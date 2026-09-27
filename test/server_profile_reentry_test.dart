@@ -7,7 +7,6 @@ import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MemoryProfileStore extends ProfileStore {
@@ -244,7 +243,7 @@ void main() {
     addTearDown(() => serverProbe = probeServerConnection);
     await tester.pumpWidget(_serversApp(store, connection));
 
-    await tester.tap(find.byType(KitRowMenu));
+    await tester.longPress(find.text('Workstation'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -263,12 +262,14 @@ void main() {
     addTearDown(connection.dispose);
     await tester.pumpWidget(_serversApp(store, connection));
 
-    // Long-press no longer deletes; the row menu (and swipe) do.
-    await tester.tap(find.byType(KitRowMenu));
+    // Long-press opens the row actions; removal still needs confirmation.
+    await tester.longPress(find.text('Workstation'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-remove-server-server-1')),
+    );
     await tester.pumpAndSettle();
 
     expect(store.removeCalls, 1);

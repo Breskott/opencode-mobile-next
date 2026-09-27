@@ -24,6 +24,8 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -679,6 +681,7 @@ void main() {
         find.byKey(const ValueKey('team-home-search')),
         'WORK-NEW',
       );
+      await tester.pump(KitMotion.typingSettle);
       await tester.pumpAndSettle();
       expect(runRow('work-new'), findsOneWidget);
       expect(runRow('work-old'), findsNothing);
@@ -688,6 +691,7 @@ void main() {
         find.byKey(const ValueKey('team-home-search')),
         'nothing like this',
       );
+      await tester.pump(KitMotion.typingSettle);
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('team-home-runs-empty-filtered')),
@@ -841,8 +845,18 @@ void main() {
     });
   });
 
-  String hostPhrase(WidgetTester tester) =>
-      tester.widget<Text>(find.byKey(const ValueKey('team-home-host'))).data!;
+  String hostPhrase(WidgetTester tester) {
+    final bar = find.descendant(
+      of: find.byType(TeamHomeScreen),
+      matching: find.byType(KitTopBar),
+    );
+    final phrase = tester.widget<KitTopBar>(bar).subtitle!;
+    expect(
+      find.descendant(of: bar, matching: find.text(phrase)),
+      findsOneWidget,
+    );
+    return phrase;
+  }
 
   // Technical details open from the page's "how it runs" row (P3.4).
   Future<void> openDetails(WidgetTester tester) async {
@@ -990,12 +1004,13 @@ void main() {
         ],
       );
       await pumpHome(tester, controller, onOpenAgent: (a) => opened = a);
-      // Four live, the stopped dog counted apart (TEAM-115); no tab.
-      expect(find.text('4 agents · 1 working'), findsOneWidget);
+      // P5.2: the home counts every agent the list shows, including asleep
+      // agents, and says when a worker crashed.
+      expect(find.text('5 agents · 1 working · 1 crashed'), findsOneWidget);
       await openAgents(tester);
       expect(find.byKey(const ValueKey('team-home-agents')), findsOneWidget);
       Finder row(String id) => find.byKey(ValueKey('team-home-agent-$id'));
-      final order = ['wolf', 'nova', 'fox', 'bear'];
+      final order = ['wolf', 'nova', 'fox', 'bear', 'dog-1'];
       for (var i = 1; i < order.length; i++) {
         expect(
           top(tester, row(order[i - 1])),
@@ -1005,7 +1020,7 @@ void main() {
       }
       // Named by role, never by engine name or pool.
       expect(
-        find.descendant(of: row('fox'), matching: find.text('Worker')),
+        find.descendant(of: row('fox'), matching: find.text('fox · Worker')),
         findsOneWidget,
       );
       expect(find.textContaining('polecat'), findsNothing);
@@ -1013,18 +1028,18 @@ void main() {
       expect(find.textContaining('Crashed'), findsOneWidget);
       // Fox works the fixture's bead, last seen 12 minutes ago.
       expect(find.textContaining('12m ago'), findsOneWidget);
-      // The stopped dog sits under the collapsed group, below the live.
-      final group = find.byKey(const ValueKey('team-home-suspended-group'));
-      expect(group, findsOneWidget);
-      expect(row('dog-1'), findsNothing);
-      expect(top(tester, row('bear')), lessThan(top(tester, group)));
-      await tester.tap(group);
-      await tester.pumpAndSettle();
-      expect(row('dog-1'), findsOneWidget);
-      expect(top(tester, group), lessThan(top(tester, row('dog-1'))));
-      await tester.tap(group);
-      await tester.pumpAndSettle();
-      expect(row('dog-1'), findsNothing);
+      // The one list ends with asleep agents; there is no state section.
+      expect(
+        find.byKey(const ValueKey('team-home-suspended-group')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: row('dog-1'),
+          matching: find.textContaining('Asleep · wakes when there is work'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(row('fox'));
       expect(opened?.id, 'fox');
@@ -1039,7 +1054,8 @@ void main() {
         (w) => switch (w.key) {
           ValueKey<String>(:final value) =>
             value.startsWith('team-home-agent-') &&
-                !value.startsWith('team-home-agent-state-'),
+                !value.startsWith('team-home-agent-state-') &&
+                !value.startsWith('team-home-agent-title-'),
           _ => false,
         },
       );
@@ -1440,7 +1456,7 @@ void main() {
       expect(runRow('oc-wisp-refinery'), findsNothing);
     });
 
-    testWidgets('suspended agents count apart and sit collapsed', (
+    testWidgets('all agents count on home; asleep and paused finish one list', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -1476,25 +1492,41 @@ void main() {
         ],
       );
       await pumpHome(tester, controller);
-      // One live agent on the home's row; the four off are not counted.
-      expect(find.text('1 agent'), findsOneWidget);
+      // P5.2: the count agrees with the list, with paused agents named.
+      expect(find.text('5 agents · 3 paused'), findsOneWidget);
       await openAgents(tester);
       Finder row(String id) => find.byKey(ValueKey('team-home-agent-$id'));
       expect(row('ocproof/gastown.refinery'), findsOneWidget);
-      expect(find.text('Suspended on the host (4)'), findsOneWidget);
+      expect(find.text('Suspended on the host (4)'), findsNothing);
+      expect(find.text('Wake the 3 paused agents'), findsOneWidget);
       for (final off in [
         'gastown.boot',
         'gastown.deacon',
         'gastown.mayor',
         'ocproof/gastown.witness',
       ]) {
-        expect(row(off), findsNothing);
+        expect(row(off), findsOneWidget);
+        expect(
+          top(tester, row('ocproof/gastown.refinery')),
+          lessThan(top(tester, row(off))),
+        );
       }
-      await tester.tap(find.byKey(const ValueKey('team-home-suspended-group')));
-      await tester.pumpAndSettle();
-      expect(row('gastown.boot'), findsOneWidget);
-      expect(row('ocproof/gastown.witness'), findsOneWidget);
-      expect(find.textContaining('Stopped'), findsNWidgets(4));
+      expect(
+        find.byKey(const ValueKey('team-home-suspended-group')),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('Paused · switched off until someone wakes it'),
+        findsNWidgets(3),
+      );
+      expect(
+        find.textContaining('Asleep · wakes when there is work'),
+        findsOneWidget,
+      );
+      expect(
+        top(tester, row('ocproof/gastown.witness')),
+        lessThan(top(tester, row('gastown.boot'))),
+      );
       expect(tester.takeException(), isNull);
     });
   });
@@ -1514,12 +1546,12 @@ void main() {
       expect(find.text('فريق الذكاء الاصطناعي'), findsOneWidget);
       // The question first, then the tasks, in the person's words: no
       // engine names or versions on the home in any language.
-      expect(find.text('يحتاجك'), findsOneWidget);
-      expect(find.text('المهام'), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(const ValueKey('team-home-host'))).data,
-        startsWith('على '),
-      );
+      // The one-list redesign removed both section headings in every locale.
+      expect(find.text('يحتاجك'), findsNothing);
+      expect(find.text('المهام'), findsNothing);
+      final gate = controller.snapshot.gates.single;
+      expect(find.byKey(ValueKey('team-home-gate-${gate.id}')), findsOneWidget);
+      expect(hostPhrase(tester), startsWith('على '));
       for (final word in ['convoy', 'Gas City', '1.4.1', 'bright-lights']) {
         expect(find.textContaining(word), findsNothing, reason: word);
       }

@@ -822,7 +822,7 @@ void main() {
       'offline draft',
     );
     await tester.pump();
-    await tester.tap(find.byTooltip('Send'));
+    await tester.tap(find.byTooltip('Send when back online'));
     await tester.pump();
     await tester.pump();
 
@@ -859,8 +859,13 @@ void main() {
       expect(controller.queuedPromptsFor('session-1'), isEmpty);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-            .controller!
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
             .text,
         'Keep this draft',
       );
@@ -1446,9 +1451,14 @@ void main() {
       expect(find.byKey(const ValueKey('queued-send-0')), findsNothing);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
             .controller
-            ?.text,
+            .text,
         'edit me',
       );
       expect(find.text('notes.txt'), findsOneWidget);
@@ -1470,6 +1480,9 @@ void main() {
       expect(api.prompts, isEmpty);
       final prefs = await SharedPreferences.getInstance();
       expect(OfflineQueueStore(prefs: prefs).load(), isEmpty);
+      expect(find.text('Returned to your draft'), findsOneWidget);
+      await tester.pump(KitUndo.window);
+      await tester.pumpAndSettle();
     });
 
     testWidgets('editing a never-sent draft carries no duplicate warning', (
@@ -1522,9 +1535,14 @@ void main() {
       expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
             .controller
-            ?.text,
+            .text,
         isEmpty,
       );
       expect(find.text('notes.txt'), findsNothing);
@@ -1558,6 +1576,10 @@ void main() {
       expect(controller.queuedPromptCount, 1);
       expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
       expect((await disk.onDisk()).single.dispatchedAt, 1700000000000);
+
+      // The failure is a kit alert; dismiss it before returning to the item.
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
 
       // Storage back: the discard goes through and nothing is ever sent.
       disk.defaultOutcome = true;

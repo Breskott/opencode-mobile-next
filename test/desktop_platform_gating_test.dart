@@ -312,7 +312,7 @@ void main() {
 
     testWidgets('offer voice input on Android', (tester) async {
       await pumpChat(tester);
-      expect(find.byTooltip('Add. Hold to attach a file'), findsOneWidget);
+      expect(find.byTooltip('Attach and more'), findsOneWidget);
       await openTools(tester);
       expect(find.byKey(const Key('composer-tool-voice')), findsOneWidget);
     });
@@ -321,7 +321,7 @@ void main() {
       onDesktop();
       await pumpChat(tester);
       // The collapsed button no longer advertises a tool that is not there.
-      expect(find.byTooltip('Add. Hold to attach a file'), findsOneWidget);
+      expect(find.byTooltip('Attach and more'), findsOneWidget);
       await openTools(tester);
       expect(find.byKey(const Key('composer-tool-voice')), findsNothing);
       expect(find.text('Voice input'), findsNothing);
