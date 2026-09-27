@@ -21429,7 +21429,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kitCapMcpAnyTitle => 'Extra tools';
 
   @override
-  String get kitCapMcpAnyWhy => 'No extra tools are added on this server yet.';
+  String get kitCapMcpAnyWhy =>
+      'This server can\'t add extra tools from the app.';
 
   @override
   String get kitCapMcpAnyEnable => 'Add a tool';
@@ -21565,6 +21566,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This server doesn\'t share its files or terminal.';
 
   @override
+  String get kitCapFlagTerminalTitle => 'Terminal';
+
+  @override
+  String get kitCapFlagTerminalWhy =>
+      'This server doesn\'t open a terminal for you.';
+
+  @override
   String get kitCapFlagSessionDiffTitle => 'Review changes';
 
   @override
@@ -21577,6 +21585,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kitCapFlagServerCatalogWhy =>
       'This server doesn\'t share its providers, tools or commands.';
+
+  @override
+  String get kitCapFlagToolInventoryTitle => 'Tool list';
+
+  @override
+  String get kitCapFlagToolInventoryWhy =>
+      'This server doesn\'t list the tools its agent can use.';
 
   @override
   String get kitCapFlagUsageStatisticsTitle => 'Spending';

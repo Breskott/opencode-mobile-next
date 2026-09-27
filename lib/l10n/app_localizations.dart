@@ -33995,10 +33995,10 @@ abstract class AppLocalizations {
   /// **'Extra tools'**
   String get kitCapMcpAnyTitle;
 
-  /// KitCapabilityExplainer: why the capability "mcp.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  /// KitCapabilityExplainer: why the capability "mcp.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body). It explains a server that cannot add MCP servers at all; the turn-on invitation is kitCapMcpAnyOffer
   ///
   /// In en, this message translates to:
-  /// **'No extra tools are added on this server yet.'**
+  /// **'This server can\'t add extra tools from the app.'**
   String get kitCapMcpAnyWhy;
 
   /// KitCapabilityExplainer: the button that starts the flow turning "mcp.any" on (a verb, COPY-8)
@@ -34241,6 +34241,18 @@ abstract class AppLocalizations {
   /// **'This server doesn\'t share its files or terminal.'**
   String get kitCapFlagFileBrowsingTerminalWhy;
 
+  /// KitCapabilityExplainer: the name of the capability "flag:terminal" (the server's own terminal, without Files), shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get kitCapFlagTerminalTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:terminal" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t open a terminal for you.'**
+  String get kitCapFlagTerminalWhy;
+
   /// KitCapabilityExplainer: the name of the capability "flag:sessionDiff", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
@@ -34264,6 +34276,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server doesn\'t share its providers, tools or commands.'**
   String get kitCapFlagServerCatalogWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:toolInventory" (the list of tools the server's agent can use), shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Tool list'**
+  String get kitCapFlagToolInventoryTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:toolInventory" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t list the tools its agent can use.'**
+  String get kitCapFlagToolInventoryWhy;
 
   /// KitCapabilityExplainer: the name of the capability "flag:usageStatistics", shown as the title of the dimmed row or the missing state
   ///
