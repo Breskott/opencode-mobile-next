@@ -1,0 +1,11 @@
+feat(sessions): expose staged revert message counts [skip ci]
+
+Add a bounded, scope-checked gateway read for staged-revert confirmation counts.
+Keep unarchive, summary seeding and destination copy/conflict features unavailable
+and document the exact server and protected-gateway integration gaps for builders.
+
+Flutter tests are authored but unrun per task instructions; pinned Dart formatting
+and static diff checks completed. No UI or protected single-owner files changed.
+
+Co-Authored-By: Codex (gpt-6-astra) <noreply@openai.com>
+Claude-Session: https://claude.ai/code/session_01G7Gr8TYUhyCJ169CtNjJB1
