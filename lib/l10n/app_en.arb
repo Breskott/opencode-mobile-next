@@ -31108,6 +31108,10 @@
   "@productErrorTermux": {
     "description": "Error words: a command the app sent to Termux failed (its output goes to details)."
   },
+  "settingsBackgroundOffFailed": "Android did not turn background mode off.",
+  "@settingsBackgroundOffFailed": {
+    "description": "Settings, Notifications: turning the keep-live-in-background switch off failed (Android's own message is under Copy details)."
+  },
   "productErrorDetailsLabel": "Error details",
   "@productErrorDetailsLabel": {
     "description": "Label of the folded technical text under an error alert."

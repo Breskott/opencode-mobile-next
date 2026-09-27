@@ -26117,6 +26117,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Termux didn\'t finish that. Check that Termux is installed and open, then try again.';
 
   @override
+  String get settingsBackgroundOffFailed =>
+      'Android did not turn background mode off.';
+
+  @override
   String get productErrorDetailsLabel => 'Error details';
 
   @override

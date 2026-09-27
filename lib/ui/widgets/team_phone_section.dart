@@ -25,7 +25,6 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_iconography.dart';
-import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_notice.dart';
@@ -36,6 +35,7 @@ import '../kit/kit_status_mark.dart';
 import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
+import 'product_states.dart' show productErrorDetails, productErrorText;
 import 'team_phone_onboarding.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -135,6 +135,10 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
   TeamRuntimeStatus? _status;
   bool _busy = false;
   String? _error;
+
+  /// The raw failure behind [_error] (script output, Termux's message),
+  /// for Copy details only.
+  String? _errorDetails;
   Timer? _poll;
 
   @override
@@ -179,6 +183,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
     setState(() {
       _busy = true;
       _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await verb();
@@ -197,14 +202,18 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
       setState(() {
         _status = status;
         if (status.phase == TeamRuntimePhase.failed) {
-          _error = l10n.teamUiPhoneActionFailed(
-            status.lastError ?? status.reason ?? status.rawPhase,
-          );
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
         }
       });
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
-      setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
+      setState(() {
+        _error = l10n.teamUiPhoneActionFailed(
+          productErrorText(error, l10n: l10n),
+        );
+        _errorDetails = productErrorDetails(error);
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -266,16 +275,16 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
     setState(() {
       _busy = true;
       _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await _runtime.remove();
       if (!mounted) return;
       if (status.phase == TeamRuntimePhase.failed) {
-        setState(
-          () => _error = l10n.teamUiPhoneActionFailed(
-            status.lastError ?? status.reason ?? status.rawPhase,
-          ),
-        );
+        setState(() {
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
+        });
         return;
       }
       // Removal turns the plugin off for the profile (03 §3), the same
@@ -302,7 +311,12 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
       widget.onRemoved?.call();
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
-      setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
+      setState(() {
+        _error = l10n.teamUiPhoneActionFailed(
+          productErrorText(error, l10n: l10n),
+        );
+        _errorDetails = productErrorDetails(error);
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -487,10 +501,11 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         ],
         if (_error case final error?) ...[
           gap(),
-          KitNotice(
+          KitNotice.error(
             key: const ValueKey('team-phone-error'),
             message: error,
-            tone: AppStatusTone.failure,
+            details: _errorDetails,
+            reportSource: 'team-phone',
           ),
         ],
         if (!actions.isEmpty) ...[gap(), actions],

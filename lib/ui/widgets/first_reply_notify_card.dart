@@ -8,6 +8,7 @@ import '../app_theme.dart';
 import '../kit/kit_ask_line.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_notice.dart';
+import 'product_states.dart' show productErrorText;
 
 /// "Get told when it's done?" — the one time the app asks for notifications
 /// (UX plan 5.6 step 6).
@@ -96,7 +97,10 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     if (!mounted) return;
     setState(() {
       _answered = true;
-      if (!enabled) _failure = controller.backgroundLive.lastError ?? failed;
+      // The app's own sentence from the Android side ("Notification access
+      // is required.") stays; exception text is said in words instead.
+      final error = controller.backgroundLive.lastError;
+      if (!enabled) _failure = error == null ? failed : productErrorText(error);
     });
   }
 

@@ -41091,6 +41091,12 @@ abstract class AppLocalizations {
   /// **'Termux didn\'t finish that. Check that Termux is installed and open, then try again.'**
   String get productErrorTermux;
 
+  /// Settings, Notifications: turning the keep-live-in-background switch off failed (Android's own message is under Copy details).
+  ///
+  /// In en, this message translates to:
+  /// **'Android did not turn background mode off.'**
+  String get settingsBackgroundOffFailed;
+
   /// Label of the folded technical text under an error alert.
   ///
   /// In en, this message translates to:

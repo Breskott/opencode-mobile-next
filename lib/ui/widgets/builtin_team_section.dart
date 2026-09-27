@@ -46,6 +46,7 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/scenes/team_scenes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
+import 'product_states.dart' show productErrorDetails, productErrorText;
 import 'team_phone_onboarding.dart'
     show TeamPhoneReadyScreen, openTeamOnThisPhone;
 
@@ -107,8 +108,13 @@ String builtinTeamFailureText(
   if (error.timedOut) {
     return l10n.aiteamComponentFailed(l10n.aiteamComponentFailedTimeout);
   }
+  // The script's last line when it is a sentence for people; its output
+  // otherwise is said in words (the output itself is under Details).
   final lines = error.detail.trim().split('\n');
-  return l10n.aiteamComponentFailed(lines.isEmpty ? '' : lines.last.trim());
+  final last = lines.isEmpty ? '' : lines.last.trim();
+  return l10n.aiteamComponentFailed(
+    productErrorText(BuiltinLinuxException(last), l10n: l10n),
+  );
 }
 
 String builtinTeamStageText(
@@ -342,7 +348,12 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       }
     } catch (error) {
       if (mounted) {
-        setState(() => _error = _copy(context).aiteamComponentFailed('$error'));
+        setState(() {
+          _error = _copy(context).aiteamComponentFailed(
+            productErrorText(error, l10n: _copy(context)),
+          );
+          _detail = productErrorDetails(error);
+        });
       }
     } finally {
       if (mounted) {
