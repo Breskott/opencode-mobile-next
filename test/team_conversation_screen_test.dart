@@ -361,19 +361,29 @@ void main() {
     ) async {
       await pump(tester);
       final lead = _key('team-conversation-lead');
-      final surfaces = find.descendant(
+      final blocks = find.descendant(
         of: lead,
-        matching: find.byKey(const Key('assistant-text-surface')),
+        matching: find.byKey(const Key('assistant-text-block')),
       );
-      expect(surfaces, findsWidgets);
-      for (final element in surfaces.evaluate()) {
-        final box = (element.widget as AnimatedContainer).decoration;
-        expect(
-          (box as BoxDecoration?)?.color ?? Colors.transparent,
-          Colors.transparent,
-          reason: 'the lead is a finished reply, not one still being written',
-        );
-      }
+      expect(blocks, findsWidgets);
+      // No fill behind the prose: a reply carries no frame or tint.
+      final fills = find.descendant(
+        of: blocks,
+        matching: find.byWidgetPredicate((widget) {
+          final decoration = switch (widget) {
+            DecoratedBox(:final decoration) => decoration,
+            Container(:final decoration) => decoration,
+            _ => null,
+          };
+          final color = decoration is BoxDecoration ? decoration.color : null;
+          return color != null && color.a > 0;
+        }),
+      );
+      expect(
+        fills,
+        findsNothing,
+        reason: 'the lead is a finished reply, drawn with no fill',
+      );
       // Three lines: none folded.
       expect(_key('team-conversation-lead-earlier'), findsNothing);
       expect(

@@ -53,17 +53,7 @@
       "G21 disableAnimationsOf": 3,
       "G21 withOpacity(|Opacity(": 3
     },
-    "lib/ui/screens/chat/message_view.dart#_AssistantErrorRow": {
-      "G17 .textTheme.": 1,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 SizedBox(width|height: <n>)": 1
-    },
-    "lib/ui/screens/chat/message_view.dart#_ErrorActionCard": {
-      "G17 .textTheme.": 2,
-      "G21 EdgeInsets(<n>)": 6,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 SizedBox(width|height: <n>)": 1
-    },
+    "lib/ui/screens/chat/message_view.dart#_AssistantErrorRow": {},
     "lib/ui/screens/chat/permission_sheet.dart": {
       "G1 AlertDialog(": 1,
       "G1 showDialog(": 1,
@@ -95,73 +85,16 @@
       "G21 TextStyle(": 1,
       "G21 fontSize:": 1
     },
-    "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart": {
-      "G17 .textTheme.": 3,
-      "G21 EdgeInsets(<n>)": 2,
-      "G21 SizedBox(width|height: <n>)": 3,
-      "G21 TextStyle(": 1
-    },
-    "lib/ui/screens/phone_setup/phone_setup_hero.dart": {
-      "G17 .textTheme.": 2,
-      "G21 EdgeInsets(<n>)": 1,
-      "G21 SizedBox(width|height: <n>)": 6
-    },
-    "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart": {
-      "G1 showConfirmSheet(": 1,
-      "G2 showConfirmSheet(": 1
-    },
+    "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart": {},
+    "lib/ui/screens/phone_setup/phone_setup_hero.dart": {},
+    "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart": {},
     "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart": {},
-    "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
-      "G17 .textTheme.": 1,
-      "G21 EdgeInsets(<n>)": 1,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 SizedBox(width|height: <n>)": 1,
-      "G21 disableAnimationsOf": 1,
-      "G21 withOpacity(|Opacity(": 1
-    },
-    "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart": {
-      "G21 EdgeInsets(<n>)": 1
-    },
-    "lib/ui/screens/servers_screen.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showConfirmSheet(": 2,
-      "G1 showSnackBar(": 1,
-      "G17 .colorScheme.": 8,
-      "G17 .textTheme.": 11,
-      "G2 showConfirmSheet(": 2,
-      "G21 EdgeInsets(<n>)": 18,
-      "G21 SizedBox(width|height: <n>)": 25,
-      "G21 TextStyle(": 3
-    },
-    "lib/ui/screens/settings/default_shell_row.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showModalBottomSheet(": 1,
-      "G1 showSnackBar(": 1
-    },
-    "lib/ui/screens/settings/notifications_settings_screen.dart": {
-      "G1 SnackBar(": 2,
-      "G1 showSnackBar(": 2,
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 1,
-      "G21 EdgeInsets(<n>)": 6
-    },
-    "lib/ui/screens/settings/personal_settings_screens.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showConfirmSheet(": 1,
-      "G1 showSnackBar(": 1,
-      "G17 .colorScheme.": 7,
-      "G17 .textTheme.": 3,
-      "G2 showConfirmSheet(": 1,
-      "G21 Border.all(": 1,
-      "G21 BorderRadius.circular(<n>": 6,
-      "G21 EdgeInsets(<n>)": 10,
-      "G21 Gradient(": 1,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 KitGlass(|GlassSurface(": 1,
-      "G21 SizedBox(width|height: <n>)": 5,
-      "G21 disableAnimationsOf": 1,
-      "G21 withOpacity(|Opacity(": 1
-    },
+    "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {},
+    "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart": {},
+    "lib/ui/screens/servers_screen.dart": {},
+    "lib/ui/screens/settings/default_shell_row.dart": {},
+    "lib/ui/screens/settings/notifications_settings_screen.dart": {},
+    "lib/ui/screens/settings/personal_settings_screens.dart": {},
     "lib/ui/screens/settings/plugins_screen.dart#PluginsSettingsScreen": {},
     "lib/ui/screens/settings/plugins_screen.dart#_PluginsSettingsScreenState": {
       "G1 showModalBottomSheet(": 1,
@@ -184,25 +117,8 @@
       "G21 TextStyle(": 4,
       "G7 EdgeInsets.fromLTRB asymmetric": 1
     },
-    "lib/ui/screens/settings/server_settings_screen.dart": {
-      "G1 AlertDialog(": 1,
-      "G1 SnackBar(": 2,
-      "G1 showConfirmSheet(": 1,
-      "G1 showDialog(": 1,
-      "G1 showSnackBar(": 2,
-      "G17 .colorScheme.": 1,
-      "G2 Clipboard.setData(": 1,
-      "G2 duration: Duration(": 2,
-      "G2 showConfirmSheet(": 1,
-      "G21 TextStyle(": 1
-    },
-    "lib/ui/screens/settings_screen.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showSnackBar(": 1,
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 1,
-      "G21 EdgeInsets(<n>)": 3
-    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {},
+    "lib/ui/screens/settings_screen.dart": {},
     "lib/ui/screens/team/agent_output_screen.dart": {
       "G1 SnackBar(": 1,
       "G1 showSnackBar(": 1,
@@ -211,38 +127,9 @@
       "G2 duration: Duration(": 1,
       "G21 EdgeInsets(<n>)": 4
     },
-    "lib/ui/screens/team/agent_screen.dart": {
-      "G1 showModalBottomSheet(": 3,
-      "G17 .textTheme.": 24,
-      "G21 EdgeInsets(<n>)": 17,
-      "G21 Icon size not 20/22/24": 3,
-      "G21 SizedBox(width|height: <n>)": 12,
-      "G21 withOpacity(|Opacity(": 1
-    },
-    "lib/ui/screens/team/gate_sheet.dart": {
-      "G1 showConfirmSheet(": 1,
-      "G1 showModalBottomSheet(": 1,
-      "G17 .colorScheme.": 3,
-      "G17 .textTheme.": 20,
-      "G2 showConfirmSheet(": 1,
-      "G21 BorderRadius.circular(<n>": 2,
-      "G21 EdgeInsets(<n>)": 14,
-      "G21 Icon size not 20/22/24": 6,
-      "G21 SizedBox(width|height: <n>)": 15,
-      "G21 TextStyle(": 1,
-      "G21 fontSize:": 1
-    },
-    "lib/ui/screens/team/merge_section.dart": {
-      "G1 DraggableScrollableSheet(": 1,
-      "G1 showConfirmSheet(": 2,
-      "G1 showModalBottomSheet(": 1,
-      "G17 .textTheme.": 13,
-      "G2 showConfirmSheet(": 2,
-      "G21 EdgeInsets(<n>)": 7,
-      "G21 Icon size not 20/22/24": 4,
-      "G21 SizedBox(width|height: <n>)": 9,
-      "G21 TextStyle(": 2
-    },
+    "lib/ui/screens/team/agent_screen.dart": {},
+    "lib/ui/screens/team/gate_sheet.dart": {},
+    "lib/ui/screens/team/merge_section.dart": {},
     "lib/ui/screens/team/run_screen.dart": {
       "G1 showModalBottomSheet(": 1,
       "G17 .colorScheme.": 6,
@@ -258,50 +145,14 @@
       "G21 withOpacity(|Opacity(": 1,
       "G7 Positioned(left|right:)": 1
     },
-    "lib/ui/screens/team/start_run_sheet.dart": {
-      "G1 showModalBottomSheet(": 1,
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 12,
-      "G21 BorderRadius.circular(<n>": 1,
-      "G21 EdgeInsets(<n>)": 5,
-      "G21 Icon size not 20/22/24": 3,
-      "G21 SizedBox(width|height: <n>)": 20
-    },
-    "lib/ui/screens/team/team_agents_screen.dart": {
-      "G17 .textTheme.": 1,
-      "G21 EdgeInsets(<n>)": 2,
-      "G21 withOpacity(|Opacity(": 1
-    },
-    "lib/ui/screens/team/team_home_screen.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showSnackBar(": 1,
-      "G17 .textTheme.": 4,
-      "G21 EdgeInsets(<n>)": 5,
-      "G21 Icon size not 20/22/24": 2,
-      "G21 SizedBox(width|height: <n>)": 5,
-      "G21 withOpacity(|Opacity(": 1
-    },
-    "lib/ui/screens/team/team_intro_screen.dart": {
-      "G17 .textTheme.": 2,
-      "G21 EdgeInsets(<n>)": 4,
-      "G21 SizedBox(width|height: <n>)": 2
-    },
-    "lib/ui/screens/team/team_needs_you.dart": {
-      "G17 .textTheme.": 3,
-      "G21 EdgeInsets(<n>)": 4,
-      "G21 SizedBox(width|height: <n>)": 1
-    },
+    "lib/ui/screens/team/start_run_sheet.dart": {},
+    "lib/ui/screens/team/team_agents_screen.dart": {},
+    "lib/ui/screens/team/team_home_screen.dart": {},
+    "lib/ui/screens/team/team_intro_screen.dart": {},
+    "lib/ui/screens/team/team_needs_you.dart": {},
     "lib/ui/screens/team/team_states.dart": {},
     "lib/ui/screens/team/work_sheet.dart": {
-      "G1 showModalBottomSheet(": 1,
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 8,
-      "G21 .toUpperCase()": 1,
-      "G21 EdgeInsets(<n>)": 6,
-      "G21 Icon size not 20/22/24": 4,
-      "G21 SizedBox(width|height: <n>)": 10,
-      "G21 TextStyle(": 1,
-      "G21 fontSize:": 1
+      "G21 .toUpperCase()": 1
     },
     "lib/ui/screens/termux_setup_screen.dart": {
       "G1 SnackBar(": 6,
@@ -322,92 +173,19 @@
       "G21 fontSize:": 2,
       "G21 withOpacity(|Opacity(": 1
     },
-    "lib/ui/screens/workspace_screen.dart": {
-      "G1 AlertDialog(": 2,
-      "G1 SnackBar(": 2,
-      "G1 showConfirmSheet(": 3,
-      "G1 showDialog(": 2,
-      "G1 showModalBottomSheet(": 3,
-      "G1 showSnackBar(": 2,
-      "G17 .colorScheme.": 4,
-      "G17 .textTheme.": 4,
-      "G2 Clipboard.setData(": 1,
-      "G2 Curves.": 1,
-      "G2 duration: Duration(": 1,
-      "G2 showConfirmSheet(": 3,
-      "G21 EdgeInsets(<n>)": 9,
-      "G21 Icon size not 20/22/24": 6,
-      "G21 SizedBox(width|height: <n>)": 8,
-      "G21 TextStyle(": 5,
-      "G21 disableAnimationsOf": 1,
-      "G21 fontSize:": 2,
-      "G21 metal|chrome": 3,
-      "G7 bidi literal": 2
-    },
-    "lib/ui/widgets/connection_status_banner.dart": {
-      "G1 showModalBottomSheet(": 1,
-      "G17 .colorScheme.": 2,
-      "G17 .textTheme.": 3,
-      "G21 BorderRadius.circular(<n>": 1,
-      "G21 EdgeInsets(<n>)": 2,
-      "G21 SizedBox(width|height: <n>)": 3
-    },
-    "lib/ui/widgets/first_reply_notify_card.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showSnackBar(": 1
-    },
-    "lib/ui/widgets/folder_browser.dart": {
-      "G17 .textTheme.": 3,
-      "G21 EdgeInsets(<n>)": 3,
-      "G21 SizedBox(width|height: <n>)": 6,
-      "G21 TextStyle(": 1,
-      "G7 bidi literal": 4
-    },
-    "lib/ui/widgets/local_server_row.dart": {
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 1
-    },
-    "lib/ui/widgets/managed_server_recovery_option.dart": {
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 2,
-      "G21 EdgeInsets(<n>)": 2
-    },
+    "lib/ui/screens/workspace_screen.dart": {},
+    "lib/ui/widgets/connection_status_banner.dart": {},
+    "lib/ui/widgets/first_reply_notify_card.dart": {},
+    "lib/ui/widgets/folder_browser.dart": {},
+    "lib/ui/widgets/local_server_row.dart": {},
+    "lib/ui/widgets/managed_server_recovery_option.dart": {},
     "lib/ui/widgets/nudge_card.dart": {},
-    "lib/ui/widgets/other_projects_panel.dart": {
-      "G17 .colorScheme.": 2,
-      "G21 TextStyle(": 1
-    },
-    "lib/ui/widgets/other_servers_panel.dart": {
-      "G17 .colorScheme.": 1,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 TextStyle(": 1
-    },
-    "lib/ui/widgets/phone_server_card.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showConfirmSheet(": 1,
-      "G1 showModalBottomSheet(": 1,
-      "G1 showSnackBar(": 1,
-      "G17 .colorScheme.": 3,
-      "G17 .textTheme.": 3,
-      "G2 showConfirmSheet(": 1,
-      "G21 EdgeInsets(<n>)": 5,
-      "G21 SizedBox(width|height: <n>)": 3,
-      "G21 TextStyle(": 1
-    },
+    "lib/ui/widgets/other_projects_panel.dart": {},
+    "lib/ui/widgets/other_servers_panel.dart": {},
+    "lib/ui/widgets/phone_server_card.dart": {},
     "lib/ui/widgets/saved_server_connection_card.dart": {},
-    "lib/ui/widgets/setup_progress_view.dart": {
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 4,
-      "G2 Curves.": 3,
-      "G21 EdgeInsets(<n>)": 8,
-      "G21 Icon size not 20/22/24": 1,
-      "G21 SizedBox(width|height: <n>)": 7,
-      "G21 TextStyle(": 2,
-      "G21 disableAnimationsOf": 2
-    },
-    "lib/ui/widgets/team_agent_row.dart": {
-      "G17 .textTheme.": 1
-    },
+    "lib/ui/widgets/setup_progress_view.dart": {},
+    "lib/ui/widgets/team_agent_row.dart": {},
     "lib/ui/widgets/team_card.dart": {
       "G17 .colorScheme.": 1,
       "G17 .textTheme.": 4,
@@ -416,14 +194,9 @@
       "G21 withOpacity(|Opacity(": 1
     },
     "lib/ui/widgets/team_discover.dart": {},
-    "lib/ui/widgets/team_moments.dart": {
-      "G21 EdgeInsets(<n>)": 2
-    },
+    "lib/ui/widgets/team_moments.dart": {},
     "lib/ui/widgets/termux_phone_tools.dart": {},
     "lib/ui/widgets/termux_running_server_entry.dart": {},
-    "lib/ui/widgets/work_status_line.dart": {
-      "G1 showConfirmSheet(": 1,
-      "G2 showConfirmSheet(": 1
-    }
+    "lib/ui/widgets/work_status_line.dart": {}
   }
 }

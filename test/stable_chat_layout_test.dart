@@ -214,15 +214,10 @@ void main() {
       final actions = find.byKey(const ValueKey('message-actions-a1'));
       expect(actions, findsOneWidget);
       expect(find.text('…'), findsNothing);
-      // A visible disc bounds the glyph so it reads as a control.
-      expect(
-        find.byKey(const ValueKey('message-actions-disc-a1')),
-        findsOneWidget,
-      );
       final size = tester.getSize(actions);
       expect(size.width, greaterThanOrEqualTo(44));
       expect(size.height, greaterThanOrEqualTo(44));
-      expect(find.bySemanticsLabel('Message actions'), findsOneWidget);
+      expect(find.bySemanticsLabel('More for this reply'), findsOneWidget);
 
       await tester.tap(actions);
       await tester.pumpAndSettle();

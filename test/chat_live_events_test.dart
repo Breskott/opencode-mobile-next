@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart' show KitMotion;
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitMarkdown, KitMotion, KitTurn;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -2338,11 +2339,11 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsNWidgets(2));
+    expect(find.byKey(const Key('work-group')), findsNWidgets(2));
     // What was done is the title; no generic "Tools" beside it.
     expect(find.text('Tools'), findsNothing);
     expect(
-      find.text('Read 1 file, searched once, ran 1 command'),
+      find.text('Read 1 file · searched once · ran 1 command'),
       findsOneWidget,
     );
     expect(find.text('Edited 2 files'), findsOneWidget);
@@ -2352,7 +2353,7 @@ void main() {
     expect(find.text('Search text'), findsNothing);
     expect(find.text('Edit'), findsNothing);
 
-    final headers = find.byKey(const Key('tool-call-group-header'));
+    final headers = find.byKey(const Key('work-group-header'));
     expect(tester.getSize(headers.first).height, greaterThanOrEqualTo(48));
     await tester.tap(headers.first);
     await tester.pumpAndSettle();
@@ -2407,7 +2408,7 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
     expect(
       find.byKey(const Key('embedded-tool-error-output')),
       findsNWidgets(2),
@@ -2470,12 +2471,12 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
-    expect(find.text('Edited 1 file, ran 1 command'), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('Edited 1 file · ran 1 command'), findsOneWidget);
     expect(find.text('Edit'), findsNothing);
     expect(find.text('Shell'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit'), findsOneWidget);
@@ -2493,10 +2494,22 @@ void main() {
           Part(type: 'text', text: 'Inspect this'),
         ], created: 1),
         _message(
+          'assistant-0',
+          'assistant',
+          [Part(type: 'text', text: 'Earlier turn')],
+          created: 2,
+          providerID: 'provider',
+          modelID: 'model-a',
+          tokens: Tokens(input: 60, output: 15),
+        ),
+        _message('user-2', 'user', [
+          Part(type: 'text', text: 'Continue'),
+        ], created: 3),
+        _message(
           'assistant-1',
           'assistant',
           [Part(type: 'text', text: 'First internal step')],
-          created: 2,
+          created: 4,
           providerID: 'provider',
           modelID: 'model-a',
           tokens: Tokens(input: 70, output: 30),
@@ -2505,7 +2518,7 @@ void main() {
           'assistant-2',
           'assistant',
           [Part(type: 'text', text: 'Second internal step')],
-          created: 3,
+          created: 5,
           providerID: 'provider',
           modelID: 'model-a',
           tokens: Tokens(input: 150, output: 50),
@@ -2514,36 +2527,28 @@ void main() {
           'assistant-3',
           'assistant',
           [Part(type: 'text', text: 'Model switched here')],
-          created: 4,
-          providerID: 'provider',
-          modelID: 'model-b',
-          tokens: Tokens(input: 40, output: 10),
-        ),
-        _message('user-2', 'user', [
-          Part(type: 'text', text: 'Continue'),
-        ], created: 5),
-        _message(
-          'assistant-4',
-          'assistant',
-          [Part(type: 'text', text: 'Same model, next turn')],
           created: 6,
           providerID: 'provider',
           modelID: 'model-b',
-          tokens: Tokens(input: 60, output: 15),
+          tokens: Tokens(input: 40, output: 10),
         ),
       ];
 
     final controller = await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    // Model switches always show; usage rides on the timestamps preference.
-    expect(find.textContaining('provider/model-a'), findsOneWidget);
-    expect(find.textContaining('provider/model-b'), findsOneWidget);
+    // A model switch is named once, in the footer of the turn it happened
+    // in; usage rides on the timestamps preference. Only the newest turn's
+    // footer carries these words (older turns keep Copy and More).
+    expect(
+      find.textContaining('provider/model-a → provider/model-b'),
+      findsOneWidget,
+    );
     expect(find.textContaining('350 tok'), findsNothing);
     await controller.setTranscriptTimestampsVisible(true);
     await tester.pumpAndSettle();
     expect(find.textContaining('350 tok'), findsOneWidget);
-    expect(find.textContaining('75 tok'), findsOneWidget);
+    expect(find.textContaining('75 tok'), findsNothing);
     Finder usageSegment(String value) => find.byWidgetPredicate((widget) {
       if (widget is! Text || widget.data == null) return false;
       return widget.data!
@@ -2599,7 +2604,6 @@ void main() {
     expect(find.text('Hello'), findsOneWidget);
     // A one-line thought right before a tool call is that call's title: the
     // step is one row, not a heading row and a tool row.
-    expect(find.byKey(const Key('reasoning-inline')), findsNothing);
     expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
     expect(find.text('why this works'), findsOneWidget);
     expect(find.text('**why this works**'), findsNothing);
@@ -2647,7 +2651,9 @@ void main() {
     expect(find.byKey(const Key('reasoning-toggle')), findsOneWidget);
     await tester.tap(find.byKey(const Key('reasoning-toggle')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('First reasoning fragment'), findsOneWidget);
+    // The fold is titled by the thought's first line, and opened it reads
+    // whole: both fragments in the one block.
+    expect(find.textContaining('First reasoning fragment'), findsWidgets);
     expect(find.textContaining('Second reasoning fragment'), findsOneWidget);
     expect(find.text('First answer paragraph.'), findsOneWidget);
     expect(find.text('Second answer paragraph.'), findsOneWidget);
@@ -3460,7 +3466,7 @@ void main() {
     // message body. Verify the actual body and active excerpt independently.
     expect(
       find.descendant(
-        of: find.byType(MarkdownText),
+        of: find.byType(KitMarkdown),
         matching: find.text('oldest anchor prompt'),
       ),
       findsOneWidget,
@@ -3473,16 +3479,34 @@ void main() {
       find.byKey(const ValueKey('transcript-match-user-0/0/0')).hitTestable(),
       findsOneWidget,
     );
-    // The key stays stable while highlighted (no remount), and the highlight
-    // itself is expressed through the animated decoration.
-    final highlightFinder = find.byKey(const Key('message-highlight-user-0'));
-    expect(highlightFinder, findsOneWidget);
-    final highlighted = tester.widget<AnimatedContainer>(highlightFinder);
-    expect(highlighted.duration, Duration.zero);
-    expect(
-      (highlighted.decoration as BoxDecoration?)?.color,
-      isNot(Colors.transparent),
+    // The found turn carries the find band (painted around it, so nothing
+    // moves), with no fade under reduced motion; its neighbour has none.
+    Finder turnOf(String id) => find.ancestor(
+      of: find.byKey(ValueKey('user-prompt-$id')),
+      matching: find.byType(KitTurn),
     );
+    bool banded(String id) => tester
+        .widgetList<CustomPaint>(
+          find.descendant(of: turnOf(id), matching: find.byType(CustomPaint)),
+        )
+        .any((paint) => paint.painter != null);
+    expect(turnOf('user-0'), findsOneWidget);
+    expect(banded('user-0'), isTrue);
+    final band = tester.widget<TweenAnimationBuilder<double>>(
+      find
+          .descendant(
+            of: turnOf('user-0'),
+            matching: find.byType(TweenAnimationBuilder<double>),
+          )
+          .first,
+    );
+    expect(band.duration, Duration.zero);
+    if (find
+        .byKey(const ValueKey('user-prompt-user-1'))
+        .evaluate()
+        .isNotEmpty) {
+      expect(banded('user-1'), isFalse);
+    }
   });
 
   testWidgets('fork from prompt restores text and file in the new composer', (
@@ -4915,13 +4939,14 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
+    // The prompt bubble's own menu (KitMessage.prompt).
     await tester.longPress(find.text('Fix the login bug'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('message-action-copy')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-copy')));
     await tester.pumpAndSettle();
     expect(copiedText, 'Fix the login bug');
     expect(find.text('Message text copied'), findsOneWidget);
@@ -4943,7 +4968,7 @@ void main() {
 
     await tester.longPress(find.text('first prompt'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
     await tester.pumpAndSettle();
 
     expect(find.text('Delete this message?'), findsOneWidget);
@@ -4970,7 +4995,7 @@ void main() {
 
     await tester.longPress(find.text('only prompt'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
     await tester.pumpAndSettle();

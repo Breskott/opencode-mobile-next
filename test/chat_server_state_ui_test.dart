@@ -337,11 +337,11 @@ void main() {
         ];
       await _pumpChat(tester, api);
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('message-stopped')), findsOneWidget);
-      expect(find.text('Stopped'), findsOneWidget);
-      expect(find.text('aborted'), findsNothing);
-      final message = find.byKey(const ValueKey('message-highlight-a1'));
+      final message = find.byKey(const Key('message-stopped'));
       expect(message, findsOneWidget);
+      // The turn's end line says it in words; the raw reason stays out.
+      expect(find.text('You stopped this reply.'), findsOneWidget);
+      expect(find.text('aborted'), findsNothing);
       expect(
         find.descendant(of: message, matching: find.byType(TextButton)),
         findsNothing,
@@ -378,7 +378,7 @@ void main() {
       await tester.tap(find.byKey(const Key('error-action-details')));
       await tester.pumpAndSettle();
       expect(find.textContaining('at <anonymous>'), findsOneWidget);
-      await tester.tap(find.text('Close'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('error-action-choose-model')),

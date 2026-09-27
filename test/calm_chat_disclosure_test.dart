@@ -143,13 +143,13 @@ void main() {
             ),
           ],
         );
-        expect(find.byKey(const Key('tool-call-group-header')), findsOneWidget);
+        expect(find.byKey(const Key('work-group-header')), findsOneWidget);
         expect(
           find.byKey(const Key('embedded-tool-row')),
           status == 'error' ? findsWidgets : findsNothing,
         );
         if (status == 'running') {
-          await tester.tap(find.byKey(const Key('tool-call-group-header')));
+          await tester.tap(find.byKey(const Key('work-group-header')));
           await tester.pump();
           expect(find.byKey(const Key('embedded-tool-row')), findsWidgets);
         }

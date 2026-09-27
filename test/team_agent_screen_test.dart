@@ -753,16 +753,13 @@ void main() {
           inside(find.byKey(const Key('assistant-text-block'))),
           findsWidgets,
         );
-        final lines = inside(find.byKey(const Key('tool-call-group-header')));
+        final lines = inside(find.byKey(const Key('work-group-header')));
         expect(lines, findsWidgets);
         expect(
           inside(find.textContaining(RegExp(r'[Rr]an \d+ commands?'))),
           findsWidgets,
         );
-        expect(
-          inside(find.byKey(const Key('tool-call-group-steps'))),
-          findsNothing,
-        );
+        expect(inside(find.byKey(const Key('work-group-steps'))), findsNothing);
         expect(inside(find.textContaining('[tool:')), findsNothing);
         expect(key('team-agent-step-group-header'), findsNothing);
 
@@ -773,7 +770,7 @@ void main() {
         await tester.tap(lines.first);
         await tester.pumpAndSettle();
         expect(
-          inside(find.byKey(const Key('tool-call-group-steps'))),
+          inside(find.byKey(const Key('work-group-steps'))),
           findsOneWidget,
         );
         expect(inside(find.byType(ToolCard)), findsWidgets);
