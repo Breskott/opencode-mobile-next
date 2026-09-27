@@ -1,0 +1,9 @@
+feat(sv3): add tool configuration and skill conversation hooks [skip ci]
+
+Expose scoped tool and MCP configuration, safe runtime disconnect, and
+create-then-activate or draft-skill conversation APIs through companion files.
+Keep missing server capabilities unavailable and document UI integration.
+Add focused behavior tests; Flutter execution is deferred to the verifier.
+
+Co-Authored-By: Codex (gpt-6-astra) <noreply@openai.com>
+Claude-Session: https://claude.ai/code/session_01G7Gr8TYUhyCJ169CtNjJB1
