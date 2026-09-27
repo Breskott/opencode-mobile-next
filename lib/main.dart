@@ -39,6 +39,7 @@ import 'update/shorebird_update_notice.dart';
 import 'ui/app_theme.dart';
 import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
+import 'ui/kit/kit_sheet.dart';
 import 'ui/kit/kit_effects.dart';
 import 'ui/kit/motion/kit_haptics.dart';
 import 'ui/theme_packs.dart';
@@ -984,36 +985,33 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (_sessionLink.pending.value == link) _sessionLink.take();
   }
 
+  /// A link for a server this phone has not saved: the link names only the
+  /// sending phone's profile id (never the server's address, see
+  /// [SessionLink.profileID]), so the sheet cannot fill anything in. It
+  /// offers Add server itself, not the list to find it on (P3.9).
   void _showSessionLinkServerMissing(
     NavigatorState navigator,
     AppLocalizations l10n,
   ) {
-    final messenger = _messengerKey.currentState;
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentMaterialBanner()
-      ..showMaterialBanner(
-        MaterialBanner(
-          key: const Key('session-link-server-missing'),
-          content: Text(l10n.handoffUiLinkServerMissing),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-              },
-              child: Text(l10n.handoffUiLinkDismiss),
-            ),
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-                final navigator = _navigatorKey.currentState;
-                if (navigator != null) _showServersForLaunch(navigator);
-              },
-              child: Text(l10n.handoffUiLinkOpenServers),
-            ),
-          ],
+    unawaited(() async {
+      final add = await showKitConfirm(
+        navigator.context,
+        title: l10n.handoffUiLinkAddTitle,
+        body: l10n.handoffUiLinkServerMissing,
+        confirmLabel: l10n.handoffUiLinkAddServer,
+        cancelLabel: l10n.handoffUiLinkDismiss,
+        icon: AppIconography.add,
+        sheetKey: const Key('session-link-server-missing'),
+        confirmKey: const Key('session-link-add-server'),
+      );
+      if (!add || !mounted) return;
+      unawaited(
+        _navigatorKey.currentState?.pushNamed(
+          '/servers',
+          arguments: const ServersRouteRequest.add(),
         ),
       );
+    }());
   }
 
   void _scheduleCodingAlertRoute() {

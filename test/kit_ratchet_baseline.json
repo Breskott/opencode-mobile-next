@@ -1,16 +1,12 @@
 {
   "G1": {
     "lib/main.dart": {
-      "MaterialBanner(": 2,
+      "MaterialBanner(": 1,
       "SnackBar(": 6,
       "showSnackBar(": 6
     },
     "lib/ui/screens/chat_screen.dart": {
       "showModalBottomSheet(": 3
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
     },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "SnackBar(": 1,
@@ -57,8 +53,6 @@
       "showSnackBar(": 1
     }
   },
-  "G15": {
-  },
   "G16": {
     "lib/main.dart": {
       "MaterialPageRoute": 9
@@ -66,12 +60,6 @@
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
-    },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "AppBar": 1,
-      "Scaffold": 1,
-      "SingleChildScrollView": 1,
-      "Text": 3
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "AppBar": 1,
@@ -85,17 +73,6 @@
     },
     "lib/ui/screens/chat_screen.dart": {
       "NotificationListener": 1
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "AppBar": 1,
-      "FilledButton": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SnackBar": 1,
-      "Text": 11,
-      "TextField": 1
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "AppBar": 1,
@@ -234,86 +211,6 @@
       "TextField": 1
     }
   },
-  "G2": {
-    "lib/feedback/bug_report.dart": {
-      "launchUrl(": 1
-    },
-    "lib/ui/kit/scenes/folders_open_scene.dart": {
-      "Curves. in kit": 3
-    },
-    "lib/ui/kit/scenes/portal_scene.dart": {
-      "Curves. in kit": 1
-    },
-    "lib/ui/kit/scenes/servers_link_scene.dart": {
-      "Curves. in kit": 2
-    },
-    "lib/ui/kit/scenes/servers_welcome_scene.dart": {
-      "Curves. in kit": 1
-    },
-    "lib/ui/kit/scenes/setup_phone_scene.dart": {
-      "Curves. in kit": 4
-    },
-    "lib/ui/kit/scenes/setup_ready_scene.dart": {
-      "Curves. in kit": 5
-    },
-    "lib/ui/kit/scenes/setup_steps_scene.dart": {
-      "Curves. in kit": 1
-    },
-    "lib/ui/kit/scenes/setup_unplugged_scene.dart": {
-      "Curves. in kit": 1
-    },
-    "lib/ui/kit/scenes/states_scenes.dart": {
-      "Curves. in kit": 6
-    },
-    "lib/ui/kit/scenes/states_working_scene.dart": {
-      "Curves. in kit": 1
-    },
-    "lib/ui/kit/scenes/team_discover_scenes.dart": {
-      "Curves. in kit": 7
-    },
-    "lib/ui/kit/scenes/team_scenes.dart": {
-      "Curves. in kit": 13
-    },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      "ProductEmptyState(": 1
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "Clipboard.setData(": 1,
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/library/integrations_screen.dart": {
-      "launchUrl(": 1
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "Clipboard.setData(": 1,
-      "duration: Duration(": 1
-    },
-    "lib/ui/screens/team/run_screen.dart": {
-      "Curves.": 1,
-      "duration: Duration(": 1
-    },
-    "lib/ui/widgets/completion_digest.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/widgets/local_agent_onboarding.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/widgets/session_handoff.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
-      "Clipboard.setData(": 1
-    }
-  },
-  "G7": {
-  },
-  "G15x": {},
   "G17": {
     "lib/diagnostics/app_diagnostics.dart": {
       "Color(0x": 2
@@ -325,15 +222,8 @@
     "lib/ui/kit/glass/kit_glass.dart": {
       "Colors.*": 2
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 2
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      ".textTheme": 4
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       ".colorScheme": 3,
@@ -399,6 +289,80 @@
     },
     "lib/ui/widgets/thermal_notice.dart": {
       "attention roles": 1
+    }
+  },
+  "G2": {
+    "lib/feedback/bug_report.dart": {
+      "launchUrl(": 1
+    },
+    "lib/ui/kit/scenes/folders_open_scene.dart": {
+      "Curves. in kit": 3
+    },
+    "lib/ui/kit/scenes/portal_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/servers_link_scene.dart": {
+      "Curves. in kit": 2
+    },
+    "lib/ui/kit/scenes/servers_welcome_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/setup_phone_scene.dart": {
+      "Curves. in kit": 4
+    },
+    "lib/ui/kit/scenes/setup_ready_scene.dart": {
+      "Curves. in kit": 5
+    },
+    "lib/ui/kit/scenes/setup_steps_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/setup_unplugged_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/states_scenes.dart": {
+      "Curves. in kit": 6
+    },
+    "lib/ui/kit/scenes/states_working_scene.dart": {
+      "Curves. in kit": 1
+    },
+    "lib/ui/kit/scenes/team_discover_scenes.dart": {
+      "Curves. in kit": 7
+    },
+    "lib/ui/kit/scenes/team_scenes.dart": {
+      "Curves. in kit": 13
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      "ProductEmptyState(": 1
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      "Clipboard.setData(": 1,
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      "launchUrl(": 1
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      "Clipboard.setData(": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "Curves.": 1,
+      "duration: Duration(": 1
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      "Clipboard.setData(": 1
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      "Clipboard.setData(": 1
     }
   },
   "G21": {
@@ -476,17 +440,9 @@
     "lib/ui/kit/terminal_key_bar.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 2
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 7
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 9
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "EdgeInsets numeric": 5,

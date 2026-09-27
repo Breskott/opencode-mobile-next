@@ -12,14 +12,19 @@
 // decision 2026-09-27): regenerate deliberately with
 //   flutter test --update-goldens test/revamp/screen_servers_1_test.dart
 // and look at every changed image before committing it.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import '../../tool/capture/fixtures.dart';
+import '../support/server_editor.dart';
 import '../support/setup_capture_preferences.dart';
 import 'shared_servers_1_fixtures.dart';
 
@@ -52,6 +57,20 @@ class _Store extends ProfileStore {
 
 const _storedPassword = 'fixture-stored-password-not-live';
 
+/// A capture controller whose connect succeeds without a network, so Add
+/// server reaches its ready step.
+class _ConnectingController extends CaptureController {
+  _ConnectingController(super.store);
+
+  @override
+  Future<void> connect(
+    ServerProfile profile, {
+    bool redetectOnFailure = true,
+  }) async {
+    api = OpenCodeApi(baseUrl: profile.baseUrl);
+  }
+}
+
 List<ServerProfile> _seed() => [
   ServerProfile(
     id: 'laptop',
@@ -80,7 +99,12 @@ List<ServerProfile> _seed() => [
 void _mockPlatform(WidgetTester tester) {
   const secure = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   const termux = MethodChannel('oc/termux');
+  const tailscale = MethodChannel('oc/tailscale');
   final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(
+    tailscale,
+    (call) async => call.method == 'check' ? 'installed' : true,
+  );
   messenger.setMockMethodCallHandler(
     secure,
     (call) async => call.method == 'readAll' ? <String, String>{} : null,
@@ -92,6 +116,7 @@ void _mockPlatform(WidgetTester tester) {
   addTearDown(() {
     messenger.setMockMethodCallHandler(secure, null);
     messenger.setMockMethodCallHandler(termux, null);
+    messenger.setMockMethodCallHandler(tailscale, null);
   });
 }
 
@@ -117,7 +142,7 @@ Future<(_Store, Future<void> Function())> _mount(
   addTearDown(tester.view.reset);
   final prefs = await setupCapturePreferences();
   final store = _Store(prefs: prefs, seeded: seeded ?? _seed());
-  final controller = CaptureController(store);
+  final controller = _ConnectingController(store);
   await tester.pumpWidget(
     captureApp(
       home: const ServersScreen(),
@@ -479,13 +504,100 @@ void main() {
         );
       });
 
+      Future<void> openAdd(WidgetTester tester) async {
+        await tester.tap(find.byKey(const ValueKey('servers-add')));
+        await _settle(tester);
+      }
+
+      /// Add server on its connect step for OpenCode with an address typed
+      /// and Save & connect tapped; [probe] answers the check.
+      Future<void> saveTyped(
+        WidgetTester tester,
+        Future<ServerProbeResult> Function() probe,
+      ) async {
+        final previous = serverProbe;
+        serverProbe = ({required baseUrl, username, password}) => probe();
+        addTearDown(() => serverProbe = previous);
+        await openAdd(tester);
+        await chooseServerKind(tester);
+        await openServerManualAddress(tester);
+        await tester.enterText(
+          find.byKey(const ValueKey('server-url-field')),
+          'https://build.example.net',
+        );
+        tester.testTextInput.hide();
+        await _settle(tester, frames: 3);
+        await tester.tap(find.byKey(const ValueKey('save-server-profile')));
+      }
+
       testWidgets('editor, add · $mode', (tester) async {
         await shoot(
           tester,
           'servers_profile-editor_add-opencode',
           then: () async {
-            await tester.tap(find.byKey(const ValueKey('servers-add')));
+            await openAdd(tester);
+            await chooseServerKind(tester);
+          },
+        );
+      });
+
+      // P3.9: Add server in steps (docs/qa/slice-P3.9-2026-09-27).
+      for (final size in const [Size(412, 915), Size(1280, 800)]) {
+        final suffix = size.width > 1000 ? '_1280x800' : '';
+        testWidgets('add server, what runs there $suffix· $mode', (
+          tester,
+        ) async {
+          await shoot(
+            tester,
+            'servers_addserver_kind$suffix',
+            size: size,
+            then: () => openAdd(tester),
+          );
+        });
+
+        testWidgets('add server, ready $suffix· $mode', (tester) async {
+          await shoot(
+            tester,
+            'servers_addserver_ready$suffix',
+            size: size,
+            then: () async {
+              await saveTyped(
+                tester,
+                () async => const ServerProbeResult.success(
+                  '2.0.10',
+                  flavor: ServerFlavor.v2,
+                ),
+              );
+              await _settle(tester, frames: 30);
+            },
+          );
+        });
+      }
+
+      testWidgets('add server, Tailscale step · $mode', (tester) async {
+        await shoot(
+          tester,
+          'servers_addserver_tailscale',
+          then: () async {
+            await openAdd(tester);
+            final row = find.byKey(const ValueKey('welcome-tailscale-card'));
+            await tester.ensureVisible(row);
+            await _settle(tester, frames: 3);
+            await tester.tap(row);
             await _settle(tester);
+          },
+        );
+      });
+
+      testWidgets('add server, slow check · $mode', (tester) async {
+        final pending = Completer<ServerProbeResult>();
+        await shoot(
+          tester,
+          'servers_addserver_slowcheck',
+          then: () async {
+            await saveTyped(tester, () => pending.future);
+            await tester.pump(slowCheckAfter);
+            await _settle(tester, frames: 10);
           },
         );
       });

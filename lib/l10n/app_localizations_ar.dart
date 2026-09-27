@@ -1799,91 +1799,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'تتبع عمليات تسجيل الدخول المعلّقة الأخرى خادمًا أو مشروعًا آخر. ارجع إلى مصدرها الأصلي لإدارتها.';
 
   @override
-  String get connectionHelpTitle => 'مساعدة الاتصال';
-
-  @override
-  String get connectionHelpEntrySubtitle => 'شرح العنوان محليًا دون اتصال';
-
-  @override
   String get connectionHelpGuideTip =>
       'أبقِ الخادم بعيدًا عن الإنترنت العام. استخدم HTTPS خاصًا أو نفقًا مشفّرًا ينتهي على الجهاز الذي يشغّل هذا التطبيق. يشير localhost على حاسوبك إلى غير ما يشير إليه على هاتفك. افتح مساعدة الاتصال أعلاه للاطّلاع على الخطوات والأمثلة.';
-
-  @override
-  String get connectionHelpPrivacy =>
-      'يُفحص تنسيق العنوان فقط، دون اختبار الاتصال. لن يُرسل أو يُحفظ شيء. يُخفى الإدخال ويُمسح بعد الفحص. الصق عنوانًا فقط، دون كلمة مرور أو رمز اقتران.';
-
-  @override
-  String get connectionHelpAddress => 'عنوان الخادم';
-
-  @override
-  String get connectionHelpCheck => 'شرح العنوان';
-
-  @override
-  String get connectionHelpEmpty => 'أدخل عنوان خادم لشرحه.';
-
-  @override
-  String get connectionHelpMalformed =>
-      'تعذّر فهم هذا العنوان. استخدم عنوان أصل كاملًا مثل https://server.example، دون مسار أو بيانات اعتماد أو استعلام.';
-
-  @override
-  String get connectionHelpCredentials =>
-      'لا تضع بيانات الاعتماد في الرابط. أزلها وأدخل اسم مستخدم الخادم وكلمة مروره في حقليهما المنفصلين ضمن الخوادم. مُسحت القيمة الملصقة.';
-
-  @override
-  String get connectionHelpQuery =>
-      'أزل معاملات الاستعلام والأجزاء اللاحقة لعلامة #؛ فقد تحتوي على أسرار. أدخل عنوان أصل الخادم فقط. مُسحت القيمة الملصقة.';
-
-  @override
-  String get connectionHelpPath =>
-      'أزل المسار. يحتاج هذا التطبيق إلى عنوان أصل الخادم، وليس عنوان صفحة أو مسار API.';
-
-  @override
-  String get connectionHelpScheme =>
-      'استخدم HTTPS للخادم البعيد، أو HTTP فقط لعناوين الاسترجاع المحلي المدعومة لهذا الجهاز.';
-
-  @override
-  String get connectionHelpRemoteHttp =>
-      'اتصالات HTTP البعيدة محظورة، بما فيها عناوين الشبكة المحلية و100.64.0.0/10. لا يغيّر استخدام VPN هذه القاعدة. أعدّ HTTPS خاصًا أو نفقًا مشفّرًا ينتهي على هذا الجهاز.';
-
-  @override
-  String get connectionHelpHttps =>
-      'يستوفي هذا العنوان قواعد عناوين HTTPS. لا يؤكد ذلك صحة شهادته أو إمكانية الوصول إليه أو تسجيل الدخول أو الخصوصية. يُفسَّر العنوان البعيد دون بروتوكول على أنه HTTPS.';
-
-  @override
-  String get connectionHelpLoopback =>
-      'يستوفي هذا العنوان قواعد الاسترجاع المحلي. يشير localhost إلى هذا الجهاز، وليس حاسوبًا آخر. يجب أن يكون خادم أو نفق بانتظار الاتصال هنا؛ لا يتحقّق هذا الفحص من ذلك.';
-
-  @override
-  String get connectionHelpPrivateTitle => 'HTTPS خاص أو وكيل عكسي';
-
-  @override
-  String get connectionHelpPrivateSteps =>
-      '1. أبقِ الخادم على عنوان الاسترجاع المحلي لجهازه مع تفعيل المصادقة.\n2. صِل الجهازين بشبكتك الخاصة واقصر الوصول على المستخدمين المقصودين.\n3. أعدّ HTTPS خاصًا، مثل Tailscale Serve، أو وكيلًا عكسيًا بشهادة موثوقة يوجّه الاتصالات إلى الخادم. فعّل دعم البث وWebSockets.\n4. أضف عنوان أصل HTTPS ضمن الخوادم وأدخل بيانات تسجيل الدخول في حقول منفصلة.\nتجعل Tailscale Funnel الخدمة متاحة للعامة؛ وليست حلًا لشبكة خاصة. لا يستطيع هذا التطبيق استنتاج وجود VPN. المثال أدناه توضيحي فقط.';
-
-  @override
-  String get connectionHelpTunnelTitle =>
-      'هل تستخدم localhost على الجهاز الخطأ؟';
-
-  @override
-  String get connectionHelpTunnelSteps =>
-      'تشير localhost و127.0.0.1 و[::1] إلى الجهاز الذي يشغّل هذا التطبيق. للوصول إلى خادم على حاسوب آخر، استخدم HTTPS خاصًا أو نفقًا مشفّرًا ينتهي هنا. إذا توفر عميل SSH على هذا الجهاز، فعدّل المثال أدناه بما يناسبك، وتحقّق من مفتاح المضيف وأبقِه قيد التشغيل. استبدل user@host بوجهة SSH لديك. تشغيله على حاسوب آخر لا يعيد توجيه منفذ هذا الجهاز. أبقِ مصادقة الخادم مفعّلة.';
-
-  @override
-  String get connectionHelpVerifyTitle => 'التحقق من الاتصال بشكل منفصل';
-
-  @override
-  String get connectionHelpVerifySteps =>
-      'على هذا الجهاز، تحقّق من الانضمام إلى الشبكة الخاصة وDNS وسماح جدار الحماية وموثوقية الشهادة باستخدام أدوات الشبكة لديك. تحقّق من إعدادات الخادم والوكيل على المضيف، ثم اتصل من قسم الخوادم. لا تعطّل التحقق من TLS ولا تشارك كلمات المرور أو رموز الاقتران أو السجلات غير المحجوبة. يمنح الوصول إلى هذا الخادم إمكانية استخدام الصدفة.';
-
-  @override
-  String get connectionHelpCopyExample => 'نسخ المثال';
-
-  @override
-  String get connectionHelpCopied => 'نُسخ المثال';
-
-  @override
-  String get connectionHelpCopyFailed =>
-      'تعذّر نسخ المثال. حدّد نص المثال لنسخه يدويًا.';
 
   @override
   String get voiceConversationTitle => 'محادثة صوتية';
@@ -5188,9 +5105,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'اطلب من وكيلك تفويض العمل في الخلفية. تعود النتائج إلى هذه المحادثة تلقائيًا.';
 
   @override
-  String get oc2DiscoveryConnect => 'الاتصال بـ OpenCode 2';
-
-  @override
   String get oc2DiscoveryEditorTitle => 'OpenCode 2';
 
   @override
@@ -5198,9 +5112,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get oc2DiscoveryTypes => 'OpenCode 1 أو 2';
-
-  @override
-  String get oc2DiscoveryAutodetect => 'يكتشف OpenCode 1 أو 2 تلقائيًا.';
 
   @override
   String get oc2DiscoveryPhone => 'إعداد OpenCode 1 أو 2 هنا عبر Termux.';
@@ -12778,9 +12689,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذا الخادم غير محفوظ على هذا الهاتف. أضفه من قسم الخوادم، ثم امسح الرمز مرة أخرى.';
 
   @override
-  String get handoffUiLinkOpenServers => 'فتح الخوادم';
-
-  @override
   String get handoffUiLinkDismiss => 'تجاهل';
 
   @override
@@ -16599,24 +16507,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get firstRunJustShowMe => 'أرني فقط';
 
   @override
-  String get firstRunWhichAgent => 'بأي وكيل تبدأ؟';
-
-  @override
   String get firstRunAgentOpenCode => 'OpenCode';
 
   @override
-  String get firstRunAgentClaudeOrPi => 'Claude Code وCodex وPi وغيرها';
-
-  @override
-  String get firstRunAgentClaudeOrPiDetail =>
-      'اتصال واحد بخدمة Paseo يشغّل كل وكيل مثبّت هناك. تجريبي.';
-
-  @override
   String get firstRunAgentCodex => 'Codex';
-
-  @override
-  String get firstRunAgentCodexDetail =>
-      'مباشرةً عبر Codex app-server. تجريبي.';
 
   @override
   String get firstRunRunOnComputer => 'على حاسوبك، شغّل:';
@@ -26444,4 +26338,65 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String addServerConnectedHost(String host) {
+    return 'Connected to $host';
+  }
+
+  @override
+  String addServerCheckSlow(String host) {
+    return '$host has not answered yet. A slow network can take a while.';
+  }
+
+  @override
+  String get addServerCheckCancel => 'Stop checking';
+
+  @override
+  String get addServerRemoteHttpAdvice =>
+      'A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.';
+
+  @override
+  String get addServerUseTailscale => 'Use Tailscale';
+
+  @override
+  String get addServerStepsLabel => 'Add server progress';
+
+  @override
+  String get addServerStepKind => 'What runs there';
+
+  @override
+  String get addServerStepTailscale => 'Tailscale on this phone';
+
+  @override
+  String get addServerStepPair => 'Pair or enter the address';
+
+  @override
+  String get addServerStepAddress => 'Address and sign-in';
+
+  @override
+  String get addServerStepCheck => 'Checking';
+
+  @override
+  String get addServerStepReady => 'Ready';
+
+  @override
+  String addServerReadyTitle(String name) {
+    return '$name is connected';
+  }
+
+  @override
+  String get addServerReadyBody =>
+      'Its conversations open next. Start one, or pick up one already there.';
+
+  @override
+  String addServerReadyOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get handoffUiLinkAddTitle => 'Add this server?';
+
+  @override
+  String get handoffUiLinkAddServer => 'Add server';
 }

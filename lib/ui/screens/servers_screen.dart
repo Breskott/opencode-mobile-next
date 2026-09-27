@@ -11,6 +11,7 @@ import '../../feedback/bug_report.dart' show openBugReport;
 import '../../domain/profile_monitor.dart' show ProfileAttentionSnapshot;
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
+import '../../platform/connection_advice.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/codex_connection_probe.dart';
@@ -34,7 +35,6 @@ import '../widgets/relative_time.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
-import 'agent_choice_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_welcome_entry.dart';
 import 'demo_screen.dart';
@@ -423,25 +423,26 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 
   /// Completes with whether the editor saved a server.
+  ///
+  /// A new server with nothing preset opens at the flow's first step (what
+  /// runs there), whether it came from Add server, the welcome's "On my
+  /// computer", the server switcher's Add or phone setup: one path.
   Future<bool> _edit({
     ServerProfile? existing,
     bool focusPassword = false,
-    bool tailscale = false,
     String? initialUrl,
     bool openCode2Intent = false,
     bool connectOnSave = false,
-    ServerBackend? presetBackend,
   }) async {
     final isNew = existing == null;
     final useTailscale =
-        tailscale ||
-        (existing != null &&
-            ref
-                    .read(bootstrapProvider)
-                    .store
-                    .prefs
-                    .getBool('oc.tailscale.${existing.id}') ==
-                true);
+        existing != null &&
+        ref
+                .read(bootstrapProvider)
+                .store
+                .prefs
+                .getBool('oc.tailscale.${existing.id}') ==
+            true;
     // The editor stays open until the save (and, for new or active profiles,
     // the connect) has succeeded, so any failure is shown where the fields
     // that fix it are — not as a snackbar over a list the user just left.
@@ -456,20 +457,16 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           tailscale: useTailscale,
           initialUrl: initialUrl,
           openCode2Intent: openCode2Intent,
-          presetBackend: presetBackend,
-          // A new server's "Connect to" also offers the other ways in, so
+          // A new server's first step also offers the other ways in, so
           // the list holds no second panel of them (R3).
           onPhoneSetup: isNew && platformCapabilities.supportsTermux
               ? _openPhoneSetup
               : null,
-          onTailscale: isNew && platformCapabilities.supportsTailscaleHandoff
-              ? _tailscale
-              : null,
           onExternalAgents: isNew ? _externalAgents : null,
-          onSubmit: (profile) => _saveAndConnect(
+          onSubmit: (profile, {required tailscale}) => _saveAndConnect(
             profile,
             isNew: isNew,
-            tailscale: useTailscale,
+            tailscale: tailscale,
             forceConnect: connectOnSave,
           ),
           secureStorageProbe: () =>
@@ -483,36 +480,6 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     }
     return true;
-  }
-
-  /// First run, computer path: ask which agent, then open the connect screen
-  /// already set to it. The connect screen is pushed on top of the question,
-  /// so Back returns to the question rather than to the welcome.
-  Future<void> _computerPath() {
-    final navigator = Navigator.of(context);
-    late final KitPageRoute<void> question;
-    question = KitPageRoute<void>(
-      builder: (_) => AgentChoiceScreen(
-        onChoose: (backend) async {
-          final saved = await _edit(presetBackend: backend);
-          // A first connection turns the root into the shell in place, so
-          // this screen is no longer mounted to clear the stack itself. The
-          // question has been answered; left alone it would sit on top of
-          // the conversation the person is about to land in.
-          if (saved && question.isActive) navigator.removeRoute(question);
-        },
-      ),
-    );
-    return navigator.push<void>(question);
-  }
-
-  Future<void> _tailscale() async {
-    final url = await pushKitPage<String>(
-      context,
-      (_) => const TailscaleSetupScreen(),
-    );
-    if (!mounted || url == null) return;
-    await _edit(tailscale: true, initialUrl: url);
   }
 
   /// Saves [result] and connects profiles whose submit action promises it.
@@ -734,7 +701,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           busy: _busy,
           runningServer: _runningServerEntry(store.profiles, accountConnection),
           phoneSetup: PhoneSetupWelcomeEntry(revision: _termuxRevision),
-          onComputer: _computerPath,
+          onComputer: () => unawaited(_edit()),
           onPhone: _openPhoneSetup,
           onDemo: _demo,
         ),
@@ -1016,7 +983,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 /// The page's side rails for a part that does not pad itself (the kit's
 /// rows and groups do), with a little air above and below.
 class _Rails extends StatelessWidget {
-  const _Rails({required this.child});
+  const _Rails({super.key, required this.child});
 
   final Widget child;
 
@@ -1352,26 +1319,25 @@ class _ProfileEditorScreen extends StatefulWidget {
   final bool openCode2Intent;
   final String? initialUrl;
 
-  /// The agent the person chose on the first-run computer path. The editor
-  /// becomes that agent's connect screen: the backend selector is hidden
-  /// (they already answered), the command to run leads, and the private
-  /// network link sits under the address. Null everywhere else.
-  final ServerBackend? presetBackend;
-
-  /// The other ways in, offered under "Connect to" for a new server (null
-  /// hides each): the editor closes, then the way opens.
+  /// The other ways in, offered on a new server's first step (null hides
+  /// each): the editor closes, then the way opens. Tailscale is not one of
+  /// them: it is a step of this flow.
   final VoidCallback? onPhoneSetup;
-  final VoidCallback? onTailscale;
   final VoidCallback? onExternalAgents;
 
   /// Focus the password field on open — the path taken from the connection
   /// banner after a mid-session 401 (the serve password rotated).
   final bool focusPassword;
 
-  /// Saves (and where promised, connects) the profile. The editor pops with
-  /// the profile only when this reports no failure; otherwise the failure is
-  /// rendered inline and the fields stay editable.
-  final Future<_SubmitOutcome> Function(ServerProfile profile) onSubmit;
+  /// Saves (and where promised, connects) the profile; [tailscale] says it
+  /// was reached through the Tailscale step. The editor finishes only when
+  /// this reports no failure; otherwise the failure is rendered inline and
+  /// the fields stay editable.
+  final Future<_SubmitOutcome> Function(
+    ServerProfile profile, {
+    required bool tailscale,
+  })
+  onSubmit;
 
   /// Resolves to a sentence when the device cannot keep a password (a Linux
   /// desktop without a keyring), shown above the form before the user types
@@ -1383,9 +1349,7 @@ class _ProfileEditorScreen extends StatefulWidget {
     this.reconnectOnSave = false,
     this.openCode2Intent = false,
     this.initialUrl,
-    this.presetBackend,
     this.onPhoneSetup,
-    this.onTailscale,
     this.onExternalAgents,
     this.focusPassword = false,
     required this.onSubmit,
@@ -1405,9 +1369,30 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       widget.existing?.orchestration != null;
 
   late ServerBackend _backend =
-      widget.existing?.backend ??
-      widget.presetBackend ??
-      ServerBackend.openCode;
+      widget.existing?.backend ?? ServerBackend.openCode;
+
+  /// A new server with nothing preset is added in steps (P3.9): what runs
+  /// there, then Tailscale when that is the way, then the address or the
+  /// pairing code, the check, and a ready moment. Everything else (editing,
+  /// a password to re-enter, the phone's own server) is one form.
+  late final bool _stepped =
+      widget.existing == null &&
+      !widget.tailscale &&
+      widget.initialUrl == null &&
+      !widget.focusPassword;
+
+  late _AddStep _step = _stepped ? _AddStep.kind : _AddStep.connect;
+
+  /// The server is reached through Tailscale: the address must be a
+  /// tailnet one, and the save remembers the way for the next edit.
+  late bool _tailscale = widget.tailscale;
+
+  /// A check or a pairing has run for [slowCheckAfter]: Cancel is offered.
+  bool _slowCheck = false;
+  Timer? _slowTimer;
+
+  /// What the ready step opens: the profile as saved and connected.
+  ServerProfile? _readyProfile;
   late final TextEditingController _name = TextEditingController(
     text: widget.existing?.name ?? '',
   );
@@ -1508,6 +1493,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// that failed can bring them into view.
   final _statusKey = GlobalKey();
 
+  /// Add server's step line, just above the verdicts: a check scrolls back
+  /// to it, so the step it is on stays in view.
+  final _stepLineKey = GlobalKey();
+
   /// "Enter the address instead" was opened by the editor itself (a check
   /// that needs a field, an empty address on save). Bumping [_manualFold]
   /// rebuilds the fold open.
@@ -1532,7 +1521,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   bool get _foldsManualAddress =>
       !_isCodex &&
       widget.existing == null &&
-      !widget.tailscale &&
+      !_tailscale &&
       widget.initialUrl == null &&
       !widget.focusPassword;
 
@@ -1549,6 +1538,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// What the link drawing shows: linking while pairing, checking or
   /// connecting; linked once the server answered; broken when it did not.
   ServersLinkState get _linkState {
+    if (_readyProfile != null) return ServersLinkState.linked;
     if (_pairing || _testing || _submitting) return ServersLinkState.linking;
     final ok = _isCodex ? _codexTestResult?.ok : _testResult?.ok;
     if (ok == true) return ServersLinkState.linked;
@@ -1582,7 +1572,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// connect starts from a button further down, and when it answered.
   void _revealStatus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = _statusKey.currentContext;
+      final context = _stepLineKey.currentContext ?? _statusKey.currentContext;
       if (!mounted || context == null) return;
       unawaited(
         Scrollable.ensureVisible(
@@ -1695,11 +1685,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _scheduleAutoTest();
   }
 
-  /// True on the first-run connect screen only (UX plan 5.6 step 3). Editing
-  /// a saved server never tests by itself: that person came to change one
-  /// value, and a probe of the half-edited profile is noise.
-  bool get _autoTests =>
-      widget.presetBackend != null && widget.existing == null;
+  /// True on the connect step of Add server only (UX plan 5.6 step 3).
+  /// Editing a saved server never tests by itself: that person came to
+  /// change one value, and a probe of the half-edited profile is noise.
+  bool get _autoTests => _stepped && _step == _AddStep.connect;
 
   /// The required fields as [_testConnection] would accept them, checked
   /// without its side effects (no error text, no focus move).
@@ -1737,6 +1726,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   void _invalidateProbe() {
     _autoTestTimer?.cancel();
     _autoTestTimer = null;
+    _stopSlowWatch();
     _probeGeneration += 1;
     _testing = false;
     _verdictFromSave = false;
@@ -1767,7 +1757,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       return _testCodexConnection(auto: auto, forSave: forSave);
     }
     final url = normalizeServerProfileUrl(_url.text);
-    if (widget.tailscale && !isValidTailscaleAddress(url)) {
+    if (_tailscale && !isValidTailscaleAddress(url)) {
       setState(() {
         _error = _connectionL10n(context).tailscaleAddressError;
         _testResult = null;
@@ -1799,6 +1789,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testing = true;
       _testResult = null;
       _error = null;
+      _watchSlowCheck();
     });
     if (!auto) {
       // The keyboard goes, and the form scrolls back to the drawing that
@@ -1815,6 +1806,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     if (!mounted || generation != _probeGeneration) return false;
     setState(() {
       _testing = false;
+      _stopSlowWatch();
       _submitFailure = null;
       _testResult = result;
       _verdictFromSave = forSave && !result.ok;
@@ -1883,6 +1875,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testing = true;
       _codexTestResult = null;
       _error = null;
+      _watchSlowCheck();
     });
     if (!auto) {
       FocusScope.of(context).unfocus();
@@ -1898,6 +1891,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       if (!mounted || generation != _probeGeneration) return false;
       setState(() {
         _testing = false;
+        _stopSlowWatch();
         _submitFailure = null;
         _codexTestResult = result;
         _verdictFromSave = forSave && !result.ok;
@@ -1909,6 +1903,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       if (!mounted || generation != _probeGeneration) return false;
       setState(() {
         _testing = false;
+        _stopSlowWatch();
         _error = productErrorText(error);
       });
       return false;
@@ -1971,7 +1966,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// never logged, never put in [_pairingNotice] or [_pairingFailure], and
   /// never in a URL.
   Future<void> _applyPairing(PairingPayload payload) async {
-    if (widget.tailscale) {
+    if (_tailscale) {
       payload.consume();
       setState(
         () => _pairingFailure = _connectionL10n(context).tailscaleReviewDetail,
@@ -1993,6 +1988,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testResult = null;
       _pairingNotice = null;
       _pairingFailure = null;
+      _watchSlowCheck();
     });
 
     final PairingSelection selection;
@@ -2018,6 +2014,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final result = selection.chosenResult;
     setState(() {
       _pairing = false;
+      _stopSlowWatch();
       // The existing probe-verdict row already says the flavor, the version,
       // and "Connected — save to finish", and it is what `_save` reads to
       // cache the detected flavor. So pairing hands it the result and says
@@ -2115,10 +2112,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   bool get _dirty {
     final baseline = _savedProfile ?? widget.existing;
-    return _backend !=
-            (baseline?.backend ??
-                widget.presetBackend ??
-                ServerBackend.openCode) ||
+    // A new server's kind is a step, not an edit: choosing one and leaving
+    // loses nothing typed.
+    return (baseline != null && _backend != baseline.backend) ||
         _name.text != (baseline?.name ?? '') ||
         _url.text != (baseline?.baseUrl ?? '') ||
         _user.text != (baseline?.username ?? '') ||
@@ -2130,6 +2126,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   @override
   void dispose() {
     _autoTestTimer?.cancel();
+    _slowTimer?.cancel();
     _name.dispose();
     _url.dispose();
     _user.dispose();
@@ -2191,21 +2188,110 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _scheduleAutoTest();
   }
 
-  /// "Not on the same network?" on the first-run connect screen. For an
-  /// OpenCode server the reviewed private address comes back into the field.
-  /// Paseo and Codex listen on `ws://`, which the Tailscale screen does not
-  /// produce, so there it is opened for its guidance and the field is left
-  /// to the person.
+  /// "Not on the same network?" on the connect step. For an OpenCode server
+  /// it is the flow's Tailscale step, and the address is then typed on the
+  /// connect step that follows. Paseo and Codex listen on `ws://`, which a
+  /// tailnet HTTPS name does not give, so there the Tailscale page opens for
+  /// its guidance and the field is left to the person.
   Future<void> _notSameNetwork() async {
-    if (!_isCodex) return _tailscaleHelp();
     if (_submitting) return;
+    if (!_isCodex) return _chooseTailscale();
     await pushKitPage<String>(context, (_) => const TailscaleSetupScreen());
   }
 
-  /// Null where the link must not exist: off the first-run path, and on a
-  /// platform with no Tailscale handoff (hide, don't disable).
+  /// Moves the flow to [step]; whatever a check was doing is retired.
+  void _goTo(_AddStep step) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _invalidateProbe();
+      if (_step == _AddStep.connect && step != _AddStep.connect) {
+        // A secret field never mounts filled (SEC-3): what was typed is
+        // held, like a saved one, and the field says so when it returns.
+        if (_pass.text.isNotEmpty) {
+          _heldPassword = _pass.text;
+          _pass.clear();
+        }
+        if (_codexToken.text.isNotEmpty) {
+          _heldToken = _codexToken.text;
+          _codexToken.clear();
+        }
+      }
+      _step = step;
+    });
+    if (step == _AddStep.connect) _scheduleAutoTest();
+  }
+
+  /// The first step's answer: the connect step for that kind of server.
+  void _chooseKind(ServerBackend backend) {
+    if (_submitting) return;
+    _backend = backend;
+    _tailscale = false;
+    _goTo(_AddStep.connect);
+  }
+
+  /// Tailscale, as a step of this flow (not a page it leaves for): an
+  /// OpenCode server reached over the tailnet.
+  void _chooseTailscale() {
+    if (_submitting) return;
+    _backend = ServerBackend.openCode;
+    _tailscale = true;
+    _goTo(_AddStep.tailscale);
+  }
+
+  /// Back within the flow: the connect step returns to Tailscale or to the
+  /// first step, Tailscale to the first step. Null where Back leaves.
+  _AddStep? get _previousStep => switch (_step) {
+    _ when !_stepped => null,
+    _AddStep.connect => _tailscale ? _AddStep.tailscale : _AddStep.kind,
+    _AddStep.tailscale => _AddStep.kind,
+    _AddStep.kind || _AddStep.ready => null,
+  };
+
+  /// Close or Back from the top bar and the system: a step back, the
+  /// finished flow's way in, or the discard check.
+  void _exit() {
+    if (_submitting) return;
+    if (_readyProfile case final profile?) {
+      Navigator.pop(context, profile);
+      return;
+    }
+    if (_previousStep case final previous?) {
+      if (previous == _AddStep.kind) _tailscale = false;
+      _goTo(previous);
+      return;
+    }
+    unawaited(_close());
+  }
+
+  /// A check or a pairing started: after [slowCheckAfter] it offers Cancel,
+  /// so a server that never answers never holds the person.
+  void _watchSlowCheck() {
+    _slowTimer?.cancel();
+    _slowCheck = false;
+    _slowTimer = Timer(slowCheckAfter, () {
+      _slowTimer = null;
+      if (!mounted || !(_testing || _pairing)) return;
+      setState(() => _slowCheck = true);
+    });
+  }
+
+  void _stopSlowWatch() {
+    _slowTimer?.cancel();
+    _slowTimer = null;
+    _slowCheck = false;
+  }
+
+  /// Cancel on a slow check: the answer, when it comes, is ignored, and the
+  /// fields are the person's again.
+  void _cancelCheck() => setState(_invalidateProbe);
+
+  /// Null where the link must not exist: off the connect step of Add
+  /// server, once Tailscale is the way, and on a platform with no Tailscale
+  /// handoff (hide, don't disable).
   Widget? _notSameNetworkLink() {
-    if (widget.presetBackend == null ||
+    if (!_stepped ||
+        _step != _AddStep.connect ||
+        _tailscale ||
         !platformCapabilities.supportsTailscaleHandoff) {
       return null;
     }
@@ -2257,7 +2343,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       return;
     }
     var url = normalizeServerProfileUrl(_url.text);
-    if (widget.tailscale && !isValidTailscaleAddress(url)) {
+    if (_tailscale && !isValidTailscaleAddress(url)) {
       setState(() => _error = _connectionL10n(context).tailscaleAddressError);
       return;
     }
@@ -2315,19 +2401,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = true;
       _submitFailure = null;
     });
-    _revealStatus();
-    final outcome = await widget.onSubmit(profile);
-    if (!mounted) return;
-    if (outcome.saved) _savedProfile = profile;
-    if (outcome.failure == null) {
-      Navigator.pop(context, profile);
-      return;
-    }
-    setState(() {
-      _submitting = false;
-      _submitFailure = outcome.failure;
-    });
-    _revealStatus();
+    await _submit(profile);
   }
 
   Future<void> _saveCodex() async {
@@ -2360,12 +2434,27 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = true;
       _submitFailure = null;
     });
+    await _submit(profile);
+  }
+
+  /// Hands [profile] to the save (and connect), then finishes: Add server
+  /// ends on its ready step, every other edit closes. A failure stays on
+  /// the form, said where the fields that fix it are.
+  Future<void> _submit(ServerProfile profile) async {
     _revealStatus();
-    final outcome = await widget.onSubmit(profile);
+    final outcome = await widget.onSubmit(profile, tailscale: _tailscale);
     if (!mounted) return;
     if (outcome.saved) _savedProfile = profile;
     if (outcome.failure == null) {
-      Navigator.pop(context, profile);
+      if (!_stepped) {
+        Navigator.pop(context, profile);
+        return;
+      }
+      setState(() {
+        _submitting = false;
+        _readyProfile = profile;
+        _step = _AddStep.ready;
+      });
       return;
     }
     setState(() {
@@ -2498,6 +2587,8 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _host,
       ),
       ServersLinkState.linking => copy.addServerCheckingHost(_host),
+      ServersLinkState.linked when _readyProfile != null =>
+        copy.addServerConnectedHost(_host),
       _ => null,
     };
     return Column(
@@ -2537,6 +2628,38 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     );
   }
 
+  /// What the old connection help explained, said where it matters: an
+  /// http:// address on the network (not this device) is refused, and a
+  /// private HTTPS name through Tailscale is the way (never a public relay).
+  /// Shown only with the field's error; on Add server it offers the
+  /// Tailscale step.
+  Widget? _remoteHttpAdvice(AppLocalizations copy, KitTokens tokens) {
+    if (_error == null ||
+        _isCodex ||
+        _tailscale ||
+        explainConnectionAddress(_url.text) != ConnectionAdvice.remoteHttp) {
+      return null;
+    }
+    final offersTailscale =
+        _stepped && platformCapabilities.supportsTailscaleHandoff;
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.space2),
+      child: KitNotice(
+        key: const ValueKey('server-remote-http-advice'),
+        tone: AppStatusTone.neutral,
+        message: copy.addServerRemoteHttpAdvice,
+        actions: [
+          if (offersTailscale)
+            KitAction(
+              key: const ValueKey('server-remote-http-tailscale'),
+              label: copy.addServerUseTailscale,
+              onPressed: _submitting ? null : _chooseTailscale,
+            ),
+        ],
+      ),
+    );
+  }
+
   /// The address and password of an OpenCode server, and the check. Folded
   /// under "Enter the address instead" for a new server (pairing is the
   /// main path); shown at once where the fields are what the person came
@@ -2554,7 +2677,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             focusNode: _urlFocus,
             fieldKey: const ValueKey('server-url-field'),
             hint: 'https://server.example',
-            helper: widget.tailscale
+            helper: _tailscale
                 ? copy.tailscaleAddressDetail
                 : copy.e7SetupHttpsHint,
             error: _error,
@@ -2567,6 +2690,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             onChanged: _urlChanged,
           ),
           ?_notSameNetworkLink(),
+          ?_remoteHttpAdvice(copy, tokens),
           SizedBox(height: tokens.space4),
           // Paste is the main way in for the per-run random serve password;
           // the kit field carries it beside the reveal toggle.
@@ -2645,6 +2769,24 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // A check that has not answered for a while offers to stop, so a
+          // server that never answers never holds the person.
+          slot(
+            !_slowCheck
+                ? null
+                : KitNotice(
+                    key: const ValueKey('server-check-slow'),
+                    tone: AppStatusTone.neutral,
+                    message: copy.addServerCheckSlow(_host),
+                    actions: [
+                      KitAction(
+                        key: const ValueKey('server-check-cancel'),
+                        label: copy.addServerCheckCancel,
+                        onPressed: _cancelCheck,
+                      ),
+                    ],
+                  ),
+          ),
           slot(
             failure == null
                 ? null
@@ -2671,7 +2813,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           // The air under the verdicts, only while there is one.
           KitReveal(
             fade: false,
-            child: failure == null && result == null && codex == null
+            child:
+                failure == null &&
+                    result == null &&
+                    codex == null &&
+                    !_slowCheck
                 ? null
                 : SizedBox(height: tokens.space2),
           ),
@@ -2779,65 +2925,329 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     };
   }
 
+  /// The kind's own name, the connect step's title: the person sees what
+  /// they chose on the step that asks for its address.
+  String _kindTitle(AppLocalizations copy) => switch (_backend) {
+    ServerBackend.openCode => copy.firstRunAgentOpenCode,
+    ServerBackend.paseo => copy.firstRunPaseoTitle,
+    ServerBackend.codex => copy.firstRunAgentCodex,
+  };
+
+  /// Where Add server is, as the kit's staged progress: "Step 2 of 4 ·
+  /// Pair or enter the address". The check is a step of its own while it
+  /// runs, and the step before it again when it did not answer.
+  Widget _stepLine(AppLocalizations copy, KitTokens tokens) {
+    final of = _tailscale ? 5 : 4;
+    final connect = _tailscale ? 3 : 2;
+    final checking = _testing || _pairing || _submitting;
+    final (step, label) = switch (_step) {
+      _AddStep.kind => (1, copy.addServerStepKind),
+      _AddStep.tailscale => (2, copy.addServerStepTailscale),
+      _AddStep.connect when checking => (connect + 1, copy.addServerStepCheck),
+      _AddStep.connect => (
+        connect,
+        _isCodex ? copy.addServerStepAddress : copy.addServerStepPair,
+      ),
+      _AddStep.ready => (of, copy.addServerStepReady),
+    };
+    return _Rails(
+      key: _stepLineKey,
+      child: KitProgressView(
+        key: ValueKey('server-add-steps-$of'),
+        progress: KitProgress.staged(
+          key: const ValueKey('server-add-step-bar'),
+          step: step,
+          of: of,
+          label: label,
+          // Ready is the last step done, not begun: the bar is full.
+          stepValue: _step == _AddStep.ready ? 1 : null,
+          semanticsLabel: copy.addServerStepsLabel,
+        ),
+      ),
+    );
+  }
+
+  /// Step 1: what runs on the computer, one choice that acts on tap, and
+  /// the other ways in under it (this phone, Tailscale, outside agents).
+  List<Widget> _kindStep(AppLocalizations copy, KitTokens tokens) => [
+    SizedBox(height: tokens.space2),
+    // The agents are not alternatives: one computer runs all of them at
+    // once. This step only picks where to begin.
+    _Rails(
+      child: KitText(
+        copy.firstRunAgentsSideBySide,
+        key: const ValueKey('agent-choice-side-by-side'),
+        role: KitTextRole.secondary,
+        tone: KitTextTone.secondary,
+      ),
+    ),
+    _BackendChoice(
+      key: const ValueKey('server-kind-step'),
+      selected: null,
+      onSelected: _chooseKind,
+    ),
+    _OtherWays(
+      onPhoneSetup: _leaveFor(widget.onPhoneSetup),
+      onTailscale: platformCapabilities.supportsTailscaleHandoff
+          ? _chooseTailscale
+          : null,
+      onExternalAgents: _leaveFor(widget.onExternalAgents),
+    ),
+  ];
+
+  /// Tailscale as a step: the phone's side (the app, the VPN), then the
+  /// address and the server's own sign-in on the connect step after it.
+  List<Widget> _tailscaleStep(AppLocalizations copy, KitTokens tokens) => [
+    SizedBox(height: tokens.space2),
+    _Rails(
+      child: Column(
+        key: const ValueKey('server-tailscale-step'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitText(copy.tailscaleIntro, tone: KitTextTone.secondary),
+          SizedBox(height: tokens.sectionGap),
+          const TailscalePhoneSteps(),
+          SizedBox(height: tokens.sectionGap),
+          const TailscaleHelpFold(),
+        ],
+      ),
+    ),
+  ];
+
+  /// The finished flow: the drawing linked, what it reached, and the one
+  /// way on.
+  List<Widget> _readyStep(AppLocalizations copy, KitTokens tokens) {
+    final profile = _readyProfile!;
+    return [
+      _linkMoment(copy, tokens),
+      _Rails(
+        child: Column(
+          key: const ValueKey('server-ready-step'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: KitText(
+                copy.addServerReadyTitle(profile.name),
+                role: KitTextRole.headline,
+              ),
+            ),
+            SizedBox(height: tokens.space2),
+            KitText(copy.addServerReadyBody, tone: KitTextTone.secondary),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  /// The address or the pairing code, the check and its verdicts: the
+  /// connect step of Add server, and the whole form everywhere else.
+  List<Widget> _connectStep(
+    AppLocalizations copy,
+    KitTokens tokens, {
+    required bool isNew,
+    required bool showsCommand,
+  }) => [
+    if (_tailscale)
+      _Rails(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitText(copy.tailscaleEditorDetail),
+            KitInset(
+              child: KitButton.tertiary(
+                // On Add server the Tailscale step is one
+                // step back; a saved server opens the page.
+                onPressed: _stepped
+                    ? () => _goTo(_AddStep.tailscale)
+                    : _tailscaleHelp,
+                icon: AppIconography.secureNetwork,
+                label: copy.tailscaleHelp,
+              ),
+            ),
+            if (_testResult?.ok == false || _submitFailure != null)
+              KitText(copy.tailscaleRecovery),
+          ],
+        ),
+      ),
+    // The connection's moment and what it found, together
+    // at the head of the form: the drawing, its line, then
+    // the verdict. Every check and save scrolls back to it.
+    Column(
+      key: _statusKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [if (isNew) _linkMoment(copy, tokens), _status(copy, tokens)],
+    ),
+    if (showsCommand) ...[
+      SizedBox(height: tokens.space1),
+      _ComputerCommand(
+        key: ValueKey('connect-computer-command-${_backend.name}'),
+        backend: _backend,
+        // Pairing, the main path, right under the command
+        // that prints the code.
+        below: _isCodex
+            ? null
+            : _PairingActions(
+                // The command is on screen above, with its
+                // copy button; only the next move is left
+                // to say.
+                instructions: platformCapabilities.supportsQrPairing
+                    ? copy.firstRunPairingNextScan
+                    : copy.firstRunPairingNextPaste,
+                busy: _pairing,
+                notice: _pairingNotice,
+                failure: _pairingFailure,
+                onPaste: _pairing || _submitting
+                    ? null
+                    : () => unawaited(_pastePairing()),
+                // Rendered only where a camera path exists.
+                // Desktop gets no affordance at all rather
+                // than one that opens and fails.
+                onScan: platformCapabilities.supportsQrPairing
+                    ? () => unawaited(_scanPairing())
+                    : null,
+              ),
+      ),
+    ],
+    if (_secureStorageNotice case final notice?)
+      _Rails(
+        child: KitNotice(
+          key: const ValueKey('server-secure-storage-notice'),
+          tone: AppStatusTone.neutral,
+          message: notice,
+        ),
+      ),
+    // Unfolds when a check finds the password missing,
+    // folds away once it is typed (design standard §10).
+    KitReveal(
+      child: !_needsPassword
+          ? null
+          : _Rails(
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                excludeSemantics: true,
+                label: copy.e7SetupMissingPasswordLong,
+                child: KitNotice(
+                  tone: AppStatusTone.neutral,
+                  icon: AppIconography.locked,
+                  liveRegion: false,
+                  message: copy.e7SetupMissingPasswordShort,
+                ),
+              ),
+            ),
+    ),
+    if (_isCodex) ...[
+      _Rails(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _buildCodexFields(copy, tokens),
+        ),
+      ),
+      _Rails(
+        child: KitText(
+          _isPaseo ? copy.paseoSetupNotice : copy.codexApprovalRecoveryNotice,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+      ),
+      _Rails(child: _testAction(copy)),
+    ] else ...[
+      if (_foldsManualAddress) SizedBox(height: tokens.space2),
+      _manualAddress(copy, tokens),
+      if (!_tailscale && !showsCommand)
+        // Editing a saved server: pairing again (a rotated
+        // password) stays one tap away, under the fields
+        // the person came to change.
+        _Rails(
+          child: _PairingActions(
+            compact: true,
+            busy: _pairing,
+            notice: _pairingNotice,
+            failure: _pairingFailure,
+            onPaste: _pairing || _submitting
+                ? null
+                : () => unawaited(_pastePairing()),
+            onScan: platformCapabilities.supportsQrPairing
+                ? () => unawaited(_scanPairing())
+                : null,
+          ),
+        ),
+      SizedBox(height: tokens.space1),
+      _moreOptions(copy, tokens),
+    ],
+  ];
+
   @override
   Widget build(BuildContext context) {
     final copy = _connectionL10n(context);
     final tokens = KitTokens.of(context);
-    final title = widget.presetBackend != null
-        ? switch (widget.presetBackend!) {
-            ServerBackend.openCode => copy.firstRunAgentOpenCode,
-            ServerBackend.paseo => copy.firstRunPaseoTitle,
-            ServerBackend.codex => copy.firstRunAgentCodex,
-          }
-        : widget.existing == null
-        ? widget.openCode2Intent && !_isCodex
-              ? copy.oc2DiscoveryEditorTitle
-              : copy.e7SetupAddServer
-        : _needsCodexToken
-        ? copy.codexTokenReentry
-        : _needsPassword
-        ? copy.e7SetupReenterPassword
-        : copy.e7SetupEditServer;
     final isNew = widget.existing == null;
-    // The person who came through "Which agent?" already chose; asking
-    // again would be a second, harder copy of the same question.
-    final asksType = isNew && !widget.tailscale && widget.presetBackend == null;
+    final title = switch (_step) {
+      _AddStep.kind => copy.e7SetupAddServer,
+      _AddStep.tailscale => copy.tailscaleTitle,
+      _ when _stepped => _tailscale ? copy.tailscaleTitle : _kindTitle(copy),
+      _ when isNew =>
+        widget.openCode2Intent && !_isCodex
+            ? copy.oc2DiscoveryEditorTitle
+            : copy.e7SetupAddServer,
+      _ when _needsCodexToken => copy.codexTokenReentry,
+      _ when _needsPassword => copy.e7SetupReenterPassword,
+      _ => copy.e7SetupEditServer,
+    };
     // A new server starts from the command to run on the computer, for the
-    // type chosen (the phone's own server and Tailscale have their own).
-    final showsCommand =
-        isNew && !widget.tailscale && widget.initialUrl == null;
+    // kind chosen (the phone's own server and Tailscale have their own).
+    final showsCommand = isNew && !_tailscale && widget.initialUrl == null;
+    final back = _previousStep != null;
+    final Widget? bottom = switch (_step) {
+      _AddStep.kind => null,
+      _AddStep.tailscale => KitButton.primary(
+        key: const ValueKey('server-tailscale-continue'),
+        onPressed: () => _goTo(_AddStep.connect),
+        icon: AppIconography.forward,
+        label: copy.tailscaleContinue,
+      ),
+      _AddStep.ready => KitButton.primary(
+        key: const ValueKey('server-ready-open'),
+        onPressed: _exit,
+        label: copy.addServerReadyOpen(_readyProfile!.name),
+      ),
+      // The one primary (§2), pinned below the form and lifted above the
+      // keyboard. Its tap checks the connection, saves and connects; the
+      // spinner is that tap in flight, the drawing and its line say which
+      // step.
+      _AddStep.connect => KitButton.primary(
+        key: const ValueKey('save-server-profile'),
+        onPressed: _submitting || _testing ? null : _save,
+        working: _submitting || (_testing && _checkingForSave),
+        label: _testing && _checkingForSave
+            ? copy.addServerChecking
+            : _submitting
+            ? copy.e7SetupSaving
+            : _connectsOnSave
+            ? copy.onboardingSaveConnect
+            : copy.onboardingSaveChanges,
+      ),
+    };
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) unawaited(_close());
+        if (!didPop) _exit();
       },
       child: KitScreen(
         key: const ValueKey('server-profile-editor'),
         width: KitScreenWidth.reading,
         topBar: KitTopBar(
           title: title,
-          exit: KitTopBarExit.close,
-          exitKey: const ValueKey('server-editor-close'),
-          // Closing asks first when something is unsaved; nothing closes
-          // while a save is in flight.
-          onExit: () => unawaited(_close()),
+          // Back steps within Add server; Close leaves (asking first when
+          // something is unsaved). Nothing closes while a save is in flight.
+          exit: back ? KitTopBarExit.back : KitTopBarExit.close,
+          exitKey: ValueKey(
+            back ? 'server-editor-back' : 'server-editor-close',
+          ),
+          onExit: _exit,
         ),
-        // The one primary (§2), pinned below the form and lifted above the
-        // keyboard. Its tap checks the connection, saves and connects; the
-        // spinner is that tap in flight, the drawing and its line say which
-        // step.
-        bottom: KitButton.primary(
-          key: const ValueKey('save-server-profile'),
-          onPressed: _submitting || _testing ? null : _save,
-          working: _submitting || (_testing && _checkingForSave),
-          label: _testing && _checkingForSave
-              ? copy.addServerChecking
-              : _submitting
-              ? copy.e7SetupSaving
-              : _connectsOnSave
-              ? copy.onboardingSaveConnect
-              : copy.onboardingSaveChanges,
-        ),
+        bottom: bottom,
         body: AbsorbPointer(
           absorbing: _submitting,
           // One box, not a lazy list: every field exists while the form is
@@ -2852,165 +3262,23 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                   bottom: KitScreen.endPadding(context),
                 ),
                 sliver: SliverToBoxAdapter(
+                  // Each step replaces the last in place.
                   child: Column(
+                    key: ValueKey('server-add-step-${_step.name}'),
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (widget.tailscale)
-                        _Rails(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              KitText(copy.tailscaleEditorDetail),
-                              KitInset(
-                                child: KitButton.tertiary(
-                                  onPressed: _tailscaleHelp,
-                                  icon: AppIconography.secureNetwork,
-                                  label: copy.tailscaleHelp,
-                                ),
-                              ),
-                              if (_testResult?.ok == false ||
-                                  _submitFailure != null)
-                                KitText(copy.tailscaleRecovery),
-                            ],
-                          ),
+                      if (_stepped) _stepLine(copy, tokens),
+                      ...switch (_step) {
+                        _AddStep.kind => _kindStep(copy, tokens),
+                        _AddStep.tailscale => _tailscaleStep(copy, tokens),
+                        _AddStep.ready => _readyStep(copy, tokens),
+                        _AddStep.connect => _connectStep(
+                          copy,
+                          tokens,
+                          isNew: isNew,
+                          showsCommand: showsCommand,
                         ),
-                      // The connection's moment and what it found, together
-                      // at the head of the form: the drawing, its line, then
-                      // the verdict. Every check and save scrolls back to it.
-                      Column(
-                        key: _statusKey,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (isNew) _linkMoment(copy, tokens),
-                          _status(copy, tokens),
-                        ],
-                      ),
-                      if (asksType)
-                        _BackendChoice(
-                          selected: _backend,
-                          onSelected: (backend) {
-                            if (_submitting || backend == _backend) return;
-                            setState(() {
-                              _backend = backend;
-                              _invalidateProbe();
-                            });
-                          },
-                        ),
-                      if (showsCommand) ...[
-                        SizedBox(
-                          height: asksType ? tokens.space3 : tokens.space1,
-                        ),
-                        _ComputerCommand(
-                          key: ValueKey(
-                            'connect-computer-command-${_backend.name}',
-                          ),
-                          backend: _backend,
-                          // Pairing, the main path, right under the command
-                          // that prints the code.
-                          below: _isCodex
-                              ? null
-                              : _PairingActions(
-                                  // The command is on screen above, with its
-                                  // copy button; only the next move is left
-                                  // to say.
-                                  instructions:
-                                      platformCapabilities.supportsQrPairing
-                                      ? copy.firstRunPairingNextScan
-                                      : copy.firstRunPairingNextPaste,
-                                  busy: _pairing,
-                                  notice: _pairingNotice,
-                                  failure: _pairingFailure,
-                                  onPaste: _pairing || _submitting
-                                      ? null
-                                      : () => unawaited(_pastePairing()),
-                                  // Rendered only where a camera path exists.
-                                  // Desktop gets no affordance at all rather
-                                  // than one that opens and fails.
-                                  onScan: platformCapabilities.supportsQrPairing
-                                      ? () => unawaited(_scanPairing())
-                                      : null,
-                                ),
-                        ),
-                      ],
-                      if (_secureStorageNotice case final notice?)
-                        _Rails(
-                          child: KitNotice(
-                            key: const ValueKey('server-secure-storage-notice'),
-                            tone: AppStatusTone.neutral,
-                            message: notice,
-                          ),
-                        ),
-                      // Unfolds when a check finds the password missing,
-                      // folds away once it is typed (design standard §10).
-                      KitReveal(
-                        child: !_needsPassword
-                            ? null
-                            : _Rails(
-                                child: Semantics(
-                                  container: true,
-                                  liveRegion: true,
-                                  excludeSemantics: true,
-                                  label: copy.e7SetupMissingPasswordLong,
-                                  child: KitNotice(
-                                    tone: AppStatusTone.neutral,
-                                    icon: AppIconography.locked,
-                                    liveRegion: false,
-                                    message: copy.e7SetupMissingPasswordShort,
-                                  ),
-                                ),
-                              ),
-                      ),
-                      if (_isCodex) ...[
-                        _Rails(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: _buildCodexFields(copy, tokens),
-                          ),
-                        ),
-                        _Rails(
-                          child: KitText(
-                            _isPaseo
-                                ? copy.paseoSetupNotice
-                                : copy.codexApprovalRecoveryNotice,
-                            role: KitTextRole.secondary,
-                            tone: KitTextTone.secondary,
-                          ),
-                        ),
-                        _Rails(child: _testAction(copy)),
-                      ] else ...[
-                        if (_foldsManualAddress)
-                          SizedBox(height: tokens.space2),
-                        _manualAddress(copy, tokens),
-                        if (!widget.tailscale && !showsCommand)
-                          // Editing a saved server: pairing again (a rotated
-                          // password) stays one tap away, under the fields
-                          // the person came to change.
-                          _Rails(
-                            child: _PairingActions(
-                              compact: true,
-                              busy: _pairing,
-                              notice: _pairingNotice,
-                              failure: _pairingFailure,
-                              onPaste: _pairing || _submitting
-                                  ? null
-                                  : () => unawaited(_pastePairing()),
-                              onScan: platformCapabilities.supportsQrPairing
-                                  ? () => unawaited(_scanPairing())
-                                  : null,
-                            ),
-                          ),
-                        SizedBox(height: tokens.space1),
-                        _moreOptions(copy, tokens),
-                      ],
-                      // The other ways in (R3: once, on Add server, not a
-                      // panel on the list), after the main path so it
-                      // stays first.
-                      if (asksType)
-                        _OtherWays(
-                          onPhoneSetup: _leaveFor(widget.onPhoneSetup),
-                          onTailscale: _leaveFor(widget.onTailscale),
-                          onExternalAgents: _leaveFor(widget.onExternalAgents),
-                        ),
+                      },
                     ],
                   ),
                 ),
@@ -3022,6 +3290,15 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     );
   }
 }
+
+/// Where Add server is (P3.9): what runs there, Tailscale when that is the
+/// way, the address or pairing code (whose check is a step while it runs),
+/// and the ready moment.
+enum _AddStep { kind, tailscale, connect, ready }
+
+/// How long a connection check or a pairing runs before it offers Cancel.
+@visibleForTesting
+const slowCheckAfter = Duration(seconds: 8);
 
 /// The one command that starts the chosen agent, with a copy button, and the
 /// rest of the setup guide's commands behind "Show the commands" (UX plan
@@ -3296,13 +3573,17 @@ class _ProbeVerdict extends StatelessWidget {
   }
 }
 
-/// What a new server is, as one clear choice (ledger row 15): the kit's
-/// single choice list (KIT-25), a row each with a line saying what it is,
-/// the chosen one marked; it acts on tap.
+/// Add server's first step (ledger row 15, P3.9): what runs on the
+/// computer, as the kit's single choice list (KIT-25), a row each with a
+/// line saying what it is. It acts on tap: the answer is the next step.
 class _BackendChoice extends StatelessWidget {
-  const _BackendChoice({required this.selected, required this.onSelected});
+  const _BackendChoice({
+    super.key,
+    required this.selected,
+    required this.onSelected,
+  });
 
-  final ServerBackend selected;
+  final ServerBackend? selected;
   final ValueChanged<ServerBackend> onSelected;
 
   @override
@@ -3313,26 +3594,14 @@ class _BackendChoice extends StatelessWidget {
       key: const ValueKey('server-backend-selector'),
       padding: EdgeInsetsDirectional.only(
         start: tokens.gutter,
-        top: tokens.space1,
+        top: tokens.space3,
         end: tokens.gutter,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space1,
-              bottom: tokens.labelGap,
-            ),
-            child: Semantics(
-              header: true,
-              child: KitText(copy.addServerConnectTo, role: KitTextRole.label),
-            ),
-          ),
           KitChoiceList<ServerBackend>.single(
             semanticsLabel: copy.addServerConnectTo,
-            // A tap only selects; Save & connect acts on the whole form.
-            actsOnTap: false,
             selected: selected,
             onSelected: onSelected,
             choices: [
@@ -3367,7 +3636,8 @@ class _BackendChoice extends StatelessWidget {
 
 /// Add server's other ways in, one row each (R3: they live here, not as a
 /// second panel on the servers list): this phone, Tailscale and external
-/// agents. Each closes the form and opens its own setup; null hides a row.
+/// agents. This phone and external agents close the form and open their own
+/// setup; Tailscale is the flow's next step. Null hides a row.
 class _OtherWays extends StatelessWidget {
   const _OtherWays({
     required this.onPhoneSetup,

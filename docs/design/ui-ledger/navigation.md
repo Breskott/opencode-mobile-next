@@ -685,10 +685,8 @@ graph LR
   activity["activity"]:::ext
   add_agent["add-agent"]
   agent_account["agent-account"]
-  agent_choice["agent-choice"]
   chat["chat"]:::ext
   command_launcher_sheet["command-launcher-sheet"]:::ext
-  connection_help["connection-help"]
   connection_status_details_sheet["connection-status-details-sheet"]:::ext
   demo["demo"]:::ext
   embedded_connection_status_banner["embedded-connection-status-banner"]:::ext
@@ -752,8 +750,7 @@ graph LR
   servers --> termux_setup_installed
   servers --> tailscale_setup
   servers --> external_agents
-  servers_welcome --> agent_choice
-  agent_choice --> profile_editor
+  servers_welcome --> profile_editor
   profile_editor --> profile_editor_discard_sheet
   profile_editor --> tailscale_setup
   profile_editor --> pairing_scanner
@@ -787,7 +784,7 @@ graph LR
   settings_disconnect_sheet --> servers
   usage_hub --> usage
   usage_hub --> provider_quota
-  guide --> connection_help
+  guide --> profile_editor
   server_settings -.-> embedded_product_states
   profile_monitor --> form_sheet
   profile_editor --> servers
@@ -1343,9 +1340,7 @@ graph LR
 ```mermaid
 graph LR
   about["about"]:::ext
-  agent_choice["agent-choice"]:::ext
   chat["chat"]:::ext
-  connection_help["connection-help"]:::ext
   demo["demo"]
   guide["guide"]
   phone_setup_progress["phone-setup-progress"]:::ext
@@ -1358,12 +1353,12 @@ graph LR
   servers --> guide
   servers --> demo
   servers_welcome --> about
-  servers_welcome --> agent_choice
+  servers_welcome --> profile_editor
   servers_welcome --> phone_setup_start
   servers_welcome --> demo
   profile_editor --> guide
   settings --> guide
-  guide --> connection_help
+  guide --> profile_editor
   servers -.-> servers_welcome
   servers_welcome --> phone_setup_progress
   classDef ext stroke-dasharray: 4 3,opacity:0.7
@@ -1628,8 +1623,6 @@ graph LR
 | Page | Kind | Depth | Inbound (page / element) | Outbound (element -> page) |
 |---|---|---|---|---|
 | `agent-account` | screen | 1 / 1 | `servers` / servers-profile-menu-account<br>`settings` / settings-accounts | agent-account-open-sign-in -> `external-link-dialog` |
-| `agent-choice` | onboarding-step | 2 / 1 | `servers-welcome` / servers-welcome-connect | agent-choice-opencode -> `profile-editor`<br>agent-choice-paseo -> `profile-editor`<br>agent-choice-codex -> `profile-editor` |
-| `connection-help` | screen | 2 / 2 | `guide` / guide-connection-help | _none_ |
 | `external-agents` | screen | 1 / 1 | `servers` / servers-external-agents<br>`settings` / settings-external-agents | external-agents-add -> `add-agent`<br>external-agents-row -> `external-agent-detail`<br>external-agents-retry-delete -> `external-agents-delete-sheet`<br>-> `external-link-dialog` |
 | `external-agents-delete-sheet` | sheet | 2 / 2 | `external-agents` / external-agents-retry-delete | _none_ |
 | `add-agent` | screen | 2 / 2 | `external-agents` / external-agents-add | _none_ |
@@ -1649,7 +1642,7 @@ graph LR
 | `provider-quota-clear-dialog` | dialog | 3 / 5 | `provider-quota` / provider-quota-clear-thresholds | _none_ |
 | `servers` | screen | 1 / 0 | `profile-editor`<br>`settings` / settings-saved-servers<br>`root-connecting` / root-connecting-change<br>`root-connecting` / root-connecting-primary-password<br>`root-connecting` / root-connecting-primary-token<br>`root-connecting` / root-connecting-primary-change<br>`home-shell` / home-shell-banner-update-token<br>`home-shell` / home-shell-banner-update-password<br>`server-switcher-sheet` / server-switcher-sheet-profile<br>`server-switcher-sheet` / server-switcher-sheet-manage<br>`server-switcher-sheet` / server-switcher-sheet-phone-connect<br>`server-switcher-sheet` / server-switcher-sheet-phone-forget<br>`connection-status-details-sheet` / connection-status-details-sheet-change-server<br>`embedded-connection-status-banner` / embedded-connection-status-banner-update-token<br>`embedded-connection-status-banner` / embedded-connection-status-banner-update-password<br>`system` / system-entry-launch-connect<br>`session-link-server-missing-banner` / session-link-server-missing-banner-open-servers<br>`phone-setup-start` / phone-setup-start-primary-connect<br>`phone-setup-start` / phone-setup-start-by-address<br>`phone-setup-progress` / phone-setup-progress-termux-connect-existing<br>`settings-disconnect-sheet` / settings-disconnect-sheet-confirm | servers-background-checks -> `profile-monitor`<br>servers-about -> `about`<br>servers-guide -> `guide`<br>servers-profile-row -> `home-shell`<br>servers-profile-menu-account -> `agent-account`<br>servers-profile-menu-connect -> `home-shell`<br>servers-profile-menu-edit -> `profile-editor`<br>servers-profile-menu-remove -> `servers-remove-server-sheet`<br>servers-add-server -> `profile-editor`<br>servers-connect-opencode2 -> `profile-editor`<br>servers-try-demo -> `demo`<br>servers-termux-setup -> `termux-setup-installed`<br>servers-tailscale -> `tailscale-setup`<br>servers-setup-guide -> `guide`<br>servers-external-agents -> `external-agents`<br>servers-profile-row -> `profile-editor`<br>(state) -> `servers-welcome`<br>(embedded) -> `embedded-termux-running-server-entry`<br>(embedded) -> `embedded-local-agent-server-entry`<br>-> `phone-setup-start`<br>(embedded) -> `embedded-phone-server-card` |
 | `servers-remove-server-sheet` | sheet | 2 / 1 | `servers` / servers-profile-menu-remove<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-forget | _none_ |
-| `profile-editor` | screen | 2 / 1 | `servers` / servers-add-server<br>`servers` / servers-connect-opencode2<br>`servers` / servers-profile-menu-edit<br>`servers` / servers-profile-row<br>`tailscale-setup` / tailscale-setup-continue<br>`embedded-termux-running-server-entry`<br>`agent-choice` / agent-choice-opencode<br>`agent-choice` / agent-choice-paseo<br>`agent-choice` / agent-choice-codex<br>`server-switcher-sheet` / server-switcher-sheet-add<br>`system` / system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor | profile-editor-close -> `profile-editor-discard-sheet`<br>profile-editor-tailscale-help -> `tailscale-setup`<br>profile-editor-pairing-scan -> `pairing-scanner`<br>profile-editor-test-guide -> `guide`<br>profile-editor-team-learn -> `team-host-guide-sheet`<br>profile-editor-team-add -> `team-host-sheet`<br>profile-editor-not-same-network -> `tailscale-setup`<br>-> `servers` |
+| `profile-editor` | screen | 2 / 1 | `servers` / servers-add-server<br>`servers` / servers-connect-opencode2<br>`servers` / servers-profile-menu-edit<br>`servers` / servers-profile-row<br>`embedded-termux-running-server-entry`<br>`servers-welcome` / servers-welcome-connect<br>`guide` / guide-add-server<br>`server-switcher-sheet` / server-switcher-sheet-add<br>`system` / system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor<br>`tailscale-setup` / tailscale-setup-continue | profile-editor-close -> `profile-editor-discard-sheet`<br>profile-editor-tailscale-help -> `tailscale-setup`<br>profile-editor-pairing-scan -> `pairing-scanner`<br>profile-editor-test-guide -> `guide`<br>profile-editor-team-learn -> `team-host-guide-sheet`<br>profile-editor-team-add -> `team-host-sheet`<br>profile-editor-not-same-network -> `tailscale-setup`<br>-> `servers` |
 | `profile-editor-discard-sheet` | sheet | 3 / 2 | `profile-editor` / profile-editor-close<br>`system` / system-system-back-gesture-in-the-editor-while-dirty-popscope-onpop-to-profile-editor-discard-sheet | _none_ |
 | `server-settings` | screen | 1 / 3 | `settings` / settings-category-server<br>`command-launcher-sheet` / chat-command-status | server-settings-host-management -> `host-management`<br>server-settings-updates-managed -> `termux-setup-installed`<br>server-settings-updates-restart -> `server-settings-restart-dialog`<br>server-settings-updates-upgrade -> `server-settings-upgrade-sheet`<br>(embedded) -> `embedded-product-states` |
 | `server-settings-restart-dialog` | dialog | 2 / 4 | `server-settings` / server-settings-updates-restart | _none_ |
@@ -1829,8 +1822,8 @@ graph LR
 |---|---|---|---|---|
 | `bootstrap-gate` | screen | system only | `system` / system-app-launch-runapp-appbootstrapgate-at-lib-main-dart-66-repla-to-bootstrap-gate | _none_ |
 | `demo` | screen | 2 / 1 | `servers` / servers-try-demo<br>`servers-welcome` / servers-welcome-try-demo | demo-chat -> `chat` |
-| `guide` | screen | 1 / 1 | `settings` / settings-setup-guide<br>`system` / system-named-route-guide-lib-main-dart-1237-to-guide<br>`servers` / servers-guide<br>`servers` / servers-setup-guide<br>`profile-editor` / profile-editor-test-guide | guide-connection-help -> `connection-help` |
-| `servers-welcome` | screen | 1 / 0 | `system` / system-app-root-root-build-returns-serversscreen-when-conn-profile--to-servers-welcome<br>`system` / system-launch-shortcut-launch-action-showserversforlaunch-pushes-se-to-servers-welcome<br>`system` / system-any-route-into-serversscreen-while-the-profile-store-is-empt-to-servers-welcome<br>`servers` / (state) | servers-welcome-about -> `about`<br>servers-welcome-connect -> `agent-choice`<br>servers-welcome-termux-setup -> `phone-setup-start`<br>servers-welcome-try-demo -> `demo`<br>-> `phone-setup-progress` |
+| `guide` | screen | 1 / 1 | `settings` / settings-setup-guide<br>`system` / system-named-route-guide-lib-main-dart-1237-to-guide<br>`servers` / servers-guide<br>`servers` / servers-setup-guide<br>`profile-editor` / profile-editor-test-guide | guide-add-server -> `profile-editor` |
+| `servers-welcome` | screen | 1 / 0 | `system` / system-app-root-root-build-returns-serversscreen-when-conn-profile--to-servers-welcome<br>`system` / system-launch-shortcut-launch-action-showserversforlaunch-pushes-se-to-servers-welcome<br>`system` / system-any-route-into-serversscreen-while-the-profile-store-is-empt-to-servers-welcome<br>`servers` / (state) | servers-welcome-about -> `about`<br>servers-welcome-connect -> `profile-editor`<br>servers-welcome-termux-setup -> `phone-setup-start`<br>servers-welcome-try-demo -> `demo`<br>-> `phone-setup-progress` |
 
 ### Misc dialogs and sheets
 

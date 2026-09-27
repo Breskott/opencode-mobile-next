@@ -99,7 +99,6 @@
   "g-servers": [
     "lib/ui/screens/servers_screen.dart",
     "lib/ui/screens/pairing_scanner_screen.dart",
-    "lib/ui/screens/connection_help_screen.dart",
     "lib/ui/screens/tailscale_setup_screen.dart",
     "lib/ui/screens/host_management_screen.dart",
     "lib/ui/screens/settings/server_settings_screen.dart",

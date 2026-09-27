@@ -1772,91 +1772,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Other pending sign-ins belong to another server or project. Return to their original source to manage them.';
 
   @override
-  String get connectionHelpTitle => 'Connection help';
-
-  @override
-  String get connectionHelpEntrySubtitle =>
-      'Explain an address locally, without connecting';
-
-  @override
   String get connectionHelpGuideTip =>
-      'Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.';
-
-  @override
-  String get connectionHelpPrivacy =>
-      'This checks address rules only, not connectivity. Nothing is sent or saved. Input is hidden and cleared after checking. Paste only an address, not a password or pairing code.';
-
-  @override
-  String get connectionHelpAddress => 'Server address';
-
-  @override
-  String get connectionHelpCheck => 'Explain address';
-
-  @override
-  String get connectionHelpEmpty => 'Enter a server address to explain.';
-
-  @override
-  String get connectionHelpMalformed =>
-      'This address could not be understood. Use a complete origin such as https://server.example, with no path, credentials or query.';
-
-  @override
-  String get connectionHelpCredentials =>
-      'Credentials do not belong in a URL. Remove them and enter the server username and password separately in Servers. The pasted value has been cleared.';
-
-  @override
-  String get connectionHelpQuery =>
-      'Remove query parameters and fragments. They can contain secrets; enter only the server origin. The pasted value has been cleared.';
-
-  @override
-  String get connectionHelpPath =>
-      'Remove the path. This app needs the server origin, not a page or API route.';
-
-  @override
-  String get connectionHelpScheme =>
-      'Use HTTPS for a remote server, or HTTP only for this device\'s supported loopback addresses.';
-
-  @override
-  String get connectionHelpRemoteHttp =>
-      'Remote HTTP is blocked, including LAN and 100.64.0.0/10 addresses. A VPN does not change this rule. Set up private HTTPS or an encrypted tunnel ending on this device.';
-
-  @override
-  String get connectionHelpHttps =>
-      'This address passes the HTTPS address rules. That does not verify its certificate, reachability, sign-in or privacy. A bare remote address is interpreted as HTTPS.';
-
-  @override
-  String get connectionHelpLoopback =>
-      'This address passes the loopback address rules. Localhost means this device, not another computer. A server or tunnel must be listening here; this check does not verify that.';
-
-  @override
-  String get connectionHelpPrivateTitle => 'Private HTTPS or reverse proxy';
-
-  @override
-  String get connectionHelpPrivateSteps =>
-      '1. Keep the server on its host\'s loopback with authentication enabled.\n2. Connect both devices to your private network and restrict access to intended users.\n3. Configure private HTTPS, such as Tailscale Serve, or a reverse proxy with a trusted certificate forwarding to the server. Support streaming and WebSockets.\n4. Add the HTTPS origin in Servers with sign-in in separate fields.\nTailscale Funnel exposes the service publicly; it is not a private-network fix. This app cannot infer VPN presence. The example below is a placeholder.';
-
-  @override
-  String get connectionHelpTunnelTitle => 'Localhost on the wrong device?';
-
-  @override
-  String get connectionHelpTunnelSteps =>
-      'Localhost, 127.0.0.1 and [::1] refer to the device running this app. For a server on another computer, use private HTTPS or an encrypted tunnel ending here. If an SSH client is available on this device, adapt the example below, verify the host key and keep it running. Replace user@host with your SSH destination. Running it on another computer does not forward this device\'s port. Keep server authentication enabled.';
-
-  @override
-  String get connectionHelpVerifyTitle => 'Verify connectivity separately';
-
-  @override
-  String get connectionHelpVerifySteps =>
-      'On this device, check private-network membership, DNS, firewall access and certificate trust using your network tools. Check server and proxy configuration on the host, then use Servers to connect. Never disable TLS verification or share passwords, pairing codes or unredacted logs. Access to this server is shell access.';
-
-  @override
-  String get connectionHelpCopyExample => 'Copy example';
-
-  @override
-  String get connectionHelpCopied => 'Example copied';
-
-  @override
-  String get connectionHelpCopyFailed =>
-      'Could not copy the example. Select the example text to copy it manually.';
+      'Keep the server off the public internet. Reach it over Tailscale\'s private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.';
 
   @override
   String get voiceConversationTitle => 'Voice conversation';
@@ -5150,9 +5067,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ask your agent to delegate work in the background. Results return to this conversation automatically.';
 
   @override
-  String get oc2DiscoveryConnect => 'Connect OpenCode 2';
-
-  @override
   String get oc2DiscoveryEditorTitle => 'OpenCode 2';
 
   @override
@@ -5160,9 +5074,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oc2DiscoveryTypes => 'OpenCode 1 or 2';
-
-  @override
-  String get oc2DiscoveryAutodetect => 'Detects OpenCode 1 or 2 automatically.';
 
   @override
   String get oc2DiscoveryPhone => 'Set up OpenCode 1 or 2 here with Termux.';
@@ -12588,10 +12499,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiLinkServerMissing =>
-      'This server is not saved on this phone. Add it under Servers, then scan the code again.';
-
-  @override
-  String get handoffUiLinkOpenServers => 'Open Servers';
+      'The conversation is on a server this phone has not saved. Add it here, then scan the code again.';
 
   @override
   String get handoffUiLinkDismiss => 'Dismiss';
@@ -16018,7 +15926,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverConnectionHelpAliases =>
-      'connection help cannot connect troubleshooting network refused timeout';
+      'add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout';
 
   @override
   String gestureEquivFileRowActions(String name) {
@@ -16355,24 +16263,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstRunJustShowMe => 'Just show me';
 
   @override
-  String get firstRunWhichAgent => 'Which agent first?';
-
-  @override
   String get firstRunAgentOpenCode => 'OpenCode';
 
   @override
-  String get firstRunAgentClaudeOrPi => 'Claude Code, Codex, Pi and more';
-
-  @override
-  String get firstRunAgentClaudeOrPiDetail =>
-      'One connection to the Paseo daemon drives every agent installed there. Experimental.';
-
-  @override
   String get firstRunAgentCodex => 'Codex';
-
-  @override
-  String get firstRunAgentCodexDetail =>
-      'Directly, through Codex app-server. Experimental.';
 
   @override
   String get firstRunRunOnComputer => 'On your computer, run:';
@@ -26169,4 +26063,65 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String addServerConnectedHost(String host) {
+    return 'Connected to $host';
+  }
+
+  @override
+  String addServerCheckSlow(String host) {
+    return '$host has not answered yet. A slow network can take a while.';
+  }
+
+  @override
+  String get addServerCheckCancel => 'Stop checking';
+
+  @override
+  String get addServerRemoteHttpAdvice =>
+      'A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.';
+
+  @override
+  String get addServerUseTailscale => 'Use Tailscale';
+
+  @override
+  String get addServerStepsLabel => 'Add server progress';
+
+  @override
+  String get addServerStepKind => 'What runs there';
+
+  @override
+  String get addServerStepTailscale => 'Tailscale on this phone';
+
+  @override
+  String get addServerStepPair => 'Pair or enter the address';
+
+  @override
+  String get addServerStepAddress => 'Address and sign-in';
+
+  @override
+  String get addServerStepCheck => 'Checking';
+
+  @override
+  String get addServerStepReady => 'Ready';
+
+  @override
+  String addServerReadyTitle(String name) {
+    return '$name is connected';
+  }
+
+  @override
+  String get addServerReadyBody =>
+      'Its conversations open next. Start one, or pick up one already there.';
+
+  @override
+  String addServerReadyOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get handoffUiLinkAddTitle => 'Add this server?';
+
+  @override
+  String get handoffUiLinkAddServer => 'Add server';
 }

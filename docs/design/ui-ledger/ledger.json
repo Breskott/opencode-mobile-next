@@ -1,5 +1,5 @@
 {
- "generatedFrom": "f08abebaad308f2d2b09fb0e84d48ae4466c61d5",
+ "generatedFrom": "e1ccfc4228a5a1db4e81a83077647da54ad47b3b",
  "pages": [
   {
    "id": "system",
@@ -19728,134 +19728,6 @@
    ]
   },
   {
-   "id": "agent-choice",
-   "title": "On my computer",
-   "kind": "onboarding-step",
-   "area": "servers",
-   "file": "lib/ui/screens/agent_choice_screen.dart",
-   "widget": "AgentChoiceScreen",
-   "presentedBy": [
-    "_computerPath"
-   ],
-   "line": 11,
-   "purpose": "First run, computer path (UX plan 5.6 step 2a): asks 'Which agent?' so the connect screen opens already set to the right backend.",
-   "reachedFrom": [
-    {
-     "page": "servers-welcome",
-     "element": "servers-welcome-connect"
-    }
-   ],
-   "gates": [
-    "pushed only by ServersScreen._computerPath, from the first-run welcome"
-   ],
-   "elements": [
-    {
-     "id": "agent-choice-opencode",
-     "type": "card",
-     "label": "OpenCode — Detects OpenCode 1 or 2 automatically.",
-     "key": "agent-choice-opencode",
-     "file": "lib/ui/screens/agent_choice_screen.dart",
-     "line": 43,
-     "action": "navigate",
-     "target": "profile-editor",
-     "targetWidget": "_ProfileEditorScreen",
-     "effect": "onChoose(ServerBackend.openCode): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "agent-choice-paseo",
-     "type": "card",
-     "label": "Claude Code or Pi — Through the Paseo daemon. Experimental.",
-     "key": "agent-choice-paseo",
-     "file": "lib/ui/screens/agent_choice_screen.dart",
-     "line": 50,
-     "action": "navigate",
-     "target": "profile-editor",
-     "targetWidget": "_ProfileEditorScreen",
-     "effect": "onChoose(ServerBackend.paseo): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "agent-choice-codex",
-     "type": "card",
-     "label": "Codex — Through Codex app-server. Experimental.",
-     "key": "agent-choice-codex",
-     "file": "lib/ui/screens/agent_choice_screen.dart",
-     "line": 57,
-     "action": "navigate",
-     "target": "profile-editor",
-     "targetWidget": "_ProfileEditorScreen",
-     "effect": "onChoose(ServerBackend.codex): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "connection-help",
-   "title": "Connection help",
-   "kind": "screen",
-   "area": "servers",
-   "file": "lib/ui/screens/connection_help_screen.dart",
-   "widget": "ConnectionHelpScreen",
-   "presentedBy": [],
-   "line": 9,
-   "purpose": "Offline explainer for a server address: classifies a typed address (never stored) and shows copyable private-network and SSH-tunnel examples.",
-   "reachedFrom": [
-    {
-     "page": "guide",
-     "element": "guide-connection-help"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "connection-help-address",
-     "type": "text-field",
-     "label": "Server address",
-     "key": null,
-     "file": "lib/ui/screens/connection_help_screen.dart",
-     "line": 57,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Obscured address input; editing clears the previous advice; keyboard Done calls _explain().",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "connection-help-explain",
-     "type": "button",
-     "label": "Explain address",
-     "key": null,
-     "file": "lib/ui/screens/connection_help_screen.dart",
-     "line": 79,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_explain(): explainConnectionAddress(text), clears the field and shows the matching advice text.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "connection-help-copy-example",
-     "type": "icon-button",
-     "label": "Copy example",
-     "key": null,
-     "file": "lib/ui/screens/connection_help_screen.dart",
-     "line": 135,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Copies the app-authored example ('https://server.example', the ssh -L tunnel command, 'http://127.0.0.1:4096') to the clipboard and shows a copied/failed snackbar. One button per example (3).",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "external-agents",
    "title": "External agents",
    "kind": "screen",
@@ -21708,7 +21580,7 @@
   },
   {
    "id": "profile-editor",
-   "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token | OpenCode | Claude Code or Pi | Codex",
+   "title": "Add server | Connect with Tailscale | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token | OpenCode | Agents through Paseo | Codex",
    "kind": "screen",
    "area": "servers",
    "file": "lib/ui/screens/servers_screen.dart",
@@ -21717,7 +21589,7 @@
     "_edit"
    ],
    "line": 1110,
-   "purpose": "Full-screen server editor and, on the first-run computer path, the one connect screen for the chosen agent (rebuilt for ledger row 15, motion slice B 2026-09-25): a drawing of this phone and the computer linking up (with the verdicts under it), the type as one choice of three rows (new servers off the first-run path), the command to run for that type, then for OpenCode pairing first (Scan code / Paste code) with the address and password folded under 'Enter the address instead'. Save & connect checks the connection by itself and explains what failed (with 'Save anyway'); Test connection is a tertiary text button.",
+   "purpose": "Add server in steps (P3.9: agent-choice and connection-help folded in): what runs there (three kinds, plus this phone, Tailscale and external agents), then Tailscale as a step when that is the way, then the address or pairing (the command to run, Scan code / Paste code, the address under 'Enter the address instead'), the check (its own step while it runs; Cancel after 8 s), and a ready moment ('<name> is connected', Open <name>). A 'Step n of 4' bar leads; Back walks the steps. An http:// address on the network explains itself inline and offers Tailscale. Editing a saved server, a password to re-enter and the phone's own server stay one form.",
    "reachedFrom": [
     {
      "page": "servers",
@@ -21736,25 +21608,17 @@
      "element": "servers-profile-row"
     },
     {
-     "page": "tailscale-setup",
-     "element": "tailscale-setup-continue"
-    },
-    {
      "page": "embedded-termux-running-server-entry",
      "element": null,
      "evidence": "lib/ui/widgets/termux_running_server_entry.dart:228"
     },
     {
-     "page": "agent-choice",
-     "element": "agent-choice-opencode"
+     "page": "servers-welcome",
+     "element": "servers-welcome-connect"
     },
     {
-     "page": "agent-choice",
-     "element": "agent-choice-paseo"
-    },
-    {
-     "page": "agent-choice",
-     "element": "agent-choice-codex"
+     "page": "guide",
+     "element": "guide-add-server"
     },
     {
      "page": "server-switcher-sheet",
@@ -21763,6 +21627,10 @@
     {
      "page": "system",
      "element": "system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-continue"
     }
    ],
    "gates": [
@@ -21781,58 +21649,6 @@
      "effect": "Cmd copy button: Clipboard.setData(SetupCommands.startFor(backend)) and a 'Copied' snackbar. The same button sits on each command inside 'Show the commands'.",
      "gates": [
       "widget.presetBackend != null (first-run computer path)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-editor-manual-address",
-     "type": "button",
-     "label": "Enter the address instead",
-     "key": "server-manual-address",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": null,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "KitExpandRow folding Server URL, 'Not on the same network?', Server password and Test connection for a new OpenCode server (pairing is the main path). Opens by itself when a check or a save needs one of its fields (empty address, a password to paste).",
-     "gates": [
-      "!_isCodex",
-      "widget.existing == null",
-      "!widget.tailscale",
-      "widget.initialUrl == null",
-      "!widget.focusPassword"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-editor-save-anyway",
-     "type": "link",
-     "label": "Save anyway",
-     "key": "server-save-anyway",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": null,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "On a failed check that Save & connect ran: _save(anyway: true) saves (and connects) without checking again.",
-     "gates": [
-      "the last failed check came from Save & connect"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-editor-link-drawing",
-     "type": "button",
-     "label": "Phone and computer linking (decorative)",
-     "key": "server-link-moment",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": null,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "KitIllustration(ServersLinkScene) at 240 dp with one line under it: idle (dotted gap), linking while pairing, checking or connecting (ambient: a dot travels the link; 'Checking <host>…' / 'Connecting to <host>…' / 'Pairing…'), linked with a spark when the server answered, broken when it did not. The verdicts sit under it; every check and save scrolls back to it.",
-     "gates": [
-      "widget.existing == null"
      ],
      "destructive": false
     },
@@ -22112,7 +21928,7 @@
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "Sets _backend = ServerBackend.openCode and invalidates the probe; shows pairing actions, Server URL, display name, username, password and the AI Team section.",
+     "effect": "Answers the first step: acts on tap and opens the connect step for that kind.",
      "gates": [
       "widget.existing == null",
       "!widget.tailscale",
@@ -22131,7 +21947,7 @@
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "Sets _backend = ServerBackend.codex and invalidates the probe; swaps the form to display name, server address (ws/wss), project folder and connection token; hides pairing, username/password and AI Team.",
+     "effect": "Answers the first step: acts on tap and opens the connect step for that kind.",
      "gates": [
       "widget.existing == null",
       "!widget.tailscale",
@@ -22149,7 +21965,7 @@
      "line": 2260,
      "action": "other",
      "target": null,
-     "effect": "setState: _backend = ServerBackend.paseo; _invalidateProbe().",
+     "effect": "Answers the first step: acts on tap and opens the connect step for that kind.",
      "gates": [
       "widget.existing == null",
       "!widget.tailscale",
@@ -22262,6 +22078,72 @@
      "destructive": false
     },
     {
+     "id": "profile-editor-save-anyway",
+     "type": "link",
+     "label": "Save anyway",
+     "key": "server-save-anyway",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2558,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "On a failed check that Save & connect ran: _save(anyway: true) saves (and connects) without checking again.",
+     "gates": [
+      "the last failed check came from Save & connect"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-link-drawing",
+     "type": "button",
+     "label": "Phone and computer linking (decorative)",
+     "key": "server-link-moment",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2591,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitIllustration(ServersLinkScene) at 240 dp with one line under it: idle (dotted gap), linking while pairing, checking or connecting (ambient: a dot travels the link; 'Checking <host>…' / 'Connecting to <host>…' / 'Pairing…'), linked with a spark when the server answered, broken when it did not. The verdicts sit under it; every check and save scrolls back to it.",
+     "gates": [
+      "widget.existing == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-remote-http-tailscale",
+     "type": "button",
+     "label": "Use Tailscale",
+     "key": "server-remote-http-tailscale",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2650,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Under the error for an http:// address on the network: opens the Tailscale step.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-manual-address",
+     "type": "button",
+     "label": "Enter the address instead",
+     "key": "server-manual-address",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2726,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitExpandRow folding Server URL, 'Not on the same network?', Server password and Test connection for a new OpenCode server (pairing is the main path). Opens by itself when a check or a save needs one of its fields (empty address, a password to paste).",
+     "gates": [
+      "!_isCodex",
+      "widget.existing == null",
+      "!widget.tailscale",
+      "widget.initialUrl == null",
+      "!widget.focusPassword"
+     ],
+     "destructive": false
+    },
+    {
      "id": "profile-editor-show-commands",
      "type": "list-tile",
      "label": "Show the commands",
@@ -22274,6 +22156,76 @@
      "gates": [
       "widget.presetBackend != null (first-run computer path)"
      ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-check-cancel",
+     "type": "button",
+     "label": "Stop checking",
+     "key": "server-check-cancel",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2779,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Offered after a check or pairing has run 8 s; the late answer is ignored.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-tailscale-continue",
+     "type": "button",
+     "label": "Continue to authentication",
+     "key": "server-tailscale-continue",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 3198,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Tailscale step -> connect step with the tailnet address rules.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-ready-open",
+     "type": "button",
+     "label": "Open <name>",
+     "key": "server-ready-open",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 3204,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Ready step: closes Add server and lands on Home for the new server.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-back",
+     "type": "icon-button",
+     "label": "Back",
+     "key": "server-editor-back",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 3239,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "A step back within Add server (connect -> Tailscale -> first step); typed secrets are held, never refilled.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-tailscale-row",
+     "type": "list-tile",
+     "label": "Connect with Tailscale",
+     "key": "welcome-tailscale-card",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 3668,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "First step's other way: moves to the Tailscale step (the phone's app and VPN checklist), OpenCode over the tailnet.",
+     "gates": [],
      "destructive": false
     }
    ],
@@ -37444,16 +37396,16 @@
    "gates": [],
    "elements": [
     {
-     "id": "guide-connection-help",
-     "type": "list-tile",
-     "label": "Connection help",
-     "key": null,
+     "id": "guide-add-server",
+     "type": "button",
+     "label": "Add server",
+     "key": "guide-add-server",
      "file": "lib/ui/screens/guide_screen.dart",
      "line": 73,
      "action": "navigate",
-     "target": "connection-help",
-     "targetWidget": "ConnectionHelpScreen",
-     "effect": "Pushes const ConnectionHelpScreen().",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "Opens '/servers' with ServersRouteRequest.add(): Add server itself, the same flow as the Servers page (P3.9).",
      "gates": [],
      "destructive": false
     },
@@ -37592,9 +37544,9 @@
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 957,
      "action": "navigate",
-     "target": "agent-choice",
-     "targetWidget": "AgentChoiceScreen",
-     "effect": "_computerPath() pushes AgentChoiceScreen; its answer opens the profile editor preset to that backend.",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "_edit(): opens Add server at its first step (what runs there), the same flow as the list's Add server (P3.9).",
      "gates": [
       "disabled while _busy"
      ],
@@ -40162,7 +40114,7 @@
    {
     "from": "servers-welcome",
     "element": "servers-welcome-connect",
-    "to": "agent-choice"
+    "to": "profile-editor"
    },
    {
     "from": "servers-welcome",
@@ -40173,21 +40125,6 @@
     "from": "servers-welcome",
     "element": "servers-welcome-try-demo",
     "to": "demo"
-   },
-   {
-    "from": "agent-choice",
-    "element": "agent-choice-opencode",
-    "to": "profile-editor"
-   },
-   {
-    "from": "agent-choice",
-    "element": "agent-choice-paseo",
-    "to": "profile-editor"
-   },
-   {
-    "from": "agent-choice",
-    "element": "agent-choice-codex",
-    "to": "profile-editor"
    },
    {
     "from": "profile-editor",
@@ -41331,8 +41268,8 @@
    },
    {
     "from": "guide",
-    "element": "guide-connection-help",
-    "to": "connection-help"
+    "element": "guide-add-server",
+    "to": "profile-editor"
    },
    {
     "from": "app-diagnostics",
