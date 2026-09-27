@@ -10,6 +10,7 @@ import 'package:opencode_mobile/api2/events.dart';
 import 'package:opencode_mobile/api2/gateway_events.dart';
 import 'package:opencode_mobile/api2/gateway_mappers.dart';
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -324,28 +325,131 @@ void main() {
     expect(f.ops.writes, isEmpty);
   });
 
-  testWidgets('remote change disables an open permanent-revert confirmation', (
+  // --- Pages (screen-review-2): stage-revert-sheet, staged-revert and
+  // staged-revert-confirm-sheet, rebuilt from kit parts.
+
+  testWidgets(
+    'a remote change closes an open "keep the undo" question and says so',
+    (tester) async {
+      final f = await setup(staged: stage('msg_1'));
+      await tester.pumpWidget(
+        app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('commit-staged-revert')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('staged-revert-confirm-sheet')),
+        findsOneWidget,
+      );
+      remote(f.controller, 'staged', messageID: 'msg_2');
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('staged-revert-confirm-sheet')),
+        findsNothing,
+      );
+      expect(find.text('The undo changed'), findsOneWidget);
+      expect(find.text('Review latest state'), findsOneWidget);
+      expect(f.ops.writes, isEmpty);
+    },
+  );
+
+  testWidgets('the page quotes the prompt, lists the files and offers two '
+      'outcomes that each say what happens', (tester) async {
+    final f = await setup(staged: stage('msg_1'));
+    await tester.pumpWidget(
+      app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Review the undo'), findsOneWidget);
+    expect(find.text('Update the settings screen'), findsOneWidget);
+    // The raw message id is gone (owner verdict: drop the id).
+    expect(find.text('msg_1'), findsNothing);
+    expect(find.text('main.dart'), findsOneWidget);
+    expect(find.text('Put everything back'), findsOneWidget);
+    expect(
+      find.text('Bring back the hidden messages and the files as they were.'),
+      findsOneWidget,
+    );
+    expect(find.text('Keep the undo'), findsOneWidget);
+    expect(
+      find.text("Delete the hidden messages for good. This can't be undone."),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('keeping the undo asks first, then says it is done', (
     tester,
   ) async {
     final f = await setup(staged: stage('msg_1'));
     await tester.pumpWidget(
-      MaterialApp(
-        home: StagedRevertScreen(controller: f.controller, sessionID: 'a'),
-      ),
+      app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('commit-staged-revert')));
     await tester.pumpAndSettle();
-    remote(f.controller, 'staged', messageID: 'msg_2');
-    await tester.pump();
-    expect(
-      tester
-          .widget<FilledButton>(
-            find.byKey(const ValueKey('confirm-staged-revert')),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(find.text('Keep the undo for good?'), findsOneWidget);
+    expect(find.text('The hidden messages are deleted'), findsOneWidget);
+    expect(find.text('Files stay as they are now'), findsOneWidget);
     expect(f.ops.writes, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('confirm-staged-revert')));
+    await tester.pumpAndSettle();
+    expect(f.ops.writes, ['commit:a']);
+    expect(find.text('Undo kept'), findsOneWidget);
+    expect(find.text('Back to the conversation'), findsOneWidget);
+  });
+
+  testWidgets('putting everything back names the files it replaces', (
+    tester,
+  ) async {
+    final f = await setup(staged: stage('msg_1'));
+    await tester.pumpWidget(
+      app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('clear-staged-revert')));
+    await tester.pumpAndSettle();
+    expect(find.text('Put everything back?'), findsOneWidget);
+    expect(
+      find.text('1 file is replaced, with any edits made since'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('confirm-staged-revert')));
+    await tester.pumpAndSettle();
+    expect(f.ops.writes, ['clear:a']);
+    expect(find.text('Everything is back'), findsOneWidget);
+  });
+
+  testWidgets('a failed "keep the undo" keeps the question open', (
+    tester,
+  ) async {
+    final f = await setup(staged: stage('msg_1'));
+    f.ops.committing = () async => throw StateError('server said no');
+    await tester.pumpWidget(
+      app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('commit-staged-revert')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirm-staged-revert')));
+    await tester.pumpAndSettle();
+    expect(f.ops.writes, ['commit:a']);
+    expect(find.text('Undo kept'), findsNothing);
+    // The question stays open (never a silent close on an error).
+    expect(
+      find.byKey(const ValueKey('staged-revert-confirm-sheet')),
+      findsOneWidget,
+    );
+    final cancel = find.byKey(const ValueKey('kit-confirm-cancel'));
+    await tester.ensureVisible(cancel);
+    await tester.pumpAndSettle();
+    await tester.tap(cancel);
+    await tester.pumpAndSettle();
+    // Back on the page, it says the act did not finish.
+    expect(
+      find.text('That didn\'t finish. Check the conversation, then try again.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('missing preview and large text remain usable at compact width', (
@@ -357,16 +461,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(2)),
-          child: child!,
-        ),
-        home: StagedRevertScreen(controller: f.controller, sessionID: 'a'),
+      app(
+        StagedRevertScreen(controller: f.controller, sessionID: 'a'),
+        textScale: 2,
       ),
     );
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.textContaining('did not provide a file preview'),
       200,
@@ -383,6 +483,114 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('clear-staged-revert')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('confirm-staged-revert')), findsOneWidget);
+    // No file list: the question cannot count the files it replaces.
+    expect(
+      find.text('Files in this undo are replaced, with any edits made since'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the undo sheet keeps the files choice and stays open when '
+      'setting up the undo fails', (tester) async {
+    final f = await setup();
+    bool? result;
+    final calls = <bool>[];
+    var fail = true;
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () async {
+                result = await showStageRevertSheet(
+                  context,
+                  controller: f.controller,
+                  review: f.controller.reviewSessionRevert('a'),
+                  prompt: 'Update the settings screen',
+                  stage: (applyFiles) async {
+                    calls.add(applyFiles);
+                    if (fail) throw StateError('boom');
+                  },
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo from this prompt?'), findsOneWidget);
+    expect(find.text('From this prompt'), findsOneWidget);
+    expect(find.text('Update the settings screen'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stage-revert-files')));
+    await tester.pump();
+    await tester.tap(find.text('Undo and review'));
+    await tester.pumpAndSettle();
+    expect(calls, [false]);
+    expect(
+      find.text("Couldn't set up the undo. Nothing was hidden."),
+      findsOneWidget,
+    );
+    expect(result, isNull);
+    expect(find.text('Undo from this prompt?'), findsOneWidget);
+    fail = false;
+    await tester.tap(find.text('Undo and review'));
+    await tester.pumpAndSettle();
+    expect(calls, [false, false]);
+    expect(result, isFalse);
+    expect(find.text('Undo from this prompt?'), findsNothing);
+  });
+
+  testWidgets('the undo sheet turns its primary off and says why while the '
+      'conversation is busy', (tester) async {
+    final f = await setup();
+    f.controller.busySessions.add('a');
+    bool? result;
+    var closed = false;
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () async {
+                result = await showStageRevertSheet(
+                  context,
+                  controller: f.controller,
+                  review: f.controller.reviewSessionRevert('a'),
+                  prompt: 'Update the settings screen',
+                );
+                closed = true;
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Wait for the current conversation action to finish.'),
+      findsWidgets,
+    );
+    await tester.tap(find.text('Undo and review'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(closed, isFalse);
+    expect(result, isNull);
+  });
 }
+
+Widget app(Widget home, {double textScale = 1}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(
+      context,
+    ).copyWith(textScaler: TextScaler.linear(textScale)),
+    child: child!,
+  ),
+  home: home,
+);

@@ -27576,5 +27576,210 @@
   "messageViewContinueReply": "Continue this reply",
   "@messageViewContinueReply": {
     "description": "Chat error action after an answer was cut off by the output limit: asks the agent to continue the same reply (chat-1)."
+  },
+  "reviewRunResultsLoadingTitle": "Loading run results",
+  "@reviewRunResultsLoadingTitle": {
+    "description": "Run results page: title of the loading state while the run's history is read from the server; also the loading bar's label during a refresh."
+  },
+  "reviewRunResultsErrorTitle": "Couldn't load run results",
+  "@reviewRunResultsErrorTitle": {
+    "description": "Run results page: title of the error state when the run's history could not be read."
+  },
+  "reviewRunResultsErrorBody": "The server didn't send this run's history.",
+  "@reviewRunResultsErrorBody": {
+    "description": "Run results page: error state body when only a raw error is known (the raw text is behind Details)."
+  },
+  "reviewRunResultsEmptyTitle": "Nothing to show yet",
+  "@reviewRunResultsEmptyTitle": {
+    "description": "Run results page: title of the empty state when the latest turn has no assistant step yet."
+  },
+  "reviewRunResultsScopeChangedTitle": "The project changed",
+  "@reviewRunResultsScopeChangedTitle": {
+    "description": "Run results page: title shown when the server or project changed while the page was open, so its result no longer applies."
+  },
+  "reviewRunResultsCloseAction": "Close run results",
+  "@reviewRunResultsCloseAction": {
+    "description": "Run results page, project changed state: button that closes the page."
+  },
+  "reviewRunResultsRunningNotice": "Still running. This shows what it has done so far; pull down for the latest.",
+  "@reviewRunResultsRunningNotice": {
+    "description": "Run results page: notice above the result while the run is still going."
+  },
+  "reviewRunResultsRefreshFailed": "Couldn't refresh. This is what was loaded before.",
+  "@reviewRunResultsRefreshFailed": {
+    "description": "Run results page: notice above the kept result when a refresh failed."
+  },
+  "reviewRunResultsReviewChanges": "Review changed files",
+  "@reviewRunResultsReviewChanges": {
+    "description": "Run results page: pinned button that opens the review of the project's changes at the first file this run changed."
+  },
+  "reviewRevertSheetTitle": "Undo from this prompt?",
+  "@reviewRevertSheetTitle": {
+    "description": "Sheet opened from a prompt's menu in a conversation: asks whether to undo the conversation from this prompt (a staged revert)."
+  },
+  "reviewRevertSheetBody": "This prompt and everything after it are hidden while you review. Nothing is final until you choose.",
+  "@reviewRevertSheetBody": {
+    "description": "Undo-from-prompt sheet: what happens to the conversation when the undo is set up."
+  },
+  "reviewRevertPromptLabel": "From this prompt",
+  "@reviewRevertPromptLabel": {
+    "description": "Undo sheet and Review the undo page: label above the quoted prompt the undo starts from."
+  },
+  "reviewRevertFilesToggle": "Put files back too",
+  "@reviewRevertFilesToggle": {
+    "description": "Undo-from-prompt sheet: switch that also returns the files the later prompts changed."
+  },
+  "reviewRevertFilesToggleHint": "Files go back to how they were before this prompt.",
+  "@reviewRevertFilesToggleHint": {
+    "description": "Undo-from-prompt sheet: one line under the files switch saying what it does."
+  },
+  "reviewRevertSheetAction": "Undo and review",
+  "@reviewRevertSheetAction": {
+    "description": "Undo-from-prompt sheet: primary button that sets up the undo and opens its review."
+  },
+  "reviewRevertStageFailed": "Couldn't set up the undo. Nothing was hidden.",
+  "@reviewRevertStageFailed": {
+    "description": "Undo-from-prompt sheet: notice when setting up the undo failed; the sheet stays open."
+  },
+  "reviewRevertScreenTitle": "Review the undo",
+  "@reviewRevertScreenTitle": {
+    "description": "Title of the page that reviews a staged undo (revert) before it is kept or put back."
+  },
+  "reviewRevertScreenIntro": "This prompt and everything after it are hidden. Nothing is final until you choose below.",
+  "@reviewRevertScreenIntro": {
+    "description": "Review the undo page: first line, saying what is hidden and that nothing is final yet."
+  },
+  "reviewRevertFilesLabel": "Files in this undo",
+  "@reviewRevertFilesLabel": {
+    "description": "Review the undo page: label above the list of files the server lists for this undo."
+  },
+  "reviewRevertNoFiles": "No files change with this undo.",
+  "@reviewRevertNoFiles": {
+    "description": "Review the undo page: the files list when the server reports no file changes."
+  },
+  "reviewRevertFileLines": "+{added} −{removed}",
+  "@reviewRevertFileLines": {
+    "description": "Technical: Review the undo page, a file row: lines added and removed in the file.",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRevertFileSupporting": "{folder} · {lines}",
+  "@reviewRevertFileSupporting": {
+    "description": "Technical: Review the undo page, a file row's second line: the file's folder, then its added and removed lines.",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewRevertChooseLabel": "Choose what happens",
+  "@reviewRevertChooseLabel": {
+    "description": "Review the undo page: label above the two outcomes (put everything back, keep the undo)."
+  },
+  "reviewRevertRestoreTitle": "Put everything back",
+  "@reviewRevertRestoreTitle": {
+    "description": "Review the undo page: outcome row, and its confirmation button, that clears the staged undo and brings the conversation and files back."
+  },
+  "reviewRevertRestoreLine": "Bring back the hidden messages and the files as they were.",
+  "@reviewRevertRestoreLine": {
+    "description": "Review the undo page: one line under Put everything back saying what happens."
+  },
+  "reviewRevertKeepTitle": "Keep the undo",
+  "@reviewRevertKeepTitle": {
+    "description": "Review the undo page: outcome row that makes the undo permanent."
+  },
+  "reviewRevertKeepLine": "Delete the hidden messages for good. This can't be undone.",
+  "@reviewRevertKeepLine": {
+    "description": "Review the undo page: one line under Keep the undo saying what happens and that it is permanent."
+  },
+  "reviewRevertKeepConfirmTitle": "Keep the undo for good?",
+  "@reviewRevertKeepConfirmTitle": {
+    "description": "Confirmation before making the undo permanent."
+  },
+  "reviewRevertKeepConfirmBody": "The hidden prompt and everything after it are deleted from this conversation. This can't be undone.",
+  "@reviewRevertKeepConfirmBody": {
+    "description": "Confirmation before making the undo permanent: what happens and that it cannot be undone."
+  },
+  "reviewRevertKeepConfirmAction": "Delete hidden messages",
+  "@reviewRevertKeepConfirmAction": {
+    "description": "Confirmation before making the undo permanent: the confirm button."
+  },
+  "reviewRevertKeepConsequenceMessages": "The hidden messages are deleted",
+  "@reviewRevertKeepConsequenceMessages": {
+    "description": "Confirmation before making the undo permanent: what is lost."
+  },
+  "reviewRevertKeepConsequenceFiles": "Files stay as they are now",
+  "@reviewRevertKeepConsequenceFiles": {
+    "description": "Confirmation before making the undo permanent: what is kept."
+  },
+  "reviewRevertRestoreConfirmTitle": "Put everything back?",
+  "@reviewRevertRestoreConfirmTitle": {
+    "description": "Confirmation before clearing the staged undo."
+  },
+  "reviewRevertRestoreConfirmBody": "The hidden messages come back, and the files in this undo return to how they were when you set it up. You can undo from a prompt again later.",
+  "@reviewRevertRestoreConfirmBody": {
+    "description": "Confirmation before clearing the staged undo: what happens and that another undo is possible."
+  },
+  "reviewRevertRestoreConsequenceMessages": "The hidden messages come back",
+  "@reviewRevertRestoreConsequenceMessages": {
+    "description": "Confirmation before clearing the staged undo: what is kept."
+  },
+  "reviewRevertRestoreConsequenceFiles": "{count, plural, =1{1 file is replaced, with any edits made since} other{{count} files are replaced, with any edits made since}}",
+  "@reviewRevertRestoreConsequenceFiles": {
+    "description": "Confirmation before clearing the staged undo: files overwritten by the saved copy, including later edits.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRevertRestoreConsequenceUnknownFiles": "Files in this undo are replaced, with any edits made since",
+  "@reviewRevertRestoreConsequenceUnknownFiles": {
+    "description": "Confirmation before clearing the staged undo when the server sent no file list."
+  },
+  "reviewRevertStaleTitle": "The undo changed",
+  "@reviewRevertStaleTitle": {
+    "description": "Review the undo page: title when the conversation or its undo changed on the server while the page was open."
+  },
+  "reviewRevertNoneTitle": "Nothing to review",
+  "@reviewRevertNoneTitle": {
+    "description": "Review the undo page: title when there is no staged undo."
+  },
+  "reviewRevertNoneBody": "There's no undo waiting in this conversation.",
+  "@reviewRevertNoneBody": {
+    "description": "Review the undo page: body when there is no staged undo."
+  },
+  "reviewRevertBackAction": "Back to the conversation",
+  "@reviewRevertBackAction": {
+    "description": "Review the undo page: button that returns to the conversation (done, nothing staged, changed)."
+  },
+  "reviewRevertKeptTitle": "Undo kept",
+  "@reviewRevertKeptTitle": {
+    "description": "Review the undo page: done state after the undo was made permanent."
+  },
+  "reviewRevertKeptBody": "The hidden messages are deleted. Files stay as they are.",
+  "@reviewRevertKeptBody": {
+    "description": "Review the undo page: body of the done state after the undo was made permanent."
+  },
+  "reviewRevertRestoredTitle": "Everything is back",
+  "@reviewRevertRestoredTitle": {
+    "description": "Review the undo page: done state after the staged undo was cleared."
+  },
+  "reviewRevertRestoredBody": "The messages and files are back as they were.",
+  "@reviewRevertRestoredBody": {
+    "description": "Review the undo page: body of the done state after the staged undo was cleared."
+  },
+  "reviewRevertFailed": "That didn't finish. Check the conversation, then try again.",
+  "@reviewRevertFailed": {
+    "description": "Review the undo page: notice when keeping or putting back the undo failed; the raw reason is behind Details."
   }
 }
