@@ -22484,4 +22484,58 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tailscaleSetupContinueReason =>
       'Enter your server’s address first.';
+
+  @override
+  String get kitDateSet => 'Set date';
+
+  @override
+  String get kitTimeSet => 'Set time';
+
+  @override
+  String get kitDateTimeSet => 'Set';
+
+  @override
+  String get kitDateType => 'Type a date';
+
+  @override
+  String get kitDateCalendar => 'Show calendar';
+
+  @override
+  String kitDateFormatHint(String example) {
+    return 'e.g. $example';
+  }
+
+  @override
+  String get kitDateField => 'Date';
+
+  @override
+  String get kitDateInvalid => 'Not a date';
+
+  @override
+  String kitDateOutOfRange(String first, String last) {
+    return 'Pick a date between $first and $last';
+  }
+
+  @override
+  String get kitTimeHour => 'Hour';
+
+  @override
+  String get kitTimeMinute => 'Minute';
+
+  @override
+  String get kitTimePeriod => 'Morning or afternoon';
+
+  @override
+  String get kitTimeInvalid => 'Not a time';
+
+  @override
+  String get kitDateTimeNotSet => 'Not set';
+
+  @override
+  String kitDateTimeClear(String title) {
+    return 'Clear $title';
+  }
+
+  @override
+  String get kitDateUnavailable => 'That day can’t be chosen';
 }
