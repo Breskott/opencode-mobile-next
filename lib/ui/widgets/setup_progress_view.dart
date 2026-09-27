@@ -1,25 +1,27 @@
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_checklist.dart';
+import '../kit/kit_log_panel.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_status_mark.dart';
 import '../kit/scenes/setup_steps_scene.dart';
-import 'terminal_view.dart';
 
 /// The progress of any setup job as one state (design standard §3, §4,
-/// §10): a drawing of the journey (cloud, parcel, phone) lit as far as the
-/// job has come, a title that says where the job stands, one overall bar
-/// with one line under it, a checklist of the job's components, the one
-/// action that fits (Continue setup, or Cancel while it runs) and the live
-/// log under "Details" (docs/design/phone-setup-v2-2026-09-24.md, goal 3).
-///
-/// With room, the head (drawing, title, bar) stays put while the steps and
-/// the log scroll under it; the log is one box, one line per line (design
-/// regressions ledger row 16).
+/// §10), now a thin adapter over the kit (KitChecklist.md, C24): it maps
+/// [SetupProgress] and [SetupComponent] onto a [KitStateView] (the drawing
+/// of the journey, a title that says where the job stands, a body, one
+/// overall bar) whose content is a [KitChecklist] (a mark per component,
+/// Continue setup or Cancel, the live log folded under Details). The kit
+/// must not import `lib/builtin/`, so the mapping stays here.
 ///
 /// It knows nothing about where it is shown: no Scaffold, no navigation, no
 /// engine. First setup hosts it on screen B; "Add tools" and updates host
@@ -137,19 +139,29 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   double _furthest = 0;
   String _jobKey = '';
 
-  /// True for the one update in which a new job started: the bar takes the
-  /// new job's value at once instead of easing backwards from the old end.
-  bool _jump = false;
+  /// Bumped when a new job starts: the state is built afresh, so the bar
+  /// takes the new job's value at once instead of easing backwards from the
+  /// old end (KitProgress: "a new job is a new KitProgressView").
+  int _generation = 0;
 
-  /// The live log under "Details", folded until asked for.
-  bool _detailsOpen = false;
-  final _logKey = GlobalKey();
+  /// The job's log, for the kit's one log panel under Details.
+  final _log = KitLogBuffer();
+  String _logText = '';
+
+  /// When the engine last reported progress: the working row escalates
+  /// after 8 s without a new report (STATE-5).
+  late DateTime _lastReport;
+  String _signature = '';
 
   @override
   void initState() {
     super.initState();
-    _jobKey = _keyOf(widget.progress);
-    _furthest = widget.progress.overall.clamp(0, 1).toDouble();
+    final progress = widget.progress;
+    _jobKey = _keyOf(progress);
+    _furthest = progress.overall.clamp(0, 1).toDouble();
+    _lastReport = clock.now();
+    _signature = _signatureOf(progress);
+    _syncLog(progress);
   }
 
   @override
@@ -163,13 +175,32 @@ class _SetupProgressViewState extends State<SetupProgressView> {
         next.state == SetupState.running &&
         (old.progress.state == SetupState.done ||
             old.progress.state == SetupState.idle);
-    _jump = key != _jobKey || restarted;
-    if (_jump) {
+    if (key != _jobKey || restarted) {
       _jobKey = key;
+      _generation++;
       _furthest = next.overall.clamp(0, 1).toDouble();
     } else {
       _furthest = math.max(_furthest, next.overall.clamp(0, 1).toDouble());
     }
+    final signature = _signatureOf(next);
+    if (signature != _signature) {
+      _signature = signature;
+      _lastReport = clock.now();
+    }
+    _syncLog(next);
+  }
+
+  @override
+  void dispose() {
+    _log.dispose();
+    super.dispose();
+  }
+
+  void _syncLog(SetupProgress progress) {
+    final text = progress.logTail.trimRight();
+    if (text == _logText) return;
+    _logText = text;
+    _log.replaceText(text);
   }
 
   // The engine names each job; the component list is only the fallback for
@@ -177,10 +208,19 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   static String _keyOf(SetupProgress progress) =>
       progress.jobId ?? progress.components.map((c) => c.id).join(',');
 
+  /// What counts as news from the engine: the bar, the current component,
+  /// and each row's state, stage and measured amount.
+  static String _signatureOf(SetupProgress progress) => [
+    progress.state.name,
+    progress.overall,
+    progress.current,
+    for (final c in progress.components)
+      '${c.id}:${c.state.name}:${c.stage}:${c.bytesDone}:${c.percent}',
+  ].join('|');
+
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final progress = widget.progress;
     final rows = progress.components.isNotEmpty
         ? progress.components
@@ -199,10 +239,6 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     final running = !failed && !stopped && !done;
     final network = failed && _looksLikeNetwork(progress);
     final title = widget.title ?? l10n.phoneSetupProgressTitle;
-
-    // The drawing at the head says the same as the title and the rows, so
-    // it stays decorative (design standard §10).
-    final scene = SetupProgressView.sceneFor(l10n, progress, rows);
 
     // A job can fail between components (the server start after the last
     // install): the body says why even though no row carries it.
@@ -227,97 +263,63 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       body = null;
     }
 
-    final checklist = Column(
-      key: const Key('setup-progress-checklist'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    final checklist = KitChecklist(
+      checklistKey: const Key('setup-progress-checklist'),
+      detailsKey: const Key('setup-progress-details'),
+      steps: [
         for (final row in rows)
-          _ComponentRow(
+          KitStep(
             key: ValueKey('setup-progress-row-${row.id}'),
-            row: row,
             title: _titleOf(row.id),
-            failure: row.state == ComponentState.failed
+            state: _markOf(row.state),
+            supporting: row.state == ComponentState.failed
                 ? _failureText(l10n, progress, row, network)
-                : null,
-            reduceMotion: reduceMotion,
+                : _detail(l10n, row),
           ),
       ],
-    );
-
-    final theme = Theme.of(context);
-    final actions = KitActionBlock(
-      primary: progress.canContinue && widget.onContinue != null
+      since: running ? _lastReport : null,
+      resume: progress.canContinue && widget.onContinue != null
           ? KitAction(
               key: const Key('setup-progress-continue'),
               label: l10n.setupProgressViewContinue,
               onPressed: widget.onContinue,
             )
           : null,
-      tertiary: [
-        if (running && widget.onCancel != null)
-          KitAction(
-            key: const Key('setup-progress-cancel'),
-            label: l10n.setupProgressViewCancel,
-            onPressed: widget.onCancel,
-            destructive: true,
-          ),
-      ],
+      stop: running && widget.onCancel != null
+          ? KitAction(
+              key: const Key('setup-progress-cancel'),
+              label: l10n.setupProgressViewCancel,
+              onPressed: widget.onCancel,
+              // Stopping drops the component being installed.
+              destructive: true,
+            )
+          : null,
+      log: KitLogPanel(
+        panelKey: const Key('setup-progress-log'),
+        lines: _log,
+        live: running,
+        emptyText: l10n.setupProgressViewNoLog,
+      ),
     );
 
-    // What the job is made of and what can be done about it; under a
-    // hairline, the technical Details, folded (design standard §3.6).
-    final steps = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        checklist,
-        if (!actions.isEmpty) ...[const SizedBox(height: 12), actions],
-        const SizedBox(height: 16),
-        Divider(height: 1, color: AppTheme.hairline(theme)),
-        const SizedBox(height: 8),
-        KitInset(
-          child: TextButton.icon(
-            key: const Key('setup-progress-details'),
-            onPressed: _toggleDetails,
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.mutedOf(theme),
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(
-                horizontal: KitButton.tertiaryInset,
-              ),
-            ),
-            icon: Icon(
-              _detailsOpen
-                  ? AppIconography.chevronUp
-                  : AppIconography.chevronDown,
-              size: 18,
-            ),
-            label: Text(
-              _detailsOpen ? l10n.e7SetupHideDetails : l10n.e7SetupDetails,
-            ),
-          ),
-        ),
-        if (_detailsOpen) _logPanel(context, l10n, progress),
-      ],
-    );
-
-    // The bar eases towards the furthest point; the first build and a new
-    // job draw the value as is.
-    final head = TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: _furthest),
-      duration: reduceMotion || _jump
-          ? Duration.zero
-          : const Duration(milliseconds: 700),
-      curve: Curves.easeOutCubic,
-      builder: (context, shown, _) => _Head(
-        scene: scene,
-        ambient: running,
+    return KeyedSubtree(
+      key: ValueKey('setup-progress-job-$_generation'),
+      child: KitStateView(
+        icon: failed ? AppIconography.error : AppIconography.download,
+        tone: failed ? AppStatusTone.failure : AppStatusTone.neutral,
+        // The drawing says the same as the title and the rows, so it stays
+        // decorative (design standard §10).
+        illustration: SetupProgressView.sceneFor(l10n, progress, rows),
+        illustrationAmbient: running,
+        illustrationWidth: 264,
         title: failed || stopped ? l10n.setupProgressViewFailedTitle : title,
+        titleKey: const Key('setup-progress-title'),
         body: body,
         bodyKey: bodyKey,
+        // The checklist's own summary is the job's live region (A11Y-3).
+        liveRegion: false,
         progress: KitProgress.known(
-          shown,
+          _furthest,
           key: const Key('setup-progress-overall'),
           tone: failed
               ? AppStatusTone.failure
@@ -327,112 +329,17 @@ class _SetupProgressViewState extends State<SetupProgressView> {
           semanticsLabel: l10n.setupProgressViewOverallLabel,
           caption: running || done ? _timeLine(l10n, progress) : null,
         ),
+        content: checklist,
       ),
     );
-
-    final bottom = 16 + MediaQuery.paddingOf(context).bottom;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // The title and the bar stay in view while the steps and the log
-        // scroll under them (ledger row 16), when there is room for that:
-        // on a short screen or at large text everything scrolls together,
-        // so the head never takes the screen.
-        final pinned =
-            constraints.hasBoundedHeight &&
-            constraints.maxHeight >= 560 &&
-            MediaQuery.textScalerOf(context).scale(14) <= 14 * 1.3;
-        if (!pinned) {
-          return SingleChildScrollView(
-            key: const Key('setup-progress-scroll'),
-            padding: EdgeInsets.fromLTRB(16, 8, 16, bottom),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [head, const SizedBox(height: 20), steps],
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              key: const Key('setup-progress-head'),
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: head,
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                key: const Key('setup-progress-scroll'),
-                padding: EdgeInsets.fromLTRB(16, 4, 16, bottom),
-                child: steps,
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
-  void _toggleDetails() {
-    setState(() => _detailsOpen = !_detailsOpen);
-    if (!_detailsOpen) return;
-    // Opening the log brings it into view, under the head that stays.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final panel = _logKey.currentContext;
-      if (panel == null || !panel.mounted) return;
-      Scrollable.ensureVisible(
-        panel,
-        alignment: 1,
-        duration: MediaQuery.disableAnimationsOf(panel)
-            ? Duration.zero
-            : KitMotion.standard,
-        curve: KitMotion.enter,
-      );
-    });
-  }
-
-  /// The live log as one box: the panel's tint and nothing inside drawing
-  /// another. Mono at the small size, one line per line (long apt lines
-  /// scroll sideways), newest at the bottom and followed as it grows.
-  Widget _logPanel(
-    BuildContext context,
-    AppLocalizations l10n,
-    SetupProgress progress,
-  ) {
-    final theme = Theme.of(context);
-    final log = progress.logTail.trimRight();
-    final height = MediaQuery.sizeOf(context).height;
-    return Container(
-      key: _logKey,
-      margin: const EdgeInsets.only(top: 4, bottom: 12),
-      constraints: BoxConstraints(maxHeight: math.max(200, height * .42)),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: log.isEmpty
-          ? Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                l10n.setupProgressViewNoLog,
-                key: const Key('setup-progress-log'),
-                style: theme.textTheme.bodySmall,
-              ),
-            )
-          // Logs are left-to-right whatever the app's direction; flipping
-          // them would scramble paths and flags. Reversed, the view starts
-          // at the end and stays there as lines arrive.
-          : SingleChildScrollView(
-              reverse: true,
-              padding: const EdgeInsets.all(12),
-              child: Directionality(
-                key: const Key('setup-progress-log'),
-                textDirection: TextDirection.ltr,
-                child: TerminalView(output: log, framed: false, wrap: false),
-              ),
-            ),
-    );
-  }
+  static KitMarkState _markOf(ComponentState state) => switch (state) {
+    ComponentState.done || ComponentState.skipped => KitMarkState.done,
+    ComponentState.running || ComponentState.checking => KitMarkState.working,
+    ComponentState.failed => KitMarkState.failed,
+    ComponentState.pending => KitMarkState.waiting,
+  };
 
   /// Where the job is, as the drawing shows it: OpenCode starting, a
   /// download (bytes still arriving), an unpack, or an install.
@@ -515,6 +422,42 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     return l10n.setupProgressViewMinutesLeft((eta / 60).round());
   }
 
+  /// A row's supporting line, from the row's own signal only: the version
+  /// once done, the stage and the measured amount while it works.
+  static String? _detail(AppLocalizations l10n, ComponentProgress row) {
+    switch (row.state) {
+      case ComponentState.done || ComponentState.skipped:
+        return row.version;
+      case ComponentState.pending || ComponentState.failed:
+        return null;
+      case ComponentState.running || ComponentState.checking:
+        break;
+    }
+    final measured = _measured(l10n, row);
+    final stage =
+        row.stage ??
+        (row.state == ComponentState.checking
+            ? l10n.setupProgressViewChecking
+            : null);
+    if (measured != null && stage != null) {
+      return l10n.setupProgressViewStageMeasured(stage, measured);
+    }
+    return measured ?? stage ?? l10n.setupProgressViewStarting;
+  }
+
+  static String? _measured(AppLocalizations l10n, ComponentProgress row) {
+    final total = row.bytesTotal;
+    final done = row.bytesDone;
+    if (total != null && total > 0 && done != null) {
+      final (d, t) = SetupProgressView.formatBytePair(done, total);
+      return l10n.setupProgressViewBytes(d, t);
+    }
+    if (row.percent case final percent?) {
+      return l10n.setupProgressViewPercent(percent.clamp(0, 100).floor());
+    }
+    return null;
+  }
+
   String _failureText(
     AppLocalizations l10n,
     SetupProgress progress,
@@ -545,241 +488,6 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     ];
     return texts.any(
       (text) => text != null && SetupProgressView.networkError.hasMatch(text),
-    );
-  }
-}
-
-/// The head of the progress: the drawing, the title, one line and the bar,
-/// in [KitStateView]'s order and type (design standard §3, §10), laid out
-/// so the host can keep it in view while the steps scroll.
-class _Head extends StatelessWidget {
-  const _Head({
-    required this.scene,
-    required this.ambient,
-    required this.title,
-    required this.body,
-    required this.bodyKey,
-    required this.progress,
-  });
-
-  final KitScene scene;
-  final bool ambient;
-  final String title;
-  final String? body;
-  final Key? bodyKey;
-  final KitProgress progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final body = this.body;
-    return Semantics(
-      container: true,
-      // Each row speaks for itself when setup moves on; the head announcing
-      // every byte would drown that out.
-      liveRegion: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: LayoutBuilder(
-              builder: (context, constraints) => KitIllustration(
-                key: const Key('setup-progress-scene'),
-                scene: scene,
-                width: math.min(constraints.maxWidth, 264),
-                ambient: ambient,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            key: const Key('setup-progress-title'),
-            style: theme.textTheme.titleLarge,
-          ),
-          if (body != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              body,
-              key: bodyKey,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                height: 1.4,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          KitProgressView(progress: progress),
-        ],
-      ),
-    );
-  }
-}
-
-/// One component of the job, as a [KitRow]: its state mark, its title, and
-/// what it is doing on the trailing side ("Downloading · 18 of 30 MB", or
-/// the version once done). With large text the detail moves under the
-/// title instead of squeezing it; a failure is said under the title.
-class _ComponentRow extends StatelessWidget {
-  const _ComponentRow({
-    super.key,
-    required this.row,
-    required this.title,
-    required this.failure,
-    required this.reduceMotion,
-  });
-
-  final ComponentProgress row;
-  final String title;
-  final String? failure;
-  final bool reduceMotion;
-
-  bool get _active =>
-      row.state == ComponentState.running ||
-      row.state == ComponentState.checking;
-
-  bool get _finished =>
-      row.state == ComponentState.done || row.state == ComponentState.skipped;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final muted = AppTheme.mutedOf(theme);
-    final detail = _detail(l10n);
-    final stacked = AppTheme.stackedActions(context);
-    final detailKey = Key('setup-progress-detail-${row.id}');
-    final failure = this.failure;
-
-    final InlineSpan? supporting = failure != null
-        ? TextSpan(
-            text: failure,
-            style: TextStyle(
-              color: AppTheme.statusColor(theme, AppStatusTone.failure),
-            ),
-          )
-        : stacked && detail != null
-        ? TextSpan(
-            text: detail,
-            style: const TextStyle(
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          )
-        : null;
-
-    final content = KitRow(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      leading: _mark(),
-      title: title,
-      supporting: supporting,
-      supportingMaxLines: 4,
-      supportingKey: failure != null
-          ? Key('setup-progress-error-${row.id}')
-          : stacked
-          ? detailKey
-          : null,
-      trailing: !stacked && detail != null
-          ? Padding(
-              padding: const EdgeInsetsDirectional.only(start: 12),
-              child: Text(
-                detail,
-                key: detailKey,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: muted,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            )
-          : null,
-    );
-
-    // The label changes with the stage or the state, not with each byte, so
-    // the live region speaks when setup moves on rather than twice a second.
-    // Byte and percent figures ride on the value, read on focus only.
-    final state = switch (row.state) {
-      ComponentState.done ||
-      ComponentState.skipped => l10n.setupProgressViewStateDone,
-      ComponentState.running ||
-      ComponentState.checking => l10n.setupProgressViewStateRunning,
-      ComponentState.pending => l10n.setupProgressViewStatePending,
-      ComponentState.failed => l10n.setupProgressViewStateFailed,
-    };
-    final label = [
-      title,
-      state,
-      if (_active && row.stage != null) row.stage!,
-      ?failure,
-      if (_finished && row.version != null) row.version!,
-    ].join(', ');
-    return Semantics(
-      container: true,
-      liveRegion: _active || row.state == ComponentState.failed,
-      label: label,
-      value: _active && row.fraction != null ? _measured(l10n) : null,
-      child: ExcludeSemantics(child: content),
-    );
-  }
-
-  /// The trailing text, from the row's own signal only.
-  String? _detail(AppLocalizations l10n) {
-    if (_finished) return row.version;
-    if (row.state == ComponentState.failed) return null;
-    if (!_active) return null;
-    final measured = _measured(l10n);
-    final stage =
-        row.stage ??
-        (row.state == ComponentState.checking
-            ? l10n.setupProgressViewChecking
-            : null);
-    if (measured != null && stage != null) {
-      return l10n.setupProgressViewStageMeasured(stage, measured);
-    }
-    return measured ?? stage ?? l10n.setupProgressViewStarting;
-  }
-
-  String? _measured(AppLocalizations l10n) {
-    final total = row.bytesTotal;
-    final done = row.bytesDone;
-    if (total != null && total > 0 && done != null) {
-      final (d, t) = SetupProgressView.formatBytePair(done, total);
-      return l10n.setupProgressViewBytes(d, t);
-    }
-    if (row.percent case final percent?) {
-      return l10n.setupProgressViewPercent(percent.clamp(0, 100).floor());
-    }
-    return null;
-  }
-
-  Widget _mark() {
-    final state = switch (row.state) {
-      ComponentState.done || ComponentState.skipped => KitMarkState.done,
-      ComponentState.running || ComponentState.checking => KitMarkState.working,
-      ComponentState.failed => KitMarkState.failed,
-      ComponentState.pending => KitMarkState.waiting,
-    };
-    // The check "lands" (a short scale and fade) as a row completes. It is
-    // the switch between states that animates, so rows already done when
-    // the view opens appear still.
-    return AnimatedSwitcher(
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 280),
-      // No overshooting curve: the fade's opacity must stay within 0..1.
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeIn,
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: Tween<double>(begin: .6, end: 1).animate(animation),
-          child: child,
-        ),
-      ),
-      child: KitStatusMark(
-        key: ValueKey('${row.id}-${state.name}'),
-        state: state,
-      ),
     );
   }
 }
