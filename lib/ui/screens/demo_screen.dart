@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../demo/demo_copy.dart';
@@ -9,11 +9,15 @@ import '../../demo/demo_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/review_handoff.dart';
-import 'chat_screen.dart';
 import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit.dart';
+import 'chat_screen.dart';
 
-/// Production chat backed by a route-owned gateway and ephemeral stores.
-/// Nothing replaces the real connection, profile store or plugin singleton.
+/// "Try it offline" (map: demo): the production chat backed by a
+/// route-owned gateway and ephemeral stores, under one status line that says
+/// it is simulated. Nothing replaces the real connection, profile store or
+/// plugin singleton.
 class DemoScreen extends StatefulWidget {
   const DemoScreen({super.key});
 
@@ -50,12 +54,13 @@ class _DemoScreenState extends State<DemoScreen> {
           ..selectedModel = DemoGateway.model;
   }
 
+  bool _reducedMotion(BuildContext context) =>
+      KitMotion.reduced(context) || MediaQuery.accessibleNavigationOf(context);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _gateway.reducedMotion =
-        MediaQuery.disableAnimationsOf(context) ||
-        MediaQuery.accessibleNavigationOf(context);
+    _gateway.reducedMotion = _reducedMotion(context);
   }
 
   void _reset() {
@@ -65,9 +70,7 @@ class _DemoScreenState extends State<DemoScreen> {
     setState(() {
       _generation++;
       _create();
-      _gateway.reducedMotion =
-          MediaQuery.disableAnimationsOf(context) ||
-          MediaQuery.accessibleNavigationOf(context);
+      _gateway.reducedMotion = _reducedMotion(context);
     });
     // Let the old chat remove its listeners before releasing its controller.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -90,105 +93,89 @@ class _DemoScreenState extends State<DemoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    // The production chat owns keyboard avoidance; avoid subtracting it twice.
-    resizeToAvoidBottomInset: false,
-    body: SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
-            child: Row(
-              children: [
-                const Icon(AppIconography.experiments, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(child: Text(DemoCopy.title)),
-                IconButton(
-                  tooltip: DemoCopy.reset,
-                  onPressed: _reset,
-                  icon: const Icon(AppIconography.restart),
-                ),
-                IconButton(
-                  tooltip: DemoCopy.exit,
-                  onPressed: _exit,
-                  icon: const Icon(AppIconography.close),
-                ),
-              ],
-            ),
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.demoScreenTitle,
+        exit: KitTopBarExit.close,
+        onExit: _exit,
+        actions: [
+          KitAction(
+            key: const Key('demo-reset'),
+            label: DemoCopy.reset,
+            icon: AppIconography.restart,
+            onPressed: _reset,
           ),
-          if (MediaQuery.viewInsetsOf(context).bottom == 0)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(DemoCopy.disclosure),
-            ),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) =>
-                _gateway.hasFinished &&
-                    MediaQuery.viewInsetsOf(context).bottom == 0
-                ? TextButton(
-                    onPressed: _exit,
-                    child: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).demoSetUpServer,
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          Expanded(
-            child: ProviderScope(
-              key: ValueKey(_generation),
-              overrides: [
-                connProvider.overrideWithValue(_controller),
-                bootstrapProvider.overrideWithValue(AppBootstrap(_store)),
-              ],
-              child: ChatScreen(
-                sessionID: DemoGateway.sessionID,
-                showAppBar: false,
-                emptyState: const _DemoTaskIntroduction(),
-                initialText: DemoCopy.prompt,
-                handoffStore: _handoff,
-              ),
-            ),
+        ],
+        // Always reachable, also while the keyboard hides the page's own
+        // offer (map statesMissing).
+        menu: [
+          KitMenuItem(
+            key: const Key('demo-set-up-server-menu'),
+            label: l10n.demoSetUpServer,
+            icon: AppIconography.server,
+            onSelected: _exit,
           ),
         ],
       ),
-    ),
-  );
-}
-
-class _DemoTaskIntroduction extends StatelessWidget {
-  const _DemoTaskIntroduction();
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).demoTaskTitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).demoTaskInstruction,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
+      // One line says it is simulated; the longer disclosure sits under it
+      // while there is room.
+      status: KitStatus(
+        kind: KitStatusKind.info,
+        id: 'demo',
+        icon: AppIconography.experiments,
+        message: l10n.demoScreenSimulated,
+        supporting: keyboard ? null : DemoCopy.disclosure,
+      ),
+      header: [
+        ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) => _gateway.hasFinished && !keyboard
+              ? Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                    tokens.gutter,
+                    tokens.space2,
+                    tokens.gutter,
+                    tokens.space2,
+                  ),
+                  child: KitNotice(
+                    key: const Key('demo-finished'),
+                    tone: AppStatusTone.ok,
+                    message: l10n.demoScreenFinished,
+                    actions: [
+                      KitAction(
+                        key: const Key('demo-set-up-server'),
+                        label: l10n.demoSetUpServer,
+                        icon: AppIconography.server,
+                        onPressed: _exit,
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+      body: ProviderScope(
+        key: ValueKey(_generation),
+        overrides: [
+          connProvider.overrideWithValue(_controller),
+          bootstrapProvider.overrideWithValue(AppBootstrap(_store)),
+        ],
+        child: ChatScreen(
+          sessionID: DemoGateway.sessionID,
+          showAppBar: false,
+          emptyState: KitStateView(
+            icon: AppIconography.experiments,
+            title: l10n.demoTaskTitle,
+            body: l10n.demoTaskInstruction,
+          ),
+          initialText: DemoCopy.prompt,
+          handoffStore: _handoff,
         ),
       ),
-    ),
-  );
+    );
+  }
 }

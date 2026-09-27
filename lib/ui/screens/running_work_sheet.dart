@@ -1,17 +1,18 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:clock/clock.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/models.dart';
 import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/shell_output.dart';
-import '../widgets/product_states.dart';
-import '../widgets/running_agents_strip.dart';
-import '../app_theme.dart';
+import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/running_agents_strip.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -23,27 +24,15 @@ typedef _WorkScope = (String?, String?, String?, String?);
 _WorkScope _scope(ConnectionController conn) =>
     (conn.profile?.id, conn.profile?.baseUrl, conn.directory, conn.workspace);
 
-String _status(AppLocalizations l10n, ManagedShell shell) =>
-    switch (shell.status) {
-      ManagedShellStatus.running => l10n.workRunning,
-      ManagedShellStatus.exited =>
-        shell.exitCode == null
-            ? l10n.workFinished
-            : l10n.workExitCode(shell.exitCode!),
-      ManagedShellStatus.timeout => l10n.workTimedOut,
-      ManagedShellStatus.killed => l10n.workStopped,
-      ManagedShellStatus.unknown => l10n.workUnknown,
-    };
-
 /// How a command ended, as the reader cares about it. A shell reports only a
 /// status and an exit code; 143 and 130 are "someone stopped it" (SIGTERM,
 /// Ctrl-C), not a failure of the command.
-enum _Outcome { running, done, failed, stopped, unknown }
+enum _Outcome { running, done, failed, timedOut, stopped, idle, unknown }
 
 _Outcome _outcome(ManagedShell shell) => switch (shell.status) {
   ManagedShellStatus.running => _Outcome.running,
   ManagedShellStatus.killed => _Outcome.stopped,
-  ManagedShellStatus.timeout => _Outcome.failed,
+  ManagedShellStatus.timeout => _Outcome.timedOut,
   ManagedShellStatus.unknown => _Outcome.unknown,
   ManagedShellStatus.exited => switch (shell.exitCode) {
     null || 0 => _Outcome.done,
@@ -52,12 +41,28 @@ _Outcome _outcome(ManagedShell shell) => switch (shell.status) {
   },
 };
 
-String _outcomeLabel(AppLocalizations l10n, ManagedShell shell) =>
-    switch (_outcome(shell)) {
-      _Outcome.stopped => l10n.workStopped,
+/// The one word for how a piece of work stands (STATE-9: a mark always
+/// travels with its word).
+String _outcomeWord(AppLocalizations l10n, _Outcome outcome) =>
+    switch (outcome) {
+      _Outcome.running => l10n.workRunning,
       _Outcome.done => l10n.workFinished,
-      _ => _status(l10n, shell),
+      _Outcome.failed => l10n.runningWorkFailed,
+      _Outcome.timedOut => l10n.workTimedOut,
+      _Outcome.stopped => l10n.workStopped,
+      _Outcome.idle => l10n.workIdle,
+      _Outcome.unknown => l10n.workUnknown,
     };
+
+/// The row mark for an outcome, always with its word. Idle and unknown are
+/// "not running and not a result": the hollow ring.
+KitTaskState _mark(_Outcome outcome) => switch (outcome) {
+  _Outcome.running => KitTaskState.working,
+  _Outcome.done => KitTaskState.done,
+  _Outcome.failed || _Outcome.timedOut => KitTaskState.failed,
+  _Outcome.stopped => KitTaskState.stopped,
+  _Outcome.idle || _Outcome.unknown => KitTaskState.waiting,
+};
 
 /// A command as a person would say it: the programs it runs, not where they
 /// live or what environment they were given. `FOO=1 /tmp/x/bin/flutter test
@@ -87,14 +92,18 @@ String shortCommand(String command) {
   return result.isEmpty ? command : result;
 }
 
-String _elapsed(ManagedShell shell) {
-  final seconds = (shell.completedAt ?? DateTime.now())
-      .difference(shell.startedAt)
-      .inSeconds
-      .clamp(0, 365 * 86400);
-  return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+String _clockText(int seconds) {
+  final s = seconds.clamp(0, 365 * 86400);
+  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
 }
 
+String _elapsed(ManagedShell shell) => _clockText(
+  (shell.completedAt ?? clock.now()).difference(shell.startedAt).inSeconds,
+);
+
+/// "Running now": the agents and commands this conversation started, in one
+/// list ordered by urgency (running first, then the rest newest first). Each
+/// row carries its own mark and word; there are no state sections.
 Future<String?> showRunningWorkSheet(
   BuildContext context, {
   required ConnectionController controller,
@@ -105,12 +114,11 @@ Future<String?> showRunningWorkSheet(
   BackgroundWorkSupport Function()? readBackgroundSupport,
   bool Function()? canBackground,
   Listenable? availabilityChanges,
-}) => showModalBottomSheet<String>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: true,
-  builder: (_) => RunningWorkSheet(
+}) => showKitSheet<String>(
+  context,
+  title: _strings(context).runningWorkTitle,
+  icon: AppIconography.playCircle,
+  body: (_) => RunningWorkSheet(
     controller: controller,
     sessionID: sessionID,
     shellIDs: shellIDs,
@@ -122,6 +130,8 @@ Future<String?> showRunningWorkSheet(
   ),
 );
 
+/// The body of the "Running now" sheet. It is not its own scroll view: the
+/// sheet frame scrolls it (KIT-17).
 class RunningWorkSheet extends StatefulWidget {
   const RunningWorkSheet({
     super.key,
@@ -299,84 +309,114 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     super.dispose();
   }
 
-  List<Widget> _section(BuildContext context, String title, List<Widget> rows) {
-    if (rows.isEmpty) return const [];
-    final theme = Theme.of(context);
-    return [
-      Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 2),
-        child: Row(
-          children: [
-            Text(title, style: theme.textTheme.titleSmall),
-            const SizedBox(width: 8),
-            Text(
-              '${rows.length}',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-      ...rows,
-    ];
+  Future<void> _promote() async {
+    setState(() => _promoting = true);
+    try {
+      final result = await widget.onBackground!();
+      if (mounted && _scopeMatches) setState(() => _promotion = result);
+      if (mounted && _scopeMatches) await _refresh();
+    } finally {
+      if (mounted) setState(() => _promoting = false);
+    }
   }
 
-  Widget _agentRow(RunningAgentEntry entry, bool busy, {bool unknown = false}) {
+  /// Stops one running agent, asked first: it ends running work (DATA-11).
+  /// The stop runs inside the question, so a failure keeps it open with Try
+  /// again instead of closing on an error.
+  Future<void> _stopAgent(RunningAgentEntry entry) async {
     final l10n = _strings(context);
-    return _WorkRow(
+    final title = entry.labelFor(l10n);
+    final conn = widget.controller;
+    final stopped = await showKitConfirm(
+      context,
+      title: l10n.runningWorkStopAgentTitle(title),
+      body: l10n.runningWorkStopAgentBody,
+      confirmLabel: l10n.runningWorkStopAgentConfirm,
+      kind: KitConfirmKind.stop,
+      confirmKey: const Key('running-work-stop-agent-confirm'),
+      action: () async {
+        final api = await conn.prepareActionTransport();
+        if (api == null || !_scopeMatches) {
+          throw ProductException(l10n.workDisconnected);
+        }
+        await api.abort(entry.session.id);
+      },
+    );
+    if (stopped && mounted && _visible) await _refresh();
+  }
+
+  Widget _agentRow(RunningAgentEntry entry, _Outcome outcome, bool offline) {
+    final l10n = _strings(context);
+    final title = entry.labelFor(l10n);
+    final word = _outcomeWord(l10n, outcome);
+    final canStop = outcome == _Outcome.running && !offline;
+    return KitRow(
       key: ValueKey('work-agent-${entry.session.id}'),
-      icon: AppIconography.branch,
-      title: entry.label,
-      status: unknown
-          ? l10n.workUnknown
-          : busy
-          ? l10n.workRunning
-          : l10n.workIdle,
-      outcome: unknown
-          ? _Outcome.unknown
-          : busy
-          ? _Outcome.running
-          : _Outcome.stopped,
-      mono: false,
-      onTap: () => Navigator.pop(context, entry.session.id),
+      leading: KitTaskMark(state: _mark(outcome), label: word),
+      title: title,
+      titleMaxLines: 2,
+      supporting: TextSpan(text: l10n.runningWorkAgentState(word)),
+      trailing: const KitChevron(),
+      onTap: () => KitSheet.close(context, entry.session.id),
+      menu: [
+        KitMenuItem(
+          label: l10n.workOpenLiveConversation(title),
+          icon: AppIconography.chat,
+          onSelected: () => KitSheet.close(context, entry.session.id),
+        ),
+        if (canStop)
+          KitMenuItem(
+            key: ValueKey('work-agent-stop-${entry.session.id}'),
+            label: l10n.runningWorkStopAgent(title),
+            icon: AppIconography.stopCircle,
+            destructive: true,
+            onSelected: () => unawaited(_stopAgent(entry)),
+          ),
+      ],
     );
   }
 
-  Widget _shellRow(ManagedShell shell, bool disconnected) {
+  Widget _shellRow(ManagedShell shell, bool offline) {
     final l10n = _strings(context);
     final conn = widget.controller;
-    return _WorkRow(
+    final outcome = _outcome(shell);
+    final word = _outcomeWord(l10n, outcome);
+    return KitRow(
       key: ValueKey('work-shell-${shell.id}'),
-      icon: AppIconography.terminal,
+      leading: KitTaskMark(state: _mark(outcome), label: word),
       title: shortCommand(shell.command),
-      status: l10n.workStatusElapsed(
-        _outcomeLabel(l10n, shell),
-        _elapsed(shell),
+      // Live work gets room to be recognised; finished work is a line.
+      titleMaxLines: outcome == _Outcome.running ? 2 : 1,
+      supporting: TextSpan(
+        text: l10n.runningWorkCommandState(
+          l10n.workStatusElapsed(word, _elapsed(shell)),
+        ),
       ),
-      outcome: _outcome(shell),
-      mono: true,
-      onTap: disconnected
+      trailing: const KitChevron(),
+      enabled: !offline,
+      disabledReason: offline ? l10n.runningWorkOffline : null,
+      onTap: offline
           ? null
           : () async {
               if (!_scopeMatches || conn.status != StreamStatus.connected) {
                 return;
               }
-              await Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      ShellOutputScreen(controller: conn, shell: shell),
-                ),
+              await pushKitPage<void>(
+                context,
+                (_) => ShellOutputScreen(controller: conn, shell: shell),
               );
               if (mounted && _visible) await _refresh();
             },
     );
   }
 
+  int _newest(ManagedShell a, ManagedShell b) =>
+      (b.completedAt ?? b.startedAt).compareTo(a.completedAt ?? a.startedAt);
+
   @override
   Widget build(BuildContext context) {
     final l10n = _strings(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final conn = widget.controller;
     final agents = runningAgentEntries(
       sessionID: widget.sessionID,
@@ -384,247 +424,145 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
       busy: conn.busySessions,
       includeIdle: true,
     ).where((entry) => !entry.current).toList();
-    final disconnected = conn.status != StreamStatus.connected;
+    final offline = conn.status != StreamStatus.connected;
     final canBackground =
         widget.canBackground?.call() ??
         (widget.onBackground != null && _promotion == null);
-    return SafeArea(
-      top: false,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .8,
+    final gap = SizedBox(height: tokens.space3);
+
+    // One list ordered by urgency: what runs now (agents, then commands),
+    // then the rest newest first. The mark and word on each row say how it
+    // stands; there are no state sections (owner rule 2026-09-27).
+    final running = <Widget>[
+      for (final entry in agents)
+        if (entry.busy && !offline) _agentRow(entry, _Outcome.running, false),
+      for (final shell in _shells)
+        if (_outcome(shell) == _Outcome.running) _shellRow(shell, offline),
+    ];
+    final rest = <Widget>[
+      for (final shell in [
+        for (final shell in _shells)
+          if (_outcome(shell) != _Outcome.running) shell,
+      ]..sort(_newest))
+        _shellRow(shell, offline),
+      for (final entry in agents)
+        if (!entry.busy || offline)
+          _agentRow(entry, offline ? _Outcome.unknown : _Outcome.idle, offline),
+    ];
+    final rows = [...running, ...rest];
+    final blocked =
+        widget.onBackground != null &&
+        (canBackground || _promoting || _promotion != null);
+
+    final children = <Widget>[];
+    void add(Widget child) {
+      if (children.isNotEmpty) children.add(gap);
+      children.add(child);
+    }
+
+    if (!_scopeMatches) {
+      add(
+        KitStateView(
+          icon: AppIconography.info,
+          title: l10n.runningWorkScopeChangedTitle,
+          body: l10n.workContextChanged,
+          size: KitStateSize.inline,
         ),
-        child: ListView(
-          key: const Key('running-work-sheet'),
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.workTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                IconButton(
-                  tooltip: l10n.workRefresh,
-                  onPressed: disconnected || !_scopeMatches ? null : _refresh,
-                  icon: const Icon(AppIconography.retry),
-                ),
-                IconButton(
-                  tooltip: l10n.workClose,
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(AppIconography.close),
-                ),
-              ],
-            ),
-            // No preamble: the title and the list say what this is. The one
-            // action appears when it can be taken.
-            if (widget.onBackground != null &&
-                (canBackground || _promoting || _promotion != null))
-              FilledButton.icon(
-                onPressed:
-                    disconnected ||
-                        !_scopeMatches ||
-                        _promoting ||
-                        !canBackground
-                    ? null
-                    : () async {
-                        setState(() => _promoting = true);
-                        try {
-                          final result = await widget.onBackground!();
-                          if (mounted && _scopeMatches) {
-                            setState(() => _promotion = result);
-                          }
-                          if (mounted && _scopeMatches) await _refresh();
-                        } finally {
-                          if (mounted) setState(() => _promoting = false);
-                        }
-                      },
-                icon: const Icon(AppIconography.lowPriority),
-                label: Text(
-                  _promoting
-                      ? l10n.workBackgroundPending
-                      : l10n.workRunInBackground,
-                ),
-              ),
-            if (_promotion != null) ...[
-              const SizedBox(height: 8),
-              Text(switch (_promotion!) {
-                BackgroundWorkResult.promoted => l10n.backgroundWorkPromoted,
-                BackgroundWorkResult.unchanged => l10n.backgroundWorkNoop,
-                BackgroundWorkResult.requested => l10n.workBackgroundRequested,
-              }),
-            ],
-            const SizedBox(height: 8),
-            if (!_scopeMatches)
-              Text(l10n.workContextChanged)
-            else ...[
-              if (disconnected) _Notice(text: l10n.workDisconnected),
-              if (_agentsError != null)
-                _Notice(text: productErrorText(_agentsError!)),
-              if (_error != null)
-                _Notice(
-                  text: productErrorText(_error!),
-                  action: TextButton(
-                    onPressed: _refresh,
-                    child: Text(l10n.workRetry),
-                  ),
-                ),
-              if (_loading)
-                const Center(child: CircularProgressIndicator())
-              else if (agents.isEmpty &&
-                  _shells.isEmpty &&
-                  _error == null &&
-                  _agentsError == null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    children: [
-                      const Icon(AppIconography.checkCircle, size: 32),
-                      const SizedBox(height: 12),
-                      Text(l10n.workEmpty, style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.workEmptyDescription,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              // What is going on now, then what is over. Within each, agents
-              // before commands. State is carried by icon and colour, so a
-              // glance tells running from done from failed.
-              ..._section(context, l10n.workRunning, [
-                for (final entry in agents)
-                  if (entry.busy && !disconnected) _agentRow(entry, true),
-                for (final shell in _shells)
-                  if (_outcome(shell) == _Outcome.running)
-                    _shellRow(shell, disconnected),
-              ]),
-              ..._section(context, l10n.workFinished, [
-                for (final entry in agents)
-                  if (!entry.busy || disconnected)
-                    _agentRow(entry, false, unknown: disconnected),
-                for (final shell in _shells)
-                  if (_outcome(shell) != _Outcome.running)
-                    _shellRow(shell, disconnected),
-              ]),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// One line of the Tasks list. The leading icon says what it is (agent or
-/// command), its colour and the trailing mark say how it stands.
-class _WorkRow extends StatelessWidget {
-  const _WorkRow({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.status,
-    required this.outcome,
-    required this.mono,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String status;
-  final _Outcome outcome;
-  final bool mono;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final live = outcome == _Outcome.running;
-    final tone = switch (outcome) {
-      _Outcome.running => scheme.primary,
-      _Outcome.failed => scheme.error,
-      _Outcome.done => AppTheme.successOf(theme),
-      _Outcome.stopped || _Outcome.unknown => scheme.onSurfaceVariant,
-    };
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: tone),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      // Live work gets room to be recognised; finished work
-                      // is a line.
-                      maxLines: live ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: mono ? AppTheme.monoFamily : null,
-                        fontSize: mono ? 13 : null,
-                        color: live
-                            ? scheme.onSurface
-                            : scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      status,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: outcome == _Outcome.failed
-                            ? scheme.error
-                            : scheme.onSurfaceVariant,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+      );
+    } else {
+      if (offline) {
+        add(
+          KitNotice(message: l10n.workDisconnected, icon: AppIconography.sync),
+        );
+      }
+      if (_agentsError case final error?) {
+        add(
+          KitNotice.error(
+            message: l10n.runningWorkAgentsFailed,
+            error: error,
+            details: productErrorText(error),
+            retry: KitAction(label: l10n.workRetry, onPressed: _refresh),
+          ),
+        );
+      }
+      if (_error case final error?) {
+        add(
+          KitNotice.error(
+            message: l10n.runningWorkCommandsFailed,
+            error: error,
+            details: productErrorText(error),
+            retry: KitAction(label: l10n.workRetry, onPressed: _refresh),
+          ),
+        );
+      }
+      if (_loading) {
+        add(const KitSkeletonRows(count: 3));
+      } else if (rows.isEmpty && _error == null && _agentsError == null) {
+        add(
+          KitStateView(
+            icon: AppIconography.checkCircle,
+            title: l10n.runningWorkEmptyTitle,
+            body: l10n.runningWorkEmptyBody,
+            size: KitStateSize.inline,
+          ),
+        );
+      } else if (rows.isNotEmpty) {
+        add(KitRowGroup(margin: EdgeInsets.zero, children: rows));
+      }
+      // Only while the work above holds the conversation, right under it:
+      // what moving it frees, then the act (map: running-work-sheet).
+      if (blocked) {
+        add(
+          _promotion == null
+              ? KitNotice(
+                  key: const Key('running-work-background'),
+                  icon: AppIconography.lowPriority,
+                  message: l10n.runningWorkBackgroundBody,
+                  actions: [
+                    KitAction(
+                      key: const Key('running-work-background-action'),
+                      label: _promoting
+                          ? l10n.workBackgroundPending
+                          : l10n.runningWorkBackgroundAction,
+                      working: _promoting,
+                      onPressed:
+                          offline ||
+                              !_scopeMatches ||
+                              _promoting ||
+                              !canBackground
+                          ? null
+                          : _promote,
+                      disabledReason: offline ? l10n.runningWorkOffline : null,
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              // A steady dot, not a spinner: a list of spinners is noise, and
-              // the elapsed time already shows that it is alive.
-              if (live)
-                Container(
-                  key: const Key('work-row-live'),
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    shape: BoxShape.circle,
-                  ),
                 )
-              else
-                Icon(
-                  switch (outcome) {
-                    _Outcome.running => AppIconography.waitingStart,
-                    _Outcome.done => AppIconography.checkCircle,
-                    _Outcome.failed => AppIconography.error,
-                    _Outcome.stopped => AppIconography.blocked,
-                    _Outcome.unknown => AppIconography.chevronRight,
+              : KitNotice(
+                  key: const Key('running-work-background'),
+                  tone: AppStatusTone.ok,
+                  message: switch (_promotion!) {
+                    BackgroundWorkResult.promoted =>
+                      l10n.backgroundWorkPromoted,
+                    BackgroundWorkResult.unchanged => l10n.backgroundWorkNoop,
+                    BackgroundWorkResult.requested =>
+                      l10n.workBackgroundRequested,
                   },
-                  size: 16,
-                  color: tone,
                 ),
-            ],
-          ),
-        ),
-      ),
+        );
+      }
+    }
+    return Column(
+      key: const Key('running-work-sheet'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
 }
 
+/// A command's own page (map: shell-output): the command as a person would
+/// say it, how it stands, its two acts kept apart, and its output filling
+/// the page. The command as typed, its folder and its exit code sit in the
+/// one Details fold at the end.
 class ShellOutputScreen extends StatefulWidget {
   const ShellOutputScreen({
     super.key,
@@ -643,16 +581,28 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
     gateway: widget.controller.repository!,
     shell: widget.shell,
   );
+  final _lines = KitLogBuffer();
+  String _shownText = '';
   late final _WorkScope _pinnedScope;
   late int _revision;
-  final _scroll = ScrollController();
   StreamSubscription<EventEnvelope>? _events;
   Timer? _timer;
   bool _active = true;
-  bool _follow = true;
   bool _mutating = false;
   bool _stopped = false;
   bool _reconcilePending = true;
+
+  /// The time limit set from this page: the seconds chosen (0 = none) and
+  /// when the server's clock for it started ("replace timeout from now").
+  /// The server does not report a limit it was started with, so nothing is
+  /// shown until one is set here.
+  int? _limitSeconds;
+  DateTime? _limitFrom;
+
+  /// A failed change of the time limit, said on the page with Try again.
+  int? _failedLimit;
+  Object? _limitError;
+
   bool get _sameScope => _pinnedScope == _scope(widget.controller);
   bool get _visible =>
       mounted && _active && (ModalRoute.of(context)?.isCurrent ?? true);
@@ -689,13 +639,13 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _refresh(reconcile: true),
     );
+    // Polls only while this page is on top and the command still writes;
+    // the output panel follows the newest line until the person scrolls up.
     _timer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (_follow &&
-          _visible &&
-          _output.available &&
-          (_output.shell.running || _output.hasMore)) {
-        unawaited(_refresh());
-      }
+      if (!_visible || !_output.available) return;
+      if (_output.shell.running || _output.hasMore) unawaited(_refresh());
+      // The elapsed time and the time left move on between reads.
+      if (_output.shell.running && !_stopped) setState(() {});
     });
   }
 
@@ -728,14 +678,12 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
 
   void _outputChanged() {
     if (!mounted) return;
-    setState(() {});
-    if (_follow) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _scroll.hasClients) {
-          _scroll.jumpTo(_scroll.position.maxScrollExtent);
-        }
-      });
+    final text = _output.displayText;
+    if (text != _shownText) {
+      _shownText = text;
+      _lines.replaceText(text);
     }
+    setState(() {});
   }
 
   @override
@@ -744,90 +692,126 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
     if (_active) unawaited(_refresh(reconcile: true));
   }
 
+  /// Stop is asked first (it ends running work and removes the saved output,
+  /// DATA-11). The stop runs inside the question: a failure keeps it open
+  /// with the reason and Try again. "Copy output first" is the safer path.
   Future<void> _stop() async {
     if (!_canMutate) return;
     final l10n = _strings(context);
+    final output = _output.displayText;
+    final repo = widget.controller.repository!;
     final confirmed = await showKitConfirm(
       context,
       title: l10n.workStopTitle,
       body: l10n.workStopDescription,
       confirmLabel: l10n.workStop,
       kind: KitConfirmKind.stop,
+      confirmKey: const Key('shell-output-stop-confirm'),
+      alternative: output.isEmpty
+          ? null
+          : KitAction(
+              key: const Key('shell-output-copy-first'),
+              label: l10n.shellOutputCopyFirst,
+              icon: AppIconography.copy,
+              onPressed: () => unawaited(KitCopy.copy(context, output)),
+            ),
+      action: () async {
+        if (!_sameScope) throw ProductException(l10n.workContextChanged);
+        await repo.stopManagedShell(widget.shell.id);
+      },
     );
-    if (!mounted || !confirmed || !_canMutate) return;
-    await _change(() async {
-      await widget.controller.repository!.stopManagedShell(widget.shell.id);
-      if (mounted && _sameScope) setState(() => _stopped = true);
-    });
+    if (!mounted || !confirmed) return;
+    if (_sameScope) setState(() => _stopped = true);
+    await _refresh();
   }
 
-  Future<void> _timeout() async {
+  Future<void> _chooseLimit() async {
     if (!_canMutate) return;
     final l10n = _strings(context);
-    final seconds = await showModalBottomSheet<int>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .8,
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            children: [
-              Text(
-                l10n.workTimeoutTitle,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              Text(l10n.workTimeoutDescription),
-              for (final option in <int, String>{
-                60: l10n.workTimeoutOneMinute,
-                300: l10n.workTimeoutFiveMinutes,
-                900: l10n.workTimeoutFifteenMinutes,
-                3600: l10n.workTimeoutOneHour,
-                0: l10n.workTimeoutNone,
-              }.entries)
-                ListTile(
-                  title: Text(option.value),
-                  onTap: () => Navigator.pop(context, option.key),
-                ),
-            ],
-          ),
-        ),
-      ),
+    final seconds = await showKitChoiceSheet<int>(
+      context,
+      title: l10n.shellOutputLimitTitle,
+      subtitle: l10n.workTimeoutDescription,
+      sheetKey: const Key('shell-output-limit-sheet'),
+      selected: _limitSeconds,
+      choices: [
+        for (final option in <int, String>{
+          60: l10n.workTimeoutOneMinute,
+          300: l10n.workTimeoutFiveMinutes,
+          900: l10n.workTimeoutFifteenMinutes,
+          3600: l10n.workTimeoutOneHour,
+          0: l10n.workTimeoutNone,
+        }.entries)
+          KitChoice(value: option.key, title: option.value),
+      ],
     );
-    if (!mounted || seconds == null || !_canMutate) return;
-    await _change(() async {
+    if (!mounted || seconds == null) return;
+    await _applyLimit(seconds);
+  }
+
+  Future<void> _applyLimit(int seconds) async {
+    if (!_canMutate) return;
+    setState(() {
+      _mutating = true;
+      _limitError = null;
+      _failedLimit = null;
+    });
+    try {
       await widget.controller.repository!.setManagedShellTimeout(
         widget.shell.id,
         seconds == 0 ? null : Duration(seconds: seconds),
       );
       if (mounted && _sameScope) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.workTimeoutSaved)));
+        setState(() {
+          _limitSeconds = seconds;
+          _limitFrom = clock.now();
+        });
+        await _refresh();
       }
-    });
-  }
-
-  Future<void> _change(Future<void> Function() action) async {
-    setState(() => _mutating = true);
-    try {
-      await action();
-      if (mounted && _sameScope) await _refresh();
     } catch (error) {
       if (mounted && _sameScope) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(productErrorText(error))));
+        setState(() {
+          _limitError = error;
+          _failedLimit = seconds;
+        });
       }
     } finally {
       if (mounted) setState(() => _mutating = false);
     }
+  }
+
+  /// Seconds until the limit set here stops the command; null when none is
+  /// known.
+  int? get _secondsLeft {
+    final limit = _limitSeconds;
+    final from = _limitFrom;
+    if (limit == null || limit == 0 || from == null) return null;
+    return limit - clock.now().difference(from).inSeconds;
+  }
+
+  String _statusWords(AppLocalizations l10n) {
+    if (_stopped) return l10n.workStopped;
+    if (!_sameScope || !_connected || !_output.available) {
+      return l10n.workUnknown;
+    }
+    final shell = _output.shell;
+    final outcome = _outcome(shell);
+    final base = l10n.workStatusElapsed(
+      _outcomeWord(l10n, outcome),
+      _elapsed(shell),
+    );
+    if (outcome != _Outcome.running) return base;
+    final left = _secondsLeft;
+    if (left != null) {
+      return l10n.workStatusElapsed(
+        base,
+        l10n.shellOutputStopsIn(_clockText(left)),
+      );
+    }
+    if (_limitSeconds == 0) {
+      return l10n.workStatusElapsed(base, l10n.shellOutputNoLimit);
+    }
+    return base;
   }
 
   @override
@@ -838,172 +822,170 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
     WidgetsBinding.instance.removeObserver(this);
     _output.removeListener(_outputChanged);
     _output.dispose();
-    _scroll.dispose();
+    _lines.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _strings(context);
-    final theme = Theme.of(context);
-    final output = _output.displayText;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.workOutput),
-        actions: [
-          IconButton(
-            tooltip: l10n.workCopyOutput,
-            onPressed: output.isEmpty
-                ? null
-                : () async {
-                    await Clipboard.setData(ClipboardData(text: output));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(l10n.workCopied)));
-                    }
-                  },
-            icon: const Icon(AppIconography.copy),
+    final tokens = KitTokens.of(context);
+    final shell = _output.shell;
+    final running = _output.available && shell.running && !_stopped;
+    final outcome = _outcome(shell);
+    final left = running ? _secondsLeft : null;
+    final canRefresh = _sameScope && _connected && !_stopped;
+    final gap = SizedBox(height: tokens.space3);
+
+    final notices = <Widget>[
+      if (!_sameScope)
+        KitNotice(message: l10n.workContextChanged, icon: AppIconography.info)
+      else if (!_connected)
+        KitNotice(message: l10n.workDisconnected, icon: AppIconography.sync)
+      else if (!_stopped && !_output.available)
+        KitNotice(
+          message: _output.serverRestarted
+              ? l10n.workRestarted
+              : l10n.workUnavailable,
+          icon: AppIconography.info,
+        ),
+      if (_output.error case final error?)
+        KitNotice.error(
+          message: l10n.shellOutputReadFailed,
+          error: error,
+          details: productErrorText(error),
+          retry: KitAction(
+            label: l10n.workRetry,
+            onPressed: () => _refresh(reconcile: true),
           ),
-          IconButton(
-            tooltip: l10n.workRefresh,
-            onPressed: _sameScope && _connected && !_stopped
-                ? () => _refresh(reconcile: true)
-                : null,
-            icon: const Icon(AppIconography.retry),
+        ),
+      if (_limitError case final error?)
+        KitNotice.error(
+          key: const Key('shell-output-limit-failed'),
+          message: l10n.shellOutputLimitFailed,
+          error: error,
+          details: productErrorText(error),
+          retry: KitAction(
+            label: l10n.workRetry,
+            onPressed: _canMutate ? () => _applyLimit(_failedLimit!) : null,
+          ),
+        ),
+      // About to hit its time limit: say it while it can still be changed.
+      if (left != null && left <= 60)
+        KitNotice(
+          key: const Key('shell-output-about-to-stop'),
+          icon: AppIconography.timer,
+          message: l10n.shellOutputAboutToStop(_clockText(left)),
+        ),
+      if (_output.trimmed)
+        KitNotice(message: l10n.workTrimmed, icon: AppIconography.info),
+    ];
+
+    final details = <KitTechnicalValue>[
+      KitTechnicalValue(l10n.shellOutputDetailCommand, widget.shell.command),
+      if (widget.shell.directory case final directory?
+          when directory.isNotEmpty)
+        KitTechnicalValue(l10n.shellOutputDetailFolder, directory),
+      if (!running && shell.exitCode != null)
+        KitTechnicalValue(l10n.shellOutputDetailExit, '${shell.exitCode}'),
+      KitTechnicalValue(l10n.shellOutputDetailId, widget.shell.id),
+    ];
+
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.workOutput,
+        actions: [
+          KitAction(
+            key: const Key('shell-output-refresh'),
+            label: l10n.workRefresh,
+            icon: AppIconography.retry,
+            onPressed: canRefresh ? () => _refresh(reconcile: true) : null,
+            disabledReason: canRefresh ? null : l10n.runningWorkOffline,
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: NotificationListener<ScrollUpdateNotification>(
-          onNotification: (event) {
-            if (_follow &&
-                event.dragDetails != null &&
-                event.metrics.pixels < event.metrics.maxScrollExtent - 24) {
-              setState(() => _follow = false);
-            }
-            return false;
-          },
-          child: ListView(
-            key: const Key('shell-output-content'),
-            controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              SelectableText(
-                widget.shell.command,
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _stopped
-                    ? l10n.workStopped
-                    : !_sameScope || !_connected || !_output.available
-                    ? l10n.workUnknown
-                    : l10n.workStatusElapsed(
-                        _status(l10n, _output.shell),
-                        _elapsed(_output.shell),
-                      ),
-              ),
-              const SizedBox(height: 8),
-              if (_output.available && _output.shell.running && !_stopped)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _canMutate ? _timeout : null,
-                      icon: const Icon(AppIconography.timer),
-                      label: Text(l10n.workTimeout),
-                    ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.error,
-                      ),
-                      onPressed: _canMutate ? _stop : null,
-                      icon: const Icon(AppIconography.stopCircle),
-                      label: Text(l10n.workStop),
-                    ),
-                  ],
+      width: KitScreenWidth.reading,
+      loading: _output.refreshing || _mutating,
+      loadingLabel: l10n.shellOutputReading,
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          key: const Key('shell-output-content'),
+          padding: KitScreen.padding(context),
+          children: [
+            KitText.mono(shortCommand(widget.shell.command), selectable: true),
+            SizedBox(height: tokens.space1),
+            KitText(
+              _statusWords(l10n),
+              key: const Key('shell-output-status'),
+              role: KitTextRole.secondary,
+              tone: outcome == _Outcome.failed || outcome == _Outcome.timedOut
+                  ? KitTextTone.primary
+                  : KitTextTone.secondary,
+              tabular: true,
+            ),
+            for (final notice in notices) ...[gap, notice],
+            if (running) ...[
+              gap,
+              // Two acts kept apart: changing the limit is ordinary, Stop
+              // ends the command (KitActionStack keeps thumbs off it).
+              KitActionStack(
+                secondary: KitAction(
+                  key: const Key('shell-output-limit'),
+                  label: l10n.workTimeout,
+                  icon: AppIconography.timer,
+                  onPressed: _canMutate ? _chooseLimit : null,
                 ),
-              if (!_stopped &&
-                  _output.available &&
-                  (_output.shell.running || _output.hasMore))
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.workFollow),
-                  value: _follow,
-                  onChanged: _sameScope && _connected
-                      ? (value) {
-                          setState(() => _follow = value);
-                          if (value) unawaited(_refresh());
-                        }
-                      : null,
-                ),
-              if (!_sameScope)
-                _Notice(text: l10n.workContextChanged)
-              else if (!_connected)
-                _Notice(text: l10n.workDisconnected)
-              else if (!_stopped && !_output.available)
-                _Notice(
-                  text: _output.serverRestarted
-                      ? l10n.workRestarted
-                      : l10n.workUnavailable,
-                ),
-              if (_output.error != null)
-                _Notice(
-                  text: productErrorText(_output.error!),
-                  action: TextButton(
-                    onPressed: () => _refresh(reconcile: true),
-                    child: Text(l10n.workRetry),
+                tertiary: [
+                  KitAction(
+                    key: const Key('shell-output-stop'),
+                    label: l10n.workStop,
+                    icon: AppIconography.stopCircle,
+                    destructive: true,
+                    onPressed: _canMutate ? _stop : null,
                   ),
-                ),
-              if (_output.trimmed) _Notice(text: l10n.workTrimmed),
-              if (_output.refreshing || _mutating)
-                const LinearProgressIndicator(minHeight: 2),
-              Container(
-                key: const Key('shell-output-text'),
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SelectableText(
-                  output.isEmpty
-                      ? (_output.shell.running && !_stopped && _output.available
-                            ? l10n.workNoOutput
-                            : l10n.workNoFinalOutput)
-                      : output,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontFamily: AppTheme.monoFamily,
-                    height: 1.5,
-                  ),
-                ),
+                ],
               ),
-              if (_output.hasMore && !_stopped && _sameScope && _connected)
-                TextButton(
-                  onPressed: _output.refreshing ? null : _refresh,
-                  child: Text(l10n.workMoreOutput),
-                ),
             ],
-          ),
+            gap,
+            // The page exists to show this log, so it fills the window
+            // instead of ending mid-screen (map: shell-output).
+            SizedBox(
+              height: constraints.maxHeight * .72,
+              child: KitLogPanel(
+                panelKey: const Key('shell-output-text'),
+                lines: _lines,
+                live: running,
+                size: KitLogSize.fill,
+                emptyText: running ? l10n.workNoOutput : l10n.workNoFinalOutput,
+                ended: running || !_output.available
+                    ? null
+                    : KitLogEnd(
+                        exitCode: _stopped ? null : shell.exitCode,
+                        failed:
+                            !_stopped &&
+                            (outcome == _Outcome.failed ||
+                                outcome == _Outcome.timedOut),
+                        reason: _stopped || outcome == _Outcome.stopped
+                            ? l10n.workStopped
+                            : outcome == _Outcome.timedOut
+                            ? l10n.workTimedOut
+                            : null,
+                      ),
+              ),
+            ),
+            if (_output.hasMore && !_stopped && _sameScope && _connected) ...[
+              gap,
+              KitButton.tertiary(
+                key: const Key('shell-output-more'),
+                label: l10n.workMoreOutput,
+                onPressed: _output.refreshing ? null : _refresh,
+              ),
+            ],
+            gap,
+            KitDetailsFold(values: details),
+          ],
         ),
       ),
     );
   }
-}
-
-class _Notice extends StatelessWidget {
-  const _Notice({required this.text, this.action});
-  final String text;
-  final Widget? action;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(text), ?action],
-    ),
-  );
 }

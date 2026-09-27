@@ -1,18 +1,20 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
-import '../../l10n/app_localizations.dart';
 import '../../api/provider_presentation.dart';
-import '../../state/connection.dart';
+import '../../domain/server_gateway.dart' show StreamStatus;
 import '../../domain/session_history.dart';
-import '../widgets/product_states.dart';
-import '../app_theme.dart';
+import '../../l10n/app_localizations.dart';
+import '../../state/connection.dart';
+import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import 'active_context_screen.dart';
-import '../kit/motion/kit_refresh.dart';
 
 enum SessionContextBreakdownKind { user, assistant, tool, other }
 
@@ -174,6 +176,17 @@ List<SessionContextBreakdownSegment> _estimateBreakdown(
   ];
 }
 
+/// From this share of the model's limit up, the page says the conversation
+/// is near its limit and offers what to do (map: session-context).
+const _nearLimit = .8;
+
+/// Under this share, the verdict adds "plenty left".
+const _plentyLeft = .5;
+
+/// How full a conversation's context is (map: session-context): a plain
+/// verdict first, the model's bar, what to do near the limit, what fills
+/// the input, the conversation's totals, and the raw request figures under
+/// Details.
 class SessionContextScreen extends StatefulWidget {
   final ConnectionController controller;
   final String sessionID;
@@ -205,6 +218,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
   bool _hasOlder = false;
   bool _failedOlder = false;
   bool _olderNeedsReload = false;
+  bool _compactStarted = false;
   final Set<String> _usedCursors = {};
   bool get _sameLocation =>
       widget.controller.locationRevision == _locationRevision;
@@ -257,7 +271,10 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
               null) {
         _messages = [];
       }
+      if (completed) _compactStarted = false;
       unawaited(_load());
+    } else {
+      setState(() {});
     }
   }
 
@@ -302,11 +319,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
               _usedCursors.contains(page.nextCursor))) {
         _failedOlder = false;
         _olderNeedsReload = true;
-        throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).historyCursorExpired,
-        );
+        throw ProductException(_sharedCopy(context).historyCursorExpired);
       }
       setState(() {
         if (older) {
@@ -342,8 +355,61 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
     }
   }
 
+  /// Why compacting cannot start now, or null when it can.
+  String? _compactBlocked(AppLocalizations l10n) {
+    final conn = widget.controller;
+    if (conn.status != StreamStatus.connected) return l10n.workDisconnected;
+    if (conn.busySessions.contains(widget.sessionID)) {
+      return l10n.sessionContextCompactBusy;
+    }
+    if (conn.modelForSession(widget.sessionID) == null &&
+        !conn.serverOwnsSessionSelection) {
+      return l10n.chatUiSelectAModelBeforeCompactingThisSession;
+    }
+    return null;
+  }
+
+  bool get _canOfferCompact =>
+      !widget.controller.isIsolated &&
+      widget.controller.capabilities.sessionCompact;
+
+  /// Asked first (it changes what the model sees from now on); the request
+  /// runs inside the question, so a failure keeps it open with Try again.
+  Future<void> _compact() async {
+    final l10n = _sharedCopy(context);
+    final conn = widget.controller;
+    final started = await showKitConfirm(
+      context,
+      title: l10n.sessionContextCompactTitle,
+      body: l10n.sessionContextCompactBody,
+      confirmLabel: l10n.sessionContextCompactConfirm,
+      icon: AppIconography.collapse,
+      confirmKey: const Key('session-context-compact-confirm'),
+      consequenceItems: [
+        KitConsequence(
+          l10n.sessionContextCompactKept,
+          mark: KitConsequenceMark.kept,
+        ),
+      ],
+      action: () async {
+        final repository = await conn.prepareActionRepository();
+        if (repository == null || !_sameLocation) {
+          throw ProductException(l10n.e7SharedOpenCodeIsReconnectingTryAgain);
+        }
+        final model = conn.modelForSession(widget.sessionID);
+        await repository.compactSession(
+          widget.sessionID,
+          providerID: model?.providerID ?? '',
+          modelID: model?.modelID ?? '',
+        );
+      },
+    );
+    if (started && mounted) setState(() => _compactStarted = true);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = _sharedCopy(context);
     final boundary = widget.controller.supportsStagedRevert
         ? widget
               .controller
@@ -360,443 +426,318 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       widget.controller.catalog,
       session: widget.controller.sessionsById[widget.sessionID],
     );
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_sharedCopy(context).e7SharedSessionContext),
+    final blocked = _compactBlocked(l10n);
+    final canRefresh = !_loading && _sameLocation;
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.e7SharedSessionContext,
         actions: [
-          IconButton(
-            tooltip: _sharedCopy(context).e7SharedRefreshContext,
-            onPressed: _loading || !_sameLocation ? null : _load,
-            icon: const Icon(AppIconography.retry),
+          KitAction(
+            key: const Key('session-context-refresh'),
+            label: l10n.e7SharedRefreshContext,
+            icon: AppIconography.retry,
+            onPressed: canRefresh ? _load : null,
+            disabledReason: canRefresh
+                ? null
+                : _sameLocation
+                ? l10n.sessionContextLoading
+                : l10n.activeContextChanged,
           ),
         ],
-      ),
-      body: !_sameLocation
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(AppLocalizations.of(context).activeContextChanged),
-              ),
-            )
-          : Column(
-              children: [
-                if (widget.controller.repository is ActiveContextGateway &&
-                    (widget.controller.repository as ActiveContextGateway)
-                        .activeContextSupported)
-                  ListTile(
-                    key: const ValueKey('open-active-context'),
-                    leading: const Icon(AppIconography.text),
-                    title: Text(
-                      AppLocalizations.of(context).activeContextTitle,
-                    ),
-                    subtitle: Text(
-                      AppLocalizations.of(context).activeContextSubtitle,
-                    ),
-                    trailing: const Icon(AppIconography.chevronRight),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => ActiveContextScreen(
-                          controller: widget.controller,
-                          sessionID: widget.sessionID,
-                        ),
-                      ),
-                    ),
-                  ),
-                Expanded(child: _buildBody(metrics)),
-              ],
+        menu: [
+          if (_canOfferCompact && _sameLocation)
+            KitMenuItem(
+              key: const Key('session-context-compact-menu'),
+              label: l10n.sessionContextCompactAction,
+              icon: AppIconography.collapse,
+              enabled: blocked == null && !_compactStarted,
+              disabledReason: _compactStarted
+                  ? l10n.sessionContextCompactStarted
+                  : blocked,
+              onSelected: () => unawaited(_compact()),
             ),
+        ],
+      ),
+      width: KitScreenWidth.reading,
+      loading: _loading && _messages.isNotEmpty,
+      loadingLabel: l10n.sessionContextLoading,
+      body: _buildBody(l10n, metrics, blocked),
     );
   }
 
-  Widget _buildBody(SessionContextMetrics metrics) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    if (_loading && _messages.isEmpty) return const LoadingList(rows: 7);
+  Widget _buildBody(
+    AppLocalizations l10n,
+    SessionContextMetrics metrics,
+    String? compactBlocked,
+  ) {
+    if (!_sameLocation) {
+      return KitStateView(
+        icon: AppIconography.swap,
+        title: l10n.sessionContextMovedTitle,
+        body: l10n.activeContextChanged,
+      );
+    }
+    if (_loading && _messages.isEmpty) {
+      return ListView(
+        padding: KitScreen.padding(context),
+        children: const [KitSkeletonRows(count: 6)],
+      );
+    }
     if (_error != null && _messages.isEmpty) {
-      return ProductErrorState(
-        message: productErrorText(_error!),
-        onRetry: _load,
+      return KitStateView.error(
+        title: l10n.sessionContextLoadFailed,
+        body: productErrorText(_error!),
+        error: _error,
+        details: productErrorText(_error!),
+        retry: KitAction(label: l10n.isolatedTaskRetryOpen, onPressed: _load),
       );
     }
     if (metrics.currentMessage == null) {
-      return ProductEmptyState(
+      return KitStateView(
         icon: AppIconography.usageRing,
-        title: _sharedCopy(context).e7SharedNoContextUsageYet,
-        message: _error != null
+        title: l10n.e7SharedNoContextUsageYet,
+        body: _error != null
             ? productErrorText(_error!)
             : _hasOlder
             ? l10n.historyLoadedOnly
-            : _sharedCopy(context).e7SharedSendAPromptAndWaitForAn,
-        actionLabel: _olderNeedsReload
-            ? l10n.historyReload
-            : _olderCursor != null
-            ? l10n.historyLoadOlder
-            : _sharedCopy(context).globalSessionsRefresh,
-        onAction: _loading
-            ? null
-            : _olderCursor != null
-            ? () => _load(older: true)
-            : _load,
+            : l10n.e7SharedSendAPromptAndWaitForAn,
+        primary: KitAction(
+          label: _olderNeedsReload
+              ? l10n.historyReload
+              : _olderCursor != null
+              ? l10n.historyLoadOlder
+              : l10n.globalSessionsRefresh,
+          onPressed: _loading
+              ? null
+              : _olderCursor != null
+              ? () => _load(older: true)
+              : _load,
+        ),
       );
     }
+
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space4);
+    final usage = metrics.usage;
+    final near = usage != null && usage >= _nearLimit;
+    final activeContext =
+        widget.controller.repository is ActiveContextGateway &&
+        (widget.controller.repository as ActiveContextGateway)
+            .activeContextSupported;
+    final model = _modelLabels(l10n, metrics);
 
     return KitRefresh(
       onRefresh: _load,
       child: ListView(
         key: const ValueKey('session-context-list'),
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: KitScreen.padding(context),
         children: [
-          if (_error != null)
-            _InlineContextError(
-              error: _error!,
-              onRetry: () => _load(older: _failedOlder),
-            ),
-          if (_hasOlder)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(l10n.historyLoadedOnly),
-                  TextButton(
-                    onPressed: _loading ? null : () => _load(older: true),
-                    child: Text(
-                      _olderNeedsReload
-                          ? l10n.historyReload
-                          : l10n.historyLoadOlder,
-                    ),
-                  ),
-                ],
+          if (_error != null) ...[
+            KitNotice.error(
+              key: const ValueKey('session-context-inline-error'),
+              message: l10n.sessionContextRefreshFailed,
+              error: _error,
+              details: productErrorText(_error!),
+              retry: KitAction(
+                label: l10n.isolatedTaskRetryOpen,
+                onPressed: () => _load(older: _failedOlder),
               ),
             ),
-          _ContextHero(metrics: metrics),
-          SectionLabel(_sharedCopy(context).e7SharedCurrentModelRequest),
-          _MetricGrid(metrics: metrics),
-          if (metrics.breakdown.isNotEmpty) ...[
-            SectionLabel(_sharedCopy(context).e7SharedEstimatedInputMakeup),
-            _ContextBreakdown(segments: metrics.breakdown),
+            gap,
           ],
-          SectionLabel(
-            _hasOlder
-                ? l10n.historyLoadedTotals
-                : _sharedCopy(context).e7SharedSessionTotals,
-          ),
-          _SessionTotals(metrics: metrics, partial: _hasOlder),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: Text(
-              _sharedCopy(
-                context,
-              ).e7SharedUsageComesFromTheLatestCompletedAssistant,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(Theme.of(context)),
-                height: 1.45,
-              ),
+          if (_hasOlder) ...[
+            KitNotice(
+              icon: AppIconography.history,
+              message: l10n.historyLoadedOnly,
+              actions: [
+                KitAction(
+                  label: _olderNeedsReload
+                      ? l10n.historyReload
+                      : l10n.historyLoadOlder,
+                  onPressed: _loading ? null : () => _load(older: true),
+                ),
+              ],
             ),
+            gap,
+          ],
+          // The verdict first, in plain words (map infoMissing).
+          KitText(
+            _verdict(l10n, usage),
+            key: const ValueKey('session-context-verdict'),
+            role: KitTextRole.title,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ContextHero extends StatelessWidget {
-  final SessionContextMetrics metrics;
-
-  const _ContextHero({required this.metrics});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final usage = metrics.usage;
-    final percent = usage == null ? null : usage * 100;
-    final progress = usage?.clamp(0.0, 1.0) ?? 0.0;
-    final model = metrics.model;
-    final info = metrics.currentMessage!;
-    final providerID = info.providerID ?? '';
-    final modelID = info.modelID ?? '';
-    final wireLabel = modelID.isEmpty
-        ? _sharedCopy(context).e7SharedModelUnavailable
-        : providerID.isEmpty
-        ? modelID
-        : presentedModelLabel(providerID, modelID);
-    final modelLabel = model?.name.trim().isNotEmpty == true
-        ? model!.name
-        : wireLabel;
-
-    final gauge = Semantics(
-      label: percent == null
-          ? _sharedCopy(context).e7SharedContextLimitUnavailable
-          : _sharedCopy(context).e7SharedDetail381(percent.toStringAsFixed(1)),
-      child: SizedBox.square(
-        dimension: 86,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox.square(
-              dimension: 72,
-              child: CircularProgressIndicator(
+          SizedBox(height: tokens.space3),
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            children: [
+              KitProgressRow(
                 key: const ValueKey('session-context-gauge'),
-                value: progress,
-                strokeWidth: 6,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                strokeCap: StrokeCap.round,
+                title: model.name,
+                value: usage,
+                valueKey: const ValueKey('session-context-token-summary'),
+                valueLabel: metrics.contextLimit > 0
+                    ? l10n.e7SharedDetail385(
+                        _formatNumber(metrics.contextTokens),
+                        _formatNumber(metrics.contextLimit),
+                      )
+                    : l10n.e7SharedDetail386(
+                        _formatNumber(metrics.contextTokens),
+                      ),
               ),
-            ),
-            Text(
-              percent == null ? '—' : '${percent.toStringAsFixed(0)}%',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    final details = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(modelLabel, style: theme.textTheme.titleMedium),
-        if (modelLabel != wireLabel) ...[
-          const SizedBox(height: 2),
-          Text(
-            wireLabel,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        Text(
-          metrics.contextLimit > 0
-              ? _sharedCopy(context).e7SharedDetail385(
-                  _formatNumber(metrics.contextTokens),
-                  _formatNumber(metrics.contextLimit),
-                )
-              : _sharedCopy(
-                  context,
-                ).e7SharedDetail386(_formatNumber(metrics.contextTokens)),
-          key: const ValueKey('session-context-token-summary'),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _sharedCopy(
-            context,
-          ).e7SharedLatestAssistantRequestIncludingCacheActivity,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: AppTheme.mutedOf(theme),
-          ),
-        ),
-      ],
-    );
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppTheme.hairline(theme))),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final stacked =
-              constraints.maxWidth < 360 ||
-              MediaQuery.textScalerOf(context).scale(1) >= 1.5;
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [gauge, const SizedBox(height: 12), details],
-            );
-          }
-          return Row(
-            children: [
-              gauge,
-              const SizedBox(width: 18),
-              Expanded(child: details),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MetricGrid extends StatelessWidget {
-  final SessionContextMetrics metrics;
-
-  const _MetricGrid({required this.metrics});
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = metrics.tokens;
-    final items = <({String label, String value})>[
-      (
-        label: _sharedCopy(context).usageInput,
-        value: _formatNumber(tokens.input),
-      ),
-      (
-        label: _sharedCopy(context).usageOutput,
-        value: _formatNumber(tokens.output),
-      ),
-      (
-        label: _sharedCopy(context).transcriptFindReasoning,
-        value: _formatNumber(tokens.reasoning),
-      ),
-      (
-        label: _sharedCopy(context).usageCacheRead,
-        value: _formatNumber(tokens.cacheRead),
-      ),
-      (
-        label: _sharedCopy(context).usageCacheWrite,
-        value: _formatNumber(tokens.cacheWrite),
-      ),
-      (
-        label: _sharedCopy(context).e7SharedContextLimit,
-        value: metrics.contextLimit > 0
-            ? _formatNumber(metrics.contextLimit)
-            : _sharedCopy(context).e7SharedUnavailable,
-      ),
-    ];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns =
-            constraints.maxWidth >= 430 &&
-                MediaQuery.textScalerOf(context).scale(1) < 1.5
-            ? 2
-            : 1;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            children: [
-              for (var index = 0; index < items.length; index++)
-                SizedBox(
-                  width: columns == 1
-                      ? constraints.maxWidth - 32
-                      : (constraints.maxWidth - 32) / 2,
-                  child: _MetricRow(
-                    label: items[index].label,
-                    value: items[index].value,
+              if (activeContext)
+                KitRow(
+                  key: const ValueKey('open-active-context'),
+                  leading: const KitRowIcon(AppIconography.text),
+                  title: l10n.activeContextTitle,
+                  supporting: TextSpan(text: l10n.activeContextSubtitle),
+                  trailing: const KitChevron(),
+                  onTap: () => pushKitPage<void>(
+                    context,
+                    (_) => ActiveContextScreen(
+                      controller: widget.controller,
+                      sessionID: widget.sessionID,
+                    ),
                   ),
                 ),
             ],
           ),
-        );
-      },
-    );
-  }
-}
-
-class _MetricRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MetricRow({super.key, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppTheme.hairline(theme))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
+          // Near the limit: what it means and what to do (map
+          // statesMissing, actionsMissing "compact now").
+          if (_compactStarted) ...[
+            gap,
+            KitNotice(
+              key: const ValueKey('session-context-compact-started'),
+              tone: AppStatusTone.ok,
+              message: l10n.sessionContextCompactStarted,
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: FontWeight.w600,
+          ] else if (near) ...[
+            gap,
+            KitNotice(
+              key: const ValueKey('session-context-near-limit'),
+              icon: AppIconography.warning,
+              title: l10n.sessionContextNearLimitTitle,
+              message: l10n.sessionContextNearLimitBody,
+              actions: [
+                if (_canOfferCompact)
+                  KitAction(
+                    key: const Key('session-context-compact'),
+                    label: l10n.sessionContextCompactAction,
+                    icon: AppIconography.collapse,
+                    onPressed: compactBlocked == null ? _compact : null,
+                    disabledReason: compactBlocked,
+                  ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ContextBreakdown extends StatelessWidget {
-  final List<SessionContextBreakdownSegment> segments;
-
-  const _ContextBreakdown({required this.segments});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final base = theme.colorScheme.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              key: const ValueKey('session-context-breakdown'),
-              height: 8,
-              child: Row(
-                children: [
-                  for (var index = 0; index < segments.length; index++)
-                    Expanded(
-                      flex: math.max(1, (segments[index].percent * 10).round()),
-                      child: ColoredBox(
-                        color: base.withValues(
-                          alpha: .28 + (index * .16).clamp(0, .58),
+          ],
+          if (metrics.breakdown.isNotEmpty) ...[
+            gap,
+            KitRowGroup(
+              label: l10n.e7SharedEstimatedInputMakeup,
+              margin: EdgeInsets.zero,
+              children: [
+                KitProgressRow.segments(
+                  key: const ValueKey('session-context-breakdown'),
+                  title: l10n.sessionContextMakeupTitle,
+                  valueLabel: l10n.sessionContextTokens(
+                    _formatNumber(metrics.tokens.input),
+                  ),
+                  segments: [
+                    for (final segment in metrics.breakdown)
+                      KitProgressSegment(
+                        label: _breakdownLabel(l10n, segment.kind),
+                        value: segment.percent / 100,
+                        // Short, so the legend fits at large text; the
+                        // counts are in the bar's own label.
+                        valueLabel: l10n.sessionContextPercent(
+                          segment.percent.round().toString(),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
+          ],
+          gap,
+          _SessionTotals(metrics: metrics, partial: _hasOlder),
+          gap,
+          // The raw figures of the latest request, the model's id and how
+          // the numbers are made: one fold, last and closed (KIT-33).
+          KitDetailsFold(
+            key: const ValueKey('session-context-details'),
+            values: [
+              if (model.wire != model.name)
+                KitTechnicalValue(l10n.sessionContextModelId, model.wire),
+              KitTechnicalValue(
+                l10n.usageInput,
+                _formatNumber(metrics.tokens.input),
+                copyable: false,
+              ),
+              KitTechnicalValue(
+                l10n.usageOutput,
+                _formatNumber(metrics.tokens.output),
+                copyable: false,
+              ),
+              KitTechnicalValue(
+                l10n.transcriptFindReasoning,
+                _formatNumber(metrics.tokens.reasoning),
+                copyable: false,
+              ),
+              KitTechnicalValue(
+                l10n.usageCacheRead,
+                _formatNumber(metrics.tokens.cacheRead),
+                copyable: false,
+              ),
+              KitTechnicalValue(
+                l10n.usageCacheWrite,
+                _formatNumber(metrics.tokens.cacheWrite),
+                copyable: false,
+              ),
+              KitTechnicalValue(
+                l10n.e7SharedContextLimit,
+                metrics.contextLimit > 0
+                    ? _formatNumber(metrics.contextLimit)
+                    : l10n.e7SharedUnavailable,
+                copyable: false,
+              ),
+            ],
+            notes: [
+              l10n.e7SharedLatestAssistantRequestIncludingCacheActivity,
+              l10n.e7SharedUsageComesFromTheLatestCompletedAssistant,
+            ],
           ),
-          const SizedBox(height: 10),
-          for (var index = 0; index < segments.length; index++)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: [
-                  Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      color: base.withValues(
-                        alpha: .28 + (index * .16).clamp(0, .58),
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _breakdownLabel(
-                        _sharedCopy(context),
-                        segments[index].kind,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${segments[index].percent.toStringAsFixed(1)}% · ${_formatNumber(segments[index].tokens)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.mutedOf(theme),
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
   }
+
+  String _verdict(AppLocalizations l10n, double? usage) {
+    if (usage == null) return l10n.e7SharedContextLimitUnavailable;
+    final percent = (usage * 100).round().toString();
+    if (usage >= 1) return l10n.sessionContextVerdictFull(percent);
+    if (usage >= _nearLimit) return l10n.sessionContextVerdictNear(percent);
+    if (usage < _plentyLeft) return l10n.sessionContextVerdictPlenty(percent);
+    return l10n.sessionContextVerdictUsed(percent);
+  }
+}
+
+/// The model's display name, and the id it goes by on the wire.
+({String name, String wire}) _modelLabels(
+  AppLocalizations l10n,
+  SessionContextMetrics metrics,
+) {
+  final info = metrics.currentMessage!;
+  final providerID = info.providerID ?? '';
+  final modelID = info.modelID ?? '';
+  final wire = modelID.isEmpty
+      ? l10n.e7SharedModelUnavailable
+      : providerID.isEmpty
+      ? modelID
+      : presentedModelLabel(providerID, modelID);
+  final name = metrics.model?.name.trim().isNotEmpty == true
+      ? metrics.model!.name
+      : wire;
+  return (name: name, wire: wire);
 }
 
 class _SessionTotals extends StatelessWidget {
@@ -807,93 +748,69 @@ class _SessionTotals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          _MetricRow(
-            label: partial
-                ? l10n.historyLoadedMessages
-                : _sharedCopy(context).e7SharedMessages,
-            value: _formatNumber(
-              metrics.userMessages + metrics.assistantMessages,
+    final l10n = _sharedCopy(context);
+    final tokens = KitTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitRowGroup(
+          label: partial
+              ? l10n.historyLoadedTotals
+              : l10n.e7SharedSessionTotals,
+          leadingIcons: false,
+          margin: EdgeInsets.zero,
+          children: [
+            KitRow(
+              title: partial
+                  ? l10n.historyLoadedMessages
+                  : l10n.e7SharedMessages,
+              trailing: KitRowValue(
+                _formatNumber(metrics.userMessages + metrics.assistantMessages),
+                chevron: false,
+              ),
             ),
-          ),
-          _MetricRow(
-            label: _sharedCopy(context).e7SharedUserAssistant,
-            value:
+            KitRow(
+              title: l10n.e7SharedUserAssistant,
+              trailing: KitRowValue(
                 '${_formatNumber(metrics.userMessages)} / ${_formatNumber(metrics.assistantMessages)}',
-          ),
-          _MetricRow(
-            key: const ValueKey('session-context-cost'),
-            label: metrics.serverCost != null
-                ? _sharedCopy(context).e7SharedAccumulatedCostReportedByServer
-                : partial
-                ? l10n.historyLoadedCost
-                : _sharedCopy(context).e7SharedAccumulatedCost,
-            value: '\$${metrics.totalCost.toStringAsFixed(4)}',
-          ),
-          if (metrics.serverTokens case final tokens?)
-            _MetricRow(
-              key: const ValueKey('session-context-server-tokens'),
-              label: _sharedCopy(context).e7SharedSessionTokensReportedByServer,
-              value: _formatNumber(tokens.total),
+                chevron: false,
+              ),
             ),
-          if (metrics.reportedByServer)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                l10n.historyServerTotalsNote,
-                key: const ValueKey('session-context-reported-by-server'),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppTheme.mutedOf(Theme.of(context)),
+            KitRow(
+              key: const ValueKey('session-context-cost'),
+              title: metrics.serverCost != null
+                  ? l10n.e7SharedAccumulatedCostReportedByServer
+                  : partial
+                  ? l10n.historyLoadedCost
+                  : l10n.e7SharedAccumulatedCost,
+              titleMaxLines: 2,
+              trailing: KitRowValue(
+                '\$${metrics.totalCost.toStringAsFixed(4)}',
+                chevron: false,
+              ),
+            ),
+            if (metrics.serverTokens case final serverTokens?)
+              KitRow(
+                key: const ValueKey('session-context-server-tokens'),
+                title: l10n.e7SharedSessionTokensReportedByServer,
+                titleMaxLines: 2,
+                trailing: KitRowValue(
+                  _formatNumber(serverTokens.total),
+                  chevron: false,
                 ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineContextError extends StatelessWidget {
-  final Object error;
-  final Future<void> Function() onRetry;
-
-  const _InlineContextError({required this.error, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      key: const ValueKey('session-context-inline-error'),
-      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-      color: theme.colorScheme.errorContainer.withValues(alpha: .38),
-      child: Row(
-        children: [
-          Icon(
-            Icons.sync_problem_rounded,
-            size: 18,
-            color: theme.colorScheme.error,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _sharedCopy(context).e7SharedDetail409(
-                productErrorText(error, l10n: _sharedCopy(context)),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            child: Text(_sharedCopy(context).isolatedTaskRetryOpen),
+          ],
+        ),
+        if (metrics.reportedByServer) ...[
+          SizedBox(height: tokens.space2),
+          KitText(
+            l10n.historyServerTotalsNote,
+            key: const ValueKey('session-context-reported-by-server'),
+            role: KitTextRole.caption,
+            tone: KitTextTone.secondary,
           ),
         ],
-      ),
+      ],
     );
   }
 }

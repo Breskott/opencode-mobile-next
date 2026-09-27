@@ -24180,4 +24180,288 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get runningWorkTitle => 'Running now';
+
+  @override
+  String get runningWorkFailed => 'Failed';
+
+  @override
+  String runningWorkAgentState(String state) {
+    return 'Agent · $state';
+  }
+
+  @override
+  String runningWorkCommandState(String state) {
+    return 'Command · $state';
+  }
+
+  @override
+  String get runningWorkOffline =>
+      'Reconnecting. Try again once the server answers.';
+
+  @override
+  String runningWorkStopAgent(String title) {
+    return 'Stop “$title”';
+  }
+
+  @override
+  String runningWorkStopAgentTitle(String title) {
+    return 'Stop “$title”?';
+  }
+
+  @override
+  String get runningWorkStopAgentBody =>
+      'The agent stops where it is. Its conversation and the files it changed are kept.';
+
+  @override
+  String get runningWorkStopAgentConfirm => 'Stop agent';
+
+  @override
+  String get runningWorkScopeChangedTitle => 'The server or project changed';
+
+  @override
+  String get runningWorkAgentsFailed =>
+      'Couldn\'t load this conversation\'s agents.';
+
+  @override
+  String get runningWorkCommandsFailed =>
+      'Couldn\'t load this conversation\'s commands.';
+
+  @override
+  String get runningWorkEmptyTitle => 'Nothing running';
+
+  @override
+  String get runningWorkEmptyBody =>
+      'Agents and commands this conversation starts show here while they run and after they end.';
+
+  @override
+  String get runningWorkBackgroundBody =>
+      'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.';
+
+  @override
+  String get runningWorkBackgroundAction => 'Keep chatting while it runs';
+
+  @override
+  String get shellOutputCopyFirst => 'Copy output first';
+
+  @override
+  String get shellOutputLimitTitle => 'Stop it after…';
+
+  @override
+  String shellOutputStopsIn(String time) {
+    return 'stops in $time';
+  }
+
+  @override
+  String get shellOutputNoLimit => 'no time limit';
+
+  @override
+  String shellOutputAboutToStop(String time) {
+    return 'It stops in $time. Change timeout to give it longer.';
+  }
+
+  @override
+  String get shellOutputReadFailed => 'Couldn\'t read the output.';
+
+  @override
+  String get shellOutputLimitFailed => 'Couldn\'t change the time limit.';
+
+  @override
+  String get shellOutputDetailCommand => 'Command as typed';
+
+  @override
+  String get shellOutputDetailFolder => 'Folder';
+
+  @override
+  String get shellOutputDetailExit => 'Exit code';
+
+  @override
+  String get shellOutputDetailId => 'Command ID';
+
+  @override
+  String get shellOutputReading => 'Reading output';
+
+  @override
+  String get sessionDestinationWarpTitle => 'Move to a cloud machine';
+
+  @override
+  String get sessionDestinationSeparateCopy => 'Separate copy';
+
+  @override
+  String sessionDestinationCloudKind(String state) {
+    return 'Cloud machine · $state';
+  }
+
+  @override
+  String get sessionDestinationConnected => 'Connected';
+
+  @override
+  String get sessionDestinationNotConnected => 'Not connected';
+
+  @override
+  String get sessionDestinationNotConnectedWhy =>
+      'Not connected. It can be picked once it connects.';
+
+  @override
+  String sessionDestinationChangesGo(String destination) {
+    return 'With changes, they go with it to $destination.';
+  }
+
+  @override
+  String sessionDestinationChangesCopied(String destination) {
+    return 'With changes, a copy goes with it to $destination.';
+  }
+
+  @override
+  String sessionDestinationChangesStay(String place) {
+    return 'Without changes, they stay in $place.';
+  }
+
+  @override
+  String get sessionDestinationMoveWithout => 'Move without changes';
+
+  @override
+  String get sessionDestinationMoveFailed => 'Couldn\'t move the conversation.';
+
+  @override
+  String get sessionDestinationLoadFailed =>
+      'Couldn\'t load the places to move to';
+
+  @override
+  String get sessionDestinationNoneTitle => 'Nowhere else to move it yet';
+
+  @override
+  String get sessionDestinationNoneMoveBody =>
+      'This project has only this folder. A separate copy of the project shows here once it exists.';
+
+  @override
+  String get sessionDestinationNoneWarpBody =>
+      'This project has no cloud machine yet.';
+
+  @override
+  String get consoleOrganizationWhatChanges =>
+      'Models, providers and billing follow the organization you pick.';
+
+  @override
+  String consoleOrganizationSwitchBody(String organization) {
+    return '$organization becomes the organization for models, providers and billing. Models reload; nothing running is stopped.';
+  }
+
+  @override
+  String consoleOrganizationSwitchConfirm(String organization) {
+    return 'Switch to $organization';
+  }
+
+  @override
+  String get consoleOrganizationLoadFailed =>
+      'Couldn\'t load your organizations';
+
+  @override
+  String get consoleOrganizationNoneTitle => 'No organizations';
+
+  @override
+  String get consoleOrganizationOnlyOne =>
+      'This is your only organization, so there is nothing to switch to.';
+
+  @override
+  String get sessionContextLoading => 'Loading context';
+
+  @override
+  String get sessionContextMovedTitle => 'This conversation moved';
+
+  @override
+  String get sessionContextLoadFailed => 'Couldn\'t load the context';
+
+  @override
+  String get sessionContextRefreshFailed =>
+      'Couldn\'t refresh. The numbers below are from the last read.';
+
+  @override
+  String sessionContextVerdictPlenty(String percent) {
+    return '$percent % used · plenty left';
+  }
+
+  @override
+  String sessionContextVerdictUsed(String percent) {
+    return '$percent % used';
+  }
+
+  @override
+  String sessionContextVerdictNear(String percent) {
+    return '$percent % used · near the limit';
+  }
+
+  @override
+  String sessionContextVerdictFull(String percent) {
+    return '$percent % used · at the limit';
+  }
+
+  @override
+  String get sessionContextNearLimitTitle => 'Near the limit';
+
+  @override
+  String get sessionContextNearLimitBody =>
+      'Older details may be dropped from what the model sees. Compact the conversation to keep going, or start a new one.';
+
+  @override
+  String get sessionContextCompactAction => 'Compact this conversation';
+
+  @override
+  String get sessionContextCompactTitle => 'Compact this conversation?';
+
+  @override
+  String get sessionContextCompactBody =>
+      'OpenCode summarizes the conversation so far and continues from the summary, so it takes less of the model\'s limit.';
+
+  @override
+  String get sessionContextCompactKept => 'Every message stays in the history.';
+
+  @override
+  String get sessionContextCompactConfirm => 'Compact conversation';
+
+  @override
+  String get sessionContextCompactStarted =>
+      'Compacting started. The numbers update when it finishes.';
+
+  @override
+  String get sessionContextCompactBusy => 'Wait for the reply to finish.';
+
+  @override
+  String get sessionContextMakeupTitle => 'Latest request input';
+
+  @override
+  String sessionContextTokens(String count) {
+    return '$count tokens';
+  }
+
+  @override
+  String get sessionContextModelId => 'Model ID';
+
+  @override
+  String get demoScreenTitle => 'Try it offline';
+
+  @override
+  String get demoScreenSimulated => 'Simulated · nothing is saved';
+
+  @override
+  String get demoScreenFinished =>
+      'That\'s the whole loop: a prompt, a reply and a reviewed edit.';
+
+  @override
+  String sessionContextPercent(String percent) {
+    return '$percent %';
+  }
+
+  @override
+  String sessionDestinationChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changed files are present.',
+      one: '1 changed file is present.',
+    );
+    return '$_temp0';
+  }
 }

@@ -37820,6 +37820,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up Linux on this phone'**
   String get localTerminalSetUpLinux;
+
+  /// Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks).
+  ///
+  /// In en, this message translates to:
+  /// **'Running now'**
+  String get runningWorkTitle;
+
+  /// Running now: the word for a command that ended with an error exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get runningWorkFailed;
+
+  /// Running now: an agent row's supporting line; state is Running, Idle or Status unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent · {state}'**
+  String runningWorkAgentState(String state);
+
+  /// Running now: a command row's supporting line; state is a word and the elapsed time, e.g. 'Failed · 2:00'.
+  ///
+  /// In en, this message translates to:
+  /// **'Command · {state}'**
+  String runningWorkCommandState(String state);
+
+  /// Running now and command output: why a row or action is unavailable while the connection is down.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting. Try again once the server answers.'**
+  String get runningWorkOffline;
+
+  /// Running now: row menu item that stops one running agent; title is the agent's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{title}”'**
+  String runningWorkStopAgent(String title);
+
+  /// Running now: the stop-agent confirmation's question.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{title}”?'**
+  String runningWorkStopAgentTitle(String title);
+
+  /// Running now: what stopping an agent does.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent stops where it is. Its conversation and the files it changed are kept.'**
+  String get runningWorkStopAgentBody;
+
+  /// Running now: the stop-agent confirmation's button.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop agent'**
+  String get runningWorkStopAgentConfirm;
+
+  /// Running now: title shown when the connection moved to another server or project while the sheet was open.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed'**
+  String get runningWorkScopeChangedTitle;
+
+  /// Running now: the agents could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation\'s agents.'**
+  String get runningWorkAgentsFailed;
+
+  /// Running now: the commands could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation\'s commands.'**
+  String get runningWorkCommandsFailed;
+
+  /// Running now: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing running'**
+  String get runningWorkEmptyTitle;
+
+  /// Running now: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents and commands this conversation starts show here while they run and after they end.'**
+  String get runningWorkEmptyBody;
+
+  /// Running now: shown only while running work holds the conversation; says what moving it to the background frees.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.'**
+  String get runningWorkBackgroundBody;
+
+  /// Running now: moves the work that holds the conversation to the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep chatting while it runs'**
+  String get runningWorkBackgroundAction;
+
+  /// Stop-command confirmation: the safer path that copies the output before anything is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy output first'**
+  String get shellOutputCopyFirst;
+
+  /// Command output: title of the sheet that sets how long the command may still run.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop it after…'**
+  String get shellOutputLimitTitle;
+
+  /// Command output status line: time left before the limit stops the command, e.g. 'stops in 12:46'.
+  ///
+  /// In en, this message translates to:
+  /// **'stops in {time}'**
+  String shellOutputStopsIn(String time);
+
+  /// Command output status line: the command has no time limit.
+  ///
+  /// In en, this message translates to:
+  /// **'no time limit'**
+  String get shellOutputNoLimit;
+
+  /// Command output: shown in the last minute before the time limit stops the command.
+  ///
+  /// In en, this message translates to:
+  /// **'It stops in {time}. Change timeout to give it longer.'**
+  String shellOutputAboutToStop(String time);
+
+  /// Command output: reading the output failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the output.'**
+  String get shellOutputReadFailed;
+
+  /// Command output: changing the time limit failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change the time limit.'**
+  String get shellOutputLimitFailed;
+
+  /// Command output Details: the full command with its environment and paths.
+  ///
+  /// In en, this message translates to:
+  /// **'Command as typed'**
+  String get shellOutputDetailCommand;
+
+  /// Command output Details: the folder the command runs in.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get shellOutputDetailFolder;
+
+  /// Command output Details: the command's exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit code'**
+  String get shellOutputDetailExit;
+
+  /// Command output Details: the server's id for the command.
+  ///
+  /// In en, this message translates to:
+  /// **'Command ID'**
+  String get shellOutputDetailId;
+
+  /// Command output: loading bar label while the output is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading output'**
+  String get shellOutputReading;
+
+  /// Title of the sheet that moves a conversation to a cloud machine (warp).
+  ///
+  /// In en, this message translates to:
+  /// **'Move to a cloud machine'**
+  String get sessionDestinationWarpTitle;
+
+  /// Move conversation: the kind of a folder that is a separate copy (worktree) of the project.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate copy'**
+  String get sessionDestinationSeparateCopy;
+
+  /// Move conversation: the kind of a cloud destination and whether it is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud machine · {state}'**
+  String sessionDestinationCloudKind(String state);
+
+  /// Move conversation: a cloud machine that can take the conversation now.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get sessionDestinationConnected;
+
+  /// Move conversation: a cloud machine that is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get sessionDestinationNotConnected;
+
+  /// Move conversation: why a cloud machine cannot be picked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected. It can be picked once it connects.'**
+  String get sessionDestinationNotConnectedWhy;
+
+  /// Move conversation confirmation: what happens to working changes when moving with them.
+  ///
+  /// In en, this message translates to:
+  /// **'With changes, they go with it to {destination}.'**
+  String sessionDestinationChangesGo(String destination);
+
+  /// Move to a cloud machine confirmation: what happens to working changes when copying them.
+  ///
+  /// In en, this message translates to:
+  /// **'With changes, a copy goes with it to {destination}.'**
+  String sessionDestinationChangesCopied(String destination);
+
+  /// Move conversation confirmation: what happens to working changes left behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Without changes, they stay in {place}.'**
+  String sessionDestinationChangesStay(String place);
+
+  /// Move conversation confirmation: moves the conversation and leaves working changes where they are.
+  ///
+  /// In en, this message translates to:
+  /// **'Move without changes'**
+  String get sessionDestinationMoveWithout;
+
+  /// Move conversation: the move failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t move the conversation.'**
+  String get sessionDestinationMoveFailed;
+
+  /// Move conversation: the destinations could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the places to move to'**
+  String get sessionDestinationLoadFailed;
+
+  /// Move conversation: there is no other destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Nowhere else to move it yet'**
+  String get sessionDestinationNoneTitle;
+
+  /// Move conversation: why there is no other folder.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has only this folder. A separate copy of the project shows here once it exists.'**
+  String get sessionDestinationNoneMoveBody;
+
+  /// Move to a cloud machine: why there is no other destination.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has no cloud machine yet.'**
+  String get sessionDestinationNoneWarpBody;
+
+  /// Switch organization sheet: what switching changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Models, providers and billing follow the organization you pick.'**
+  String get consoleOrganizationWhatChanges;
+
+  /// Switch organization confirmation body; organization is the organization's name.
+  ///
+  /// In en, this message translates to:
+  /// **'{organization} becomes the organization for models, providers and billing. Models reload; nothing running is stopped.'**
+  String consoleOrganizationSwitchBody(String organization);
+
+  /// Switch organization confirmation button.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {organization}'**
+  String consoleOrganizationSwitchConfirm(String organization);
+
+  /// Switch organization: the organizations could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your organizations'**
+  String get consoleOrganizationLoadFailed;
+
+  /// Switch organization: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No organizations'**
+  String get consoleOrganizationNoneTitle;
+
+  /// Switch organization: shown when the only organization is the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your only organization, so there is nothing to switch to.'**
+  String get consoleOrganizationOnlyOne;
+
+  /// Conversation context: loading label.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading context'**
+  String get sessionContextLoading;
+
+  /// Conversation context: the server, project or conversation changed while the page was open.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation moved'**
+  String get sessionContextMovedTitle;
+
+  /// Conversation context: the history could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the context'**
+  String get sessionContextLoadFailed;
+
+  /// Conversation context: a refresh failed while earlier numbers are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. The numbers below are from the last read.'**
+  String get sessionContextRefreshFailed;
+
+  /// Conversation context verdict under half of the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · plenty left'**
+  String sessionContextVerdictPlenty(String percent);
+
+  /// Conversation context verdict between half and the near-limit mark.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used'**
+  String sessionContextVerdictUsed(String percent);
+
+  /// Conversation context verdict near the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · near the limit'**
+  String sessionContextVerdictNear(String percent);
+
+  /// Conversation context verdict at or over the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % used · at the limit'**
+  String sessionContextVerdictFull(String percent);
+
+  /// Conversation context: title of the notice near the model's limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Near the limit'**
+  String get sessionContextNearLimitTitle;
+
+  /// Conversation context: what being near the limit means and what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'Older details may be dropped from what the model sees. Compact the conversation to keep going, or start a new one.'**
+  String get sessionContextNearLimitBody;
+
+  /// Conversation context: starts compacting the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation'**
+  String get sessionContextCompactAction;
+
+  /// Conversation context: the compact confirmation's question.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation?'**
+  String get sessionContextCompactTitle;
+
+  /// Conversation context: what compacting does.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode summarizes the conversation so far and continues from the summary, so it takes less of the model\'s limit.'**
+  String get sessionContextCompactBody;
+
+  /// Conversation context: what compacting keeps.
+  ///
+  /// In en, this message translates to:
+  /// **'Every message stays in the history.'**
+  String get sessionContextCompactKept;
+
+  /// Conversation context: the compact confirmation's button.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact conversation'**
+  String get sessionContextCompactConfirm;
+
+  /// Conversation context: shown after compacting was started.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacting started. The numbers update when it finishes.'**
+  String get sessionContextCompactStarted;
+
+  /// Conversation context: why compacting is unavailable while a reply runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the reply to finish.'**
+  String get sessionContextCompactBusy;
+
+  /// Conversation context: title of the stacked bar of what fills the latest request's input.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest request input'**
+  String get sessionContextMakeupTitle;
+
+  /// Conversation context: a token count, e.g. '41,200 tokens'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String sessionContextTokens(String count);
+
+  /// Conversation context Details: the model's id as the server knows it.
+  ///
+  /// In en, this message translates to:
+  /// **'Model ID'**
+  String get sessionContextModelId;
+
+  /// Offline demo page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it offline'**
+  String get demoScreenTitle;
+
+  /// Offline demo status line.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated · nothing is saved'**
+  String get demoScreenSimulated;
+
+  /// Offline demo: shown when the demo is finished, above Set up your own server.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the whole loop: a prompt, a reply and a reviewed edit.'**
+  String get demoScreenFinished;
+
+  /// Conversation context: a share of the latest request's input, e.g. '42 %'.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String sessionContextPercent(String percent);
+
+  /// Move conversation confirmation: how many working changes there are; what happens to them is said under it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}}'**
+  String sessionDestinationChangesCount(int count);
 }
 
 class _AppLocalizationsDelegate
