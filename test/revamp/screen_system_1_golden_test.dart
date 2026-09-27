@@ -165,6 +165,10 @@ void main() {
         light: light,
         home: AppDiagnosticsScreen(controller: controller),
         then: () async {
+          await tester.tap(
+            find.byKey(const ValueKey('app-diagnostics-actions')),
+          );
+          await tester.pumpAndSettle();
           await tester.tap(find.byKey(const ValueKey('clear-app-diagnostics')));
           await tester.pumpAndSettle();
         },

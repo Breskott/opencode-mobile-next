@@ -1,19 +1,21 @@
 // Golden renders of screen-usage-2's pages (wave 2b): Usage (usage-hub) on
-// its Remaining tab, Remaining usage (provider-quota) before consent and
-// with a reading, the monitoring sheet (provider-quota-enroll-dialog) and
-// the clear-thresholds confirmation (provider-quota-clear-dialog), rebuilt
-// from kit parts. Phone 412x915 and one wide window (1280x800), dark and
+// its Remaining tab, Remaining usage (provider-quota) before consent, with a
+// reading and with that account monitored, and the monitoring sheet
+// (provider-quota-enroll-dialog), rebuilt from kit parts. Phone 412x915 and one wide window (1280x800), dark and
 // light (owner decision 2026-09-27: no Arabic), real fonts at DPR 1.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_usage_2_golden_test.dart
 // and look at every changed image before committing it.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/domain/provider_quota.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
 
@@ -41,6 +43,7 @@ Future<void> _shot(
   required bool light,
   _Page page = _Page.quota,
   Size size = _phone,
+  bool monitored = false,
   Future<void> Function(WidgetTester tester)? act,
 }) async {
   tester.view.physicalSize = size;
@@ -56,6 +59,7 @@ Future<void> _shot(
       snapshot: () => quotaSnapshot(_now),
       statistics: page == _Page.hub,
     );
+    if (monitored) await _monitor(h);
     await tester.pumpWidget(
       usageApp(
         QuotaHarnessOwner(harness: h, child: const SizedBox.expand()),
@@ -99,6 +103,27 @@ Future<void> _shot(
 
 Finder _key(String key) => find.byKey(ValueKey(key));
 
+const _hash =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+/// This account already monitored at 90% used. The record's source is not
+/// this server's hash, so the monitor never starts a read (no network) while
+/// the page shows the source's threshold and Stop in the account's block.
+Future<void> _monitor(QuotaHarness h) => h.connection.store.prefs.setString(
+  ProviderQuotaMonitor.key(quotaProfileId),
+  jsonEncode({
+    'version': 1,
+    'rules': {
+      QuotaProvider.codex.name: const QuotaMonitorRules(
+        source: _hash,
+        account: _hash,
+        token: _hash,
+        threshold: 90,
+      ).toJson(),
+    },
+  }),
+);
+
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(
     target,
@@ -122,13 +147,8 @@ Future<void> _read(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _readWithThreshold(WidgetTester tester) async {
+Future<void> _readToTop(WidgetTester tester) async {
   await _read(tester);
-  await _scrollTo(tester, _key('quota-threshold-primary'));
-  await tester.tap(_key('quota-threshold-primary'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('90% used').last);
-  await tester.pumpAndSettle();
   await tester.drag(_key('quota-content'), const Offset(0, 5000));
   await tester.pumpAndSettle();
 }
@@ -148,7 +168,8 @@ void main() {
         tester,
         'quota_loaded',
         light: light,
-        act: _readWithThreshold,
+        monitored: true,
+        act: _readToTop,
       );
     });
 
@@ -157,9 +178,10 @@ void main() {
         tester,
         'quota_window',
         light: light,
+        monitored: true,
         act: (tester) async {
-          await _readWithThreshold(tester);
-          await _scrollTo(tester, _key('quota-attention-primary'));
+          await _readToTop(tester);
+          await _scrollTo(tester, _key('quota-window-secondary'));
         },
       );
     });
@@ -170,7 +192,8 @@ void main() {
         'quota_loaded',
         light: light,
         size: _wide,
-        act: _readWithThreshold,
+        monitored: true,
+        act: _readToTop,
       );
     });
 
@@ -183,20 +206,6 @@ void main() {
           await _read(tester);
           await _scrollTo(tester, _key('quota-enable-monitoring'));
           await tester.tap(_key('quota-enable-monitoring'));
-          await tester.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets('quota clear confirm, $theme', (tester) async {
-      await _shot(
-        tester,
-        'quota_clear_confirm',
-        light: light,
-        act: (tester) async {
-          await _read(tester);
-          await _scrollTo(tester, _key('quota-clear'));
-          await tester.tap(_key('quota-clear'));
           await tester.pumpAndSettle();
         },
       );

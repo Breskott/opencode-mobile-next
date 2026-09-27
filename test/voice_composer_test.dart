@@ -235,7 +235,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Local voice input'), findsOneWidget);
-    expect(find.textContaining('Audio stays on this device'), findsOneWidget);
+    expect(find.text('Audio never leaves this phone.'), findsOneWidget);
     expect(find.text('High accuracy'), findsOneWidget);
     final modelTarget = find.byKey(const Key('voice-model-base'));
     final modelNode = tester.getSemantics(modelTarget);
@@ -264,12 +264,10 @@ void main() {
           .height,
       greaterThanOrEqualTo(48),
     );
-    expect(
-      tester
-          .getSize(find.byKey(const Key('voice-model-primary-action')))
-          .height,
-      greaterThanOrEqualTo(48),
-    );
+    // The model is on the phone and in use: no primary, the secondary is
+    // Done.
+    expect(find.byKey(const Key('voice-model-primary-action')), findsNothing);
+    expect(find.text('Done'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

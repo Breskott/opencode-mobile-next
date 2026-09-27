@@ -1556,6 +1556,12 @@ abstract class AppLocalizations {
   /// **'Refresh usage'**
   String get usageRefresh;
 
+  /// Usage top bar action that reloads the Spent tab
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh spending'**
+  String get usageRefreshSpending;
+
   /// No description provided for @usageToday.
   ///
   /// In en, this message translates to:
@@ -2981,7 +2987,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageScopedTotals.
   ///
   /// In en, this message translates to:
-  /// **'Totals for the selected report scope'**
+  /// **'Totals'**
   String get usageScopedTotals;
 
   /// No description provided for @usageInspectionDisclosure.
@@ -4484,12 +4490,6 @@ abstract class AppLocalizations {
   /// **'Remaining usage'**
   String get quotaTitle;
 
-  /// Distinguishes account-wide rate-limit windows from project consumption
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.'**
-  String get quotaDescription;
-
   /// Label above the explicitly selected server origin
   ///
   /// In en, this message translates to:
@@ -4523,8 +4523,14 @@ abstract class AppLocalizations {
   /// Informed consent before sending existing server authentication to an optional same-origin route
   ///
   /// In en, this message translates to:
-  /// **'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.'**
+  /// **'Needs a usage collector installed on this server. Provider tokens stay on the server.'**
   String get quotaSetupDescription;
+
+  /// Details note on Usage > Remaining setup: who installs the collector and when to trust it
+  ///
+  /// In en, this message translates to:
+  /// **'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment.'**
+  String get quotaSetupTrustNote;
 
   /// Explains operator configuration and visit-only consent
   ///
@@ -5261,7 +5267,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageBudgetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Personal consumption budgets'**
+  /// **'Budgets'**
   String get usageBudgetTitle;
 
   /// No description provided for @usageBudgetDescription.
@@ -5327,7 +5333,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageBudgetClearAll.
   ///
   /// In en, this message translates to:
-  /// **'Clear saved consumption budgets'**
+  /// **'Clear both budgets'**
   String get usageBudgetClearAll;
 
   /// No description provided for @usageBudgetClearDescription.
@@ -5935,17 +5941,29 @@ abstract class AppLocalizations {
   /// **'Quota monitoring'**
   String get quotaMonitorTitle;
 
+  /// Row in Usage > Remaining > Quota monitoring that opens the shared notification settings for quota alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Quota alerts'**
+  String get quotaAlertsRowTitle;
+
+  /// Second line of the Quota alerts row: what the notification settings it opens control
+  ///
+  /// In en, this message translates to:
+  /// **'Sound, Wi-Fi only and quiet hours'**
+  String get quotaAlertsRowSupporting;
+
   /// No description provided for @quotaMonitorConsentTitle.
   ///
   /// In en, this message translates to:
   /// **'Monitor this provider source?'**
   String get quotaMonitorConsentTitle;
 
-  /// No description provided for @quotaMonitorConsent.
+  /// One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'
   ///
   /// In en, this message translates to:
-  /// **'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.'**
-  String get quotaMonitorConsent;
+  /// **'Keep checking {provider} on {server} in the background and alert me when use reaches:'**
+  String quotaMonitorConsent(String provider, String server);
 
   /// No description provided for @quotaMonitorRuntime.
   ///
@@ -6013,11 +6031,11 @@ abstract class AppLocalizations {
   /// **'Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.'**
   String get quotaMonitorSaveFailed;
 
-  /// No description provided for @quotaMonitorDisable.
+  /// Row that stops background quota monitoring for one provider account on one saved server, e.g. 'Stop monitoring Codex on Workstation'
   ///
   /// In en, this message translates to:
-  /// **'Disable quota monitoring'**
-  String get quotaMonitorDisable;
+  /// **'Stop monitoring {provider} on {server}'**
+  String quotaMonitorDisable(String provider, String server);
 
   /// No description provided for @setupChooseServerTitle.
   ///
@@ -9982,7 +10000,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Dismiss this request?
   ///
   /// In en, this message translates to:
-  /// **'Dismiss this request?'**
+  /// **'Decline this request?'**
   String get e7SharedDismissThisRequest;
 
   /// Shared app interface: The agent continues without your answers.
@@ -11399,7 +11417,7 @@ abstract class AppLocalizations {
   /// About screen AI assistance provenance and experimental desktop limitation
   ///
   /// In en, this message translates to:
-  /// **'This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.'**
+  /// **'Android is the supported platform; desktop builds are experimental.'**
   String get e7SettingsAlphaBody;
 
   /// Settings and appearance user interface.
@@ -11407,12 +11425,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.'**
   String get e7SettingsNonAffiliation;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Third-party license notices below are reproduced in their original language.'**
-  String get e7SettingsOriginalLicenses;
 
   /// Settings and appearance user interface.
   ///
@@ -19767,11 +19779,23 @@ abstract class AppLocalizations {
   /// **'Could not save favorites. Try again.'**
   String get e7ModelUiFavoritesFailed;
 
-  /// Shared voice or model selection UI: e7ModelUiUseModelMode
+  /// Model sheet primary: applies the chosen model and agent, e.g. 'Use Claude Opus 5.5 · Build'
   ///
   /// In en, this message translates to:
-  /// **'Use model and mode'**
-  String get e7ModelUiUseModelMode;
+  /// **'Use {model} · {agent}'**
+  String e7ModelUiUseModelMode(String model, String agent);
+
+  /// Model sheet primary when no agent is chosen: applies the chosen model
+  ///
+  /// In en, this message translates to:
+  /// **'Use {model}'**
+  String modelPickerUseModel(String model);
+
+  /// Model sheet primary before a model is chosen (disabled)
+  ///
+  /// In en, this message translates to:
+  /// **'Use model'**
+  String get modelPickerUseChosenModel;
 
   /// Shared voice or model selection UI: e7ModelUiUseSession
   ///
@@ -19824,7 +19848,7 @@ abstract class AppLocalizations {
   /// Shared voice or model selection UI: e7VoiceUiPrivacyDownload
   ///
   /// In en, this message translates to:
-  /// **'Audio stays on this device. Transcription is local and audio is discarded after use. The one-time model download requires internet access.'**
+  /// **'Audio never leaves this phone.'**
   String get e7VoiceUiPrivacyDownload;
 
   /// Shared voice or model selection UI: e7VoiceUiNoBuiltInMic
@@ -19956,7 +19980,7 @@ abstract class AppLocalizations {
   /// Shared voice or model selection UI: e7VoiceUiReviewTranscript
   ///
   /// In en, this message translates to:
-  /// **'Review transcript'**
+  /// **'Transcript'**
   String get e7VoiceUiReviewTranscript;
 
   /// Shared voice or model selection UI: e7VoiceUiOpenSettings
@@ -20142,7 +20166,7 @@ abstract class AppLocalizations {
   /// Shared voice or model selection UI: e7VoiceUiDeletePack
   ///
   /// In en, this message translates to:
-  /// **'Delete {model}?'**
+  /// **'Delete {model} speech model?'**
   String e7VoiceUiDeletePack(String model);
 
   /// Shared voice or model selection UI: e7VoiceUiDeleteDetail
@@ -20576,6 +20600,12 @@ abstract class AppLocalizations {
   /// **'Continue on computer'**
   String get handoffUiComputerTitle;
 
+  /// Continue on computer: caption over the command to run in a terminal
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal command'**
+  String get handoffUiComputerCommandLabel;
+
   /// Sheet lead paragraph. {binary} is the CLI program name (opencode or opencode2); do not translate it.
   ///
   /// In en, this message translates to:
@@ -20633,7 +20663,7 @@ abstract class AppLocalizations {
   /// QR sheet lead paragraph
   ///
   /// In en, this message translates to:
-  /// **'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.'**
+  /// **'Scan with OpenCode Mobile on the other phone. The code holds only the server and conversation IDs.'**
   String get handoffUiPhoneIntro;
 
   /// Accessibility label for the QR image
@@ -29216,7 +29246,7 @@ abstract class AppLocalizations {
   /// Copies the plain-text performance report
   ///
   /// In en, this message translates to:
-  /// **'Copy report'**
+  /// **'Copy timing report'**
   String get perfTraceCopy;
 
   /// Empties the performance trace
@@ -35745,6 +35775,12 @@ abstract class AppLocalizations {
   /// **'Sending your answers…'**
   String get formRendererSending;
 
+  /// Agent form sheet: the secondary action (and its confirm button) that declines the agent's request for input
+  ///
+  /// In en, this message translates to:
+  /// **'Decline this request'**
+  String get formRendererDecline;
+
   /// Form sheet: value of a choice row before anything is chosen
   ///
   /// In en, this message translates to:
@@ -38115,6 +38151,12 @@ abstract class AppLocalizations {
   /// **'Clear timings'**
   String get perfTraceClearTimings;
 
+  /// App diagnostics > Performance: name of the menu on the timings list header
+  ///
+  /// In en, this message translates to:
+  /// **'Timing report actions'**
+  String get perfTraceActions;
+
   /// screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.
   ///
   /// In en, this message translates to:
@@ -38138,6 +38180,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy errors'**
   String get appDiagnosticsCopyErrors;
+
+  /// App diagnostics: copies the listed handled errors as text
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Copy 1 error} other{Copy {count} errors}}'**
+  String appDiagnosticsCopyCount(int count);
+
+  /// App diagnostics: name of the menu on the handled errors list header
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Actions for 1 error} other{Actions for {count} errors}}'**
+  String appDiagnosticsActions(int count);
 
   /// screen-system-1: App diagnostics tertiary (destructive, confirmed): clears the captured errors.
   ///
@@ -38376,14 +38430,14 @@ abstract class AppLocalizations {
   /// Voice model setup sheet: replaces the downloaded files of the chosen speech model with a fresh copy.
   ///
   /// In en, this message translates to:
-  /// **'Download {model} again'**
+  /// **'Download {model} speech model again'**
   String voiceSetupRedownloadPack(String model);
 
   /// Voice model setup sheet: removes the chosen speech model from the phone (button and the confirm button).
   ///
   /// In en, this message translates to:
-  /// **'Delete {model}'**
-  String voiceSetupDeletePack(String model);
+  /// **'Delete {model} speech model ({size})'**
+  String voiceSetupDeletePack(String model, String size);
 
   /// Voice model delete confirmation: the neutral answer that keeps the speech model.
   ///
@@ -38451,6 +38505,24 @@ abstract class AppLocalizations {
   /// **'Available after the download'**
   String get voiceSetupBusyReason;
 
+  /// Voice model setup: a speech model pack that is not on the phone yet, with its download size, e.g. 'Not downloaded · 153 MB'
+  ///
+  /// In en, this message translates to:
+  /// **'Not downloaded · {size}'**
+  String voiceSetupNotDownloaded(String size);
+
+  /// Voice model setup: closes the sheet when the chosen speech model is already on the phone and in use
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get voiceSetupDone;
+
+  /// Voice input: primary action when the microphone permission is blocked for good; opens the app's Android settings
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone in Android settings'**
+  String get voiceAllowMicInSettings;
+
   /// App-wide status line once a downloaded app update is ready to apply. No tool name.
   ///
   /// In en, this message translates to:
@@ -38502,7 +38574,7 @@ abstract class AppLocalizations {
   /// Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks).
   ///
   /// In en, this message translates to:
-  /// **'Running now'**
+  /// **'Work in this conversation'**
   String get runningWorkTitle;
 
   /// Running now: the word for a command that ended with an error exit code.
@@ -38586,7 +38658,7 @@ abstract class AppLocalizations {
   /// Running now: shown only while running work holds the conversation; says what moving it to the background frees.
   ///
   /// In en, this message translates to:
-  /// **'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.'**
+  /// **'The work keeps running on the server and its results come back here.'**
   String get runningWorkBackgroundBody;
 
   /// Running now: moves the work that holds the conversation to the background.
@@ -38820,26 +38892,32 @@ abstract class AppLocalizations {
   /// Conversation context verdict under half of the model's limit.
   ///
   /// In en, this message translates to:
-  /// **'{percent} % used · plenty left'**
+  /// **'{percent}% used · plenty left'**
   String sessionContextVerdictPlenty(String percent);
 
   /// Conversation context verdict between half and the near-limit mark.
   ///
   /// In en, this message translates to:
-  /// **'{percent} % used'**
+  /// **'{percent}% used'**
   String sessionContextVerdictUsed(String percent);
 
   /// Conversation context verdict near the model's limit.
   ///
   /// In en, this message translates to:
-  /// **'{percent} % used · near the limit'**
+  /// **'{percent}% used'**
   String sessionContextVerdictNear(String percent);
 
   /// Conversation context verdict at or over the model's limit.
   ///
   /// In en, this message translates to:
-  /// **'{percent} % used · at the limit'**
+  /// **'{percent}% used · at the limit'**
   String sessionContextVerdictFull(String percent);
+
+  /// Conversation context totals: the message count with who wrote them, e.g. '2 (1 yours, 1 agent)'
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ({yours} yours, {agent} agent)'**
+  String sessionContextMessagesSplit(String count, String yours, String agent);
 
   /// Conversation context: title of the notice near the model's limit.
   ///
@@ -39306,8 +39384,20 @@ abstract class AppLocalizations {
   /// Add web source: pinned primary that returns the added sources to the draft.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{Done · 1 added} other{Done · {count} added}}'**
+  /// **'{count, plural, one{Add 1 source to prompt} other{Add {count} sources to prompt}}'**
   String webSourcesDone(int count);
+
+  /// Add web source: closes the page when nothing was added
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get webSourcesClose;
+
+  /// Add web source: label above pasted links added to the prompt (search results are marked on their own rows)
+  ///
+  /// In en, this message translates to:
+  /// **'Links you added'**
+  String get webSourcesPastedLinks;
 
   /// Add web source: title of the state when the server or project changed.
   ///
@@ -40106,6 +40196,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding the skill…'**
   String get skillSheetSending;
+
+  /// Full terms of quota monitoring, under Details on the monitoring sheet
+  ///
+  /// In en, this message translates to:
+  /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
+  String get quotaMonitorConsentDetails;
 }
 
 class _AppLocalizationsDelegate

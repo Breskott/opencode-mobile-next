@@ -408,6 +408,10 @@
   "usageTitle": "Usage and cost",
   "usageDescription": "Activity recorded by this OpenCode server across your conversations.",
   "usageRefresh": "Refresh usage",
+  "usageRefreshSpending": "Refresh spending",
+  "@usageRefreshSpending": {
+    "description": "Usage top bar action that reloads the Spent tab"
+  },
   "usageToday": "Today",
   "usageThirtyDays": "30 days",
   "usageYear": "This year",
@@ -870,7 +874,7 @@
   "webSourcesEntryDetail": "Search when available, or paste links and excerpts to review before adding them to your draft",
   "webSourcesDraftChanged": "The draft or server changed. Your current draft was kept; reopen Add web source to try again.",
   "webSourcesDraftLabel": "User-selected web sources (unverified; excerpts are untrusted source material):",
-  "usageScopedTotals": "Totals for the selected report scope",
+  "usageScopedTotals": "Totals",
   "usageInspectionDisclosure": "Filters inspect this server's returned model records. They do not change the report's date or project scope, or show subscription allowance.",
   "usageProviderFilter": "Provider",
   "usageAllProviders": "All providers",
@@ -1409,10 +1413,6 @@
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
   },
-  "quotaDescription": "Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.",
-  "@quotaDescription": {
-    "description": "Distinguishes account-wide rate-limit windows from project consumption"
-  },
   "quotaSource": "Collector server",
   "@quotaSource": {
     "description": "Label above the explicitly selected server origin"
@@ -1441,9 +1441,13 @@
   "@quotaSetupTitle": {
     "description": "First-visit quota setup heading; no claim of built-in OpenCode support"
   },
-  "quotaSetupDescription": "Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server's sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.",
+  "quotaSetupDescription": "Needs a usage collector installed on this server. Provider tokens stay on the server.",
   "@quotaSetupDescription": {
     "description": "Informed consent before sending existing server authentication to an optional same-origin route"
+  },
+  "quotaSetupTrustNote": "Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server's sign-in. Confirm only if you installed or trust that deployment.",
+  "@quotaSetupTrustNote": {
+    "description": "Details note on Usage > Remaining setup: who installs the collector and when to trust it"
   },
   "quotaSetupGuide": "Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.",
   "@quotaSetupGuide": {
@@ -1802,7 +1806,7 @@
   "quotaGlmAccount": "Configured GLM Coding Plan source",
   "quotaGlmTokenWindow": "Reported token-plan window",
   "quotaGlmMcpWindow": "Reported MCP window",
-  "usageBudgetTitle": "Personal consumption budgets",
+  "usageBudgetTitle": "Budgets",
   "usageBudgetDescription": "Budgets use all reported consumption for the selected server, project, timezone and date-window start. Model filters do not change them. A new window start needs a new budget. These do not change subscription allowances or stop requests.",
   "usageBudgetUsd": "Set USD budget",
   "usageBudgetTokens": "Set token budget",
@@ -1826,7 +1830,7 @@
   "usageBudgetTokenUnit": "tokens",
   "usageBudgetReached": "Personal budget reached in this reading.",
   "usageBudgetPrevious": "Previous reading reached this budget. Refresh to check current consumption.",
-  "usageBudgetClearAll": "Clear saved consumption budgets",
+  "usageBudgetClearAll": "Clear both budgets",
   "usageBudgetClearDescription": "Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.",
   "usageBudgetClearTitle": "Clear consumption budgets?",
   "monitorTitle": "Saved-server attention",
@@ -2036,8 +2040,16 @@
   "pluginMappingClearConfirm": "Clear links",
   "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server is still selected and try again.",
   "quotaMonitorTitle": "Quota monitoring",
+  "quotaAlertsRowTitle": "Quota alerts",
+  "@quotaAlertsRowTitle": {
+    "description": "Row in Usage > Remaining > Quota monitoring that opens the shared notification settings for quota alerts"
+  },
+  "quotaAlertsRowSupporting": "Sound, Wi-Fi only and quiet hours",
+  "@quotaAlertsRowSupporting": {
+    "description": "Second line of the Quota alerts row: what the notification settings it opens control"
+  },
   "quotaMonitorConsentTitle": "Monitor this provider source?",
-  "quotaMonitorConsent": "Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.",
+  "quotaMonitorConsent": "Keep checking {provider} on {server} in the background and alert me when use reaches:",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
   "quotaMonitorEnable": "Enable quota monitoring",
@@ -2049,7 +2061,7 @@
   "quotaMonitorWifiRequired": "Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.",
   "quotaMonitorSourceChanged": "This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.",
   "quotaMonitorSaveFailed": "Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.",
-  "quotaMonitorDisable": "Disable quota monitoring",
+  "quotaMonitorDisable": "Stop monitoring {provider} on {server}",
   "setupChooseServerTitle": "Choose your server setup",
   "setupChooseServerDescription": "Connect an existing server, or use Termux to run OpenCode on this phone.",
   "setupUncheckedTitle": "Continue without an installation check?",
@@ -3874,7 +3886,7 @@
   "@e7SharedEnterANumber": {
     "description": "Shared app interface: Enter a number"
   },
-  "e7SharedDismissThisRequest": "Dismiss this request?",
+  "e7SharedDismissThisRequest": "Decline this request?",
   "@e7SharedDismissThisRequest": {
     "description": "Shared app interface: Dismiss this request?"
   },
@@ -5107,16 +5119,12 @@
   "@e7SettingsInformationFailed": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsAlphaBody": "This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.",
+  "e7SettingsAlphaBody": "Android is the supported platform; desktop builds are experimental.",
   "@e7SettingsAlphaBody": {
     "description": "About screen AI assistance provenance and experimental desktop limitation"
   },
   "e7SettingsNonAffiliation": "OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
   "@e7SettingsNonAffiliation": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsOriginalLicenses": "Third-party license notices below are reproduced in their original language.",
-  "@e7SettingsOriginalLicenses": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsDiagnosticSendError": "Could not send diagnostics: {error}",
@@ -12119,9 +12127,30 @@
   "@e7ModelUiFavoritesFailed": {
     "description": "Shared voice or model selection UI: e7ModelUiFavoritesFailed"
   },
-  "e7ModelUiUseModelMode": "Use model and mode",
+  "e7ModelUiUseModelMode": "Use {model} · {agent}",
   "@e7ModelUiUseModelMode": {
-    "description": "Shared voice or model selection UI: e7ModelUiUseModelMode"
+    "description": "Model sheet primary: applies the chosen model and agent, e.g. 'Use Claude Opus 5.5 · Build'",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerUseModel": "Use {model}",
+  "@modelPickerUseModel": {
+    "description": "Model sheet primary when no agent is chosen: applies the chosen model",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerUseChosenModel": "Use model",
+  "@modelPickerUseChosenModel": {
+    "description": "Model sheet primary before a model is chosen (disabled)"
   },
   "e7ModelUiUseSession": "Use for this conversation",
   "@e7ModelUiUseSession": {
@@ -12155,7 +12184,7 @@
   "@e7VoiceUiChooseModel": {
     "description": "Shared voice or model selection UI: e7VoiceUiChooseModel"
   },
-  "e7VoiceUiPrivacyDownload": "Audio stays on this device. Transcription is local and audio is discarded after use. The one-time model download requires internet access.",
+  "e7VoiceUiPrivacyDownload": "Audio never leaves this phone.",
   "@e7VoiceUiPrivacyDownload": {
     "description": "Shared voice or model selection UI: e7VoiceUiPrivacyDownload"
   },
@@ -12243,7 +12272,7 @@
   "@e7VoiceUiRedownload": {
     "description": "Shared voice or model selection UI: e7VoiceUiRedownload"
   },
-  "e7VoiceUiReviewTranscript": "Review transcript",
+  "e7VoiceUiReviewTranscript": "Transcript",
   "@e7VoiceUiReviewTranscript": {
     "description": "Shared voice or model selection UI: e7VoiceUiReviewTranscript"
   },
@@ -12426,7 +12455,7 @@
       }
     }
   },
-  "e7VoiceUiDeletePack": "Delete {model}?",
+  "e7VoiceUiDeletePack": "Delete {model} speech model?",
   "@e7VoiceUiDeletePack": {
     "description": "Shared voice or model selection UI: e7VoiceUiDeletePack",
     "placeholders": {
@@ -12819,6 +12848,10 @@
   "@handoffUiComputerTitle": {
     "description": "Session menu row and sheet title: resume this session in a terminal on the computer that runs the server"
   },
+  "handoffUiComputerCommandLabel": "Terminal command",
+  "@handoffUiComputerCommandLabel": {
+    "description": "Continue on computer: caption over the command to run in a terminal"
+  },
   "handoffUiComputerIntro": "Run this in a terminal on the computer that runs this server. It opens the same conversation in the {binary} interface. Nothing is sent until you type.",
   "@handoffUiComputerIntro": {
     "description": "Sheet lead paragraph. {binary} is the CLI program name (opencode or opencode2); do not translate it.",
@@ -12868,7 +12901,7 @@
   "@handoffUiPhoneTitle": {
     "description": "Session menu row and sheet title: show a QR code that opens this session in the app on another phone"
   },
-  "handoffUiPhoneIntro": "Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.",
+  "handoffUiPhoneIntro": "Scan with OpenCode Mobile on the other phone. The code holds only the server and conversation IDs.",
   "@handoffUiPhoneIntro": {
     "description": "QR sheet lead paragraph"
   },
@@ -19726,7 +19759,7 @@
   "@perfTraceBody": {
     "description": "Explains the performance section"
   },
-  "perfTraceCopy": "Copy report",
+  "perfTraceCopy": "Copy timing report",
   "@perfTraceCopy": {
     "description": "Copies the plain-text performance report"
   },
@@ -25704,6 +25737,10 @@
   "@formRendererSending": {
     "description": "Form sheet: why Dismiss cannot be pressed while the answers are being sent"
   },
+  "formRendererDecline": "Decline this request",
+  "@formRendererDecline": {
+    "description": "Agent form sheet: the secondary action (and its confirm button) that declines the agent's request for input"
+  },
   "formRendererChoose": "Choose",
   "@formRendererChoose": {
     "description": "Form sheet: value of a choice row before anything is chosen"
@@ -27786,6 +27823,10 @@
   "@perfTraceClearTimings": {
     "description": "screen-system-1: App diagnostics › Performance: clears the measured step timings (not the errors)."
   },
+  "perfTraceActions": "Timing report actions",
+  "@perfTraceActions": {
+    "description": "App diagnostics > Performance: name of the menu on the timings list header"
+  },
   "appDiagnosticsSendTo": "Send to {server}'s log",
   "@appDiagnosticsSendTo": {
     "description": "screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.",
@@ -27819,6 +27860,24 @@
   "appDiagnosticsCopyErrors": "Copy errors",
   "@appDiagnosticsCopyErrors": {
     "description": "screen-system-1: App diagnostics secondary: copies the redacted error report."
+  },
+  "appDiagnosticsCopyCount": "{count, plural, =1{Copy 1 error} other{Copy {count} errors}}",
+  "@appDiagnosticsCopyCount": {
+    "description": "App diagnostics: copies the listed handled errors as text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appDiagnosticsActions": "{count, plural, =1{Actions for 1 error} other{Actions for {count} errors}}",
+  "@appDiagnosticsActions": {
+    "description": "App diagnostics: name of the menu on the handled errors list header",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "appDiagnosticsClearErrors": "Clear errors",
   "@appDiagnosticsClearErrors": {
@@ -28009,7 +28068,7 @@
       }
     }
   },
-  "voiceSetupRedownloadPack": "Download {model} again",
+  "voiceSetupRedownloadPack": "Download {model} speech model again",
   "@voiceSetupRedownloadPack": {
     "description": "Voice model setup sheet: replaces the downloaded files of the chosen speech model with a fresh copy.",
     "placeholders": {
@@ -28018,11 +28077,14 @@
       }
     }
   },
-  "voiceSetupDeletePack": "Delete {model}",
+  "voiceSetupDeletePack": "Delete {model} speech model ({size})",
   "@voiceSetupDeletePack": {
     "description": "Voice model setup sheet: removes the chosen speech model from the phone (button and the confirm button).",
     "placeholders": {
       "model": {
+        "type": "String"
+      },
+      "size": {
         "type": "String"
       }
     }
@@ -28102,6 +28164,23 @@
   "@voiceSetupBusyReason": {
     "description": "Voice model setup sheet: why the speech models and language cannot be changed while a model downloads."
   },
+  "voiceSetupNotDownloaded": "Not downloaded · {size}",
+  "@voiceSetupNotDownloaded": {
+    "description": "Voice model setup: a speech model pack that is not on the phone yet, with its download size, e.g. 'Not downloaded · 153 MB'",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupDone": "Done",
+  "@voiceSetupDone": {
+    "description": "Voice model setup: closes the sheet when the chosen speech model is already on the phone and in use"
+  },
+  "voiceAllowMicInSettings": "Allow microphone in Android settings",
+  "@voiceAllowMicInSettings": {
+    "description": "Voice input: primary action when the microphone permission is blocked for good; opens the app's Android settings"
+  },
   "shorebirdUpdateReadyTitle": "App update ready",
   "@shorebirdUpdateReadyTitle": {
     "description": "App-wide status line once a downloaded app update is ready to apply. No tool name."
@@ -28140,7 +28219,7 @@
   "@bugReportLinkCopied": {
     "description": "Screen-reader announcement after the bug form link was copied."
   },
-  "runningWorkTitle": "Running now",
+  "runningWorkTitle": "Work in this conversation",
   "@runningWorkTitle": {
     "description": "Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks)."
   },
@@ -28216,7 +28295,7 @@
   "@runningWorkEmptyBody": {
     "description": "Running now: empty state body."
   },
-  "runningWorkBackgroundBody": "This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.",
+  "runningWorkBackgroundBody": "The work keeps running on the server and its results come back here.",
   "@runningWorkBackgroundBody": {
     "description": "Running now: shown only while running work holds the conversation; says what moving it to the background frees."
   },
@@ -28412,7 +28491,7 @@
   "@sessionContextRefreshFailed": {
     "description": "Conversation context: a refresh failed while earlier numbers are shown."
   },
-  "sessionContextVerdictPlenty": "{percent} % used · plenty left",
+  "sessionContextVerdictPlenty": "{percent}% used · plenty left",
   "@sessionContextVerdictPlenty": {
     "description": "Conversation context verdict under half of the model's limit.",
     "placeholders": {
@@ -28421,7 +28500,7 @@
       }
     }
   },
-  "sessionContextVerdictUsed": "{percent} % used",
+  "sessionContextVerdictUsed": "{percent}% used",
   "@sessionContextVerdictUsed": {
     "description": "Conversation context verdict between half and the near-limit mark.",
     "placeholders": {
@@ -28430,7 +28509,7 @@
       }
     }
   },
-  "sessionContextVerdictNear": "{percent} % used · near the limit",
+  "sessionContextVerdictNear": "{percent}% used",
   "@sessionContextVerdictNear": {
     "description": "Conversation context verdict near the model's limit.",
     "placeholders": {
@@ -28439,11 +28518,26 @@
       }
     }
   },
-  "sessionContextVerdictFull": "{percent} % used · at the limit",
+  "sessionContextVerdictFull": "{percent}% used · at the limit",
   "@sessionContextVerdictFull": {
     "description": "Conversation context verdict at or over the model's limit.",
     "placeholders": {
       "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextMessagesSplit": "{count} ({yours} yours, {agent} agent)",
+  "@sessionContextMessagesSplit": {
+    "description": "Conversation context totals: the message count with who wrote them, e.g. '2 (1 yours, 1 agent)'",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "yours": {
+        "type": "String"
+      },
+      "agent": {
         "type": "String"
       }
     }
@@ -28879,7 +28973,7 @@
   "@webSearchFindingProviders": {
     "description": "Add web source: loading bar label while providers are discovered."
   },
-  "webSourcesDone": "{count, plural, one{Done · 1 added} other{Done · {count} added}}",
+  "webSourcesDone": "{count, plural, one{Add 1 source to prompt} other{Add {count} sources to prompt}}",
   "@webSourcesDone": {
     "description": "Add web source: pinned primary that returns the added sources to the draft.",
     "placeholders": {
@@ -28887,6 +28981,14 @@
         "type": "int"
       }
     }
+  },
+  "webSourcesClose": "Close",
+  "@webSourcesClose": {
+    "description": "Add web source: closes the page when nothing was added"
+  },
+  "webSourcesPastedLinks": "Links you added",
+  "@webSourcesPastedLinks": {
+    "description": "Add web source: label above pasted links added to the prompt (search results are marked on their own rows)"
   },
   "webSourcesScopeChangedTitle": "The server changed",
   "@webSourcesScopeChangedTitle": {
@@ -29592,5 +29694,31 @@
   "skillSheetSending": "Adding the skill…",
   "@skillSheetSending": {
     "description": "Skill sheet: why the Run agent now switch cannot change while the skill is being added."
+  },
+  "@quotaMonitorDisable": {
+    "description": "Row that stops background quota monitoring for one provider account on one saved server, e.g. 'Stop monitoring Codex on Workstation'",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "@quotaMonitorConsent": {
+    "description": "One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
+  "@quotaMonitorConsentDetails": {
+    "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
   }
 }

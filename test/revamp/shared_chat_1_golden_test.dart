@@ -275,7 +275,10 @@ void main() {
         light: light,
         open: (context) => showModelPicker(context, focusAgent: true),
         then: () async {
-          await tester.tap(find.byKey(const Key('model-picker-options')));
+          // The chosen model's details sit under its checked row.
+          final details = find.byKey(const Key('model-picker-details'));
+          await tester.ensureVisible(details);
+          await tester.pumpAndSettle();
         },
       );
     });

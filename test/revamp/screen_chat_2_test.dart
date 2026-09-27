@@ -2,8 +2,9 @@
 // note offers Undo that puts the words back, a failed save keeps the draft
 // with Try again, the size shows only near the limit; subagents list by
 // urgency and a working one can be stopped by name; active context says
-// when nothing matches; web sources marks what was added and finishes with
-// "Done · N added", and a failed search offers to search again.
+// when nothing matches; web sources marks what was added on its own row
+// (tap again removes it) and finishes with "Add N sources to prompt", and a
+// failed search offers to search again.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
@@ -213,8 +214,8 @@ void main() {
       return c;
     }
 
-    testWidgets('a result is added to the prompt, marked Added, and Done '
-        'returns it', (tester) async {
+    testWidgets('a result toggles Added in place, is listed once, and the '
+        'primary returns it', (tester) async {
       final gateway = SearchGateway(results: searchResults);
       final c = await searchable(gateway);
       final navigator = GlobalKey<NavigatorState>();
@@ -238,7 +239,18 @@ void main() {
       await tester.tap(find.byTooltip('Add Testing Flutter apps to prompt'));
       await tester.pumpAndSettle();
       expect(find.text('Added'), findsOneWidget);
-      expect(find.text('Done · 1 added'), findsOneWidget);
+      // Shown once: marked on its result row, not listed again below.
+      expect(find.byKey(const ValueKey('web-sources-added')), findsNothing);
+      expect(find.text('Add 1 source to prompt'), findsOneWidget);
+      // Tapping the row again takes it out; with nothing added the page
+      // offers Close.
+      await tester.tap(find.text('Testing Flutter apps'));
+      await tester.pumpAndSettle();
+      expect(find.text('Added'), findsNothing);
+      expect(find.byKey(const ValueKey('web-sources-confirm')), findsNothing);
+      expect(find.byKey(const ValueKey('web-sources-close')), findsOneWidget);
+      await tester.tap(find.text('Testing Flutter apps'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('web-sources-confirm')));
       await tester.pumpAndSettle();
       final returned = await opened;
@@ -296,13 +308,15 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('web-source-add')));
       await tester.pumpAndSettle();
-      expect(find.text('Done · 1 added'), findsOneWidget);
+      expect(find.text('Add 1 source to prompt'), findsOneWidget);
+      // A pasted link has no result row: it is listed under its own label.
+      expect(find.text('Links you added'), findsOneWidget);
       await tester.ensureVisible(
         find.byTooltip('Remove Release notes from prompt'),
       );
       await tester.tap(find.byTooltip('Remove Release notes from prompt'));
       await tester.pumpAndSettle();
-      expect(find.text('Done · 1 added'), findsNothing);
+      expect(find.text('Add 1 source to prompt'), findsNothing);
     });
   });
 }

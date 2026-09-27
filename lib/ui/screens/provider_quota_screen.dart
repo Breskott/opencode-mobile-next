@@ -6,12 +6,14 @@ import 'package:intl/intl.dart';
 import '../../domain/provider_quota.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/provider_quota_budgets.dart';
+import '../../state/provider_quota_monitor.dart' show QuotaMonitorTarget;
 import '../../state/provider_quota_overview.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/quota_monitor_section.dart';
 import 'settings_screen.dart' show NotificationsSettingsScreen;
+import 'usage_refresh_slot.dart';
 
 // revamp: redesign (slice-P5.4). Rebuilt from kit parts in today's layout;
 // the per-provider answer rows, the agent-driven collector setup and the
@@ -24,11 +26,16 @@ class ProviderQuotaScreen extends StatefulWidget {
   /// supplies the top bar.
   final bool embedded;
 
+  /// Inside Usage, where this section's Refresh goes: the Usage top bar
+  /// holds one Refresh for the active tab.
+  final UsageRefreshSlot? refreshSlot;
+
   const ProviderQuotaScreen({
     super.key,
     required this.controller,
     this.overview,
     this.embedded = false,
+    this.refreshSlot,
   });
 
   @override
@@ -124,12 +131,21 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final threshold = ValueNotifier<double>(100);
     final origin = _origin();
+    final profile = widget.controller.profile!;
+    final consent = l10n.quotaMonitorConsent(
+      _providerName(snapshot.provider, l10n),
+      serverDisplayName(profile, l10n, among: widget.controller.store.profiles),
+    );
     final accepted = await showKitSheet<bool>(
       context,
       sheetKey: const ValueKey('quota-enroll-sheet'),
       title: l10n.quotaMonitorConsentTitle,
       icon: AppIconography.notificationImportant,
-      body: (_) => _EnrollSheetBody(threshold: threshold, origin: origin),
+      body: (_) => _EnrollSheetBody(
+        threshold: threshold,
+        origin: origin,
+        consent: consent,
+      ),
       primary: KitAction(
         key: const ValueKey('quota-enroll-confirm'),
         label: l10n.quotaMonitorEnable,
@@ -169,23 +185,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     setState(() => _monitorSaveFailed = !saved);
   }
 
-  Future<void> _clearThresholds() async {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final clear = await showKitConfirm(
-      context,
-      sheetKey: const ValueKey('quota-clear-sheet'),
-      confirmKey: const ValueKey('quota-clear-confirm'),
-      title: l10n.quotaBudgetClearTitle,
-      body: l10n.quotaBudgetClearDescription,
-      confirmLabel: l10n.quotaBudgetClearAll,
-      icon: AppIconography.delete,
-      kind: KitConfirmKind.destructive,
-    );
-    if (clear && mounted) {
-      await _overview.budgets.clearAll();
-    }
-  }
-
   void _stopUsingCollector() {
     setState(() {
       _trusted = false;
@@ -201,9 +200,25 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     ),
   );
 
+  /// The monitored source for the account this page shows, or null when
+  /// that account is not on the page (no reading, other provider, detached).
+  QuotaMonitorTarget? _shownSource(ProviderQuotaSnapshot? snapshot) {
+    final profileID = widget.controller.profile?.id;
+    if (profileID == null ||
+        snapshot == null ||
+        !snapshot.canShowWindows ||
+        !_overview.consented ||
+        _overview.detached ||
+        !_overview.providerSupported ||
+        snapshot.provider != _overview.provider) {
+      return null;
+    }
+    return QuotaMonitorTarget(profileID, snapshot.provider);
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _overview,
+    listenable: Listenable.merge([_overview, widget.controller.quotaMonitor]),
     builder: (context, _) {
       final l10n = lookupAppLocalizations(Localizations.localeOf(context));
       final tokens = KitTokens.of(context);
@@ -213,10 +228,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       final consented = _overview.consented && !detached;
       final origin = _origin();
       Widget gap([double? height]) => SizedBox(height: height ?? tokens.space4);
-      final description = KitText(
-        l10n.quotaDescription,
-        role: KitTextRole.secondary,
-      );
       final refreshAction = KitAction(
         key: const ValueKey('quota-refresh'),
         label: l10n.quotaRefresh,
@@ -224,28 +235,16 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         onPressed: canRefresh ? () => unawaited(_overview.refresh()) : null,
         disabledReason: canRefresh ? null : l10n.quotaLoading,
       );
+      // Inside Usage the one top bar holds Refresh for the active tab.
+      widget.refreshSlot?.offer(
+        visible: _overview.consented,
+        onRefresh: refreshAction.onPressed,
+        disabledReason: refreshAction.disabledReason,
+      );
+      final shownSource = _shownSource(snapshot);
 
       final children = <Widget>[
         SizedBox(height: tokens.space3),
-        // Inside Usage there is no bar of its own to hold Refresh, so it
-        // sits beside the description.
-        if (widget.embedded && _overview.consented)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: description),
-              KitIconButton(
-                key: const ValueKey('quota-refresh'),
-                icon: AppIconography.retry,
-                tooltip: l10n.quotaRefresh,
-                onPressed: refreshAction.onPressed,
-                disabledReason: refreshAction.disabledReason,
-              ),
-            ],
-          )
-        else
-          description,
-        gap(),
         if (detached)
           KitNotice(
             key: const ValueKey('quota-detached'),
@@ -291,9 +290,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
           _CollectorRows(
             origin: origin,
             consented: consented,
-            saving: _overview.budgets.saving,
             onStop: _stopUsingCollector,
-            onClear: _clearThresholds,
           ),
         ],
         // Monitored sources belong to any saved server, so they stay listed
@@ -302,6 +299,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         QuotaMonitorSection(
           controller: widget.controller,
           onOpenNotifications: _openNotifications,
+          shownAbove: shownSource,
         ),
         gap(tokens.sectionGap),
         // Every technical value on the page, once, last and folded
@@ -316,7 +314,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                 quotaPathFor(_overview.provider),
               ),
           ],
-          notes: [l10n.quotaSourceDisclosure],
+          notes: [
+            if (!_overview.consented) ...[
+              l10n.quotaSetupTrustNote,
+              l10n.quotaSetupGuide,
+            ],
+            l10n.quotaMonitorRuntime,
+            l10n.quotaSourceDisclosure,
+          ],
         ),
       ];
 
@@ -362,8 +367,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       ),
       SizedBox(height: tokens.space2),
       KitText(l10n.quotaSetupDescription, role: KitTextRole.secondary),
-      SizedBox(height: tokens.space3),
-      KitText(l10n.quotaSetupGuide, role: KitTextRole.secondary),
       if (setupNeeded) ...[
         SizedBox(height: tokens.space3),
         KitNotice(
@@ -415,7 +418,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     bool canRefresh,
   ) {
     final stale = _overview.snapshotIsStale;
-    final budgets = _overview.budgets;
+    final profileID = widget.controller.profile?.id;
     return [
       if (_overview.failure case final failure?) ...[
         KitNotice.error(
@@ -434,18 +437,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       if (snapshot == null && _overview.failure == null)
         KitText(l10n.quotaLoading, role: KitTextRole.secondary),
       if (snapshot != null) ...[
-        if (budgets.failed) ...[
-          KitNotice.error(message: l10n.quotaBudgetSaveFailed),
-          SizedBox(height: tokens.space3),
-        ],
-        if (budgets.attentionVisible && !stale) ...[
-          KitNotice(
-            key: const ValueKey('quota-threshold-reached'),
-            icon: AppIconography.warning,
-            message: l10n.quotaBudgetAttention,
-          ),
-          SizedBox(height: tokens.space3),
-        ],
         if (!snapshot.canShowWindows)
           KitNotice(
             key: const ValueKey('quota-status'),
@@ -457,7 +448,16 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
             snapshot: snapshot,
             stale: stale,
             now: _overview.clock(),
-            budgets: budgets,
+            monitored:
+                profileID != null &&
+                    widget.controller.quotaMonitor.rulesFor(
+                          profileID,
+                          snapshot.provider,
+                        ) !=
+                        null
+                ? QuotaMonitorTarget(profileID, snapshot.provider)
+                : null,
+            controller: widget.controller,
             monitorSaveFailed: _monitorSaveFailed,
             onEnableMonitoring: stale ? null : _enroll,
           ),
@@ -466,24 +466,19 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
   }
 }
 
-/// The collector on this server and what acts on it: its origin, stopping
-/// its use, and clearing the thresholds saved for it. The acts live with
-/// the thing they act on (owner rule 2026-09-27), not as loose buttons at
-/// the end of the page.
+/// The collector on this server and what acts on it: its origin and
+/// stopping its use. The act lives with the thing it acts on (owner rule
+/// 2026-09-27), not as a loose button at the end of the page.
 class _CollectorRows extends StatelessWidget {
   const _CollectorRows({
     required this.origin,
     required this.consented,
-    required this.saving,
     required this.onStop,
-    required this.onClear,
   });
 
   final String? origin;
   final bool consented;
-  final bool saving;
   final VoidCallback onStop;
-  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -500,23 +495,13 @@ class _CollectorRows extends StatelessWidget {
           title: origin == null ? l10n.quotaUnknownSource : KitBidi.ltr(origin),
           titleMaxLines: 2,
         ),
-        if (consented) ...[
+        if (consented)
           KitRow(
             key: const ValueKey('quota-stop'),
             leading: KitRow.icon(context, AppIconography.unlink),
             title: l10n.quotaForgetConsent,
             onTap: onStop,
           ),
-          KitRow(
-            key: const ValueKey('quota-clear'),
-            leading: KitRow.icon(context, AppIconography.delete),
-            title: l10n.quotaBudgetClearAll,
-            destructive: true,
-            enabled: !saving,
-            disabledReason: saving ? l10n.quotaMonitorSaving : null,
-            onTap: saving ? null : onClear,
-          ),
-        ],
       ],
     );
   }
@@ -526,8 +511,11 @@ class _QuotaReport extends StatelessWidget {
   final ProviderQuotaSnapshot snapshot;
   final bool stale;
   final DateTime now;
-  final ProviderQuotaBudgets budgets;
   final bool monitorSaveFailed;
+
+  /// This account's monitored source, or null when it is not monitored.
+  final QuotaMonitorTarget? monitored;
+  final ConnectionController controller;
 
   /// Null while the reading is stale (monitoring needs a fresh one).
   final VoidCallback? onEnableMonitoring;
@@ -536,7 +524,8 @@ class _QuotaReport extends StatelessWidget {
     required this.snapshot,
     required this.stale,
     required this.now,
-    required this.budgets,
+    required this.monitored,
+    required this.controller,
     required this.monitorSaveFailed,
     required this.onEnableMonitoring,
   });
@@ -594,14 +583,23 @@ class _QuotaReport extends StatelessWidget {
           ),
         ],
         // Monitoring acts on this account source, so it sits under the
-        // account's name rather than above the whole report.
+        // account's name rather than above the whole report. Once it is
+        // monitored, its threshold and Stop live here, not twice.
         SizedBox(height: tokens.space4),
-        KitButton.secondary(
-          key: const ValueKey('quota-enable-monitoring'),
-          label: l10n.quotaMonitorEnable,
-          icon: AppIconography.notificationImportant,
-          onPressed: onEnableMonitoring,
-        ),
+        if (monitored case final target?)
+          QuotaMonitorControls(
+            key: const ValueKey('quota-account-monitoring'),
+            controller: controller,
+            target: target,
+            grouped: true,
+          )
+        else
+          KitButton.secondary(
+            key: const ValueKey('quota-enable-monitoring'),
+            label: l10n.quotaMonitorEnable,
+            icon: AppIconography.notificationImportant,
+            onPressed: onEnableMonitoring,
+          ),
         if (monitorSaveFailed) ...[
           SizedBox(height: tokens.space3),
           KitNotice.error(
@@ -621,7 +619,6 @@ class _QuotaReport extends StatelessWidget {
             index: index,
             stale: stale,
             now: now,
-            budgets: budgets,
             date: date,
             percent: percent,
           ),
@@ -631,8 +628,8 @@ class _QuotaReport extends StatelessWidget {
   }
 }
 
-/// One reported window as a panel of rows: how much is left, when it
-/// resets, and the personal threshold for it.
+/// One reported window as a panel of rows: how much is left and when it
+/// resets. The alert threshold is the monitored source's, one per source.
 class _WindowGroup extends StatelessWidget {
   const _WindowGroup({
     required this.snapshot,
@@ -640,7 +637,6 @@ class _WindowGroup extends StatelessWidget {
     required this.index,
     required this.stale,
     required this.now,
-    required this.budgets,
     required this.date,
     required this.percent,
   });
@@ -650,7 +646,6 @@ class _WindowGroup extends StatelessWidget {
   final int index;
   final bool stale;
   final DateTime now;
-  final ProviderQuotaBudgets budgets;
   final DateFormat date;
   final NumberFormat percent;
 
@@ -710,89 +705,28 @@ class _WindowGroup extends StatelessWidget {
           supporting: passed ? TextSpan(text: l10n.quotaResetPassed) : null,
           supportingMaxLines: 3,
         ),
-        if (budgets.usable(snapshot, window)) ..._threshold(context, l10n),
       ],
     );
-  }
-
-  List<Widget> _threshold(BuildContext context, AppLocalizations l10n) {
-    final rule = budgets.rule(snapshot, window);
-    // Read through a pattern: the field shares its name with the attention
-    // colour roles, which G17 keeps out of screens (LOOK-4).
-    final attentionOn = switch (rule) {
-      QuotaBudget(attention: final on) => on,
-      null => false,
-    };
-    final enabled = !stale && !budgets.saving;
-    final reason = enabled
-        ? null
-        : stale
-        ? l10n.providerQuotaThresholdStale
-        : l10n.quotaMonitorSaving;
-    Future<void> save(QuotaBudget? value) async {
-      if (await budgets.save(snapshot, window, value)) {
-        await budgets.observe(snapshot, stale: stale);
-      }
-    }
-
-    return [
-      KitPickerRow<double>(
-        rowKey: ValueKey('quota-threshold-${window.id}'),
-        leading: KitRow.icon(context, AppIconography.notificationImportant),
-        title: l10n.quotaBudgetTitle,
-        supporting: l10n.quotaBudgetDescription,
-        selected: rule?.percent ?? 0,
-        choices: [
-          KitChoice(value: 0, title: l10n.quotaBudgetOff),
-          for (final value in {
-            50.0,
-            75.0,
-            90.0,
-            100.0,
-            if (rule != null) rule.percent,
-          })
-            KitChoice(
-              value: value,
-              title: l10n.quotaBudgetPercent(value.toStringAsFixed(0)),
-            ),
-        ],
-        onSelected: enabled
-            ? (value) => unawaited(
-                save(
-                  value == 0
-                      ? null
-                      : QuotaBudget(value, attention: attentionOn),
-                ),
-              )
-            : null,
-        disabledReason: reason,
-      ),
-      if (rule != null)
-        KitSwitchRow(
-          switchKey: ValueKey('quota-attention-${window.id}'),
-          leading: KitRow.icon(context, AppIconography.warning),
-          title: l10n.quotaBudgetOptIn,
-          supporting: l10n.quotaBudgetAttentionScope,
-          value: attentionOn,
-          onChanged: enabled
-              ? (value) =>
-                    unawaited(save(QuotaBudget(rule.percent, attention: value)))
-              : null,
-          disabledReason: reason,
-        ),
-    ];
   }
 }
 
 // revamp: merge-into:provider-quota (slice-P3.11a)
-/// What monitoring does, the percentage used that alerts, and the source
-/// under Details. The threshold is a segmented choice in place: a picker
-/// would open a sheet on this sheet (KIT-16).
+/// What monitoring does in one line that leads into the percentage used
+/// that alerts, then the source and the full terms under Details. The
+/// threshold is a segmented choice in place: a picker would open a sheet on
+/// this sheet (KIT-16).
 class _EnrollSheetBody extends StatelessWidget {
-  const _EnrollSheetBody({required this.threshold, required this.origin});
+  const _EnrollSheetBody({
+    required this.threshold,
+    required this.origin,
+    required this.consent,
+  });
 
   final ValueNotifier<double> threshold;
   final String? origin;
+
+  /// "Keep checking Codex on Workstation … when use reaches:"
+  final String consent;
 
   @override
   Widget build(BuildContext context) {
@@ -806,10 +740,8 @@ class _EnrollSheetBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        KitText(l10n.quotaMonitorConsent, role: KitTextRole.secondary),
-        SizedBox(height: tokens.space4),
-        KitText(l10n.quotaMonitorThreshold, role: KitTextRole.label),
-        SizedBox(height: tokens.labelGap),
+        KitText(consent, role: KitTextRole.secondary),
+        SizedBox(height: tokens.space3),
         ValueListenableBuilder<double>(
           valueListenable: threshold,
           builder: (context, value, _) => KitSegmented<double>(
@@ -820,8 +752,8 @@ class _EnrollSheetBody extends StatelessWidget {
               for (final option in [50.0, 75.0, 90.0, 100.0])
                 KitSegment(
                   value: option,
-                  // The label above says "used"; the bare percentage fits
-                  // four segments on a phone without cutting.
+                  // The line above says "use reaches"; the bare percentage
+                  // fits four segments on a phone without cutting.
                   label: percent.format(option / 100),
                 ),
             ],
@@ -836,6 +768,7 @@ class _EnrollSheetBody extends StatelessWidget {
               origin ?? l10n.quotaUnknownSource,
             ),
           ],
+          notes: [l10n.quotaMonitorConsentDetails],
         ),
       ],
     );

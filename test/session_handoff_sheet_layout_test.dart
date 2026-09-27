@@ -148,11 +148,11 @@ void main() {
         findsOneWidget,
       );
 
-      // The export route is reachable by scrolling and pops its value.
-      final export = find.byKey(const Key('continue-on-computer-export'));
-      await tester.ensureVisible(export);
-      await tester.pumpAndSettle();
-      expectInside(tester, export);
+      // Export is not repeated here: it lives in the conversation menu.
+      expect(
+        find.byKey(const Key('continue-on-computer-export')),
+        findsNothing,
+      );
     });
 
     testWidgets('continue on phone stays reachable ${variant.name}', (
@@ -203,38 +203,30 @@ void main() {
     });
   }
 
-  testWidgets('export pops the sheet with its action', (tester) async {
-    final popped = <String?>[];
+  testWidgets('the command wraps: all of it inside the sheet, no export', (
+    tester,
+  ) async {
     await pumpSheet(
       tester,
       ContinueOnComputerSheet(command: command, exportAvailable: true),
       rtl: false,
       large: false,
-      onPopped: popped.add,
     );
-    final export = find.byKey(const Key('continue-on-computer-export'));
-    await tester.ensureVisible(export);
-    await tester.pumpAndSettle();
-    await tester.tap(export);
-    await tester.pumpAndSettle();
-    expect(popped, ['export']);
-    expect(find.byKey(const Key('continue-on-computer-sheet')), findsNothing);
-    expect(clipboard, isEmpty);
-  });
-
-  testWidgets('without export support the hint stays but the button goes', (
-    tester,
-  ) async {
-    await pumpSheet(
-      tester,
-      ContinueOnComputerSheet(command: command, exportAvailable: false),
-      rtl: false,
-      large: false,
+    final block = find.byKey(const Key('continue-on-computer-command'));
+    expectInside(tester, block);
+    // Wrapped, the command's last characters are inside the sheet too.
+    final text = find.descendant(
+      of: block,
+      matching: find.textContaining(
+        "opencode2 --session 'ses_0123456789abcdef'",
+        findRichText: true,
+      ),
     );
+    expectInside(tester, text.first);
     expect(find.byKey(const Key('continue-on-computer-export')), findsNothing);
     expect(
       find.textContaining('Export this conversation as a file'),
-      findsOneWidget,
+      findsNothing,
     );
   });
 

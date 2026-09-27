@@ -470,7 +470,7 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('clear-app-diagnostics')));
+      kit.expectVisible(find.byKey(const ValueKey('app-diagnostics-actions')));
     }),
     CensusShot('app-diagnostics', state: 'empty', (kit) async {
       final done = await mountSettingsScene(
@@ -480,7 +480,7 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('copy-app-diagnostics')));
+      kit.expectVisible(find.byKey(const ValueKey('send-app-diagnostics')));
     }),
     CensusShot('app-diagnostics-clear-sheet', (kit) async {
       final done = await mountSettingsScene(
@@ -490,6 +490,7 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
+      await kit.tapKey('app-diagnostics-actions');
       await kit.tapKey('clear-app-diagnostics');
       kit.expectText('Clear');
     }),

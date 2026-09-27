@@ -428,6 +428,11 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
     );
     final blocked = _compactBlocked(l10n);
     final canRefresh = !_loading && _sameLocation;
+    // Near the limit the page's notice carries "Compact this conversation";
+    // the bar's menu does not offer it a second time (owner rule
+    // 2026-09-27, nothing twice on one page).
+    final noticeOffersCompact =
+        _nearLimitNoticeShown(metrics) && _canOfferCompact;
     return KitScreen(
       topBar: KitTopBar(
         title: l10n.e7SharedSessionContext,
@@ -445,7 +450,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
           ),
         ],
         menu: [
-          if (_canOfferCompact && _sameLocation)
+          if (_canOfferCompact && _sameLocation && !noticeOffersCompact)
             KitMenuItem(
               key: const Key('session-context-compact-menu'),
               label: l10n.sessionContextCompactAction,
@@ -464,6 +469,15 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       body: _buildBody(l10n, metrics, blocked),
     );
   }
+
+  /// Whether the body shows the near-the-limit notice (with its Compact).
+  bool _nearLimitNoticeShown(SessionContextMetrics metrics) =>
+      _sameLocation &&
+      !_compactStarted &&
+      !(_loading && _messages.isEmpty) &&
+      !(_error != null && _messages.isEmpty) &&
+      metrics.currentMessage != null &&
+      (metrics.usage ?? 0) >= _nearLimit;
 
   Widget _buildBody(
     AppLocalizations l10n,
@@ -575,6 +589,14 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
                 key: const ValueKey('session-context-gauge'),
                 title: model.name,
                 value: usage,
+                // Near the limit, the verdict and the notice below say so;
+                // an explicit tone keeps the bar's own "Near limit" word
+                // off (the same colours as the automatic bar).
+                tone: near
+                    ? usage >= 1
+                          ? AppStatusTone.failure
+                          : AppStatusTone.progress
+                    : null,
                 valueKey: const ValueKey('session-context-token-summary'),
                 valueLabel: metrics.contextLimit > 0
                     ? l10n.e7SharedDetail385(
@@ -760,19 +782,21 @@ class _SessionTotals extends StatelessWidget {
           leadingIcons: false,
           margin: EdgeInsets.zero,
           children: [
+            // One row for the count and who wrote them: "2 (1 yours,
+            // 1 agent)", not the same total twice.
             KitRow(
+              key: const ValueKey('session-context-messages'),
               title: partial
                   ? l10n.historyLoadedMessages
                   : l10n.e7SharedMessages,
               trailing: KitRowValue(
-                _formatNumber(metrics.userMessages + metrics.assistantMessages),
-                chevron: false,
-              ),
-            ),
-            KitRow(
-              title: l10n.e7SharedUserAssistant,
-              trailing: KitRowValue(
-                '${_formatNumber(metrics.userMessages)} / ${_formatNumber(metrics.assistantMessages)}',
+                l10n.sessionContextMessagesSplit(
+                  _formatNumber(
+                    metrics.userMessages + metrics.assistantMessages,
+                  ),
+                  _formatNumber(metrics.userMessages),
+                  _formatNumber(metrics.assistantMessages),
+                ),
                 chevron: false,
               ),
             ),

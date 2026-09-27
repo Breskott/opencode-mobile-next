@@ -586,7 +586,7 @@ void main() {
       );
     });
 
-    testWidgets('v2 disables the diagnostics send button in place', (
+    testWidgets('v2 has no send button; Copy is the one primary', (
       tester,
     ) async {
       final v1 = await _controller(v2: false);
@@ -603,18 +603,13 @@ void main() {
       await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v2)));
       await tester.pumpAndSettle();
 
-      final send = find.byKey(const ValueKey('send-app-diagnostics'));
-      expect(send, findsOneWidget);
-      expect(tester.widget<KitButton>(send).onPressed, isNull);
+      // No dead button and no line explaining it: Copy takes the slot.
+      expect(find.byKey(const ValueKey('send-app-diagnostics')), findsNothing);
       expect(
         find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(
-        find.text("This server doesn't accept client logs"),
-        findsOneWidget,
-      );
-      // Copy still works: only the server-bound action is gated.
+      expect(find.text("This server doesn't accept client logs"), findsNothing);
       expect(
         find.byKey(const ValueKey('copy-app-diagnostics')),
         findsOneWidget,

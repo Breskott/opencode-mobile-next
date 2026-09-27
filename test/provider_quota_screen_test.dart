@@ -1243,34 +1243,6 @@ void main() {
   );
 
   testWidgets(
-    'personal threshold is saved and attention requires explicit opt-in',
-    (tester) async {
-      final h = await harness(tester);
-      await _pumpQuota(tester, h);
-      await _consentAndRead(tester, h);
-      await _finishRead(tester, h, _snapshot(usedPercent: 100));
-      final threshold = find.byKey(const ValueKey('quota-threshold-primary'));
-      await _reveal(tester, threshold);
-      await tester.tap(threshold);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(_l10n.quotaBudgetPercent('90')).last);
-      await tester.pumpAndSettle();
-      expect(find.text(_l10n.quotaBudgetAttention), findsNothing);
-      final optIn = find.widgetWithText(SwitchListTile, _l10n.quotaBudgetOptIn);
-      await _reveal(tester, optIn);
-      await tester.tap(optIn);
-      await tester.pumpAndSettle();
-      await tester.drag(find.byType(ListView), const Offset(0, 1600));
-      await tester.pumpAndSettle();
-      expect(find.text(_l10n.quotaBudgetAttention), findsOneWidget);
-      expect(
-        h.connection.store.prefs.getString('oc.budgets.quota-profile-a'),
-        isNotNull,
-      );
-    },
-  );
-
-  testWidgets(
     'monitoring requires separate consent and is reviewed and disabled in place',
     (tester) async {
       final h = await harness(tester);
@@ -1287,7 +1259,9 @@ void main() {
       expect(
         find.descendant(
           of: dialog,
-          matching: find.text(_l10n.quotaMonitorConsent),
+          matching: find.text(
+            _l10n.quotaMonitorConsent(_l10n.quotaCodex, 'Synthetic collector'),
+          ),
         ),
         findsOneWidget,
       );
@@ -1325,7 +1299,7 @@ void main() {
       expect(h.connection.store.activeId, 'quota-profile-a');
       final disable = find.widgetWithText(
         TextButton,
-        _l10n.quotaMonitorDisable,
+        _l10n.quotaMonitorDisable(_l10n.quotaCodex, 'Synthetic collector'),
       );
       await _reveal(tester, disable);
       await tester.tap(disable);

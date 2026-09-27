@@ -14,7 +14,9 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/kit/kit_row_parts.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/widgets/pickers.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff_sheets.dart';
 import 'package:opencode_mobile/ui/widgets/transcript_display_toggles.dart';
@@ -135,7 +137,14 @@ void main() {
       // No dialog is ever stacked on the sheet.
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Use model and mode'), findsOneWidget);
+      // The primary names what it applies; the chosen model is shown once,
+      // as the checked row, not again under "Your choice".
+      expect(find.text('Use Claude Opus 5.5 · Build'), findsOneWidget);
+      expect(find.text('Claude Opus 5.5'), findsOneWidget);
+      expect(find.byKey(const Key('model-picker-options')), findsNothing);
+      // No count label over the list; Refresh sits in the filter row.
+      expect(find.textContaining(RegExp(r'^\d+ models?$')), findsNothing);
+      expect(find.byKey(const Key('model-picker-refresh')), findsOneWidget);
     });
 
     testWidgets('picking a model and applying saves it and closes', (
@@ -143,10 +152,13 @@ void main() {
     ) async {
       final controller = await _controller();
       await _open(tester, controller);
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-6-sol')),
-      );
+      final row = find.byKey(const ValueKey('model-option-openai-gpt-6-sol'));
+      await tester.ensureVisible(row);
       await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      // The primary now names the chosen model.
+      expect(find.textContaining('Use GPT-6 Sol'), findsOneWidget);
       await tester.tap(find.byKey(const Key('model-picker-apply')));
       await tester.pumpAndSettle();
       expect(controller.selectedModel?.wireName, 'openai/gpt-6-sol');
@@ -220,15 +232,17 @@ void main() {
     testWidgets('details and thinking unfold in place', (tester) async {
       final controller = await _controller();
       await _open(tester, controller);
-      await tester.tap(find.byKey(const Key('model-picker-options')));
-      await tester.pumpAndSettle();
-      expect(find.text('1,000,000 tokens of context'), findsOneWidget);
-      expect(find.text('Thinks before answering'), findsOneWidget);
+      // The chosen row carries its details; its context is already on its
+      // supporting line, so it is not said again in words.
+      final details = find.byKey(const Key('model-picker-details'));
+      expect(details, findsOneWidget);
+      final text = tester.widget<KitText>(details).text;
+      expect(text, contains('Thinks before answering'));
       expect(
-        find.text(r'$5.00 per million tokens read, $25.00 per million written'),
-        findsOneWidget,
+        text,
+        contains(r'$5.00 per million tokens read, $25.00 per million written'),
       );
-      expect(find.byKey(const Key('model-picker-model-id')), findsOneWidget);
+      expect(find.text('1,000,000 tokens of context'), findsNothing);
 
       await tester.tap(find.byKey(const Key('model-picker-thinking-header')));
       await tester.pumpAndSettle();
@@ -338,6 +352,9 @@ void main() {
         scrollable: find.byType(Scrollable).last,
       );
       expect(find.text('Show 10 more models'), findsOneWidget);
+      // Clear of the pinned primary before tapping.
+      await tester.ensureVisible(more);
+      await tester.pumpAndSettle();
       await tester.tap(more);
       await tester.pumpAndSettle();
       expect(more, findsNothing);
@@ -419,25 +436,36 @@ void main() {
       },
     );
 
-    testWidgets('the version note waits under Details; export pops export', (
-      tester,
-    ) async {
-      final popped = await openComputer(
+    testWidgets('the command wraps whole; the version note waits under '
+        'Details; Export is not repeated here', (tester) async {
+      await openComputer(
         tester,
         SessionResumeCommand.build(
           cli: SessionResumeCli.openCode2,
           sessionID: 'ses_0123456789abcdef',
-          directory: '/home/dev/acme',
+          directory: '/home/dev/My Projects/acme',
         ),
       );
+      final block = tester.widget<KitCodeBlock>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('continue-on-computer-command')),
+              matching: find.byType(KitCodeBlock),
+            )
+            .first,
+      );
+      expect(block.wrap, isTrue);
       expect(find.textContaining('Verified against'), findsNothing);
       expect(
         find.byKey(const Key('continue-on-computer-details')),
         findsOneWidget,
       );
-      await tester.tap(find.byKey(const Key('continue-on-computer-export')));
-      await tester.pumpAndSettle();
-      expect(popped, ['export']);
+      // Export lives in the conversation menu (one entry point).
+      expect(
+        find.byKey(const Key('continue-on-computer-export')),
+        findsNothing,
+      );
+      expect(find.textContaining('Moving to a different server'), findsNothing);
     });
   });
 

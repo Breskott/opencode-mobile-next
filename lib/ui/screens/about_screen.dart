@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../update/shorebird_update_notice.dart';
@@ -82,12 +81,18 @@ class _AboutScreenState extends State<AboutScreen> {
     final language = Localizations.localeOf(context).languageCode;
     if (_documents == null || _documentsLocale != language) {
       _documentsLocale = language;
-      _documents = Future.wait([
-        rootBundle.loadString(
-          language == 'ar' ? 'assets/l10n/PRIVACY.ar.md' : 'PRIVACY.md',
-        ),
-        rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
-      ]).then((texts) => [for (final text in texts) reflowMarkdown(text)]);
+      _documents =
+          Future.wait([
+            rootBundle.loadString(
+              language == 'ar' ? 'assets/l10n/PRIVACY.ar.md' : 'PRIVACY.md',
+            ),
+            rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
+          ]).then(
+            (texts) => [
+              reflowMarkdown(texts[0]),
+              reflowMarkdown(aboutNoticesForReaders(texts[1])),
+            ],
+          );
     }
   }
 
@@ -227,20 +232,13 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
               ),
               SizedBox(height: tokens.space3),
+              // Reporting a problem lives in Settings (one entry point).
               rails(
                 KitNotice(
                   icon: AppIconography.experiments,
                   title: l10n.e7SettingsDetailUi19,
                   message: l10n.e7SettingsAlphaBody,
                   liveRegion: false,
-                  actions: [
-                    KitAction(
-                      key: const ValueKey('about-alpha-report-bug'),
-                      label: l10n.aboutReportBugOnGithub,
-                      icon: AppIconography.bug,
-                      onPressed: () => unawaited(openBugReport(context)),
-                    ),
-                  ],
                 ),
               ),
               SizedBox(height: tokens.sectionGap),
@@ -298,13 +296,6 @@ class _AboutScreenState extends State<AboutScreen> {
                   ],
                 ),
                 SizedBox(height: tokens.space4),
-                rails(
-                  KitText(
-                    l10n.e7SettingsOriginalLicenses,
-                    role: KitTextRole.secondary,
-                  ),
-                ),
-                SizedBox(height: tokens.space3),
                 rails(
                   KitMarkdown(
                     texts[1],
@@ -435,3 +426,19 @@ class _BuildData {
 AppLocalizations _screenCopy(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??
     lookupAppLocalizations(const Locale('en'));
+
+/// The notices as a reader needs them: the bundled components, the package
+/// table and the data-flow notes. The file's intro (the non-affiliation
+/// line, which the page already shows, and how the file is verified) and
+/// its regeneration steps are for maintainers, so they are left out.
+@visibleForTesting
+String aboutNoticesForReaders(String markdown) {
+  final lines = markdown.split('\n');
+  final start = lines.indexWhere((line) => line.startsWith('## '));
+  if (start < 0) return markdown;
+  final end = lines.indexWhere(
+    (line) => line.startsWith('## Regenerating'),
+    start,
+  );
+  return lines.sublist(start, end < 0 ? lines.length : end).join('\n').trim();
+}

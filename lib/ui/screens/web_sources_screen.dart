@@ -18,8 +18,10 @@ export '../../domain/web_source_selection.dart';
 /// on cancellation. Does not send a prompt, attach a remote file or fetch URLs.
 ///
 /// Map page web-sources: search (when the server has a provider) or paste a
-/// link, add results to the prompt with an "Added" mark, and finish with
-/// the pinned "Done · N added".
+/// link. A result toggles in place ("Added" with a check; tap again to
+/// remove it); only pasted links, which have no result row, are listed
+/// under "Links you added". The pinned primary says what it does: "Add 2
+/// sources to prompt" (Close with none).
 class WebSourcesScreen extends StatefulWidget {
   const WebSourcesScreen({super.key, required this.controller});
 
@@ -111,6 +113,17 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
   void _addResult(WebSourceSelection result) =>
       setState(() => _resultError = _overview.add(result));
 
+  /// A result already added is taken out again by tapping it.
+  void _removeResult(WebSourceSelection result) {
+    for (final source in _overview.sources) {
+      if (source.url == result.url) {
+        _overview.remove(source);
+        break;
+      }
+    }
+    setState(() => _resultError = null);
+  }
+
   void _open(String url) {
     if (_overview.reviewedSelection() == null) return;
     openExternalLink(context, url);
@@ -121,6 +134,8 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     setState(() => _resultError = null);
     unawaited(_overview.search(_query.text));
   }
+
+  void _close() => Navigator.of(context).pop<List<WebSourceSelection>>();
 
   void _confirm() {
     final sources = _overview.reviewedSelection();
@@ -304,6 +319,8 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
         ].join(' · '),
       ),
       supportingMaxLines: 3,
+      // A toggle: "Added" with a check, and tapping the row again removes
+      // it (its menu names it: "Remove … from prompt").
       trailing: added
           ? KitStatusMark(
               state: KitMarkState.done,
@@ -315,10 +332,16 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
               tooltip: l10n.webSourcesAddNamed(result.title),
               onPressed: () => _addResult(result),
             ),
-      onTap: added ? null : () => _addResult(result),
+      onTap: added ? () => _removeResult(result) : () => _addResult(result),
       menuLabel: l10n.webSourcesRowMenu(result.title),
       menu: [
-        if (!added)
+        if (added)
+          KitMenuItem(
+            label: l10n.webSourcesRemoveNamed(result.title),
+            icon: AppIconography.close,
+            onSelected: () => _removeResult(result),
+          )
+        else
           KitMenuItem(
             label: l10n.webSourcesAddNamed(result.title),
             icon: AppIconography.add,
@@ -403,18 +426,28 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     );
   }
 
-  Widget _addedList(AppLocalizations l10n) {
+  /// Added sources that have no result row above: the pasted links. A
+  /// result that was added is marked on its own row, not listed twice.
+  List<(int, WebSourceSelection)> get _pasted {
+    final resultUrls = {for (final result in _overview.results) result.url};
     final sources = _overview.sources;
-    return KitRowGroup(
-      key: const ValueKey('web-sources-added'),
-      label: l10n.webSourcesAddedCount(sources.length),
-      leadingIcons: false,
-      children: [
-        for (var index = 0; index < sources.length; index++)
-          _addedRow(l10n, sources[index], index),
-      ],
-    );
+    return [
+      for (var index = 0; index < sources.length; index++)
+        if (!resultUrls.contains(sources[index].url)) (index, sources[index]),
+    ];
   }
+
+  Widget _addedList(
+    AppLocalizations l10n,
+    List<(int, WebSourceSelection)> pasted,
+  ) => KitRowGroup(
+    key: const ValueKey('web-sources-added'),
+    label: l10n.webSourcesPastedLinks,
+    leadingIcons: false,
+    children: [
+      for (final (index, source) in pasted) _addedRow(l10n, source, index),
+    ],
+  );
 
   Widget _addedRow(AppLocalizations l10n, WebSourceSelection source, int i) {
     final host = _host(source.url);
@@ -459,6 +492,7 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     final blocked = _overview.scopeChanged;
     final count = _overview.selectedCount;
     final tokens = KitTokens.of(context);
+    final pasted = _pasted;
     return KitScreen(
       topBar: KitTopBar(title: l10n.webSourcesTitle),
       width: KitScreenWidth.list,
@@ -466,8 +500,16 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
       loadingLabel: _overview.searching
           ? l10n.webSearchSearching
           : l10n.webSearchFindingProviders,
-      bottom: blocked || count == 0
+      bottom: blocked
           ? null
+          : count == 0
+          ? KitActionBlock(
+              secondary: KitAction(
+                key: const ValueKey('web-sources-close'),
+                label: l10n.webSourcesClose,
+                onPressed: _close,
+              ),
+            )
           : KitActionBlock(
               primary: KitAction(
                 key: const ValueKey('web-sources-confirm'),
@@ -505,9 +547,9 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
                 if (_overview.supportsSearch) ..._searchPanel(context, l10n),
                 SizedBox(height: tokens.space3),
                 _manualEntry(context, l10n),
-                if (_overview.sources.isNotEmpty) ...[
+                if (pasted.isNotEmpty) ...[
                   SizedBox(height: tokens.sectionGap),
-                  _addedList(l10n),
+                  _addedList(l10n, pasted),
                 ],
               ],
             ),

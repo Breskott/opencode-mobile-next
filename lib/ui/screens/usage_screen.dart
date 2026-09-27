@@ -18,7 +18,6 @@ import '../kit/kit_sheet.dart';
 import '../kit/kit_details_fold.dart';
 import '../kit/kit_dialog.dart';
 import '../kit/kit_field.dart';
-import '../kit/kit_icon_button.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_progress_row.dart';
@@ -32,6 +31,7 @@ import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_refresh.dart';
 import '../widgets/product_states.dart';
+import 'usage_refresh_slot.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -56,11 +56,16 @@ class UsageScreen extends StatefulWidget {
   /// True as the "Spent" section of the Usage screen, which already supplies
   /// the app bar.
   final bool embedded;
+
+  /// Inside Usage, where this section's Refresh goes: the Usage top bar
+  /// holds one Refresh for the active tab.
+  final UsageRefreshSlot? refreshSlot;
   const UsageScreen({
     super.key,
     required this.controller,
     this.overview,
     this.embedded = false,
+    this.refreshSlot,
   });
   @override
   State<UsageScreen> createState() => _UsageScreenState();
@@ -137,9 +142,11 @@ class _UsageScreenState extends State<UsageScreen> {
       final unsupported = _overview.error is UsageUnsupported;
       final available = !_overview.detached && !unsupported;
       final canRefresh = available && !_overview.loading;
-      final description = KitText(
-        l10n.usageDescription,
-        role: KitTextRole.secondary,
+      // Inside Usage the one top bar holds Refresh for the active tab.
+      widget.refreshSlot?.offer(
+        visible: !unsupported,
+        onRefresh: canRefresh ? _overview.refresh : null,
+        disabledReason: canRefresh ? null : l10n.usageLoading,
       );
       Widget gap([double? height]) => SizedBox(height: height ?? tokens.space4);
       final body = KitRefresh(
@@ -150,24 +157,7 @@ class _UsageScreenState extends State<UsageScreen> {
           padding: KitScreen.padding(context),
           children: [
             SizedBox(height: tokens.space3),
-            // Inside Usage there is no bar of its own to hold Refresh, so
-            // it sits beside the description.
-            if (widget.embedded)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: description),
-                  KitIconButton(
-                    key: const ValueKey('refresh-usage'),
-                    icon: AppIconography.retry,
-                    tooltip: l10n.usageRefresh,
-                    onPressed: canRefresh ? _overview.refresh : null,
-                    disabledReason: canRefresh ? null : l10n.usageLoading,
-                  ),
-                ],
-              )
-            else
-              description,
+            KitText(l10n.usageDescription, role: KitTextRole.secondary),
             if (_overview.detached) ...[
               gap(),
               KitNotice(
@@ -552,17 +542,24 @@ class _UsageBudgetControls extends StatelessWidget {
         ),
       );
     }
-    rows.add(
-      KitRow(
-        key: const ValueKey('usage-budget-clear'),
-        leading: KitRow.icon(context, AppIconography.delete),
-        title: l10n.usageBudgetClearAll,
-        destructive: true,
-        enabled: !budgets.saving,
-        disabledReason: budgets.saving ? l10n.usageBudgetWaitReason : null,
-        onTap: budgets.saving ? null : () => _clear(context),
-      ),
+    // Clearing is offered only when there is something to clear: a budget
+    // for this scope, or one saved for another range or project.
+    final anySet = UsageBudgetUnit.values.any(
+      (unit) => budgets.limit(snapshot, unit) != null,
     );
+    if (anySet || budgets.hasSaved) {
+      rows.add(
+        KitRow(
+          key: const ValueKey('usage-budget-clear'),
+          leading: KitRow.icon(context, AppIconography.delete),
+          title: l10n.usageBudgetClearAll,
+          destructive: true,
+          enabled: !budgets.saving,
+          disabledReason: budgets.saving ? l10n.usageBudgetWaitReason : null,
+          onTap: budgets.saving ? null : () => _clear(context),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,

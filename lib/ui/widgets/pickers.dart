@@ -16,7 +16,6 @@ import 'package:opencode_mobile/ui/kit/kit_search_field.dart';
 import 'package:opencode_mobile/ui/kit/kit_segmented.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
-import 'package:opencode_mobile/ui/kit/kit_technical_value.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -71,7 +70,7 @@ bool isNewModel(CatalogModel model, {DateTime? now}) {
 
 String _applyLabel(AppLocalizations strings, ModelPickerApplyScope scope) =>
     switch (scope) {
-      ModelPickerApplyScope.classic => strings.e7ModelUiUseModelMode,
+      ModelPickerApplyScope.classic => strings.modelPickerUseChosenModel,
       ModelPickerApplyScope.session => strings.e7ModelUiUseSession,
       ModelPickerApplyScope.newSessions => strings.e7ModelUiUseNewSessions,
     };
@@ -112,11 +111,12 @@ Future<void> showModelPicker(
     icon: AppIconography.model,
     height: KitSheetHeight.full,
     loading: apply.applying,
-    primary: KitAction(
-      key: const Key('model-picker-apply'),
-      label: _applyLabel(strings, scope),
-      onPressed: apply.run,
-    ),
+    primaryListenable: apply.primary
+      ..value = KitAction(
+        key: const Key('model-picker-apply'),
+        label: _applyLabel(strings, scope),
+        onPressed: apply.run,
+      ),
     body: (sheetContext) => ModelCatalogView._sheet(
       controller: controller,
       apply: apply,
@@ -132,14 +132,39 @@ Future<void> showModelPicker(
 /// reports its in-flight save back as the sheet's loading bar.
 class _SheetApply {
   final applying = ValueNotifier<bool>(false);
+
+  /// The sheet's pinned primary; its label names what it applies ("Use
+  /// Claude Opus 5.5 · Build"), so the view renames it as the draft changes.
+  final primary = ValueNotifier<KitAction?>(null);
   Future<void> Function()? _handler;
+  String? _label;
 
   void run() {
     final handler = _handler;
     if (handler != null) unawaited(handler());
   }
 
-  void dispose() => applying.dispose();
+  /// Renames the primary after the frame (called from the view's build).
+  void offerLabel(String label) {
+    if (label == _label) return;
+    _label = label;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_disposed) return;
+      primary.value = KitAction(
+        key: const Key('model-picker-apply'),
+        label: label,
+        onPressed: run,
+      );
+    });
+  }
+
+  bool _disposed = false;
+
+  void dispose() {
+    _disposed = true;
+    applying.dispose();
+    primary.dispose();
+  }
 }
 
 enum _ModelIntent { all, fast, reasoning, context }
@@ -155,8 +180,9 @@ const _modelPage = 60;
 /// catalog screen.
 ///
 /// Top to bottom: notices about this catalog (only when they apply), "Your
-/// choice" (the model, unfolding into its details; Thinking; Agent), then
-/// search with its filter menu, All / Favorites / Recent, and the models.
+/// choice" (Thinking; Agent), then search with its filter menu, All /
+/// Favorites / Recent with Refresh, and the models; the chosen one is the
+/// checked row, with its details under it.
 /// With a bounded height (a screen) the list scrolls and the apply action is
 /// pinned under it; inside the sheet the sheet scrolls and pins it.
 class ModelCatalogView extends StatefulWidget {
@@ -220,7 +246,6 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   String _observedAgent = '';
   bool _thinkingOpen = false;
   late bool _agentOpen = widget.focusAgent;
-  bool _detailsOpen = false;
   String? _scopeProfile;
   int _scopeLocation = 0;
 
@@ -347,6 +372,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         final drafted = catalog == null ? null : _draftedModel(catalog);
         final items = _items(context, catalog, drafted);
         final inSheet = widget._apply != null;
+        widget._apply?.offerLabel(_applyText(drafted));
         final apply = inSheet ? null : _applyBlock(context, drafted);
         if (!constraints.hasBoundedHeight) {
           // Inside a scrolling host (the sheet): the host scrolls.
@@ -560,15 +586,15 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           margin: EdgeInsets.zero,
           label: _strings.modelPickerYourChoice,
           children: [
+            // The chosen model is the checked row in the list below (and
+            // named on the apply action), not repeated here.
             if (drafted == null)
               KitRow(
                 key: const Key('model-picker-none-chosen'),
                 leading: KitRow.icon(context, AppIconography.model),
                 title: _strings.modelPickerNoneChosen,
                 supporting: TextSpan(text: _strings.modelPickerNoneChosenHint),
-              )
-            else
-              _draftedRow(context, catalog, drafted),
+              ),
             _thinkingRow(context, drafted),
             _agentRow(context, catalog),
           ],
@@ -591,19 +617,12 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     );
   }
 
-  /// The chosen model, unfolding in place into what it can do, its limits
-  /// and prices in words, and its id under Details.
-  Widget _draftedRow(
-    BuildContext context,
-    CatalogSnapshot catalog,
-    CatalogModel model,
-  ) {
-    final tokens = KitTokens.of(context);
-    final provider = presentedProviderName(model.providerID, catalog.providers);
+  /// What the chosen model can do, its output limit and prices, in words,
+  /// under its checked row. The context window is already on the row's
+  /// supporting line, and the id is in the row's menu (Copy model ID).
+  Widget? _draftDetails(BuildContext context, CatalogModel model) {
     final cost = model.cost;
     final lines = <String>[
-      if (model.contextLimit > 0)
-        _strings.modelPickerDetailsContext(_number(model.contextLimit)),
       if (model.outputLimit > 0)
         _strings.modelPickerDetailsOutput(_number(model.outputLimit)),
       if (model.reasoning) _strings.modelPickerCanThink,
@@ -616,55 +635,12 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           _money(cost.outputPerMillion),
         ),
     ];
-    return KitExpandRow(
-      key: const Key('model-picker-drafted'),
-      headerKey: const Key('model-picker-options'),
-      leading: KitRow.icon(context, AppIconography.model),
-      title: model.name,
-      supporting: TextSpan(
-        text: [
-          provider,
-          if (model.contextLimit > 0)
-            _strings.e7ModelUiContext(_compactNumber(model.contextLimit)),
-        ].join(' · '),
-      ),
-      expanded: _detailsOpen,
-      onExpansionChanged: (open) => setState(() => _detailsOpen = open),
-      children: [
-        Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: tokens.space4,
-            end: tokens.space4,
-            bottom: tokens.space3,
-          ),
-          child: Column(
-            key: const Key('model-picker-details'),
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final line in lines)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(bottom: tokens.space1),
-                  child: KitText(
-                    line,
-                    role: KitTextRole.secondary,
-                    tone: KitTextTone.secondary,
-                  ),
-                ),
-              SizedBox(height: tokens.space1),
-              KitDetailsFold(
-                foldKey: const Key('model-picker-model-id'),
-                values: [
-                  KitTechnicalValue(
-                    _strings.modelPickerModelId,
-                    '${model.providerID}/${model.id}',
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
+    if (lines.isEmpty) return null;
+    return KitText(
+      lines.join(' · '),
+      key: const Key('model-picker-details'),
+      role: KitTextRole.secondary,
+      tone: KitTextTone.secondary,
     );
   }
 
@@ -939,80 +915,73 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     ].join(' · ');
     final shown = models.take(_visible).toList();
     return [
-      KitSearchField(
-        label: _strings.modelSearchHint,
-        controller: _search,
-        fieldKey: const Key('model-picker-search'),
-        clearKey: const Key('model-picker-search-clear'),
-        filterKey: const Key('model-picker-filters'),
-        resultCount: _query.trim().isEmpty ? null : models.length,
-        onChanged: (value) => setState(() {
-          _query = value;
-          _visible = _modelPage;
-        }),
-        filters: [
-          for (final intent in _ModelIntent.values)
-            KitMenuItem(
-              key: ValueKey('model-intent-${intent.name}'),
-              label: _intentLabel(intent),
-              group: 'intent',
-              checked: _intent == intent,
-              onSelected: () => setState(() {
-                _intent = intent;
+      // Search with its filter menu, and Refresh for the catalog beside it.
+      Row(
+        children: [
+          Expanded(
+            child: KitSearchField(
+              label: _strings.modelSearchHint,
+              controller: _search,
+              fieldKey: const Key('model-picker-search'),
+              clearKey: const Key('model-picker-search-clear'),
+              filterKey: const Key('model-picker-filters'),
+              resultCount: _query.trim().isEmpty ? null : models.length,
+              onChanged: (value) => setState(() {
+                _query = value;
                 _visible = _modelPage;
               }),
+              filters: [
+                for (final intent in _ModelIntent.values)
+                  KitMenuItem(
+                    key: ValueKey('model-intent-${intent.name}'),
+                    label: _intentLabel(intent),
+                    group: 'intent',
+                    checked: _intent == intent,
+                    onSelected: () => setState(() {
+                      _intent = intent;
+                      _visible = _modelPage;
+                    }),
+                  ),
+                KitMenuItem(
+                  key: const ValueKey('model-provider-*'),
+                  label: _strings.e7ModelUiAllProviders,
+                  group: 'provider',
+                  checked: _provider == '*',
+                  onSelected: () => setState(() => _provider = '*'),
+                ),
+                for (final provider in providers)
+                  KitMenuItem(
+                    key: ValueKey('model-provider-${provider.id}'),
+                    label: provider.name,
+                    group: 'provider',
+                    checked: _provider == provider.id,
+                    onSelected: () => setState(() {
+                      _provider = provider.id;
+                      _visible = _modelPage;
+                    }),
+                  ),
+              ],
+              activeFilter: activeFilter.isEmpty ? null : activeFilter,
+              onClearFilter: () => setState(() {
+                _provider = '*';
+                _intent = _ModelIntent.all;
+              }),
             ),
-          KitMenuItem(
-            key: const ValueKey('model-provider-*'),
-            label: _strings.e7ModelUiAllProviders,
-            group: 'provider',
-            checked: _provider == '*',
-            onSelected: () => setState(() => _provider = '*'),
           ),
-          for (final provider in providers)
-            KitMenuItem(
-              key: ValueKey('model-provider-${provider.id}'),
-              label: provider.name,
-              group: 'provider',
-              checked: _provider == provider.id,
-              onSelected: () => setState(() {
-                _provider = provider.id;
-                _visible = _modelPage;
-              }),
-            ),
+          SizedBox(width: tokens.space2),
+          KitIconButton(
+            key: const Key('model-picker-refresh'),
+            icon: AppIconography.retry,
+            tooltip: _strings.e7ModelUiRefresh,
+            working: controller.catalogLoading,
+            onPressed: controller.catalogLoading
+                ? null
+                : controller.refreshCatalog,
+          ),
         ],
-        activeFilter: activeFilter.isEmpty ? null : activeFilter,
-        onClearFilter: () => setState(() {
-          _provider = '*';
-          _intent = _ModelIntent.all;
-        }),
       ),
       gap,
-      KitSegmented<_ModelCollection>(
-        semanticsLabel: _strings.modelPickerCollections,
-        selected: _collection,
-        onChanged: (value) => setState(() {
-          _collection = value;
-          _visible = _modelPage;
-        }),
-        segments: [
-          KitSegment(
-            key: const ValueKey('model-collection-all'),
-            value: _ModelCollection.all,
-            label: _strings.modelAll,
-          ),
-          KitSegment(
-            key: const ValueKey('model-collection-favorites'),
-            value: _ModelCollection.favorites,
-            label: _strings.modelFavorites,
-          ),
-          KitSegment(
-            key: const ValueKey('model-collection-recent'),
-            value: _ModelCollection.recent,
-            label: _strings.modelRecent,
-          ),
-        ],
-      ),
+      _collections(),
       gap,
       if (models.isEmpty)
         _noMatch(filtered)
@@ -1020,17 +989,6 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         KitRowGroup(
           key: const Key('model-picker-list'),
           margin: EdgeInsets.zero,
-          label: _strings.e7ModelUiCount(models.length),
-          labelTrailing: KitIconButton(
-            key: const Key('model-picker-refresh'),
-            icon: AppIconography.retry,
-            size: 20,
-            tooltip: _strings.e7ModelUiRefresh,
-            working: controller.catalogLoading,
-            onPressed: controller.catalogLoading
-                ? null
-                : controller.refreshCatalog,
-          ),
           children: [
             for (final model in shown)
               _modelRow(
@@ -1051,6 +1009,33 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         ),
     ];
   }
+
+  /// All / Favorites / Recent.
+  Widget _collections() => KitSegmented<_ModelCollection>(
+    semanticsLabel: _strings.modelPickerCollections,
+    selected: _collection,
+    onChanged: (value) => setState(() {
+      _collection = value;
+      _visible = _modelPage;
+    }),
+    segments: [
+      KitSegment(
+        key: const ValueKey('model-collection-all'),
+        value: _ModelCollection.all,
+        label: _strings.modelAll,
+      ),
+      KitSegment(
+        key: const ValueKey('model-collection-favorites'),
+        value: _ModelCollection.favorites,
+        label: _strings.modelFavorites,
+      ),
+      KitSegment(
+        key: const ValueKey('model-collection-recent'),
+        value: _ModelCollection.recent,
+        label: _strings.modelRecent,
+      ),
+    ],
+  );
 
   /// The server has no model at all: the next step is signing in to a
   /// provider, which lives on the Providers screen.
@@ -1168,6 +1153,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         ].join(' · '),
       ),
       selected: draft,
+      below: draft ? _draftDetails(context, model) : null,
       enabled: model.enabled,
       disabledReason: model.enabled
           ? null
@@ -1226,6 +1212,19 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     }
   }
 
+  /// What the apply action says: with the classic scope it names the model
+  /// and agent it applies ("Use Claude Opus 5.5 · Build"); the OpenCode 2
+  /// scopes name where it applies ("Use for this conversation").
+  String _applyText(CatalogModel? drafted) {
+    if (widget.applyScope != ModelPickerApplyScope.classic || drafted == null) {
+      return _applyLabel(_strings, widget.applyScope);
+    }
+    final agent = _draftAgent;
+    return agent.isEmpty
+        ? _strings.modelPickerUseModel(drafted.name)
+        : _strings.e7ModelUiUseModelMode(drafted.name, _agentTitle(agent));
+  }
+
   /// The apply action for a view that pins its own (a screen); inside the
   /// sheet the sheet pins it.
   Widget _applyBlock(BuildContext context, CatalogModel? drafted) {
@@ -1238,7 +1237,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         key: drafted == null
             ? const Key('model-picker-apply')
             : ValueKey('use-model-${drafted.providerID}-${drafted.id}'),
-        label: _applyLabel(_strings, widget.applyScope),
+        label: _applyText(drafted),
         working: _applying,
         onPressed: reason == null || _applying ? _applyDraft : null,
         disabledReason: _applying ? null : reason,

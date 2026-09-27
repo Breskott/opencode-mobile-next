@@ -24,13 +24,16 @@ bool _setupBusy(VoiceModelManager manager) =>
 // revamp: redesign (slice-P10.4): automatic pack choice by total RAM and a
 // background download from the first mic tap wait for that slice.
 /// The voice model setup sheet (voice-model-setup-sheet) in the kit's one
-/// sheet frame. Completes with true when the person chose "Use Balanced"
-/// with the model on the phone, false otherwise (Not now, close, swipe).
+/// sheet frame. Completes with true when the person chose "Use Balanced" or
+/// "Done" with the model on the phone, false otherwise (Not now, close,
+/// swipe).
 ///
 /// The pinned primary follows the manager: "Download Balanced (153 MB)"
-/// before the model is on the phone, "Use Balanced" once it is, and nothing
-/// while a download runs (the progress in the body says what is happening
-/// and holds Cancel download). A download keeps running in the manager if
+/// before the model is on the phone, "Use Balanced" once a download here
+/// finishes, and nothing while a download runs (the progress in the body
+/// says what is happening and holds Cancel download). Opened with the model
+/// already on the phone and in use, there is nothing to start: no primary,
+/// and the secondary is "Done". A download keeps running in the manager if
 /// the sheet is closed; reopening shows its progress.
 Future<bool> showVoiceModelSetupSheet(
   BuildContext context,
@@ -40,10 +43,15 @@ Future<bool> showVoiceModelSetupSheet(
   final strings = _voiceStrings(context);
   final navigator = Navigator.of(context);
   final primary = ValueNotifier<KitAction?>(null);
+  // Opened with the chosen model on the phone: it is already the one in
+  // use, so "Use Balanced" would only close the sheet; "Done" does that.
+  final ready =
+      !_setupBusy(manager) && manager.isInstalled(manager.selectedPack);
   void sync() => primary.value = _setupPrimary(
     manager,
     strings,
     use: () => navigator.pop(true),
+    inUse: ready,
   );
   sync();
   manager.addListener(sync);
@@ -56,8 +64,8 @@ Future<bool> showVoiceModelSetupSheet(
           primaryListenable: primary,
           secondary: KitAction(
             key: const Key('voice-model-secondary-action'),
-            label: strings.e7VoiceUiNotNow,
-            onPressed: () => navigator.pop(false),
+            label: ready ? strings.voiceSetupDone : strings.e7VoiceUiNotNow,
+            onPressed: () => navigator.pop(ready),
           ),
           body: (context) => _VoiceModelSetupBody(manager: manager),
         ) ??
@@ -72,12 +80,15 @@ KitAction? _setupPrimary(
   VoiceModelManager manager,
   AppLocalizations strings, {
   required VoidCallback use,
+  bool inUse = false,
 }) {
   if (_setupBusy(manager)) return null;
   final pack = manager.selectedPack;
   final name = voicePackLabel(pack, strings);
   const key = Key('voice-model-primary-action');
   if (manager.isInstalled(pack)) {
+    // Already on the phone and in use: the secondary "Done" closes.
+    if (inUse) return null;
     return KitAction(
       key: key,
       label: strings.voiceSetupUsePack(name),
@@ -154,8 +165,12 @@ class _VoiceModelSetupBody extends StatelessWidget {
           SizedBox(height: tokens.space4),
           KitText(strings.voiceSetupModelLabel, role: KitTextRole.label),
           SizedBox(height: tokens.space1),
+          // A tap only chooses; the pinned primary downloads. (A list that
+          // acts on tap would mark a pack that is not on the phone as
+          // "Current".)
           KitChoiceList<String>.single(
             semanticsLabel: strings.voiceSetupModelLabel,
+            actsOnTap: false,
             selected: selected.id,
             onSelected: (id) =>
                 unawaited(manager.selectPack(voiceModelPack(id))),
@@ -176,7 +191,10 @@ class _VoiceModelSetupBody extends StatelessWidget {
                 ),
                 KitAction(
                   key: Key('voice-delete-${selected.id}'),
-                  label: strings.voiceSetupDeletePack(selectedName),
+                  label: strings.voiceSetupDeletePack(
+                    selectedName,
+                    formatModelBytes(selected.downloadBytes),
+                  ),
                   icon: AppIconography.delete,
                   destructive: true,
                   onPressed: () => unawaited(_confirmDelete(context, selected)),
@@ -216,25 +234,30 @@ class _VoiceModelSetupBody extends StatelessWidget {
   }) {
     final strings = _voiceStrings(context);
     final support = manager.supportFor(pack);
+    // On the phone: say so; otherwise that it is not, and what it costs to
+    // download. The description already says which one is recommended.
+    final line = [
+      manager.isInstalled(pack)
+          ? strings.e7VoiceUiInstalled
+          : strings.voiceSetupNotDownloaded(
+              formatModelBytes(pack.downloadBytes),
+            ),
+      voicePackDescription(pack, strings),
+    ].join(' · ');
+    // While a download runs the rows rest, dimmed, with their own line:
+    // the progress above already says why (no "Available after the
+    // download" on every row).
+    final resting = busy && support.supported;
     return KitChoice<String>(
       key: Key('voice-model-${pack.id}'),
       value: pack.id,
       title: voicePackLabel(pack, strings),
-      // On the phone: say so; otherwise what it costs to download. The
-      // description already says which one is recommended.
-      supporting: [
-        manager.isInstalled(pack)
-            ? strings.e7VoiceUiInstalled
-            : strings.e7VoiceUiDownloadSize(
-                formatModelBytes(pack.downloadBytes),
-              ),
-        voicePackDescription(pack, strings),
-      ].join(' · '),
+      supporting: resting ? null : line,
       enabled: !busy && support.supported,
       disabledReason: !support.supported
           ? voiceSupportReason(manager, pack, support, strings)
-          : busy
-          ? strings.voiceSetupBusyReason
+          : resting
+          ? line
           : null,
     );
   }
@@ -246,7 +269,10 @@ class _VoiceModelSetupBody extends StatelessWidget {
       context,
       title: strings.e7VoiceUiDeletePack(name),
       body: strings.e7VoiceUiDeleteDetail(formatModelBytes(pack.downloadBytes)),
-      confirmLabel: strings.voiceSetupDeletePack(name),
+      confirmLabel: strings.voiceSetupDeletePack(
+        name,
+        formatModelBytes(pack.downloadBytes),
+      ),
       cancelLabel: strings.voiceSetupKeepPack(name),
       icon: AppIconography.delete,
       kind: KitConfirmKind.destructive,
@@ -524,6 +550,15 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
             icon: AppIconography.settingsAdvanced,
             onPressed: () => unawaited(_openModelSetup()),
           );
+          // The microphone is blocked for good: only Android settings can
+          // fix that, so it is the primary and Try again steps back.
+          final blocked = error is VoicePermissionDenied && error.permanent;
+          final retry = KitAction(
+            key: const Key('voice-composer-retry'),
+            label: strings.e7VoiceUiRetry,
+            icon: AppIconography.retry,
+            onPressed: () => unawaited(controller.startListening()),
+          );
           final KitAction? primary = switch (state) {
             VoiceComposerState.listening => KitAction(
               key: const Key('stop-voice-recording'),
@@ -537,11 +572,13 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
               icon: AppIconography.add,
               onPressed: () => unawaited(_insert(send: false)),
             ),
-            VoiceComposerState.error => KitAction(
-              label: strings.e7VoiceUiRetry,
-              icon: AppIconography.retry,
-              onPressed: () => unawaited(controller.startListening()),
+            VoiceComposerState.error when blocked => KitAction(
+              key: const Key('voice-composer-open-settings'),
+              label: strings.voiceAllowMicInSettings,
+              icon: AppIconography.settings,
+              onPressed: () => unawaited(voiceDevicePlatform.openAppSettings()),
             ),
+            VoiceComposerState.error => retry,
             VoiceComposerState.idle => KitAction(
               label: strings.e7VoiceUiStartListening,
               icon: AppIconography.mic,
@@ -562,8 +599,9 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                   tone: KitTextTone.secondary,
                 ),
               ],
+              // Draft and error have no status line above them.
               if (state == VoiceComposerState.draft) ...[
-                SizedBox(height: tokens.space4),
+                if (widget.conversation) SizedBox(height: tokens.space4),
                 KitField(
                   fieldKey: const Key('voice-draft-field'),
                   label: strings.e7VoiceUiReviewTranscript,
@@ -575,7 +613,7 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                 ),
               ],
               if (state == VoiceComposerState.error) ...[
-                SizedBox(height: tokens.space4),
+                if (widget.conversation) SizedBox(height: tokens.space4),
                 KitNotice(
                   tone: AppStatusTone.failure,
                   message: voiceErrorText(
@@ -583,15 +621,6 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                     strings,
                     manager: controller.models,
                   ),
-                  actions: [
-                    if (error is VoicePermissionDenied && error.permanent)
-                      KitAction(
-                        label: strings.e7VoiceUiOpenSettings,
-                        icon: AppIconography.settings,
-                        onPressed: () =>
-                            unawaited(voiceDevicePlatform.openAppSettings()),
-                      ),
-                  ],
                 ),
                 if (error != null)
                   KitDetailsFold(
@@ -602,8 +631,11 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
               SizedBox(height: tokens.space4),
               KitActionBlock(
                 primary: primary,
-                secondary: cancel,
+                secondary: state == VoiceComposerState.error && blocked
+                    ? retry
+                    : cancel,
                 tertiary: [
+                  if (state == VoiceComposerState.error && blocked) cancel,
                   if (state == VoiceComposerState.draft && !widget.conversation)
                     KitAction(
                       key: const Key('insert-voice-draft-send'),
@@ -653,7 +685,7 @@ class _VoiceStatus extends StatelessWidget {
         controller.state == VoiceComposerState.loading ||
         controller.state == VoiceComposerState.finishingCancellation ||
         controller.state == VoiceComposerState.transcribing;
-    final status = switch (controller.state) {
+    final String? status = switch (controller.state) {
       VoiceComposerState.listening => strings.e7VoiceUiListeningTime(
         _formatElapsed(controller.elapsed),
         _formatElapsed(voiceRecordingCap),
@@ -663,14 +695,16 @@ class _VoiceStatus extends StatelessWidget {
       VoiceComposerState.transcribing => strings.e7VoiceUiTranscribing,
       VoiceComposerState.finishingCancellation =>
         strings.e7VoiceUiFinishingCancel,
-      VoiceComposerState.draft => strings.e7VoiceUiDraftReady,
-      VoiceComposerState.error => strings.e7VoiceUiNeedsAttention,
+      // The transcript field and the error notice say it themselves.
+      VoiceComposerState.draft || VoiceComposerState.error => null,
       VoiceComposerState.idle => strings.e7VoiceUiReady,
       VoiceComposerState.modelRequired => strings.e7VoiceUiModelRequired,
       VoiceComposerState.downloading => strings.e7VoiceUiDownloading,
       VoiceComposerState.verifying => strings.e7VoiceUiVerifyingModel,
     };
+    if (status == null) return const SizedBox.shrink();
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         Semantics(
@@ -680,7 +714,6 @@ class _VoiceStatus extends StatelessWidget {
           child: KitText(
             status,
             role: KitTextRole.headline,
-            textAlign: TextAlign.center,
             tabular: listening,
           ),
         ),
@@ -691,7 +724,6 @@ class _VoiceStatus extends StatelessWidget {
             key: const Key('voice-recording-cap'),
             role: KitTextRole.secondary,
             tone: KitTextTone.secondary,
-            textAlign: TextAlign.center,
           ),
         ],
         if (listening) ...[

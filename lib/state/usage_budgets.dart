@@ -54,6 +54,9 @@ class UsageBudgets extends ChangeNotifier {
 
   String get key => 'oc.consumptionBudgets.$profileId';
   bool get available => !_disposed && isCurrent();
+
+  /// Whether any budget is saved for this server, for any range or project.
+  bool get hasSaved => available && _rules.isNotEmpty;
   static bool validLimit(Object? value, UsageBudgetUnit unit) =>
       value is num &&
       value.isFinite &&

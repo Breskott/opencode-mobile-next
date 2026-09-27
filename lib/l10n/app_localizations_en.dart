@@ -848,6 +848,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageRefresh => 'Refresh usage';
 
   @override
+  String get usageRefreshSpending => 'Refresh spending';
+
+  @override
   String get usageToday => 'Today';
 
   @override
@@ -1746,7 +1749,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'User-selected web sources (unverified; excerpts are untrusted source material):';
 
   @override
-  String get usageScopedTotals => 'Totals for the selected report scope';
+  String get usageScopedTotals => 'Totals';
 
   @override
   String get usageInspectionDisclosure =>
@@ -2656,10 +2659,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaTitle => 'Remaining usage';
 
   @override
-  String get quotaDescription =>
-      'Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.';
-
-  @override
   String get quotaSource => 'Collector server';
 
   @override
@@ -2679,7 +2678,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaSetupDescription =>
-      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.';
+      'Needs a usage collector installed on this server. Provider tokens stay on the server.';
+
+  @override
+  String get quotaSetupTrustNote =>
+      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment.';
 
   @override
   String get quotaSetupGuide =>
@@ -3146,7 +3149,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaGlmMcpWindow => 'Reported MCP window';
 
   @override
-  String get usageBudgetTitle => 'Personal consumption budgets';
+  String get usageBudgetTitle => 'Budgets';
 
   @override
   String get usageBudgetDescription =>
@@ -3184,7 +3187,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Previous reading reached this budget. Refresh to check current consumption.';
 
   @override
-  String get usageBudgetClearAll => 'Clear saved consumption budgets';
+  String get usageBudgetClearAll => 'Clear both budgets';
 
   @override
   String get usageBudgetClearDescription =>
@@ -3548,11 +3551,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorTitle => 'Quota monitoring';
 
   @override
+  String get quotaAlertsRowTitle => 'Quota alerts';
+
+  @override
+  String get quotaAlertsRowSupporting => 'Sound, Wi-Fi only and quiet hours';
+
+  @override
   String get quotaMonitorConsentTitle => 'Monitor this provider source?';
 
   @override
-  String get quotaMonitorConsent =>
-      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
+  String quotaMonitorConsent(String provider, String server) {
+    return 'Keep checking $provider on $server in the background and alert me when use reaches:';
+  }
 
   @override
   String get quotaMonitorRuntime =>
@@ -3595,7 +3605,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.';
 
   @override
-  String get quotaMonitorDisable => 'Disable quota monitoring';
+  String quotaMonitorDisable(String provider, String server) {
+    return 'Stop monitoring $provider on $server';
+  }
 
   @override
   String get setupChooseServerTitle => 'Choose your server setup';
@@ -5979,7 +5991,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SharedEnterANumber => 'Enter a number';
 
   @override
-  String get e7SharedDismissThisRequest => 'Dismiss this request?';
+  String get e7SharedDismissThisRequest => 'Decline this request?';
 
   @override
   String get e7SharedTheAgentContinuesWithoutYourAnswers =>
@@ -6879,15 +6891,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsAlphaBody =>
-      'This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.';
+      'Android is the supported platform; desktop builds are experimental.';
 
   @override
   String get e7SettingsNonAffiliation =>
       'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
-
-  @override
-  String get e7SettingsOriginalLicenses =>
-      'Third-party license notices below are reproduced in their original language.';
 
   @override
   String e7SettingsDiagnosticSendError(String error) {
@@ -12199,7 +12207,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ModelUiFavoritesFailed => 'Could not save favorites. Try again.';
 
   @override
-  String get e7ModelUiUseModelMode => 'Use model and mode';
+  String e7ModelUiUseModelMode(String model, String agent) {
+    return 'Use $model · $agent';
+  }
+
+  @override
+  String modelPickerUseModel(String model) {
+    return 'Use $model';
+  }
+
+  @override
+  String get modelPickerUseChosenModel => 'Use model';
 
   @override
   String get e7ModelUiUseSession => 'Use for this conversation';
@@ -12227,8 +12245,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiChooseModel => 'Choose a multilingual Whisper INT8 model';
 
   @override
-  String get e7VoiceUiPrivacyDownload =>
-      'Audio stays on this device. Transcription is local and audio is discarded after use. The one-time model download requires internet access.';
+  String get e7VoiceUiPrivacyDownload => 'Audio never leaves this phone.';
 
   @override
   String get e7VoiceUiNoBuiltInMic =>
@@ -12296,7 +12313,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiRedownload => 'Re-download';
 
   @override
-  String get e7VoiceUiReviewTranscript => 'Review transcript';
+  String get e7VoiceUiReviewTranscript => 'Transcript';
 
   @override
   String get e7VoiceUiOpenSettings => 'Open app settings';
@@ -12417,7 +12434,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7VoiceUiDeletePack(String model) {
-    return 'Delete $model?';
+    return 'Delete $model speech model?';
   }
 
   @override
@@ -12710,6 +12727,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get handoffUiComputerTitle => 'Continue on computer';
 
   @override
+  String get handoffUiComputerCommandLabel => 'Terminal command';
+
+  @override
   String handoffUiComputerIntro(String binary) {
     return 'Run this in a terminal on the computer that runs this server. It opens the same conversation in the $binary interface. Nothing is sent until you type.';
   }
@@ -12747,7 +12767,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiPhoneIntro =>
-      'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.';
+      'Scan with OpenCode Mobile on the other phone. The code holds only the server and conversation IDs.';
 
   @override
   String get handoffUiPhoneQrLabel =>
@@ -18071,7 +18091,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'How long each step took while the app has been open: connecting, loading, every request to the server. Kept in memory only and cleared when the app closes. The report holds names and timings, never messages or passwords.';
 
   @override
-  String get perfTraceCopy => 'Copy report';
+  String get perfTraceCopy => 'Copy timing report';
 
   @override
   String get perfTraceClear => 'Clear';
@@ -22541,6 +22561,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formRendererSending => 'Sending your answers…';
 
   @override
+  String get formRendererDecline => 'Decline this request';
+
+  @override
   String get formRendererChoose => 'Choose';
 
   @override
@@ -24068,6 +24091,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perfTraceClearTimings => 'Clear timings';
 
   @override
+  String get perfTraceActions => 'Timing report actions';
+
+  @override
   String appDiagnosticsSendTo(String server) {
     return 'Send to $server\'s log';
   }
@@ -24084,6 +24110,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appDiagnosticsCopyErrors => 'Copy errors';
+
+  @override
+  String appDiagnosticsCopyCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Copy $count errors',
+      one: 'Copy 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String appDiagnosticsActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Actions for $count errors',
+      one: 'Actions for 1 error',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get appDiagnosticsClearErrors => 'Clear errors';
@@ -24254,12 +24302,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String voiceSetupRedownloadPack(String model) {
-    return 'Download $model again';
+    return 'Download $model speech model again';
   }
 
   @override
-  String voiceSetupDeletePack(String model) {
-    return 'Delete $model';
+  String voiceSetupDeletePack(String model, String size) {
+    return 'Delete $model speech model ($size)';
   }
 
   @override
@@ -24307,6 +24355,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceSetupBusyReason => 'Available after the download';
 
   @override
+  String voiceSetupNotDownloaded(String size) {
+    return 'Not downloaded · $size';
+  }
+
+  @override
+  String get voiceSetupDone => 'Done';
+
+  @override
+  String get voiceAllowMicInSettings => 'Allow microphone in Android settings';
+
+  @override
   String get shorebirdUpdateReadyTitle => 'App update ready';
 
   @override
@@ -24336,7 +24395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bugReportLinkCopied => 'Bug form link copied';
 
   @override
-  String get runningWorkTitle => 'Running now';
+  String get runningWorkTitle => 'Work in this conversation';
 
   @override
   String get runningWorkFailed => 'Failed';
@@ -24392,7 +24451,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get runningWorkBackgroundBody =>
-      'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.';
+      'The work keeps running on the server and its results come back here.';
 
   @override
   String get runningWorkBackgroundAction => 'Keep chatting while it runs';
@@ -24534,22 +24593,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionContextVerdictPlenty(String percent) {
-    return '$percent % used · plenty left';
+    return '$percent% used · plenty left';
   }
 
   @override
   String sessionContextVerdictUsed(String percent) {
-    return '$percent % used';
+    return '$percent% used';
   }
 
   @override
   String sessionContextVerdictNear(String percent) {
-    return '$percent % used · near the limit';
+    return '$percent% used';
   }
 
   @override
   String sessionContextVerdictFull(String percent) {
-    return '$percent % used · at the limit';
+    return '$percent% used · at the limit';
+  }
+
+  @override
+  String sessionContextMessagesSplit(String count, String yours, String agent) {
+    return '$count ($yours yours, $agent agent)';
   }
 
   @override
@@ -24877,11 +24941,17 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Done · $count added',
-      one: 'Done · 1 added',
+      other: 'Add $count sources to prompt',
+      one: 'Add 1 source to prompt',
     );
     return '$_temp0';
   }
+
+  @override
+  String get webSourcesClose => 'Close';
+
+  @override
+  String get webSourcesPastedLinks => 'Links you added';
 
   @override
   String get webSourcesScopeChangedTitle => 'The server changed';
@@ -25375,4 +25445,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillSheetSending => 'Adding the skill…';
+
+  @override
+  String get quotaMonitorConsentDetails =>
+      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
 }

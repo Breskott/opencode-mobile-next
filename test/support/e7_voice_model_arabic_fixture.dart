@@ -80,7 +80,8 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7ModelUiFavoritesFailed => 'تعذّر حفظ المفضّلة. حاول مجددًا.';
   @override
-  String get e7ModelUiUseModelMode => 'استخدام النموذج والوضع';
+  String e7ModelUiUseModelMode(String model, String agent) =>
+      'استخدام $model · $agent';
   @override
   String get e7ModelUiUseSession => 'استخدام في هذه الجلسة';
   @override

@@ -7,7 +7,8 @@ import '../kit/kit.dart';
 
 /// The "Performance" part of App diagnostics: where time went in this run
 /// of the app, from [PerfTrace]. Steps grouped by name (slowest first), the
-/// latest steps, and a plain-text report to copy.
+/// latest steps, and a plain-text report to copy from the first list's
+/// header menu (with Clear timings).
 ///
 /// Built from kit parts only (screen-system-1): the steps are [KitRow]s on
 /// two [KitRowGroup] panels, each with its time as the trailing value. A
@@ -31,6 +32,39 @@ class PerfTraceSection extends StatelessWidget {
         final stats = PerfTrace.stats().take(slowest).toList();
         final latest = PerfTrace.recent(recent);
         final empty = latest.isEmpty;
+        // Copy and Clear act on the timings, so they sit on the first
+        // timing list's header, not loose above it (owner rule 2026-09-27).
+        final actions = Builder(
+          builder: (menuContext) => KitIconButton(
+            key: const ValueKey('perf-trace-actions'),
+            icon: AppIconography.more,
+            size: 20,
+            tooltip: copy.perfTraceActions,
+            onPressed: () => showKitMenu(
+              menuContext,
+              semanticsLabel: copy.perfTraceActions,
+              items: [
+                KitMenuItem(
+                  key: const ValueKey('perf-trace-copy'),
+                  label: copy.perfTraceCopy,
+                  icon: AppIconography.copy,
+                  onSelected: () => KitCopy.copy(
+                    context,
+                    PerfTrace.reportText(),
+                    announcement: copy.perfTraceCopied,
+                  ),
+                ),
+                KitMenuItem(
+                  key: const ValueKey('perf-trace-clear'),
+                  label: copy.perfTraceClearTimings,
+                  icon: AppIconography.delete,
+                  destructive: true,
+                  onSelected: PerfTrace.clear,
+                ),
+              ],
+            ),
+          ),
+        );
         return Column(
           key: const ValueKey('perf-trace-section'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,33 +85,8 @@ class PerfTraceSection extends StatelessWidget {
                   ),
                   SizedBox(height: tokens.space1),
                   KitText(copy.perfTraceBody, role: KitTextRole.secondary),
-                  SizedBox(height: tokens.space3),
-                  // Copy report is this block's one path; Clear timings is
-                  // the start-aligned text button under it. With nothing
-                  // measured they rest and the line below says why.
-                  KitButton.secondary(
-                    key: const ValueKey('perf-trace-copy'),
-                    onPressed: empty
-                        ? null
-                        : () => KitCopy.copy(
-                            context,
-                            PerfTrace.reportText(),
-                            announcement: copy.perfTraceCopied,
-                          ),
-                    icon: AppIconography.copy,
-                    label: copy.perfTraceCopy,
-                  ),
-                  SizedBox(height: tokens.space1),
-                  KitInset(
-                    child: KitButton.tertiary(
-                      key: const ValueKey('perf-trace-clear'),
-                      onPressed: empty ? null : PerfTrace.clear,
-                      icon: AppIconography.delete,
-                      label: copy.perfTraceClearTimings,
-                    ),
-                  ),
                   if (empty) ...[
-                    SizedBox(height: tokens.space1),
+                    SizedBox(height: tokens.space3),
                     KitText(copy.perfTraceEmpty, role: KitTextRole.secondary),
                   ],
                 ],
@@ -88,6 +97,7 @@ class PerfTraceSection extends StatelessWidget {
                 SizedBox(height: tokens.sectionGap),
                 KitRowGroup(
                   label: copy.perfTraceSlowest,
+                  labelTrailing: actions,
                   leadingIcons: false,
                   children: [
                     for (final stat in stats)
@@ -119,6 +129,7 @@ class PerfTraceSection extends StatelessWidget {
               SizedBox(height: tokens.sectionGap),
               KitRowGroup(
                 label: copy.perfTraceRecent,
+                labelTrailing: stats.isEmpty ? actions : null,
                 leadingIcons: false,
                 children: [
                   for (final span in latest)
