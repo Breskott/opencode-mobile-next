@@ -40,12 +40,23 @@ class KitStatusScope extends InheritedWidget {
 /// drawn. The line folds in and out through [KitReveal] (it stays mounted
 /// with no child).
 ///
+/// With [child] (coordinator ruling on the KitStatusLine-v2 contract, for
+/// KitScreen), the slot also hosts what sits below its line: it draws the
+/// line above [child], which fills the rest of the slot's height (give the
+/// slot a bounded height), and every [KitStatusContribution] inside [child]
+/// reaches this slot. Without [child] only contributions below the line
+/// itself reach it.
+///
 /// States: none drawn / one condition (KitStatusLine's own states).
 class KitStatusLineSlot extends StatefulWidget {
-  const KitStatusLineSlot({super.key, this.status, this.slotKey});
+  const KitStatusLineSlot({super.key, this.status, this.slotKey, this.child});
 
   final KitStatus? status;
   final Key? slotKey;
+
+  /// What sits below the line, inside this slot's reach (null: the line
+  /// alone).
+  final Widget? child;
 
   /// True when a slot is above [context] (a KitScreen then contributes
   /// instead of drawing).
@@ -86,25 +97,35 @@ class _KitStatusLineSlotState extends State<KitStatusLineSlot> {
   @override
   Widget build(BuildContext context) {
     final conditions = KitStatusScope.of(context);
+    final line = KeyedSubtree(
+      key: widget.slotKey,
+      child: ValueListenableBuilder<List<KitStatus>>(
+        valueListenable: conditions,
+        builder: (context, appWide, _) {
+          final shown = KitStatus.highest([
+            ...appWide,
+            widget.status,
+            for (final contribution in _contributions)
+              if (contribution.active) contribution.widget.status,
+          ]);
+          return KitReveal(
+            child: shown == null ? null : KitStatusLine.of(shown),
+          );
+        },
+      ),
+    );
+    final child = widget.child;
     return _KitStatusSlotScope(
       state: this,
-      child: KeyedSubtree(
-        key: widget.slotKey,
-        child: ValueListenableBuilder<List<KitStatus>>(
-          valueListenable: conditions,
-          builder: (context, appWide, _) {
-            final shown = KitStatus.highest([
-              ...appWide,
-              widget.status,
-              for (final contribution in _contributions)
-                if (contribution.active) contribution.widget.status,
-            ]);
-            return KitReveal(
-              child: shown == null ? null : KitStatusLine.of(shown),
-            );
-          },
-        ),
-      ),
+      child: child == null
+          ? line
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                line,
+                Expanded(child: child),
+              ],
+            ),
     );
   }
 }
