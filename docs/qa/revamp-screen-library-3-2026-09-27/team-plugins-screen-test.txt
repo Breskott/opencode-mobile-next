@@ -1,0 +1,7 @@
+00:02 +12 -1: manual add host kind offers three kinds with Desktop computer preselected [E]
+00:03 +12 -2: manual add host kind pc persists into the config [E]
+00:03 +12 -3: manual add host kind laptop persists into the config [E]
+00:03 +12 -4: manual add host kind wsl persists into the config [E]
+00:03 +12 -5: manual add host kind Change reopens the form with the saved kind [E]
+00:03 +12 -6: manual add host kind a host that reports a phone keeps the phone kind [E]
+00:04 +25 -6: Some tests failed.

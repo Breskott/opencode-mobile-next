@@ -14,6 +14,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -249,9 +250,14 @@ void main() {
     await tester.pumpWidget(_app(await _controller(repository)));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppBar), findsOneWidget);
+    // The kit's top bar (screen-library-3, TEST-19: KitTopBar replaced the
+    // Material AppBar).
+    expect(find.byType(KitTopBar), findsOneWidget);
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Plugins')),
+      find.descendant(
+        of: find.byType(KitTopBar),
+        matching: find.text('Plugins'),
+      ),
       findsOneWidget,
     );
     final app = find.text('In this app');

@@ -1,19 +1,28 @@
+// Tools and capabilities (map pages `tools` and `tools-detail-sheet`): which
+// tools the chosen model can call, in one list ordered callable first, and
+// each tool's plain parameter summary with its raw schema under Details.
+// Built from kit parts only (screen-library-3, kit-v2 §9).
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/app_localizations.dart';
-
-import 'package:flutter/services.dart';
-
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
+import '../../api/provider_presentation.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/pickers.dart';
-import '../widgets/product_states.dart';
 import '../app_theme.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
+import '../widgets/pickers.dart';
+import '../widgets/product_states.dart' show productErrorText;
+
+AppLocalizations _copy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
+
+/// From this many tools the list gets its search field (map: "search from
+/// ~8 tools"); a shorter list is read at a glance.
+const toolsSearchThreshold = 8;
 
 class ToolsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -74,9 +83,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
     if (repository == null) {
       setState(() {
         _toolsError = ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryOpenCodeIsReconnectingTryAgain,
+          _copy(context).e7LibraryOpenCodeIsReconnectingTryAgain,
         );
       });
       return;
@@ -123,232 +130,133 @@ class _ToolsScreenState extends State<ToolsScreen> {
     await _load();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final body = _model == null ? _noModel() : _body();
-    if (widget.embedded) return body;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryToolsAndCapabilities,
-        ),
-        actions: [
-          IconButton(
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryRefreshTools,
-            onPressed: _model == null ? null : _load,
-            icon: const Icon(AppIconography.retry),
-          ),
-        ],
-      ),
-      body: body,
-    );
+  void _clearSearch() {
+    _search.clear();
+    setState(() => _query = '');
   }
 
-  Widget _noModel() => ProductEmptyState(
-    icon: AppIconography.tools,
-    title: lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).modelChooseTitle,
-    message: lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryOpenCodeToolsDependOnTheProviderAnd,
-    actionLabel: lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryChooseModel,
-    onAction: _chooseModel,
-  );
-
-  Widget _body() {
-    final model = _model!;
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _copy(context);
     final tools = _tools;
-    // The header (model, summary, search) grows with the person's text
-    // size; past 60 % of the page it scrolls on its own so the tool list
-    // keeps room at any size.
-    return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: constraints.maxHeight * .6),
-            child: ListView(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              children: [
-                _modelHeader(model),
-                const Divider(height: 1),
-                _capabilitySummary(),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
-                  child: TextField(
-                    key: const Key('tools-search'),
-                    controller: _search,
-                    decoration: InputDecoration(
-                      hintText: tools == null
-                          ? lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7LibrarySearchTools
-                          : lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7LibrarySearchTools2((tools.length).toString()),
-                      prefixIcon: const Icon(AppIconography.search),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).commonClearSearch,
-                              onPressed: () {
-                                _search.clear();
-                                setState(() => _query = '');
-                              },
-                              icon: const Icon(AppIconography.close),
-                            ),
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    onChanged: (value) => setState(() => _query = value),
-                  ),
+    final showSearch =
+        _model != null &&
+        tools != null &&
+        (tools.length >= toolsSearchThreshold || _query.isNotEmpty);
+    return KitScreen(
+      topBar: widget.embedded
+          ? null
+          : KitTopBar(
+              title: l10n.e7LibraryToolsAndCapabilities,
+              actions: [
+                KitAction(
+                  key: const ValueKey('tools-refresh'),
+                  label: l10n.e7LibraryRefreshTools,
+                  icon: AppIconography.retry,
+                  onPressed: _model == null ? null : _load,
                 ),
               ],
             ),
-          ),
-          Expanded(child: _toolList()),
-        ],
-      ),
+      width: KitScreenWidth.list,
+      search: showSearch
+          ? KitSearchField(
+              label: l10n.e7LibrarySearchTools2(tools.length.toString()),
+              controller: _search,
+              fieldKey: const ValueKey('tools-search'),
+              onChanged: (value) => setState(() => _query = value),
+            )
+          : null,
+      body: _model == null ? _noModel(l10n) : _toolList(l10n),
     );
   }
 
-  Widget _modelHeader(ModelRef model) => InkWell(
-    key: const Key('tools-model-summary'),
-    onTap: _chooseModel,
-    child: Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-          final stacked = MediaQuery.textScalerOf(context).scale(14) > 20;
-          final summary = Row(
-            children: [
-              const Icon(AppIconography.model),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _modelName(model),
-                      maxLines: stacked ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${model.providerID}/${model.modelID}',
-                      textDirection: TextDirection.ltr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontFamily: AppTheme.monoFamily),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-          final actions = Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.embedded)
-                IconButton(
-                  tooltip: l10n.e7LibraryRefreshTools,
-                  onPressed: _load,
-                  icon: const Icon(AppIconography.retry),
-                ),
-              TextButton(
-                onPressed: _chooseModel,
-                child: Text(l10n.e7LibraryChange),
-              ),
-            ],
-          );
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                summary,
-                const SizedBox(height: 4),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: actions,
-                ),
-              ],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(child: summary),
-              const SizedBox(width: 8),
-              actions,
-            ],
-          );
-        },
-      ),
+  Widget _noModel(AppLocalizations l10n) => KitStateView(
+    icon: AppIconography.tools,
+    title: l10n.modelChooseTitle,
+    body: l10n.e7LibraryOpenCodeToolsDependOnTheProviderAnd,
+    primary: KitAction(
+      key: const ValueKey('tools-choose-model'),
+      label: l10n.e7LibraryChooseModel,
+      onPressed: _chooseModel,
     ),
   );
 
-  Widget _capabilitySummary() {
-    final theme = Theme.of(context);
+  /// The model the list is for, with Change: "Claude Sonnet 4 · Anthropic".
+  Widget _modelHeader(AppLocalizations l10n, ModelRef model) {
+    final providers =
+        widget.controller.catalog?.providers ?? const <CatalogProvider>[];
+    return KitRowGroup(
+      margin: EdgeInsets.zero,
+      children: [
+        KitRow(
+          key: const Key('tools-model-summary'),
+          leading: KitRow.icon(context, AppIconography.model),
+          title: _modelName(model),
+          titleMaxLines: 2,
+          supporting: TextSpan(
+            text: presentedProviderName(model.providerID, providers),
+          ),
+          trailing: KitButton(
+            key: const ValueKey('tools-change-model'),
+            role: KitButtonRole.tertiary,
+            label: l10n.e7LibraryChange,
+            expand: false,
+            onPressed: _chooseModel,
+          ),
+          onTap: _chooseModel,
+        ),
+      ],
+    );
+  }
+
+  /// One muted line of counts; a part the server could not report reads in
+  /// the failure tone beside them.
+  Widget _counts(AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
     final tools = _tools;
     final registered = _registeredIDs;
     final capabilities = _capabilities;
     final values = <String>[
-      if (tools != null)
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryUsable((tools.length).toString()),
+      if (tools != null) l10n.e7LibraryUsable(tools.length.toString()),
       if (registered != null)
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryRegistered((registered.length).toString()),
+        l10n.e7LibraryRegistered(registered.length.toString()),
       if (capabilities != null)
         capabilities.backgroundSubagents
-            ? lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryBackgroundSubagentsEnabled
-            : lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryBackgroundSubagentsUnavailable,
+            ? l10n.e7LibraryBackgroundSubagentsEnabled
+            : l10n.e7LibraryBackgroundSubagentsUnavailable,
     ];
     final errors = [
       if (_registeredError != null)
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryRegisteredInventoryUnavailable,
-      if (_capabilitiesError != null)
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryServerCapabilityUnavailable,
+        l10n.e7LibraryRegisteredInventoryUnavailable,
+      if (_capabilitiesError != null) l10n.e7LibraryServerCapabilityUnavailable,
     ];
+    if (values.isEmpty && errors.isEmpty) return const SizedBox.shrink();
     return Semantics(
       container: true,
       excludeSemantics: true,
       label: [...values, ...errors].join(', '),
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 10),
+        padding: EdgeInsetsDirectional.only(
+          start: tokens.space1,
+          end: tokens.space1,
+          top: tokens.space3,
+          bottom: tokens.space3,
+        ),
         child: Wrap(
-          spacing: 12,
-          runSpacing: 4,
+          spacing: tokens.space3,
+          runSpacing: tokens.space1,
           children: [
             for (final value in values)
-              Text(value, style: theme.textTheme.labelMedium),
+              KitText(
+                value,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
+              ),
             for (final error in errors)
-              Text(
+              KitText(
                 error,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
+                role: KitTextRole.secondary,
+                tone: KitTextTone.danger,
               ),
           ],
         ),
@@ -356,23 +264,40 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
-  Widget _toolList() {
-    if (_tools == null && _toolsError == null) {
-      return const LoadingList(rows: 7);
+  Widget _toolList(AppLocalizations l10n) {
+    final model = _model!;
+    final tools = _tools;
+    final padding = KitScreen.padding(context);
+    Widget page(List<Widget> children) => KitRefresh(
+      onRefresh: _load,
+      child: ListView(
+        key: const Key('coding-tools-list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: padding,
+        children: [_modelHeader(l10n, model), _counts(l10n), ...children],
+      ),
+    );
+    if (tools == null && _toolsError == null) {
+      return page(const [KitSkeletonRows(count: 7)]);
     }
-    if (_toolsError != null && _tools == null) {
-      return ProductErrorState(
-        message: productErrorText(_toolsError!),
-        onRetry: _load,
-      );
+    if (_toolsError != null && tools == null) {
+      return page([
+        KitStateView.error(
+          size: KitStateSize.inline,
+          title: l10n.toolsScreenLoadFailed,
+          body: productErrorText(_toolsError!, l10n: l10n),
+          error: _toolsError,
+          retry: KitAction(label: l10n.commonRetry, onPressed: _load),
+        ),
+      ]);
     }
     final query = _query.trim().toLowerCase();
-    final callable = _tools!.where((tool) {
+    final callable = tools!.where((tool) {
       return query.isEmpty ||
           tool.id.toLowerCase().contains(query) ||
           tool.description.toLowerCase().contains(query);
     }).toList();
-    final callableIDs = {for (final tool in _tools!) tool.id};
+    final callableIDs = {for (final tool in tools) tool.id};
     final registeredOnly = [
       for (final id in _registeredIDs ?? const <String>[])
         if (!callableIDs.contains(id) &&
@@ -380,215 +305,128 @@ class _ToolsScreenState extends State<ToolsScreen> {
           id,
     ];
     if (callable.isEmpty && registeredOnly.isEmpty) {
-      return ProductEmptyState(
-        icon: _query.isEmpty ? AppIconography.tools : Icons.search_off_rounded,
-        title: _query.isEmpty
-            ? lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryNoToolsForThisModel
-            : lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryNoMatchingTools,
-        message: _query.isEmpty
-            ? lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).emptyTeachToolsMessage
-            : lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryTryAToolIDOrAWord,
-      );
+      return page([
+        if (query.isNotEmpty)
+          KitSearchNoMatch(
+            query: _query.trim(),
+            what: l10n.toolsScreenSearchWhat,
+            onClear: _clearSearch,
+          )
+        else
+          KitStateView(
+            size: KitStateSize.inline,
+            icon: AppIconography.tools,
+            title: l10n.e7LibraryNoToolsForThisModel,
+            body: l10n.emptyTeachToolsMessage,
+          ),
+      ]);
     }
-    return KitRefresh(
-      onRefresh: _load,
-      child: ListView(
-        key: const Key('coding-tools-list'),
-        physics: const AlwaysScrollableScrollPhysics(),
+    // One list (owner, 2026-09-27: no state sections): what this model can
+    // call first, then what is registered but not offered to it; each row
+    // says which it is.
+    return page([
+      KitRowGroup(
+        margin: EdgeInsets.zero,
+        leadingIcons: false,
         children: [
-          if (callable.isNotEmpty) ...[
-            SectionLabel(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryCallableByThisModel,
-            ),
-            for (var index = 0; index < callable.length; index++) ...[
-              _callableToolRow(callable[index]),
-              if (index < callable.length - 1)
-                const Divider(height: 1, indent: 16),
-            ],
-          ],
-          if (registeredOnly.isNotEmpty) ...[
-            SectionLabel(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryRegisteredNotCallable,
-            ),
-            for (var index = 0; index < registeredOnly.length; index++) ...[
-              _registeredToolRow(registeredOnly[index]),
-              if (index < registeredOnly.length - 1)
-                const Divider(height: 1, indent: 16),
-            ],
-          ],
-          const SizedBox(height: 24),
+          for (final tool in callable) _callableToolRow(l10n, tool),
+          for (final id in registeredOnly) _registeredToolRow(l10n, id),
         ],
       ),
+    ]);
+  }
+
+  Widget _callableToolRow(AppLocalizations l10n, CodingToolInfo tool) {
+    final described = tool.description.trim().isNotEmpty;
+    return KitRow(
+      key: Key('coding-tool-${tool.id}'),
+      title: described ? tool.description.trim() : tool.id,
+      titleMaxLines: 2,
+      supporting: TextSpan(
+        text: described
+            ? tool.id
+            : l10n.e7LibraryNoDescriptionReturnedByOpenCode,
+      ),
+      trailing: const KitChevron(),
+      onTap: () => _showTool(tool),
     );
   }
 
-  Widget _callableToolRow(CodingToolInfo tool) => InkWell(
-    key: Key('coding-tool-${tool.id}'),
-    onTap: () => _showTool(tool),
-    child: Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tool.id,
-                  textDirection: TextDirection.ltr,
-                  style: const TextStyle(fontFamily: AppTheme.monoFamily),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  tool.description.isEmpty
-                      ? lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7LibraryNoDescriptionReturnedByOpenCode
-                      : tool.description,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(AppIconography.chevronRight),
-        ],
-      ),
-    ),
-  );
-
-  Widget _registeredToolRow(String id) => Padding(
+  Widget _registeredToolRow(AppLocalizations l10n, String id) => KitRow(
     key: Key('registered-tool-$id'),
-    padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(id, style: const TextStyle(fontFamily: AppTheme.monoFamily)),
-        const SizedBox(height: 4),
-        Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryRegisteredOnThisProjectButNotReturned(
-            (_model!.providerID).toString(),
-            (_model!.modelID).toString(),
-          ),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    ),
+    title: id,
+    supporting: TextSpan(text: l10n.toolsScreenRegisteredOnly),
+    supportingMaxLines: 2,
   );
 
   void _showTool(CodingToolInfo tool) {
+    final l10n = _copy(context);
     final schema = _prettyJson(tool.parameters);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      constraints: const BoxConstraints(maxWidth: 720),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: .9,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 12, 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tool.id,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontFamily: AppTheme.monoFamily,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryCopyParameterSchema,
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: schema));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7LibrarySchemaCopied((tool.id).toString()),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(AppIcons.copy),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                key: const Key('tool-detail-scroll'),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+    final parameters = toolParameters(tool.parameters);
+    unawaited(
+      showKitSheet<void>(
+        context,
+        title: tool.id,
+        icon: AppIconography.tools,
+        height: KitSheetHeight.full,
+        sheetKey: const Key('tool-detail-scroll'),
+        body: (sheetContext) {
+          final tokens = KitTokens.of(sheetContext);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (tool.description.trim().isNotEmpty) ...[
+                KitText.selectable(tool.description.trim()),
+                SizedBox(height: tokens.space4),
+              ],
+              // What it takes, in words, before any JSON (map: "Takes:
+              // command — text" rows first).
+              if (parameters.isEmpty)
+                KitText(
+                  l10n.toolsDetailTakesNothing,
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
+                )
+              else
+                KitRowGroup(
+                  key: const ValueKey('tool-parameters'),
+                  label: l10n.toolsDetailTakes,
+                  margin: EdgeInsets.zero,
+                  leadingIcons: false,
                   children: [
-                    if (tool.description.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                          20,
-                          0,
-                          20,
-                          16,
+                    for (final parameter in parameters)
+                      KitRow(
+                        key: ValueKey('tool-parameter-${parameter.name}'),
+                        title: parameter.name,
+                        supporting: TextSpan(
+                          text: [
+                            _typeWord(l10n, parameter.type),
+                            parameter.required
+                                ? l10n.toolsDetailRequired
+                                : l10n.toolsDetailOptional,
+                            ?parameter.description,
+                          ].join(' · '),
                         ),
-                        child: SelectableText(tool.description),
+                        supportingMaxLines: 3,
                       ),
-                    const Divider(height: 1),
-                    SectionLabel(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryParameterSchema,
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        20,
-                        4,
-                        20,
-                        24,
-                      ),
-                      child: SelectableText(
-                        schema,
-                        textDirection: TextDirection.ltr,
-                        key: const Key('tool-parameter-schema'),
-                        style: const TextStyle(
-                          fontFamily: AppTheme.monoFamily,
-                          fontSize: AppTheme.codeFontSize,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
+              SizedBox(height: tokens.space4),
+              // The raw schema, last and folded, with its copy (K2 §4.3).
+              KitDetailsFold(
+                label: l10n.e7LibraryParameterSchema,
+                child: KitCodeBlock(
+                  text: schema,
+                  language: 'json',
+                  maxLines: 40,
+                  copyLabel: l10n.e7LibraryCopyParameterSchema,
+                  blockKey: const Key('tool-parameter-schema'),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -604,6 +442,75 @@ class _ToolsScreenState extends State<ToolsScreen> {
     return model.modelID;
   }
 }
+
+/// A tool parameter as the person reads it.
+typedef ToolParameter = ({
+  String name,
+  ToolParameterType type,
+  bool required,
+  String? description,
+});
+
+/// What kind of value a parameter takes, in words.
+enum ToolParameterType { text, number, yesNo, list, group, any }
+
+/// The parameters a JSON Schema object declares, required first, in the
+/// schema's own order otherwise. Anything that is not an object schema
+/// with `properties` takes nothing the app can describe.
+List<ToolParameter> toolParameters(Object? schema) {
+  if (schema is! Map) return const [];
+  final properties = schema['properties'];
+  if (properties is! Map) return const [];
+  final required = {
+    for (final value
+        in schema['required'] is List ? schema['required'] as List : const [])
+      if (value is String) value,
+  };
+  final result = <ToolParameter>[
+    for (final entry in properties.entries)
+      if (entry.key is String)
+        (
+          name: entry.key as String,
+          type: _typeOf(entry.value),
+          required: required.contains(entry.key),
+          description: switch (entry.value) {
+            {'description': final String text} when text.trim().isNotEmpty =>
+              text.trim(),
+            _ => null,
+          },
+        ),
+  ];
+  final ordered = [
+    ...result.where((parameter) => parameter.required),
+    ...result.where((parameter) => !parameter.required),
+  ];
+  return ordered;
+}
+
+ToolParameterType _typeOf(Object? property) {
+  final type = property is Map ? property['type'] : null;
+  final name = type is List
+      ? type.whereType<String>().where((t) => t != 'null').firstOrNull
+      : type;
+  return switch (name) {
+    'string' => ToolParameterType.text,
+    'number' || 'integer' => ToolParameterType.number,
+    'boolean' => ToolParameterType.yesNo,
+    'array' => ToolParameterType.list,
+    'object' => ToolParameterType.group,
+    _ => ToolParameterType.any,
+  };
+}
+
+String _typeWord(AppLocalizations l10n, ToolParameterType type) =>
+    switch (type) {
+      ToolParameterType.text => l10n.toolsDetailTypeText,
+      ToolParameterType.number => l10n.toolsDetailTypeNumber,
+      ToolParameterType.yesNo => l10n.toolsDetailTypeYesNo,
+      ToolParameterType.list => l10n.toolsDetailTypeList,
+      ToolParameterType.group => l10n.toolsDetailTypeGroup,
+      ToolParameterType.any => l10n.toolsDetailTypeAny,
+    };
 
 class _Captured<T> {
   final T? value;

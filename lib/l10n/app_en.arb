@@ -29301,5 +29301,156 @@
   "mcpSetupUnavailableBody": "It doesn't accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.",
   "@mcpSetupUnavailableBody": {
     "description": "screen-library-2: Add MCP server: why the page cannot add one here."
+  },
+  "commandAuthSheetWorking": "Asking the server…",
+  "@commandAuthSheetWorking": {
+    "description": "Command sign-in sheet: the loading bar label while the app talks to the server"
+  },
+  "credentialSheetLoading": "Reading saved accounts…",
+  "@credentialSheetLoading": {
+    "description": "Manage accounts sheet: the loading bar label while accounts load or change"
+  },
+  "credentialSheetEmptyBody": "Sign in to {provider} again from Providers to add an account.",
+  "@credentialSheetEmptyBody": {
+    "description": "Manage accounts sheet: what to do when the server reports no saved accounts",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetActions": "Actions for {label}",
+  "@credentialSheetActions": {
+    "description": "Manage accounts sheet: the name of the menu of one saved account",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetUseNamed": "Use {label}",
+  "@credentialSheetUseNamed": {
+    "description": "Manage accounts sheet: menu item that makes this saved account the one in use",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetInUse": "Already in use",
+  "@credentialSheetInUse": {
+    "description": "Manage accounts sheet: why \"Use\" is dimmed for the account the server reported in use"
+  },
+  "credentialSheetRenameNamed": "Rename {label}…",
+  "@credentialSheetRenameNamed": {
+    "description": "Manage accounts sheet: menu item that opens the rename dialog for this account",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetRemoveNamed": "Remove {label}",
+  "@credentialSheetRemoveNamed": {
+    "description": "Manage accounts sheet: menu item and confirm button that remove this saved account from the server",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetRemoveBody": "Removes {label} from this server. Projects that use it will need another {provider} account.",
+  "@credentialSheetRemoveBody": {
+    "description": "Remove account confirmation: what happens, naming the account and the provider",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetRenamed": "Renamed to {label}.",
+  "@credentialSheetRenamed": {
+    "description": "Manage accounts sheet: in-place result after a rename was saved",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialSheetLabelEmpty": "Give the account a name.",
+  "@credentialSheetLabelEmpty": {
+    "description": "Rename account dialog: error when the label is empty"
+  },
+  "credentialSheetLabelInvalid": "Use up to 128 characters, without line breaks or control characters.",
+  "@credentialSheetLabelInvalid": {
+    "description": "Rename account dialog: error when the label is too long or has control characters"
+  },
+  "pendingAuthRecoveryForgetTitle": "Forget the {integration} sign-in?",
+  "@pendingAuthRecoveryForgetTitle": {
+    "description": "Confirmation before forgetting an unfinished sign-in on this device",
+    "placeholders": {
+      "integration": {
+        "type": "String"
+      }
+    }
+  },
+  "pendingAuthRecoveryForgetBody": "The app stops tracking it on this device. Nothing is cancelled on the server; an unfinished sign-in there expires on its own.",
+  "@pendingAuthRecoveryForgetBody": {
+    "description": "Forget unfinished sign-in confirmation: what happens and what does not"
+  },
+  "toolsScreenLoadFailed": "Couldn't load this model's tools",
+  "@toolsScreenLoadFailed": {
+    "description": "Tools page: title when the tool list could not be read"
+  },
+  "toolsScreenSearchWhat": "tools",
+  "@toolsScreenSearchWhat": {
+    "description": "Tools page: what the search looks through, in \"Nothing in tools matches …\""
+  },
+  "toolsScreenRegisteredOnly": "Registered on this project · this model can’t call it",
+  "@toolsScreenRegisteredOnly": {
+    "description": "Tools page: the worded state of a tool the project registers but the chosen model is not offered"
+  },
+  "toolsDetailTakes": "Takes",
+  "@toolsDetailTakes": {
+    "description": "Tool details sheet: label above the list of values the tool takes"
+  },
+  "toolsDetailTakesNothing": "Takes nothing.",
+  "@toolsDetailTakesNothing": {
+    "description": "Tool details sheet: shown when the tool declares no parameters"
+  },
+  "toolsDetailRequired": "required",
+  "@toolsDetailRequired": {
+    "description": "Tool details sheet: a parameter the tool needs, lower case after its type"
+  },
+  "toolsDetailOptional": "optional",
+  "@toolsDetailOptional": {
+    "description": "Tool details sheet: a parameter the tool can do without, lower case after its type"
+  },
+  "toolsDetailTypeText": "text",
+  "@toolsDetailTypeText": {
+    "description": "Tool details sheet: parameter type for a string"
+  },
+  "toolsDetailTypeNumber": "number",
+  "@toolsDetailTypeNumber": {
+    "description": "Tool details sheet: parameter type for a number or integer"
+  },
+  "toolsDetailTypeYesNo": "yes or no",
+  "@toolsDetailTypeYesNo": {
+    "description": "Tool details sheet: parameter type for a boolean"
+  },
+  "toolsDetailTypeList": "list",
+  "@toolsDetailTypeList": {
+    "description": "Tool details sheet: parameter type for an array"
+  },
+  "toolsDetailTypeGroup": "group of values",
+  "@toolsDetailTypeGroup": {
+    "description": "Tool details sheet: parameter type for an object"
+  },
+  "toolsDetailTypeAny": "any value",
+  "@toolsDetailTypeAny": {
+    "description": "Tool details sheet: parameter type the schema does not name"
   }
 }
