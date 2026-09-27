@@ -1,0 +1,10 @@
+feat(domain): expose supported workspace inspection and terminal rerun APIs [skip ci]
+
+Add backend-only worktree inspection, server-update project ordering, and
+explicit terminal command adapters. Document missing server contracts and UI
+composition hooks while keeping unsupported operations unavailable.
+
+Flutter verification is deferred to the verifier as requested.
+
+Co-Authored-By: Codex (gpt-6-astra) <noreply@openai.com>
+Claude-Session: https://claude.ai/code/session_01G7Gr8TYUhyCJ169CtNjJB1
