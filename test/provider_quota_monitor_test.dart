@@ -432,6 +432,62 @@ void main() {
   );
 
   test(
+    'aborted deletion retains rotated credential retirement until explicit reenrollment',
+    () async {
+      expect(
+        await monitor.enroll('profile', response, notifications: false),
+        isTrue,
+      );
+      await monitor.refresh();
+      final originalToken = monitor
+          .rulesFor('profile', QuotaProvider.codex)!
+          .token;
+      store.entries.single.password = 'rotated-password';
+      expect(
+        monitor.observationFor('profile', QuotaProvider.codex).status,
+        QuotaMonitorStatus.sourceChanged,
+      );
+      await monitor.refresh();
+      reads.clear();
+
+      monitor.removeProfile('profile', retainIdentity: true);
+      await monitor.drain('profile');
+      monitor.cancelDeletion('profile');
+      await monitor.refresh();
+      expect(reads, isEmpty);
+      expect(
+        monitor.observationFor('profile', QuotaProvider.codex).status,
+        QuotaMonitorStatus.sourceChanged,
+      );
+      expect(monitor.routeForToken('profile', originalToken), isNull);
+      expect(
+        await monitor.setPolicy(
+          'profile',
+          QuotaProvider.codex,
+          notifications: true,
+          wifiOnly: false,
+        ),
+        isFalse,
+        reason:
+            'editing notification settings does not renew collection consent',
+      );
+
+      expect(
+        await monitor.enroll('profile', response, notifications: true),
+        isTrue,
+      );
+      final renewedToken = monitor
+          .rulesFor('profile', QuotaProvider.codex)!
+          .token;
+      expect(renewedToken, isNot(originalToken));
+      await monitor.refresh();
+      expect(reads, isNotEmpty);
+      expect(monitor.routeForToken('profile', originalToken), isNull);
+      expect(monitor.routeForToken('profile', renewedToken), isNotNull);
+    },
+  );
+
+  test(
     'background cancellation and deletion reject late provider completions',
     () async {
       await monitor.enroll('profile', response, notifications: true);

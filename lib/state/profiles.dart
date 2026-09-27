@@ -660,6 +660,15 @@ class SecureStorageUnavailable implements Exception {
   String toString() => message;
 }
 
+/// A scoped sign-in reset was not fully confirmed. Some sign-ins may already
+/// have been removed; retrying completes the same operation safely.
+class SavedSignInResetException implements Exception {
+  const SavedSignInResetException();
+
+  @override
+  String toString() => 'Could not reset saved sign-ins. Try again.';
+}
+
 class _ProfileStoreChanges extends ChangeNotifier {
   void changed() => notifyListeners();
 }
@@ -714,6 +723,70 @@ class ProfileStore {
   /// connected to it), and nothing else tells the screens that show a name:
   /// without this the app bar kept the old name until a restart.
   Listenable get changes => _changes;
+
+  /// Bootstrap recovery only: removes saved profile sign-ins and the active
+  /// selection without loading or rewriting profiles, drafts, queues or settings.
+  /// The caller must exclude concurrent bootstrap loads and live connections.
+  /// Enumerating secure keys includes orphaned sign-ins, while unrelated secure
+  /// entries remain untouched. A partial failure is retryable, never success.
+  Future<void> resetSavedSignIns() async {
+    // Invalidate retained references even if storage fails part-way through.
+    // Keep redaction registrations: late diagnostics can still contain a secret.
+    for (final profile in _cache) {
+      profile.requiresPasswordReentry =
+          !profile.usesAgentSocket &&
+          (profile.password.isNotEmpty || profile.requiresPasswordReentry);
+      profile.requiresCodexTokenReentry =
+          profile.usesAgentSocket &&
+          (profile.agentSocketSecretRequired ||
+              profile.codexToken.isNotEmpty ||
+              profile.requiresCodexTokenReentry);
+      profile.password = '';
+      profile.codexToken = '';
+    }
+    bool ownsKey(String key) =>
+        key.startsWith(_passwordKey) || key.startsWith(_codexTokenKey);
+    try {
+      final secrets = await secure.readAll();
+      final owned = <String>[
+        for (final entry in secrets.entries)
+          if (ownsKey(entry.key)) entry.key,
+      ];
+      for (final key in owned) {
+        KitRedact.registerKnownSecret(secrets[key]!);
+      }
+      // Confirm selection removal before deleting secrets. A preferences
+      // refusal leaves all durable sign-ins available for another attempt.
+      if (!await prefs.remove(_activeKey)) {
+        throw const SavedSignInResetException();
+      }
+      for (final key in owned) {
+        await secure.delete(key: key);
+      }
+      final remaining = await secure.readAll();
+      for (final entry in remaining.entries) {
+        if (ownsKey(entry.key)) {
+          KitRedact.registerKnownSecret(entry.value);
+        }
+      }
+      if (remaining.keys.any(ownsKey)) {
+        throw const SavedSignInResetException();
+      }
+      await prefs.reload();
+      if (prefs.containsKey(_activeKey)) {
+        throw const SavedSignInResetException();
+      }
+    } catch (_) {
+      // SharedPreferences changes its cache before platform confirmation.
+      try {
+        await prefs.reload();
+      } catch (_) {}
+      // Never retain a keyring exception: it may echo any stored credential.
+      throw const SavedSignInResetException();
+    } finally {
+      _changes.changed();
+    }
+  }
 
   /// Where the retired personal quota budgets were kept, per profile
   /// (`oc.budgets.<profileId>`). Quota monitoring's own threshold replaced
@@ -906,7 +979,10 @@ class ProfileStore {
   /// model, agent, and location on the device while the user was told the
   /// server had been removed. The caller decides what to do about a
   /// non-empty result; this method only refuses to lie about it.
-  Future<Set<String>> removeScopedPreferences(String profileId) async {
+  Future<Set<String>> removeScopedPreferences(
+    String profileId, {
+    Set<String> excluding = const {},
+  }) async {
     if (profileId.isEmpty) return const {};
     // This method already runs inside the controller's deletion transaction.
     // Drain before key discovery so a late platform write cannot resurrect data.
@@ -918,6 +994,7 @@ class ProfileStore {
     await Future.wait([defaultsDrain, auditDrain]);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
+      if (excluding.contains(key)) continue;
       try {
         if (!await prefs.remove(key)) failed.add(key);
       } catch (_) {
@@ -936,7 +1013,7 @@ class ProfileStore {
   /// the keys are orphaned regardless, so a failure there cannot resurrect a
   /// deleted server. [ConnectionController.deleteProfileAndLocalData] sweeps
   /// them *before* calling this and verifies the result, so on that path the
-  /// sweep below finds nothing left to do.
+  /// sweep below finds only owners intentionally retained until this commit.
   ///
   /// This clears only what [ProfileStore] owns. Queued prompts, drafts, and
   /// the home-screen widget snapshot live in shared blobs; the full cascade

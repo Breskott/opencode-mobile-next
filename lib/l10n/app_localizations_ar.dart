@@ -22528,7 +22528,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String teamChatNoProgressReportTitle(String elapsed) {
-    return 'Task made no progress';
+    return 'No progress for $elapsed';
   }
 
   @override
@@ -22601,4 +22601,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamWatchAboutRole(String role) {
     return 'About the $role';
   }
+
+  @override
+  String serversRemoveQueuedUnreadable(String name) {
+    return 'The queued prompts for $name cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.';
+  }
+
+  @override
+  String get bootstrapStartFresh => 'Start fresh';
+
+  @override
+  String get bootstrapStartFreshTitle => 'Remove saved sign-ins?';
+
+  @override
+  String get bootstrapStartFreshBody =>
+      'This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.';
+
+  @override
+  String get bootstrapStartFreshConfirm => 'Remove saved sign-ins';
+
+  @override
+  String get bootstrapResettingTitle => 'Removing saved sign-ins…';
+
+  @override
+  String get bootstrapResettingBody => 'Keep the app open while this finishes.';
+
+  @override
+  String get bootstrapResetFailedTitle => 'Sign-in reset failed';
+
+  @override
+  String get bootstrapResetFailedBody =>
+      'Some saved sign-ins could not be removed. Try again.';
 }

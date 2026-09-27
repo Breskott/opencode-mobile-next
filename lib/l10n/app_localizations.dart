@@ -35430,7 +35430,7 @@ abstract class AppLocalizations {
   /// Report a problem: the attached problem's title for a stalled team task
   ///
   /// In en, this message translates to:
-  /// **'Task made no progress'**
+  /// **'No progress for {elapsed}'**
   String teamChatNoProgressReportTitle(String elapsed);
 
   /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
@@ -35534,6 +35534,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About the {role}'**
   String teamWatchAboutRole(String role);
+
+  /// Removing a server stopped because its queued prompts could not be inspected. The server and source data remain available; technical information is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'The queued prompts for {name} cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.'**
+  String serversRemoveQueuedUnreadable(String name);
+
+  /// No description provided for @bootstrapStartFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Start fresh'**
+  String get bootstrapStartFresh;
+
+  /// No description provided for @bootstrapStartFreshTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins?'**
+  String get bootstrapStartFreshTitle;
+
+  /// No description provided for @bootstrapStartFreshBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.'**
+  String get bootstrapStartFreshBody;
+
+  /// No description provided for @bootstrapStartFreshConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins'**
+  String get bootstrapStartFreshConfirm;
+
+  /// No description provided for @bootstrapResettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing saved sign-ins…'**
+  String get bootstrapResettingTitle;
+
+  /// No description provided for @bootstrapResettingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the app open while this finishes.'**
+  String get bootstrapResettingBody;
+
+  /// No description provided for @bootstrapResetFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in reset failed'**
+  String get bootstrapResetFailedTitle;
+
+  /// No description provided for @bootstrapResetFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some saved sign-ins could not be removed. Try again.'**
+  String get bootstrapResetFailedBody;
 }
 
 class _AppLocalizationsDelegate

@@ -51,3 +51,25 @@ class ThermalNoticeLine extends ConsumerWidget {
     );
   }
 }
+
+/// The thermal condition joins the app-wide status slot on every route.
+KitStatus? thermalKitStatus(BuildContext context, ThermalGuard? guard) {
+  final notice = guard?.notice;
+  if (notice == null) return null;
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return KitStatus(
+    kind: KitStatusKind.heat,
+    id: 'heat:${notice.kind.name}',
+    key: ValueKey('thermal-notice-${notice.kind.name}'),
+    icon: switch (notice.kind) {
+      ThermalNoticeKind.paused => AppIconography.pause,
+      ThermalNoticeKind.stopped => AppIconography.stopCircle,
+      ThermalNoticeKind.resumed => AppIconography.play,
+    },
+    tone: notice.kind == ThermalNoticeKind.resumed
+        ? AppStatusTone.ok
+        : AppStatusTone.neutral,
+    message: thermalNoticeText(l10n, notice.kind),
+    onDismiss: guard!.dismiss,
+  );
+}

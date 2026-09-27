@@ -26860,7 +26860,7 @@
   "@teamChatNoProgressReport": {
     "description": "Team conversation, a stalled task: opens Report a problem with the stall attached"
   },
-  "teamChatNoProgressReportTitle": "Task made no progress",
+  "teamChatNoProgressReportTitle": "No progress for {elapsed}",
   "@teamChatNoProgressReportTitle": {
     "description": "Report a problem: the attached problem's title for a stalled team task",
     "placeholders": {
@@ -26979,5 +26979,22 @@
         "example": "Worker"
       }
     }
-  }
+  },
+  "serversRemoveQueuedUnreadable": "The queued prompts for {name} cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.",
+  "@serversRemoveQueuedUnreadable": {
+    "description": "Removing a server stopped because its queued prompts could not be inspected. The server and source data remain available; technical information is under Details.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bootstrapStartFresh": "Start fresh",
+  "bootstrapStartFreshTitle": "Remove saved sign-ins?",
+  "bootstrapStartFreshBody": "This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.",
+  "bootstrapStartFreshConfirm": "Remove saved sign-ins",
+  "bootstrapResettingTitle": "Removing saved sign-ins…",
+  "bootstrapResettingBody": "Keep the app open while this finishes.",
+  "bootstrapResetFailedTitle": "Sign-in reset failed",
+  "bootstrapResetFailedBody": "Some saved sign-ins could not be removed. Try again."
 }

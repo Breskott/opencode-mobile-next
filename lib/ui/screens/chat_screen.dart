@@ -55,7 +55,6 @@ import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
 import '../widgets/always_allow_invitation.dart';
-import '../widgets/connection_status_banner.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/diff_view.dart';
@@ -77,7 +76,6 @@ import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
 import '../widgets/transcript_display_toggles.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
-import '../../builtin/builtin_server.dart' show builtinServerStarterProvider;
 import '../../feedback/bug_report.dart' show openBugReport;
 import '../kit/kit.dart';
 import '../../domain/orchestration_gateway.dart';
@@ -104,8 +102,6 @@ import 'team/team_needs_you.dart'
 import 'team_conversation/team_conversation.dart' show TeamConversation;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/grace_timer.dart';
-import '../widgets/phone_server_restart.dart';
-import '../widgets/work_status_line.dart' show confirmPhoneServerRestart;
 import '../permission_presentation.dart';
 import 'activity_screen.dart' show showQuestionSheet;
 import 'app_diagnostics_screen.dart';
@@ -6593,20 +6589,6 @@ class _ChatScreenState extends State<ChatScreen>
     _showComposerNote(_chatL10n(context).chatUiFileSaved(file.displayName));
   }
 
-  /// The offline banner's queue line: drafts the next flush will send,
-  /// plus drafts a flush will deliberately skip for other servers.
-  String? _queuedNote() {
-    final review = _conn.queuedPromptReviewCount;
-    final mine = _conn.queuedPromptCount - review;
-    final others = _conn.queuedPromptCountForOtherProfiles;
-    final parts = <String>[
-      if (mine > 0) _chatL10n(context).chatUiDraftsQueued(mine),
-      if (review > 0) _chatL10n(context).queuedBannerReview(review),
-      if (others > 0) _chatL10n(context).chatUiOtherDraftsWaiting(others),
-    ];
-    return parts.isEmpty ? null : parts.join(' ');
-  }
-
   /// A picker opened from an open chat applies to this session only. Other
   /// sessions keep the profile default; on OpenCode 2 the server also treats
   /// the model as session state.
@@ -7436,7 +7418,7 @@ class _ChatScreenState extends State<ChatScreen>
             // the line must say which one this conversation is on.
             among: _conn.store.profiles,
           );
-    final reconnecting = _ChatStatusLine.reconnecting(_conn);
+    final reconnecting = _conn.connectionStatus.waiting;
 
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop || _watching,
@@ -7463,68 +7445,55 @@ class _ChatScreenState extends State<ChatScreen>
                 _conn.profile?.name ?? 'OpenCode',
               )
             : _chatL10n(context).chatLoadingConversation,
+        status: _chatStatus([
+          if (widget.watch case final watch?) _watchingStatus(watch),
+          if (!_watching) ...[
+            if (_sendError case final error?)
+              _sendErrorStatus(
+                context,
+                error: error,
+                onDismiss: () => setState(() => _sendError = null),
+              ),
+            if (_promptError case final promptError?
+                when !_messages.any(
+                  (message) => _sameError(message.info.errorText, promptError),
+                ))
+              _promptErrorStatus(
+                context,
+                message: promptError,
+                onDismiss: () => setState(() => _promptError = null),
+                onChooseModel: _conn.isIsolated
+                    ? null
+                    : () => showModelPicker(
+                        context,
+                        applyScope: _modelApplyScope,
+                        sessionID: widget.sessionID,
+                      ),
+              ),
+            if (!_conn.isIsolated &&
+                _conn.supportsStagedRevert &&
+                session?.reverted == true)
+              _stagedRevertStatus(
+                context,
+                onReview: () => unawaited(_reviewStagedRevert()),
+              )
+            else if (!_conn.isIsolated &&
+                _conn.capabilities.sessionRevert &&
+                session?.reverted == true)
+              _undoneStatus(context, onPutBack: () => unawaited(_restore())),
+            if (!_conn.isIsolated && parentID != null)
+              _subagentStatus(
+                context,
+                position: siblingIndex < 0 ? null : siblingIndex + 1,
+                total: siblings.isEmpty ? null : siblings.length,
+                onParent: _openParentSession,
+                onAll: _showSubagents,
+              ),
+            if (!_conn.isIsolated && shareUrl != null)
+              _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+          ],
+        ]),
         header: [
-          // One status line (design standard §5), most urgent first: the
-          // connection, a message that was not sent, a prompt error with no
-          // home in the transcript (one a reply already carries is shown
-          // there, once, with its actions), a staged revert, the subagent
-          // context, sharing (also in the conversation menu).
-          _ChatStatusLine(
-            controller: _conn,
-            queuedNote: _queuedNote(),
-            others: [
-              if (widget.watch case final watch?) _watchingStatus(watch),
-              if (!_watching) ...[
-                if (_sendError case final error?)
-                  _sendErrorStatus(
-                    context,
-                    error: error,
-                    onDismiss: () => setState(() => _sendError = null),
-                  ),
-                if (_promptError case final promptError?
-                    when !_messages.any(
-                      (message) =>
-                          _sameError(message.info.errorText, promptError),
-                    ))
-                  _promptErrorStatus(
-                    context,
-                    message: promptError,
-                    onDismiss: () => setState(() => _promptError = null),
-                    onChooseModel: _conn.isIsolated
-                        ? null
-                        : () => showModelPicker(
-                            context,
-                            applyScope: _modelApplyScope,
-                            sessionID: widget.sessionID,
-                          ),
-                  ),
-                if (!_conn.isIsolated &&
-                    _conn.supportsStagedRevert &&
-                    session?.reverted == true)
-                  _stagedRevertStatus(
-                    context,
-                    onReview: () => unawaited(_reviewStagedRevert()),
-                  )
-                else if (!_conn.isIsolated &&
-                    _conn.capabilities.sessionRevert &&
-                    session?.reverted == true)
-                  _undoneStatus(
-                    context,
-                    onPutBack: () => unawaited(_restore()),
-                  ),
-                if (!_conn.isIsolated && parentID != null)
-                  _subagentStatus(
-                    context,
-                    position: siblingIndex < 0 ? null : siblingIndex + 1,
-                    total: siblings.isEmpty ? null : siblings.length,
-                    onParent: _openParentSession,
-                    onAll: _showSubagents,
-                  ),
-                if (!_conn.isIsolated && shareUrl != null)
-                  _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
-              ],
-            ],
-          ),
           // The demo has no bar of its own here; its one extra action sits
           // under the host's bar.
           if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
