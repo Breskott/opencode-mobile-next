@@ -24732,5 +24732,45 @@
   "kitCapNotNow": "Not now",
   "@kitCapNotNow": {
     "description": "KitCapabilityExplainer: folds a turn-on offer into one quiet row"
+  },
+  "kitMessageYou": "You said",
+  "@kitMessageYou": {
+    "description": "KitMessage: the start of a sent prompt's screen-reader label, before the prompt's words"
+  },
+  "kitMessageThinking": "Thinking…",
+  "@kitMessageThinking": {
+    "description": "KitMessage: the title of the agent's reasoning while it is still thinking"
+  },
+  "kitMessageThought": "Thought",
+  "@kitMessageThought": {
+    "description": "KitMessage: the title of the agent's finished reasoning when its length is unknown"
+  },
+  "kitMessageThoughtForSeconds": "Thought for {count, plural, =1{1 second} other{{count} seconds}}",
+  "@kitMessageThoughtForSeconds": {
+    "description": "KitMessage: the title of the agent's finished reasoning with how long it took, under a minute",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "kitMessageThoughtForMinutes": "Thought for {count, plural, =1{1 minute} other{{count} minutes}}",
+  "@kitMessageThoughtForMinutes": {
+    "description": "KitMessage: the title of the agent's finished reasoning with how long it took, a minute or more",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "kitMessageActions": "Message actions",
+  "@kitMessageActions": {
+    "description": "KitMessage: the name of a sent prompt's action menu"
+  },
+  "kitMessageNoticeFailed": "Failed",
+  "@kitMessageNoticeFailed": {
+    "description": "KitMessage: the word that starts a failed notice's screen-reader label"
   }
 }
