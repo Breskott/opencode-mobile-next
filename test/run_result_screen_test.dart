@@ -274,25 +274,25 @@ void main() {
       );
       expect(find.text('Add run results'), findsOneWidget);
       expect(find.text('Run …a-edit'), findsOneWidget);
-      expect(find.text('2 assistant steps'), findsOneWidget);
-      expect(find.text('build · gpt-5'), findsOneWidget);
+      expect(find.text('2 assistant steps · build · gpt-5'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
       expect(find.text('Provider finish reason: stop'), findsOneWidget);
       expect(find.byKey(const Key('run-result-history')), findsOneWidget);
       expect(find.byKey(const Key('run-result-partial')), findsNothing);
       // Only this run's edit, never the previous run's.
-      expect(find.text('lib/domain/run_result.dart'), findsOneWidget);
-      expect(find.text('lib/old.dart'), findsNothing);
+      // The file's name leads; its folder follows as a technical value.
+      expect(find.text('run_result.dart'), findsOneWidget);
+      expect(find.text('lib/domain'), findsOneWidget);
+      expect(find.text('old.dart'), findsNothing);
       expect(find.text('Edited'), findsOneWidget);
       // Commands: recorded exit code vs explicit unknown, textual test label.
       expect(
         find.text('flutter test test/run_result_test.dart'),
         findsOneWidget,
       );
+      expect(find.text('Exit code 0'), findsOneWidget);
       expect(
-        find.text(
-          'Exit code 0 · Looks like a test command (from the command text only)',
-        ),
+        find.text('Looks like a test command (from the command text only)'),
         findsOneWidget,
       );
       expect(find.text('ls lib'), findsOneWidget);
@@ -328,12 +328,18 @@ void main() {
       await tester.tap(find.text('flutter test test/run_result_test.dart'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('run-result-output-sheet')), findsOneWidget);
-      expect(find.text('Recorded tool output'), findsOneWidget);
+      expect(find.text('What it did'), findsOneWidget);
       expect(find.byType(ToolCard), findsOneWidget);
-      // Expand the card the way the transcript does and read the record.
-      await tester.tap(find.byType(ToolCard));
-      await tester.pumpAndSettle();
+      // The sheet exists to show this one record, so it opens already
+      // expanded: the output reads without another tap.
       expect(find.textContaining('All tests passed!'), findsOneWidget);
+      // Sized to its one record, not a fixed 60 % of the window.
+      expect(
+        tester.getSize(find.byKey(const Key('run-result-output-sheet'))).height,
+        lessThan(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio * 0.6,
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -360,7 +366,10 @@ void main() {
         ),
       );
       expect(find.byKey(const Key('run-result-partial')), findsOneWidget);
-      expect(find.text('At least 1 assistant step loaded'), findsOneWidget);
+      expect(
+        find.text('At least 1 assistant step loaded · build · gpt-5'),
+        findsOneWidget,
+      );
       expect(find.text('Failed'), findsOneWidget);
       expect(find.text('quota exceeded'), findsOneWidget);
       expect(find.byKey(const Key('run-result-no-tools')), findsOneWidget);
@@ -504,6 +513,11 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
+      // The action is the page's last item: bring all of it on screen.
+      await tester.ensureVisible(
+        find.byKey(const Key('run-result-open-conversation')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('run-result-open-conversation')));
       await tester.pumpAndSettle();
       expect(openedChat, isTrue);

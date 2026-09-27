@@ -26447,5 +26447,9 @@
   "phoneServerCardRemoveOpenCode": "Remove OpenCode",
   "@phoneServerCardRemoveOpenCode": {
     "description": "Remove OpenCode from this phone sheet: confirm button"
+  },
+  "runResultViewOutputTitle": "What it did",
+  "@runResultViewOutputTitle": {
+    "description": "Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results."
   }
 }

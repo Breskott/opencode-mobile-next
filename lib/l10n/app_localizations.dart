@@ -2888,6 +2888,12 @@ abstract class AppLocalizations {
   /// **'Open conversation'**
   String get runResultsOpenConversation;
 
+  /// Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results.
+  ///
+  /// In en, this message translates to:
+  /// **'What it did'**
+  String get runResultViewOutputTitle;
+
   /// No description provided for @attentionDisclosure.
   ///
   /// In en, this message translates to:
