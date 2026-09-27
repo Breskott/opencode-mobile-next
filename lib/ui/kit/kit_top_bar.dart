@@ -880,6 +880,26 @@ class _KitServerPillContent extends StatelessWidget {
               ),
             ),
           );
+    // Only the name gives way; the status word always shows (STATE-9).
+    final label = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: KitText(
+            KitBidi.auto(server),
+            role: KitTextRole.rowTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        KitText(
+          ' · $status',
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+          maxLines: 1,
+        ),
+      ],
+    );
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),
       child: Padding(
@@ -894,23 +914,10 @@ class _KitServerPillContent extends StatelessWidget {
           children: [
             mark,
             SizedBox(width: tokens.space2),
-            // Only the name gives way; the status word always shows
-            // (STATE-9).
-            Flexible(
-              child: KitText(
-                KitBidi.auto(server),
-                role: KitTextRole.rowTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            KitText(
-              ' · $status',
-              role: KitTextRole.caption,
-              tone: KitTextTone.secondary,
-              maxLines: 1,
-            ),
-            if (expand) const Spacer(),
+            // Expanded (the PC sidebar), the name and status take the
+            // whole width and push the chevron to the end; no Spacer shares
+            // the flex, so the name is cut only when it truly does not fit.
+            if (expand) Expanded(child: label) else Flexible(child: label),
             SizedBox(width: tokens.space1),
             Icon(
               AppIconography.chevronDown,

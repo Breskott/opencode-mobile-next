@@ -1017,11 +1017,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             // 5. Everything else going on: the other projects on this
             // server once each, then other servers with something
             // running or waiting (items 6 and 8).
-            SliverToBoxAdapter(
-              child: OtherProjectsPanel(
-                controller: controller,
-                currentDirectory: headerDirectory,
-                onAllProjects: _openProjects,
+            // The same gap as between the sections above (SectionLabel's
+            // top): the panel's own label carries none.
+            SliverPadding(
+              padding: EdgeInsetsDirectional.only(top: tokens.sectionGap),
+              sliver: SliverToBoxAdapter(
+                child: OtherProjectsPanel(
+                  controller: controller,
+                  currentDirectory: headerDirectory,
+                  onAllProjects: _openProjects,
+                ),
               ),
             ),
             SliverToBoxAdapter(
