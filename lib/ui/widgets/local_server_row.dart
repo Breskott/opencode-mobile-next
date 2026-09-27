@@ -106,7 +106,6 @@ class LocalServerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final failure = this.failure;
     final VoidCallback? tap;
     final Key? rowKey;
@@ -156,14 +155,15 @@ class LocalServerRow extends StatelessWidget {
     final large = MediaQuery.textScalerOf(context).scale(14) > 21;
     final below = [
       if (failure != null)
-        Text(
+        // The failure in words, in text1 (LOOK-5: error tone is for acts
+        // that lose data, not for a failure state).
+        KitText(
           failure,
           key: _key('failure'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.primary,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-          ),
         ),
       if (start != null && large) KitInset(child: start),
     ];
@@ -205,6 +205,11 @@ class LocalServerRow extends StatelessWidget {
                   children: below,
                 ),
           onTap: tap,
+          // Long-press, right-click and the context-menu key open the same
+          // items, which are also the row's semantic actions (KIT-28). The
+          // ⋮ stays because the row's tap is taken by its one likely act.
+          menu: locked ? const [] : items,
+          menuLabel: menuTooltip,
           trailing: trailing.isEmpty
               ? null
               : Row(mainAxisSize: MainAxisSize.min, children: trailing),

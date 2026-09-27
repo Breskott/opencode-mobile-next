@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../termux/managed_server_recovery.dart';
-import '../app_theme.dart';
+import '../app_iconography.dart';
 import '../kit/kit.dart';
 
 /// "Restart after a crash": the opt-in foreground recovery of the server
@@ -16,6 +16,9 @@ import '../kit/kit.dart';
 /// what recovery is doing, any error with its way out, and the Android
 /// caveat. It reads and writes [ManagedServerRecovery] only; nothing here
 /// installs, updates or starts anything by itself.
+///
+/// Kit only (shared-phone-1): a [KitSwitchRow], its notes as [KitText] in
+/// the row's own inset, and the ways out in a [KitActionBlock].
 class ManagedServerRecoveryOption extends StatefulWidget {
   const ManagedServerRecoveryOption({
     super.key,
@@ -94,52 +97,53 @@ class _ManagedServerRecoveryOptionState
     final recovery = _recovery;
     if (recovery == null) return const SizedBox.shrink();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
+    final tokens = KitTokens.of(context);
+    Widget note(String text, {Key? key}) => KitText(
+      text,
+      key: key,
+      role: KitTextRole.secondary,
+      tone: KitTextTone.secondary,
     );
-    final problem = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.error,
-    );
+    // A problem is said in words, in text1 (LOOK-5: the error tone marks
+    // acts that lose data, never a failure state).
+    Widget problem(String text) =>
+        KitText(text, role: KitTextRole.secondary, tone: KitTextTone.primary);
     // The counter and the caveat matter once recovery is on (or has been):
     // off, the row's own line says what it would do.
     final used = recovery.enabled || recovery.attempts > 0;
     final notes = <Widget>[
       if (used)
-        Text(
+        note(
           l10n.managedRecoveryAttempts(recovery.attempts),
           key: const ValueKey('managed-recovery-attempts'),
-          style: muted,
         ),
-      if (recovery.exhausted) Text(l10n.managedRecoveryExhausted, style: muted),
+      if (recovery.exhausted) note(l10n.managedRecoveryExhausted),
       if (recovery.enabled && recovery.paused && recovery.error == null)
-        Text(l10n.managedRecoveryBackground, style: muted),
-      if (recovery.busy) Text(l10n.managedRecoveryChecking, style: muted),
+        note(l10n.managedRecoveryBackground),
+      if (recovery.busy) note(l10n.managedRecoveryChecking),
       if (recovery.nextAttemptAt case final next?)
         if (recovery.enabled && !recovery.exhausted)
-          Text(
+          note(
             l10n.managedRecoveryNext(
               MaterialLocalizations.of(
                 context,
               ).formatTimeOfDay(TimeOfDay.fromDateTime(next)),
             ),
-            style: muted,
           ),
       if (recovery.error case final error?)
-        Text(switch (error) {
+        problem(switch (error) {
           ManagedRecoveryError.settingsUnreadable =>
             l10n.managedRecoverySettingsUnreadable,
           ManagedRecoveryError.enableFailed => l10n.managedRecoveryEnableFailed,
           ManagedRecoveryError.ownershipChanged =>
             l10n.managedRecoveryOwnershipChanged,
           ManagedRecoveryError.uncertainResult => l10n.managedRecoveryUncertain,
-        }, style: problem),
+        }),
       if (_policyError case final revoke?)
-        Text(
+        problem(
           revoke
               ? l10n.managedRecoveryRevokeFailed
               : l10n.managedRecoverySaveFailed,
-          style: problem,
         ),
     ];
     final actions = <KitAction>[
@@ -161,10 +165,9 @@ class _ManagedServerRecoveryOptionState
     ];
     if (recovery.enabled) {
       notes.add(
-        Text(
+        note(
           l10n.managedHealthLifetime,
           key: const ValueKey('managed-recovery-caveat'),
-          style: muted,
         ),
       );
     }
@@ -183,8 +186,13 @@ class _ManagedServerRecoveryOptionState
         ),
         if (notes.isNotEmpty || actions.isNotEmpty)
           Padding(
-            // Under the row's text, past its 32 dp icon and 12 dp gap.
-            padding: const EdgeInsetsDirectional.fromSTEB(60, 0, 16, 8),
+            // Under the row's words: past its icon tile and the gap after
+            // it, the inset of the row's own hairline (KitDividerInset.text).
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.space4 + tokens.iconTileSize + tokens.space3,
+              end: tokens.space4,
+              bottom: tokens.space2,
+            ),
             child: Semantics(
               liveRegion: true,
               child: Column(
@@ -192,7 +200,9 @@ class _ManagedServerRecoveryOptionState
                 children: [
                   for (final note in notes)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
+                      padding: EdgeInsetsDirectional.only(
+                        bottom: tokens.space1,
+                      ),
                       child: note,
                     ),
                   if (actions.isNotEmpty) KitActionBlock(tertiary: actions),

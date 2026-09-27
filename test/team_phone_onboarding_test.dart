@@ -1068,8 +1068,12 @@ void main() {
       );
       await openSheet(tester);
       expect(statusLine(tester), l10n.teamUiPhoneStatusRunning(2));
+      // Isolated left to right (KitBidi), so matched by its words.
       expect(
-        find.text(l10n.teamUiPhoneVersions('1.4.1', '1.2.2', '2.3.3')),
+        find.textContaining(
+          l10n.teamUiPhoneVersions('1.4.1', '1.2.2', '2.3.3'),
+          findRichText: true,
+        ),
         findsOneWidget,
       );
       runtime.results['stop'] = _status(
@@ -1141,21 +1145,30 @@ void main() {
       expect(find.text(l10n.teamUiPhoneTipWakeLock), findsOneWidget);
       expect(find.text(l10n.teamUiPhoneTipBattery), findsOneWidget);
       expect(find.text(l10n.teamUiPhoneTipPhantom), findsOneWidget);
-      final commands = tester.widget<SelectableText>(
-        find.byKey(const ValueKey('team-phone-tips-commands')),
+      // The commands are a KitCodeBlock (kind command): left to right.
+      Finder command(String text) => find.descendant(
+        of: find.byKey(const ValueKey('team-phone-tips-commands')),
+        matching: find.textContaining(text, findRichText: true),
       );
-      expect(commands.textDirection, TextDirection.ltr);
-      expect(
-        commands.data,
-        contains(
-          'adb shell settings put global settings_enable_monitor_phantom_procs false',
-        ),
+      final phantom = command(
+        'adb shell settings put global settings_enable_monitor_phantom_procs false',
       );
+      expect(phantom, findsOneWidget);
       expect(
-        commands.data,
-        contains(
+        command(
           'adb shell device_config put activity_manager max_phantom_processes 2147483647',
         ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Directionality>(
+              find
+                  .ancestor(of: phantom, matching: find.byType(Directionality))
+                  .first,
+            )
+            .textDirection,
+        TextDirection.ltr,
       );
       String? copied;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -1197,7 +1210,7 @@ void main() {
           find.byKey(const ValueKey('team-phone-remove-sheet')),
           findsOneWidget,
         );
-        expect(find.text(l10n.teamUiPhoneRemoveBody), findsOneWidget);
+        expect(find.text(l10n.teamPhoneRemoveBody), findsOneWidget);
         runtime.results['remove'] = _status(TeamRuntimePhase.idle);
         await tapRevealed(
           tester,
@@ -1354,13 +1367,20 @@ void main() {
           find.byKey(const ValueKey('team-phone-step-connect')),
         );
         // The live output stays LTR in RTL.
-        final output = tester.widget<SelectableText>(
-          find.descendant(
-            of: find.byKey(const ValueKey('setup-live-output')),
-            matching: find.byType(SelectableText),
-          ),
+        final line = find.descendant(
+          of: find.byKey(const ValueKey('setup-live-output')),
+          matching: find.textContaining('[aiteam] downloading'),
         );
-        expect(output.textDirection, TextDirection.ltr);
+        expect(
+          tester
+              .widget<Directionality>(
+                find
+                    .ancestor(of: line, matching: find.byType(Directionality))
+                    .first,
+              )
+              .textDirection,
+          TextDirection.ltr,
+        );
         runtime.gates['install']!.complete();
         await settle(tester);
         expect(tester.takeException(), isNull);
@@ -1408,10 +1428,26 @@ void main() {
           find.byKey(const ValueKey('team-phone-keep-running')),
         );
         expect(tester.takeException(), isNull);
-        final commands = tester.widget<SelectableText>(
-          find.byKey(const ValueKey('team-phone-tips-commands')),
+        final command = find.descendant(
+          of: find.byKey(const ValueKey('team-phone-tips-commands')),
+          matching: find.textContaining(
+            'pkg install android-tools',
+            findRichText: true,
+          ),
         );
-        expect(commands.textDirection, TextDirection.ltr);
+        expect(
+          tester
+              .widget<Directionality>(
+                find
+                    .ancestor(
+                      of: command,
+                      matching: find.byType(Directionality),
+                    )
+                    .first,
+              )
+              .textDirection,
+          TextDirection.ltr,
+        );
         await reveal(
           tester,
           find.byKey(const ValueKey('team-phone-tips-copy')),

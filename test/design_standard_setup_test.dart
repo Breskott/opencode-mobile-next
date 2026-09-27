@@ -122,10 +122,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(
-      tester
-          .widget<Text>(find.byKey(const ValueKey('phone-server-status')))
-          .data,
-      'Starting',
+      find.descendant(
+        of: find.byKey(const ValueKey('phone-server-status')),
+        matching: find.text('Starting'),
+      ),
+      findsOneWidget,
     );
     expect(find.byKey(const ValueKey('phone-server-start')), findsNothing);
     expect(find.byType(FilledButton), findsNothing);
