@@ -1728,9 +1728,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get runResultsOpenConversation => 'فتح المحادثة';
 
   @override
-  String get runResultViewOutputTitle => 'What it did';
-
-  @override
   String get attentionDisclosure =>
       'نظرة عامة محلية، وليست مراقبة مباشرة عبر الخوادم. قد تكون الإشارات المخزّنة مؤقتًا غير مكتملة أو قديمة. افتح خادمًا للتحقق من نشاطه الحالي.';
 
@@ -23221,4 +23218,279 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamStartRunRefusedKept =>
       'Your task is still here. Edit it and send it again.';
+
+  @override
+  String get transcriptTogglesReasoningOn =>
+      'When on, the model\'s reasoning opens under each answer.';
+
+  @override
+  String get transcriptTogglesUsageOn =>
+      'When on, each message shows its time, tokens and cost.';
+
+  @override
+  String get transcriptTogglesScope =>
+      'These apply to every conversation on this device.';
+
+  @override
+  String get handoffSheetCopyCommand => 'Copy command';
+
+  @override
+  String get handoffSheetReloadConversation => 'Reload conversation';
+
+  @override
+  String get handoffSheetPhoneServerNote =>
+      'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.';
+
+  @override
+  String get modelPickerYourChoice => 'Your choice';
+
+  @override
+  String get modelPickerNoneChosen => 'No model chosen';
+
+  @override
+  String get modelPickerNoneChosenHint => 'Pick one from the list below.';
+
+  @override
+  String get modelPickerChooseFirst => 'Choose a model first.';
+
+  @override
+  String get modelPickerThinking => 'Thinking';
+
+  @override
+  String get modelPickerThinkingExplain =>
+      'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.';
+
+  @override
+  String get modelPickerThinkingOneLevel => 'This model has one thinking level';
+
+  @override
+  String get modelPickerAgentExplain =>
+      'The agent decides what the model may do, such as edit files or only read and plan.';
+
+  @override
+  String get modelPickerAgentBuild => 'Edits files and runs commands';
+
+  @override
+  String get modelPickerAgentPlan => 'Reads and plans; does not change files';
+
+  @override
+  String modelPickerDetailsContext(String count) {
+    return '$count tokens of context';
+  }
+
+  @override
+  String modelPickerDetailsOutput(String count) {
+    return 'Up to $count tokens per answer';
+  }
+
+  @override
+  String modelPickerDetailsPrice(String input, String output) {
+    return '$input per million tokens read, $output per million written';
+  }
+
+  @override
+  String get modelPickerCanThink => 'Thinks before answering';
+
+  @override
+  String get modelPickerCanUseTools => 'Uses tools';
+
+  @override
+  String get modelPickerCanReadAttachments =>
+      'Reads images and files you attach';
+
+  @override
+  String get modelPickerModelId => 'Model id';
+
+  @override
+  String get modelPickerCopyId => 'Copy model id';
+
+  @override
+  String get modelPickerInUse => 'In use';
+
+  @override
+  String get modelPickerUnavailableReason =>
+      'Not available on this server right now.';
+
+  @override
+  String get modelPickerCollections => 'Which models to show';
+
+  @override
+  String get modelPickerSignInTitle => 'Sign in to a provider';
+
+  @override
+  String get modelPickerSignInBody =>
+      'No provider on this server has models yet. Sign in to one, then come back to choose a model.';
+
+  @override
+  String modelPickerShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count more models',
+      one: 'Show 1 more model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelPickerAgentBuildName => 'Build';
+
+  @override
+  String get modelPickerAgentPlanName => 'Plan';
+
+  @override
+  String phoneServerCardDisconnect(String server) {
+    return 'Disconnect from $server';
+  }
+
+  @override
+  String phoneServerCardConnect(String server) {
+    return 'Connect to $server';
+  }
+
+  @override
+  String get phoneServerCardStartOpenCode => 'Start OpenCode';
+
+  @override
+  String get phoneServerCardStopOpenCode => 'Stop OpenCode';
+
+  @override
+  String get phoneServerCardShowServerLog => 'Show server log';
+
+  @override
+  String get phoneServerCardOpenTerminal => 'Open terminal';
+
+  @override
+  String get phoneServerCardFailedTitle => 'Could not finish';
+
+  @override
+  String get phoneServerRestartFailedTitle => 'Restart failed';
+
+  @override
+  String get setupTerminalTitle => 'Setup output';
+
+  @override
+  String get teamPhoneStopTeam => 'Stop the team';
+
+  @override
+  String get teamPhoneStartTeam => 'Start the team';
+
+  @override
+  String get teamPhoneStartTeamAgain => 'Start the team again';
+
+  @override
+  String get teamPhoneDeleteTeam => 'Delete the team from this phone';
+
+  @override
+  String get teamPhoneRemoveBody =>
+      'The team stops, and the AI Team turns off for this server.';
+
+  @override
+  String get teamPhoneRemoveLost =>
+      'The team\'s programs, its city and its task list are deleted';
+
+  @override
+  String get teamPhoneRemoveKept =>
+      'Your project files and their git history stay';
+
+  @override
+  String teamPhoneRemoveFrees(int size) {
+    return 'Frees about $size MB';
+  }
+
+  @override
+  String get teamPhoneRemoveConfirm => 'Delete the team';
+
+  @override
+  String get phoneServerCardRemoveOpenCode => 'Remove OpenCode';
+
+  @override
+  String get runResultViewOutputTitle => 'What it did';
+
+  @override
+  String get productStatesActionFailedTitle => 'Couldn\'t finish that';
+
+  @override
+  String get productStatesErrorTitle => 'Couldn\'t load this';
+
+  @override
+  String get productStatesNetworkErrorTitle => 'Can\'t reach the server';
+
+  @override
+  String get productStatesSwitchServer => 'Switch server';
+
+  @override
+  String productStatesRequiresServer(int generation) {
+    return 'Needs an OpenCode $generation server';
+  }
+
+  @override
+  String get externalLinkBlockedTitle => 'Link blocked';
+
+  @override
+  String get externalLinkBlockedBody =>
+      'This app opens only https:// links, and http:// links after you confirm.';
+
+  @override
+  String externalLinkOpensHost(String host) {
+    return 'Opens $host outside this app.';
+  }
+
+  @override
+  String get externalLinkDontOpen => 'Don\'t open';
+
+  @override
+  String get externalLinkCopy => 'Copy link';
+
+  @override
+  String get externalLinkAddress => 'Full address';
+
+  @override
+  String get externalLinkOpenFailedTitle => 'Couldn\'t open link';
+
+  @override
+  String get runCommandReconnecting =>
+      'OpenCode is reconnecting. Try again in a moment.';
+
+  @override
+  String runCommandArgumentsHelper(String command) {
+    return 'Text passed to /$command. Leave it empty if the command takes none.';
+  }
+
+  @override
+  String get runCommandRunsIn => 'Runs in';
+
+  @override
+  String runCommandFailedTitle(String command) {
+    return 'Couldn\'t run /$command';
+  }
+
+  @override
+  String get teamControlsFieldUnavailable =>
+      'The team can\'t take words from this phone right now.';
+
+  @override
+  String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
+
+  @override
+  String get teamBoardMoveSheetAddEmpty => 'Say what the team should do first.';
+
+  @override
+  String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
+
+  @override
+  String get teamHostFormTeamLabel => 'Team name (optional)';
+
+  @override
+  String get teamHostFormTeamHelper =>
+      'Leave it empty to use the team the computer runs.';
+
+  @override
+  String get teamHostFormHowAction => 'How to set up the computer';
+
+  @override
+  String get teamHostFormCancelTest => 'Cancel test';
+
+  @override
+  String get teamHostFormSaveAnyway => 'Save without an answer';
 }

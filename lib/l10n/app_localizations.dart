@@ -2888,12 +2888,6 @@ abstract class AppLocalizations {
   /// **'Open conversation'**
   String get runResultsOpenConversation;
 
-  /// Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results.
-  ///
-  /// In en, this message translates to:
-  /// **'What it did'**
-  String get runResultViewOutputTitle;
-
   /// No description provided for @attentionDisclosure.
   ///
   /// In en, this message translates to:
@@ -36386,6 +36380,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your task is still here. Edit it and send it again.'**
   String get teamStartRunRefusedKept;
+
+  /// Transcript display toggles: what the Reasoning switch does when on
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the model\'s reasoning opens under each answer.'**
+  String get transcriptTogglesReasoningOn;
+
+  /// Transcript display toggles: what the Timestamps & usage switch does when on
+  ///
+  /// In en, this message translates to:
+  /// **'When on, each message shows its time, tokens and cost.'**
+  String get transcriptTogglesUsageOn;
+
+  /// Transcript display toggles: the two switches are app-wide, not per conversation
+  ///
+  /// In en, this message translates to:
+  /// **'These apply to every conversation on this device.'**
+  String get transcriptTogglesScope;
+
+  /// Continue on computer sheet: copy button for the resume command
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get handoffSheetCopyCommand;
+
+  /// Continue on computer sheet: reload the conversation when the server did not report its folder
+  ///
+  /// In en, this message translates to:
+  /// **'Reload conversation'**
+  String get handoffSheetReloadConversation;
+
+  /// Open on another phone sheet: what happens on a phone without this server
+  ///
+  /// In en, this message translates to:
+  /// **'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.'**
+  String get handoffSheetPhoneServerNote;
+
+  /// Model picker: section label above the chosen model, thinking level and agent
+  ///
+  /// In en, this message translates to:
+  /// **'Your choice'**
+  String get modelPickerYourChoice;
+
+  /// Model picker: the choice row when no model is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'No model chosen'**
+  String get modelPickerNoneChosen;
+
+  /// Model picker: supporting line when no model is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one from the list below.'**
+  String get modelPickerNoneChosenHint;
+
+  /// Model picker: why the apply action cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model first.'**
+  String get modelPickerChooseFirst;
+
+  /// Model picker: the thinking level row title
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get modelPickerThinking;
+
+  /// Model picker: what the thinking level means
+  ///
+  /// In en, this message translates to:
+  /// **'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.'**
+  String get modelPickerThinkingExplain;
+
+  /// Model picker: the model offers no thinking levels to choose from
+  ///
+  /// In en, this message translates to:
+  /// **'This model has one thinking level'**
+  String get modelPickerThinkingOneLevel;
+
+  /// Model picker: what the agent choice means
+  ///
+  /// In en, this message translates to:
+  /// **'The agent decides what the model may do, such as edit files or only read and plan.'**
+  String get modelPickerAgentExplain;
+
+  /// Model picker: what the built-in build agent does
+  ///
+  /// In en, this message translates to:
+  /// **'Edits files and runs commands'**
+  String get modelPickerAgentBuild;
+
+  /// Model picker: what the built-in plan agent does
+  ///
+  /// In en, this message translates to:
+  /// **'Reads and plans; does not change files'**
+  String get modelPickerAgentPlan;
+
+  /// Model picker details: context window in words
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens of context'**
+  String modelPickerDetailsContext(String count);
+
+  /// Model picker details: output limit in words
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count} tokens per answer'**
+  String modelPickerDetailsOutput(String count);
+
+  /// Model picker details: price in words
+  ///
+  /// In en, this message translates to:
+  /// **'{input} per million tokens read, {output} per million written'**
+  String modelPickerDetailsPrice(String input, String output);
+
+  /// Model picker details: the model reasons
+  ///
+  /// In en, this message translates to:
+  /// **'Thinks before answering'**
+  String get modelPickerCanThink;
+
+  /// Model picker details: the model can call tools
+  ///
+  /// In en, this message translates to:
+  /// **'Uses tools'**
+  String get modelPickerCanUseTools;
+
+  /// Model picker details: the model accepts attachments
+  ///
+  /// In en, this message translates to:
+  /// **'Reads images and files you attach'**
+  String get modelPickerCanReadAttachments;
+
+  /// Model picker details: label of the provider/model id
+  ///
+  /// In en, this message translates to:
+  /// **'Model id'**
+  String get modelPickerModelId;
+
+  /// Model picker: row menu item that copies the provider/model id
+  ///
+  /// In en, this message translates to:
+  /// **'Copy model id'**
+  String get modelPickerCopyId;
+
+  /// Model picker: the model in use now, first word of its row
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get modelPickerInUse;
+
+  /// Model picker: why a model or agent cannot be chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this server right now.'**
+  String get modelPickerUnavailableReason;
+
+  /// Model picker: spoken name of the All / Favorites / Recent choice
+  ///
+  /// In en, this message translates to:
+  /// **'Which models to show'**
+  String get modelPickerCollections;
+
+  /// Model picker: no models on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a provider'**
+  String get modelPickerSignInTitle;
+
+  /// Model picker: no models on the server, next step
+  ///
+  /// In en, this message translates to:
+  /// **'No provider on this server has models yet. Sign in to one, then come back to choose a model.'**
+  String get modelPickerSignInBody;
+
+  /// Model picker: grows the list by the next page of models
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more model} other{Show {count} more models}}'**
+  String modelPickerShowMore(int count);
+
+  /// Model picker: the built-in build agent by name
+  ///
+  /// In en, this message translates to:
+  /// **'Build'**
+  String get modelPickerAgentBuildName;
+
+  /// Model picker: the built-in plan agent by name
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get modelPickerAgentPlanName;
+
+  /// This phone card menu: leaves the phone's own server, which is in use now; the server keeps running
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from {server}'**
+  String phoneServerCardDisconnect(String server);
+
+  /// This phone card primary action: connects to the running phone server
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to {server}'**
+  String phoneServerCardConnect(String server);
+
+  /// This phone card: starts the stopped OpenCode server inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Start OpenCode'**
+  String get phoneServerCardStartOpenCode;
+
+  /// This phone card: stops the OpenCode server inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Stop OpenCode'**
+  String get phoneServerCardStopOpenCode;
+
+  /// This phone card: opens the OpenCode server's log
+  ///
+  /// In en, this message translates to:
+  /// **'Show server log'**
+  String get phoneServerCardShowServerLog;
+
+  /// This phone card menu: opens a shell in the phone's Linux
+  ///
+  /// In en, this message translates to:
+  /// **'Open terminal'**
+  String get phoneServerCardOpenTerminal;
+
+  /// Alert title when a This phone card action (update, add tools, remove) failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish'**
+  String get phoneServerCardFailedTitle;
+
+  /// Alert title when restarting the server on this phone failed
+  ///
+  /// In en, this message translates to:
+  /// **'Restart failed'**
+  String get phoneServerRestartFailedTitle;
+
+  /// Title of the setup log panel (live or finished output of a setup step)
+  ///
+  /// In en, this message translates to:
+  /// **'Setup output'**
+  String get setupTerminalTitle;
+
+  /// On this phone section: stops the AI team running on this phone (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the team'**
+  String get teamPhoneStopTeam;
+
+  /// On this phone section: starts the stopped AI team on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Start the team'**
+  String get teamPhoneStartTeam;
+
+  /// On this phone section: starts the team Android stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Start the team again'**
+  String get teamPhoneStartTeamAgain;
+
+  /// On this phone section: deletes the AI team from this phone (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the team from this phone'**
+  String get teamPhoneDeleteTeam;
+
+  /// Delete the team sheet: what happens, in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'The team stops, and the AI Team turns off for this server.'**
+  String get teamPhoneRemoveBody;
+
+  /// Delete the team sheet: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s programs, its city and its task list are deleted'**
+  String get teamPhoneRemoveLost;
+
+  /// Delete the team sheet: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Your project files and their git history stay'**
+  String get teamPhoneRemoveKept;
+
+  /// Delete the team sheet: the space the team's downloads take
+  ///
+  /// In en, this message translates to:
+  /// **'Frees about {size} MB'**
+  String teamPhoneRemoveFrees(int size);
+
+  /// Delete the team sheet: confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the team'**
+  String get teamPhoneRemoveConfirm;
+
+  /// Remove OpenCode from this phone sheet: confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove OpenCode'**
+  String get phoneServerCardRemoveOpenCode;
+
+  /// Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results.
+  ///
+  /// In en, this message translates to:
+  /// **'What it did'**
+  String get runResultViewOutputTitle;
+
+  /// Shared product states: title of the alert shown when an action the person started failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t finish that'**
+  String get productStatesActionFailedTitle;
+
+  /// Shared product states: default title of a page that failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this'**
+  String get productStatesErrorTitle;
+
+  /// Shared product states: title of a page that failed to load because the server could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server'**
+  String get productStatesNetworkErrorTitle;
+
+  /// Shared product states: action on a network error that opens the server list
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server'**
+  String get productStatesSwitchServer;
+
+  /// Shared product states: spoken hint on a dimmed settings row naming the server generation the feature needs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an OpenCode {generation} server'**
+  String productStatesRequiresServer(int generation);
+
+  /// External link gate: title of the alert shown when a link was refused
+  ///
+  /// In en, this message translates to:
+  /// **'Link blocked'**
+  String get externalLinkBlockedTitle;
+
+  /// External link gate: body of the alert shown when a link was refused
+  ///
+  /// In en, this message translates to:
+  /// **'This app opens only https:// links, and http:// links after you confirm.'**
+  String get externalLinkBlockedBody;
+
+  /// External link gate: the confirmation's body naming the destination host
+  ///
+  /// In en, this message translates to:
+  /// **'Opens {host} outside this app.'**
+  String externalLinkOpensHost(String host);
+
+  /// External link gate: cancel action on the insecure http confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t open'**
+  String get externalLinkDontOpen;
+
+  /// External link gate: copies the link instead of opening it
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get externalLinkCopy;
+
+  /// External link gate: label of the full URL under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Full address'**
+  String get externalLinkAddress;
+
+  /// External link gate: title of the alert shown when no app could open the link or opening failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open link'**
+  String get externalLinkOpenFailedTitle;
+
+  /// Run command sheet: error when the server connection is not ready
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is reconnecting. Try again in a moment.'**
+  String get runCommandReconnecting;
+
+  /// Run command sheet: helper under the arguments field
+  ///
+  /// In en, this message translates to:
+  /// **'Text passed to /{command}. Leave it empty if the command takes none.'**
+  String runCommandArgumentsHelper(String command);
+
+  /// Run command sheet: row naming the conversation the command runs in
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in'**
+  String get runCommandRunsIn;
+
+  /// Run command sheet: title of the notice shown when the command failed to start
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t run /{command}'**
+  String runCommandFailedTitle(String command);
+
+  /// Why an agent's message field is turned off (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'The team can\'t take words from this phone right now.'**
+  String get teamControlsFieldUnavailable;
+
+  /// Shown when the team host refused to wake an agent without a reason (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'The host didn\'t say why.'**
+  String get teamNowWakeRefusedNoReason;
+
+  /// Error under the Add to backlog field when it is empty (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Say what the team should do first.'**
+  String get teamBoardMoveSheetAddEmpty;
+
+  /// Why Open agent output is unavailable on the dispatch strip (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'No agent has taken this step yet.'**
+  String get teamCycleStripNoAgentYet;
+
+  /// Label of the field for the Gas City city name on the Add AI Team host sheet (shared-team-1; was 'City').
+  ///
+  /// In en, this message translates to:
+  /// **'Team name (optional)'**
+  String get teamHostFormTeamLabel;
+
+  /// Helper under the team name field (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it empty to use the team the computer runs.'**
+  String get teamHostFormTeamHelper;
+
+  /// Opens the host guide from a failed address test (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'How to set up the computer'**
+  String get teamHostFormHowAction;
+
+  /// Stops waiting for the address test on the Add AI Team host sheet (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel test'**
+  String get teamHostFormCancelTest;
+
+  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Save without an answer'**
+  String get teamHostFormSaveAnyway;
 }
 
 class _AppLocalizationsDelegate
