@@ -23,9 +23,6 @@ import 'package:flutter/material.dart';
 
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../builtin/setup/aiteam_scripts.dart';
-import '../../builtin/setup/components.dart' show SetupComponentIds;
-import '../../builtin/setup/phone_setup.dart';
-import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/team/builtin_team.dart';
 import '../../builtin/team/builtin_team_job.dart';
 import '../../l10n/app_localizations.dart';
@@ -43,8 +40,9 @@ import '../kit/kit_surface.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/scenes/team_scenes.dart';
-import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
+import 'team_phone_onboarding.dart'
+    show TeamPhoneReadyScreen, openTeamOnThisPhone;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -55,22 +53,23 @@ BuiltinTeam? debugBuiltinTeam;
 BuiltinTeam get _sharedTeam => debugBuiltinTeam ?? (_team ??= BuiltinTeam());
 BuiltinTeam? _team;
 
+/// The in-app team the phone's screens share (this section and the team's
+/// ready page, [TeamPhoneReadyScreen]), so one turn-on runs at a time.
+BuiltinTeam get sharedBuiltinTeam => _sharedTeam;
+
 /// Opens Add tools with AI Team switched on and, when the person goes
-/// ahead, starts the install and shows its progress. Tests replace it.
+/// ahead, installs it and turns it on for the project: the one "Set up AI
+/// Team on this phone" ([openTeamOnThisPhone]). Tests replace it.
 @visibleForTesting
 Future<void> Function(BuildContext context)? debugAddAiTeam;
 
-Future<void> _addAiTeam(BuildContext context) async {
+Future<void> _addAiTeam(
+  BuildContext context,
+  ConnectionController connection,
+) async {
   final override = debugAddAiTeam;
   if (override != null) return override(context);
-  final ids = await showPhoneSetupCustomize(
-    context,
-    addMode: true,
-    selected: const {SetupComponentIds.aiTeam},
-  );
-  if (ids == null || ids.isEmpty || !context.mounted) return;
-  await PhoneSetup.engine.run(ids, params: SetupJobParams.adding(ids));
-  if (context.mounted) await openPhoneSetupProgress(context);
+  await openTeamOnThisPhone(context, connection);
 }
 
 /// The words for a failed turn-on or start.
@@ -139,6 +138,56 @@ String builtinTeamProjectName(String path) {
       ? path.substring(0, path.length - 1)
       : path;
   return trimmed.substring(trimmed.lastIndexOf('/') + 1);
+}
+
+/// A team job's stages, each with its mark: done with how long it took,
+/// the current one with its time so far (or failed), the rest waiting.
+/// [project] is the project's name, for "Adding {project}".
+List<Widget> builtinTeamStageRows(
+  AppLocalizations l10n,
+  BuiltinTeamJob job, {
+  required bool failed,
+  required String project,
+}) {
+  final current = job.stage;
+  final rows = <Widget>[];
+  var reached = false;
+  for (final stage in job.stages) {
+    final took = job.took(stage);
+    final isCurrent = stage == current;
+    final KitMarkState mark;
+    String? supporting;
+    if (isCurrent) {
+      reached = true;
+      final elapsed = job.elapsed(stage);
+      mark = failed ? KitMarkState.failed : KitMarkState.working;
+      if (!failed && elapsed != null) {
+        supporting = l10n.aiteamComponentStageSoFar(
+          builtinTeamElapsedText(elapsed),
+        );
+      }
+    } else if (took != null) {
+      mark = KitMarkState.done;
+      supporting = l10n.aiteamComponentStageTook(builtinTeamElapsedText(took));
+    } else {
+      // A stage the job skipped (a store made during setup) reads as done
+      // once a later one began.
+      mark = reached || current == null
+          ? KitMarkState.waiting
+          : KitMarkState.done;
+    }
+    rows.add(
+      KitRow(
+        key: ValueKey('builtin-team-stage-${stage.name}'),
+        padding: EdgeInsets.zero,
+        leading: KitStatusMark(state: mark),
+        title: builtinTeamStageText(l10n, stage, project),
+        supporting: supporting == null ? null : TextSpan(text: supporting),
+        titleKey: isCurrent ? const ValueKey('builtin-team-stage') : null,
+      ),
+    );
+  }
+  return rows;
 }
 
 class BuiltinTeamSection extends StatefulWidget {
@@ -246,7 +295,7 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   String get _notice => _copy(context).aiteamComponentNotice;
 
   Future<void> _add() async {
-    await _addAiTeam(context);
+    await _addAiTeam(context, widget.connection);
     if (mounted) await _load();
   }
 
@@ -413,7 +462,14 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     if (job.stages.isNotEmpty && (job.running || jobError != null)) {
       children
         ..add(SizedBox(height: tokens.space1))
-        ..addAll(_stageRows(l10n, job, failed: jobError != null));
+        ..addAll(
+          builtinTeamStageRows(
+            l10n,
+            job,
+            failed: jobError != null,
+            project: builtinTeamProjectName(job.project ?? _project ?? ''),
+          ),
+        );
     }
     final error =
         _error ??
@@ -458,57 +514,6 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         children: children,
       ),
     );
-  }
-
-  /// The job's stages, each with its mark: done with how long it took, the
-  /// current one with its time so far (or failed), the rest waiting.
-  List<Widget> _stageRows(
-    AppLocalizations l10n,
-    BuiltinTeamJob job, {
-    required bool failed,
-  }) {
-    final project = builtinTeamProjectName(job.project ?? _project ?? '');
-    final current = job.stage;
-    final rows = <Widget>[];
-    var reached = false;
-    for (final stage in job.stages) {
-      final took = job.took(stage);
-      final isCurrent = stage == current;
-      final KitMarkState mark;
-      String? supporting;
-      if (isCurrent) {
-        reached = true;
-        final elapsed = job.elapsed(stage);
-        mark = failed ? KitMarkState.failed : KitMarkState.working;
-        if (!failed && elapsed != null) {
-          supporting = l10n.aiteamComponentStageSoFar(
-            builtinTeamElapsedText(elapsed),
-          );
-        }
-      } else if (took != null) {
-        mark = KitMarkState.done;
-        supporting = l10n.aiteamComponentStageTook(
-          builtinTeamElapsedText(took),
-        );
-      } else {
-        // A stage the job skipped (a store made during setup) reads as
-        // done once a later one began.
-        mark = reached || current == null
-            ? KitMarkState.waiting
-            : KitMarkState.done;
-      }
-      rows.add(
-        KitRow(
-          key: ValueKey('builtin-team-stage-${stage.name}'),
-          padding: EdgeInsets.zero,
-          leading: KitStatusMark(state: mark),
-          title: builtinTeamStageText(l10n, stage, project),
-          supporting: supporting == null ? null : TextSpan(text: supporting),
-          titleKey: isCurrent ? const ValueKey('builtin-team-stage') : null,
-        ),
-      );
-    }
-    return rows;
   }
 
   List<Widget> _installed(

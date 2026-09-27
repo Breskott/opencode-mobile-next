@@ -38,6 +38,7 @@ class PhoneSetupTermuxJobScreen extends StatefulWidget {
     this.selection,
     this.adding = const {},
     this.firstSetup = false,
+    this.resume = false,
     this.engine,
     this.openLink,
     this.openReady,
@@ -52,6 +53,10 @@ class PhoneSetupTermuxJobScreen extends StatefulWidget {
 
   /// Started as the phone's first setup: it ends on screen C.
   final bool firstSetup;
+
+  /// Opened by "Continue setup" (the start screen): a job that stopped part
+  /// way continues as soon as Termux answers, without a second tap.
+  final bool resume;
 
   /// Tests pass a fake; the app uses [PhoneSetup.termux].
   final SetupEngine? engine;
@@ -78,12 +83,14 @@ Future<void> openPhoneSetupTermuxJob(
   Set<String>? selection,
   Set<String> adding = const {},
   bool firstSetup = false,
+  bool resume = false,
 }) => pushKitPage<void>(
   context,
   (_) => PhoneSetupTermuxJobScreen(
     selection: selection,
     adding: adding,
     firstSetup: firstSetup,
+    resume: resume,
   ),
   settings: const RouteSettings(name: phoneSetupProgressTermuxRouteName),
 );
@@ -232,7 +239,10 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     if (_started) return;
     final progress = _engine.progress.value;
     if (progress.state == SetupState.running) return;
-    if (progress.canContinue && widget.adding.isEmpty) return;
+    if (progress.canContinue && widget.adding.isEmpty) {
+      if (widget.resume) await _continue();
+      return;
+    }
     _started = true;
     await _run(_ids());
   }

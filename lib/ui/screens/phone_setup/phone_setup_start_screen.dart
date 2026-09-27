@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
 import '../../../state/termux_running_server.dart';
+import '../../../termux/bridge.dart' show TermuxBridge;
 import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
@@ -22,6 +23,7 @@ import '../servers_screen.dart' show ServersRouteRequest;
 import 'phone_setup_hero.dart';
 import 'phone_setup_routes.dart';
 import 'phone_setup_selection.dart';
+import 'phone_setup_termux_job_screen.dart' show openPhoneSetupTermuxJob;
 import 'phone_setup_termux_screen.dart';
 
 /// Screen A of phone setup v2 (docs/design/phone-setup-v2-2026-09-24.md):
@@ -29,7 +31,8 @@ import 'phone_setup_termux_screen.dart';
 /// folded away underneath.
 ///
 /// The hero follows what is true on the phone right now, in this order:
-/// a setup that is running or stopped part way ("Setup is 42% done"), an
+/// a setup that is running or stopped part way ("Setup is 42% done"), then
+/// one that runs or stopped in Termux ("Setup in Termux is 42% done"), an
 /// OpenCode that is ready in the app, one that Termux already runs, and only
 /// then the first-time promise. Every number in the promise comes from the
 /// component registry, so adding a component changes it with no screen code.
@@ -65,10 +68,14 @@ class PhoneSetupStartScreen extends ConsumerStatefulWidget {
       _PhoneSetupStartScreenState();
 }
 
-enum _Hero { loading, fresh, progress, ready, termux }
+enum _Hero { loading, fresh, progress, termuxProgress, ready, termux }
 
 class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   late final SetupEngine _engine;
+
+  /// The Termux host's engine (P1.2), read so a job Termux runs or stopped
+  /// shows here too; null off Android.
+  SetupEngine? _termuxEngine;
   late Set<String> _selection;
 
   /// Until the persisted job is read, the screen cannot know whether to
@@ -94,6 +101,7 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   void initState() {
     super.initState();
     _engine = PhoneSetup.engine;
+    if (TermuxBridge.supported) _termuxEngine = PhoneSetup.termux;
     _selection = defaultSetupSelection(installableComponents(_engine.registry));
     unawaited(_load());
   }
@@ -104,7 +112,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       // turns this screen into "Continue". A read that hangs must not hold
       // the screen hostage, so it gets a few seconds and then the screen
       // shows what it knows.
-      await _engine.restore().timeout(const Duration(seconds: 3));
+      await Future.wait([
+        _engine.restore().timeout(const Duration(seconds: 3)),
+        _restoreTermux(),
+      ]);
     } catch (_) {
       // Nothing restored: the progress stays idle and the promise shows.
     }
@@ -113,6 +124,29 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     unawaited(_probeInApp());
     unawaited(_probeTermux());
     unawaited(_probeDevice());
+  }
+
+  /// The Termux job on disk, if any; unreadable counts as none.
+  Future<void> _restoreTermux() async {
+    try {
+      await _termuxEngine?.restore().timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // No Termux job to show.
+    }
+  }
+
+  /// A Termux job that runs or stopped part way, which the hero leads with
+  /// when the app's own setup has none.
+  SetupProgress? get _termuxJob {
+    final progress = _termuxEngine?.progress.value;
+    if (progress == null) return null;
+    return switch (progress.state) {
+      SetupState.running ||
+      SetupState.interrupted ||
+      SetupState.failed ||
+      SetupState.cancelled => progress,
+      SetupState.idle || SetupState.done => null,
+    };
   }
 
   /// P0.8: the CPU ABI, free space and total RAM the pre-flight check reads,
@@ -190,10 +224,11 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       case SetupState.cancelled:
         return _Hero.progress;
       case SetupState.done:
-        return _Hero.ready;
       case SetupState.idle:
         break;
     }
+    if (_termuxJob != null) return _Hero.termuxProgress;
+    if (progress.state == SetupState.done) return _Hero.ready;
     if (_inAppInstalled) return _Hero.ready;
     if (_termuxPresent) return _Hero.termux;
     return _Hero.fresh;
@@ -358,6 +393,19 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     if (mounted) unawaited(_probeTermux());
   }
 
+  /// The Termux job that runs or stopped: its own progress screen, which
+  /// follows a running job and continues a stopped one straight away.
+  Future<void> _continueTermux(SetupProgress progress) async {
+    await openPhoneSetupTermuxJob(
+      context,
+      selection: progress.adding.isEmpty ? _jobSelection(progress) : null,
+      adding: progress.adding.toSet(),
+      firstSetup: progress.firstSetup,
+      resume: true,
+    );
+    if (mounted) unawaited(_probeTermux());
+  }
+
   /// P0.8, low space: Android's Storage settings, so freeing space is one
   /// tap away instead of a dead end. Freeing space and coming back re-reads
   /// it on the next build rather than polling.
@@ -389,9 +437,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    return ValueListenableBuilder<SetupProgress>(
-      valueListenable: _engine.progress,
-      builder: (context, progress, _) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([_engine.progress, _termuxEngine?.progress]),
+      builder: (context, _) {
+        final progress = _engine.progress.value;
         final hero = _heroFor(progress);
         // Until the job on disk is read the screen promises nothing: the
         // one loading bar, and no state that might be the wrong one.
@@ -409,7 +458,14 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
               key: ValueKey(hero),
               child: hero == _Hero.loading
                   ? const SizedBox.shrink()
-                  : _state(context, l10n, hero, progress),
+                  : _state(
+                      context,
+                      l10n,
+                      hero,
+                      hero == _Hero.termuxProgress
+                          ? _termuxJob ?? progress
+                          : progress,
+                    ),
             ),
           ),
         );
@@ -464,16 +520,22 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
         action = l10n.phoneSetupStartSetUp;
         onPressed = () => unawaited(_run(_selection));
       case _Hero.progress:
+      case _Hero.termuxProgress:
         // Never "100% done" while it is still going: the last step
         // (starting OpenCode) has no bar of its own.
         final percent = (progress.overall * 100).floor().clamp(0, 99);
         final running = progress.state == SetupState.running;
-        headline = l10n.phoneSetupStartProgressHeadline(percent);
+        final inTermux = hero == _Hero.termuxProgress;
+        headline = inTermux
+            ? l10n.phoneSetupStartTermuxProgressHeadline(percent)
+            : l10n.phoneSetupStartProgressHeadline(percent);
         body = running
             ? l10n.phoneSetupStartRunningBody
             : l10n.phoneSetupStartStoppedBody;
         action = l10n.phoneSetupStartContinue;
-        onPressed = () => unawaited(_continue(progress));
+        onPressed = inTermux
+            ? () => unawaited(_continueTermux(progress))
+            : () => unawaited(_continue(progress));
         scene = SetupProgressView.sceneFor(l10n, progress);
         ambient = running;
         meter = KitProgress.known(

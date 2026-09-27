@@ -95,6 +95,17 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     }
   }
 
+  /// The engine of the host this page shows: its registry and checks say
+  /// what is installed there.
+  SetupEngine? _hostEngine() {
+    if (_host.kind != PhoneHostKind.termux) return _engine();
+    try {
+      return PhoneSetup.termux;
+    } on StateError {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -119,8 +130,10 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   Future<void> _load() async {
     await _host.refresh();
-    if (_host.kind != PhoneHostKind.inApp) return;
-    final engine = _engine();
+    // Installed tools are read on both hosts (Termux's checks run in its
+    // Ubuntu); nothing to read before setup put anything there.
+    if (!_host.installed) return;
+    final engine = _hostEngine();
     if (engine == null) return;
     try {
       final installed = await engine.installedOptional();
@@ -677,23 +690,26 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     );
   }
 
-  /// What is installed on this phone, folded: the parts setup put there.
+  /// What is installed on this phone, folded: the parts setup put there,
+  /// on either host. What every setup installs, then the optional tools the
+  /// host's checks find (Python, AI Team, voice typing and more).
   Widget _installed(BuildContext context, AppLocalizations l10n) {
     final names = <String>[];
-    if (_host.kind == PhoneHostKind.inApp) {
-      final engine = _engine();
-      final optional = _installedOptional ?? const <String>{};
-      for (final component
-          in engine == null
-              ? const <SetupComponent>[]
-              : installableComponents(engine.registry)) {
-        if (component.required || optional.contains(component.id)) {
-          names.add(component.shortTitle);
-        }
+    final engine = _hostEngine();
+    final optional = _installedOptional ?? const <String>{};
+    for (final component
+        in engine == null
+            ? const <SetupComponent>[]
+            : installableComponents(engine.registry)) {
+      if (component.required || optional.contains(component.id)) {
+        names.add(component.shortTitle);
       }
-      if (names.isEmpty) names.add(l10n.phoneSetupLinuxTitle);
-    } else {
-      names.addAll([l10n.phoneSetupLinuxTitle, _runtimeName(_host.runtime)]);
+    }
+    if (names.isEmpty) {
+      names.add(l10n.phoneSetupLinuxTitle);
+      if (_host.kind == PhoneHostKind.termux) {
+        names.add(_runtimeName(_host.runtime));
+      }
     }
     return KitExpandRow(
       key: const ValueKey('this-phone-installed'),

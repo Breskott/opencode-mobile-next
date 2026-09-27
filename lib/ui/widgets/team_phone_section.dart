@@ -1,8 +1,9 @@
 /// Settings › Plugins › AI Team › "On this phone" (TEAM-302, 02-ux §9):
 /// the phone-hosted supervisor's status, Start / Stop, the "Android stopped
 /// the team" line with Start again, the Keep-it-running tips (spike-phone
-/// §3g) and Delete from this phone. (The one-time re-offer card is gone:
-/// the AI Team is added from This phone, programme P1.3.)
+/// §3g) and Delete from this phone. A team that is not installed or not on
+/// for a project yet is set up through phone setup v2's Add tools › AI
+/// Team and its ready page ([openTeamOnThisPhone], programme P1.7).
 ///
 /// Reads and drives [TermuxTeamRuntime] only; the plugin's own controller
 /// is left to the sheet around this section.
@@ -20,7 +21,6 @@ import 'package:flutter/widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration_store.dart';
-import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
@@ -36,7 +36,6 @@ import '../kit/kit_status_mark.dart';
 import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
-import '../screens/this_phone_screen.dart' show openThisPhone;
 import 'team_phone_onboarding.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -118,8 +117,8 @@ class TeamPhoneSection extends StatefulWidget {
   final ServerProfile profile;
   final TermuxTeamRuntime? runtime;
 
-  /// Opens This phone (to set up or resume); defaults to This phone for
-  /// Termux, where the AI Team is added.
+  /// Sets the team up (installs it, turns it on for the project); defaults
+  /// to [openTeamOnThisPhone].
   final VoidCallback? onOpenSetup;
 
   /// Called after Remove finished, so the sheet can close.
@@ -309,10 +308,15 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
     }
   }
 
-  void _openSetup() {
+  Future<void> _openSetup() async {
     final open = widget.onOpenSetup;
     if (open != null) return open();
-    unawaited(openThisPhone(context, kind: PhoneHostKind.termux));
+    await openTeamOnThisPhone(
+      context,
+      widget.connection,
+      runtime: widget.runtime,
+    );
+    if (mounted) await _read();
   }
 
   @override
@@ -456,9 +460,9 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         : status != null
         ? KitAction(
             key: const ValueKey('team-phone-open-setup'),
-            label: l10n.teamUiPhoneOpenSetup,
+            label: l10n.teamIntroSetUpPhone,
             icon: AppIconography.tools,
-            onPressed: _openSetup,
+            onPressed: () => unawaited(_openSetup()),
           )
         : null;
     final actions = KitActionBlock(primary: primary);
