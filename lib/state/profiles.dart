@@ -825,41 +825,48 @@ class ProfileStore {
     } catch (_) {
       _cache = [];
     }
-    // Restore secrets.
-    for (final p in _cache) {
-      try {
-        if (p.usesAgentSocket) {
-          p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
-          KitRedact.registerKnownSecret(p.codexToken);
-          p.requiresCodexTokenReentry =
-              p.agentSocketSecretRequired && p.codexToken.isEmpty;
-          p.password = '';
-          p.requiresPasswordReentry = false;
-        } else {
-          p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
-          KitRedact.registerKnownSecret(p.password);
-          p.requiresPasswordReentry = false;
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = false;
-        }
-      } catch (_) {
-        // Keystore entries can become unreadable after a device restore or a
-        // lock-screen security change. Keep the non-secret profile usable so
-        // the user can re-enter its password instead of failing app startup.
-        if (p.usesAgentSocket) {
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = true;
-          p.password = '';
-          p.requiresPasswordReentry = false;
-        } else {
-          p.password = '';
-          p.requiresPasswordReentry = true;
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = false;
-        }
-      }
+    // Independent Keystore reads can overlap. Bound the fan-out so many
+    // saved servers do not flood the platform channel. Await every secret
+    // (and its redaction registration) before bootstrap may expose the shell.
+    const batchSize = 4;
+    for (var start = 0; start < _cache.length; start += batchSize) {
+      await Future.wait(_cache.skip(start).take(batchSize).map(_restoreSecret));
     }
     return _cache;
+  }
+
+  Future<void> _restoreSecret(ServerProfile p) async {
+    try {
+      if (p.usesAgentSocket) {
+        p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
+        KitRedact.registerKnownSecret(p.codexToken);
+        p.requiresCodexTokenReentry =
+            p.agentSocketSecretRequired && p.codexToken.isEmpty;
+        p.password = '';
+        p.requiresPasswordReentry = false;
+      } else {
+        p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
+        KitRedact.registerKnownSecret(p.password);
+        p.requiresPasswordReentry = false;
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = false;
+      }
+    } catch (_) {
+      // Keystore entries can become unreadable after a device restore or a
+      // lock-screen security change. Keep the non-secret profile usable so
+      // the user can re-enter its password instead of failing app startup.
+      if (p.usesAgentSocket) {
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = true;
+        p.password = '';
+        p.requiresPasswordReentry = false;
+      } else {
+        p.password = '';
+        p.requiresPasswordReentry = true;
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = false;
+      }
+    }
   }
 
   String _encode(List<ServerProfile> profiles) =>
