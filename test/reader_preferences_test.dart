@@ -323,10 +323,12 @@ void main() {
         rtl: true,
         scale: 2.5,
       );
-      expect(find.byKey(const Key('diff-view-horizontal')), findsNothing);
-      await tester.tap(find.byTooltip('Scroll lines'));
+      expect(find.byKey(const Key('diff-horizontal')), findsNothing);
+      // The diff's own Wrap toggle (KitDiffView's header) saves the reader
+      // preference through the DiffView wrapper.
+      await tester.tap(find.byTooltip('Wrap lines'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('diff-view-horizontal')), findsOneWidget);
+      expect(find.byKey(const Key('diff-horizontal')), findsOneWidget);
       final state = tester.state<ScrollableState>(_horizontal());
       expect(state.position.axisDirection, AxisDirection.right);
       expect(state.position.maxScrollExtent, greaterThan(0));
