@@ -25868,7 +25868,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamHomeSpentHint =>
-      'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.';
+      'The whole team since midnight where it runs, estimated. The server doesn’t report what each task cost.';
 
   @override
   String get teamHomeSpentPartial =>
@@ -26716,7 +26716,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamAgentsWaking => 'Waking…';
 
   @override
-  String get teamAgentsWakeCheckAgain => 'Check again';
+  String get teamAgentsWakeCheckAgain => 'Refresh';
 
   @override
   String get servicesStopConfirm => 'Stop service';
