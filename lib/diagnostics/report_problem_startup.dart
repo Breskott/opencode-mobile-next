@@ -46,6 +46,11 @@ class ReportProblemStartup {
   /// The open report, or null before [start] finished or after it failed.
   static ReportProblemStartup? get current => _current;
 
+  /// The app's in-memory diagnostics given to [start], for a page opened
+  /// without a connection (Report a problem); null before [start].
+  static AppDiagnosticsController? get diagnostics => _diagnostics;
+  static AppDiagnosticsController? _diagnostics;
+
   /// Completes with [current] once [start] has run; null when it never ran.
   static Future<ReportProblemStartup?> get ready =>
       _opening ?? Future<ReportProblemStartup?>.value();
@@ -57,7 +62,10 @@ class ReportProblemStartup {
     Directory? directory,
     int maxEntries = 128,
     int maxBytes = 262144,
-  }) => _opening ??= _open(diagnostics, directory, maxEntries, maxBytes);
+  }) {
+    _diagnostics ??= diagnostics;
+    return _opening ??= _open(diagnostics, directory, maxEntries, maxBytes);
+  }
 
   static Future<ReportProblemStartup?> _open(
     AppDiagnosticsController diagnostics,
@@ -127,6 +135,7 @@ class ReportProblemStartup {
     final opening = _opening;
     _opening = null;
     _current = null;
+    _diagnostics = null;
     await (await opening)?.close();
   }
 }

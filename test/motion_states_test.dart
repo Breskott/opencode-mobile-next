@@ -249,7 +249,7 @@ void main() {
     });
 
     testWidgets('could not load is the unplugged cable, with Try again and '
-        'Report a bug', (tester) async {
+        'Report a problem', (tester) async {
       final controller = await _connected(
         repository: _Finder(error: ApiException('Connection refused')),
       );

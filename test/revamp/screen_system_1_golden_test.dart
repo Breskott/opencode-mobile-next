@@ -17,6 +17,7 @@ import 'package:opencode_mobile/codex/gateway.dart';
 import 'package:opencode_mobile/diagnostics/perf_trace.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/kit/kit_notice.dart' show KitReport;
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
@@ -85,6 +86,30 @@ Future<void> _shot(
   } finally {
     await tester.pumpWidget(const SizedBox.shrink());
     debugDefaultTargetPlatformOverride = null;
+  }
+}
+
+/// Types [description] and opens report-problem-preview-sheet.
+Future<void> _review(WidgetTester tester, String description) async {
+  await tester.enterText(
+    find.descendant(
+      of: find.byKey(const ValueKey('report-problem-description')),
+      matching: find.byType(EditableText),
+    ),
+    description,
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(
+    find.byKey(const ValueKey('report-problem-review')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('report-problem-review')));
+  // The version resolves on a real future.
+  for (var i = 0; i < 3; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 60)),
+    );
+    await tester.pumpAndSettle();
   }
 }
 
@@ -165,13 +190,32 @@ void main() {
         light: light,
         home: AppDiagnosticsScreen(controller: controller),
         then: () async {
-          await tester.tap(
-            find.byKey(const ValueKey('app-diagnostics-actions')),
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('clear-app-diagnostics')),
           );
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const ValueKey('clear-app-diagnostics')));
           await tester.pumpAndSettle();
         },
+      );
+    });
+
+    testWidgets('report a problem preview sheet ($theme)', (tester) async {
+      final controller = await systemController(codexServerCapabilities);
+      addTearDown(controller.dispose);
+      recordSampleErrors(controller);
+      await _shot(
+        tester,
+        'system_report_problem_preview',
+        light: light,
+        home: AppDiagnosticsScreen(
+          controller: controller,
+          error: const KitReport(
+            title: "Couldn't load files",
+            errorType: 'FormatException',
+          ),
+        ),
+        then: () => _review(tester, 'The file list stays empty after Refresh'),
       );
     });
 
@@ -231,6 +275,20 @@ void main() {
       light: false,
       size: _wide,
       home: AppDiagnosticsScreen(controller: controller),
+    );
+  });
+
+  testWidgets('report a problem preview sheet wide (dark)', (tester) async {
+    final controller = await systemController(codexServerCapabilities);
+    addTearDown(controller.dispose);
+    recordSampleErrors(controller);
+    await _shot(
+      tester,
+      'system_report_problem_preview',
+      light: false,
+      size: _wide,
+      home: AppDiagnosticsScreen(controller: controller),
+      then: () => _review(tester, 'The file list stays empty after Refresh'),
     );
   });
 

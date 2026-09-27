@@ -226,7 +226,8 @@ Future<Future<void> Function()> mountSettingsScene(
   controller.appearance.value = light
       ? AppAppearance.light
       : AppAppearance.dark;
-  if (scene == SettingsScene.diagnostics) {
+  // The hub shows them as the badge on Report a problem (P8.2).
+  if (scene == SettingsScene.diagnostics || scene == SettingsScene.hub) {
     final base = DateTime(2026, 9, 24, 9, 41, 7);
     controller.diagnostics
       ..record(

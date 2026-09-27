@@ -12,6 +12,7 @@ import 'kit_motion.dart';
 import 'kit_row_parts.dart' show KitRowMenu;
 import 'kit_swipe_action.dart';
 import 'kit_tappable.dart';
+import 'kit_text.dart';
 import 'kit_tokens.dart';
 
 /// The one list row (design standard §6, visual language §5;
@@ -529,27 +530,49 @@ class _KitSwipePanel extends StatelessWidget {
 ///
 /// States: none — the row it sits in carries the states.
 class KitRowValue extends StatelessWidget {
-  const KitRowValue(this.value, {super.key, this.chevron = true});
+  const KitRowValue(this.value, {super.key, this.chevron = true})
+    : count = null;
+
+  /// A count badge instead of a value: the number in a small pill whose
+  /// digits take the danger colour ("3" errors kept), "99+" above 99.
+  /// [value] is what it means in words ("3 errors kept"): the badge's
+  /// semantics, so the number is never colour alone (STATE-9). A count
+  /// of 0 or less shows only the chevron.
+  const KitRowValue.count(
+    int this.count,
+    this.value, {
+    super.key,
+    this.chevron = true,
+  });
 
   final String value;
   final bool chevron;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
+    final count = this.count;
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.rowValue,
+          if (count == null)
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.rowValue,
+              ),
+            )
+          else if (count > 0)
+            Semantics(
+              label: value,
+              excludeSemantics: true,
+              child: _KitCountPill(count > 99 ? '99+' : '$count'),
             ),
-          ),
           if (chevron)
             Padding(
               padding: EdgeInsetsDirectional.only(
@@ -565,6 +588,44 @@ class KitRowValue extends StatelessWidget {
           else
             SizedBox(width: tokens.space4),
         ],
+      ),
+    );
+  }
+}
+
+/// [KitRowValue.count]'s pill: at least `KitTokens.badgeHeight` /
+/// `badgeMinWidth` and growing with its clamped text (A11Y-8,
+/// `KitTokens.badgeTextScaleMax`), `surface2` with the digits in `danger`.
+class _KitCountPill extends StatelessWidget {
+  const _KitCountPill(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final scaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: KitTokens.badgeTextScaleMax);
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: KitTokens.badgeMinWidth,
+        minHeight: KitTokens.badgeHeight,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: tokens.space1),
+      alignment: Alignment.center,
+      decoration: ShapeDecoration(
+        color: tokens.roles.surface2,
+        shape: tokens.shapeOf(KitShape.pill),
+      ),
+      child: Text(
+        text,
+        textScaler: scaler,
+        style: KitText.styleOf(context, KitTextRole.caption).copyWith(
+          color: tokens.roles.danger,
+          fontWeight: FontWeight.w600,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
   }

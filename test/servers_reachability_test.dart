@@ -108,7 +108,7 @@ void main() {
     await _finish(tester, controller);
   });
 
-  testWidgets('as the root page, the menu holds Report a bug and the Setup '
+  testWidgets('as the root page, the menu holds Report a problem and the Setup '
       'guide; the guide opens', (tester) async {
     final controller = await _controller();
     await tester.pumpWidget(_app(controller, const ServersScreen()));

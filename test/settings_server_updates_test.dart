@@ -146,7 +146,9 @@ Future<void> _openCategory(WidgetTester tester, String key) async {
 }
 
 void main() {
-  testWidgets('settings exposes process-local app diagnostics', (tester) async {
+  testWidgets('Settings has one Report a problem row with an error badge', (
+    tester,
+  ) async {
     final controller = await _controllerFor(
       'http://127.0.0.1:4096',
       repository: _EmptyPermissionRepository(),
@@ -162,19 +164,31 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        // Diagnostics is a row of Settings › Help (R4).
-        home: SettingsHelpScreen(controller: controller),
+        // Report a problem is the hub's own row (P8.2), with the count of
+        // errors kept as its badge.
+        home: SettingsScreen(controller: controller),
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('app-diagnostics-entry')),
+      find.byKey(const Key('library-report-bug')),
       320,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('1 handled error kept in memory'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('app-diagnostics-entry')));
+    final badge = find.descendant(
+      of: find.byKey(const Key('library-report-bug')),
+      matching: find.byType(KitRowValue),
+    );
+    expect(tester.widget<KitRowValue>(badge).count, 1);
+    expect(tester.widget<KitRowValue>(badge).value, '1 error kept');
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.byKey(const Key('library-report-bug')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('library-report-bug')));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDiagnosticsScreen), findsOneWidget);

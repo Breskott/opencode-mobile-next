@@ -211,7 +211,8 @@ class ProductEmptyState extends StatelessWidget {
 ///   [errorKind] overrides the classification.
 /// - A network error offers Try again and Switch server ([onSwitchServer],
 ///   by default the server list) and no Report: the fix comes first
-///   (STATE-3). Any other error offers Try again and "Report a bug".
+///   (STATE-3). Any other error offers Try again and "Report a problem",
+///   which opens Report a problem with this failure attached.
 /// - [details] is raw technical text: folded under Details, redacted, with
 ///   "Copy details".
 class ProductErrorState extends StatelessWidget {
@@ -287,7 +288,20 @@ class ProductErrorState extends StatelessWidget {
             key: const ValueKey('product-error-report-bug'),
             label: l10n.e7LibraryReportABug,
             icon: AppIconography.bug,
-            onPressed: () => unawaited(openBugReport(context)),
+            // The failure goes with the report: its title, the cause and
+            // the redacted details, never the raw error (P8.2).
+            onPressed: () => unawaited(
+              openBugReport(
+                context,
+                error: KitReport(
+                  title: title ?? l10n.productStatesErrorTitle,
+                  details: KitReportHook.redact(
+                    [message, ?details].join('\n\n'),
+                  ),
+                  errorType: error?.runtimeType.toString(),
+                ),
+              ),
+            ),
           ),
         if (details != null)
           KitAction.copy(

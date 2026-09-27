@@ -5,8 +5,9 @@
 // line under the top bar of a Work-like page, clear of its pinned primary.
 // system_desktop-release-notice_shown: a newer desktop release; the same line with
 // "Open release page".
-// system_bug-report_link-copied: no browser opened the bug form, so its link is
-// copied and a sheet says so.
+// (system_bug-report_link-copied is gone: slice-P8.2 sends every report
+// through Report a problem and openExternalLink, whose own alert covers a
+// browser that did not open.)
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_system_2_golden_test.dart
@@ -15,7 +16,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/feedback/bug_report.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
@@ -163,21 +163,6 @@ void main() {
             currentBuildNumberLoader: () async => 44,
             launcher: (_) async {},
             child: child,
-          ),
-        );
-      });
-
-      testWidgets('bug report link copied · $mode · $at', (tester) async {
-        await _golden(
-          tester,
-          'system_bug-report_link-copied',
-          light: light,
-          size: size,
-          act: (context) => openBugReport(
-            context,
-            urlBuilder: () async =>
-                Uri.parse('https://github.com/fake/issues/new'),
-            launcher: (_) async => false,
           ),
         );
       });

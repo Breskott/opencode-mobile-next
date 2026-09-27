@@ -25,6 +25,7 @@ void main() {
     builds: {
       'default': () => const KitRowValue('Claude Sonnet 4'),
       'no chevron': () => const KitRowValue('Ask first', chevron: false),
+      'count': () => const KitRowValue.count(3, '3 errors kept'),
     },
   );
 
@@ -58,5 +59,23 @@ void main() {
     final text = tester.widget<Text>(find.text(long));
     expect(text.maxLines, 1);
     expect(text.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('KitRowValue.count is a number with its words, and nothing '
+      'at zero', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_host(const KitRowValue.count(3, '3 errors kept')));
+    expect(find.text('3'), findsOneWidget);
+    expect(find.bySemanticsLabel('3 errors kept'), findsOneWidget);
+    expect(find.byIcon(AppIconography.chevronRight), findsOneWidget);
+
+    await tester.pumpWidget(_host(const KitRowValue.count(120, 'many')));
+    expect(find.text('99+'), findsOneWidget);
+
+    await tester.pumpWidget(_host(const KitRowValue.count(0, 'none kept')));
+    expect(find.text('0'), findsNothing);
+    expect(find.bySemanticsLabel('none kept'), findsNothing);
+    expect(find.byIcon(AppIconography.chevronRight), findsOneWidget);
+    semantics.dispose();
   });
 }

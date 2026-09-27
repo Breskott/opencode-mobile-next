@@ -8,6 +8,7 @@ import '../../api/provider_presentation.dart';
 import '../../background/live_background.dart';
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart' show SetupProgress;
+import '../../diagnostics/report_problem_startup.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
@@ -25,6 +26,7 @@ import '../widgets/appearance_picker.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
+import 'app_diagnostics_screen.dart' show reportProblemErrorCount;
 import 'host_management_screen.dart';
 import 'this_phone_screen.dart' show openThisPhone;
 import '../widgets/team_discover.dart';
@@ -44,7 +46,7 @@ AppLocalizations _settingsCopy(BuildContext context) =>
 /// The three groups of the Settings hub, as the approved canvas draws them
 /// (docs/design/visual-language-2026-09-26/Settings.png): what belongs to
 /// the connected server, under its name; what belongs to this phone; and a
-/// last, unlabelled panel with Report a bug, Help and About.
+/// last, unlabelled panel with Report a problem, Help and About.
 enum SettingsGroup {
   /// Model, tools, the AI Team, what agents may do and the server itself,
   /// labelled with the server's name.
@@ -53,7 +55,7 @@ enum SettingsGroup {
   /// Notifications, voice, appearance, usage and privacy of this app.
   thisPhone('this-phone'),
 
-  /// Report a bug, Help and About; no label.
+  /// Report a problem, Help and About; no label.
   help('help');
 
   const SettingsGroup(this.slug);
@@ -348,9 +350,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         row('settings-category-privacy'),
       ],
       SettingsGroup.help: [
-        // The bug form lives in the failure states themselves; this row is
-        // the deliberate path for everything noticed outside a failure.
-        row('library-report-bug'),
+        // Report a problem: every failure state offers it too; this row is
+        // the deliberate path, with the count of errors kept (P8.2).
+        row(
+          'library-report-bug',
+          builder: (context) => _ReportProblemRow(
+            entry: entries['library-report-bug']!,
+            controller: controller,
+            onTap: () => _openEntry(entries['library-report-bug']!, scope),
+          ),
+        ),
         row('settings-help'),
         row('settings-about-notices'),
       ],
@@ -375,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Groups without a row are dropped before they get here.
     final column = KitRowGroup(
       key: ValueKey('settings-group-${entry.group.group.slug}'),
-      // The last panel needs no name: Report a bug, Help, About.
+      // The last panel needs no name: Report a problem, Help, About.
       label: entry.group.group == SettingsGroup.help ? null : entry.group.title,
       children: [for (final row in entry.rows) row.build(context)],
     );
@@ -670,6 +679,10 @@ class _CategoryRow extends StatelessWidget {
   final bool chevron;
   final bool enabled;
 
+  /// A count badge before the chevron, with [badgeLabel] as its words.
+  final int? badge;
+  final String? badgeLabel;
+
   const _CategoryRow({
     required this.rowKey,
     required this.icon,
@@ -679,6 +692,8 @@ class _CategoryRow extends StatelessWidget {
     this.value,
     this.chevron = true,
     this.enabled = true,
+    this.badge,
+    this.badgeLabel,
   });
 
   @override
@@ -696,13 +711,52 @@ class _CategoryRow extends StatelessWidget {
       titleMaxLines: large ? 2 : 1,
       supporting: subtitle == null ? null : TextSpan(text: subtitle),
       supportingMaxLines: 2,
-      trailing: hasValue && !large
+      trailing: (badge ?? 0) > 0
+          ? KitRowValue.count(badge!, badgeLabel ?? '$badge', chevron: chevron)
+          : hasValue && !large
           ? KitRowValue(value, chevron: chevron)
           : chevron
           ? const KitChevron()
           : null,
       enabled: enabled,
       onTap: onTap,
+    );
+  }
+}
+
+/// Settings' Report a problem row (P8.2): the one way in besides the
+/// failure states, with a badge counting the errors kept on this phone.
+class _ReportProblemRow extends StatelessWidget {
+  const _ReportProblemRow({
+    required this.entry,
+    required this.controller,
+    required this.onTap,
+  });
+
+  final SearchEntry entry;
+  final ConnectionController controller;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = _settingsCopy(context);
+    final store = ReportProblemStartup.current?.report;
+    return ListenableBuilder(
+      listenable: Listenable.merge([controller.diagnostics, ?store]),
+      builder: (context, _) {
+        final count = reportProblemErrorCount(
+          store: store,
+          diagnostics: controller.diagnostics,
+        );
+        return _CategoryRow(
+          rowKey: entry.id,
+          icon: entry.icon,
+          title: entry.title,
+          badge: count,
+          badgeLabel: copy.reportProblemErrorBadge(count),
+          onTap: onTap,
+        );
+      },
     );
   }
 }

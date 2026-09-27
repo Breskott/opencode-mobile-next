@@ -2134,10 +2134,6 @@
   "@launchUiActivityNoServer": {
     "description": "Snackbar shown on the servers screen when the Quick Settings tile is tapped with no saved server selected"
   },
-  "queuedSending": "Sending…",
-  "@queuedSending": {
-    "description": "Queued draft bubble label while the offline flush is dispatching it"
-  },
   "queuedDeliveryUnconfirmed": "Delivery unconfirmed — review before resending",
   "@queuedDeliveryUnconfirmed": {
     "description": "Queued draft bubble label for a send that left the device without a confirmed outcome; never resent automatically"
@@ -4677,10 +4673,6 @@
   "@e7SettingsUi88": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi89": "No captured errors",
-  "@e7SettingsUi89": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi91": "Connect a computer or run OpenCode on this phone",
   "@e7SettingsUi91": {
     "description": "Settings and appearance user interface."
@@ -4837,15 +4829,6 @@
       }
     }
   },
-  "e7SettingsDiagnosticCount": "{count, plural, =1{1 handled error kept in memory} other{{count} handled errors kept in memory}}",
-  "@e7SettingsDiagnosticCount": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "e7SettingsRestartBody": "OpenCode {version} is installed, but this server process is still running {current}. Restart that process on the server host; mobile will reconnect and confirm the running version.",
   "@e7SettingsRestartBody": {
     "description": "Settings and appearance user interface.",
@@ -4948,10 +4931,6 @@
       }
     }
   },
-  "e7SettingsDetailUi0": "Diagnostics copied",
-  "@e7SettingsDetailUi0": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsDetailUi2": "Diagnostics sent to OpenCode",
   "@e7SettingsDetailUi2": {
     "description": "Settings and appearance user interface."
@@ -4968,24 +4947,12 @@
   "@e7SettingsDetailUi5": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsDetailUi7": "Private until you send it",
-  "@e7SettingsDetailUi7": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDetailUi8": "Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.",
-  "@e7SettingsDetailUi8": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsDetailUi10": "Send",
   "@e7SettingsDetailUi10": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsDetailUi12": "This server doesn't accept client logs",
   "@e7SettingsDetailUi12": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDetailUi13": "No captured app errors",
-  "@e7SettingsDetailUi13": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsDetailUi14": "Handled Flutter, platform, and startup errors will appear here for this app run.",
@@ -5047,24 +5014,6 @@
   "e7SettingsNonAffiliation": "OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
   "@e7SettingsNonAffiliation": {
     "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDiagnosticSendError": "Could not send diagnostics: {error}",
-  "@e7SettingsDiagnosticSendError": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "e7SettingsDiagnosticTotal": "{count, plural, =1{1 handled error} other{{count} handled errors}}",
-  "@e7SettingsDiagnosticTotal": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "e7SettingsDiagnosticOccurrences": "{count} occurrences",
   "@e7SettingsDiagnosticOccurrences": {
@@ -8785,7 +8734,7 @@
       }
     }
   },
-  "e7LibraryReportABug": "Report a bug",
+  "e7LibraryReportABug": "Report a problem",
   "@e7LibraryReportABug": {
     "description": "Library and project tools UI: Report a bug"
   },
@@ -17169,7 +17118,7 @@
   "@settingsHubSearchGuideAliases": {
     "description": "Search aliases for the Setup guide row; preserve English terms."
   },
-  "settingsHubSearchBugAliases": "bug feedback issue support report",
+  "settingsHubSearchBugAliases": "bug feedback issue support report problem crash diagnostics errors log github",
   "@settingsHubSearchBugAliases": {
     "description": "Search aliases for the Report a bug row; preserve English terms."
   },
@@ -27638,36 +27587,6 @@
   "@perfTraceClearTimings": {
     "description": "screen-system-1: App diagnostics › Performance: clears the measured step timings (not the errors)."
   },
-  "appDiagnosticsSendTo": "Send to {server}'s log",
-  "@appDiagnosticsSendTo": {
-    "description": "screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
-  "appDiagnosticsSendWhere": "Adds these errors to the log of {server}. The app's makers don't receive them.",
-  "@appDiagnosticsSendWhere": {
-    "description": "screen-system-1: App diagnostics: says where Send goes, under the Send button.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
-  "appDiagnosticsSentTo": "Sent to {server}'s log",
-  "@appDiagnosticsSentTo": {
-    "description": "screen-system-1: App diagnostics: notice after a successful send.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
   "appDiagnosticsCopyErrors": "Copy errors",
   "@appDiagnosticsCopyErrors": {
     "description": "screen-system-1: App diagnostics secondary: copies the redacted error report."
@@ -27685,7 +27604,7 @@
       }
     }
   },
-  "appDiagnosticsClearBody": "{count, plural, =1{The error recorded since the app opened is removed from this phone. This can't be undone.} other{The {count} errors recorded since the app opened are removed from this phone. This can't be undone.}}",
+  "appDiagnosticsClearBody": "{count, plural, =1{The error kept on this phone is removed, also from the saved report. This can't be undone.} other{The {count} errors kept on this phone are removed, also from the saved report. This can't be undone.}}",
   "@appDiagnosticsClearBody": {
     "description": "screen-system-1: Confirmation body before clearing the captured errors.",
     "placeholders": {
@@ -27702,10 +27621,6 @@
         "type": "int"
       }
     }
-  },
-  "appDiagnosticsEmptyBody": "Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.",
-  "@appDiagnosticsEmptyBody": {
-    "description": "screen-system-1: App diagnostics empty state body."
   },
   "capabilityStateHere": "Works here",
   "@capabilityStateHere": {
@@ -27982,18 +27897,6 @@
   "desktopReleaseOpenPage": "Open release page",
   "@desktopReleaseOpenPage": {
     "description": "Desktop release status line action: opens the release page in the browser after the external-link confirmation."
-  },
-  "bugReportBrowserDidNotOpen": "Your browser didn't open, so the link to the bug form is copied. Paste it into a browser to file the report.",
-  "@bugReportBrowserDidNotOpen": {
-    "description": "Report a bug sheet, shown when no browser opened the bug form: the link was copied instead."
-  },
-  "bugReportCopyLinkAgain": "Copy bug form link",
-  "@bugReportCopyLinkAgain": {
-    "description": "Report a bug sheet action: copies the bug form link again."
-  },
-  "bugReportLinkCopied": "Bug form link copied",
-  "@bugReportLinkCopied": {
-    "description": "Screen-reader announcement after the bug form link was copied."
   },
   "runningWorkTitle": "Work in this conversation",
   "@runningWorkTitle": {
@@ -30034,24 +29937,6 @@
   "@perfTraceActions": {
     "description": "App diagnostics > Performance: name of the menu on the timings list header"
   },
-  "appDiagnosticsCopyCount": "{count, plural, =1{Copy 1 error} other{Copy {count} errors}}",
-  "@appDiagnosticsCopyCount": {
-    "description": "App diagnostics: copies the listed handled errors as text",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "appDiagnosticsActions": "{count, plural, =1{Actions for 1 error} other{Actions for {count} errors}}",
-  "@appDiagnosticsActions": {
-    "description": "App diagnostics: name of the menu on the handled errors list header",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "voiceSetupNotDownloaded": "Not downloaded · {size}",
   "@voiceSetupNotDownloaded": {
     "description": "Voice model setup: a speech model pack that is not on the phone yet, with its download size, e.g. 'Not downloaded · 153 MB'",
@@ -30687,5 +30572,113 @@
   "chatDraftCopy": "Copy draft",
   "@chatDraftCopy": {
     "description": "Chat, draft not saved: copies the unsaved draft text"
+  },
+  "reportProblemIntro": "Say what went wrong. You see the whole report before anything leaves this phone.",
+  "@reportProblemIntro": {
+    "description": "slice-P8.2 Report a problem: the line under the page title."
+  },
+  "reportProblemDescribeLabel": "What happened?",
+  "@reportProblemDescribeLabel": {
+    "description": "slice-P8.2 Report a problem: the description field label."
+  },
+  "reportProblemDescribeHint": "What you did, what you expected, what you got instead",
+  "@reportProblemDescribeHint": {
+    "description": "slice-P8.2 Report a problem: the description field hint."
+  },
+  "reportProblemDescribeFirst": "Say what happened first",
+  "@reportProblemDescribeFirst": {
+    "description": "slice-P8.2 Report a problem: the description field error when Review is tapped with nothing to report."
+  },
+  "reportProblemAttached": "Attached: {title}",
+  "@reportProblemAttached": {
+    "description": "slice-P8.2 Report a problem: the error the page was opened from.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reportProblemIncludeDiagnostics": "Include recent diagnostics",
+  "@reportProblemIncludeDiagnostics": {
+    "description": "slice-P8.2 Report a problem: the switch that adds the recent events."
+  },
+  "reportProblemIncludeDiagnosticsBody": "{count, plural, =1{1 event from this phone} other{{count} events from this phone}}, with keys, passwords and server addresses removed",
+  "@reportProblemIncludeDiagnosticsBody": {
+    "description": "slice-P8.2 Report a problem: what the switch adds.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportProblemReview": "Review report",
+  "@reportProblemReview": {
+    "description": "slice-P8.2 Report a problem: the primary button and the preview sheet title."
+  },
+  "reportProblemReviewHint": "Then open it on GitHub, copy it or share it. Screenshots can be added on the GitHub form.",
+  "@reportProblemReviewHint": {
+    "description": "slice-P8.2 Report a problem: what comes after Review."
+  },
+  "reportProblemErrorsLabel": "{count, plural, =1{1 recent error} other{{count} recent errors}}",
+  "@reportProblemErrorsLabel": {
+    "description": "slice-P8.2 Report a problem: the recent errors list label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportProblemClearFailed": "Couldn't clear the saved report. Try again.",
+  "@reportProblemClearFailed": {
+    "description": "slice-P8.2 Report a problem: the saved report could not be deleted."
+  },
+  "reportProblemPreviewSubtitle": "This is exactly what is sent",
+  "@reportProblemPreviewSubtitle": {
+    "description": "slice-P8.2 Report a problem: the preview sheet subtitle."
+  },
+  "reportProblemPublicNotice": "GitHub issues are public. Nothing is filed until you submit the form there.",
+  "@reportProblemPublicNotice": {
+    "description": "slice-P8.2 Report a problem: the preview sheet notice above the report."
+  },
+  "reportProblemOpenGitHub": "Open GitHub form",
+  "@reportProblemOpenGitHub": {
+    "description": "slice-P8.2 Report a problem: the preview sheet primary: opens the prefilled issue form."
+  },
+  "reportProblemLinkCopiesDiagnostics": "The diagnostics are too long for the link. Opening the form copies them, so paste them into its Diagnostics field.",
+  "@reportProblemLinkCopiesDiagnostics": {
+    "description": "slice-P8.2 Report a problem: the prefill link cannot carry the diagnostics."
+  },
+  "reportProblemLinkCopiesWhole": "The report is too long for the link. Opening the form copies it, so paste it into the form.",
+  "@reportProblemLinkCopiesWhole": {
+    "description": "slice-P8.2 Report a problem: the prefill link cannot carry the report."
+  },
+  "reportProblemCopy": "Copy report",
+  "@reportProblemCopy": {
+    "description": "slice-P8.2 Report a problem: the preview sheet Copy action."
+  },
+  "reportProblemCopied": "Report copied",
+  "@reportProblemCopied": {
+    "description": "slice-P8.2 Report a problem: the announcement after Copy report."
+  },
+  "reportProblemDiagnosticsCopied": "Diagnostics copied: paste them into the form",
+  "@reportProblemDiagnosticsCopied": {
+    "description": "slice-P8.2 Report a problem: the announcement when opening the form copied the diagnostics."
+  },
+  "reportProblemShare": "Share report",
+  "@reportProblemShare": {
+    "description": "slice-P8.2 Report a problem: the preview sheet Share action."
+  },
+  "reportProblemShareFallback": "Sharing didn't open, so the report is copied",
+  "@reportProblemShareFallback": {
+    "description": "slice-P8.2 Report a problem: the announcement when the share sheet failed."
+  },
+  "reportProblemErrorBadge": "{count, plural, =1{1 error kept} other{{count} errors kept}}",
+  "@reportProblemErrorBadge": {
+    "description": "slice-P8.2 Report a problem: the Settings row badge semantics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

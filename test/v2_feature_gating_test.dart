@@ -589,34 +589,27 @@ void main() {
       );
     });
 
-    testWidgets('v2 has no send button; Copy is the one primary', (
+    testWidgets('Report a problem is the same page on v1 and v2', (
       tester,
     ) async {
-      final v1 = await _controller(v2: false);
-      addTearDown(v1.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v1)));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsNothing,
-      );
-
-      final v2 = await _controller(v2: true);
-      addTearDown(v2.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v2)));
-      await tester.pumpAndSettle();
-
-      // No dead button and no line explaining it: Copy takes the slot.
-      expect(find.byKey(const ValueKey('send-app-diagnostics')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsNothing,
-      );
-      expect(find.text("This server doesn't accept client logs"), findsNothing);
-      expect(
-        find.byKey(const ValueKey('copy-app-diagnostics')),
-        findsOneWidget,
-      );
+      // P8.2 merged the server-log send into Report a problem, so no
+      // capability decides what the page offers.
+      for (final isV2 in [false, true]) {
+        final controller = await _controller(v2: isV2);
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          _app(AppDiagnosticsScreen(controller: controller)),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('send-app-diagnostics')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('report-problem-review')),
+          findsOneWidget,
+        );
+      }
     });
   });
 

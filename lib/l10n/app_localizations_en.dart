@@ -3850,9 +3850,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a server to see what needs your attention.';
 
   @override
-  String get queuedSending => 'Sending…';
-
-  @override
   String get queuedDeliveryUnconfirmed =>
       'Delivery unconfirmed — review before resending';
 
@@ -6547,9 +6544,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi88 => 'App diagnostics';
 
   @override
-  String get e7SettingsUi89 => 'No captured errors';
-
-  @override
   String get e7SettingsUi91 =>
       'Connect a computer or run OpenCode on this phone';
 
@@ -6672,17 +6666,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String e7SettingsDiagnosticCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count handled errors kept in memory',
-      one: '1 handled error kept in memory',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String e7SettingsRestartBody(String version, String current) {
     return 'OpenCode $version is installed, but this server process is still running $current. Restart that process on the server host; mobile will reconnect and confirm the running version.';
   }
@@ -6733,9 +6716,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SettingsDetailUi0 => 'Diagnostics copied';
-
-  @override
   String get e7SettingsDetailUi2 => 'Diagnostics sent to OpenCode';
 
   @override
@@ -6749,20 +6729,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsDetailUi5 => 'Clear';
 
   @override
-  String get e7SettingsDetailUi7 => 'Private until you send it';
-
-  @override
-  String get e7SettingsDetailUi8 =>
-      'Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.';
-
-  @override
   String get e7SettingsDetailUi10 => 'Send';
 
   @override
   String get e7SettingsDetailUi12 => 'This server doesn\'t accept client logs';
-
-  @override
-  String get e7SettingsDetailUi13 => 'No captured app errors';
 
   @override
   String get e7SettingsDetailUi14 =>
@@ -6813,22 +6783,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7SettingsNonAffiliation =>
       'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
-
-  @override
-  String e7SettingsDiagnosticSendError(String error) {
-    return 'Could not send diagnostics: $error';
-  }
-
-  @override
-  String e7SettingsDiagnosticTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count handled errors',
-      one: '1 handled error',
-    );
-    return '$_temp0';
-  }
 
   @override
   String e7SettingsDiagnosticOccurrences(int count) {
@@ -9673,7 +9627,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryReportABug => 'Report a bug';
+  String get e7LibraryReportABug => 'Report a problem';
 
   @override
   String get e7LibraryKeyboardShortcuts => 'Keyboard shortcuts';
@@ -15852,7 +15806,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'help guide connect tutorial start';
 
   @override
-  String get settingsHubSearchBugAliases => 'bug feedback issue support report';
+  String get settingsHubSearchBugAliases =>
+      'bug feedback issue support report problem crash diagnostics errors log github';
 
   @override
   String get settingsHubSearchDiagnosticsAliases =>
@@ -23924,21 +23879,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perfTraceClearTimings => 'Clear timings';
 
   @override
-  String appDiagnosticsSendTo(String server) {
-    return 'Send to $server\'s log';
-  }
-
-  @override
-  String appDiagnosticsSendWhere(String server) {
-    return 'Adds these errors to the log of $server. The app\'s makers don\'t receive them.';
-  }
-
-  @override
-  String appDiagnosticsSentTo(String server) {
-    return 'Sent to $server\'s log';
-  }
-
-  @override
   String get appDiagnosticsCopyErrors => 'Copy errors';
 
   @override
@@ -23961,9 +23901,9 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'The $count errors recorded since the app opened are removed from this phone. This can\'t be undone.',
+          'The $count errors kept on this phone are removed, also from the saved report. This can\'t be undone.',
       one:
-          'The error recorded since the app opened is removed from this phone. This can\'t be undone.',
+          'The error kept on this phone is removed, also from the saved report. This can\'t be undone.',
     );
     return '$_temp0';
   }
@@ -23978,10 +23918,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get appDiagnosticsEmptyBody =>
-      'Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.';
 
   @override
   String get capabilityStateHere => 'Works here';
@@ -24180,16 +24116,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get desktopReleaseOpenPage => 'Open release page';
-
-  @override
-  String get bugReportBrowserDidNotOpen =>
-      'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.';
-
-  @override
-  String get bugReportCopyLinkAgain => 'Copy bug form link';
-
-  @override
-  String get bugReportLinkCopied => 'Bug form link copied';
 
   @override
   String get runningWorkTitle => 'Work in this conversation';
@@ -25641,28 +25567,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perfTraceActions => 'Timing report actions';
 
   @override
-  String appDiagnosticsCopyCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Copy $count errors',
-      one: 'Copy 1 error',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String appDiagnosticsActions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Actions for $count errors',
-      one: 'Actions for 1 error',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String voiceSetupNotDownloaded(String size) {
     return 'Not downloaded · $size';
   }
@@ -26117,4 +26021,105 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatDraftCopy => 'Copy draft';
+
+  @override
+  String get reportProblemIntro =>
+      'Say what went wrong. You see the whole report before anything leaves this phone.';
+
+  @override
+  String get reportProblemDescribeLabel => 'What happened?';
+
+  @override
+  String get reportProblemDescribeHint =>
+      'What you did, what you expected, what you got instead';
+
+  @override
+  String get reportProblemDescribeFirst => 'Say what happened first';
+
+  @override
+  String reportProblemAttached(String title) {
+    return 'Attached: $title';
+  }
+
+  @override
+  String get reportProblemIncludeDiagnostics => 'Include recent diagnostics';
+
+  @override
+  String reportProblemIncludeDiagnosticsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events from this phone',
+      one: '1 event from this phone',
+    );
+    return '$_temp0, with keys, passwords and server addresses removed';
+  }
+
+  @override
+  String get reportProblemReview => 'Review report';
+
+  @override
+  String get reportProblemReviewHint =>
+      'Then open it on GitHub, copy it or share it. Screenshots can be added on the GitHub form.';
+
+  @override
+  String reportProblemErrorsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recent errors',
+      one: '1 recent error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportProblemClearFailed =>
+      'Couldn\'t clear the saved report. Try again.';
+
+  @override
+  String get reportProblemPreviewSubtitle => 'This is exactly what is sent';
+
+  @override
+  String get reportProblemPublicNotice =>
+      'GitHub issues are public. Nothing is filed until you submit the form there.';
+
+  @override
+  String get reportProblemOpenGitHub => 'Open GitHub form';
+
+  @override
+  String get reportProblemLinkCopiesDiagnostics =>
+      'The diagnostics are too long for the link. Opening the form copies them, so paste them into its Diagnostics field.';
+
+  @override
+  String get reportProblemLinkCopiesWhole =>
+      'The report is too long for the link. Opening the form copies it, so paste it into the form.';
+
+  @override
+  String get reportProblemCopy => 'Copy report';
+
+  @override
+  String get reportProblemCopied => 'Report copied';
+
+  @override
+  String get reportProblemDiagnosticsCopied =>
+      'Diagnostics copied: paste them into the form';
+
+  @override
+  String get reportProblemShare => 'Share report';
+
+  @override
+  String get reportProblemShareFallback =>
+      'Sharing didn\'t open, so the report is copied';
+
+  @override
+  String reportProblemErrorBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count errors kept',
+      one: '1 error kept',
+    );
+    return '$_temp0';
+  }
 }

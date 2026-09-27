@@ -168,6 +168,14 @@ class KitRow extends StatelessWidget {
 /// chevron.
 class KitRowValue extends StatelessWidget {
   const KitRowValue(this.value, {super.key, this.chevron = true});
+
+  /// slice-P8.2: a count badge instead of the value (Settings' Report a
+  /// problem, "errors kept"). The number sits in a small surface2 pill with
+  /// danger digits ("99+" above 99), badgeHeight/badgeMinWidth, text scale
+  /// clamped to badgeTextScaleMax; [value] is its semantics in words, so the
+  /// number is never colour alone (STATE-9). A count of 0 or less shows only
+  /// the chevron.
+  const KitRowValue.count(int count, String value, {Key? key, bool chevron = true});
 }
 
 /// Rows grouped on one surface1 panel (VL branch), gaining the destructive
