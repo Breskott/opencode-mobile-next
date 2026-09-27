@@ -510,7 +510,8 @@ void main() {
           find.byKey(const Key('library-search')),
           'quiet hours',
         );
-        await tester.pump();
+        // The field reports once typing settles.
+        await tester.pump(KitMotion.typingSettle);
         // The door and the thing itself.
         expect(_key('settings-category-background'), findsOneWidget);
         final result = _key('search-result-inside-notifications-quiet');
@@ -561,7 +562,8 @@ void main() {
           find.byKey(const Key('library-search')),
           entry.key,
         );
-        await tester.pump();
+        // The field reports once typing settles.
+        await tester.pump(KitMotion.typingSettle);
         expect(_key(entry.value), findsOneWidget, reason: entry.key);
       }
       await tester.tap(_key('search-result-inside-appearance-theme'));
@@ -577,11 +579,11 @@ void main() {
       await tester.pumpAndSettle();
       final search = find.byKey(const Key('library-search'));
       await tester.enterText(search, 'budget');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-inside-usage-budgets'), findsOneWidget);
       expect(_key('settings-category-usage'), findsOneWidget);
       await tester.enterText(search, 'always allowed');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('saved-permissions-entry'), findsOneWidget);
     });
 
@@ -594,7 +596,7 @@ void main() {
       final search = find.byKey(const Key('library-search'));
 
       await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-results-places'), findsOneWidget);
       await tester.tap(_key('search-result-tab-inbox'));
       await tester.pump();
@@ -603,13 +605,13 @@ void main() {
 
       seen.clear();
       await tester.enterText(search, _en.readerUiFiles);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       await tester.tap(_key('search-result-project-files'));
       await tester.pump();
       expect((seen.single as OpenProjectToolIntent).tool, ProjectTool.files);
       // The hub never offers a way to itself.
       await tester.enterText(search, _en.librarySettingsTitle);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-tab-settings'), findsNothing);
     });
 
@@ -622,10 +624,10 @@ void main() {
       await tester.pumpAndSettle();
       final search = find.byKey(const Key('library-search'));
       await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-tab-inbox'), findsNothing);
       await tester.enterText(search, 'terminal');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-project-terminal'), findsOneWidget);
     });
 
@@ -639,7 +641,7 @@ void main() {
       final search = find.byKey(const Key('library-search'));
       for (final query in ['terminal', 'skills', 'worktrees', 'files']) {
         await tester.enterText(search, query);
-        await tester.pump();
+        await tester.pump(KitMotion.typingSettle);
         expect(_key('search-results-places'), findsNothing, reason: query);
         expect(
           find.byWidgetPredicate(

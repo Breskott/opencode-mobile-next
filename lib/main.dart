@@ -1160,7 +1160,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       );
     }
 
-    final scope = SearchScope(controller: _controller, hasShell: true);
+    final scope = SearchScope(
+      controller: _controller,
+      hasShell: true,
+      thermalGuard: ref.read(thermalGuardSlotProvider).value != null,
+    );
     return [
       DesktopCommand(
         label: l10n.e7LocaleUiNewSession,

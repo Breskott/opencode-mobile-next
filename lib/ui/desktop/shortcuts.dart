@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'desktop_interaction.dart';
+import '../../domain/settings_search.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import '../kit/kit_row.dart';
@@ -485,20 +486,29 @@ Future<void> showCommandPalette(
   );
 }
 
-/// Which [commands] a query finds: label, hint and keywords, any case.
+/// Which [commands] a query finds, by the same matcher as Settings' search
+/// (lib/domain/settings_search.dart): label, hint and keywords, every word
+/// by word, prefix or one typo, in any case; a whole label first. An empty
+/// query lists every command in order.
 @visibleForTesting
 List<DesktopCommand> matchCommands(
   List<DesktopCommand> commands,
   String query,
 ) {
-  final needle = query.trim().toLowerCase();
-  if (needle.isEmpty) return commands;
+  if (query.trim().isEmpty) return commands;
+  final index = SettingsSearchIndex([
+    for (final (i, command) in commands.indexed)
+      SettingsSearchDocument(
+        id: '$i',
+        title: command.label,
+        parent: command.hint ?? '',
+        aliases: command.keywords ?? '',
+        target: const SettingsSearchTarget(pageId: 'command'),
+      ),
+  ]);
   return [
-    for (final command in commands)
-      if (command.label.toLowerCase().contains(needle) ||
-          (command.hint?.toLowerCase().contains(needle) ?? false) ||
-          (command.keywords?.toLowerCase().contains(needle) ?? false))
-        command,
+    for (final document in index.search(query))
+      commands[int.parse(document.id)],
   ];
 }
 
