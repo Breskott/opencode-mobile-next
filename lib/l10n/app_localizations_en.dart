@@ -22461,16 +22461,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverSettingsRunningVersionLabel => 'Running version';
 
   @override
-  String serverSettingsDisconnectTitle(String serverName) {
-    return 'Disconnect from $serverName';
-  }
-
-  @override
-  String serverSettingsDisconnectDetail(String serverName) {
-    return 'Stops live updates from $serverName. Conversations stay on $serverName; unsent messages stay on this phone until you reconnect.';
-  }
-
-  @override
   String get tailscaleSetupAppTitle => 'Tailscale app on this phone';
 
   @override
@@ -22615,4 +22605,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceConversations => 'Conversations';
+
+  @override
+  String serverSettingsDisconnectTitle(String serverName) {
+    return 'Disconnect from $serverName';
+  }
+
+  @override
+  String serverSettingsDisconnectDetail(String serverName) {
+    return 'Stops live updates from $serverName. Conversations stay on $serverName; unsent messages stay on this phone until you reconnect.';
+  }
 }

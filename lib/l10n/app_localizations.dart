@@ -35613,18 +35613,6 @@ abstract class AppLocalizations {
   /// **'Running version'**
   String get serverSettingsRunningVersionLabel;
 
-  /// Server settings: the destructive last row that disconnects the app from this server; opens a confirmation first
-  ///
-  /// In en, this message translates to:
-  /// **'Disconnect from {serverName}'**
-  String serverSettingsDisconnectTitle(String serverName);
-
-  /// Server settings: supporting line under the Disconnect row, saying what disconnecting stops and what stays where
-  ///
-  /// In en, this message translates to:
-  /// **'Stops live updates from {serverName}. Conversations stay on {serverName}; unsent messages stay on this phone until you reconnect.'**
-  String serverSettingsDisconnectDetail(String serverName);
-
   /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
   ///
   /// In en, this message translates to:
@@ -35876,6 +35864,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversations'**
   String get workspaceConversations;
+
+  /// Server settings: the destructive last row that disconnects the app from this server; opens a confirmation first
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from {serverName}'**
+  String serverSettingsDisconnectTitle(String serverName);
+
+  /// Server settings: supporting line under the Disconnect row, saying what disconnecting stops and what stays where
+  ///
+  /// In en, this message translates to:
+  /// **'Stops live updates from {serverName}. Conversations stay on {serverName}; unsent messages stay on this phone until you reconnect.'**
+  String serverSettingsDisconnectDetail(String serverName);
 }
 
 class _AppLocalizationsDelegate
