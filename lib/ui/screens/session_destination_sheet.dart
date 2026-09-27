@@ -1,77 +1,248 @@
-import '../../l10n/app_localizations.dart';
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/product_repository.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/product_states.dart';
-import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
-import '../kit/kit.dart';
 import '../early_l10n.dart';
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/session_handoff.dart';
 
 enum SessionDestinationMode { move, warp }
 
+/// Moves a conversation to another folder of its project (move) or to a
+/// cloud machine (warp) (map: session-destination-sheet). One chevron row per
+/// place, named and said in words; the current place is marked once.
+///
+/// The sheet is the choice; once a place is picked it closes and the
+/// question follows as its own modal, so the question is never squeezed
+/// into the list's sheet (and no sheet sits on a sheet, KIT-16).
 Future<void> showSessionDestinationSheet(
   BuildContext context, {
   required ConnectionController controller,
   required String sessionID,
   required SessionDestinationMode mode,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: false,
-  constraints: const BoxConstraints(maxWidth: 720),
-  builder: (_) => _SessionDestinationSheet(
-    rootContext: context,
-    controller: controller,
-    sessionID: sessionID,
-    mode: mode,
-  ),
-);
+}) async {
+  final copy = _sharedCopy(context);
+  final moving = mode == SessionDestinationMode.move;
+  final pick = await showKitSheet<_DestinationPick>(
+    context,
+    title: moving ? copy.e7SharedMoveSession : copy.sessionDestinationWarpTitle,
+    subtitle: moving
+        ? copy.e7SharedChooseAnotherDirectoryInThisProject
+        : copy.e7SharedChooseAConnectedWorkspaceOrReturnTo,
+    icon: moving ? AppIconography.folders : AppIconography.cloud,
+    sheetKey: Key(moving ? 'move-session-sheet' : 'warp-session-sheet'),
+    body: (_) => _SessionDestinationSheet(
+      controller: controller,
+      sessionID: sessionID,
+      mode: mode,
+    ),
+  );
+  if (pick == null || !context.mounted) return;
+  await _confirmMove(context, controller, sessionID, mode, pick);
+}
 
+/// What the sheet hands to the question: the place, what the working
+/// changes are, and the session and location as they were when read.
+class _DestinationPick {
+  const _DestinationPick({
+    required this.destination,
+    required this.here,
+    required this.changes,
+    required this.unknownChanges,
+    required this.scope,
+    required this.session,
+  });
+
+  final _SessionDestination destination;
+  final String here;
+  final int changes;
+  final bool unknownChanges;
+  final SessionNavigationScope scope;
+  final Session? session;
+}
+
+/// Asks before moving, saying where the working changes go and where they
+/// stay. The move runs inside the question: a failure keeps it open with
+/// the reason and Try again, so it never closes on an error. "Move without
+/// changes" closes the question and moves; a failure there is said in an
+/// alert.
+Future<void> _confirmMove(
+  BuildContext context,
+  ConnectionController controller,
+  String sessionID,
+  SessionDestinationMode mode,
+  _DestinationPick pick,
+) async {
+  final copy = _sharedCopy(context);
+  final moving = mode == SessionDestinationMode.move;
+  final destination = pick.destination;
+  final hasChanges = pick.changes > 0;
+  var withoutChanges = false;
+  Future<void> perform(bool transfer) => _performMove(
+    controller,
+    sessionID,
+    mode,
+    pick,
+    transfer: transfer,
+    copy: copy,
+  );
+  final confirmed = await showKitConfirm(
+    context,
+    title: copy.e7SharedDetail429,
+    body: hasChanges
+        ? copy.sessionDestinationChangesCount(pick.changes)
+        : pick.unknownChanges
+        ? copy.e7SharedTheAppCouldNotInspectWorkingChanges
+        : copy.e7SharedDetail432(destination.title),
+    consequenceItems: hasChanges
+        ? [
+            KitConsequence(
+              moving
+                  ? copy.sessionDestinationChangesGo(destination.title)
+                  : copy.sessionDestinationChangesCopied(destination.title),
+            ),
+            KitConsequence(
+              copy.sessionDestinationChangesStay(pick.here),
+              mark: KitConsequenceMark.kept,
+            ),
+          ]
+        : null,
+    confirmLabel: hasChanges
+        ? moving
+              ? copy.e7SharedMoveWithChanges
+              : copy.e7SharedCopyChangesAndMove
+        : copy.e7SharedMove,
+    confirmKey: const Key('session-destination-confirm'),
+    alternative: hasChanges
+        ? KitAction(
+            key: const Key('session-destination-without-changes'),
+            label: copy.sessionDestinationMoveWithout,
+            onPressed: () => withoutChanges = true,
+          )
+        : null,
+    action: () => perform(hasChanges && !pick.unknownChanges),
+  );
+  if (confirmed || !withoutChanges) return;
+  try {
+    await perform(false);
+  } catch (error) {
+    if (!context.mounted) return;
+    await showKitAlert(
+      context,
+      alertKey: const Key('session-destination-move-failed'),
+      title: copy.sessionDestinationMoveFailed,
+      body: productErrorText(error),
+    );
+  }
+}
+
+/// Moves (or copies) the conversation; [transfer] takes the working changes
+/// along. Re-reads the session first so a conversation that moved elsewhere
+/// meanwhile is never moved from the wrong place.
+Future<void> _performMove(
+  ConnectionController controller,
+  String sessionID,
+  SessionDestinationMode mode,
+  _DestinationPick pick, {
+  required bool transfer,
+  required AppLocalizations copy,
+}) async {
+  final destination = pick.destination;
+  pick.scope.check(controller);
+  final repository = await controller.prepareActionRepository();
+  pick.scope.check(controller);
+  if (repository == null) {
+    throw StateError(copy.e7SharedOpenCodeIsReconnectingTryAgain);
+  }
+  final current = await repository.getSessionDetails(sessionID);
+  pick.scope.check(controller);
+  if (current.id != sessionID ||
+      current.directory != pick.session?.directory ||
+      current.workspaceID != pick.session?.workspaceID) {
+    throw StateError(copy.e7SharedSessionLocationChangedCloseAndReopenThis);
+  }
+  if (mode == SessionDestinationMode.move) {
+    await controller.moveSessionToDirectory(
+      sessionID,
+      directory: destination.directory,
+      moveChanges: transfer,
+    );
+  } else {
+    await controller.warpSessionToWorkspace(
+      sessionID,
+      directory: destination.directory,
+      workspaceID: destination.workspaceID,
+      copyChanges: transfer,
+    );
+  }
+}
+
+/// Switches the OpenCode Console organization (map: console-organization-
+/// sheet). Kit-only rebuild of today's layout; the Settings row it becomes is
+/// deferred to its account slice (map proposal: redesign).
+///
+/// The sheet is the choice; the question follows it as its own modal, with
+/// what switching changes. The switch runs inside the question, so a
+/// failure keeps it open with Try again.
 Future<void> showConsoleOrganizationSheet(
   BuildContext context, {
   required ConnectionController controller,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: false,
-  constraints: const BoxConstraints(maxWidth: 720),
-  builder: (_) =>
-      _ConsoleOrganizationSheet(rootContext: context, controller: controller),
-);
+}) async {
+  final copy = _sharedCopy(context);
+  final organization = await showKitSheet<ConsoleOrganization>(
+    context,
+    title: copy.e7SharedSwitchOrganization462,
+    subtitle: copy.consoleOrganizationWhatChanges,
+    icon: AppIconography.account,
+    sheetKey: const Key('console-organization-sheet'),
+    body: (_) => _ConsoleOrganizationSheet(controller: controller),
+  );
+  if (organization == null || organization.active || !context.mounted) {
+    return;
+  }
+  await showKitConfirm(
+    context,
+    title: copy.e7SharedSwitchOrganization,
+    body: copy.consoleOrganizationSwitchBody(organization.orgName),
+    confirmLabel: copy.consoleOrganizationSwitchConfirm(organization.orgName),
+    confirmKey: const Key('console-org-confirm'),
+    action: () => controller.switchConsoleOrganization(organization),
+  );
+}
 
 class _SessionDestination {
   const _SessionDestination({
     required this.title,
     required this.directory,
+    required this.kind,
     this.workspaceID,
-    this.workspaceType,
-    this.status,
+    this.connected = true,
     this.current = false,
   });
 
   final String title;
   final String directory;
+
+  /// What kind of place it is, in words: "Main copy", "Separate copy",
+  /// "Cloud machine · Connected".
+  final String kind;
   final String? workspaceID;
-  final String? workspaceType;
-  final String? status;
+  final bool connected;
   final bool current;
 }
 
 class _SessionDestinationSheet extends StatefulWidget {
   const _SessionDestinationSheet({
-    required this.rootContext,
     required this.controller,
     required this.sessionID,
     required this.mode,
   });
 
-  final BuildContext rootContext;
   final ConnectionController controller;
   final String sessionID;
   final SessionDestinationMode mode;
@@ -86,15 +257,11 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
   List<VersionControlFile> _changes = const [];
   Object? _error;
   Object? _changesError;
-  bool _working = false;
   String _query = '';
   late final SessionNavigationScope _scope;
   Session? _session;
 
   bool get _moving => widget.mode == SessionDestinationMode.move;
-
-  /// Both modes read as "Move" to the user; only the transport differs.
-  String get _verb => _sharedCopy(context).e7SharedMove;
 
   @override
   void initState() {
@@ -200,6 +367,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
     Session? session,
     String currentDirectory,
   ) async {
+    final copy = _sharedCopy(context);
     final listed = await repository.listProjectDirectories(project.id);
     final directories = <String>{
       if (currentDirectory.isNotEmpty) currentDirectory,
@@ -218,6 +386,9 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
         _SessionDestination(
           title: _basename(directory),
           directory: directory,
+          kind: _samePath(directory, project.directory)
+              ? copy.worktreesMainCopy
+              : copy.sessionDestinationSeparateCopy,
           current: directory == currentDirectory,
         ),
     ];
@@ -245,6 +416,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
       _SessionDestination(
         title: copy.e7SharedLocalProject,
         directory: project.directory,
+        kind: copy.worktreesMainCopy,
         current: currentWorkspaceID == null,
       ),
       for (final workspace in projectWorkspaces)
@@ -252,98 +424,44 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           title: workspace.name,
           directory: workspace.directory ?? project.directory,
           workspaceID: workspace.id,
-          workspaceType: workspace.type,
-          status: workspace.status,
+          // Unknown status is not "connected": only a machine that says it
+          // is connected can take the conversation.
+          connected:
+              workspace.status == null || workspace.status == 'connected',
+          kind: copy.sessionDestinationCloudKind(
+            workspace.status == null || workspace.status == 'connected'
+                ? copy.sessionDestinationConnected
+                : copy.sessionDestinationNotConnected,
+          ),
           current: workspace.id == currentWorkspaceID,
         ),
     ];
   }
 
-  Future<void> _select(_SessionDestination destination) async {
-    final copy = _sharedCopy(context);
-    if (_working || destination.current) return;
-    final status = destination.status;
-    if (!_moving && status != null && status != 'connected') return;
-    final messenger = ScaffoldMessenger.of(widget.rootContext);
-    final transfer = await _confirmTransfer(destination);
-    if (transfer == null || !mounted) return;
-    setState(() => _working = true);
-    try {
-      _scope.check(widget.controller);
-      final repository = await widget.controller.prepareActionRepository();
-      _scope.check(widget.controller);
-      if (repository == null) {
-        throw StateError(copy.e7SharedOpenCodeIsReconnectingTryAgain);
-      }
-      final current = await repository.getSessionDetails(widget.sessionID);
-      _scope.check(widget.controller);
-      if (current.id != widget.sessionID ||
-          current.directory != _session?.directory ||
-          current.workspaceID != _session?.workspaceID) {
-        throw StateError(copy.e7SharedSessionLocationChangedCloseAndReopenThis);
-      }
-      if (_moving) {
-        await widget.controller.moveSessionToDirectory(
-          widget.sessionID,
-          directory: destination.directory,
-          moveChanges: transfer,
-        );
-      } else {
-        await widget.controller.warpSessionToWorkspace(
-          widget.sessionID,
-          directory: destination.directory,
-          workspaceID: destination.workspaceID,
-          copyChanges: transfer,
-        );
-      }
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      messenger.showSnackBar(
-        SnackBar(content: Text(copy.e7SharedDetail428(destination.title))),
-      );
-    } catch (error) {
-      if (mounted) setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _working = false);
-    }
-  }
-
-  /// True moves or copies the working changes with the conversation, false
-  /// continues without them, null cancels.
-  Future<bool?> _confirmTransfer(_SessionDestination destination) async {
-    final copy = _sharedCopy(context);
-    final hasChanges = _changes.isNotEmpty;
-    final unknownChanges = _changesError != null;
-    var withoutChanges = false;
-    final confirmed = await showKitConfirm(
-      context,
-      title: copy.e7SharedDetail429,
-      body: hasChanges
-          ? copy.e7SharedDetail430(_changes.length, _moving ? 'move' : 'copy')
-          : unknownChanges
-          ? copy.e7SharedTheAppCouldNotInspectWorkingChanges
-          : copy.e7SharedDetail432(destination.title),
-      confirmLabel: hasChanges
-          ? _moving
-                ? copy.e7SharedMoveWithChanges
-                : copy.e7SharedCopyChangesAndMove
-          : _verb,
-      confirmKey: const Key('session-destination-confirm'),
-      alternative: hasChanges
-          ? KitAction(
-              key: const Key('session-destination-without-changes'),
-              label: copy.e7SharedDetail435,
-              onPressed: () => withoutChanges = true,
-            )
-          : null,
+  void _select(_SessionDestination destination) {
+    if (destination.current) return;
+    if (!_moving && !destination.connected) return;
+    final here =
+        _destinations
+            ?.firstWhere((item) => item.current, orElse: () => destination)
+            .title ??
+        destination.title;
+    Navigator.of(context).pop(
+      _DestinationPick(
+        destination: destination,
+        here: here,
+        changes: _changes.length,
+        unknownChanges: _changesError != null,
+        scope: _scope,
+        session: _session,
+      ),
     );
-    if (confirmed) return hasChanges && !unknownChanges;
-    return withoutChanges ? false : null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final copy = _sharedCopy(context);
+    final tokens = KitTokens.of(context);
     final destinations = _destinations;
     final query = _query.trim().toLowerCase();
     final visible = destinations
@@ -354,134 +472,122 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
               item.directory.toLowerCase().contains(query),
         )
         .toList();
-    return FractionallySizedBox(
-      heightFactor: .9,
-      child: Scaffold(
-        key: Key(_moving ? 'move-session-sheet' : 'warp-session-sheet'),
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Text(_sharedCopy(context).e7SharedMoveSession),
-          actions: [
-            IconButton(
-              tooltip: _sharedCopy(context).isolatedTaskClose,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: _working ? null : () => Navigator.pop(context),
-              icon: const Icon(AppIconography.close),
-            ),
-          ],
-          bottom: _working
-              ? const PreferredSize(
-                  preferredSize: Size.fromHeight(3),
-                  child: LinearProgressIndicator(minHeight: 3),
-                )
-              : null,
+    final gap = SizedBox(height: tokens.space3);
+    final children = <Widget>[];
+    void add(Widget child) {
+      if (children.isNotEmpty) children.add(gap);
+      children.add(child);
+    }
+
+    if ((destinations?.length ?? 0) > 6) {
+      add(
+        KitSearchField(
+          fieldKey: const Key('session-destination-search'),
+          label: copy.e7SharedFilterDestinations,
+          onChanged: (value) => setState(() => _query = value),
+          resultCount: query.isEmpty ? null : visible?.length,
         ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                _moving
-                    ? _sharedCopy(
-                        context,
-                      ).e7SharedChooseAnotherDirectoryInThisProject
-                    : _sharedCopy(
-                        context,
-                      ).e7SharedChooseAConnectedWorkspaceOrReturnTo,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if ((destinations?.length ?? 0) > 6)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: TextField(
-                  key: const Key('session-destination-search'),
-                  onChanged: (value) => setState(() => _query = value),
-                  decoration: InputDecoration(
-                    labelText: _sharedCopy(context).e7SharedFilterDestinations,
-                    prefixIcon: Icon(AppIconography.search),
-                  ),
-                ),
-              ),
-            Expanded(child: _buildBody(visible)),
-          ],
+      );
+    }
+    if (_error != null && destinations == null) {
+      add(
+        KitStateView.error(
+          title: copy.sessionDestinationLoadFailed,
+          body: productErrorText(_error!),
+          error: _error,
+          details: productErrorText(_error!),
+          size: KitStateSize.inline,
+          retry: KitAction(label: copy.isolatedTaskRetryOpen, onPressed: _load),
         ),
-      ),
+      );
+    } else if (visible == null) {
+      add(const KitSkeletonRows(count: 4));
+    } else if (visible.isEmpty && query.isNotEmpty) {
+      add(
+        KitSearchNoMatch(
+          query: _query,
+          onClear: () => setState(() => _query = ''),
+        ),
+      );
+    } else {
+      final others = visible.where((item) => !item.current).length;
+      final titles = <String, int>{};
+      for (final item in visible) {
+        titles[item.title] = (titles[item.title] ?? 0) + 1;
+      }
+      if (visible.isNotEmpty) {
+        add(
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            children: [
+              for (final item in visible)
+                _destinationRow(item, duplicate: (titles[item.title] ?? 0) > 1),
+            ],
+          ),
+        );
+      }
+      // Nowhere else to go: say so and why, instead of an empty list.
+      if (others == 0 && query.isEmpty) {
+        add(
+          KitStateView(
+            key: const Key('session-destination-none'),
+            icon: _moving ? AppIconography.folders : AppIconography.cloudOff,
+            title: copy.sessionDestinationNoneTitle,
+            body: _moving
+                ? copy.sessionDestinationNoneMoveBody
+                : copy.sessionDestinationNoneWarpBody,
+            size: KitStateSize.inline,
+          ),
+        );
+      }
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
 
-  Widget _buildBody(List<_SessionDestination>? visible) {
-    if (_error != null && _destinations == null) {
-      return ProductErrorState(
-        message: productErrorText(_error!),
-        onRetry: _load,
-      );
-    }
-    if (visible == null) {
-      return const LoadingList(rows: 6);
-    }
-    if (visible.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            _query.isEmpty
-                ? _sharedCopy(context).e7SharedNoOtherDestinationsAreAvailable
-                : _sharedCopy(context).e7SharedNoDestinationsMatchThisFilter,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 24),
-      itemCount: visible.length + (_error == null ? 0 : 1),
-      itemBuilder: (context, index) {
-        if (index == 0 && _error != null) {
-          return _InlineErrorBanner(error: _error!);
-        }
-        final offset = _error == null ? index : index - 1;
-        final item = visible[offset];
-        final unavailable =
-            !_moving && item.status != null && item.status != 'connected';
-        final label = item.workspaceType == null
-            ? item.directory
-            : '${item.workspaceType} · ${item.status ?? 'unknown'}\n${item.directory}';
-        return ListTile(
-          key: ValueKey(
-            '${_moving ? 'move' : 'warp'}-destination-${item.workspaceID ?? item.directory}',
-          ),
-          minTileHeight: 64,
-          enabled: !_working && !item.current && !unavailable,
-          leading: Icon(
-            item.current
-                ? AppIconography.radioSelected
-                : AppIconography.radioEmpty,
-          ),
-          title: Text(item.title),
-          subtitle: Text(label, maxLines: 3, overflow: TextOverflow.ellipsis),
-          trailing: item.current
-              ? Text(_sharedCopy(context).e7SharedCurrent)
-              : unavailable
-              ? Text(item.status ?? _sharedCopy(context).e7SharedUnavailable)
-              : const Icon(AppIconography.chevronRight),
-          onTap: () => _select(item),
-        );
-      },
+  Widget _destinationRow(_SessionDestination item, {required bool duplicate}) {
+    final copy = _sharedCopy(context);
+    final unavailable = !_moving && !item.connected;
+    return KitRow(
+      key: ValueKey(
+        '${_moving ? 'move' : 'warp'}-destination-${item.workspaceID ?? item.directory}',
+      ),
+      leading: KitRowIcon(
+        _moving
+            ? AppIconography.folderOpen
+            : item.workspaceID == null
+            ? AppIconography.computer
+            : AppIconography.cloud,
+        current: item.current,
+      ),
+      title: item.title,
+      // Name and kind; the path only when two places share a name.
+      supporting: TextSpan(
+        text: duplicate ? '${item.kind} · ${item.directory}' : item.kind,
+      ),
+      supportingMaxLines: duplicate || unavailable ? 2 : 1,
+      // The current place is marked once (its tile and the word), and is
+      // not dimmed: it is where the conversation is, not unavailable.
+      trailing: item.current
+          ? KitRowValue(copy.e7SharedCurrent, chevron: false)
+          : unavailable
+          ? null
+          : const KitChevron(),
+      enabled: !unavailable,
+      disabledReason: unavailable
+          ? copy.sessionDestinationNotConnectedWhy
+          : null,
+      onTap: item.current || unavailable ? null : () => _select(item),
     );
   }
 }
 
 class _ConsoleOrganizationSheet extends StatefulWidget {
-  const _ConsoleOrganizationSheet({
-    required this.rootContext,
-    required this.controller,
-  });
+  const _ConsoleOrganizationSheet({required this.controller});
 
-  final BuildContext rootContext;
   final ConnectionController controller;
 
   @override
@@ -492,7 +598,6 @@ class _ConsoleOrganizationSheet extends StatefulWidget {
 class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
   List<ConsoleOrganization>? _organizations;
   Object? _error;
-  bool _working = false;
 
   @override
   void initState() {
@@ -517,10 +622,20 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
     });
     try {
       final organizations = [...await repository.listConsoleOrganizations()];
+      // The account holding the current organization first, then the
+      // rest by name; within an account, the current one first.
+      final current = {
+        for (final organization in organizations)
+          if (organization.active) _accountLabel(organization),
+      };
       organizations.sort((a, b) {
-        if (a.active != b.active) return a.active ? -1 : 1;
+        final aCurrent = current.contains(_accountLabel(a));
+        final bCurrent = current.contains(_accountLabel(b));
+        if (aCurrent != bCurrent) return aCurrent ? -1 : 1;
         final account = _accountLabel(a).compareTo(_accountLabel(b));
-        return account != 0 ? account : a.orgName.compareTo(b.orgName);
+        if (account != 0) return account;
+        if (a.active != b.active) return a.active ? -1 : 1;
+        return a.orgName.compareTo(b.orgName);
       });
       if (mounted) setState(() => _organizations = organizations);
     } catch (error) {
@@ -528,141 +643,101 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
     }
   }
 
-  Future<void> _switch(ConsoleOrganization organization) async {
-    if (_working || organization.active) return;
-    final messenger = ScaffoldMessenger.of(widget.rootContext);
-    final confirmed = await showKitConfirm(
-      context,
-      title: _sharedCopy(context).e7SharedSwitchOrganization,
-      body: _sharedCopy(context).e7SharedDetail456(organization.orgName),
-      confirmLabel: _sharedCopy(context).e7SharedSwitch,
-      confirmKey: const Key('console-org-confirm'),
-    );
-    if (!confirmed || !mounted) return;
-    setState(() {
-      _working = true;
-      _error = null;
-    });
-    try {
-      await widget.controller.switchConsoleOrganization(organization);
-      if (!mounted) return;
-      Navigator.pop(context);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            _sharedCopy(context).e7SharedDetail460(organization.orgName),
-          ),
-        ),
-      );
-    } catch (error) {
-      if (mounted) setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _working = false);
-    }
+  void _switch(ConsoleOrganization organization) {
+    if (organization.active) return;
+    Navigator.of(context).pop(organization);
   }
 
   @override
   Widget build(BuildContext context) {
+    final copy = _sharedCopy(context);
+    final tokens = KitTokens.of(context);
     final organizations = _organizations;
-    return FractionallySizedBox(
-      heightFactor: .82,
-      child: Scaffold(
-        key: const Key('console-organization-sheet'),
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Text(_sharedCopy(context).e7SharedSwitchOrganization462),
-          actions: [
-            IconButton(
-              tooltip: _sharedCopy(context).isolatedTaskClose,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: _working ? null : () => Navigator.pop(context),
-              icon: const Icon(AppIconography.close),
-            ),
-          ],
-          bottom: _working
-              ? const PreferredSize(
-                  preferredSize: Size.fromHeight(3),
-                  child: LinearProgressIndicator(minHeight: 3),
-                )
-              : null,
-        ),
-        body: organizations == null
-            ? _error == null
-                  ? const LoadingList(rows: 5)
-                  : ProductErrorState(
-                      message: productErrorText(_error!),
-                      onRetry: _load,
-                    )
-            : organizations.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    _sharedCopy(
-                      context,
-                    ).e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned,
-                    textAlign: TextAlign.center,
-                  ),
+    final gap = SizedBox(height: tokens.space3);
+    final children = <Widget>[];
+    void add(Widget child) {
+      if (children.isNotEmpty) children.add(gap);
+      children.add(child);
+    }
+
+    if (organizations == null) {
+      add(
+        _error == null
+            ? const KitSkeletonRows(count: 3)
+            : KitStateView.error(
+                title: copy.consoleOrganizationLoadFailed,
+                body: productErrorText(_error!),
+                error: _error,
+                details: productErrorText(_error!),
+                size: KitStateSize.inline,
+                retry: KitAction(
+                  label: copy.isolatedTaskRetryOpen,
+                  onPressed: _load,
                 ),
-              )
-            : ListView(
-                padding: const EdgeInsets.only(bottom: 24),
-                children: [
-                  if (_error != null) _InlineErrorBanner(error: _error!),
-                  for (
-                    var index = 0;
-                    index < organizations.length;
-                    index++
-                  ) ...[
-                    if (index == 0 ||
-                        _accountLabel(organizations[index - 1]) !=
-                            _accountLabel(organizations[index]))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
-                        child: Text(
-                          _accountLabel(organizations[index]),
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                      ),
-                    ListTile(
-                      key: ValueKey(
-                        'console-org-${organizations[index].accountID}-${organizations[index].orgID}',
-                      ),
-                      minTileHeight: 64,
-                      enabled: !_working && !organizations[index].active,
-                      leading: Icon(
-                        organizations[index].active
-                            ? AppIconography.radioSelected
-                            : AppIconography.radioEmpty,
-                      ),
-                      title: Text(organizations[index].orgName),
-                      subtitle: Text(organizations[index].orgID),
-                      trailing: organizations[index].active
-                          ? Text(_sharedCopy(context).e7SharedCurrent)
-                          : const Icon(AppIconography.chevronRight),
-                      onTap: () => _switch(organizations[index]),
-                    ),
-                  ],
-                ],
               ),
-      ),
+      );
+    } else if (organizations.isEmpty) {
+      add(
+        KitStateView(
+          icon: AppIconography.account,
+          title: copy.consoleOrganizationNoneTitle,
+          body:
+              copy.e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned,
+          size: KitStateSize.inline,
+        ),
+      );
+    } else {
+      // One group per account, its label said once.
+      final accounts = <String, List<ConsoleOrganization>>{};
+      for (final organization in organizations) {
+        accounts
+            .putIfAbsent(_accountLabel(organization), () => [])
+            .add(organization);
+      }
+      for (final MapEntry(key: account, value: members) in accounts.entries) {
+        add(
+          KitRowGroup(
+            label: account,
+            margin: EdgeInsets.zero,
+            children: [
+              for (final organization in members)
+                KitRow(
+                  key: ValueKey(
+                    'console-org-${organization.accountID}-${organization.orgID}',
+                  ),
+                  leading: KitRowIcon(
+                    AppIconography.account,
+                    current: organization.active,
+                  ),
+                  title: organization.orgName,
+                  trailing: organization.active
+                      ? KitRowValue(copy.e7SharedCurrent, chevron: false)
+                      : const KitChevron(),
+                  onTap: organization.active
+                      ? null
+                      : () => _switch(organization),
+                ),
+            ],
+          ),
+        );
+      }
+      // Only one organization: nothing to switch to, said in words.
+      if (organizations.every((organization) => organization.active)) {
+        add(
+          KitNotice(
+            key: const Key('console-organization-only-one'),
+            icon: AppIconography.info,
+            message: copy.consoleOrganizationOnlyOne,
+          ),
+        );
+      }
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
-}
-
-class _InlineErrorBanner extends StatelessWidget {
-  const _InlineErrorBanner({required this.error});
-
-  final Object error;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-    child: Text(
-      productErrorText(error),
-      style: TextStyle(color: Theme.of(context).colorScheme.error),
-    ),
-  );
 }
 
 String _accountLabel(ConsoleOrganization organization) {
@@ -682,10 +757,13 @@ String _basename(String path) {
   return parts.isEmpty ? path : parts.last;
 }
 
+String _normalized(String path) =>
+    path.replaceAll('\\', '/').replaceFirst(RegExp(r'/+$'), '');
+
+bool _samePath(String a, String b) => _normalized(a) == _normalized(b);
+
 bool _containsPath(String root, String path) {
-  final normalizedRoot = root
-      .replaceAll('\\', '/')
-      .replaceFirst(RegExp(r'/+$'), '');
+  final normalizedRoot = _normalized(root);
   final normalizedPath = path.replaceAll('\\', '/');
   return normalizedPath == normalizedRoot ||
       normalizedPath.startsWith('$normalizedRoot/');

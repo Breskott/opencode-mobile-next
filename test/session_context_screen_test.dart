@@ -10,7 +10,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opencode_mobile/ui/app_iconography.dart';
 
 class _ContextApi extends OpenCodeApi with CompleteMessageHistory {
   _ContextApi() : super(baseUrl: 'http://localhost');
@@ -37,6 +36,19 @@ class _ContextApi extends OpenCodeApi with CompleteMessageHistory {
   }
 }
 
+class _CompactRepository implements ServerOperationsGateway {
+  final compacted = <String>[];
+  @override
+  Future<void> compactSession(
+    String id, {
+    required String providerID,
+    required String modelID,
+  }) async => compacted.add('$id:$providerID/$modelID');
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('Unexpected ${invocation.memberName}');
+}
+
 class _ContextController extends ConnectionController {
   _ContextController(super.store, this.actionApi) {
     api = actionApi;
@@ -45,6 +57,11 @@ class _ContextController extends ConnectionController {
 
   final _ContextApi actionApi;
   int prepareCalls = 0;
+  _CompactRepository? compactRepository;
+
+  @override
+  Future<ServerOperationsGateway?> prepareActionRepository() async =>
+      compactRepository;
 
   @override
   Future<OpenCodeApi?> prepareActionTransport() async {
@@ -174,14 +191,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('Reopen this inspector'), findsOneWidget);
       expect(api.messagesCalls, calls);
-      expect(
-        tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, AppIconography.retry),
-            )
-            .onPressed,
-        isNull,
-      );
+      // Refresh leaves the bar: it waits in the overflow with its reason.
+      expect(find.byKey(const Key('session-context-refresh')), findsNothing);
     },
   );
 
@@ -268,7 +279,8 @@ void main() {
 
     expect(find.text('GPT Context'), findsOneWidget);
     expect(find.text('200 of 1,000 tokens'), findsOneWidget);
-    expect(find.text('20%'), findsOneWidget);
+    // The verdict in plain words comes first (map infoMissing).
+    expect(find.text('20 % used · plenty left'), findsOneWidget);
     expect(find.byType(Card), findsNothing);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('session-context-breakdown')),
@@ -409,5 +421,87 @@ void main() {
 
     expect(find.text('No context usage yet'), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
+  });
+
+  testWidgets('near the limit, the page says so and offers to compact', (
+    tester,
+  ) async {
+    final near = [
+      _messages().first,
+      _message(
+        'assistant-1',
+        'assistant',
+        [Part(type: 'text', text: 'Long answer')],
+        created: 2,
+        providerID: 'openai',
+        modelID: 'gpt-context',
+        tokens: Tokens(input: 800, output: 50),
+      ),
+    ];
+    final api = _ContextApi()..messagesResult = near;
+    final controller = await _controller(api);
+    controller
+      ..compactRepository = _CompactRepository()
+      ..selectedModel = ModelRef(providerID: 'openai', modelID: 'gpt-context');
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      _app(
+        SessionContextScreen(
+          controller: controller,
+          sessionID: 'session-1',
+          initialMessages: near,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('85 % used · near the limit'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('session-context-near-limit')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('session-context-compact')));
+    await tester.pumpAndSettle();
+    // Asked first, with what is kept.
+    expect(find.text('Compact this conversation?'), findsOneWidget);
+    expect(find.text('Every message stays in the history.'), findsOneWidget);
+    expect(controller.compactRepository!.compacted, isEmpty);
+    await tester.tap(find.byKey(const Key('session-context-compact-confirm')));
+    await tester.pumpAndSettle();
+    expect(controller.compactRepository!.compacted, [
+      'session-1:openai/gpt-context',
+    ]);
+    // Said in place, not in a snackbar.
+    expect(
+      find.byKey(const ValueKey('session-context-compact-started')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('session-context-near-limit')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('under half the limit there is no near-limit notice', (
+    tester,
+  ) async {
+    final api = _ContextApi()..messagesResult = _messages();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _app(
+        SessionContextScreen(
+          controller: controller,
+          sessionID: 'session-1',
+          initialMessages: _messages(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('session-context-near-limit')),
+      findsNothing,
+    );
   });
 }

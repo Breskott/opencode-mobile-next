@@ -892,7 +892,7 @@ final eWorkspaceArea = CensusArea(
         ),
         settleFor: const Duration(seconds: 2),
       );
-      kit.expectText('Tasks');
+      kit.expectText('Running now');
       kit.expectVisible(find.byKey(const ValueKey('work-shell-sh_tests')));
     }, note: 'Opened over the chat: one agent and one command running.'),
     CensusShot('running-work-sheet', state: 'empty', (kit) async {
@@ -909,7 +909,7 @@ final eWorkspaceArea = CensusArea(
         ),
         settleFor: const Duration(seconds: 2),
       );
-      kit.expectText('Tasks');
+      kit.expectText('Nothing running');
     }),
     CensusShot(
       'shell-output',

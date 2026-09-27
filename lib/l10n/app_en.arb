@@ -28139,5 +28139,396 @@
   "bugReportLinkCopied": "Bug form link copied",
   "@bugReportLinkCopied": {
     "description": "Screen-reader announcement after the bug form link was copied."
+  },
+  "runningWorkTitle": "Running now",
+  "@runningWorkTitle": {
+    "description": "Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks)."
+  },
+  "runningWorkFailed": "Failed",
+  "@runningWorkFailed": {
+    "description": "Running now: the word for a command that ended with an error exit code."
+  },
+  "runningWorkAgentState": "Agent · {state}",
+  "@runningWorkAgentState": {
+    "description": "Running now: an agent row's supporting line; state is Running, Idle or Status unavailable.",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "runningWorkCommandState": "Command · {state}",
+  "@runningWorkCommandState": {
+    "description": "Running now: a command row's supporting line; state is a word and the elapsed time, e.g. 'Failed · 2:00'.",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "runningWorkOffline": "Reconnecting. Try again once the server answers.",
+  "@runningWorkOffline": {
+    "description": "Running now and command output: why a row or action is unavailable while the connection is down."
+  },
+  "runningWorkStopAgent": "Stop “{title}”",
+  "@runningWorkStopAgent": {
+    "description": "Running now: row menu item that stops one running agent; title is the agent's name.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "runningWorkStopAgentTitle": "Stop “{title}”?",
+  "@runningWorkStopAgentTitle": {
+    "description": "Running now: the stop-agent confirmation's question.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "runningWorkStopAgentBody": "The agent stops where it is. Its conversation and the files it changed are kept.",
+  "@runningWorkStopAgentBody": {
+    "description": "Running now: what stopping an agent does."
+  },
+  "runningWorkStopAgentConfirm": "Stop agent",
+  "@runningWorkStopAgentConfirm": {
+    "description": "Running now: the stop-agent confirmation's button."
+  },
+  "runningWorkScopeChangedTitle": "The server or project changed",
+  "@runningWorkScopeChangedTitle": {
+    "description": "Running now: title shown when the connection moved to another server or project while the sheet was open."
+  },
+  "runningWorkAgentsFailed": "Couldn't load this conversation's agents.",
+  "@runningWorkAgentsFailed": {
+    "description": "Running now: the agents could not be read."
+  },
+  "runningWorkCommandsFailed": "Couldn't load this conversation's commands.",
+  "@runningWorkCommandsFailed": {
+    "description": "Running now: the commands could not be read."
+  },
+  "runningWorkEmptyTitle": "Nothing running",
+  "@runningWorkEmptyTitle": {
+    "description": "Running now: empty state title."
+  },
+  "runningWorkEmptyBody": "Agents and commands this conversation starts show here while they run and after they end.",
+  "@runningWorkEmptyBody": {
+    "description": "Running now: empty state body."
+  },
+  "runningWorkBackgroundBody": "This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.",
+  "@runningWorkBackgroundBody": {
+    "description": "Running now: shown only while running work holds the conversation; says what moving it to the background frees."
+  },
+  "runningWorkBackgroundAction": "Keep chatting while it runs",
+  "@runningWorkBackgroundAction": {
+    "description": "Running now: moves the work that holds the conversation to the background."
+  },
+  "shellOutputCopyFirst": "Copy output first",
+  "@shellOutputCopyFirst": {
+    "description": "Stop-command confirmation: the safer path that copies the output before anything is removed."
+  },
+  "shellOutputLimitTitle": "Stop it after…",
+  "@shellOutputLimitTitle": {
+    "description": "Command output: title of the sheet that sets how long the command may still run."
+  },
+  "shellOutputStopsIn": "stops in {time}",
+  "@shellOutputStopsIn": {
+    "description": "Command output status line: time left before the limit stops the command, e.g. 'stops in 12:46'.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shellOutputNoLimit": "no time limit",
+  "@shellOutputNoLimit": {
+    "description": "Command output status line: the command has no time limit."
+  },
+  "shellOutputAboutToStop": "It stops in {time}. Change timeout to give it longer.",
+  "@shellOutputAboutToStop": {
+    "description": "Command output: shown in the last minute before the time limit stops the command.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shellOutputReadFailed": "Couldn't read the output.",
+  "@shellOutputReadFailed": {
+    "description": "Command output: reading the output failed."
+  },
+  "shellOutputLimitFailed": "Couldn't change the time limit.",
+  "@shellOutputLimitFailed": {
+    "description": "Command output: changing the time limit failed."
+  },
+  "shellOutputDetailCommand": "Command as typed",
+  "@shellOutputDetailCommand": {
+    "description": "Command output Details: the full command with its environment and paths."
+  },
+  "shellOutputDetailFolder": "Folder",
+  "@shellOutputDetailFolder": {
+    "description": "Command output Details: the folder the command runs in."
+  },
+  "shellOutputDetailExit": "Exit code",
+  "@shellOutputDetailExit": {
+    "description": "Command output Details: the command's exit code."
+  },
+  "shellOutputDetailId": "Command ID",
+  "@shellOutputDetailId": {
+    "description": "Command output Details: the server's id for the command."
+  },
+  "shellOutputReading": "Reading output",
+  "@shellOutputReading": {
+    "description": "Command output: loading bar label while the output is read."
+  },
+  "sessionDestinationWarpTitle": "Move to a cloud machine",
+  "@sessionDestinationWarpTitle": {
+    "description": "Title of the sheet that moves a conversation to a cloud machine (warp)."
+  },
+  "sessionDestinationSeparateCopy": "Separate copy",
+  "@sessionDestinationSeparateCopy": {
+    "description": "Move conversation: the kind of a folder that is a separate copy (worktree) of the project."
+  },
+  "sessionDestinationCloudKind": "Cloud machine · {state}",
+  "@sessionDestinationCloudKind": {
+    "description": "Move conversation: the kind of a cloud destination and whether it is connected.",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionDestinationConnected": "Connected",
+  "@sessionDestinationConnected": {
+    "description": "Move conversation: a cloud machine that can take the conversation now."
+  },
+  "sessionDestinationNotConnected": "Not connected",
+  "@sessionDestinationNotConnected": {
+    "description": "Move conversation: a cloud machine that is not connected."
+  },
+  "sessionDestinationNotConnectedWhy": "Not connected. It can be picked once it connects.",
+  "@sessionDestinationNotConnectedWhy": {
+    "description": "Move conversation: why a cloud machine cannot be picked."
+  },
+  "sessionDestinationChangesGo": "With changes, they go with it to {destination}.",
+  "@sessionDestinationChangesGo": {
+    "description": "Move conversation confirmation: what happens to working changes when moving with them.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionDestinationChangesCopied": "With changes, a copy goes with it to {destination}.",
+  "@sessionDestinationChangesCopied": {
+    "description": "Move to a cloud machine confirmation: what happens to working changes when copying them.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionDestinationChangesStay": "Without changes, they stay in {place}.",
+  "@sessionDestinationChangesStay": {
+    "description": "Move conversation confirmation: what happens to working changes left behind.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionDestinationMoveWithout": "Move without changes",
+  "@sessionDestinationMoveWithout": {
+    "description": "Move conversation confirmation: moves the conversation and leaves working changes where they are."
+  },
+  "sessionDestinationMoveFailed": "Couldn't move the conversation.",
+  "@sessionDestinationMoveFailed": {
+    "description": "Move conversation: the move failed."
+  },
+  "sessionDestinationLoadFailed": "Couldn't load the places to move to",
+  "@sessionDestinationLoadFailed": {
+    "description": "Move conversation: the destinations could not be read."
+  },
+  "sessionDestinationNoneTitle": "Nowhere else to move it yet",
+  "@sessionDestinationNoneTitle": {
+    "description": "Move conversation: there is no other destination."
+  },
+  "sessionDestinationNoneMoveBody": "This project has only this folder. A separate copy of the project shows here once it exists.",
+  "@sessionDestinationNoneMoveBody": {
+    "description": "Move conversation: why there is no other folder."
+  },
+  "sessionDestinationNoneWarpBody": "This project has no cloud machine yet.",
+  "@sessionDestinationNoneWarpBody": {
+    "description": "Move to a cloud machine: why there is no other destination."
+  },
+  "consoleOrganizationWhatChanges": "Models, providers and billing follow the organization you pick.",
+  "@consoleOrganizationWhatChanges": {
+    "description": "Switch organization sheet: what switching changes."
+  },
+  "consoleOrganizationSwitchBody": "{organization} becomes the organization for models, providers and billing. Models reload; nothing running is stopped.",
+  "@consoleOrganizationSwitchBody": {
+    "description": "Switch organization confirmation body; organization is the organization's name.",
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "consoleOrganizationSwitchConfirm": "Switch to {organization}",
+  "@consoleOrganizationSwitchConfirm": {
+    "description": "Switch organization confirmation button.",
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "consoleOrganizationLoadFailed": "Couldn't load your organizations",
+  "@consoleOrganizationLoadFailed": {
+    "description": "Switch organization: the organizations could not be read."
+  },
+  "consoleOrganizationNoneTitle": "No organizations",
+  "@consoleOrganizationNoneTitle": {
+    "description": "Switch organization: empty state title."
+  },
+  "consoleOrganizationOnlyOne": "This is your only organization, so there is nothing to switch to.",
+  "@consoleOrganizationOnlyOne": {
+    "description": "Switch organization: shown when the only organization is the current one."
+  },
+  "sessionContextLoading": "Loading context",
+  "@sessionContextLoading": {
+    "description": "Conversation context: loading label."
+  },
+  "sessionContextMovedTitle": "This conversation moved",
+  "@sessionContextMovedTitle": {
+    "description": "Conversation context: the server, project or conversation changed while the page was open."
+  },
+  "sessionContextLoadFailed": "Couldn't load the context",
+  "@sessionContextLoadFailed": {
+    "description": "Conversation context: the history could not be read."
+  },
+  "sessionContextRefreshFailed": "Couldn't refresh. The numbers below are from the last read.",
+  "@sessionContextRefreshFailed": {
+    "description": "Conversation context: a refresh failed while earlier numbers are shown."
+  },
+  "sessionContextVerdictPlenty": "{percent} % used · plenty left",
+  "@sessionContextVerdictPlenty": {
+    "description": "Conversation context verdict under half of the model's limit.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextVerdictUsed": "{percent} % used",
+  "@sessionContextVerdictUsed": {
+    "description": "Conversation context verdict between half and the near-limit mark.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextVerdictNear": "{percent} % used · near the limit",
+  "@sessionContextVerdictNear": {
+    "description": "Conversation context verdict near the model's limit.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextVerdictFull": "{percent} % used · at the limit",
+  "@sessionContextVerdictFull": {
+    "description": "Conversation context verdict at or over the model's limit.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextNearLimitTitle": "Near the limit",
+  "@sessionContextNearLimitTitle": {
+    "description": "Conversation context: title of the notice near the model's limit."
+  },
+  "sessionContextNearLimitBody": "Older details may be dropped from what the model sees. Compact the conversation to keep going, or start a new one.",
+  "@sessionContextNearLimitBody": {
+    "description": "Conversation context: what being near the limit means and what to do."
+  },
+  "sessionContextCompactAction": "Compact this conversation",
+  "@sessionContextCompactAction": {
+    "description": "Conversation context: starts compacting the conversation."
+  },
+  "sessionContextCompactTitle": "Compact this conversation?",
+  "@sessionContextCompactTitle": {
+    "description": "Conversation context: the compact confirmation's question."
+  },
+  "sessionContextCompactBody": "OpenCode summarizes the conversation so far and continues from the summary, so it takes less of the model's limit.",
+  "@sessionContextCompactBody": {
+    "description": "Conversation context: what compacting does."
+  },
+  "sessionContextCompactKept": "Every message stays in the history.",
+  "@sessionContextCompactKept": {
+    "description": "Conversation context: what compacting keeps."
+  },
+  "sessionContextCompactConfirm": "Compact conversation",
+  "@sessionContextCompactConfirm": {
+    "description": "Conversation context: the compact confirmation's button."
+  },
+  "sessionContextCompactStarted": "Compacting started. The numbers update when it finishes.",
+  "@sessionContextCompactStarted": {
+    "description": "Conversation context: shown after compacting was started."
+  },
+  "sessionContextCompactBusy": "Wait for the reply to finish.",
+  "@sessionContextCompactBusy": {
+    "description": "Conversation context: why compacting is unavailable while a reply runs."
+  },
+  "sessionContextMakeupTitle": "Latest request input",
+  "@sessionContextMakeupTitle": {
+    "description": "Conversation context: title of the stacked bar of what fills the latest request's input."
+  },
+  "sessionContextTokens": "{count} tokens",
+  "@sessionContextTokens": {
+    "description": "Conversation context: a token count, e.g. '41,200 tokens'.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionContextModelId": "Model ID",
+  "@sessionContextModelId": {
+    "description": "Conversation context Details: the model's id as the server knows it."
+  },
+  "demoScreenTitle": "Try it offline",
+  "@demoScreenTitle": {
+    "description": "Offline demo page title."
+  },
+  "demoScreenSimulated": "Simulated · nothing is saved",
+  "@demoScreenSimulated": {
+    "description": "Offline demo status line."
+  },
+  "demoScreenFinished": "That's the whole loop: a prompt, a reply and a reviewed edit.",
+  "@demoScreenFinished": {
+    "description": "Offline demo: shown when the demo is finished, above Set up your own server."
+  },
+  "sessionContextPercent": "{percent} %",
+  "@sessionContextPercent": {
+    "description": "Conversation context: a share of the latest request's input, e.g. '42 %'.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionDestinationChangesCount": "{count, plural, one {1 changed file is present.} other {{count} changed files are present.}}",
+  "@sessionDestinationChangesCount": {
+    "description": "Move conversation confirmation: how many working changes there are; what happens to them is said under it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
