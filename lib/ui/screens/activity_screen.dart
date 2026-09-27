@@ -13,7 +13,6 @@ import '../../state/connection.dart';
 import '../../state/orchestration.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
-import '../kit/kit_scrollbar.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../permission_presentation.dart';
 import '../widgets/completion_digest.dart';
