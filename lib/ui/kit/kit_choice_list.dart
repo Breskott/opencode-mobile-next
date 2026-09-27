@@ -36,6 +36,8 @@ class KitChoice<T> {
     this.enabled = true,
     this.disabledReason,
     this.key,
+    this.menu = const [],
+    this.menuLabel,
   }) : assert(enabled || disabledReason != null);
 
   final T value;
@@ -58,6 +60,15 @@ class KitChoice<T> {
 
   /// The row's key.
   final Key? key;
+
+  /// Actions on this one choice ("Download again", "Delete Balanced"),
+  /// opened by the row's trailing "More" button, long-press, right-click,
+  /// Shift+F10 and the context-menu key: an action lives on the choice it
+  /// acts on, never below the list. Empty: no button.
+  final List<KitMenuItem> menu;
+
+  /// The opened menu's name ("Balanced actions").
+  final String? menuLabel;
 }
 
 /// "Something else": a free answer below the options (a question's custom
@@ -115,6 +126,7 @@ class KitChoiceList<T> extends StatelessWidget {
     required List<KitChoice<T>> choices,
     required T? selected,
     required ValueChanged<T> onSelected,
+    T? current,
     this.actsOnTap = true,
     this.sends = false,
     this.receipt,
@@ -124,6 +136,7 @@ class KitChoiceList<T> extends StatelessWidget {
     this.semanticsLabel,
   }) : _choices = choices,
        _selected = selected,
+       _current = current,
        _selectedSet = const <Never>{},
        _onSelected = onSelected,
        _onChanged = null,
@@ -140,6 +153,7 @@ class KitChoiceList<T> extends StatelessWidget {
     this.semanticsLabel,
   }) : _choices = choices,
        _selected = null,
+       _current = null,
        _selectedSet = selected,
        _onSelected = null,
        _onChanged = onChanged,
@@ -151,6 +165,14 @@ class KitChoiceList<T> extends StatelessWidget {
 
   final List<KitChoice<T>> _choices;
   final T? _selected;
+
+  /// The value in use now (applied, installed, saved), when it can differ
+  /// from the selection: a form whose primary applies, or a choice that
+  /// must download first. "Current" shows on that row only while the
+  /// selection differs from it (a pending change); the selected row's
+  /// radio already says which one is chosen, so "Current" never repeats
+  /// it. Null: no row says "Current".
+  final T? _current;
   final Set<T> _selectedSet;
   final ValueChanged<T>? _onSelected;
   final ValueChanged<Set<T>>? _onChanged;
@@ -345,7 +367,11 @@ class _KitChoiceGroupState<T> extends State<_KitChoiceGroup<T>> {
     if (entry < 0) entry = choices.indexWhere((choice) => choice.enabled);
     if (entry < 0 && other != null) entry = choices.length;
 
-    final showCurrent = !list._multi && list.actsOnTap && !list.sends;
+    // "Current" marks the applied value only while a different one is
+    // selected (a pending change); never beside the radio that marks it.
+    final current = list._current;
+    final pending =
+        !list._multi && !list.sends && current != null && !_isSelected(current);
     final mark = list._multi ? KitChoiceMark.check : KitChoiceMark.radio;
     final rows = <Widget>[
       for (var i = 0; i < choices.length; i++)
@@ -356,7 +382,7 @@ class _KitChoiceGroupState<T> extends State<_KitChoiceGroup<T>> {
             choice: choices[i],
             selected: _isSelected(choices[i].value),
             mark: mark,
-            current: showCurrent && _isSelected(choices[i].value),
+            current: pending && choices[i].value == current,
             receipt: !list._multi && list._selected == choices[i].value
                 ? list.receipt
                 : null,
@@ -470,12 +496,17 @@ class _KitChoiceGroupState<T> extends State<_KitChoiceGroup<T>> {
 enum KitChoiceMark { radio, check }
 
 /// A row with a leading selection mark (a filled radio or a check) and, for
-/// the value in use now, the word "Current" first on its supporting line.
-/// Used by KitChoiceList, KitSegmented's stacked form and the request card.
+/// the value in use now while another one is selected, the word "Current"
+/// first on its supporting line. Used by KitChoiceList, KitSegmented's
+/// stacked form and the request card.
 ///
-/// States: default, selected, current, disabled (reason on the supporting
-/// line), sending / answered (the [receipt] under the words), hovered,
-/// focused.
+/// A non-empty [menu] (the choice's own, [KitChoice.menu], by default)
+/// adds a trailing "More" button and opens on long-press, right-click,
+/// Shift+F10 and the context-menu key.
+///
+/// States: default, selected, current (only when not selected), disabled
+/// (reason on the supporting line), sending / answered (the [receipt]
+/// under the words), with a menu, hovered, focused.
 class KitChoiceRow<T> extends StatelessWidget {
   const KitChoiceRow({
     super.key,
@@ -487,6 +518,8 @@ class KitChoiceRow<T> extends StatelessWidget {
     this.receipt,
     this.rowKey,
     this.focusNode,
+    this.menu,
+    this.menuLabel,
   });
 
   final KitChoice<T> choice;
@@ -496,7 +529,8 @@ class KitChoiceRow<T> extends StatelessWidget {
   final VoidCallback? onTap;
   final KitChoiceMark mark;
 
-  /// "Current · …" (STATE-9).
+  /// "Current · …" (STATE-9): this row is the value in use now. Shown only
+  /// when the row is not [selected]: the selected mark already says it.
   final bool current;
   final KitReceipt? receipt;
 
@@ -505,6 +539,12 @@ class KitChoiceRow<T> extends StatelessWidget {
 
   /// The row's focus node, for a list that moves focus with the arrows.
   final FocusNode? focusNode;
+
+  /// Actions on this choice; [KitChoice.menu] when null.
+  final List<KitMenuItem>? menu;
+
+  /// The opened menu's name; [KitChoice.menuLabel] when null.
+  final String? menuLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -518,7 +558,10 @@ class KitChoiceRow<T> extends StatelessWidget {
       if (choice.supporting case final text? when text.isNotEmpty) text,
       if (choice.recommended) l10n.kitChoiceRecommended,
     ].join(' · ');
-    final hasSupporting = current || supporting.isNotEmpty;
+    final showCurrent = current && !selected;
+    final hasSupporting = showCurrent || supporting.isNotEmpty;
+    final items = menu ?? choice.menu;
+    final itemsLabel = menuLabel ?? choice.menuLabel;
     final secondary = KitText.styleOf(context, KitTextRole.secondary);
 
     final words = Column(
@@ -536,7 +579,7 @@ class KitChoiceRow<T> extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                if (current)
+                if (showCurrent)
                   supporting.isEmpty
                       ? TextSpan(
                           text: l10n.kitChoiceCurrent,
@@ -567,7 +610,7 @@ class KitChoiceRow<T> extends StatelessWidget {
         padding: EdgeInsetsDirectional.fromSTEB(
           tokens.gutter,
           tokens.space2,
-          tokens.gutter,
+          items.isEmpty ? tokens.gutter : tokens.space1,
           tokens.space2,
         ),
         child: Row(
@@ -588,7 +631,7 @@ class KitChoiceRow<T> extends StatelessWidget {
       ),
     );
 
-    return MergeSemantics(
+    final row = MergeSemantics(
       child: Semantics(
         checked: mark == KitChoiceMark.check ? selected : null,
         inMutuallyExclusiveGroup: mark == KitChoiceMark.radio ? true : null,
@@ -598,9 +641,22 @@ class KitChoiceRow<T> extends StatelessWidget {
           selected: mark == KitChoiceMark.radio ? selected : null,
           focusNode: focusNode,
           tappableKey: rowKey,
+          menu: enabled ? items : const [],
           child: body,
         ),
       ),
+    );
+    if (items.isEmpty) return row;
+    // The choice's own actions sit on its row, after the words; the button
+    // is its own node, outside the row's merged selection node.
+    return Row(
+      children: [
+        Expanded(child: row),
+        Padding(
+          padding: EdgeInsetsDirectional.only(end: tokens.space1),
+          child: KitRowMenu(items: items, menuLabel: itemsLabel),
+        ),
+      ],
     );
   }
 }

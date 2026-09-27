@@ -33,8 +33,8 @@ enum KitReceiptState {
   answeredElsewhere,
 }
 
-/// A write's receipt, shown in place as a mark and a word: "Sending…",
-/// "Sent", "Done" (or the act, [label]), "Not confirmed yet" with Try
+/// A write's receipt, shown in place as a mark and a word: "Sending…" (or
+/// the act's own in-flight words, [sendingLabel]), "Sent", "Done" (or the act, [label]), "Not confirmed yet" with Try
 /// again, "Not accepted: {reason}", "Answered on {where}".
 ///
 /// With [automatic] it is the automation vertical's `KitAutoLine` (AUTO-4):
@@ -63,6 +63,7 @@ class KitReceipt extends StatelessWidget {
     super.key,
     required this.state,
     this.label,
+    this.sendingLabel,
     this.reason,
     this.where,
     this.at,
@@ -83,6 +84,13 @@ class KitReceipt extends StatelessWidget {
   /// [automatic] line it replaces the state word in every state
   /// ("Restarted the phone's server"), beside the state's own mark.
   final String? label;
+
+  /// The in-flight words for the act, replacing "Sending…" while the state
+  /// is [KitReceiptState.sending]: "Moving to Review…". Only the sending
+  /// word changes: a write that stays unconfirmed still turns into "Not
+  /// confirmed yet" with Try again, and a sent write still says "Sent".
+  /// Ignored on an [automatic] line, where [label] names the act.
+  final String? sendingLabel;
 
   /// [KitReceiptState.refused]: the server's reason in plain words.
   final String? reason;
@@ -124,11 +132,19 @@ class KitReceipt extends StatelessWidget {
     String? reason,
     String? label,
     String? where,
+    String? sendingLabel,
   }) {
     final roles = KitTokens.of(context).roles;
+    final word = _visibleWord(
+      context,
+      state,
+      reason: reason,
+      label: label,
+      where: where,
+      sendingLabel: sendingLabel,
+    );
     return TextSpan(
-      text:
-          '${_visibleWord(context, state, reason: reason, label: label, where: where)} · ',
+      text: '$word · ',
       style: TextStyle(color: _wordColor(roles, state)),
     );
   }
@@ -177,6 +193,7 @@ class KitReceipt extends StatelessWidget {
       reason: reason,
       label: label,
       where: where,
+      sendingLabel: sendingLabel,
       automatic: automatic,
     );
     final time = at == null ? null : _time(context, at!);
@@ -188,6 +205,7 @@ class KitReceipt extends StatelessWidget {
         shown,
         label: label,
         where: where,
+        sendingLabel: sendingLabel,
         automatic: automatic,
       ),
       if (shown == KitReceiptState.refused &&
@@ -305,6 +323,7 @@ String _visibleWord(
   String? reason,
   String? label,
   String? where,
+  String? sendingLabel,
   bool automatic = false,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -325,6 +344,7 @@ String _visibleWord(
     state,
     label: label,
     where: where,
+    sendingLabel: sendingLabel,
     automatic: automatic,
   );
 }
@@ -342,6 +362,7 @@ String _plainWord(
   KitReceiptState state, {
   String? label,
   String? where,
+  String? sendingLabel,
   bool automatic = false,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -351,8 +372,12 @@ String _plainWord(
   if (automaticAct != null) return KitBidi.auto(automaticAct);
   final act = label?.trim();
   final place = where?.trim();
+  final sending = sendingLabel?.trim();
   return switch (state) {
-    KitReceiptState.sending => l10n.kitReceiptSending,
+    KitReceiptState.sending =>
+      sending != null && sending.isNotEmpty
+          ? KitBidi.auto(sending)
+          : l10n.kitReceiptSending,
     KitReceiptState.sent => l10n.kitReceiptSent,
     KitReceiptState.confirmed =>
       act != null && act.isNotEmpty
