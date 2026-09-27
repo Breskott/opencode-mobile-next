@@ -170,6 +170,38 @@ void main() {
       expect(KitUndo.debugHasPending, isFalse);
     });
 
+    testWidgets(
+      '5d. a route opened on top commits the bar (never covers a sheet)',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        var commits = 0;
+        late BuildContext pushed;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (inner) {
+              pushed = inner;
+              return const SizedBox.expand();
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+        showKitUndo(
+          pushed,
+          message: 'Archived "Fix login"',
+          onUndo: () {},
+          onCommit: () => commits++,
+        );
+        await tester.pump();
+        expect(KitUndo.debugHasPending, isTrue);
+        Navigator.of(pushed).push(
+          MaterialPageRoute<void>(builder: (_) => const SizedBox.expand()),
+        );
+        await tester.pumpAndSettle();
+        expect(commits, 1);
+        expect(KitUndo.debugHasPending, isFalse);
+      },
+    );
+
     testWidgets('5b. AppLifecycleState.paused commits the pending bar', (
       tester,
     ) async {

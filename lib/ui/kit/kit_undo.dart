@@ -74,7 +74,8 @@ abstract final class KitUndo {
   static const Duration window = KitMotion.undoWindow;
 
   /// Commits a pending bar now (runs its `onCommit`, closes it). Called by
-  /// the kit on route pop and `AppLifecycleState.paused`; public for the
+  /// the kit on route pop, when a route opens on top of the one that showed
+  /// the bar, and on `AppLifecycleState.paused`; public for the
   /// app's lifecycle wiring and tests. No-op when nothing is pending.
   static void commitPending() => _KitUndoHost.instance.commitPending();
 
@@ -109,6 +110,9 @@ class _PendingUndo extends ChangeNotifier {
   final KitClearance clearance;
 
   Timer? _timer;
+
+  /// Removes the "something opened on top" listener (see [_KitUndoHost.show]).
+  VoidCallback? detach;
   bool working = false;
   Object? error;
   bool _disposed = false;
@@ -142,6 +146,8 @@ class _PendingUndo extends ChangeNotifier {
   @override
   void dispose() {
     cancelTimer();
+    detach?.call();
+    detach = null;
     if (_disposed) return;
     _disposed = true;
     super.dispose();
@@ -196,6 +202,23 @@ class _KitUndoHost {
     route?.popped.then((_) {
       if (identical(current.value, pending)) _commit(pending);
     });
+    // A sheet, dialog or page opened on top of the route that showed the bar
+    // is a new act: commit then, so the bar never sits over the new route's
+    // bottom rows for the rest of its window.
+    final cover = route?.secondaryAnimation;
+    if (cover != null) {
+      void onCovered(AnimationStatus status) {
+        if (status != AnimationStatus.forward &&
+            status != AnimationStatus.completed) {
+          return;
+        }
+        cover.removeStatusListener(onCovered);
+        if (identical(current.value, pending)) _commit(pending);
+      }
+
+      cover.addStatusListener(onCovered);
+      pending.detach = () => cover.removeStatusListener(onCovered);
+    }
     current.value = pending;
     _ensureOverlayEntry(overlay);
     _ensureLifecycleObserver();
