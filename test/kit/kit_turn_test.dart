@@ -18,6 +18,8 @@ import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 
+import 'kit_motion_still.dart';
+
 const _turnKey = ValueKey('turn-1');
 const _footerKey = ValueKey('turn-1-footer');
 const _copyKey = ValueKey('message-copy-1');
@@ -136,6 +138,30 @@ KitTurn _turn({
 );
 
 void main() {
+  kitMotionStillTests(
+    'KitTurn',
+    builds: {
+      'running': () => _turn(
+        phase: KitTurnPhase.running,
+        blocks: [_line(KitWorkState.running)],
+      ),
+      'finished': () => _turn(footer: _footer()),
+    },
+    changes: {
+      'reply finishes': KitMotionChange(
+        build: () => _turn(
+          phase: KitTurnPhase.running,
+          latest: true,
+          blocks: [_line(KitWorkState.running)],
+        ),
+        act: (tester, stage) => stage.rebuild(
+          _turn(latest: true, footer: _footer(meta: 'Reply finished')),
+        ),
+        shows: 'Reply finished',
+      ),
+    },
+  );
+
   late List<MethodCall> platform;
   late List<Map<Object?, Object?>> announcements;
 

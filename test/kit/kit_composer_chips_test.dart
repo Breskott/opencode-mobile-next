@@ -150,6 +150,27 @@ ThemeRoles _roles(WidgetTester tester) =>
     KitTokens.of(tester.element(find.byType(KitComposerChips).first)).roles;
 
 void main() {
+  kitMotionStillTests(
+    'KitComposerStatusStrip',
+    builds: {
+      'facts': () => KitComposerStatusStrip(chips: [_model()]),
+      'empty': () => const KitComposerStatusStrip(chips: []),
+    },
+    changes: {
+      'fact appears': KitMotionChange(
+        build: () => const KitComposerStatusStrip(chips: []),
+        act: (tester, stage) => stage.rebuild(
+          KitComposerStatusStrip(
+            chips: [
+              KitComposerChips.model(label: 'Review model', onPressed: () {}),
+            ],
+          ),
+        ),
+        shows: 'Review model',
+      ),
+    },
+  );
+
   group('1. model chip words', () {
     testWidgets('each state says its words; only chooseNeeded says '
         '"Choose a model"', (tester) async {

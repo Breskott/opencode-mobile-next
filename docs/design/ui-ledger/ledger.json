@@ -1,5 +1,5 @@
 {
- "generatedFrom": "42d3932d239882a00b3ea9da3b6a3da611058d5c",
+ "generatedFrom": "e5b781663d937e285f397b50fc1a9e526326f7d8",
  "pages": [
   {
    "id": "system",
@@ -919,7 +919,7 @@
      "label": "[drop files]",
      "key": "composer-drop-highlight",
      "file": "lib/ui/desktop/file_drop.dart",
-     "line": 105,
+     "line": 96,
      "action": "other",
      "target": "file-drop-failed-dialog",
      "targetWidget": null,
@@ -1778,11 +1778,6 @@
      "evidence": "lib/ui/screens/profile_monitor_screen.dart:64"
     },
     {
-     "page": "embedded-return-brief-panel",
-     "element": null,
-     "evidence": "lib/ui/widgets/return_brief_panel.dart:69"
-    },
-    {
      "page": "system",
      "element": "system-activityscreen-initialquestionsessionid-from-a-question-noti-to-question-sheet"
     },
@@ -2025,10 +2020,6 @@
     {
      "page": "phone-setup-ready",
      "element": "phone-setup-ready-close"
-    },
-    {
-     "page": "team-phone-onboarding-success",
-     "element": "team-phone-onboarding-success-open-workspace"
     }
    ],
    "gates": [
@@ -2937,7 +2928,7 @@
    "file": "lib/ui/screens/chat/approvals_sheet.dart",
    "widget": "_AutoApprovalIndicator",
    "presentedBy": [],
-   "line": 330,
+   "line": 257,
    "purpose": "Persistent strip in the chat attention slot above the composer while automatic approval is on for the session.",
    "reachedFrom": [
     {
@@ -2963,7 +2954,7 @@
      "label": "Approving automatically / Auto-approval paused (semantics: \"… Open approval settings\")",
      "key": "auto-approval-indicator",
      "file": "lib/ui/screens/chat/approvals_sheet.dart",
-     "line": 375,
+     "line": 303,
      "action": "open-sheet",
      "target": "session-approvals-sheet",
      "targetWidget": "showSessionApprovalsSheet",
@@ -3208,22 +3199,6 @@
      "effect": "Navigator.pop(context, 'changes'); ChatScreen._openSessionMenu then calls _showDiff(): pushes ReviewWorkspace (or DiffView when isolated).",
      "gates": [
       "changesAvailable: _conn.capabilities.sessionDiff"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "session-menu-sheet-todos",
-     "type": "chip",
-     "label": "Todos",
-     "key": null,
-     "file": "lib/ui/screens/chat/attention_card.dart",
-     "line": 611,
-     "action": "open-sheet",
-     "target": "todos-sheet",
-     "targetWidget": "_showTodos",
-     "effect": "Navigator.pop(context, 'todos'); ChatScreen._openSessionMenu then calls _showTodos().",
-     "gates": [
-      "todosAvailable: _conn.capabilities.sessionTodos"
      ],
      "destructive": false
     },
@@ -3530,6 +3505,146 @@
      "effect": "_SessionSheetRow (timeline_sheet.dart:15) pops 'reload'; ChatScreen._openSessionMenu then calls _load(): re-fetches the transcript.",
      "gates": [],
      "destructive": false
+    },
+    {
+     "id": "session-menu-sheet-todos",
+     "type": "chip",
+     "label": "Tasks",
+     "key": null,
+     "file": "lib/ui/screens/chat/session_sheets.dart",
+     "line": 28,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Tasks now opens the latest plan in the transcript via _openPlan; there is no Tasks sheet (chat/session_sheets.dart).",
+     "gates": [
+      "todosAvailable: _conn.capabilities.sessionTodos"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-subagent-context-banner",
+   "title": "[Subagent session banner: \"Subagent · {count}\"]",
+   "kind": "overlay",
+   "area": "chat",
+   "file": "lib/ui/screens/chat/chat_states.dart",
+   "widget": "_SubagentContextBanner",
+   "presentedBy": [],
+   "line": 268,
+   "purpose": "Banner shown in a delegated (child) session with links to the parent session and the sibling list.",
+   "reachedFrom": [
+    {
+     "page": "chat",
+     "element": null
+    },
+    {
+     "page": "chat",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "_promptError == null",
+    "!_conn.isIsolated && parentID != null"
+   ],
+   "embeddedIn": [
+    "ChatScreen"
+   ],
+   "hostPages": [
+    "chat"
+   ],
+   "elements": [
+    {
+     "id": "embedded-subagent-context-banner-parent",
+     "type": "icon-button",
+     "label": "Open parent session",
+     "key": "subagent-parent-session",
+     "file": "lib/ui/screens/chat/chat_states.dart",
+     "line": 283,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "/chat/<id>",
+     "effect": "onParent -> ChatScreen._openParentSession() -> _openRelatedSession(parent): _conn.selectLocationForExistingSession then pushReplacementNamed(\"/chat/<parent id>\").",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-subagent-context-banner-all",
+     "type": "icon-button",
+     "label": "Show all subagent sessions",
+     "key": "subagent-session-list",
+     "file": "lib/ui/screens/chat/chat_states.dart",
+     "line": 289,
+     "action": "navigate",
+     "target": "session-relations",
+     "targetWidget": "SessionRelationsScreen",
+     "effect": "onAll -> ChatScreen._showSubagents() (chat_screen.dart:5703) pushes SessionRelationsScreen.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-shared-session-banner",
+   "title": "[Shared session banner: \"Shared: anyone with the link can view\"]",
+   "kind": "overlay",
+   "area": "chat",
+   "file": "lib/ui/screens/chat/chat_states.dart",
+   "widget": "_SharedSessionBanner",
+   "presentedBy": [],
+   "line": 300,
+   "purpose": "Banner shown while the session has a public share URL.",
+   "reachedFrom": [
+    {
+     "page": "chat",
+     "element": null
+    },
+    {
+     "page": "chat",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "_promptError == null && parentID == null",
+    "!_conn.isIsolated && shareUrl != null"
+   ],
+   "embeddedIn": [
+    "ChatScreen"
+   ],
+   "hostPages": [
+    "chat"
+   ],
+   "elements": [
+    {
+     "id": "embedded-shared-session-banner-copy",
+     "type": "icon-button",
+     "label": "Copy share link",
+     "key": null,
+     "file": "lib/ui/screens/chat/chat_states.dart",
+     "line": 314,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(ClipboardData(text: url)).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-shared-session-banner-stop",
+     "type": "button",
+     "label": "Stop sharing",
+     "key": null,
+     "file": "lib/ui/screens/chat/chat_states.dart",
+     "line": 320,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onStop -> ChatScreen._stopSharing() (chat_screen.dart:3455): repository.unshareSession(widget.sessionID), clears _localShareUrl, _conn.refreshSessions(). No confirmation.",
+     "gates": [],
+     "destructive": true
     }
    ]
   },
@@ -4377,6 +4492,140 @@
    ],
    "elements": [
     {
+     "id": "embedded-composer-submit-shortcut",
+     "type": "gesture",
+     "label": "Ctrl+Enter / Cmd+Enter (desktop: Enter, Numpad Enter)",
+     "key": null,
+     "file": "lib/ui/kit/chat/kit_composer.dart",
+     "line": 450,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "CallbackShortcuts -> _submitFromKeyboard(): calls onSend (ChatScreen._send) when _hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy).",
+     "gates": [
+      "!isolated && onSubmitShortcut != null",
+      "plain Enter / numpadEnter only when desktopInteractions"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-composer-send",
+     "type": "icon-button",
+     "label": "Send | Send after this run | Queue after this run | Send now and steer this run",
+     "key": "chat-send-button",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 290,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSend -> ChatScreen._send() (chat_screen.dart:2425); while busy the tooltip reflects the delivery mode (line 1238). Shows a spinner while sending.",
+     "gates": [
+      "!busy || canSendWhileBusy (host: !_voiceConversation)",
+      "disabled when sending || !(_hasPrompt && !shelfBusy)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-composer-stop",
+     "type": "icon-button",
+     "label": "Stop",
+     "key": "chat-send-button | chat-stop-button",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 291,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_stop(): dismisses tooltips then onStop -> ChatScreen._abort() (chat_screen.dart:3383) aborting the running turn. Rendered with key chat-send-button when busy && !canSendWhileBusy (line 1188), or as chat-stop-button beside Send when busy && canSendWhileBusy (line 1227).",
+     "gates": [
+      "busy",
+      "disabled while stopping"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-composer-delivery-toggle",
+     "type": "toggle",
+     "label": "Steer | Queue (SegmentedButton)",
+     "key": "composer-delivery-steer / composer-delivery-queue (segment label keys); container composer-delivery-control",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 295,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSelectionChanged -> onDeliveryChanged(selection.single); host does setState(() => _delivery = delivery), changing whether Send steers the running turn or queues after it.",
+     "gates": [
+      "busy && canSendWhileBusy && _hasPrompt",
+      "canChooseDelivery (host: _conn.supportsInbox) && onDeliveryChanged != null; otherwise a non-interactive _QueueHint (key composer-queue-hint) is shown"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-composer-model-chip",
+     "type": "button",
+     "label": "<agent · model · variant> | Choose model (tooltip: Model and agent: {model}. Tap to change.{cost})",
+     "key": "composer-model-context",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 347,
+     "action": "open-sheet",
+     "target": "model-picker-sheet",
+     "targetWidget": "showModelPicker",
+     "effect": "Calls onChooseModel; host calls showModelPicker(context, applyScope: _modelApplyScope, sessionID: widget.sessionID) unless _conn.isIsolated.",
+     "gates": [
+      "!isolated (isolated shows plain text instead)",
+      "collapses to an icon when narrower than 80 scaled px"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-composer-attachment-chip-remove",
+     "type": "icon-button",
+     "label": "Remove attachment {name} / Remove reference @{name}",
+     "key": null,
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 403,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Calls onRemoveAttachment(attachment); host removes the pending attachment from the draft.",
+     "gates": [
+      "attachments.isNotEmpty"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-composer-reference-chip-remove",
+     "type": "icon-button",
+     "label": "Remove reference {name}",
+     "key": null,
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 405,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Removes one staged review reference chip; calls onRemoveReference(reference) (host callback in ChatScreen, null disables the button). References are in-memory only.",
+     "gates": [
+      "references.isNotEmpty"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-composer-attachment-chip-preview",
+     "type": "chip",
+     "label": "<attachment filename> (tooltip: Preview {name})",
+     "key": null,
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 427,
+     "action": "open-sheet",
+     "target": "file-preview-sheet",
+     "targetWidget": "showFilePreviewSheet",
+     "effect": "Opens showFilePreviewSheet(context, FilePreviewData.fromDataUrl(name, mimeType, url)) for the pending attachment.",
+     "gates": [
+      "attachments.isNotEmpty",
+      "!attachment.isDirectoryReference (directory references render as non-tappable \"@<name>\")"
+     ],
+     "destructive": false
+    },
+    {
      "id": "embedded-composer-restore-history-draft",
      "type": "button",
      "label": "Restore original draft",
@@ -4485,23 +4734,6 @@
      "destructive": false
     },
     {
-     "id": "embedded-composer-submit-shortcut",
-     "type": "gesture",
-     "label": "Ctrl+Enter / Cmd+Enter (desktop: Enter, Numpad Enter)",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 735,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "CallbackShortcuts -> _submitFromKeyboard(): calls onSend (ChatScreen._send) when _hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy).",
-     "gates": [
-      "!isolated && onSubmitShortcut != null",
-      "plain Enter / numpadEnter only when desktopInteractions"
-     ],
-     "destructive": false
-    },
-    {
      "id": "embedded-composer-inline-agent-show-all",
      "type": "button",
      "label": "Show all subagents",
@@ -4517,23 +4749,6 @@
      ],
      "destructive": false,
      "widgetFile": "lib/ui/screens/chat/command_launcher.dart"
-    },
-    {
-     "id": "embedded-composer-tools-button-long-press",
-     "type": "gesture",
-     "label": "[long-press on tools button: attach a file]",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 788,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "GestureDetector.onLongPress -> onAttach -> ChatScreen._pickAttachment() (chat_screen.dart:3013), opening the system file picker directly.",
-     "gates": [
-      "!isolated && !conversationMode",
-      "null when _attachBlocked (sending || shelfBusy || (busy && !canSendWhileBusy)) || !promptAttachmentsSupported"
-     ],
-     "destructive": false
     },
     {
      "id": "embedded-composer-tools-button",
@@ -4553,121 +4768,23 @@
      "destructive": false
     },
     {
-     "id": "embedded-composer-model-chip",
-     "type": "button",
-     "label": "<agent · model · variant> | Choose model (tooltip: Model and agent: {model}. Tap to change.{cost})",
-     "key": "composer-model-context",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1089,
-     "action": "open-sheet",
-     "target": "model-picker-sheet",
-     "targetWidget": "showModelPicker",
-     "effect": "Calls onChooseModel; host calls showModelPicker(context, applyScope: _modelApplyScope, sessionID: widget.sessionID) unless _conn.isIsolated.",
-     "gates": [
-      "!isolated (isolated shows plain text instead)",
-      "collapses to an icon when narrower than 80 scaled px"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-stop",
-     "type": "icon-button",
-     "label": "Stop",
-     "key": "chat-send-button | chat-stop-button",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1188,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_stop(): dismisses tooltips then onStop -> ChatScreen._abort() (chat_screen.dart:3383) aborting the running turn. Rendered with key chat-send-button when busy && !canSendWhileBusy (line 1188), or as chat-stop-button beside Send when busy && canSendWhileBusy (line 1227).",
-     "gates": [
-      "busy",
-      "disabled while stopping"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "embedded-composer-send",
-     "type": "icon-button",
-     "label": "Send | Send after this run | Queue after this run | Send now and steer this run",
-     "key": "chat-send-button",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1206,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onSend -> ChatScreen._send() (chat_screen.dart:2425); while busy the tooltip reflects the delivery mode (line 1238). Shows a spinner while sending.",
-     "gates": [
-      "!busy || canSendWhileBusy (host: !_voiceConversation)",
-      "disabled when sending || !(_hasPrompt && !shelfBusy)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-delivery-toggle",
-     "type": "toggle",
-     "label": "Steer | Queue (SegmentedButton)",
-     "key": "composer-delivery-steer / composer-delivery-queue (segment label keys); container composer-delivery-control",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1323,
+     "id": "embedded-composer-history-keys",
+     "type": "gesture",
+     "label": "Arrow Up (caret at start) / Arrow Down (caret at end)",
+     "key": null,
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 970,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "onSelectionChanged -> onDeliveryChanged(selection.single); host does setState(() => _delivery = delivery), changing whether Send steers the running turn or queues after it.",
+     "effect": "isPromptHistoryKey(event, value, suggestionsOpen:) gates ChatScreen._navigatePromptHistory (chat_screen.dart:893, installed as _focus.onKeyEvent at :573); PromptHistoryNavigation.move() swaps the draft for older/newer sent prompts and keeps the original for \"Restore original draft\".",
      "gates": [
-      "busy && canSendWhileBusy && _hasPrompt",
-      "canChooseDelivery (host: _conn.supportsInbox) && onDeliveryChanged != null; otherwise a non-interactive _QueueHint (key composer-queue-hint) is shown"
+      "KeyDownEvent with no Ctrl/Alt/Meta/Shift",
+      "selection collapsed and no active IME composing range",
+      "!suggestionsOpen",
+      "host: !_conn.isIsolated && !_sending && !_promptShelfBusy"
      ],
      "destructive": false
-    },
-    {
-     "id": "embedded-composer-attachment-chip-preview",
-     "type": "chip",
-     "label": "<attachment filename> (tooltip: Preview {name})",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1525,
-     "action": "open-sheet",
-     "target": "file-preview-sheet",
-     "targetWidget": "showFilePreviewSheet",
-     "effect": "Opens showFilePreviewSheet(context, FilePreviewData.fromDataUrl(name, mimeType, url)) for the pending attachment.",
-     "gates": [
-      "attachments.isNotEmpty",
-      "!attachment.isDirectoryReference (directory references render as non-tappable \"@<name>\")"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-attachment-chip-remove",
-     "type": "icon-button",
-     "label": "Remove attachment {name} / Remove reference @{name}",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1565,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Calls onRemoveAttachment(attachment); host removes the pending attachment from the draft.",
-     "gates": [
-      "attachments.isNotEmpty"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "embedded-composer-reference-chip-remove",
-     "type": "icon-button",
-     "label": "Remove reference {name}",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1650,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Removes one staged review reference chip; calls onRemoveReference(reference) (host callback in ChatScreen, null disables the button). References are in-memory only.",
-     "gates": [
-      "references.isNotEmpty"
-     ],
-     "destructive": true
     },
     {
      "id": "embedded-composer-model-cycle-menu",
@@ -4734,25 +4851,6 @@
       "enabled: hasFavorites"
      ],
      "destructive": false
-    },
-    {
-     "id": "embedded-composer-history-keys",
-     "type": "gesture",
-     "label": "Arrow Up (caret at start) / Arrow Down (caret at end)",
-     "key": null,
-     "file": "lib/ui/widgets/prompt_history_navigation.dart",
-     "line": 4,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "isPromptHistoryKey(event, value, suggestionsOpen:) gates ChatScreen._navigatePromptHistory (chat_screen.dart:893, installed as _focus.onKeyEvent at :573); PromptHistoryNavigation.move() swaps the draft for older/newer sent prompts and keeps the original for \"Restore original draft\".",
-     "gates": [
-      "KeyDownEvent with no Ctrl/Alt/Meta/Shift",
-      "selection collapsed and no active IME composing range",
-      "!suggestionsOpen",
-      "host: !_conn.isIsolated && !_sending && !_promptShelfBusy"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -4766,7 +4864,7 @@
    "presentedBy": [
     "_ChatComposer._openTools (showKitSheet)"
    ],
-   "line": 814,
+   "line": 594,
    "purpose": "One sheet behind the composer \"+\" button listing commands, attach, photo, voice, advanced and prompt-shelf tools; each tile pops with a _PromptTool that _ChatComposer._openTool dispatches to a ChatScreen callback.",
    "reachedFrom": [
     {
@@ -4779,26 +4877,12 @@
    ],
    "elements": [
     {
-     "id": "prompt-tools-sheet-commands",
-     "type": "list-tile",
-     "label": "Commands and agents",
-     "key": "composer-tool-commands",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 864,
-     "action": "open-sheet",
-     "target": "command-launcher-sheet",
-     "targetWidget": "_CommandLauncherSheet",
-     "effect": "Pops _PromptTool.commands; _openTool calls onOpenCommands -> ChatScreen._openCommandLauncher().",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "prompt-tools-sheet-attach",
      "type": "list-tile",
      "label": "Attach file",
      "key": "composer-tool-attach",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 881,
+     "line": 662,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -4815,7 +4899,7 @@
      "label": "Photo library",
      "key": "composer-tool-gallery",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 893,
+     "line": 670,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -4832,7 +4916,7 @@
      "label": "Take photo",
      "key": "composer-tool-camera",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 902,
+     "line": 678,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -4849,7 +4933,7 @@
      "label": "Voice input",
      "key": "composer-tool-voice",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 926,
+     "line": 688,
      "action": "open-sheet",
      "target": "voice-composer-sheet",
      "targetWidget": "showVoiceComposerResultSheet",
@@ -4861,12 +4945,107 @@
      "destructive": false
     },
     {
+     "id": "prompt-tools-sheet-commands",
+     "type": "list-tile",
+     "label": "Commands and agents",
+     "key": "composer-tool-commands",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 697,
+     "action": "open-sheet",
+     "target": "command-launcher-sheet",
+     "targetWidget": "_CommandLauncherSheet",
+     "effect": "Pops _PromptTool.commands; _openTool calls onOpenCommands -> ChatScreen._openCommandLauncher().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "prompt-tools-sheet-prompts",
+     "type": "list-tile",
+     "label": "Prompts",
+     "key": "composer-tools-prompts",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 705,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile: expands the prompt history / drafts / stash / clear rows.",
+     "gates": [
+      "canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "prompt-tools-sheet-history",
+     "type": "list-tile",
+     "label": "Reuse a prompt",
+     "key": "composer-tool-history",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 712,
+     "action": "open-sheet",
+     "target": "prompt-history-sheet",
+     "targetWidget": "_PromptHistorySheet",
+     "effect": "Pops _PromptTool.history; onReusePrompt -> ChatScreen._reusePrompt() (chat_screen.dart:875) opens _PromptHistorySheet and appends the chosen prompt to the draft.",
+     "gates": [
+      "canReusePrompt (host: _recentPrompts.isNotEmpty)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "prompt-tools-sheet-saved",
+     "type": "list-tile",
+     "label": "Saved prompts",
+     "key": "composer-tool-saved",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 720,
+     "action": "open-sheet",
+     "target": "prompt-stash-sheet",
+     "targetWidget": "_PromptStashSheet",
+     "effect": "Pops _PromptTool.saved; onOpenStash -> ChatScreen._openPromptStash() (chat_screen.dart:1005) opens _PromptStashSheet.",
+     "gates": [
+      "canOpenStash"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "prompt-tools-sheet-stash",
+     "type": "list-tile",
+     "label": "Save prompt for later",
+     "key": "composer-tool-stash",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 727,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops _PromptTool.stash; onStashPrompt -> ChatScreen._stashCurrentPrompt() (chat_screen.dart:953) -> _conn.savePromptStash(snapshot, locationRevision).",
+     "gates": [
+      "canOpenStash (host: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy)",
+      "enabled only when canStash (_hasPrompt && onStashPrompt != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "prompt-tools-sheet-clear",
+     "type": "list-tile",
+     "label": "Clear draft text",
+     "key": "composer-tool-clear",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 737,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops _PromptTool.clearText; onClearText -> ChatScreen._clearDraftText() (chat_screen.dart:1164) clears the composer text and shows a snackbar.",
+     "gates": [
+      "canClearText (controller.text.isNotEmpty && onClearText != null)"
+     ],
+     "destructive": true
+    },
+    {
      "id": "prompt-tools-sheet-advanced",
      "type": "list-tile",
      "label": "More tools",
      "key": "composer-tools-advanced",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 930,
+     "line": 745,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -4880,7 +5059,7 @@
      "label": "Add web source",
      "key": null,
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 950,
+     "line": 752,
      "action": "navigate",
      "target": "web-sources",
      "targetWidget": "WebSourcesScreen",
@@ -4898,7 +5077,7 @@
      "label": "Voice conversation",
      "key": "composer-tool-conversation",
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 963,
+     "line": 762,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -4909,103 +5088,6 @@
       "disabled when voiceBlocked"
      ],
      "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-prompts",
-     "type": "list-tile",
-     "label": "Prompts",
-     "key": "composer-tools-prompts",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 974,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile: expands the prompt history / drafts / stash / clear rows.",
-     "gates": [
-      "canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-history",
-     "type": "list-tile",
-     "label": "Reuse a prompt",
-     "key": "composer-tool-history",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 984,
-     "action": "open-sheet",
-     "target": "prompt-history-sheet",
-     "targetWidget": "_PromptHistorySheet",
-     "effect": "Pops _PromptTool.history; onReusePrompt -> ChatScreen._reusePrompt() (chat_screen.dart:875) opens _PromptHistorySheet and appends the chosen prompt to the draft.",
-     "gates": [
-      "canReusePrompt (host: _recentPrompts.isNotEmpty)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-legacy-drafts",
-     "type": "list-tile",
-     "label": "Older drafts",
-     "key": "composer-tool-legacy-drafts",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 994,
-     "action": "navigate",
-     "target": "legacy-drafts",
-     "targetWidget": "LegacyDraftsScreen",
-     "effect": "Pops _PromptTool.legacyDrafts; onLegacyDrafts -> ChatScreen._recoverLegacyDraft() (chat_screen.dart:3034) pushes LegacyDraftsScreen(controller: _conn).",
-     "gates": [
-      "hasLegacyDrafts (host: _conn.store.profiles.length >= 2 && _conn.legacySessionDrafts.isNotEmpty)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-stash",
-     "type": "list-tile",
-     "label": "Save prompt for later",
-     "key": "composer-tool-stash",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1004,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops _PromptTool.stash; onStashPrompt -> ChatScreen._stashCurrentPrompt() (chat_screen.dart:953) -> _conn.savePromptStash(snapshot, locationRevision).",
-     "gates": [
-      "canOpenStash (host: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy)",
-      "enabled only when canStash (_hasPrompt && onStashPrompt != null)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-saved",
-     "type": "list-tile",
-     "label": "Saved prompts",
-     "key": "composer-tool-saved",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1015,
-     "action": "open-sheet",
-     "target": "prompt-stash-sheet",
-     "targetWidget": "_PromptStashSheet",
-     "effect": "Pops _PromptTool.saved; onOpenStash -> ChatScreen._openPromptStash() (chat_screen.dart:1005) opens _PromptStashSheet.",
-     "gates": [
-      "canOpenStash"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-clear",
-     "type": "list-tile",
-     "label": "Clear draft text",
-     "key": "composer-tool-clear",
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1026,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops _PromptTool.clearText; onClearText -> ChatScreen._clearDraftText() (chat_screen.dart:1164) clears the composer text and shows a snackbar.",
-     "gates": [
-      "canClearText (controller.text.isNotEmpty && onClearText != null)"
-     ],
-     "destructive": true
     }
    ]
   },
@@ -5299,6 +5381,22 @@
      "destructive": false
     },
     {
+     "id": "embedded-message-view-reasoning-toggle",
+     "type": "list-tile",
+     "label": "Reasoning (tap to expand) (semantics: Expand/Collapse reasoning details)",
+     "key": "reasoning-toggle",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1730,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_open = !_open) and _persist(_open) into the expansion store.",
+     "gates": [
+      "reasoning part whose text is not short (_isShort renders short reasoning inline without a toggle)"
+     ],
+     "destructive": false
+    },
+    {
      "id": "embedded-message-view-error-details",
      "type": "button",
      "label": "Details",
@@ -5401,28 +5499,12 @@
      "destructive": false
     },
     {
-     "id": "embedded-message-view-reasoning-toggle",
-     "type": "list-tile",
-     "label": "Reasoning (tap to expand) (semantics: Expand/Collapse reasoning details)",
-     "key": "reasoning-toggle",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2211,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "setState(_open = !_open) and _persist(_open) into the expansion store.",
-     "gates": [
-      "reasoning part whose text is not short (_isShort renders short reasoning inline without a toggle)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "embedded-message-view-background-result-open-child",
      "type": "button",
      "label": "Open subagent session",
      "key": null,
      "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2845,
+     "line": 1992,
      "action": "navigate",
      "target": "chat",
      "targetWidget": "/chat/<id>",
@@ -5440,7 +5522,7 @@
      "label": "Server message details",
      "key": null,
      "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2850,
+     "line": 1995,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -5449,6 +5531,135 @@
       "BackgroundAgentResult.fromPart(part) != null"
      ],
      "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-pending-sends-strip",
+   "title": "[Pending sends strip]",
+   "kind": "overlay",
+   "area": "chat",
+   "file": "lib/ui/screens/chat/message_view.dart",
+   "widget": "_PendingSendsStrip",
+   "presentedBy": [],
+   "line": 1748,
+   "purpose": "List between transcript and composer of offline queued drafts and OpenCode 2 inbox items that have not reached the agent yet.",
+   "reachedFrom": [
+    {
+     "page": "chat",
+     "element": "chat-pending-sends-strip"
+    },
+    {
+     "page": "chat",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "pendingSends.drafts.isNotEmpty || pendingSends.inbox.isNotEmpty"
+   ],
+   "embeddedIn": [
+    "ChatScreen"
+   ],
+   "hostPages": [
+    "chat"
+   ],
+   "elements": [
+    {
+     "id": "embedded-pending-sends-strip-queued-resend",
+     "type": "icon-button",
+     "label": "Send again",
+     "key": "queued-action-resend",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1812,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onResend(entry) -> ChatScreen._resendQueuedPrompt: explicit resend of a dispatched-but-unconfirmed draft.",
+     "gates": [
+      "entry.dispatched && !sending && !acceptedUnrecorded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-pending-sends-strip-queued-edit",
+     "type": "icon-button",
+     "label": "Edit draft",
+     "key": "queued-action-edit",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1818,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onEdit(entry) -> ChatScreen._editQueuedPrompt: moves the queued draft back into the composer.",
+     "gates": [
+      "disabled while sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-pending-sends-strip-queued-discard",
+     "type": "icon-button",
+     "label": "Discard draft",
+     "key": "queued-action-discard",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1825,
+     "action": "open-sheet",
+     "target": "chat-discard-queued-draft-sheet",
+     "targetWidget": "_discardQueuedPrompt",
+     "effect": "onDiscard(entry) -> ChatScreen._discardQueuedPrompt (chat_screen.dart:2293) which confirms through showConfirmSheet before removing the queued prompt.",
+     "gates": [
+      "disabled while sending"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-pending-sends-strip-inbox-flip-to-queue",
+     "type": "icon-button",
+     "label": "Wait for this run instead",
+     "key": "inbox-action-queue",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1855,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from steer to queue.",
+     "gates": [
+      "item.type == \"user\" && item.delivery == Api2Delivery.steer"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-pending-sends-strip-inbox-flip-to-steer",
+     "type": "icon-button",
+     "label": "Send now and steer instead",
+     "key": "inbox-action-steer",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1861,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from queue to steer.",
+     "gates": [
+      "item.type == \"user\" && item.delivery != Api2Delivery.steer"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-pending-sends-strip-inbox-cancel",
+     "type": "icon-button",
+     "label": "Cancel and return to the composer",
+     "key": "inbox-action-cancel",
+     "file": "lib/ui/screens/chat/message_view.dart",
+     "line": 1868,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onCancelInbox(item) -> ChatScreen._cancelInboxSend: cancels the server inbox item and restores its text to the composer.",
+     "gates": [
+      "item.type == \"user\""
+     ],
+     "destructive": true
     }
    ]
   },
@@ -5484,259 +5695,6 @@
      "gates": [],
      "destructive": false,
      "hostWiring": true
-    }
-   ]
-  },
-  {
-   "id": "embedded-subagent-context-banner",
-   "title": "[Subagent session banner: \"Subagent · {count}\"]",
-   "kind": "overlay",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/message_view.dart",
-   "widget": "_SubagentContextBanner",
-   "presentedBy": [],
-   "line": 2290,
-   "purpose": "Banner shown in a delegated (child) session with links to the parent session and the sibling list.",
-   "reachedFrom": [
-    {
-     "page": "chat",
-     "element": null
-    },
-    {
-     "page": "chat",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "_promptError == null",
-    "!_conn.isIsolated && parentID != null"
-   ],
-   "embeddedIn": [
-    "ChatScreen"
-   ],
-   "hostPages": [
-    "chat"
-   ],
-   "elements": [
-    {
-     "id": "embedded-subagent-context-banner-parent",
-     "type": "icon-button",
-     "label": "Open parent session",
-     "key": "subagent-parent-session",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2328,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<id>",
-     "effect": "onParent -> ChatScreen._openParentSession() -> _openRelatedSession(parent): _conn.selectLocationForExistingSession then pushReplacementNamed(\"/chat/<parent id>\").",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-subagent-context-banner-all",
-     "type": "icon-button",
-     "label": "Show all subagent sessions",
-     "key": "subagent-session-list",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2334,
-     "action": "navigate",
-     "target": "session-relations",
-     "targetWidget": "SessionRelationsScreen",
-     "effect": "onAll -> ChatScreen._showSubagents() (chat_screen.dart:5703) pushes SessionRelationsScreen.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-shared-session-banner",
-   "title": "[Shared session banner: \"Shared: anyone with the link can view\"]",
-   "kind": "overlay",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/message_view.dart",
-   "widget": "_SharedSessionBanner",
-   "presentedBy": [],
-   "line": 2344,
-   "purpose": "Banner shown while the session has a public share URL.",
-   "reachedFrom": [
-    {
-     "page": "chat",
-     "element": null
-    },
-    {
-     "page": "chat",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "_promptError == null && parentID == null",
-    "!_conn.isIsolated && shareUrl != null"
-   ],
-   "embeddedIn": [
-    "ChatScreen"
-   ],
-   "hostPages": [
-    "chat"
-   ],
-   "elements": [
-    {
-     "id": "embedded-shared-session-banner-copy",
-     "type": "icon-button",
-     "label": "Copy share link",
-     "key": null,
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2381,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Clipboard.setData(ClipboardData(text: url)).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-shared-session-banner-stop",
-     "type": "button",
-     "label": "Stop sharing",
-     "key": null,
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2385,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onStop -> ChatScreen._stopSharing() (chat_screen.dart:3455): repository.unshareSession(widget.sessionID), clears _localShareUrl, _conn.refreshSessions(). No confirmation.",
-     "gates": [],
-     "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "embedded-pending-sends-strip",
-   "title": "[Pending sends strip]",
-   "kind": "overlay",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/message_view.dart",
-   "widget": "_PendingSendsStrip",
-   "presentedBy": [],
-   "line": 2401,
-   "purpose": "List between transcript and composer of offline queued drafts and OpenCode 2 inbox items that have not reached the agent yet.",
-   "reachedFrom": [
-    {
-     "page": "chat",
-     "element": "chat-pending-sends-strip"
-    },
-    {
-     "page": "chat",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "pendingSends.drafts.isNotEmpty || pendingSends.inbox.isNotEmpty"
-   ],
-   "embeddedIn": [
-    "ChatScreen"
-   ],
-   "hostPages": [
-    "chat"
-   ],
-   "elements": [
-    {
-     "id": "embedded-pending-sends-strip-queued-resend",
-     "type": "icon-button",
-     "label": "Send again",
-     "key": "queued-action-resend",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2665,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onResend(entry) -> ChatScreen._resendQueuedPrompt: explicit resend of a dispatched-but-unconfirmed draft.",
-     "gates": [
-      "entry.dispatched && !sending && !acceptedUnrecorded"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-pending-sends-strip-queued-edit",
-     "type": "icon-button",
-     "label": "Edit draft",
-     "key": "queued-action-edit",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2671,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onEdit(entry) -> ChatScreen._editQueuedPrompt: moves the queued draft back into the composer.",
-     "gates": [
-      "disabled while sending"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-pending-sends-strip-queued-discard",
-     "type": "icon-button",
-     "label": "Discard draft",
-     "key": "queued-action-discard",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2677,
-     "action": "open-sheet",
-     "target": "chat-discard-queued-draft-sheet",
-     "targetWidget": "_discardQueuedPrompt",
-     "effect": "onDiscard(entry) -> ChatScreen._discardQueuedPrompt (chat_screen.dart:2293) which confirms through showConfirmSheet before removing the queued prompt.",
-     "gates": [
-      "disabled while sending"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "embedded-pending-sends-strip-inbox-flip-to-queue",
-     "type": "icon-button",
-     "label": "Wait for this run instead",
-     "key": "inbox-action-queue",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2729,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from steer to queue.",
-     "gates": [
-      "item.type == \"user\" && item.delivery == Api2Delivery.steer"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-pending-sends-strip-inbox-flip-to-steer",
-     "type": "icon-button",
-     "label": "Send now and steer instead",
-     "key": "inbox-action-steer",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2735,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from queue to steer.",
-     "gates": [
-      "item.type == \"user\" && item.delivery != Api2Delivery.steer"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-pending-sends-strip-inbox-cancel",
-     "type": "icon-button",
-     "label": "Cancel and return to the composer",
-     "key": "inbox-action-cancel",
-     "file": "lib/ui/screens/chat/message_view.dart",
-     "line": 2742,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onCancelInbox(item) -> ChatScreen._cancelInboxSend: cancels the server inbox item and restores its text to the composer.",
-     "gates": [
-      "item.type == \"user\""
-     ],
-     "destructive": true
     }
    ]
   },
@@ -5876,10 +5834,6 @@
      "element": "embedded-permission-attention-card-review"
     },
     {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-request-answer"
-    },
-    {
      "page": "activity",
      "element": "activity-permission-row"
     },
@@ -5909,138 +5863,12 @@
    ],
    "elements": [
     {
-     "id": "permission-sheet-source-chip",
-     "type": "chip",
-     "label": "From tool call",
-     "key": "permission-source-chip",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 377,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_routes.close() dismisses the sheet, then runs widget.onShowSource (ChatScreen passes _jumpToMessage(tool.messageID)).",
-     "gates": [
-      "widget.onShowSource != null && permission.tool != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-copy-resource",
-     "type": "icon-button",
-     "label": "Copy {resource}",
-     "key": null,
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 451,
-     "action": "copy",
-     "target": null,
-     "effect": "Clipboard.setData with one requested pattern row of the resources card (one button per pattern).",
-     "gates": [
-      "widget.allowDeviceActions",
-      "pattern not already shown as command/file preview"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-allow-once",
-     "type": "button",
-     "label": "Allow once",
-     "key": "permission-allow-once",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 516,
-     "action": "mutate",
-     "target": null,
-     "effect": "_reply('once') -> widget.onReply -> controller.answerPermission(permission.id, 'once', expectedRequest: request); closes the sheet on success, shows inline 'Reply failed' error otherwise.",
-     "gates": [
-      "disabled while _replying"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject",
-     "type": "button",
-     "label": "Reject… (v2) / Reject (v1)",
-     "key": "permission-reject",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 524,
-     "action": "mutate",
-     "target": null,
-     "effect": "_startReject: when supportsRejectMessage is false calls _reply('reject') -> controller.answerPermission(..., 'reject') directly; otherwise sets _rejecting=true to swap the apply bar to the rejection-message pane.",
-     "gates": [
-      "disabled while _replying",
-      "label depends on controller.permissionSupportsRejectMessage(permission.id)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-allow-always",
-     "type": "button",
-     "label": "Always allow",
-     "key": "permission-allow-always",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 557,
-     "action": "open-dialog",
-     "target": "permission-sheet-always-dialog",
-     "targetWidget": "_confirmAlways",
-     "effect": "_reply('always'): first awaits _confirmAlways() dialog; on confirm calls controller.answerPermission(..., 'always').",
-     "gates": [
-      "widget.allowPersistentPermission (= controller.capabilities.persistentPermissionGrants)",
-      "disabled while _replying"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject-message",
-     "type": "text-field",
-     "label": "Tell the agent why, or what to do instead (optional)",
-     "key": "permission-reject-message",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 573,
-     "action": "other",
-     "target": null,
-     "effect": "Optional rejection reason held in _rejectMessage; autofocus; sent by Send rejection.",
-     "gates": [
-      "_rejecting (after Reject… on a server that supports reject messages)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject-send",
-     "type": "button",
-     "label": "Send rejection",
-     "key": "permission-reject-send",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 585,
-     "action": "mutate",
-     "target": null,
-     "effect": "_sendRejection -> _reply('reject', message: trimmed text or null) -> controller.answerPermission(..., 'reject', message:).",
-     "gates": [
-      "_rejecting",
-      "disabled while _replying"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject-back",
-     "type": "button",
-     "label": "Back",
-     "key": null,
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 598,
-     "action": "other",
-     "target": null,
-     "effect": "setState(_rejecting = false): returns the apply bar to the Reject / Allow once triad.",
-     "gates": [
-      "_rejecting",
-      "disabled while _replying"
-     ],
-     "destructive": false
-    },
-    {
      "id": "permission-sheet-copy-command",
      "type": "icon-button",
      "label": "Copy command",
      "key": null,
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 654,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 600,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData with the pending shell command (_CommandPreview/_CopyButton).",
@@ -6055,8 +5883,8 @@
      "type": "icon-button",
      "label": "Copy {resource}",
      "key": null,
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 710,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 600,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData with the file path the request concerns (_FilePathRow/_CopyButton).",
@@ -6067,67 +5895,80 @@
      "destructive": false
     },
     {
-     "id": "permission-sheet-see-full-diff",
-     "type": "button",
-     "label": "See full diff",
-     "key": "permission-see-full-diff",
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 764,
-     "action": "navigate",
-     "target": "diff-view",
-     "targetWidget": "DiffView.single",
-     "effect": "_openFullDiff: pushes a fullscreenDialog MaterialPageRoute with DiffView.single(pending diff, allowCopy: allowDeviceActions); route is owned by RequestRoutes so it closes when the request resolves.",
-     "gates": [
-      "permission.permission in {edit, write, multiedit, patch} and metadata['diff'|'patch'|'preview'] is a non-empty String"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "permission-sheet-always-dialog",
-   "title": "Confirm broader access",
-   "kind": "dialog",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/permission_sheet.dart",
-   "widget": "_confirmAlways",
-   "presentedBy": [],
-   "line": 192,
-   "purpose": "Second-step confirmation before a persistent \"always allow\" grant, listing the patterns it would cover.",
-   "reachedFrom": [
-    {
-     "page": "permission-sheet",
-     "element": "permission-sheet-allow-always"
-    }
-   ],
-   "gates": [
-    "widget.allowPersistentPermission"
-   ],
-   "elements": [
-    {
-     "id": "permission-sheet-always-dialog-keep-asking",
-     "type": "button",
-     "label": "Keep asking",
+     "id": "permission-sheet-copy-resource",
+     "type": "icon-button",
+     "label": "Copy {resource}",
      "key": null,
-     "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 234,
-     "action": "dismiss",
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 600,
+     "action": "copy",
      "target": null,
-     "effect": "Navigator.pop(context, false): no reply is sent, the sheet stays open.",
-     "gates": [],
+     "effect": "Copies the full command, path or patterns from the request sheet code block.",
+     "gates": [
+      "widget.allowDeviceActions",
+      "pattern not already shown as command/file preview"
+     ],
      "destructive": false
     },
     {
-     "id": "permission-sheet-always-dialog-confirm",
-     "type": "button",
-     "label": "Confirm always allow",
-     "key": null,
+     "id": "permission-sheet-allow-always",
+     "type": "toggle",
+     "label": "Always allow",
+     "key": "permission-allow-always",
      "file": "lib/ui/screens/chat/permission_sheet.dart",
-     "line": 238,
+     "line": 274,
      "action": "mutate",
      "target": null,
-     "effect": "Navigator.pop(context, true); the sheet then calls widget.onReply('always') -> controller.answerPermission(permission.id, 'always') creating a saved grant.",
-     "gates": [],
+     "targetWidget": null,
+     "effect": "KitRequestAlwaysAllow shows the scope before its risky switch; selecting it answers always through the controller.",
+     "gates": [
+      "controller.capabilities.persistentPermissionGrants"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "permission-sheet-allow-once",
+     "type": "button",
+     "label": "Allow once",
+     "key": "permission-card-allow",
+     "file": "lib/ui/screens/chat/permission_sheet.dart",
+     "line": 347,
+     "action": "mutate",
+     "target": null,
+     "effect": "Answers 'once' through answerPermissionRequest; the request sheet closes and the receipt is carried by the conversation card.",
+     "gates": [
+      "request is still pending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "permission-sheet-reject",
+     "type": "button",
+     "label": "Reject",
+     "key": "permission-card-reject",
+     "file": "lib/ui/screens/chat/permission_sheet.dart",
+     "line": 348,
+     "action": "mutate",
+     "target": null,
+     "effect": "Answers 'reject' through answerPermissionRequest with the saved note where the server supports it; there is no second rejection pane.",
+     "gates": [
+      "request is still pending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "permission-sheet-reject-message",
+     "type": "text-field",
+     "label": "Tell the agent why, or what to do instead (optional)",
+     "key": "permission-reject-message",
+     "file": "lib/ui/screens/chat/permission_sheet.dart",
+     "line": 366,
+     "action": "other",
+     "target": null,
+     "effect": "Optional rejection reason held in _rejectMessage; autofocus; sent by Send rejection.",
+     "gates": [
+      "_rejecting (after Reject… on a server that supports reject messages)"
+     ],
      "destructive": false
     }
    ]
@@ -6170,7 +6011,7 @@
      "label": "<attachment filename> (tooltip: Preview {name})",
      "key": null,
      "file": "lib/ui/screens/chat/composer.dart",
-     "line": 1525,
+     "line": 427,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -6360,7 +6201,7 @@
      "label": "<prompt text>",
      "key": "reuse-prompt-<index>",
      "file": "lib/ui/screens/chat/prompt_history.dart",
-     "line": 83,
+     "line": 64,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -6467,7 +6308,7 @@
      "label": "Delete saved prompt",
      "key": "delete-stash-<id>",
      "file": "lib/ui/screens/chat/prompt_stash.dart",
-     "line": 322,
+     "line": 303,
      "action": "mutate",
      "target": "confirm-sheet",
      "targetWidget": "showConfirmSheet",
@@ -6575,60 +6416,6 @@
      "targetWidget": null,
      "effect": "Navigator.pop(context, voice); sets _readAloudVoiceID and _readReply then calls speech.speak(sessionID/messageID, prose, voiceID).",
      "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "todos-sheet",
-   "title": "Todo list",
-   "kind": "sheet",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/session_sheets.dart",
-   "widget": "_TodosSheet",
-   "presentedBy": [
-    "_showTodos"
-   ],
-   "line": 3,
-   "purpose": "Read-only list of the session's todos fetched with api.todos(sessionID).",
-   "reachedFrom": [
-    {
-     "page": "session-menu-sheet",
-     "element": "session-menu-sheet-todos"
-    }
-   ],
-   "gates": [
-    "_conn.capabilities.sessionTodos"
-   ],
-   "elements": [
-    {
-     "id": "todos-sheet-retry",
-     "type": "button",
-     "label": "[ProductErrorState retry]",
-     "key": null,
-     "file": "lib/ui/screens/chat/session_sheets.dart",
-     "line": 49,
-     "action": "other",
-     "target": null,
-     "effect": "_fetch(): re-requests widget.conn.prepareActionTransport().todos(sessionID).",
-     "gates": [
-      "_error != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "todos-sheet-todo-row",
-     "type": "toggle",
-     "label": "<todo content>",
-     "key": null,
-     "file": "lib/ui/screens/chat/session_sheets.dart",
-     "line": 70,
-     "action": "other",
-     "target": null,
-     "effect": "CheckboxListTile with onChanged: null: display only, never interactive.",
-     "gates": [
-      "always disabled (onChanged: null)"
-     ],
      "destructive": false
     }
    ]
@@ -6855,6 +6642,22 @@
      "destructive": false
     },
     {
+     "id": "timeline-sheet-row-fork",
+     "type": "icon-button",
+     "label": "Fork from this prompt",
+     "key": "timeline-fork-<messageID>",
+     "file": "lib/ui/screens/chat/timeline_sheet.dart",
+     "line": 251,
+     "action": "mutate",
+     "target": null,
+     "effect": "Navigator.pop(_TimelineSelection(message, fork: true)) -> ChatScreen._forkFromMessage(message) forks the session at that prompt.",
+     "gates": [
+      "widget.forkAvailable (_conn.capabilities.sessionFork) && _isForkable(message) (user role, non-local id, has non-synthetic text)",
+      "!widget.forkMode"
+     ],
+     "destructive": false
+    },
+    {
      "id": "timeline-sheet-row",
      "type": "list-tile",
      "label": "<message preview> · You/OpenCode · <time>",
@@ -6866,22 +6669,6 @@
      "effect": "Navigator.pop(_TimelineSelection(message, fork: forkMode, query)); ChatScreen._openTimeline then calls _forkFromMessage (fork mode), _openFind(query, messageID) when a search was active, else _jumpToMessage(id).",
      "gates": [
       "fork mode lists only forkable user prompts"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "timeline-sheet-row-fork",
-     "type": "icon-button",
-     "label": "Fork from this prompt",
-     "key": "timeline-fork-<messageID>",
-     "file": "lib/ui/screens/chat/timeline_sheet.dart",
-     "line": 291,
-     "action": "mutate",
-     "target": null,
-     "effect": "Navigator.pop(_TimelineSelection(message, fork: true)) -> ChatScreen._forkFromMessage(message) forks the session at that prompt.",
-     "gates": [
-      "widget.forkAvailable (_conn.capabilities.sessionFork) && _isForkable(message) (user role, non-local id, has non-synthetic text)",
-      "!widget.forkMode"
      ],
      "destructive": false
     }
@@ -7259,10 +7046,6 @@
      "element": "embedded-completion-digest-card-open-conversation"
     },
     {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-run-continue"
-    },
-    {
      "page": "workspace",
      "element": "workspace-session-row"
     },
@@ -7333,6 +7116,10 @@
     {
      "page": "embedded-team-planning-card",
      "element": "embedded-team-planning-card-output"
+    },
+    {
+     "page": "team-phone-onboarding-success",
+     "element": "team-phone-onboarding-success-open-workspace"
     },
     {
      "page": "commands",
@@ -7427,7 +7214,7 @@
      "label": "Arrow Up / Arrow Down in composer",
      "key": null,
      "file": "lib/ui/screens/chat_screen.dart",
-     "line": 573,
+     "line": 970,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -7543,22 +7330,6 @@
      "destructive": true
     },
     {
-     "id": "chat-shortcut-command-palette",
-     "type": "gesture",
-     "label": "Ctrl+K (OpenCommandPaletteIntent)",
-     "key": null,
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 4975,
-     "action": "open-sheet",
-     "target": "command-launcher-sheet",
-     "targetWidget": "_CommandLauncherSheet",
-     "effect": "onAppShortcut: in a session the palette intent opens the chat command launcher (_openCommandLauncher()) instead of the shell palette; isolated sessions swallow it.",
-     "gates": [
-      "!_conn.isIsolated"
-     ],
-     "destructive": false
-    },
-    {
      "id": "chat-composer-model-cycle",
      "type": "icon-button",
      "label": "[model cycle button: next / previous / favorite]",
@@ -7575,6 +7346,22 @@
      ],
      "destructive": false,
      "hostWiring": true
+    },
+    {
+     "id": "chat-shortcut-command-palette",
+     "type": "gesture",
+     "label": "Ctrl+K (OpenCommandPaletteIntent)",
+     "key": null,
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5342,
+     "action": "open-sheet",
+     "target": "command-launcher-sheet",
+     "targetWidget": "_CommandLauncherSheet",
+     "effect": "onAppShortcut: in a session the palette intent opens the chat command launcher (_openCommandLauncher()) instead of the shell palette; isolated sessions swallow it.",
+     "gates": [
+      "!_conn.isIsolated"
+     ],
+     "destructive": false
     },
     {
      "id": "chat-question-card-answer",
@@ -7662,24 +7449,6 @@
      "effect": "onReview -> _showPermissionDialog(permission) -> showPermissionSheet(context, permission, controller: _conn, onShowSource: jump to the tool message via _jumpToMessage). One at a time (_activePermissionID guard).",
      "gates": [
       "_conn.permissionsForSession(sessionID).isNotEmpty (oldest first)"
-     ],
-     "destructive": false,
-     "hostWiring": true
-    },
-    {
-     "id": "chat-composer-drop-target",
-     "type": "gesture",
-     "label": "[drop files onto composer (desktop)]",
-     "key": null,
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 6369,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "DesktopFileDropTarget.onDrop -> _handleDroppedFiles: each file (<= 10 MB, max count and 20 MB aggregate) goes through _addPreviewAttachment into _attachments.",
-     "gates": [
-      "!_conn.isIsolated",
-      "_conn.capabilities promptAttachments (_supportsPromptAttachments)"
      ],
      "destructive": false,
      "hostWiring": true
@@ -8036,6 +7805,24 @@
       "_conn.capabilities.projectManagement"
      ],
      "destructive": false
+    },
+    {
+     "id": "chat-composer-drop-target",
+     "type": "gesture",
+     "label": "[drop files onto composer (desktop)]",
+     "key": null,
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 6745,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "DesktopFileDropTarget.onDrop -> _handleDroppedFiles: each file (<= 10 MB, max count and 20 MB aggregate) goes through _addPreviewAttachment into _attachments.",
+     "gates": [
+      "!_conn.isIsolated",
+      "_conn.capabilities promptAttachments (_supportsPromptAttachments)"
+     ],
+     "destructive": false,
+     "hostWiring": true
     },
     {
      "id": "chat-message-long-press",
@@ -8491,24 +8278,6 @@
      "hostWiring": true
     },
     {
-     "id": "chat-composer-legacy-drafts",
-     "type": "icon-button",
-     "label": "[recover legacy drafts]",
-     "key": null,
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 7216,
-     "action": "navigate",
-     "target": "legacy-drafts",
-     "targetWidget": "LegacyDraftsScreen",
-     "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onLegacyDrafts -> _recoverLegacyDraft() (line 3034) pushes LegacyDraftsScreen(controller: _conn).",
-     "gates": [
-      "_conn.store.profiles.length >= 2",
-      "_conn.legacySessionDrafts.isNotEmpty"
-     ],
-     "destructive": false,
-     "hostWiring": true
-    },
-    {
      "id": "chat-composer-open-stash",
      "type": "icon-button",
      "label": "[open prompt stash]",
@@ -8611,21 +8380,6 @@
      "hostWiring": true
     },
     {
-     "id": "chat-composer-content-inserted",
-     "type": "gesture",
-     "label": "[IME image/GIF insertion or clipboard-image paste chip]",
-     "key": null,
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 7282,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onContentInserted -> _handleInsertedContent(content) (line 3232) attaches the inserted image.",
-     "gates": [],
-     "destructive": false,
-     "hostWiring": true
-    },
-    {
      "id": "chat-composer-voice",
      "type": "icon-button",
      "label": "[voice input]",
@@ -8718,6 +8472,21 @@
      "gates": [
       "!_conn.isIsolated"
      ],
+     "destructive": false,
+     "hostWiring": true
+    },
+    {
+     "id": "chat-composer-content-inserted",
+     "type": "gesture",
+     "label": "[IME image/GIF insertion or clipboard-image paste chip]",
+     "key": null,
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 7303,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onContentInserted -> _handleInsertedContent(content) (line 3232) attaches the inserted image.",
+     "gates": [],
      "destructive": false,
      "hostWiring": true
     },
@@ -9799,10 +9568,6 @@
     {
      "page": "embedded-completion-digest-card",
      "element": "embedded-completion-digest-card-run-results"
-    },
-    {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-run-review"
     }
    ],
    "gates": [
@@ -10704,10 +10469,6 @@
    "purpose": "Renders a server Form.Info request: a bottom sheet for up to four short fields, otherwise a full-screen dialog route (formPrefersFullScreen); Send answers / Dismiss in a pinned apply bar.",
    "reachedFrom": [
     {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-request-answer"
-    },
-    {
      "page": "profile-monitor",
      "element": null,
      "evidence": "lib/ui/screens/profile_monitor_screen.dart:70"
@@ -11091,6 +10852,82 @@
    ],
    "elements": [
     {
+     "id": "embedded-markdown-text-link",
+     "type": "link",
+     "label": "[label](url)",
+     "key": null,
+     "file": "lib/ui/kit/chat/kit_markdown.dart",
+     "line": 1223,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "TapGestureRecognizer -> openExternalLink(context, url) (lib/ui/widgets/external_link.dart:48, which confirms in a dialog before launching).",
+     "gates": [
+      "MarkdownInteractionScope.enabledOf(context)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-markdown-text-path-chip",
+     "type": "link",
+     "label": "<inline code file path>",
+     "key": "path-link-<code>",
+     "file": "lib/ui/kit/chat/kit_markdown.dart",
+     "line": 1389,
+     "action": "open-sheet",
+     "target": "file-preview-sheet",
+     "targetWidget": "showFilePreviewSheet",
+     "effect": "GestureDetector.onTap -> MarkdownFileLinks.open(code); ChatScreen installs open: _openPathLink (chat_screen.dart:6657-6659) which resolves the path and shows showFilePreviewSheet.",
+     "gates": [
+      "a MarkdownFileLinks ancestor exists",
+      "looksLikeFilePath(code)",
+      "links.validate(path) resolved true (_readable)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-markdown-text-code-wrap",
+     "type": "icon-button",
+     "label": "Wrap lines / Scroll lines",
+     "key": null,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 594,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "Same wrap toggle as the menu entry, shown as a plain IconButton when the block cannot expand (reader view, file previews).",
+     "gates": [
+      "!widget.canExpand"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-markdown-text-code-copy",
+     "type": "icon-button",
+     "label": "Copy code",
+     "key": null,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 600,
+     "action": "copy",
+     "target": null,
+     "effect": "_copy(originalSource ?? code): Clipboard.setData + \"copied\" snackbar; on failure a snackbar with a Retry action (line 1112) re-invokes _copy.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-markdown-text-code-menu-expand",
+     "type": "menu-item",
+     "label": "Open full output",
+     "key": "kit-code-open-full",
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 824,
+     "action": "navigate",
+     "target": "markdown-code-reader",
+     "targetWidget": "_openReader",
+     "effect": "KitCodeBlock.onOpenFull calls the markdown host onOpenCode callback, opening its full-screen code reader.",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "embedded-markdown-text-agent-choice",
      "type": "card",
      "label": "Choose: {option}",
@@ -11111,118 +10948,13 @@
      "label": "Copy command",
      "key": "agent-command-copy-<index>",
      "file": "lib/ui/widgets/agent_blocks.dart",
-     "line": 310,
+     "line": 282,
      "action": "copy",
      "target": null,
      "effect": "AgentCommandBlock._copy: Clipboard.setData(command) + snackbar. Also hosted directly by session_handoff_sheets.dart:70.",
      "gates": [
       "```command fenced block"
      ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-link",
-     "type": "link",
-     "label": "[label](url)",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 749,
-     "action": "external-link",
-     "target": "external-link-dialog",
-     "targetWidget": "openExternalLink",
-     "effect": "TapGestureRecognizer -> openExternalLink(context, url) (lib/ui/widgets/external_link.dart:48, which confirms in a dialog before launching).",
-     "gates": [
-      "MarkdownInteractionScope.enabledOf(context)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-path-chip",
-     "type": "link",
-     "label": "<inline code file path>",
-     "key": "path-link-<code>",
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 986,
-     "action": "open-sheet",
-     "target": "file-preview-sheet",
-     "targetWidget": "showFilePreviewSheet",
-     "effect": "GestureDetector.onTap -> MarkdownFileLinks.open(code); ChatScreen installs open: _openPathLink (chat_screen.dart:6657-6659) which resolves the path and shows showFilePreviewSheet.",
-     "gates": [
-      "a MarkdownFileLinks ancestor exists",
-      "looksLikeFilePath(code)",
-      "links.validate(path) resolved true (_readable)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-menu",
-     "type": "icon-button",
-     "label": "Code options",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1285,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu (PopupMenuButton) on a code block.",
-     "gates": [
-      "MarkdownInteractionScope enabled",
-      "widget.canExpand"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-menu-wrap",
-     "type": "menu-item",
-     "label": "Wrap lines / Scroll lines",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1302,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "saveReaderPreferences(context, wrapCode: !wrap) when a ReaderPreferencesScope exists (persisted), else local setState(_wrap).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-menu-expand",
-     "type": "menu-item",
-     "label": "Full screen",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1311,
-     "action": "navigate",
-     "target": "markdown-code-reader",
-     "targetWidget": "_openReader",
-     "effect": "_openReader(): pushes a MaterialPageRoute Scaffold \"Code reader\" showing a snapshot CodeBlock(canExpand: false).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-wrap",
-     "type": "icon-button",
-     "label": "Wrap lines / Scroll lines",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1320,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "Same wrap toggle as the menu entry, shown as a plain IconButton when the block cannot expand (reader view, file previews).",
-     "gates": [
-      "!widget.canExpand"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-copy",
-     "type": "icon-button",
-     "label": "Copy code",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1339,
-     "action": "copy",
-     "target": null,
-     "effect": "_copy(originalSource ?? code): Clipboard.setData + \"copied\" snackbar; on failure a snackbar with a Retry action (line 1112) re-invokes _copy.",
-     "gates": [],
      "destructive": false
     }
    ]
@@ -11237,7 +10969,7 @@
    "presentedBy": [
     "_openReader"
    ],
-   "line": 1137,
+   "line": 195,
    "purpose": "Full-screen snapshot of one code block with wrap and copy controls.",
    "reachedFrom": [
     {
@@ -11255,7 +10987,7 @@
      "label": "[AppBar back]",
      "key": null,
      "file": "lib/ui/widgets/markdown.dart",
-     "line": 1144,
+     "line": 226,
      "action": "dismiss",
      "target": null,
      "effect": "Implicit AppBar back button pops the route.",
@@ -11268,7 +11000,7 @@
      "label": "Wrap lines / Scroll lines",
      "key": null,
      "file": "lib/ui/widgets/markdown.dart",
-     "line": 1320,
+     "line": 232,
      "action": "toggle-setting",
      "target": null,
      "effect": "saveReaderPreferences(wrapCode) or local _wrap toggle.",
@@ -11281,7 +11013,7 @@
      "label": "Copy code",
      "key": null,
      "file": "lib/ui/widgets/markdown.dart",
-     "line": 1339,
+     "line": 237,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData(original source); controls retire when the source row disposes (_readerPermission).",
@@ -11439,158 +11171,12 @@
      "label": "Your answer",
      "key": null,
      "file": "lib/ui/widgets/question_options.dart",
-     "line": 151,
+     "line": 86,
      "action": "other",
      "target": null,
      "effect": "TextField with host-provided onChanged / onSubmitted.",
      "gates": [
       "host shows it only when prompt.custom"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-return-brief-panel-status-dialog",
-   "title": "Review status unknown",
-   "kind": "dialog",
-   "area": "chat",
-   "file": "lib/ui/widgets/return_brief_card.dart",
-   "widget": "ReturnBriefCard",
-   "presentedBy": [],
-   "line": 67,
-   "purpose": "Explains why review status is unknown.",
-   "reachedFrom": [
-    {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-status-unknown"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "embedded-return-brief-panel-status-dialog-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 73,
-     "action": "dismiss",
-     "target": null,
-     "effect": "Navigator.of(context).pop().",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-return-brief-panel",
-   "title": "Unreviewed work",
-   "kind": "overlay",
-   "area": "chat",
-   "file": "lib/ui/widgets/return_brief_panel.dart",
-   "widget": "ReturnBriefPanel",
-   "presentedBy": [],
-   "line": 14,
-   "purpose": "Return brief above the workspace session list: sessions blocked on a request and unreviewed finished runs (ReturnBriefPanel builds the snapshot, ReturnBriefCard renders it).",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-return-brief-panel"
-    },
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "c.isProfileReadable(scope.$1)",
-    "hidden when the brief is empty, read state known, not stale"
-   ],
-   "embeddedIn": [
-    "WorkspaceScreen (workspace_screen.dart:610)"
-   ],
-   "hostPages": [
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-return-brief-panel-status-unknown",
-     "type": "button",
-     "label": "Review status unknown",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 60,
-     "action": "open-dialog",
-     "target": "embedded-return-brief-panel-status-dialog",
-     "targetWidget": "ReturnBriefCard",
-     "effect": "showDialog AlertDialog explaining that the server does not report read state.",
-     "gates": [
-      "brief.isEmpty && !stale && !brief.readStateKnown",
-      "!widget.unknownStatusInParent (panel hides it otherwise)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-request-answer",
-     "type": "button",
-     "label": "Answer",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 180,
-     "action": "open-sheet",
-     "target": "permission-sheet",
-     "targetWidget": "showPermissionSheet | showQuestionSheet | presentConnectionForm",
-     "effect": "onAnswer(request) -> _ReturnBriefPanelState._answer: showPermissionSheet / showQuestionSheet / presentConnectionForm depending on request.blocker (forms need c.capabilities.forms).",
-     "gates": [
-      "one per brief.requests entry"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-run-review",
-     "type": "button",
-     "label": "Review results",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 198,
-     "action": "navigate",
-     "target": "run-result",
-     "targetWidget": "RunResultScreen",
-     "effect": "onReview(run) -> _review: pushes RunResultScreen(controller, sessionID) under a RequestRoutes guard.",
-     "gates": [
-      "one per brief.unreviewed entry"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-run-continue",
-     "type": "button",
-     "label": "Continue",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 202,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<id>",
-     "effect": "onContinue(id) -> Navigator.pushNamed('/chat/<id>').",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-dismiss",
-     "type": "button",
-     "label": "Dismiss shown items / Saving dismissal...",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 233,
-     "action": "mutate",
-     "target": null,
-     "effect": "onDismiss -> _dismiss -> controller.dismissReturnBrief(shown, expectedScope: scope); inline error on failure.",
-     "gates": [
-      "!brief.isEmpty",
-      "disabled while saving"
      ],
      "destructive": false
     }
@@ -11785,6 +11371,22 @@
      "destructive": false
     },
     {
+     "id": "embedded-tool-card-output-see-all",
+     "type": "button",
+     "label": "See all · {count} lines",
+     "key": "tool-body-see-all",
+     "file": "lib/ui/widgets/tool_card.dart",
+     "line": 953,
+     "action": "open-sheet",
+     "target": "file-preview-sheet",
+     "targetWidget": "showFilePreviewSheet",
+     "effect": "showFilePreviewSheet(context, FilePreviewData(name, full text)) from a truncated _Mono block (cap 13 lines / 4000 chars).",
+     "gates": [
+      "mono output truncated"
+     ],
+     "destructive": false
+    },
+    {
      "id": "embedded-tool-card-open-subagent-session",
      "type": "button",
      "label": "Open subagent session",
@@ -11798,6 +11400,22 @@
      "gates": [
       "task tool body, state.executed && sessionId != null && onOpenSession != null",
       "host: !_conn.isIsolated && _conn.capabilities.projectManagement (chat_screen.dart:6840-6846)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-tool-card-diff-see-all",
+     "type": "button",
+     "label": "See all · {count} lines",
+     "key": "tool-body-see-all",
+     "file": "lib/ui/widgets/tool_card.dart",
+     "line": 1487,
+     "action": "open-sheet",
+     "target": "file-preview-sheet",
+     "targetWidget": "showFilePreviewSheet",
+     "effect": "showFilePreviewSheet(context, FilePreviewData(name: 'changes.diff', text: diff)) from the inline _DiffPreview.",
+     "gates": [
+      "diff preview truncated"
      ],
      "destructive": false
     },
@@ -11817,28 +11435,12 @@
      "destructive": false
     },
     {
-     "id": "embedded-tool-card-diff-see-all",
-     "type": "button",
-     "label": "See all · {count} lines",
-     "key": "tool-body-see-all",
-     "file": "lib/ui/widgets/tool_card.dart",
-     "line": 1821,
-     "action": "open-sheet",
-     "target": "file-preview-sheet",
-     "targetWidget": "showFilePreviewSheet",
-     "effect": "showFilePreviewSheet(context, FilePreviewData(name: 'changes.diff', text: diff)) from the inline _DiffPreview.",
-     "gates": [
-      "diff preview truncated"
-     ],
-     "destructive": false
-    },
-    {
      "id": "embedded-tool-card-image-retry",
      "type": "icon-button",
      "label": "Retry image preview",
      "key": null,
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2010,
+     "line": 1583,
      "action": "other",
      "target": null,
      "effect": "onRetry -> _retryPreview(file): re-runs _loadPreview (data URL or widget.filePreviewLoader).",
@@ -11853,7 +11455,7 @@
      "label": "Preview generated image {filename}",
      "key": null,
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2037,
+     "line": 1590,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -11869,7 +11471,7 @@
      "label": "Open generated file {filename}",
      "key": "tool-output-file",
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2165,
+     "line": 1665,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -11877,22 +11479,6 @@
      "gates": [
       "non-image output file (first 8 files only)",
       "disabled while _opening"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-tool-card-output-see-all",
-     "type": "button",
-     "label": "See all · {count} lines",
-     "key": "tool-body-see-all",
-     "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2287,
-     "action": "open-sheet",
-     "target": "file-preview-sheet",
-     "targetWidget": "showFilePreviewSheet",
-     "effect": "showFilePreviewSheet(context, FilePreviewData(name, full text)) from a truncated _Mono block (cap 13 lines / 4000 chars).",
-     "gates": [
-      "mono output truncated"
      ],
      "destructive": false
     }
@@ -13323,26 +12909,12 @@
    "gates": [],
    "elements": [
     {
-     "id": "managed-workspaces-remove-dialog-confirm-text",
-     "type": "text-field",
-     "label": "Type {name} to confirm",
-     "key": "remove-managed-workspace-confirmation",
-     "file": "lib/ui/screens/managed_workspaces_screen.dart",
-     "line": 709,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "setState to enable the confirm button when the text equals workspace.name.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "managed-workspaces-remove-dialog-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/screens/managed_workspaces_screen.dart",
-     "line": 724,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 431,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -13356,7 +12928,7 @@
      "label": "Remove permanently",
      "key": "confirm-remove-managed-workspace",
      "file": "lib/ui/screens/managed_workspaces_screen.dart",
-     "line": 736,
+     "line": 276,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -13365,6 +12937,20 @@
       "enabled only when the typed text == workspace.name"
      ],
      "destructive": true
+    },
+    {
+     "id": "managed-workspaces-remove-dialog-confirm-text",
+     "type": "text-field",
+     "label": "Type {name} to confirm",
+     "key": "remove-managed-workspace-confirmation",
+     "file": "lib/ui/screens/managed_workspaces_screen.dart",
+     "line": 709,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState to enable the confirm button when the text equals workspace.name.",
+     "gates": [],
+     "destructive": false
     }
    ]
   },
@@ -13566,37 +13152,49 @@
     {
      "page": "phone-setup-ready",
      "element": "phone-setup-ready-open-existing"
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "team-phone-onboarding-offer-set-up"
+    },
+    {
+     "page": "team-phone-onboarding-steps",
+     "element": "team-phone-onboarding-steps-continue"
+    },
+    {
+     "page": "team-phone-onboarding-failed",
+     "element": "team-phone-onboarding-failed-retry"
     }
    ],
    "gates": [],
    "elements": [
     {
-     "id": "project-folder-open-dialog-path",
-     "type": "text-field",
-     "label": "Folder path",
-     "key": "open-folder-path",
-     "file": "lib/ui/screens/project_folder_actions.dart",
-     "line": 462,
-     "action": "submit",
+     "id": "project-folder-open-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/kit/kit_dialog.dart",
+     "line": 619,
+     "action": "dismiss",
      "target": null,
      "targetWidget": null,
-     "effect": "onChanged clears the problem; onSubmitted -> _submit().",
+     "effect": "Navigator.pop().",
      "gates": [
       "disabled while _checking"
      ],
      "destructive": false
     },
     {
-     "id": "project-folder-open-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
+     "id": "project-folder-open-dialog-path",
+     "type": "text-field",
+     "label": "Folder path",
+     "key": "open-folder-path",
      "file": "lib/ui/screens/project_folder_actions.dart",
-     "line": 494,
-     "action": "dismiss",
+     "line": 305,
+     "action": "submit",
      "target": null,
      "targetWidget": null,
-     "effect": "Navigator.pop().",
+     "effect": "onChanged clears the problem; onSubmitted -> _submit().",
      "gates": [
       "disabled while _checking"
      ],
@@ -13608,7 +13206,7 @@
      "label": "Open",
      "key": "open-folder-confirm",
      "file": "lib/ui/screens/project_folder_actions.dart",
-     "line": 508,
+     "line": 306,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -13680,6 +13278,23 @@
      "destructive": false
     },
     {
+     "id": "project-health-section-retry",
+     "type": "button",
+     "label": "Try again (on a 'Status unavailable' row)",
+     "key": null,
+     "file": "lib/ui/screens/project_health_screen.dart",
+     "line": 240,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_HealthErrorTile.onRetry -> _load(); used by the version control (268), language services (402) and formatters (458) sections.",
+     "gates": [
+      "section error != null",
+      "disabled while _refreshing"
+     ],
+     "destructive": false
+    },
+    {
      "id": "project-health-git-init",
      "type": "button",
      "label": "Initialize Git",
@@ -13710,23 +13325,6 @@
      "effect": "_initializeGit() again after a failed initialization.",
      "gates": [
       "_gitInitializationError != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "project-health-section-retry",
-     "type": "button",
-     "label": "Try again (on a 'Status unavailable' row)",
-     "key": null,
-     "file": "lib/ui/screens/project_health_screen.dart",
-     "line": 596,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_HealthErrorTile.onRetry -> _load(); used by the version control (268), language services (402) and formatters (458) sections.",
-     "gates": [
-      "section error != null",
-      "disabled while _refreshing"
      ],
      "destructive": false
     },
@@ -14000,30 +13598,30 @@
    "gates": [],
    "elements": [
     {
+     "id": "projects-rename-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/kit/kit_dialog.dart",
+     "line": 619,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop().",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "projects-rename-dialog-name",
      "type": "text-field",
      "label": "Project name",
      "key": "project-name-input",
      "file": "lib/ui/screens/projects_screen.dart",
-     "line": 457,
+     "line": 185,
      "action": "submit",
      "target": null,
      "targetWidget": null,
      "effect": "onSubmitted -> _submit() pops with the text.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "projects-rename-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/projects_screen.dart",
-     "line": 482,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop().",
      "gates": [],
      "destructive": false
     },
@@ -14033,7 +13631,7 @@
      "label": "Save",
      "key": "confirm-rename-project",
      "file": "lib/ui/screens/projects_screen.dart",
-     "line": 487,
+     "line": 186,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -14599,6 +14197,23 @@
      "destructive": false
     },
     {
+     "id": "console-organization-sheet-error-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/session_destination_sheet.dart",
+     "line": 615,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductErrorState.onRetry -> _load().",
+     "gates": [
+      "organizations == null && _error != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/product_states.dart"
+    },
+    {
      "id": "console-organization-sheet-org",
      "type": "list-tile",
      "label": "<organization name> / <org id>",
@@ -14611,22 +14226,6 @@
      "effect": "_switch(organization) opens the switch confirmation.",
      "gates": [
       "enabled: !_working && !organization.active"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "console-organization-sheet-error-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/widgets/product_states.dart",
-     "line": 615,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ProductErrorState.onRetry -> _load().",
-     "gates": [
-      "organizations == null && _error != null"
      ],
      "destructive": false
     }
@@ -14870,7 +14469,7 @@
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 610,
      "action": "other",
-     "target": "embedded-return-brief-panel",
+     "target": null,
      "targetWidget": "ReturnBriefPanel",
      "effect": "Embeds ReturnBriefPanel(controller, inventoryStatusInParent: true, unknownStatusInParent: _hasProjectDetails); its own buttons (permission/question sheets, open chat) belong to the widget's owner.",
      "gates": [],
@@ -15933,6 +15532,53 @@
      "destructive": false
     },
     {
+     "id": "worktrees-tile-menu-open",
+     "type": "menu-item",
+     "label": "Open",
+     "key": null,
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 655,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onOpen -> _open(directory).",
+     "gates": [
+      "!current && !preparing && failure == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "worktrees-tile-menu-reset",
+     "type": "menu-item",
+     "label": "Reset",
+     "key": null,
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 675,
+     "action": "open-dialog",
+     "target": "worktrees-reset-dialog",
+     "targetWidget": "_confirmReset",
+     "effect": "onReset -> _reset(worktree): inspects changes with repository.listWorktreeFileStatuses, then opens the reset confirmation.",
+     "gates": [
+      "widget.controller.capabilities.worktreeReset",
+      "!preparing && failure == null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "worktrees-tile-menu-remove",
+     "type": "menu-item",
+     "label": "Remove",
+     "key": null,
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 682,
+     "action": "open-dialog",
+     "target": "worktrees-remove-dialog",
+     "targetWidget": "_RemoveWorktreeDialog",
+     "effect": "onRemove -> _remove(worktree): inspects changes, then opens _RemoveWorktreeDialog.",
+     "gates": [],
+     "destructive": true
+    },
+    {
      "id": "worktrees-tile",
      "type": "list-tile",
      "label": "<worktree name> / <branch | directory | Preparing… | Setup failed>",
@@ -15963,53 +15609,6 @@
       "enabled: !busy"
      ],
      "destructive": false
-    },
-    {
-     "id": "worktrees-tile-menu-open",
-     "type": "menu-item",
-     "label": "Open",
-     "key": null,
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 718,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onOpen -> _open(directory).",
-     "gates": [
-      "!current && !preparing && failure == null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "worktrees-tile-menu-reset",
-     "type": "menu-item",
-     "label": "Reset",
-     "key": null,
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 727,
-     "action": "open-dialog",
-     "target": "worktrees-reset-dialog",
-     "targetWidget": "_confirmReset",
-     "effect": "onReset -> _reset(worktree): inspects changes with repository.listWorktreeFileStatuses, then opens the reset confirmation.",
-     "gates": [
-      "widget.controller.capabilities.worktreeReset",
-      "!preparing && failure == null"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "worktrees-tile-menu-remove",
-     "type": "menu-item",
-     "label": "Remove",
-     "key": null,
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 735,
-     "action": "open-dialog",
-     "target": "worktrees-remove-dialog",
-     "targetWidget": "_RemoveWorktreeDialog",
-     "effect": "onRemove -> _remove(worktree): inspects changes, then opens _RemoveWorktreeDialog.",
-     "gates": [],
-     "destructive": true
     },
     {
      "id": "worktrees-error-retry",
@@ -17105,27 +16704,12 @@
    ],
    "elements": [
     {
-     "id": "files-file-viewer-sheet-close",
-     "type": "icon-button",
-     "label": "Close (CloseButton)",
-     "key": null,
-     "file": "lib/ui/screens/files_screen.dart",
-     "line": 2088,
-     "action": "dismiss",
-     "target": null,
-     "effect": "Navigator.pop(context).",
-     "gates": [
-      "!widget.embedded"
-     ],
-     "destructive": false
-    },
-    {
      "id": "files-file-viewer-sheet-copy",
      "type": "button",
      "label": "Copy",
      "key": null,
-     "file": "lib/ui/screens/files_screen.dart",
-     "line": 2099,
+     "file": "lib/ui/kit/kit_viewer.dart",
+     "line": 838,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData(file content) + snackbar \"Copied\".",
@@ -17135,12 +16719,58 @@
      "destructive": false
     },
     {
+     "id": "files-file-viewer-sheet-wrap",
+     "type": "toggle",
+     "label": "Wrap lines / Scroll lines",
+     "key": null,
+     "file": "lib/ui/kit/kit_viewer.dart",
+     "line": 854,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
+     "gates": [
+      "widget.initialLine != null",
+      "ReaderPreferencesScope present"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "files-file-viewer-sheet-close",
+     "type": "icon-button",
+     "label": "Close (CloseButton)",
+     "key": null,
+     "file": "lib/ui/kit/kit_viewer.dart",
+     "line": 1029,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Navigator.pop(context).",
+     "gates": [
+      "!widget.embedded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "files-file-viewer-sheet-error-retry",
+     "type": "button",
+     "label": "Try again (ProductErrorState)",
+     "key": null,
+     "file": "lib/ui/kit/kit_viewer.dart",
+     "line": 1217,
+     "action": "other",
+     "target": null,
+     "effect": "ProductErrorState.onRetry -> _fetch().",
+     "gates": [
+      "_error != null && !_scopeInvalid"
+     ],
+     "destructive": false
+    },
+    {
      "id": "files-file-viewer-sheet-reference",
      "type": "button",
      "label": "Reference",
      "key": "project-file-add-reference",
      "file": "lib/ui/screens/files_screen.dart",
-     "line": 2121,
+     "line": 658,
      "action": "mutate",
      "target": null,
      "effect": "widget.onAddReference -> FilesScreen._stageProjectFile(path, initialLine) -> handoff.stage().",
@@ -17155,7 +16785,7 @@
      "label": "Attach",
      "key": "project-file-attach",
      "file": "lib/ui/screens/files_screen.dart",
-     "line": 2128,
+     "line": 666,
      "action": "mutate",
      "target": null,
      "effect": "_attach(): calls host onAttachFile(path, exportData) and shows \"attached\" snackbar.",
@@ -17171,7 +16801,7 @@
      "label": "Save",
      "key": "project-file-download",
      "file": "lib/ui/screens/files_screen.dart",
-     "line": 2143,
+     "line": 694,
      "action": "external-link",
      "target": null,
      "effect": "_download(): FilePicker.saveFile(...) writes the file to the device; snackbar on success.",
@@ -17186,43 +16816,12 @@
      "label": "Reload",
      "key": null,
      "file": "lib/ui/screens/files_screen.dart",
-     "line": 2156,
+     "line": 702,
      "action": "other",
      "target": null,
      "effect": "_fetch(): re-reads the file content from the server.",
      "gates": [
       "disabled when _scopeInvalid"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "files-file-viewer-sheet-error-retry",
-     "type": "button",
-     "label": "Try again (ProductErrorState)",
-     "key": null,
-     "file": "lib/ui/screens/files_screen.dart",
-     "line": 2171,
-     "action": "other",
-     "target": null,
-     "effect": "ProductErrorState.onRetry -> _fetch().",
-     "gates": [
-      "_error != null && !_scopeInvalid"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "files-file-viewer-sheet-wrap",
-     "type": "toggle",
-     "label": "Wrap lines / Scroll lines",
-     "key": null,
-     "file": "lib/ui/widgets/reader_preferences.dart",
-     "line": 2098,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
-     "gates": [
-      "widget.initialLine != null",
-      "ReaderPreferencesScope present"
      ],
      "destructive": false
     }
@@ -17467,6 +17066,202 @@
    ],
    "elements": [
     {
+     "id": "review-workspace-previous-hunk",
+     "type": "icon-button",
+     "label": "Previous hunk",
+     "key": "review-previous-hunk",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1601,
+     "action": "other",
+     "target": null,
+     "effect": "_jumpToHunk(-1, hunks): canvas.revealSourceIndex(previous hunk header), wrapping. Key only on the phone toolbar; unkeyed twins at 1158 and 1252.",
+     "gates": [
+      "disabled when hunks.isEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-hunk-bar-previous",
+     "type": "icon-button",
+     "label": "Previous hunk",
+     "key": "review-hunk-bar-previous",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1601,
+     "action": "other",
+     "target": null,
+     "effect": "_jumpToHunk(-1, hunks) from the bottom hunk bar (key review-hunk-bar).",
+     "gates": [
+      "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-next-hunk",
+     "type": "icon-button",
+     "label": "Next hunk",
+     "key": "review-next-hunk",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1608,
+     "action": "other",
+     "target": null,
+     "effect": "_jumpToHunk(1, hunks): canvas.revealSourceIndex(next hunk header), wrapping. Unkeyed twins at 1166 and 1260.",
+     "gates": [
+      "disabled when hunks.isEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-hunk-bar-next",
+     "type": "icon-button",
+     "label": "Next hunk",
+     "key": "review-hunk-bar-next",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1608,
+     "action": "other",
+     "target": null,
+     "effect": "_jumpToHunk(1, hunks) from the bottom hunk bar.",
+     "gates": [
+      "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-file-actions",
+     "type": "icon-button",
+     "label": "File review actions",
+     "key": "review-file-actions",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1642,
+     "action": "other",
+     "target": null,
+     "effect": "Opens overflow menu.",
+     "gates": [
+      "phone toolbar: !compact && toolbar width < 560"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-selection-clear",
+     "type": "icon-button",
+     "label": "Clear selection",
+     "key": "review-selection-clear",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1709,
+     "action": "other",
+     "target": null,
+     "effect": "setState(_clearSelection).",
+     "gates": [
+      "selectedCount > 0"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-selection-comment",
+     "type": "button",
+     "label": "Comment",
+     "key": "review-comment-action",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1714,
+     "action": "open-sheet",
+     "target": "review-comment-sheet",
+     "targetWidget": "_ReviewCommentComposer",
+     "effect": "_openCommentComposer(diff, lines) for the selected lines.",
+     "gates": [
+      "selectedCount > 0"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-selection-add",
+     "type": "icon-button",
+     "label": "Add selection to prompt / Add hunk to prompt",
+     "key": "review-selection-add",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1717,
+     "action": "mutate",
+     "target": null,
+     "effect": "_stageSelection(diff, lines): handoff.stage(ReviewReference kind hunk|selection with snippet).",
+     "gates": [
+      "selectedCount > 0",
+      "widget.handoff != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-selection-copy",
+     "type": "icon-button",
+     "label": "Copy selection",
+     "key": "review-selection-copy",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 1721,
+     "action": "copy",
+     "target": null,
+     "effect": "_copyText(_selectedSnippet(lines)).",
+     "gates": [
+      "selectedCount > 0"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-hunk-header",
+     "type": "gesture",
+     "label": "[tap hunk header]",
+     "key": "review-line-<index>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2004,
+     "action": "other",
+     "target": null,
+     "effect": "_selectHunk(index, lines): selects every selectable line of the hunk (toggle) so the selection bar can add the hunk. In the wrapped phone canvas this is the right zone of _CompactHunkBar (line 2256).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-diff-line",
+     "type": "gesture",
+     "label": "[tap diff line]",
+     "key": "review-line-<index>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2161,
+     "action": "other",
+     "target": null,
+     "effect": "_selectLine(index): first tap selects a line, a second tap on another line extends to a range, tapping the single selected line clears. Rows key review-line-<index>; split rows review-split-row-<index> (line 1879); wrapped phone rows at 2016.",
+     "gates": [
+      "line.selectable"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-expand-below",
+     "type": "gesture",
+     "label": "Expand ({count} more)",
+     "key": "review-expand-below-<hunk>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2337,
+     "action": "other",
+     "target": null,
+     "effect": "_CompactExpandBar -> _expandBelow(hunk, remaining): reveals the next 20 unchanged lines. \"Expand\" is a hard-coded English string.",
+     "gates": [
+      "wrapped (phone) canvas"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-expand-above",
+     "type": "gesture",
+     "label": "+{count} lines",
+     "key": null,
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2350,
+     "action": "other",
+     "target": null,
+     "effect": "_CompactHunkBar left zone -> _expandAbove(hunkIndex, hiddenAbove): reveals hidden unchanged lines above the hunk.",
+     "gates": [
+      "wrapped (phone) canvas",
+      "row.expandable && row.hiddenAbove > 0"
+     ],
+     "destructive": false
+    },
+    {
      "id": "review-workspace-wrap",
      "type": "toggle",
      "label": "Wrap lines / Scroll lines",
@@ -17558,6 +17353,101 @@
      "destructive": false
     },
     {
+     "id": "review-workspace-ask-file",
+     "type": "menu-item",
+     "label": "Comment on {file}",
+     "key": "review-file-comment",
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 614,
+     "action": "open-sheet",
+     "target": "review-comment-sheet",
+     "targetWidget": null,
+     "effect": "The file menu calls _openCommentComposer(file, null), retaining a per-file comment draft.",
+     "gates": [
+      "a file is shown"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-file-actions-ask",
+     "type": "menu-item",
+     "label": "Comment on {file}",
+     "key": "review-file-comment",
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 614,
+     "action": "open-sheet",
+     "target": "review-comment-sheet",
+     "targetWidget": null,
+     "effect": "The file menu calls _openCommentComposer(file, null), retaining a per-file comment draft.",
+     "gates": [
+      "phone toolbar"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-add-file",
+     "type": "menu-item",
+     "label": "Add file to prompt",
+     "key": "review-add-file",
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 621,
+     "action": "mutate",
+     "target": null,
+     "effect": "The file menu calls _stageFile(file), adding a structured reference to the originating draft.",
+     "gates": [
+      "widget.handoff != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-file-actions-add",
+     "type": "menu-item",
+     "label": "Add file to prompt",
+     "key": null,
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 621,
+     "action": "mutate",
+     "target": null,
+     "effect": "onAddFile -> _stageFile(diff) -> handoff.stage().",
+     "gates": [
+      "phone toolbar",
+      "onAddFile != null (widget.handoff != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-copy-patch",
+     "type": "button",
+     "label": "Copy patch (compact toolbar: Copy)",
+     "key": null,
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 629,
+     "action": "copy",
+     "target": null,
+     "effect": "_copyText(diff.patch ?? diff.after): clipboard + snackbar. Compact twin at line 1181.",
+     "gates": [
+      "disabled when (diff.patch ?? diff.after ?? '').isEmpty",
+      "wide or compact toolbar"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "review-workspace-file-actions-copy",
+     "type": "menu-item",
+     "label": "Copy patch",
+     "key": null,
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 629,
+     "action": "copy",
+     "target": null,
+     "effect": "onCopy -> _copyText(patch).",
+     "gates": [
+      "phone toolbar",
+      "enabled only when patch/after text is non-empty"
+     ],
+     "destructive": false
+    },
+    {
      "id": "review-workspace-scope-picker",
      "type": "toggle",
      "label": "Session | Working tree | Branch",
@@ -17601,324 +17491,6 @@
       "constraints.maxWidth >= 840 (wide layout)"
      ],
      "destructive": false
-    },
-    {
-     "id": "review-workspace-mode-unified",
-     "type": "button",
-     "label": "Unified",
-     "key": "review-mode-unified",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1145,
-     "action": "other",
-     "target": null,
-     "effect": "onModeChanged(ReviewDiffMode.unified): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1145, 1239, 1405).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-mode-split",
-     "type": "button",
-     "label": "Split",
-     "key": "review-mode-split",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1151,
-     "action": "other",
-     "target": null,
-     "effect": "onModeChanged(ReviewDiffMode.split): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1151, 1245, 1413).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-add-file",
-     "type": "button",
-     "label": "Add file to prompt (compact toolbar: Add file)",
-     "key": "review-add-file",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1222,
-     "action": "mutate",
-     "target": null,
-     "effect": "_stageFile(diff): handoff.stage(ReviewReference changedFile) on the originating composer; snackbar review-staged-notice. Compact twin key review-add-file-compact (line 1176).",
-     "gates": [
-      "widget.handoff != null",
-      "wide or compact toolbar"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-ask-file",
-     "type": "button",
-     "label": "Ask about file (compact toolbar: Ask)",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1227,
-     "action": "open-sheet",
-     "target": "review-comment-sheet",
-     "targetWidget": "_ReviewCommentComposer",
-     "effect": "_openCommentComposer(diff, lines, wholeFile: true).",
-     "gates": [
-      "wide or compact toolbar (toolbar width >= 560 or compact height); phone uses the overflow menu"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-copy-patch",
-     "type": "button",
-     "label": "Copy patch (compact toolbar: Copy)",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1265,
-     "action": "copy",
-     "target": null,
-     "effect": "_copyText(diff.patch ?? diff.after): clipboard + snackbar. Compact twin at line 1181.",
-     "gates": [
-      "disabled when (diff.patch ?? diff.after ?? '').isEmpty",
-      "wide or compact toolbar"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-file-actions",
-     "type": "icon-button",
-     "label": "File review actions",
-     "key": "review-file-actions",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1353,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu.",
-     "gates": [
-      "phone toolbar: !compact && toolbar width < 560"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-file-actions-ask",
-     "type": "menu-item",
-     "label": "Ask about file",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1367,
-     "action": "open-sheet",
-     "target": "review-comment-sheet",
-     "targetWidget": "_ReviewCommentComposer",
-     "effect": "onAsk -> _openCommentComposer(diff, lines, wholeFile: true).",
-     "gates": [
-      "phone toolbar"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-file-actions-add",
-     "type": "menu-item",
-     "label": "Add file to prompt",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1376,
-     "action": "mutate",
-     "target": null,
-     "effect": "onAddFile -> _stageFile(diff) -> handoff.stage().",
-     "gates": [
-      "phone toolbar",
-      "onAddFile != null (widget.handoff != null)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-file-actions-copy",
-     "type": "menu-item",
-     "label": "Copy patch",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1386,
-     "action": "copy",
-     "target": null,
-     "effect": "onCopy -> _copyText(patch).",
-     "gates": [
-      "phone toolbar",
-      "enabled only when patch/after text is non-empty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-previous-hunk",
-     "type": "icon-button",
-     "label": "Previous hunk",
-     "key": "review-previous-hunk",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1432,
-     "action": "other",
-     "target": null,
-     "effect": "_jumpToHunk(-1, hunks): canvas.revealSourceIndex(previous hunk header), wrapping. Key only on the phone toolbar; unkeyed twins at 1158 and 1252.",
-     "gates": [
-      "disabled when hunks.isEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-next-hunk",
-     "type": "icon-button",
-     "label": "Next hunk",
-     "key": "review-next-hunk",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1438,
-     "action": "other",
-     "target": null,
-     "effect": "_jumpToHunk(1, hunks): canvas.revealSourceIndex(next hunk header), wrapping. Unkeyed twins at 1166 and 1260.",
-     "gates": [
-      "disabled when hunks.isEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-diff-line",
-     "type": "gesture",
-     "label": "[tap diff line]",
-     "key": "review-line-<index>",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1891,
-     "action": "other",
-     "target": null,
-     "effect": "_selectLine(index): first tap selects a line, a second tap on another line extends to a range, tapping the single selected line clears. Rows key review-line-<index>; split rows review-split-row-<index> (line 1879); wrapped phone rows at 2016.",
-     "gates": [
-      "line.selectable"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-hunk-header",
-     "type": "gesture",
-     "label": "[tap hunk header]",
-     "key": "review-line-<index>",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 1897,
-     "action": "other",
-     "target": null,
-     "effect": "_selectHunk(index, lines): selects every selectable line of the hunk (toggle) so the selection bar can add the hunk. In the wrapped phone canvas this is the right zone of _CompactHunkBar (line 2256).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-expand-above",
-     "type": "gesture",
-     "label": "+{count} lines",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2222,
-     "action": "other",
-     "target": null,
-     "effect": "_CompactHunkBar left zone -> _expandAbove(hunkIndex, hiddenAbove): reveals hidden unchanged lines above the hunk.",
-     "gates": [
-      "wrapped (phone) canvas",
-      "row.expandable && row.hiddenAbove > 0"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-expand-below",
-     "type": "gesture",
-     "label": "Expand ({count} more)",
-     "key": "review-expand-below-<hunk>",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2302,
-     "action": "other",
-     "target": null,
-     "effect": "_CompactExpandBar -> _expandBelow(hunk, remaining): reveals the next 20 unchanged lines. \"Expand\" is a hard-coded English string.",
-     "gates": [
-      "wrapped (phone) canvas"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-selection-clear",
-     "type": "icon-button",
-     "label": "Clear selection",
-     "key": "review-selection-clear",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2675,
-     "action": "other",
-     "target": null,
-     "effect": "setState(_clearSelection).",
-     "gates": [
-      "selectedCount > 0"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-selection-copy",
-     "type": "icon-button",
-     "label": "Copy selection",
-     "key": "review-selection-copy",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2681,
-     "action": "copy",
-     "target": null,
-     "effect": "_copyText(_selectedSnippet(lines)).",
-     "gates": [
-      "selectedCount > 0"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-selection-add",
-     "type": "icon-button",
-     "label": "Add selection to prompt / Add hunk to prompt",
-     "key": "review-selection-add",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2688,
-     "action": "mutate",
-     "target": null,
-     "effect": "_stageSelection(diff, lines): handoff.stage(ReviewReference kind hunk|selection with snippet).",
-     "gates": [
-      "selectedCount > 0",
-      "widget.handoff != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-selection-comment",
-     "type": "button",
-     "label": "Comment",
-     "key": "review-comment-action",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2697,
-     "action": "open-sheet",
-     "target": "review-comment-sheet",
-     "targetWidget": "_ReviewCommentComposer",
-     "effect": "_openCommentComposer(diff, lines) for the selected lines.",
-     "gates": [
-      "selectedCount > 0"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-hunk-bar-previous",
-     "type": "icon-button",
-     "label": "Previous hunk",
-     "key": "review-hunk-bar-previous",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2737,
-     "action": "other",
-     "target": null,
-     "effect": "_jumpToHunk(-1, hunks) from the bottom hunk bar (key review-hunk-bar).",
-     "gates": [
-      "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "review-workspace-hunk-bar-next",
-     "type": "icon-button",
-     "label": "Next hunk",
-     "key": "review-hunk-bar-next",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2743,
-     "action": "other",
-     "target": null,
-     "effect": "_jumpToHunk(1, hunks) from the bottom hunk bar.",
-     "gates": [
-      "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -17932,7 +17504,7 @@
    "presentedBy": [
     "_openCommentComposer"
    ],
-   "line": 2755,
+   "line": 698,
    "purpose": "Composer for a review comment on the selected lines or the entire change; the result is staged on the chat composer (handoff) or popped back as a formatted prompt.",
    "reachedFrom": [
     {
@@ -17951,28 +17523,15 @@
    "gates": [],
    "elements": [
     {
-     "id": "review-comment-sheet-field",
-     "type": "text-field",
-     "label": "What should OpenCode inspect or change?",
-     "key": "review-comment-field",
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2809,
-     "action": "submit",
-     "target": null,
-     "effect": "Autofocused multiline field; onSubmitted -> _submit() pops the sheet with the trimmed text.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "review-comment-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2830,
+     "type": "icon-button",
+     "label": "Close",
+     "key": "kit-sheet-close",
+     "file": "lib/ui/kit/kit_sheet.dart",
+     "line": 435,
      "action": "dismiss",
      "target": null,
-     "effect": "Navigator.pop(context) with no result.",
+     "effect": "Closes the comment sheet; KitDraft retains unsent comment text where a profile is present.",
      "gates": [],
      "destructive": false
     },
@@ -17982,13 +17541,26 @@
      "label": "Add to prompt",
      "key": "review-add-to-prompt",
      "file": "lib/ui/screens/review_workspace.dart",
-     "line": 2836,
+     "line": 688,
      "action": "submit",
      "target": null,
      "effect": "_submit(): pops with the comment; _openCommentComposer then either _stage()s a ReviewReference(kind comment) via handoff.stage(), or, without a handoff, pops ReviewWorkspace with _reviewPrompt(...) (caller sends it to the chat or clipboard).",
      "gates": [
       "disabled while the field is empty"
      ],
+     "destructive": false
+    },
+    {
+     "id": "review-comment-sheet-field",
+     "type": "text-field",
+     "label": "What should OpenCode inspect or change?",
+     "key": "review-comment-field",
+     "file": "lib/ui/screens/review_workspace.dart",
+     "line": 950,
+     "action": "submit",
+     "target": null,
+     "effect": "Autofocused multiline field; onSubmitted -> _submit() pops the sheet with the trimmed text.",
+     "gates": [],
      "destructive": false
     }
    ]
@@ -18828,9 +18400,9 @@
      "element": "staged-revert-file-row"
     },
     {
-     "page": "todos-sheet",
+     "page": "permission-sheet",
      "element": null,
-     "evidence": "lib/ui/screens/chat/session_sheets.dart:231"
+     "evidence": "lib/ui/screens/chat/permission_sheet.dart:275"
     },
     {
      "page": "chat",
@@ -18839,14 +18411,55 @@
     {
      "page": "chat",
      "element": "chat-body-demo-review-changes"
-    },
-    {
-     "page": "permission-sheet",
-     "element": "permission-sheet-see-full-diff"
     }
    ],
    "gates": [],
    "elements": [
+    {
+     "id": "diff-view-collapse-context",
+     "type": "gesture",
+     "label": "Hide revealed context",
+     "key": "diff-collapse-<index>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2321,
+     "action": "other",
+     "target": null,
+     "effect": "_GapBar: removes _shownTop/_shownBottom for that gap.",
+     "gates": [
+      "gap has revealed rows"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "diff-view-expand-down",
+     "type": "gesture",
+     "label": "Show next {count} lines",
+     "key": "diff-expand-down-<index>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2337,
+     "action": "other",
+     "target": null,
+     "effect": "_GapBar -> _expandTop(index) reveals up to 20 lines below the previous hunk.",
+     "gates": [
+      "gap rows available && index > 0 && remaining > 0"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "diff-view-expand-up",
+     "type": "gesture",
+     "label": "Show {count} previous lines ({remaining} hidden)",
+     "key": "diff-gap-<index>",
+     "file": "lib/ui/kit/kit_diff_view.dart",
+     "line": 2350,
+     "action": "other",
+     "target": null,
+     "effect": "_GapBar -> _expandBottom(index) reveals up to 20 lines above the next hunk; inert \"missing context\" label when rows are unavailable.",
+     "gates": [
+      "expandable (gap.rows != null)"
+     ],
+     "destructive": false
+    },
     {
      "id": "diff-view-close",
      "type": "icon-button",
@@ -18873,51 +18486,6 @@
      "gates": [
       "allowCopy && diffs.length == 1",
       "disabled when the text is empty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "diff-view-collapse-context",
-     "type": "gesture",
-     "label": "Hide revealed context",
-     "key": "diff-collapse-<index>",
-     "file": "lib/ui/widgets/diff_view.dart",
-     "line": 594,
-     "action": "other",
-     "target": null,
-     "effect": "_GapBar: removes _shownTop/_shownBottom for that gap.",
-     "gates": [
-      "gap has revealed rows"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "diff-view-expand-down",
-     "type": "gesture",
-     "label": "Show next {count} lines",
-     "key": "diff-expand-down-<index>",
-     "file": "lib/ui/widgets/diff_view.dart",
-     "line": 615,
-     "action": "other",
-     "target": null,
-     "effect": "_GapBar -> _expandTop(index) reveals up to 20 lines below the previous hunk.",
-     "gates": [
-      "gap rows available && index > 0 && remaining > 0"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "diff-view-expand-up",
-     "type": "gesture",
-     "label": "Show {count} previous lines ({remaining} hidden)",
-     "key": "diff-gap-<index>",
-     "file": "lib/ui/widgets/diff_view.dart",
-     "line": 627,
-     "action": "other",
-     "target": null,
-     "effect": "_GapBar -> _expandBottom(index) reveals up to 20 lines above the next hunk; inert \"missing context\" label when rows are unavailable.",
-     "gates": [
-      "expandable (gap.rows != null)"
      ],
      "destructive": false
     },
@@ -20170,7 +19738,7 @@
      "label": "Copy command: {label}",
      "key": "copy-host-command-<label>",
      "file": "lib/ui/screens/host_management_screen.dart",
-     "line": 262,
+     "line": 189,
      "action": "copy",
      "target": null,
      "targetWidget": null,
@@ -20201,6 +19769,22 @@
    ],
    "elements": [
     {
+     "id": "pairing-scanner-paste-instead",
+     "type": "button",
+     "label": "Paste it instead",
+     "key": "pairing-scanner-secondary",
+     "file": "lib/ui/screens/pairing_scanner_screen.dart",
+     "line": 157,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop() with no payload.",
+     "gates": [
+      "_stage == denied, permanentlyDenied or failed"
+     ],
+     "destructive": false
+    },
+    {
      "id": "pairing-scanner-close",
      "type": "icon-button",
      "label": "Close the scanner",
@@ -20215,44 +19799,12 @@
      "destructive": false
     },
     {
-     "id": "pairing-scanner-detect",
-     "type": "gesture",
-     "label": "[point camera at pairing QR]",
-     "key": "pairing-scanner-preview",
-     "file": "lib/ui/screens/pairing_scanner_screen.dart",
-     "line": 277,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "MobileScanner.onDetect -> _onDetect: parsePairingPayload(raw); a valid payload stops the controller and pops with it; an invalid QR shows the rejection text (pairing-scanner-rejected) and keeps scanning.",
-     "gates": [
-      "_stage == _ScanStage.scanning"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "pairing-scanner-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": "pairing-scanner-primary",
-     "file": "lib/ui/screens/pairing_scanner_screen.dart",
-     "line": 371,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets _stage = starting and re-runs _start() (camera check + cameraPlatform.requestCameraPermission()).",
-     "gates": [
-      "_stage == denied (pairing-scanner-denied) or failed (pairing-scanner-failed)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "pairing-scanner-open-settings",
      "type": "button",
      "label": "Open app settings",
      "key": "pairing-scanner-primary",
      "file": "lib/ui/screens/pairing_scanner_screen.dart",
-     "line": 371,
+     "line": 202,
      "action": "external-link",
      "target": null,
      "targetWidget": null,
@@ -20268,7 +19820,7 @@
      "label": "Paste it instead",
      "key": "pairing-scanner-primary",
      "file": "lib/ui/screens/pairing_scanner_screen.dart",
-     "line": 371,
+     "line": 215,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -20279,18 +19831,34 @@
      "destructive": false
     },
     {
-     "id": "pairing-scanner-paste-instead",
+     "id": "pairing-scanner-retry",
      "type": "button",
-     "label": "Paste it instead",
-     "key": "pairing-scanner-secondary",
+     "label": "Try again",
+     "key": "pairing-scanner-primary",
      "file": "lib/ui/screens/pairing_scanner_screen.dart",
-     "line": 378,
-     "action": "dismiss",
+     "line": 229,
+     "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "Navigator.pop() with no payload.",
+     "effect": "Sets _stage = starting and re-runs _start() (camera check + cameraPlatform.requestCameraPermission()).",
      "gates": [
-      "_stage == denied, permanentlyDenied or failed"
+      "_stage == denied (pairing-scanner-denied) or failed (pairing-scanner-failed)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-detect",
+     "type": "gesture",
+     "label": "[point camera at pairing QR]",
+     "key": "pairing-scanner-preview",
+     "file": "lib/ui/screens/pairing_scanner_screen.dart",
+     "line": 243,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "MobileScanner.onDetect -> _onDetect: parsePairingPayload(raw); a valid payload stops the controller and pops with it; an invalid QR shows the rejection text (pairing-scanner-rejected) and keeps scanning.",
+     "gates": [
+      "_stage == _ScanStage.scanning"
      ],
      "destructive": false
     }
@@ -23262,10 +22830,12 @@
    "presentedBy": [
     "PhoneSetupTermuxScreen",
     "openPhoneSetupProgress",
-    "openPhoneSetupTermux"
+    "openPhoneSetupTermux",
+    "PhoneSetupTermuxJobScreen",
+    "openPhoneSetupTermuxJob"
    ],
    "line": 21,
-   "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened. The Termux host (PhoneSetupTermuxScreen, lib/ui/screens/phone_setup/phone_setup_termux_screen.dart, slice P1.3/P1.5 (2026-09-27)) draws the old Termux wizard as the same SetupProgressView checklist: Get Termux and Connect Termux once are rows only the person can do, then Linux base, OpenCode and Start OpenCode follow the Termux manager; a failure is a failed row with Continue setup. A first setup ends on home-shell, an update or a switch closes back to This phone.",
+   "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened. The Termux host (PhoneSetupTermuxScreen, lib/ui/screens/phone_setup/phone_setup_termux_screen.dart, slice P1.3/P1.5 (2026-09-27)) draws the old Termux wizard as the same SetupProgressView checklist: Get Termux and Connect Termux once are rows only the person can do, then Linux base, OpenCode and Start OpenCode follow the Termux manager; a failure is a failed row with Continue setup. A first setup ends on home-shell, an update or a switch closes back to This phone. The persisted Termux job variant (PhoneSetupTermuxJobScreen, P5.3) also hosts SetupProgressView and hands first setup completion to Ready; its Get Termux, permission and resume actions are listed here.",
    "reachedFrom": [
     {
      "page": "phone-setup-start",
@@ -23323,6 +22893,54 @@
    "gates": [],
    "elements": [
     {
+     "id": "phone-setup-progress-termux-get",
+     "type": "button",
+     "label": "Get Termux",
+     "key": "phone-setup-termux-get",
+     "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart",
+     "line": 582,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "openExternalLink(context, termuxDownloadUrl) (the F-Droid page, through the external-link confirm); coming back re-checks Termux.",
+     "gates": [
+      "Termux persisted job host; corresponding person action pending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-progress-termux-app-settings",
+     "type": "button",
+     "label": "App settings",
+     "key": "phone-setup-termux-app-settings",
+     "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart",
+     "line": 588,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "TermuxBridge.openAppSettings() when Android denied the command permission.",
+     "gates": [
+      "Termux persisted job host; corresponding person action pending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-progress-termux-allow",
+     "type": "button",
+     "label": "Copy & open Termux",
+     "key": "phone-setup-termux-allow",
+     "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart",
+     "line": 593,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_allowTermux(): requests command permission, copies the unlock command, and opens Termux; return checks the permission gate before starting the persisted job.",
+     "gates": [
+      "Termux persisted job host; corresponding person action pending"
+     ],
+     "destructive": false
+    },
+    {
      "id": "phone-setup-progress-termux-done-home",
      "type": "button",
      "label": "[first setup done]",
@@ -23367,54 +22985,6 @@
      "effect": "Off Android (TermuxBridge.supported false): pushNamed(/servers, ServersRouteRequest.add()). Merges termux-setup-unsupported.",
      "gates": [
       "!TermuxBridge.supported"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "phone-setup-progress-termux-get",
-     "type": "button",
-     "label": "Get Termux",
-     "key": "phone-setup-termux-get",
-     "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart",
-     "line": 398,
-     "action": "external-link",
-     "target": null,
-     "targetWidget": null,
-     "effect": "openExternalLink(context, termuxDownloadUrl) (the F-Droid page, through the external-link confirm); coming back re-checks Termux.",
-     "gates": [
-      "Termux host, TermuxHostPhase.needTermux"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "phone-setup-progress-termux-app-settings",
-     "type": "button",
-     "label": "App settings",
-     "key": "phone-setup-termux-app-settings",
-     "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart",
-     "line": 404,
-     "action": "external-link",
-     "target": null,
-     "targetWidget": null,
-     "effect": "TermuxBridge.openAppSettings() when Android denied the command permission.",
-     "gates": [
-      "Termux host, needAllow after termuxPermissionDenied"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "phone-setup-progress-termux-allow",
-     "type": "button",
-     "label": "Copy & open Termux",
-     "key": "phone-setup-termux-allow",
-     "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart",
-     "line": 409,
-     "action": "external-link",
-     "target": null,
-     "targetWidget": null,
-     "effect": "TermuxHostSetup.allowTermux: asks for the RUN_COMMAND permission, KitCopy.copy(unlockCommand), TermuxBridge.openTermux(); returning from Termux runs verifyAfterReturn().",
-     "gates": [
-      "Termux host, TermuxHostPhase.needAllow"
      ],
      "destructive": false
     },
@@ -26320,22 +25890,6 @@
      "destructive": false
     },
     {
-     "id": "team-agent-details",
-     "type": "icon-button",
-     "label": "Technical details",
-     "key": "team-agent-details",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 205,
-     "action": "open-sheet",
-     "target": "team-agent-details-sheet",
-     "targetWidget": "_AgentDetailsSheet",
-     "effect": "_openDetails(agent): showModalBottomSheet(_AgentDetailsSheet) (line 135).",
-     "gates": [
-      "agent != null"
-     ],
-     "destructive": false
-    },
-    {
      "id": "team-agent-pull",
      "type": "gesture",
      "label": "[pull to refresh]",
@@ -26363,6 +25917,21 @@
      "effect": "_openConversation(agent): openTeamAgentConversation(context, agent, team, lookup: _lookup, details: false) pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or TeamWatchLiveScreen (chat-watching-live) with a note saying why when the agent's session is not on the connected server. details: false, so the watching page offers no way back to this page (Back returns here).",
      "gates": [
       "the agent is listed and the team screen state is ready"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-agent-technical",
+     "type": "list-tile",
+     "label": "Technical details",
+     "key": "team-agent-technical",
+     "file": "lib/ui/screens/team/agent_screen.dart",
+     "line": 642,
+     "action": "other",
+     "target": null,
+     "effect": "ExpansionTile: expands the raw provider fields inline.",
+     "gates": [
+      "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
      ],
      "destructive": false
     },
@@ -26445,36 +26014,6 @@
       "controller.capabilities.controlAgent"
      ],
      "destructive": true
-    },
-    {
-     "id": "team-agent-step-group",
-     "type": "list-tile",
-     "label": "Tools · <step summary>",
-     "key": "team-agent-step-group-header",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 1281,
-     "action": "other",
-     "target": null,
-     "effect": "Expands/collapses one tool step group in Activity: setState(_expanded = !_expanded).",
-     "gates": [
-      "Activity has step groups parsed from the output tail's `[tool: …]` markers"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-agent-technical",
-     "type": "list-tile",
-     "label": "Technical details",
-     "key": "team-agent-technical",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 1476,
-     "action": "other",
-     "target": null,
-     "effect": "ExpansionTile: expands the raw provider fields inline.",
-     "gates": [
-      "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-     ],
-     "destructive": false
     },
     {
      "id": "team-agent-missing-back",
@@ -26681,46 +26220,6 @@
    "sheetKey": "team-agent-restart-confirm"
   },
   {
-   "id": "team-agent-details-sheet",
-   "title": "Technical details",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/screens/team/agent_screen.dart",
-   "widget": "_AgentDetailsSheet",
-   "presentedBy": [
-    "_openDetails"
-   ],
-   "line": 1525,
-   "purpose": "The agent's raw provider fields, reachable from the app bar without scrolling.",
-   "reachedFrom": [
-    {
-     "page": "team-agent",
-     "element": "team-agent-details"
-    }
-   ],
-   "gates": [
-    "agent != null"
-   ],
-   "elements": [
-    {
-     "id": "team-agent-details-sheet-copy-value",
-     "type": "icon-button",
-     "label": "Copy",
-     "key": null,
-     "file": "lib/ui/widgets/team_technical_details.dart",
-     "line": 229,
-     "action": "copy",
-     "target": null,
-     "effect": "TeamTechnicalValue: Clipboard.setData(value) + 'Copied' snackbar; one per raw field.",
-     "gates": [
-      "value.isNotEmpty"
-     ],
-     "destructive": false
-    }
-   ],
-   "sheetKey": "team-agent-details-sheet"
-  },
-  {
    "id": "gate-sheet",
    "title": "<gate title> (Decision / Confirmation / Free text / Gate / Run failed / Review ready)",
    "kind": "sheet",
@@ -26805,6 +26304,54 @@
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.of(context).pop(). The sheet also closes itself gateSheetAnsweredBeat (900 ms) after the record is confirmed (_scheduleClose).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-receipt-retry",
+     "type": "button",
+     "label": "Retry (unconfirmed) / Try again (rejected)",
+     "key": "team-gate-retry",
+     "file": "lib/ui/screens/team/gate_sheet.dart",
+     "line": 459,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_retry(record): controller.retryMutation(record.key) creates a new mutation record under a new key and follows it.",
+     "gates": [
+      "record != null",
+      "record.status is MutationStatus.unconfirmed or rejected && record.canRetry",
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-how",
+     "type": "button",
+     "label": "How",
+     "key": "team-gate-how",
+     "file": "lib/ui/screens/team/gate_sheet.dart",
+     "line": 470,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "showTeamHostGuideSheet(context), next to the \"Answer this on the host\" line.",
+     "gates": [
+      "actions.isEmpty && !hideActions && record == null (no capability for this variant, or kind reviewReady/unknown)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-technical",
+     "type": "list-tile",
+     "label": "Technical details",
+     "key": "team-gate-technical",
+     "file": "lib/ui/screens/team/gate_sheet.dart",
+     "line": 498,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Expands the raw provider values (request id, session id, kind, work id, run id, every raw scalar), each a TeamTechnicalValue row.",
      "gates": [],
      "destructive": false
     },
@@ -26991,54 +26538,6 @@
       "disabled while busy (_sending || record.isSent)"
      ],
      "destructive": true
-    },
-    {
-     "id": "gate-sheet-receipt-retry",
-     "type": "button",
-     "label": "Retry (unconfirmed) / Try again (rejected)",
-     "key": "team-gate-retry",
-     "file": "lib/ui/screens/team/gate_sheet.dart",
-     "line": 1127,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_retry(record): controller.retryMutation(record.key) creates a new mutation record under a new key and follows it.",
-     "gates": [
-      "record != null",
-      "record.status is MutationStatus.unconfirmed or rejected && record.canRetry",
-      "disabled while _sending"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "gate-sheet-how",
-     "type": "button",
-     "label": "How",
-     "key": "team-gate-how",
-     "file": "lib/ui/screens/team/gate_sheet.dart",
-     "line": 1172,
-     "action": "open-sheet",
-     "target": "team-host-guide-sheet",
-     "targetWidget": "showTeamHostGuideSheet",
-     "effect": "showTeamHostGuideSheet(context), next to the \"Answer this on the host\" line.",
-     "gates": [
-      "actions.isEmpty && !hideActions && record == null (no capability for this variant, or kind reviewReady/unknown)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "gate-sheet-technical",
-     "type": "list-tile",
-     "label": "Technical details",
-     "key": "team-gate-technical",
-     "file": "lib/ui/screens/team/gate_sheet.dart",
-     "line": 1234,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Expands the raw provider values (request id, session id, kind, work id, run id, every raw scalar), each a TeamTechnicalValue row.",
-     "gates": [],
-     "destructive": false
     },
     {
      "id": "gate-sheet-technical-copy",
@@ -27317,7 +26816,7 @@
      "label": "<work item title> / <state word>",
      "key": "team-merge-work-<id>",
      "file": "lib/ui/screens/team/merge_section.dart",
-     "line": 787,
+     "line": 667,
      "action": "open-sheet",
      "target": "work-sheet",
      "targetWidget": "showWorkSheet",
@@ -27735,6 +27234,21 @@
      "widgetFile": "lib/ui/widgets/team_board_tabs.dart"
     },
     {
+     "id": "team-board-project-item",
+     "type": "menu-item",
+     "label": "<project name>",
+     "key": "team-board-project-<id>",
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 233,
+     "action": "other",
+     "target": null,
+     "effect": "_ProjectSwitcher.onSelect(id): setState(() => _project = id); clears pending moves and their hold timers.",
+     "gates": [
+      "projects.length > 1"
+     ],
+     "destructive": false
+    },
+    {
      "id": "team-board-card-moves",
      "type": "icon-button",
      "label": "Move or change",
@@ -27752,21 +27266,6 @@
      "widgetFile": "lib/ui/widgets/team_board_card.dart"
     },
     {
-     "id": "team-board-card-long-press",
-     "type": "gesture",
-     "label": "[long press on a card]",
-     "key": "team-board-card-<id>",
-     "file": "lib/ui/screens/team/team_board_screen.dart",
-     "line": 322,
-     "action": "open-sheet",
-     "target": "team-board-move-sheet",
-     "targetWidget": "showTeamBoardMoveSheet",
-     "effect": "GestureDetector.onLongPress -> _showMoves(card): showTeamBoardMoveSheet (same sheet as the card's ⋯ button; unconditional, even when onMoves is hidden, in which case the sheet only offers Open conversation/details and says why there are no moves).",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_board_card.dart"
-    },
-    {
      "id": "team-board-card",
      "type": "card",
      "label": "<task title>",
@@ -27780,6 +27279,21 @@
      "gates": [],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_board_card.dart"
+    },
+    {
+     "id": "team-board-project",
+     "type": "icon-button",
+     "label": "Choose project",
+     "key": "team-board-project",
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 392,
+     "action": "other",
+     "target": null,
+     "effect": "_ProjectSwitcher: PopupMenuButton opener; opens the project menu (shown only when the host reports more than one project).",
+     "gates": [
+      "projects.length > 1"
+     ],
+     "destructive": false
     },
     {
      "id": "team-board-add",
@@ -27829,33 +27343,17 @@
      "destructive": false
     },
     {
-     "id": "team-board-project",
-     "type": "icon-button",
-     "label": "Choose project",
-     "key": "team-board-project",
-     "file": "lib/ui/screens/team/team_board_screen.dart",
-     "line": 696,
-     "action": "other",
-     "target": null,
-     "effect": "_ProjectSwitcher: PopupMenuButton opener; opens the project menu (shown only when the host reports more than one project).",
-     "gates": [
-      "projects.length > 1"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-board-project-item",
-     "type": "menu-item",
-     "label": "<project name>",
-     "key": "team-board-project-<id>",
-     "file": "lib/ui/screens/team/team_board_screen.dart",
-     "line": 703,
-     "action": "other",
-     "target": null,
-     "effect": "_ProjectSwitcher.onSelect(id): setState(() => _project = id); clears pending moves and their hold timers.",
-     "gates": [
-      "projects.length > 1"
-     ],
+     "id": "team-board-card-long-press",
+     "type": "gesture",
+     "label": "[long press on a card]",
+     "key": "team-board-card-<id>",
+     "file": "lib/ui/widgets/team_board_card.dart",
+     "line": 248,
+     "action": "open-sheet",
+     "target": "team-board-move-sheet",
+     "targetWidget": "showTeamBoardMoveSheet",
+     "effect": "GestureDetector.onLongPress -> _showMoves(card): showTeamBoardMoveSheet (same sheet as the card's ⋯ button; unconditional, even when onMoves is hidden, in which case the sheet only offers Open conversation/details and says why there are no moves).",
+     "gates": [],
      "destructive": false
     }
    ]
@@ -28238,14 +27736,6 @@
     {
      "page": "plugins-settings",
      "element": "plugins-settings-ai-team-row"
-    },
-    {
-     "page": "embedded-team-discover",
-     "element": "embedded-team-discover-open"
-    },
-    {
-     "page": "embedded-team-discover",
-     "element": "embedded-team-discover-row"
     }
    ],
    "gates": [
@@ -28343,7 +27833,7 @@
    "file": "lib/ui/screens/team/work_graph.dart",
    "widget": "WorkGraph",
    "presentedBy": [],
-   "line": 351,
+   "line": 218,
    "purpose": "Pan/zoom dependency graph of a run's work items in the run Work tab (graph view).",
    "reachedFrom": [],
    "gates": [
@@ -28355,30 +27845,30 @@
    "hostPages": [],
    "elements": [
     {
-     "id": "embedded-work-graph-viewer",
-     "type": "gesture",
-     "label": "[pinch-zoom / drag-pan]",
-     "key": "team-work-graph-viewer",
-     "file": "lib/ui/screens/team/work_graph.dart",
-     "line": 433,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "InteractiveViewer with TransformationController, scale .2 to 3.0; view state only.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "embedded-work-graph-node",
      "type": "gesture",
      "label": "{title}, {state} (node chip)",
      "key": "team-work-graph-canvas",
      "file": "lib/ui/screens/team/work_graph.dart",
-     "line": 440,
+     "line": 256,
      "action": "open-sheet",
      "target": "work-sheet",
      "targetWidget": "showWorkSheet",
      "effect": "GestureDetector.onTapUp hit-tests layout.nodeAt and calls widget.onNodeTap(node.id) (also exposed as a semantics button, line 599); RunScreen passes _openWork -> showWorkSheet.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-work-graph-viewer",
+     "type": "gesture",
+     "label": "[pinch-zoom / drag-pan]",
+     "key": "team-work-graph-viewer",
+     "file": "lib/ui/screens/team/work_graph.dart",
+     "line": 258,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "InteractiveViewer with TransformationController, scale .2 to 3.0; view state only.",
      "gates": [],
      "destructive": false
     },
@@ -28388,7 +27878,7 @@
      "label": "Fit",
      "key": "team-work-graph-fit",
      "file": "lib/ui/screens/team/work_graph.dart",
-     "line": 466,
+     "line": 261,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -28800,7 +28290,7 @@
      "label": "Refresh",
      "key": "team-cycle-action-refresh",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 713,
+     "line": 328,
      "action": "mutate",
      "target": null,
      "effect": "_refresh -> controller.refresh(); disabled while busy.",
@@ -28816,7 +28306,7 @@
      "label": "How the host dispatches",
      "key": "team-cycle-action-how",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 719,
+     "line": 335,
      "action": "open-sheet",
      "target": "team-cycle-how-sheet",
      "targetWidget": "showTeamCycleHowSheet",
@@ -28833,7 +28323,7 @@
      "label": "Watch the agent",
      "key": "team-cycle-action-output",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 725,
+     "line": 342,
      "action": "navigate",
      "target": "chat",
      "targetWidget": "openTeamAgentConversationById",
@@ -28850,7 +28340,7 @@
      "label": "Stop",
      "key": "team-cycle-action-stop",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 744,
+     "line": 356,
      "action": "open-sheet",
      "target": "team-cycle-stop-confirm-sheet",
      "targetWidget": "confirmTeamControl",
@@ -28867,7 +28357,7 @@
      "label": "Nudge refinery",
      "key": "team-cycle-action-nudge",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 756,
+     "line": 367,
      "action": "mutate",
      "target": null,
      "effect": "_nudge(refineryId): controller.controlAgent(refineryId, AgentControlAction.nudge).",
@@ -28934,85 +28424,6 @@
     }
    ],
    "sheetKey": "team-cycle-stop-confirm"
-  },
-  {
-   "id": "embedded-team-discover",
-   "title": "AI Team (off)",
-   "kind": "overlay",
-   "area": "team",
-   "file": "lib/ui/widgets/team_discover.dart",
-   "widget": "TeamDiscoverEntry",
-   "presentedBy": [],
-   "line": 156,
-   "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "WorkspaceScreen: `controller.orchestration == null` (else TeamCard)",
-    "absent without a profile, with an AI Team config, and on a Termux phone whose runtime cannot run a team",
-    "folded when the global preference oc.teamDiscover.folded is true (TeamDiscoverMemory)"
-   ],
-   "embeddedIn": [
-    "WorkspaceScreen"
-   ],
-   "hostPages": [
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-team-discover-row",
-     "type": "list-tile",
-     "label": "AI Team · Off · A team of agents for bigger jobs",
-     "key": "team-discover-row",
-     "file": "lib/ui/widgets/team_discover.dart",
-     "line": 240,
-     "action": "navigate",
-     "target": "team-intro",
-     "targetWidget": "TeamIntroScreen",
-     "effect": "Opens the intro.",
-     "gates": [
-      "folded"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-discover-open",
-     "type": "list-tile",
-     "label": "Give a bigger job to a team",
-     "key": "team-discover-open",
-     "file": "lib/ui/widgets/team_discover.dart",
-     "line": 257,
-     "action": "navigate",
-     "target": "team-intro",
-     "targetWidget": "TeamIntroScreen",
-     "effect": "Folds the entry (seen) and opens the intro.",
-     "gates": [
-      "not folded"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-discover-hide",
-     "type": "icon-button",
-     "label": "[Not now]",
-     "key": "team-discover-hide",
-     "file": "lib/ui/widgets/team_discover.dart",
-     "line": 270,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "TeamDiscoverMemory.fold: the entry folds to the quiet row, for good.",
-     "gates": [
-      "not folded"
-     ],
-     "destructive": false
-    }
-   ]
   },
   {
    "id": "embedded-team-discovery-card",
@@ -29270,6 +28681,67 @@
    ]
   },
   {
+   "id": "team-phone-onboarding-failed",
+   "title": "The AI team could not be set up.",
+   "kind": "onboarding-step",
+   "area": "team",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 590,
+   "purpose": "Failure card: honest reason sentence, step list with the failed step, last output, Retry.",
+   "reachedFrom": [
+    {
+     "page": "this-phone-add-tools-sheet",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by This phone's Termux Add tools sheet)",
+    "status.phase == failed, or ready but not healthy, or a TermuxBridgeException on dispatch"
+   ],
+   "embeddedIn": [
+    "_addTools"
+   ],
+   "hostPages": [
+    "this-phone-add-tools-sheet"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-failed-copy-log",
+     "type": "icon-button",
+     "label": "Copy output",
+     "key": null,
+     "file": "lib/ui/widgets/setup_terminal.dart",
+     "line": 135,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SetupTerminal.onCopy -> _copyLog (team_phone_onboarding.dart:575): Clipboard.setData(_log) then SnackBar (l10n.workCopied). Disabled while the log is empty.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-failed-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": "team-phone-retry",
+     "file": "lib/ui/widgets/team_phone_onboarding.dart",
+     "line": 468,
+     "action": "open-dialog",
+     "target": "project-folder-open-dialog",
+     "targetWidget": null,
+     "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "team-phone-onboarding-offer",
    "title": "Also run an AI team on this phone",
    "kind": "onboarding-step",
@@ -29299,6 +28771,20 @@
    ],
    "elements": [
     {
+     "id": "team-phone-onboarding-offer-set-up",
+     "type": "button",
+     "label": "Set up AI team",
+     "key": "team-phone-set-up",
+     "file": "lib/ui/widgets/team_phone_onboarding.dart",
+     "line": 468,
+     "action": "open-dialog",
+     "target": "project-folder-open-dialog",
+     "targetWidget": null,
+     "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "team-phone-onboarding-offer-skip",
      "type": "button",
      "label": "Skip for now",
@@ -29311,19 +28797,52 @@
      "effect": "_skip: orchestrationStore.setPhoneOffer(profile.id, PhoneOffer.skipped) and hides the block (re-offered once in Settings > Plugins).",
      "gates": [],
      "destructive": false
-    },
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-killed",
+   "title": "[Android stopped the team]",
+   "kind": "onboarding-step",
+   "area": "team",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 669,
+   "purpose": "Card shown when Android killed the phone supervisor: \"Android stopped the team while the app was away. Nothing is lost.\"",
+   "reachedFrom": [
     {
-     "id": "team-phone-onboarding-offer-set-up",
+     "page": "this-phone-add-tools-sheet",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by This phone's Termux Add tools sheet)",
+    "status.phase == ready && status.killedByAndroid"
+   ],
+   "embeddedIn": [
+    "_addTools"
+   ],
+   "hostPages": [
+    "this-phone-add-tools-sheet"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-killed-start-again",
      "type": "button",
-     "label": "Set up AI team",
-     "key": "team-phone-set-up",
+     "label": "Start again",
+     "key": "team-phone-start-again",
      "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 679,
+     "line": 770,
      "action": "mutate",
-     "target": "team-phone-onboarding-project-sheet",
-     "targetWidget": "_ProjectSheet",
-     "effect": "_setUp: picks the project (_chooseProject: saved workspace dir, the only project, or else the project sheet) then _run(from: download): runtime.install() -> runtime.init(project) -> runtime.start() -> teamPhoneEnable writes the phone OrchestrationConfig on the profile.",
-     "gates": [],
+     "target": null,
+     "targetWidget": null,
+     "effect": "_startAgain: runtime.start(), then teamPhoneEnable if not yet connected.",
+     "gates": [
+      "disabled while _busy"
+     ],
      "destructive": false
     }
    ]
@@ -29381,11 +28900,11 @@
      "label": "Continue",
      "key": "team-phone-continue",
      "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 764,
-     "action": "mutate",
-     "target": "team-phone-onboarding-project-sheet",
-     "targetWidget": "_ProjectSheet",
-     "effect": "_resume: continues from where the runtime got to (install / init / start), choosing a project first when needed, via _run.",
+     "line": 468,
+     "action": "open-dialog",
+     "target": "project-folder-open-dialog",
+     "targetWidget": null,
+     "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
      "gates": [
       "!running (neither _busy nor status.busy): a setup interrupted part-way"
      ],
@@ -29425,218 +28944,16 @@
     {
      "id": "team-phone-onboarding-success-open-workspace",
      "type": "button",
-     "label": "Open Workspace",
-     "key": "team-phone-open-workspace",
+     "label": "Give the team a first task",
+     "key": "team-phone-ready-first-task",
      "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 816,
+     "line": 640,
      "action": "navigate",
-     "target": "home-shell",
-     "targetWidget": "/home",
-     "effect": "widget.onOpenWorkspace: This phone's Add tools sheet closes and _connect() connects to the Termux profile, then pushNamedAndRemoveUntil(/home).",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-phone-onboarding-failed",
-   "title": "The AI team could not be set up.",
-   "kind": "onboarding-step",
-   "area": "team",
-   "file": "lib/ui/widgets/team_phone_onboarding.dart",
-   "widget": "TeamPhoneOnboardingBlock",
-   "presentedBy": [],
-   "line": 828,
-   "purpose": "Failure card: honest reason sentence, step list with the failed step, last output, Retry.",
-   "reachedFrom": [
-    {
-     "page": "this-phone-add-tools-sheet",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "await runtime.supportsAiTeam (absent otherwise)",
-    "managed Termux server profile (block built by This phone's Termux Add tools sheet)",
-    "status.phase == failed, or ready but not healthy, or a TermuxBridgeException on dispatch"
-   ],
-   "embeddedIn": [
-    "_addTools"
-   ],
-   "hostPages": [
-    "this-phone-add-tools-sheet"
-   ],
-   "elements": [
-    {
-     "id": "team-phone-onboarding-failed-copy-log",
-     "type": "icon-button",
-     "label": "Copy output",
-     "key": null,
-     "file": "lib/ui/widgets/setup_terminal.dart",
-     "line": 135,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "SetupTerminal.onCopy -> _copyLog (team_phone_onboarding.dart:575): Clipboard.setData(_log) then SnackBar (l10n.workCopied). Disabled while the log is empty.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-phone-onboarding-failed-retry",
-     "type": "button",
-     "label": "Retry",
-     "key": "team-phone-retry",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 864,
-     "action": "mutate",
-     "target": "team-phone-onboarding-project-sheet",
-     "targetWidget": "_ProjectSheet",
-     "effect": "_retry: restarts from the failed step (teamPhoneFailedStep) via _run; picks a project first when the city step or install is redone.",
+     "target": "chat",
+     "targetWidget": "TeamConversation.start",
+     "effect": "Starts the first team task as a conversation. Once the task is accepted and its conversation closes, the ready screen closes.",
      "gates": [
-      "disabled while _busy"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-phone-onboarding-killed",
-   "title": "[Android stopped the team]",
-   "kind": "onboarding-step",
-   "area": "team",
-   "file": "lib/ui/widgets/team_phone_onboarding.dart",
-   "widget": "TeamPhoneOnboardingBlock",
-   "presentedBy": [],
-   "line": 876,
-   "purpose": "Card shown when Android killed the phone supervisor: \"Android stopped the team while the app was away. Nothing is lost.\"",
-   "reachedFrom": [
-    {
-     "page": "this-phone-add-tools-sheet",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "await runtime.supportsAiTeam (absent otherwise)",
-    "managed Termux server profile (block built by This phone's Termux Add tools sheet)",
-    "status.phase == ready && status.killedByAndroid"
-   ],
-   "embeddedIn": [
-    "_addTools"
-   ],
-   "hostPages": [
-    "this-phone-add-tools-sheet"
-   ],
-   "elements": [
-    {
-     "id": "team-phone-onboarding-killed-start-again",
-     "type": "button",
-     "label": "Start again",
-     "key": "team-phone-start-again",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 905,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_startAgain: runtime.start(), then teamPhoneEnable if not yet connected.",
-     "gates": [
-      "disabled while _busy"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-phone-onboarding-project-sheet",
-   "title": "Choose a project",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/widgets/team_phone_onboarding.dart",
-   "widget": "_ProjectSheet",
-   "presentedBy": [],
-   "line": 984,
-   "purpose": "Pick the managed project folder the city is created next to, or name a new folder when there are none (opened by _chooseProject, line 423).",
-   "reachedFrom": [
-    {
-     "page": "team-phone-onboarding-offer",
-     "element": "team-phone-onboarding-offer-set-up"
-    },
-    {
-     "page": "team-phone-onboarding-steps",
-     "element": "team-phone-onboarding-steps-continue"
-    },
-    {
-     "page": "team-phone-onboarding-failed",
-     "element": "team-phone-onboarding-failed-retry"
-    }
-   ],
-   "gates": [
-    "_project == null, no saved workspace directory among runtime.managedProjects(), and projects.length != 1"
-   ],
-   "elements": [
-    {
-     "id": "team-phone-onboarding-project-sheet-new-folder",
-     "type": "text-field",
-     "label": "Folder name",
-     "key": "team-phone-new-folder",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 1058,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onSubmitted -> _create().",
-     "gates": [
-      "projects empty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-phone-onboarding-project-sheet-create",
-     "type": "button",
-     "label": "Create and continue",
-     "key": "team-phone-create-folder",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 1072,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_create: validates with projectFolderNameProblem, runtime.createManagedProject(name), pops with the new path.",
-     "gates": [
-      "projects empty",
-      "disabled while _creating"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-phone-onboarding-project-sheet-radio",
-     "type": "list-tile",
-     "label": "<folder name> / <path> (radio)",
-     "key": "team-phone-project-<i>",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 1084,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "RadioGroup.onChanged (line 1080): setState(_selected = value).",
-     "gates": [
-      "projects non-empty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-phone-onboarding-project-sheet-continue",
-     "type": "button",
-     "label": "Continue",
-     "key": "team-phone-project-continue",
-     "file": "lib/ui/widgets/team_phone_onboarding.dart",
-     "line": 1104,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(_selected): returns the chosen path to _chooseProject, which starts the setup run.",
-     "gates": [
-      "projects non-empty",
-      "_selected != null"
+      "team is available and a task is not already starting"
      ],
      "destructive": false
     }
@@ -30471,170 +29788,6 @@
    ]
   },
   {
-   "id": "legacy-drafts",
-   "title": "Older drafts",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/legacy_drafts_screen.dart",
-   "widget": "LegacyDraftsScreen",
-   "presentedBy": [],
-   "line": 10,
-   "purpose": "Lists drafts saved by older app versions so one can be reviewed and inserted into the composer; pops with the chosen draft text.",
-   "reachedFrom": [
-    {
-     "page": "chat",
-     "element": "chat-composer-legacy-drafts"
-    },
-    {
-     "page": "prompt-tools-sheet",
-     "element": "prompt-tools-sheet-legacy-drafts"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "legacy-drafts-search",
-     "type": "text-field",
-     "label": "Search older drafts",
-     "key": "legacy-drafts-search",
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 133,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets _query (lower-cased) filtering drafts by text or sessionID.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "legacy-drafts-item",
-     "type": "list-tile",
-     "label": "<draft text>",
-     "key": "legacy-draft-<draft.sessionID>",
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 154,
-     "action": "open-sheet",
-     "target": "legacy-drafts-review-sheet",
-     "targetWidget": "_review",
-     "effect": "_review(draft): opens the review sheet; if the sheet returns true, Navigator.pop(context, draft.text) back to the chat composer.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "legacy-drafts-review-sheet",
-   "title": "Older drafts",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/legacy_drafts_screen.dart",
-   "widget": "_review",
-   "presentedBy": [],
-   "line": 24,
-   "purpose": "Full text of one legacy draft with copy, delete and insert.",
-   "reachedFrom": [
-    {
-     "page": "legacy-drafts",
-     "element": "legacy-drafts-item"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "legacy-drafts-review-sheet-copy",
-     "type": "icon-button",
-     "label": "Copy",
-     "key": null,
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 56,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Clipboard.setData(draft.text) (tooltip MaterialLocalizations.copyButtonLabel). Disabled when the draft text is empty.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "legacy-drafts-review-sheet-delete",
-     "type": "button",
-     "label": "Delete saved copy",
-     "key": null,
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 65,
-     "action": "open-sheet",
-     "target": "legacy-drafts-delete-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "Opens the delete confirm sheet.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "legacy-drafts-review-sheet-insert",
-     "type": "button",
-     "label": "Insert into draft",
-     "key": null,
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 91,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops the sheet with true; the screen then pops with draft.text for the caller to insert. Disabled when text is empty.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "legacy-drafts-delete-sheet",
-   "title": "Delete saved copy",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/legacy_drafts_screen.dart",
-   "widget": "_review",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 67,
-   "purpose": "Confirms deleting one legacy draft.",
-   "reachedFrom": [
-    {
-     "page": "legacy-drafts-review-sheet",
-     "element": "legacy-drafts-review-sheet-delete"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "legacy-drafts-delete-sheet-confirm",
-     "type": "button",
-     "label": "Delete saved copy",
-     "key": null,
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 71,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Returns true; then controller.removeLegacySessionDraft(draft); on success pops the review sheet with false, else snackbar \"The draft changed or could not be removed. Reopen it and retry.\".",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "legacy-drafts-delete-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/legacy_drafts_screen.dart",
-     "line": 72,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops false.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "command-auth-sheet",
    "title": "<provider name> / <method label>",
    "kind": "sheet",
@@ -31188,6 +30341,48 @@
    ],
    "elements": [
     {
+     "id": "integrations-oauth-inputs-dialog-cancel",
+     "type": "icon-button",
+     "label": "Close",
+     "key": "kit-sheet-close",
+     "file": "lib/ui/kit/kit_sheet.dart",
+     "line": 435,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Closes the provider input sheet without beginning OAuth.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-inputs-dialog-continue",
+     "type": "button",
+     "label": "Open {provider} sign-in",
+     "key": "oauth-inputs-continue",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 591,
+     "action": "submit",
+     "target": "integrations-authorization-launch-dialog",
+     "targetWidget": "_confirmAuthorizationLaunch",
+     "effect": "Validates the provider prompts and returns their answers to begin sign-in.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-inputs-dialog-text",
+     "type": "text-field",
+     "label": "<prompt message>",
+     "key": "oauth-prompt-<key>",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 715,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitField updates the corresponding provider text prompt value and clears its validation error.",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "integrations-oauth-inputs-dialog-select",
      "type": "dropdown",
      "label": "<prompt message>",
@@ -31198,48 +30393,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "DropdownButtonFormField per 'select' prompt; setState(_values[key]); required unless prompt.required == false.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "integrations-oauth-inputs-dialog-text",
-     "type": "text-field",
-     "label": "<prompt message>",
-     "key": "oauth-prompt-<key>",
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 786,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "TextFormField per 'text' prompt; setState(_values[key]).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "integrations-oauth-inputs-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 812,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context); OAuth is not started.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "integrations-oauth-inputs-dialog-continue",
-     "type": "button",
-     "label": "Continue",
-     "key": null,
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 820,
-     "action": "submit",
-     "target": "integrations-authorization-launch-dialog",
-     "targetWidget": "_confirmAuthorizationLaunch",
-     "effect": "_submit(): validates the form and pops the visible values; caller (_connectWithOAuth) starts controller.startRecoverableIntegrationOAuth or legacy repository.startIntegrationOAuth, then opens the authorization-launch dialog.",
      "gates": [],
      "destructive": false
     }
@@ -31927,6 +31080,60 @@
    ]
   },
   {
+   "id": "integrations-forget-pending-auth-sheet",
+   "title": "Forget on this device",
+   "kind": "sheet",
+   "area": "settings",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_PendingAuthRecoveryTileState._act",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 1238,
+   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-pending-forget"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-forget-pending-auth-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 431,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-forget-pending-auth-sheet-confirm",
+     "type": "button",
+     "label": "Forget on this device",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 1246,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
+     "gates": [],
+     "destructive": true
+    }
+   ]
+  },
+  {
    "id": "integrations-disconnect-provider-sheet",
    "title": "Disconnect {provider}?",
    "kind": "sheet",
@@ -32081,60 +31288,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Pops with the trimmed key; caller runs repository.connectIntegrationKey(integration.id, value), then _load() and controller.refreshCatalog(). Empty value is ignored.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "integrations-forget-pending-auth-sheet",
-   "title": "Forget on this device",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-   "widget": "_PendingAuthRecoveryTileState._act",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 59,
-   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
-   "reachedFrom": [
-    {
-     "page": "integrations",
-     "element": "integrations-pending-forget"
-    },
-    {
-     "page": "integrations",
-     "element": "integrations-uncertain-forget"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "integrations-forget-pending-auth-sheet-confirm",
-     "type": "button",
-     "label": "Forget on this device",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "integrations-forget-pending-auth-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
      "destructive": false
     }
@@ -34768,34 +33921,6 @@
      "effect": "Navigator.pop without saving.",
      "gates": [],
      "destructive": false
-    },
-    {
-     "id": "theme-pack-preview-sheet-preview-chip",
-     "type": "chip",
-     "label": "Selected option",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 295,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample FilterChip: local state only.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "theme-pack-preview-sheet-preview-button",
-     "type": "button",
-     "label": "Try a control",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 301,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample button: local state only.",
-     "gates": [],
-     "destructive": false
     }
    ],
    "sheetKey": "appearance-picker"
@@ -35603,8 +34728,8 @@
      "type": "gesture",
      "label": "Shift+F10 / Menu key",
      "key": null,
-     "file": "lib/ui/desktop/context_menu.dart",
-     "line": 78,
+     "file": "lib/ui/kit/kit_context_region.dart",
+     "line": 81,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -35617,8 +34742,8 @@
      "type": "gesture",
      "label": "[right-click]",
      "key": null,
-     "file": "lib/ui/desktop/context_menu.dart",
-     "line": 100,
+     "file": "lib/ui/kit/kit_context_region.dart",
+     "line": 103,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -35631,8 +34756,8 @@
      "type": "menu-item",
      "label": "<action label>",
      "key": "<action.menuKey>",
-     "file": "lib/ui/desktop/context_menu.dart",
-     "line": 131,
+     "file": "lib/ui/kit/kit_menu.dart",
+     "line": 656,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -35673,8 +34798,8 @@
      "type": "button",
      "label": "<confirmLabel>",
      "key": "<confirmKey>",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 68,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 422,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -35687,8 +34812,8 @@
      "type": "button",
      "label": "<cancelLabel> (default 'Cancel')",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 85,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 431,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -36783,11 +35908,6 @@
    },
    {
     "from": "chat",
-    "element": "chat-composer-legacy-drafts",
-    "to": "legacy-drafts"
-   },
-   {
-    "from": "chat",
     "element": "chat-composer-voice",
     "to": "voice-composer-sheet"
    },
@@ -37008,11 +36128,6 @@
    },
    {
     "from": "session-menu-sheet",
-    "element": "session-menu-sheet-todos",
-    "to": "todos-sheet"
-   },
-   {
-    "from": "session-menu-sheet",
     "element": "session-menu-sheet-subagents",
     "to": "session-relations"
    },
@@ -37123,11 +36238,6 @@
    },
    {
     "from": "prompt-tools-sheet",
-    "element": "prompt-tools-sheet-legacy-drafts",
-    "to": "legacy-drafts"
-   },
-   {
-    "from": "prompt-tools-sheet",
     "element": "prompt-tools-sheet-saved",
     "to": "prompt-stash-sheet"
    },
@@ -37227,16 +36337,6 @@
     "to": "review-workspace"
    },
    {
-    "from": "permission-sheet",
-    "element": "permission-sheet-see-full-diff",
-    "to": "diff-view"
-   },
-   {
-    "from": "permission-sheet",
-    "element": "permission-sheet-allow-always",
-    "to": "permission-sheet-always-dialog"
-   },
-   {
     "from": "embedded-auto-approval-indicator",
     "element": "embedded-auto-approval-indicator-open",
     "to": "session-approvals-sheet"
@@ -37327,26 +36427,6 @@
     "to": "run-result"
    },
    {
-    "from": "embedded-return-brief-panel",
-    "element": "embedded-return-brief-panel-status-unknown",
-    "to": "embedded-return-brief-panel-status-dialog"
-   },
-   {
-    "from": "embedded-return-brief-panel",
-    "element": "embedded-return-brief-panel-request-answer",
-    "to": "permission-sheet"
-   },
-   {
-    "from": "embedded-return-brief-panel",
-    "element": "embedded-return-brief-panel-run-review",
-    "to": "run-result"
-   },
-   {
-    "from": "embedded-return-brief-panel",
-    "element": "embedded-return-brief-panel-run-continue",
-    "to": "chat"
-   },
-   {
     "from": "form-sheet",
     "element": "form-sheet-date-field",
     "to": "form-sheet-date-picker"
@@ -37385,11 +36465,6 @@
     "from": "workspace",
     "element": "workspace-restricted-directory",
     "to": "workspace-context-sheet"
-   },
-   {
-    "from": "workspace",
-    "element": "workspace-return-brief-panel",
-    "to": "embedded-return-brief-panel"
    },
    {
     "from": "workspace",
@@ -38483,11 +37558,6 @@
    },
    {
     "from": "team-agent",
-    "element": "team-agent-details",
-    "to": "team-agent-details-sheet"
-   },
-   {
-    "from": "team-agent",
     "element": "team-agent-control-stop",
     "to": "team-agent-stop-confirm-sheet"
    },
@@ -38535,16 +37605,6 @@
     "from": "team-intro",
     "element": "team-intro-set-up-termux",
     "to": "termux-setup-installed"
-   },
-   {
-    "from": "embedded-team-discover",
-    "element": "embedded-team-discover-open",
-    "to": "team-intro"
-   },
-   {
-    "from": "embedded-team-discover",
-    "element": "embedded-team-discover-row",
-    "to": "team-intro"
    },
    {
     "from": "team-board",
@@ -38714,22 +37774,22 @@
    {
     "from": "team-phone-onboarding-offer",
     "element": "team-phone-onboarding-offer-set-up",
-    "to": "team-phone-onboarding-project-sheet"
+    "to": "project-folder-open-dialog"
    },
    {
     "from": "team-phone-onboarding-steps",
     "element": "team-phone-onboarding-steps-continue",
-    "to": "team-phone-onboarding-project-sheet"
+    "to": "project-folder-open-dialog"
    },
    {
     "from": "team-phone-onboarding-success",
     "element": "team-phone-onboarding-success-open-workspace",
-    "to": "home-shell"
+    "to": "chat"
    },
    {
     "from": "team-phone-onboarding-failed",
     "element": "team-phone-onboarding-failed-retry",
-    "to": "team-phone-onboarding-project-sheet"
+    "to": "project-folder-open-dialog"
    },
    {
     "from": "embedded-team-phone-section",
@@ -38950,16 +38010,6 @@
     "from": "app-diagnostics",
     "element": "app-diagnostics-clear",
     "to": "app-diagnostics-clear-sheet"
-   },
-   {
-    "from": "legacy-drafts",
-    "element": "legacy-drafts-item",
-    "to": "legacy-drafts-review-sheet"
-   },
-   {
-    "from": "legacy-drafts-review-sheet",
-    "element": "legacy-drafts-review-sheet-delete",
-    "to": "legacy-drafts-delete-sheet"
    },
    {
     "from": "automation-settings",
@@ -39206,12 +38256,6 @@
     "secondary": true
    },
    {
-    "from": "embedded-return-brief-panel",
-    "element": "embedded-return-brief-panel-request-answer",
-    "to": "form-sheet",
-    "secondary": true
-   },
-   {
     "from": "home-shell",
     "element": "home-shell-tab-workspace",
     "to": "workspace-folder-chooser",
@@ -39351,11 +38395,6 @@
    },
    {
     "from": "profile-monitor-switch-server-dialog",
-    "element": null,
-    "to": "question-sheet"
-   },
-   {
-    "from": "embedded-return-brief-panel",
     "element": null,
     "to": "question-sheet"
    },
@@ -39853,12 +38892,6 @@
     "via": "embedded"
    },
    {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-return-brief-panel",
-    "via": "embedded"
-   },
-   {
     "from": "profile-monitor",
     "element": null,
     "to": "form-sheet"
@@ -39935,7 +38968,7 @@
     "via": "embedded"
    },
    {
-    "from": "todos-sheet",
+    "from": "permission-sheet",
     "element": null,
     "to": "diff-view"
    },
@@ -40051,12 +39084,6 @@
     "from": "activity",
     "element": null,
     "to": "embedded-team-receipt-chip",
-    "via": "embedded"
-   },
-   {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-team-discover",
     "via": "embedded"
    },
    {
@@ -40257,6 +39284,11 @@
    "part": "b1-chat-screen"
   },
   {
+   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "reason": "Only _authSourceFor remains: a nonvisual equality identity for an authentication action. The sign-in confirmation now lives in integrations_screen.dart.",
+   "part": "j2-library"
+  },
+  {
    "file": "lib/ui/screens/library_screen.dart",
    "reason": "No surface since UX phase 2: the More tab (LibraryScreen) merged into the Settings hub. The file only hosts the library part files (catalog, integrations, commands, skills, references) and defaultModelLabel().",
    "part": "j1-settings-more"
@@ -40317,6 +39349,11 @@
    "part": "i1-team-core"
   },
   {
+   "file": "lib/ui/screens/usage_refresh_slot.dart",
+   "reason": "UsageRefreshSlot is a ChangeNotifier holding refresh callbacks for the Usage page, with no visual surface or gestures.",
+   "part": "j1-settings-more"
+  },
+  {
    "file": "lib/ui/theme_packs.dart",
    "reason": "theme pack palettes and dynamic-colour pack; no surface",
    "part": "a-shell"
@@ -40352,11 +39389,6 @@
    "part": "a-shell"
   },
   {
-   "file": "lib/ui/widgets/local_server_card.dart",
-   "reason": "shared presentation of the two on-phone server cards (LocalServerCard); every control is a callback wired by TermuxRunningServerEntry or LocalAgentServerEntry and is recorded on their pages",
-   "part": "h-termux"
-  },
-  {
    "file": "lib/ui/widgets/provider_logo.dart",
    "reason": "ProviderLogo / ProviderMonogram / BrandTile pure rendering; no tap handlers or tooltips",
    "part": "k-session-misc"
@@ -40370,11 +39402,6 @@
    "file": "lib/ui/widgets/request_routes.dart",
    "reason": "non-visual RequestRoutes route-ownership helper (removes routes opened for a pending request once it is resolved); used by permission_sheet.dart, activity_screen.dart, form_flow.dart, return_brief_panel.dart; no interactive element",
    "part": "g-servers"
-  },
-  {
-   "file": "lib/ui/widgets/retained_tab_view.dart",
-   "reason": "keeps root tab bodies alive and cross-fades them; no interactive element",
-   "part": "a-shell"
   },
   {
    "file": "lib/ui/widgets/session_read_state.dart",
@@ -40644,10 +39671,6 @@
   {
    "part": "d-chat-sheets",
    "note": "lib/ui/widgets/agent_blocks.dart: AgentChoicesBlock / AgentCommandBlock elements are attached to embedded-markdown-text (they are only built by markdown.dart:364-370, plus AgentCommandBlock directly in session_handoff_sheets.dart:70). AgentChecklistBlock is display-only."
-  },
-  {
-   "part": "d-chat-sheets",
-   "note": "lib/ui/widgets/return_brief_card.dart elements are attached to embedded-return-brief-panel (its only host is ReturnBriefPanel, return_brief_panel.dart:150)."
   },
   {
    "part": "d-chat-sheets",

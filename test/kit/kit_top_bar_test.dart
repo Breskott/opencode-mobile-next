@@ -1,6 +1,8 @@
 // Behaviour tests for KitTopBar, docs/ux-system/kit-api/KitTopBar.md
 // ("Tests required"). Owner decision 2026-09-27: Arabic dropped, so the RTL
 // check is a plain direction check, not an Arabic review.
+import 'kit_motion_still.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +72,42 @@ KitTopBar _busy(List<String> log) => KitTopBar(
 );
 
 void main() {
+  kitMotionStillTests(
+    'KitTopBar',
+    builds: {
+      'title and status': () =>
+          const KitTopBar(title: 'Project', subtitle: 'Connected'),
+      'actions': () => _busy([]),
+    },
+    changes: {
+      'status changes': KitMotionChange(
+        build: () => const KitTopBar(title: 'Project', subtitle: 'Connecting'),
+        act: (tester, stage) => stage.rebuild(
+          const KitTopBar(title: 'Project', subtitle: 'Connected'),
+        ),
+        shows: 'Connected',
+      ),
+    },
+  );
+  Widget motionControls(bool connected) => KitShellControls(
+    server: 'Office computer',
+    serverStatus: connected ? 'Connected' : 'Reconnecting',
+    serverTone: connected ? AppStatusTone.ok : AppStatusTone.progress,
+    onServer: () {},
+    needsYou: 2,
+  );
+  kitMotionStillTests(
+    'KitShellControls',
+    builds: {'reconnecting': () => motionControls(false)},
+    changes: {
+      'connects': KitMotionChange(
+        build: () => motionControls(false),
+        act: (tester, stage) => stage.rebuild(motionControls(true)),
+        shows: ' · Connected',
+      ),
+    },
+  );
+
   testWidgets('title is a header naming the route; subtitle in its label', (
     tester,
   ) async {

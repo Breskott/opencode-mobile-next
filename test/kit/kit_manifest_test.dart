@@ -651,10 +651,6 @@ const _deferredAtKitMerge = <String, Map<String, String>>{
   },
   'test': {
     'KitComposerStatusStrip': _byChat,
-    'KitContextRegion': _toAssignTest,
-    'KitOwnScrollbar': _toAssignTest,
-    'KitScrollArea': _toAssignTest,
-    'KitScrollbar': _toAssignTest,
     'KitStatusContribution': _toAssignTest,
     'KitStatusLineSlot': _toAssignTest,
     'KitStatusScope': _toAssignTest,
@@ -1320,7 +1316,9 @@ Map<String, String> _requiredStates(Map<String, String> fields) {
 
 /// Reads the kit manifest: `lib/ui/kit/kit.dart`'s exports plus every
 /// widget, scene and opener declared under `lib/ui/kit/`.
-KitManifest readKitManifest() {
+/// [includeRetired] lets regression gates retain coverage of exported
+/// forwarding widgets; G4 itself keeps excluding them per KIT-43.
+KitManifest readKitManifest({bool includeRetired = false}) {
   final exportedDecls = <String, _Decl>{};
   final wanted = <String>{};
   _collectExports(_kitLibrary, null, {}, exportedDecls, wanted, {});
@@ -1408,7 +1406,11 @@ KitManifest readKitManifest() {
     final isScene = supersOf.skip(1).contains('KitScene');
     if (!isScene && !isWidget(supersOf)) continue;
     final doc = _docAbove(decl.file, decl.line);
-    if (doc.isNotEmpty && doc.first.startsWith('Retired by kit-')) continue;
+    if (!includeRetired &&
+        doc.isNotEmpty &&
+        doc.first.startsWith('Retired by kit-')) {
+      continue;
+    }
     final (states, problem) = _statesFrom(doc);
     parts.add(
       KitManifestPart(

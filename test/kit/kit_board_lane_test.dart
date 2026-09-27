@@ -13,6 +13,9 @@ import 'package:opencode_mobile/ui/kit/kit_progress.dart';
 import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
 import 'package:opencode_mobile/ui/kit/kit_task_card.dart';
 import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
+import 'package:opencode_mobile/ui/kit/motion/kit_tab_switcher.dart';
+
+import 'kit_motion_still.dart';
 
 const _names = ['Backlog', 'Ready', 'Working', 'Review', 'Done'];
 const _counts = [2, 1, 3, 0, 4];
@@ -153,6 +156,38 @@ bool _focusInside(Key key) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitBoardLane',
+    builds: {
+      'loaded': () => KitBoardLane(cards: [_card(2, 0)]),
+      'loading': () => const KitBoardLane.loading(),
+    },
+    changes: {
+      'card arrives': KitMotionChange(
+        build: () => const KitBoardLane(cards: [], empty: Text('No tasks yet')),
+        act: (tester, stage) =>
+            stage.rebuild(KitBoardLane(cards: [_card(0, 0)])),
+        shows: 'Backlog task 1',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitBoardLanes',
+    builds: {
+      'loaded': () => _Board(calls: []),
+      'loading': () => _Board(calls: [], loading: true),
+    },
+    changes: {
+      'strip selects another lane': KitMotionChange(
+        build: () => _Board(calls: []),
+        act: (tester, stage) async {
+          tester.widget<KitTabStrip>(find.byType(KitTabStrip)).onSelected(0);
+        },
+        shows: 'Backlog task 1',
+      ),
+    },
+  );
+
   testWidgets('1 opens on selected; the strip shows that tab selected', (
     tester,
   ) async {

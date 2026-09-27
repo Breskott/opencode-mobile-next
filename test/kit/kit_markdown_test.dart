@@ -15,6 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/widgets/agent_blocks.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
+import 'kit_motion_still.dart';
+
 Future<void> _pump(
   WidgetTester tester,
   Widget child, {
@@ -77,6 +79,27 @@ TextSpan? _spanWith(WidgetTester tester, String text) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitMarkdown',
+    builds: {
+      'prose': () => const KitMarkdown(
+        'Review **checkout** before release.',
+        selectable: false,
+      ),
+      'streaming fence': () =>
+          const KitMarkdown('```dart\nfinal ready = true;', selectable: false),
+    },
+    changes: {
+      'reply grows': KitMotionChange(
+        build: () => const KitMarkdown('Checking files', selectable: false),
+        act: (tester, stage) => stage.rebuild(
+          const KitMarkdown('The checkout is ready.', selectable: false),
+        ),
+        shows: 'The checkout is ready.',
+      ),
+    },
+  );
+
   setUp(() => KitMarkdown.debugParseCount = 0);
 
   testWidgets('1. blocks render in the role table', (tester) async {

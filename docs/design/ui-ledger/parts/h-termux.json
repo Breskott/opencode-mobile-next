@@ -2395,10 +2395,12 @@
       "presentedBy": [
         "PhoneSetupTermuxScreen",
         "openPhoneSetupProgress",
-        "openPhoneSetupTermux"
+        "openPhoneSetupTermux",
+        "PhoneSetupTermuxJobScreen",
+        "openPhoneSetupTermuxJob"
       ],
       "line": 21,
-      "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened. The Termux host (PhoneSetupTermuxScreen, lib/ui/screens/phone_setup/phone_setup_termux_screen.dart, slice P1.3/P1.5 (2026-09-27)) draws the old Termux wizard as the same SetupProgressView checklist: Get Termux and Connect Termux once are rows only the person can do, then Linux base, OpenCode and Start OpenCode follow the Termux manager; a failure is a failed row with Continue setup. A first setup ends on home-shell, an update or a switch closes back to This phone.",
+      "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened. The Termux host (PhoneSetupTermuxScreen, lib/ui/screens/phone_setup/phone_setup_termux_screen.dart, slice P1.3/P1.5 (2026-09-27)) draws the old Termux wizard as the same SetupProgressView checklist: Get Termux and Connect Termux once are rows only the person can do, then Linux base, OpenCode and Start OpenCode follow the Termux manager; a failure is a failed row with Continue setup. A first setup ends on home-shell, an update or a switch closes back to This phone. The persisted Termux job variant (PhoneSetupTermuxJobScreen, P5.3) also hosts SetupProgressView and hands first setup completion to Ready; its Get Termux, permission and resume actions are listed here.",
       "reachedFrom": [
         {
           "page": "phone-setup-start",
@@ -2461,48 +2463,48 @@
           "type": "button",
           "label": "Get Termux",
           "key": "phone-setup-termux-get",
-          "line": 398,
+          "line": 582,
           "action": "external-link",
           "target": null,
           "targetWidget": null,
           "effect": "openExternalLink(context, termuxDownloadUrl) (the F-Droid page, through the external-link confirm); coming back re-checks Termux.",
           "gates": [
-            "Termux host, TermuxHostPhase.needTermux"
+            "Termux persisted job host; corresponding person action pending"
           ],
           "destructive": false,
-          "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart"
+          "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart"
         },
         {
           "id": "phone-setup-progress-termux-allow",
           "type": "button",
           "label": "Copy & open Termux",
           "key": "phone-setup-termux-allow",
-          "line": 409,
+          "line": 593,
           "action": "external-link",
           "target": null,
           "targetWidget": null,
-          "effect": "TermuxHostSetup.allowTermux: asks for the RUN_COMMAND permission, KitCopy.copy(unlockCommand), TermuxBridge.openTermux(); returning from Termux runs verifyAfterReturn().",
+          "effect": "_allowTermux(): requests command permission, copies the unlock command, and opens Termux; return checks the permission gate before starting the persisted job.",
           "gates": [
-            "Termux host, TermuxHostPhase.needAllow"
+            "Termux persisted job host; corresponding person action pending"
           ],
           "destructive": false,
-          "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart"
+          "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart"
         },
         {
           "id": "phone-setup-progress-termux-app-settings",
           "type": "button",
           "label": "App settings",
           "key": "phone-setup-termux-app-settings",
-          "line": 404,
+          "line": 588,
           "action": "external-link",
           "target": null,
           "targetWidget": null,
           "effect": "TermuxBridge.openAppSettings() when Android denied the command permission.",
           "gates": [
-            "Termux host, needAllow after termuxPermissionDenied"
+            "Termux persisted job host; corresponding person action pending"
           ],
           "destructive": false,
-          "file": "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart"
+          "file": "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart"
         },
         {
           "id": "phone-setup-progress-termux-continue",
@@ -2889,10 +2891,6 @@
     {
       "file": "lib/ui/widgets/setup_ui_messages.dart",
       "reason": "pure function `setupUiMessage(l10n, message)` mapping raw setup/bridge messages to localized text; no widget, surface or interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/local_server_card.dart",
-      "reason": "shared presentation of the two on-phone server cards (LocalServerCard); every control is a callback wired by TermuxRunningServerEntry or LocalAgentServerEntry and is recorded on their pages"
     },
     {
       "file": "lib/ui/screens/phone_setup/phone_setup_routes.dart",

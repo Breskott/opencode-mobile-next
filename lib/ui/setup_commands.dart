@@ -11,20 +11,21 @@ abstract final class SetupCommands {
   static const pair = 'opencode2 pair';
 
   /// Older servers that do not print a pairing code.
-  ///
-  /// The password is an unquoted `<…>` placeholder the person replaces:
-  /// quoted or bare-word sample values read as a real secret, and the code
-  /// block would hide the whole command behind its secret guard.
   static const legacyServe =
-      'OPENCODE_SERVER_PASSWORD=<your password> \\\n'
-      '  opencode serve --hostname 127.0.0.1 --port 4096';
+      'bash -c \'IFS= read -rsp "Choose a server password > " '
+      'OPENCODE_SERVER_PASSWORD &&\n'
+      '  printf "\\n" && test -n "\$OPENCODE_SERVER_PASSWORD" &&\n'
+      '  export OPENCODE_SERVER_PASSWORD &&\n'
+      '  exec opencode serve --hostname 127.0.0.1 --port 4096\'';
 
   /// The Paseo daemon, kept off the relay. This app never uses the relay.
   static const paseoStart = 'paseo start --no-relay';
 
   static const paseoStartPrivateNetwork =
-      'PASEO_PASSWORD=<a long password> \\\n'
-      '  paseo start --no-relay --listen "\$(tailscale ip -4):6767"';
+      'bash -c \'IFS= read -rsp "Choose a daemon password > " PASEO_PASSWORD &&\n'
+      '  printf "\\n" && test -n "\$PASEO_PASSWORD" &&\n'
+      '  export PASEO_PASSWORD &&\n'
+      '  exec paseo start --no-relay --listen "\$(tailscale ip -4):6767"\'';
 
   static const codexToken =
       'umask 077\n'

@@ -246,7 +246,7 @@
           "type": "button",
           "label": "Retry (unconfirmed) / Try again (rejected)",
           "key": "team-gate-retry",
-          "line": 1127,
+          "line": 459,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -256,14 +256,15 @@
             "record.status is MutationStatus.unconfirmed or rejected && record.canRetry",
             "disabled while _sending"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/gate_sheet.dart"
         },
         {
           "id": "gate-sheet-how",
           "type": "button",
           "label": "How",
           "key": "team-gate-how",
-          "line": 1172,
+          "line": 470,
           "action": "open-sheet",
           "target": "team-host-guide-sheet",
           "targetWidget": "showTeamHostGuideSheet",
@@ -271,20 +272,22 @@
           "gates": [
             "actions.isEmpty && !hideActions && record == null (no capability for this variant, or kind reviewReady/unknown)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/gate_sheet.dart"
         },
         {
           "id": "gate-sheet-technical",
           "type": "list-tile",
           "label": "Technical details",
           "key": "team-gate-technical",
-          "line": 1234,
+          "line": 498,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "Expands the raw provider values (request id, session id, kind, work id, run id, every raw scalar), each a TeamTechnicalValue row.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/gate_sheet.dart"
         },
         {
           "id": "gate-sheet-technical-copy",
@@ -563,7 +566,7 @@
           "type": "list-tile",
           "label": "<work item title> / <state word>",
           "key": "team-merge-work-<id>",
-          "line": 787,
+          "line": 667,
           "action": "open-sheet",
           "target": "work-sheet",
           "targetWidget": "showWorkSheet",
@@ -571,7 +574,8 @@
           "gates": [
             "run has work items in controller.snapshot.work"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/merge_section.dart"
         }
       ]
     },
@@ -699,7 +703,7 @@
       "file": "lib/ui/screens/team/work_graph.dart",
       "widget": "WorkGraph",
       "presentedBy": [],
-      "line": 351,
+      "line": 218,
       "purpose": "Pan/zoom dependency graph of a run's work items in the run Work tab (graph view).",
       "reachedFrom": [
         {
@@ -722,39 +726,42 @@
           "type": "gesture",
           "label": "[pinch-zoom / drag-pan]",
           "key": "team-work-graph-viewer",
-          "line": 433,
+          "line": 258,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "InteractiveViewer with TransformationController, scale .2 to 3.0; view state only.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/work_graph.dart"
         },
         {
           "id": "embedded-work-graph-node",
           "type": "gesture",
           "label": "{title}, {state} (node chip)",
           "key": "team-work-graph-canvas",
-          "line": 440,
+          "line": 256,
           "action": "open-sheet",
           "target": "work-sheet",
           "targetWidget": "showWorkSheet",
           "effect": "GestureDetector.onTapUp hit-tests layout.nodeAt and calls widget.onNodeTap(node.id) (also exposed as a semantics button, line 599); RunScreen passes _openWork -> showWorkSheet.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/work_graph.dart"
         },
         {
           "id": "embedded-work-graph-fit",
           "type": "icon-button",
           "label": "Fit",
           "key": "team-work-graph-fit",
-          "line": 466,
+          "line": 261,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "_fit(viewport, layout): resets the transform so the whole graph is visible.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/work_graph.dart"
         }
       ]
     },
@@ -969,104 +976,14 @@
           "type": "button",
           "label": "Set up AI team",
           "key": "team-phone-set-up",
-          "line": 679,
-          "action": "mutate",
-          "target": "team-phone-onboarding-project-sheet",
-          "targetWidget": "_ProjectSheet",
-          "effect": "_setUp: picks the project (_chooseProject: saved workspace dir, the only project, or else the project sheet) then _run(from: download): runtime.install() -> runtime.init(project) -> runtime.start() -> teamPhoneEnable writes the phone OrchestrationConfig on the profile.",
+          "line": 468,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": null,
+          "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
           "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "team-phone-onboarding-project-sheet",
-      "title": "Choose a project",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/team_phone_onboarding.dart",
-      "widget": "_ProjectSheet",
-      "presentedBy": [],
-      "line": 984,
-      "purpose": "Pick the managed project folder the city is created next to, or name a new folder when there are none (opened by _chooseProject, line 423).",
-      "reachedFrom": [
-        {
-          "page": "team-phone-onboarding-offer",
-          "element": "team-phone-onboarding-offer-set-up"
-        },
-        {
-          "page": "team-phone-onboarding-steps",
-          "element": "team-phone-onboarding-steps-continue"
-        },
-        {
-          "page": "team-phone-onboarding-failed",
-          "element": "team-phone-onboarding-failed-retry"
-        }
-      ],
-      "gates": [
-        "_project == null, no saved workspace directory among runtime.managedProjects(), and projects.length != 1"
-      ],
-      "elements": [
-        {
-          "id": "team-phone-onboarding-project-sheet-radio",
-          "type": "list-tile",
-          "label": "<folder name> / <path> (radio)",
-          "key": "team-phone-project-<i>",
-          "line": 1084,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "RadioGroup.onChanged (line 1080): setState(_selected = value).",
-          "gates": [
-            "projects non-empty"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-phone-onboarding-project-sheet-continue",
-          "type": "button",
-          "label": "Continue",
-          "key": "team-phone-project-continue",
-          "line": 1104,
-          "action": "submit",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(_selected): returns the chosen path to _chooseProject, which starts the setup run.",
-          "gates": [
-            "projects non-empty",
-            "_selected != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-phone-onboarding-project-sheet-new-folder",
-          "type": "text-field",
-          "label": "Folder name",
-          "key": "team-phone-new-folder",
-          "line": 1058,
-          "action": "submit",
-          "target": null,
-          "targetWidget": null,
-          "effect": "onSubmitted -> _create().",
-          "gates": [
-            "projects empty"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-phone-onboarding-project-sheet-create",
-          "type": "button",
-          "label": "Create and continue",
-          "key": "team-phone-create-folder",
-          "line": 1072,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_create: validates with projectFolderNameProblem, runtime.createManagedProject(name), pops with the new path.",
-          "gates": [
-            "projects empty",
-            "disabled while _creating"
-          ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart"
         }
       ]
     },
@@ -1113,15 +1030,16 @@
           "type": "button",
           "label": "Continue",
           "key": "team-phone-continue",
-          "line": 764,
-          "action": "mutate",
-          "target": "team-phone-onboarding-project-sheet",
-          "targetWidget": "_ProjectSheet",
-          "effect": "_resume: continues from where the runtime got to (install / init / start), choosing a project first when needed, via _run.",
+          "line": 468,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": null,
+          "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
           "gates": [
             "!running (neither _busy nor status.busy): a setup interrupted part-way"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart"
         }
       ]
     },
@@ -1147,15 +1065,18 @@
         {
           "id": "team-phone-onboarding-success-open-workspace",
           "type": "button",
-          "label": "Open Workspace",
-          "key": "team-phone-open-workspace",
-          "line": 816,
+          "label": "Give the team a first task",
+          "key": "team-phone-ready-first-task",
+          "line": 640,
           "action": "navigate",
-          "target": "home-shell",
-          "targetWidget": "/home",
-          "effect": "widget.onOpenWorkspace: This phone's Add tools sheet closes and _connect() connects to the Termux profile, then pushNamedAndRemoveUntil(/home).",
-          "gates": [],
-          "destructive": false
+          "target": "chat",
+          "targetWidget": "TeamConversation.start",
+          "effect": "Starts the first team task as a conversation. Once the task is accepted and its conversation closes, the ready screen closes.",
+          "gates": [
+            "team is available and a task is not already starting"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart"
         }
       ]
     },
@@ -1166,7 +1087,7 @@
       "file": "lib/ui/widgets/team_phone_onboarding.dart",
       "widget": "TeamPhoneOnboardingBlock",
       "presentedBy": [],
-      "line": 828,
+      "line": 590,
       "purpose": "Failure card: honest reason sentence, step list with the failed step, last output, Retry.",
       "reachedFrom": [],
       "gates": [
@@ -1197,15 +1118,16 @@
           "type": "button",
           "label": "Retry",
           "key": "team-phone-retry",
-          "line": 864,
-          "action": "mutate",
-          "target": "team-phone-onboarding-project-sheet",
-          "targetWidget": "_ProjectSheet",
-          "effect": "_retry: restarts from the failed step (teamPhoneFailedStep) via _run; picks a project first when the city step or install is redone.",
+          "line": 468,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": null,
+          "effect": "TeamPhoneReadyScreen._choose delegates to ProjectFolderActions.openFolder; the separate team folder chooser was retired.",
           "gates": [
             "disabled while _busy"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart"
         }
       ]
     },
@@ -1216,7 +1138,7 @@
       "file": "lib/ui/widgets/team_phone_onboarding.dart",
       "widget": "TeamPhoneOnboardingBlock",
       "presentedBy": [],
-      "line": 876,
+      "line": 669,
       "purpose": "Card shown when Android killed the phone supervisor: \"Android stopped the team while the app was away. Nothing is lost.\"",
       "reachedFrom": [],
       "gates": [
@@ -1233,7 +1155,7 @@
           "type": "button",
           "label": "Start again",
           "key": "team-phone-start-again",
-          "line": 905,
+          "line": 770,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1241,7 +1163,8 @@
           "gates": [
             "disabled while _busy"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart"
         }
       ]
     },

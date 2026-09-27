@@ -1,5 +1,7 @@
 // KitGroupNote (slice-P3.10, docs/ux-system/kit-api/KitGroupNote.md): the one
 // muted line under a row group that says what it leaves out, with a Why.
+import 'kit_motion_still.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -20,6 +22,18 @@ Widget _host(Widget child, {double textScale = 1}) => MaterialApp(
 );
 
 void main() {
+  kitMotionStillTests(
+    'KitGroupNote',
+    builds: {
+      'with explanation action': () => KitGroupNote(
+        message: 'Two settings are unavailable',
+        action: KitAction(label: 'Why', onPressed: () {}),
+      ),
+      'words only': () =>
+          const KitGroupNote(message: 'Two settings are unavailable'),
+    },
+  );
+
   const message = "2 settings aren't available on this server";
 
   testWidgets('says what is missing and runs its action', (tester) async {

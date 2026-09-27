@@ -45,7 +45,6 @@ const _excluded = <String, String>{
   'session-relations': 'needs an open conversation',
   'markdown-code-reader': 'needs a code block in a transcript',
   'web-sources': 'adds a source to the open conversation',
-  'legacy-drafts': 'restores a draft into the open conversation',
   'staged-revert': 'needs a staged revert in an open conversation',
   // Need something picked first.
   'projects': 'a picker that returns the chosen project to Work',

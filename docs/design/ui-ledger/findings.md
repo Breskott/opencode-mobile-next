@@ -1,10 +1,11 @@
 # UI ledger: findings
 
-Facts from the ledger that matter for a later reorganization. These are
-observations with evidence, not proposals. Numbers come from
-`python3 docs/design/ui-ledger/build_ledger.py --stats` at the revision in
-`ledger.json`; page ids in `code` are ledger page ids (see `pages.md`).
-Element counts exclude `hostWiring` duplicates (see README).
+Historical observations from the original inventory, retained for the
+reorganization record. The counts, page ids and source anchors below were not
+re-audited during the September 28 source repair and are not current ledger
+statistics. For the rebuilt inventory use `pages.md`, `navigation.md` and
+`ledger.json`; see README's September 28 source-anchor repair note.
+Historical element counts exclude `hostWiring` duplicates (see README).
 
 ## 0. Size
 

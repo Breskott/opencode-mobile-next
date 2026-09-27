@@ -143,6 +143,21 @@ void main() {
         null,
       ),
     );
+    final announcements = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<dynamic>(
+      SystemChannels.accessibility,
+      (message) async {
+        announcements.add(message);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<dynamic>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
     final controller = await _controllerFor('http://192.0.2.20:4747');
     addTearDown(controller.dispose);
 
@@ -157,7 +172,13 @@ void main() {
     await tester.scrollUntilVisible(
       restartCopy,
       240,
-      scrollable: find.byType(Scrollable).first,
+      // KitScreen also owns a top-bar scrollable. Move the commands list.
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     // The list grew, so the row can settle under the viewport edge where a
     // raw tap misses it.
@@ -168,7 +189,20 @@ void main() {
 
     expect(copiedText, 'bash ubuntu-opencode.sh restart');
     expect(
-      find.text("Copied. Run it on the server's computer."),
+      announcements.whereType<Map>().where(
+        (message) =>
+            message['type'] == 'announce' &&
+            (message['data'] as Map)['message'] == 'Copied',
+      ),
+      hasLength(1),
+    );
+    expect(
+      // A single-line command keeps its copy icon on the command line;
+      // its success state is a check, while Copied is announced.
+      find.descendant(
+        of: restartCopy,
+        matching: find.byKey(const ValueKey('kit-icon-button-copied')),
+      ),
       findsOneWidget,
     );
   });

@@ -14,14 +14,12 @@
     "lib/ui/widgets/saved_server_connection_card.dart",
     "lib/ui/widgets/product_states.dart",
     "lib/ui/widgets/glass_surface.dart",
-    "lib/ui/widgets/retained_tab_view.dart",
     "lib/ui/widgets/confirm_sheet.dart",
     "lib/ui/widgets/external_link.dart",
     "lib/ui/widgets/entrance.dart",
     "lib/ui/screens/demo_screen.dart",
     "lib/ui/screens/capabilities_screen.dart",
     "lib/ui/screens/activity_screen.dart",
-    "lib/ui/screens/attention_overview_screen.dart",
     "lib/ui/app_iconography.dart",
     "lib/ui/app_theme.dart",
     "lib/ui/theme_packs.dart",
@@ -60,9 +58,7 @@
     "lib/ui/widgets/question_options.dart",
     "lib/ui/widgets/markdown.dart",
     "lib/ui/widgets/agent_blocks.dart",
-    "lib/ui/widgets/completion_digest.dart",
-    "lib/ui/widgets/return_brief_card.dart",
-    "lib/ui/widgets/return_brief_panel.dart"
+    "lib/ui/widgets/completion_digest.dart"
   ],
   "e-workspace": [
     "lib/ui/screens/workspace_screen.dart",
@@ -76,7 +72,6 @@
     "lib/ui/screens/isolated_task_sheet.dart",
     "lib/ui/screens/running_work_sheet.dart",
     "lib/ui/widgets/running_agents_strip.dart",
-    "lib/ui/widgets/session_inventory_footer.dart",
     "lib/ui/widgets/session_title.dart",
     "lib/ui/widgets/session_read_state.dart",
     "lib/ui/widgets/mobile_task_view.dart"
@@ -120,24 +115,22 @@
     "lib/ui/widgets/setup_ui_messages.dart",
     "lib/ui/widgets/local_agent_onboarding.dart",
     "lib/ui/widgets/local_agent_server_entry.dart",
-    "lib/ui/widgets/local_server_card.dart",
     "lib/ui/screens/this_phone_screen.dart",
     "lib/ui/screens/phone_setup/phone_setup_termux_screen.dart",
-    "lib/ui/widgets/phone_server_card.dart"
+    "lib/ui/widgets/phone_server_card.dart",
+    "lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart"
   ],
   "i1-team-core": [
     "lib/ui/screens/team/team_home_screen.dart",
     "lib/ui/screens/team/task_details_sheet.dart",
     "lib/ui/screens/team/agent_screen.dart",
     "lib/ui/screens/team/policy_block.dart",
-    "lib/ui/widgets/team_card.dart",
     "lib/ui/widgets/team_cycle_strip.dart",
     "lib/ui/widgets/team_agent_row.dart",
     "lib/ui/widgets/team_receipt.dart",
     "lib/ui/widgets/team_controls.dart",
     "lib/ui/screens/team/team_intro_screen.dart",
     "lib/ui/widgets/team_discover.dart",
-    "lib/ui/screens/team/team_conversation_stub.dart",
     "lib/ui/widgets/team_task_row.dart",
     "lib/ui/widgets/team_now.dart",
     "lib/ui/screens/team/team_page.dart"
@@ -168,17 +161,16 @@
     "lib/ui/screens/about_screen.dart",
     "lib/ui/screens/guide_screen.dart",
     "lib/ui/screens/app_diagnostics_screen.dart",
-    "lib/ui/screens/legacy_drafts_screen.dart",
     "lib/ui/screens/saved_permissions_screen.dart",
     "lib/ui/screens/web_sources_screen.dart",
     "lib/ui/widgets/appearance_picker.dart",
     "lib/ui/widgets/language_picker.dart",
     "lib/ui/widgets/pickers.dart",
     "lib/feedback/bug_report.dart",
-    "lib/ui/screens/usage_hub_screen.dart"
+    "lib/ui/screens/usage_hub_screen.dart",
+    "lib/ui/screens/usage_refresh_slot.dart"
   ],
   "j2-library": [
-    "lib/ui/screens/library/catalog_screen.dart",
     "lib/ui/screens/library/command_auth_sheet.dart",
     "lib/ui/screens/library/commands_screen.dart",
     "lib/ui/screens/library/credential_sheet.dart",
@@ -202,7 +194,6 @@
     "lib/ui/widgets/run_result_view.dart",
     "lib/ui/widgets/session_handoff.dart",
     "lib/ui/widgets/session_handoff_sheets.dart",
-    "lib/ui/widgets/info_label.dart",
     "lib/ui/widgets/technical_direction.dart",
     "lib/ui/widgets/agent_color.dart",
     "lib/ui/widgets/provider_logo.dart",
