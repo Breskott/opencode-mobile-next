@@ -146,6 +146,39 @@ void main() {
     expect(_top(tester, 'Third') - _bottom(tester, 'two'), _sectionGap);
   });
 
+  testWidgets('padding the caller put above the section collapses into the '
+      'gap too (Work\'s SliverPadding, a padded column)', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        CustomScrollView(
+          slivers: [
+            const SliverToBoxAdapter(child: Text('head')),
+            SliverPadding(
+              padding: const EdgeInsets.only(top: _sectionGap),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  children: const [KitSectionLabel('Other projects')],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: Text('mid')),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: KitSectionLabel('Padded'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    expect(
+      _top(tester, 'Other projects') - _bottom(tester, 'head'),
+      _sectionGap,
+    );
+    expect(_top(tester, 'Padded') - _bottom(tester, 'mid'), _sectionGap);
+  });
+
   testWidgets('with an explanation the words are a KitTerm on the same line', (
     tester,
   ) async {

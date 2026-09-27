@@ -21,11 +21,12 @@ import 'kit_tokens.dart';
 /// **Gap.** A section is separated from what comes before it by
 /// [KitTokens.sectionGap]. [gapBefore] null means exactly that, except when
 /// the label is the first thing in its scroll view or on its page (nothing
-/// above it to separate from), where it is 0. An explicit spacer right before the label
-/// (a `SizedBox` of fixed height in the same column or list, or in a
-/// `SliverToBoxAdapter` just before) collapses into the gap, so a caller's
-/// older spacing never doubles it. Pass a number to force a gap, 0 for
-/// none.
+/// above it to separate from), where it is 0. An explicit spacer right
+/// before the label (a `SizedBox` of fixed height in the same column or
+/// list, or in a `SliverToBoxAdapter` just before), or the top of a
+/// `Padding` or `SliverPadding` the label sits first in, collapses into the
+/// gap, so a caller's older spacing never doubles it. Pass a number to
+/// force a gap, 0 for none.
 ///
 /// **Explanation.** With [explanation] the words are a [KitTerm]: tap,
 /// long-press or hover explains them (Providers, MCP servers, Resources).
@@ -218,8 +219,11 @@ class _RenderKitSectionGap extends RenderBox {
     final gap = _gap;
     if (gap != null) return gap;
     // Walk up while this box is the first thing in each parent. Reaching a
-    // viewport that way means nothing scrolls above the section.
+    // viewport that way means nothing scrolls above the section. Padding
+    // passed on the way (a Padding's or SliverPadding's top) is space the
+    // caller already put above the section, like a spacer.
     RenderObject node = this;
+    var above = 0.0;
     while (true) {
       final parent = node.parent;
       // Nothing above it anywhere on the page (a body that does not
@@ -228,13 +232,18 @@ class _RenderKitSectionGap extends RenderBox {
       final data = node.parentData;
       if (parent is RenderAbstractViewport) {
         if (parent is RenderViewportBase && parent.axis != Axis.vertical) {
-          return _sectionGap;
+          return _less(above);
         }
         if (data is ContainerParentDataMixin<RenderObject>) {
           final previous = data.previousSibling;
-          if (previous != null) return _less(_spacerHeight(previous));
+          if (previous != null) return _less(above + _spacerHeight(previous));
         }
         return 0;
+      }
+      if (parent is RenderPadding) {
+        above += parent.padding.resolve(TextDirection.ltr).top;
+      } else if (parent is RenderSliverEdgeInsetsPadding) {
+        above += parent.beforePadding;
       }
       if (data is SliverMultiBoxAdaptorParentData) {
         // A list: the live children are contiguous, so the previous live
@@ -242,14 +251,14 @@ class _RenderKitSectionGap extends RenderBox {
         // with none before it), no spacer is assumed.
         if ((data.index ?? 0) > 0) {
           final previous = data.previousSibling;
-          return previous == null
-              ? _sectionGap
-              : _less(_spacerHeight(previous));
+          return _less(
+            above + (previous == null ? 0 : _spacerHeight(previous)),
+          );
         }
       } else if (data is ContainerParentDataMixin<RenderObject> &&
           _stacksVertically(parent)) {
         final previous = data.previousSibling;
-        if (previous != null) return _less(_spacerHeight(previous));
+        if (previous != null) return _less(above + _spacerHeight(previous));
       }
       node = parent;
     }
