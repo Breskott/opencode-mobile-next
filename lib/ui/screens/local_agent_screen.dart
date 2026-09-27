@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../kit/kit.dart';
 import '../widgets/local_agent_onboarding.dart';
+import 'phone_setup/phone_setup_termux_screen.dart' show openPhoneSetupTermux;
 
 /// Claude Code on this phone, on its own page
 /// (docs/design/phone-server-screens-cleanup-2026-09-24.md §2): the phone
@@ -54,7 +55,7 @@ class LocalAgentScreen extends ConsumerWidget {
                 // is the only door that actually unblocks it, whether
                 // nothing is set up yet or the in-app Linux already is.
                 onOpenPhoneSetup: () =>
-                    unawaited(Navigator.of(context).pushNamed('/termux-setup')),
+                    unawaited(openPhoneSetupTermux(context)),
               ),
             ),
           ),

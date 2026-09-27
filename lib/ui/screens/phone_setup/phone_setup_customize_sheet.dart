@@ -247,6 +247,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
         setupSizeText(l10n, totals.bytes),
       );
     }
+    final showsCost = !checking && !everythingInstalled && install.isNotEmpty;
     final disabled =
         checking || preflight != null || (widget.addMode && install.isEmpty);
     final children = <Widget>[
@@ -278,7 +279,21 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
       SizedBox(height: tokens.space4),
       // What the switches add up to, said once as they change. A problem
       // the phone has (P0.8) is a notice with its fix beside it.
-      if (preflight == null)
+      // A real install is priced with the kit's cost line (KIT-37, P1.5:
+      // before every install); checking and nothing-to-add stay words.
+      if (preflight == null && showsCost)
+        Semantics(
+          liveRegion: true,
+          child: KitNotice.cost(
+            [
+              setupDurationText(l10n, totals.seconds),
+              l10n.phoneSetupStartApproxSize(setupSizeText(l10n, totals.bytes)),
+            ],
+            key: const ValueKey('phone-setup-customize-cost'),
+            messageKey: const ValueKey('phone-setup-customize-totals'),
+          ),
+        )
+      else if (preflight == null)
         Semantics(
           liveRegion: true,
           child: KitText(

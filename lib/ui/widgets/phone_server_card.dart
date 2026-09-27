@@ -9,12 +9,14 @@ import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
+import '../screens/this_phone_screen.dart' show openThisPhone;
 import 'product_states.dart';
 import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 
@@ -29,7 +31,15 @@ import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 /// What the ⋯ menu can ask for. Each one either leaves for the setup
 /// progress screen or removes the server, so a host that is itself a sheet
 /// (the switcher) closes first and runs it with [runPhoneServerAction].
-enum PhoneServerAction { terminal, switchRuntime, addTools, update, remove }
+enum PhoneServerAction {
+  /// This phone: the page where everything about it is managed.
+  manage,
+  terminal,
+  switchRuntime,
+  addTools,
+  update,
+  remove,
+}
 
 /// The saved in-app profile the card stands for: the active one when it is
 /// in-app, else the newest. Setup may have saved one per OpenCode version;
@@ -173,6 +183,9 @@ Future<bool> runPhoneServerAction(
   }
 
   switch (action) {
+    case PhoneServerAction.manage:
+      await openThisPhone(context, kind: PhoneHostKind.inApp);
+      return false;
     case PhoneServerAction.terminal:
       // A shell in this phone's Linux: it needs no running server, so it is
       // the way in when the server is stopped or not answering.
@@ -229,9 +242,12 @@ Future<bool> runPhoneServerAction(
   }
 }
 
-/// Confirms with the space that comes back, stops and deletes OpenCode and
-/// everything inside it, then forgets the saved entries: a "This phone"
-/// entry left behind would point at nothing and could only fail.
+/// The remove-from-phone sheet (P0.7, P1.5): it says what survives. The
+/// default removes OpenCode and its tools and keeps the projects, with the
+/// space that comes back; "Delete everything" is the heavy path and asks
+/// for the typed name. Then OpenCode is stopped and removed and the saved
+/// entries are forgotten: a "This phone" entry left behind would point at
+/// nothing and could only fail.
 Future<bool> _removePhoneServer(
   BuildContext context, {
   required AppLocalizations l10n,
@@ -241,20 +257,55 @@ Future<bool> _removePhoneServer(
   int? bytesUsed,
   VoidCallback? onRemoving,
 }) async {
-  final size = bytesUsed;
-  final confirmed = await showKitConfirm(
+  // Measured afresh: sizes come from a real reading or are not said.
+  BuiltinProjectStorage? storage;
+  try {
+    storage = await linux.projectStorage();
+  } catch (_) {
+    storage = null;
+  }
+  if (!context.mounted) return false;
+  var deleteEverything = false;
+  final keep = await showKitConfirm(
     context,
     title: l10n.phoneServerCardRemoveTitle,
-    body: size != null && size > 0
-        ? l10n.phoneServerCardRemoveBody(formatPhoneStorage(size))
-        : l10n.phoneServerCardRemoveBodyUnmeasured,
-    confirmLabel: l10n.phoneServerCardRemoveOpenCode,
+    body: storage != null
+        ? l10n.removeFromPhoneKeepBody(
+            formatPhoneStorage(storage.keepProjectsFreedBytes),
+          )
+        : l10n.removeFromPhoneKeepBodyUnmeasured,
+    confirmLabel: l10n.removeFromPhoneKeepConfirm,
     kind: KitConfirmKind.destructive,
     icon: AppIconography.delete,
+    alternative: KitAction(
+      key: const ValueKey('phone-server-remove-everything'),
+      label: l10n.removeFromPhoneDeleteAll,
+      destructive: true,
+      onPressed: () => deleteEverything = true,
+    ),
     sheetKey: const ValueKey('phone-server-remove-sheet'),
     confirmKey: const ValueKey('phone-server-remove-confirm'),
   );
-  if (!confirmed) return false;
+  if (!keep && deleteEverything && context.mounted) {
+    deleteEverything = await showKitConfirm(
+      context,
+      title: l10n.removeFromPhoneDeleteTitle,
+      body: storage != null
+          ? l10n.removeFromPhoneDeleteBody(
+              formatPhoneStorage(storage.deleteEverythingFreedBytes),
+            )
+          : l10n.removeFromPhoneDeleteBodyUnmeasured,
+      confirmLabel: l10n.removeFromPhoneDeleteAll,
+      kind: KitConfirmKind.destructive,
+      icon: AppIconography.delete,
+      typedName: BuiltinLinux.deletionConfirmationName,
+      sheetKey: const ValueKey('phone-server-delete-everything-sheet'),
+      confirmKey: const ValueKey('phone-server-delete-everything-confirm'),
+    );
+  } else {
+    deleteEverything = false;
+  }
+  if (!keep && !deleteEverything) return false;
   onRemoving?.call();
   // Leave the server before it disappears, so the app does not spend the
   // next minute reconnecting to something that is gone.
@@ -262,7 +313,14 @@ Future<bool> _removePhoneServer(
     await connection.disconnect(keepActive: true);
   }
   try {
-    await linux.uninstall();
+    if (deleteEverything) {
+      await linux.remove(
+        alsoDeleteProjects: true,
+        confirmationName: BuiltinLinux.deletionConfirmationName,
+      );
+    } else {
+      await linux.uninstall();
+    }
   } on BuiltinLinuxException catch (error) {
     await fail([l10n.phoneServerCardActionFailed(error.message)]);
     return false;
@@ -638,6 +696,13 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final menuOpen = terminalOnly || (!locked && state != _Status.checking);
     void choose(PhoneServerAction action) => unawaited(_menu(action));
     final items = <KitMenuItem>[
+      if (installed && !terminalOnly)
+        KitMenuItem(
+          key: const ValueKey('phone-server-manage'),
+          label: l10n.thisPhoneManage,
+          icon: AppIconography.phone,
+          onSelected: () => choose(PhoneServerAction.manage),
+        ),
       if (installed)
         KitMenuItem(
           key: const ValueKey('phone-server-terminal'),

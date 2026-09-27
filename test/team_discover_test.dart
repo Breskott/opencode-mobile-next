@@ -496,7 +496,7 @@ void main() {
             ),
           ),
           routes: {
-            '/termux-setup': (_) =>
+            '/this-phone': (_) =>
                 const Scaffold(body: Text('termux setup screen')),
           },
         ),

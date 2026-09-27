@@ -67,11 +67,6 @@
     "lib/ui/screens/team/run_screen.dart": {
       "showModalBottomSheet(": 1
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "SnackBar(": 6,
-      "showConfirmSheet(": 6,
-      "showSnackBar(": 6
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "SnackBar(": 2,
       "showSnackBar(": 2
@@ -94,9 +89,6 @@
     }
   },
   "G15": {
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "width-literal": 2
-    }
   },
   "G16": {
     "lib/main.dart": {
@@ -343,23 +335,6 @@
       "TabBarView": 1,
       "Text": 22
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "AppBar": 4,
-      "CircleAvatar": 1,
-      "Container": 4,
-      "DecoratedBox": 2,
-      "Divider": 3,
-      "ExpansionTile": 1,
-      "Icon": 7,
-      "MaterialPageRoute": 1,
-      "Opacity": 1,
-      "RadioGroup": 1,
-      "RadioListTile": 3,
-      "Scaffold": 4,
-      "SelectableText": 1,
-      "SnackBar": 6,
-      "Text": 54
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Icon": 2,
       "SnackBar": 2,
@@ -518,11 +493,6 @@
       "Curves.": 1,
       "duration: Duration(": 1
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "Clipboard.setData(": 3,
-      "launchUrl(": 1,
-      "showConfirmSheet(": 6
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Clipboard.setData(": 1
     },
@@ -633,12 +603,6 @@
     },
     "lib/ui/screens/team/team_states.dart": {
       "attention roles": 5
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      ".colorScheme": 14,
-      ".textTheme": 16,
-      "Colors.*": 4,
-      "attention roles": 3
     },
     "lib/ui/widgets/app_exit_notice.dart": {
       "attention roles": 1
@@ -872,16 +836,6 @@
     },
     "lib/ui/screens/team/work_sheet.dart": {
       ".toUpperCase()": 1
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 5,
-      "EdgeInsets numeric": 14,
-      "Opacity( around text": 1,
-      "SizedBox numeric": 52,
-      "TextStyle(": 3,
-      "fontSize:": 2,
-      "icon size not 20/22/24": 2
     },
     "lib/ui/widgets/app_exit_notice.dart": {
       "EdgeInsets numeric": 1

@@ -19,7 +19,6 @@ import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 
 import '../../tool/capture/fixtures.dart';
 import 'setup_capture_preferences.dart';
@@ -37,7 +36,6 @@ enum SettingsScene {
   servers,
   addServer,
   addServerFailed,
-  termuxSetup,
 }
 
 /// File-name slug of a scene: `settings_hub`, `servers_list`, ...
@@ -53,7 +51,6 @@ String settingsSceneName(SettingsScene scene) => switch (scene) {
   SettingsScene.servers => 'servers_list',
   SettingsScene.addServer => 'servers_add',
   SettingsScene.addServerFailed => 'servers_add_failed',
-  SettingsScene.termuxSetup => 'termux_setup',
 };
 
 final _en = lookupAppLocalizations(const Locale('en'));
@@ -261,7 +258,6 @@ Future<Future<void> Function()> mountSettingsScene(
     SettingsScene.servers ||
     SettingsScene.addServer ||
     SettingsScene.addServerFailed => const ServersScreen(),
-    SettingsScene.termuxSetup => const TermuxSetupScreen(),
   };
   await tester.pumpWidget(
     captureApp(
@@ -312,11 +308,6 @@ Future<Future<void> Function()> mountSettingsScene(
     await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.byKey(const ValueKey('save-server-profile')));
     await tester.pumpAndSettle();
-  }
-  if (scene == SettingsScene.termuxSetup) {
-    for (var i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 300));
-    }
   }
   return () async {
     serverProbe = previousProbe;

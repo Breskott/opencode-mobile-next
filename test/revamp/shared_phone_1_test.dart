@@ -235,7 +235,7 @@ void main() {
       expect(
         find.descendant(
           of: confirm,
-          matching: find.text(l10n.phoneServerCardRemoveOpenCode),
+          matching: find.text(l10n.removeFromPhoneKeepConfirm),
         ),
         findsOneWidget,
       );
@@ -495,43 +495,6 @@ void main() {
       await tester.tap(copy);
       await tester.pumpAndSettle();
       expect(copied, teamPhoneAdbCommands);
-    });
-  });
-
-  group('the re-offer (TeamPhoneReofferCard)', () {
-    testWidgets('one sentence, Set up AI team, and Not now that ends it', (
-      tester,
-    ) async {
-      final profile = teamProfile(on: false);
-      store.saved.add(profile);
-      await connection.orchestrationStore.setPhoneOffer(
-        profile.id,
-        PhoneOffer.skipped,
-      );
-      var setUp = 0;
-      await tester.pumpWidget(
-        app(
-          TeamPhoneReofferCard(
-            connection: connection,
-            profile: profile,
-            runtime: TeamRuntime(),
-            onSetUp: () => setUp++,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.teamUiPhoneReofferTitle), findsOneWidget);
-      await tester.tap(find.text(l10n.teamUiPhoneSetUp));
-      expect(setUp, 1);
-      await tester.tap(
-        find.byKey(const ValueKey('plugins-phone-offer-dismiss')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('plugins-phone-offer')), findsNothing);
-      expect(
-        connection.orchestrationStore.phoneOffer(profile.id),
-        PhoneOffer.dismissed,
-      );
     });
   });
 

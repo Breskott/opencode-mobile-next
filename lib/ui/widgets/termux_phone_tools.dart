@@ -23,10 +23,18 @@ import 'work_status_line.dart' show WorkRunawayNotice;
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
+/// One of the two rows [TermuxPhoneToolsRows] can show on its own.
+enum TermuxPhoneTool { storage, processes }
+
 /// The Storage and Running now rows, each with its live
 /// summary ("11.6 GB used", "14 processes · CPU 3%").
+///
+/// With [only], just that row: This phone puts each in its own place in
+/// one list, where the group draws the line between them.
 class TermuxPhoneToolsRows extends StatefulWidget {
-  const TermuxPhoneToolsRows({super.key});
+  const TermuxPhoneToolsRows({super.key, this.only});
+
+  final TermuxPhoneTool? only;
 
   @override
   State<TermuxPhoneToolsRows> createState() => _TermuxPhoneToolsRowsState();
@@ -45,21 +53,24 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
   }
 
   Future<void> _load() async {
+    final only = widget.only;
     await Future.wait([
-      TermuxStorage.summary()
-          .then((summary) {
-            if (mounted) setState(() => _storage = summary);
-          })
-          .catchError((Object _) {
-            if (mounted) setState(() => _storageFailed = true);
-          }),
-      TermuxProcesses.scan()
-          .then((report) {
-            if (mounted) setState(() => _processes = report);
-          })
-          .catchError((Object _) {
-            if (mounted) setState(() => _processesFailed = true);
-          }),
+      if (only != TermuxPhoneTool.processes)
+        TermuxStorage.summary()
+            .then((summary) {
+              if (mounted) setState(() => _storage = summary);
+            })
+            .catchError((Object _) {
+              if (mounted) setState(() => _storageFailed = true);
+            }),
+      if (only != TermuxPhoneTool.storage)
+        TermuxProcesses.scan()
+            .then((report) {
+              if (mounted) setState(() => _processes = report);
+            })
+            .catchError((Object _) {
+              if (mounted) setState(() => _processesFailed = true);
+            }),
     ]);
   }
 
@@ -92,30 +103,37 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
             processes.count,
             formatTermuxCpuPct(processes.totalCpuPct),
           );
+    final storageRow = KitRow(
+      key: const Key('termux-storage-row'),
+      leading: KitRow.icon(context, AppIconography.database),
+      title: l10n.termuxStorageTitle,
+      supporting: TextSpan(text: storageSubtitle),
+      supportingKey: const Key('termux-storage-row-subtitle'),
+      trailing: const KitChevron(),
+      onTap: () => _open(const TermuxStorageScreen()),
+    );
+    final processesRow = KitRow(
+      key: const Key('termux-procs-row'),
+      leading: KitRow.icon(context, AppIconography.processor),
+      title: l10n.termuxProcsTitle,
+      supporting: TextSpan(text: processesSubtitle),
+      supportingKey: const Key('termux-procs-row-subtitle'),
+      trailing: const KitChevron(),
+      onTap: () => _open(const TermuxProcessesScreen()),
+    );
+    switch (widget.only) {
+      case TermuxPhoneTool.storage:
+        return storageRow;
+      case TermuxPhoneTool.processes:
+        return processesRow;
+      case null:
+        break;
+    }
     // Kit rows under the caller's "Options" label (design standard §6).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        KitRow(
-          key: const Key('termux-storage-row'),
-          leading: KitRow.icon(context, AppIconography.database),
-          title: l10n.termuxStorageTitle,
-          supporting: TextSpan(text: storageSubtitle),
-          supportingKey: const Key('termux-storage-row-subtitle'),
-          trailing: const KitChevron(),
-          onTap: () => _open(const TermuxStorageScreen()),
-        ),
-        KitRow(
-          key: const Key('termux-procs-row'),
-          leading: KitRow.icon(context, AppIconography.processor),
-          title: l10n.termuxProcsTitle,
-          supporting: TextSpan(text: processesSubtitle),
-          supportingKey: const Key('termux-procs-row-subtitle'),
-          trailing: const KitChevron(),
-          onTap: () => _open(const TermuxProcessesScreen()),
-        ),
-      ],
+      children: [storageRow, processesRow],
     );
   }
 }

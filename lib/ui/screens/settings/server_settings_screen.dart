@@ -223,7 +223,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       serverUpdateSubtitle = copy.e7SettingsUi51;
       serverUpdateTrailing = const _RowMark(AppIconography.chevronRight);
       serverUpdateAction = () =>
-          Navigator.of(context).pushNamed('/termux-setup');
+          openThisPhone(context, kind: PhoneHostKind.termux);
     } else if (installedVersion != null) {
       serverUpdateTitle = copy.e7SettingsRestartVersion(installedVersion);
       serverUpdateSubtitle = _serverUpgradeError != null

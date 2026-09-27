@@ -23,7 +23,8 @@ import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import 'termux_setup_screen.dart';
+import '../../state/phone_host.dart' show PhoneHostKind;
+import 'this_phone_screen.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -238,7 +239,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
       open();
       return;
     }
-    unawaited(pushKitPage<void>(context, (_) => const TermuxSetupScreen()));
+    unawaited(openThisPhone(context, kind: PhoneHostKind.termux));
   }
 
   /// termux-processes-details-sheet: what the process is in words, its

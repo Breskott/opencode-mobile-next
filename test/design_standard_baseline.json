@@ -154,25 +154,6 @@
     "lib/ui/screens/team/work_sheet.dart": {
       "G21 .toUpperCase()": 1
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "G1 SnackBar(": 6,
-      "G1 showConfirmSheet(": 6,
-      "G1 showSnackBar(": 6,
-      "G17 .colorScheme.": 14,
-      "G17 .textTheme.": 16,
-      "G17 Colors.*": 4,
-      "G2 Clipboard.setData(": 3,
-      "G2 launchUrl(": 1,
-      "G2 showConfirmSheet(": 6,
-      "G21 Border.all(": 1,
-      "G21 BorderRadius.circular(<n>": 5,
-      "G21 EdgeInsets(<n>)": 14,
-      "G21 Icon size not 20/22/24": 2,
-      "G21 SizedBox(width|height: <n>)": 52,
-      "G21 TextStyle(": 3,
-      "G21 fontSize:": 2,
-      "G21 withOpacity(|Opacity(": 1
-    },
     "lib/ui/screens/workspace_screen.dart": {},
     "lib/ui/widgets/connection_status_banner.dart": {},
     "lib/ui/widgets/first_reply_notify_card.dart": {},

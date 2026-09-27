@@ -72,10 +72,6 @@
       "label capsuleRemove: fewer than two words": 1,
       "label voiceConversationStopReply: fewer than two words": 1
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "label e7SetupUpdate: fewer than two words": 1,
-      "label termuxRestartConfirm: fewer than two words": 1
-    },
     "lib/ui/screens/workspace_screen.dart": {
       "label e7WorkspaceArchive: fewer than two words": 1,
       "label promptStashDelete: a bare OK/Yes/Continue/Confirm/Delete": 1

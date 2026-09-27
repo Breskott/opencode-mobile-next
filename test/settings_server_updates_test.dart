@@ -190,7 +190,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(controller: controller),
         routes: {
-          '/termux-setup': (_) => const Scaffold(body: Text('Managed updater')),
+          '/this-phone': (_) => const Scaffold(body: Text('Managed updater')),
         },
       ),
     );

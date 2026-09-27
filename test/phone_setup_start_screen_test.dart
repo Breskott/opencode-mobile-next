@@ -13,6 +13,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_she
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,7 +76,6 @@ Widget _app(
       child: child!,
     ),
     routes: {
-      '/termux-setup': (_) => const _RouteProbe('termux'),
       '/servers': (_) => const _RouteProbe('servers'),
       '/home': (_) => const _RouteProbe('home'),
     },
@@ -406,7 +406,8 @@ void main() {
       tester,
       find.byKey(const ValueKey('phone-setup-start-use-termux')),
     );
-    expect(find.text('termux null'), findsOneWidget);
+    // Termux is a host of phone setup (P1.3): its checklist, not a wizard.
+    expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 

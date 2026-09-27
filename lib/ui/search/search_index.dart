@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../api/product_repository.dart';
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/external_agents.dart';
+import '../../termux/bridge.dart' show TermuxBridge;
 import '../../voice/model_manager.dart';
 import '../../voice/notices.dart';
 import '../../voice/voice_ui.dart';
@@ -38,6 +40,7 @@ import '../screens/team/team_intro_screen.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
+import '../screens/this_phone_screen.dart' show openThisPhone;
 import '../screens/usage_hub_screen.dart';
 import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
@@ -324,13 +327,20 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.phone,
       title: onThisPhone,
       keywords: l10n.settingsHubSearchPhoneAliases,
-      // Phone setup v2 screen A; Termux stays one tap away under its "Other
-      // ways" row.
-      pages: const ['phone-setup-start', 'termux-setup'],
+      // This phone once OpenCode is saved on it (in the app or in Termux),
+      // phone setup's screen A before that; Termux is one of its ways in.
+      pages: const ['phone-setup-start', 'termux-setup-installed'],
       // Local Android tools belong to the phone, not the connected server's
       // capability set.
       gate: (scope) => scope.platform.supportsTermux,
-      open: (context, _) => openPhoneSetupStart(context),
+      open: (context, scope) =>
+          scope.controller.store.profiles.any(
+            (p) =>
+                looksLikeInAppServer(p) ||
+                TermuxBridge.managesServerUrl(p.baseUrl),
+          )
+          ? openThisPhone(context)
+          : openPhoneSetupStart(context),
     ),
     SearchEntry(
       id: 'settings-accounts',

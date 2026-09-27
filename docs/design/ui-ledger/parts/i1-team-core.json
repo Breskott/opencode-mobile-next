@@ -2122,7 +2122,7 @@
           "action": "navigate",
           "target": "plugins-settings",
           "targetWidget": "PluginsSettingsScreen",
-          "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacementNamed('/termux-setup'), whose TeamPhoneOnboardingBlock installs it. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
+          "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacement(ThisPhoneScreen(kind: termux)), whose Add tools sheet holds the AI Team block. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
           "gates": [
             "in-app: always; Termux: supportsAiTeam; a computer: TeamDiscovery found nothing (yet)"
           ],
@@ -2172,6 +2172,22 @@
             "Termux on a phone whose runtime cannot run a team (the 'This phone can't run the AI Team' notice)"
           ],
           "destructive": false
+        },
+        {
+          "id": "team-intro-set-up-termux",
+          "type": "button",
+          "label": "Set it up",
+          "key": "team-intro-set-up",
+          "line": 266,
+          "action": "navigate",
+          "target": "termux-setup-installed",
+          "targetWidget": "ThisPhoneScreen",
+          "effect": "_openTermuxSetup: reopens the phone offer (PhoneOffer.open), then pushReplacement(KitPageRoute(ThisPhoneScreen(kind: termux))).",
+          "gates": [
+            "TeamServerKind.termux && supportsAiTeam"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/team/team_intro_screen.dart"
         }
       ]
     },

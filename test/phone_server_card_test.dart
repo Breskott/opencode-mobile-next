@@ -504,11 +504,16 @@ void main() {
       connection.api = OpenCodeApi(baseUrl: BuiltinLinux.serverUrl);
       await mountCard(tester, connected: true, onRemoved: () => removed++);
       await choose(tester, 'phone-server-remove');
+      // What survives is said first: the default keeps the projects.
       expect(
         find.text(
-          'This deletes OpenCode, its tools and every project on this phone, '
-          'and frees 700.0 MB.',
+          'OpenCode and its tools are removed. Your projects stay on this '
+          'phone and come back when you set up again.',
         ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phone-server-remove-everything')),
         findsOneWidget,
       );
       await tester.tap(

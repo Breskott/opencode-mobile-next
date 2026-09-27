@@ -225,11 +225,6 @@ const _migrated = <String, List<String>>{
     'add_server_failed',
     'first_run_connect',
   ],
-  'lib/ui/screens/termux_setup_screen.dart': [
-    'termux_setup',
-    'phone_running',
-    'phone_stopped',
-  ],
   // The Servers, On this phone and Plugins cleanup
   // (docs/design/phone-server-screens-cleanup-2026-09-24.md; goldens:
   // test/goldens/phone_server_screens_golden_test.dart): the phone's server
@@ -386,7 +381,6 @@ const _grandfathered = <String>{
   'lib/ui/screens/team/team_needs_you.dart',
   'lib/ui/screens/team/team_states.dart',
   'lib/ui/screens/team/work_sheet.dart',
-  'lib/ui/screens/termux_setup_screen.dart',
   'lib/ui/screens/workspace_screen.dart',
   'lib/ui/widgets/connection_status_banner.dart',
   'lib/ui/widgets/first_reply_notify_card.dart',

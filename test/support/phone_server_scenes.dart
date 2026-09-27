@@ -22,7 +22,8 @@ import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/state/phone_host.dart';
+import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
 
 import '../../tool/capture/fixtures.dart';
@@ -295,8 +296,8 @@ Future<Future<void> Function()> mountPhoneServerScene(
 
   final home = switch (scene) {
     PhoneServerScene.servers => const ServersScreen(),
-    PhoneServerScene.phoneRunning ||
-    PhoneServerScene.phoneStopped => const TermuxSetupScreen(),
+    PhoneServerScene.phoneRunning || PhoneServerScene.phoneStopped =>
+      const ThisPhoneScreen(kind: PhoneHostKind.termux),
     PhoneServerScene.plugins => PluginsSettingsScreen(
       controller: controller,
       probe: (url, {city}) async => const ProbeUnreachable(error: 'no answer'),

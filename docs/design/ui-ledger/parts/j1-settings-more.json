@@ -127,9 +127,9 @@
           "key": "settings-on-this-phone",
           "line": 290,
           "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "TermuxSetupScreen",
-          "effect": "Pushes TermuxSetupScreen via _open. Subtitle \"Run OpenCode here with Termux\".",
+          "target": "termux-setup-installed",
+          "targetWidget": "openThisPhone",
+          "effect": "The 'On this phone' search entry (search_index.dart settings-on-this-phone): openThisPhone when a phone server (in app or Termux) is saved, else openPhoneSetupStart.",
           "gates": [
             "platformCapabilities.supportsTermux",
             "row hidden when it does not match the search query (_HubRow.matches(_query))"
@@ -1663,14 +1663,6 @@
           "file": "lib/ui/widgets/team_discovery_card.dart",
           "line": 122,
           "gates": []
-        },
-        {
-          "widget": "TeamPhoneReofferCard",
-          "file": "lib/ui/widgets/team_phone_section.dart",
-          "line": 128,
-          "gates": [
-            "teamPhoneProfile(profile): profile != null && TermuxBridge.supported && TermuxBridge.managesServerUrl(profile.baseUrl)"
-          ]
         },
         {
           "widget": "ServerPluginsSection",
@@ -3347,10 +3339,6 @@
         {
           "page": "settings",
           "element": "settings-keep-running"
-        },
-        {
-          "page": "builtin-server-setup",
-          "element": "builtin-server-keep-running"
         },
         {
           "page": "home-shell",

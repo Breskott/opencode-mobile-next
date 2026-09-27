@@ -20,7 +20,8 @@ import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/state/phone_host.dart' show PhoneHostKind;
+import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart';
 
 import '../census_core.dart';
@@ -149,14 +150,19 @@ Future<void> _phoneSetup(
     phoneProfile(config: configured ? phoneConfig() : null),
   );
   kit.onDispose(conn.dispose);
+  // The block lives in This phone's Add tools sheet for Termux (slice
+  // P1.3/P1.5), no longer under the Termux wizard.
   await kit.pumpApp(
-    const TermuxSetupScreen(),
+    const ThisPhoneScreen(kind: PhoneHostKind.termux),
     controller: conn,
     store: store,
-    routes: {
-      '/home': (_) => const Scaffold(body: Text('home')),
-      '/termux-setup': (_) => const Scaffold(body: Text('setup')),
-    },
+    routes: {'/home': (_) => const Scaffold(body: Text('home'))},
+  );
+  final addTools = find.byKey(const ValueKey('this-phone-add-tools'));
+  await _reveal(kit, addTools);
+  await kit.tapKey(
+    'this-phone-add-tools',
+    settleFor: const Duration(seconds: 2),
   );
   await after?.call();
   final target = find.byKey(ValueKey(key));
@@ -228,7 +234,7 @@ Future<void> _phonePlugins(
     PluginsSettingsScreen(controller: conn, teamRuntime: runtime),
     controller: conn,
     store: store,
-    routes: {'/termux-setup': (_) => const Scaffold(body: Text('setup'))},
+    routes: {'/home': (_) => const Scaffold(body: Text('home'))},
   );
   if (openSheet) {
     await kit.tapKey(
@@ -477,7 +483,7 @@ final i2TeamSheetsArea = CensusArea(
     CensusShot('team-phone-onboarding-offer', (kit) async {
       final runtime = await _runtime(kit);
       await _phoneSetup(kit, runtime, 'team-phone-offer');
-    }, note: 'Host: the phone setup screen after the server is running.'),
+    }, note: "Host: This phone's Add tools sheet (Termux), server running."),
     CensusShot('team-phone-onboarding-project-sheet', (kit) async {
       final runtime = await _runtime(kit);
       runtime.projects = const [
@@ -575,18 +581,6 @@ final i2TeamSheetsArea = CensusArea(
       await _revealAndTap(kit, 'team-phone-keep-running');
       kit.expectVisible(find.byKey(const ValueKey('team-phone-tips-sheet')));
     }),
-    CensusShot('embedded-team-phone-reoffer-card', (kit) async {
-      final runtime = await _runtime(kit);
-      await _phonePlugins(
-        kit,
-        runtime,
-        configured: false,
-        skipped: true,
-        openSheet: false,
-      );
-      kit.expectVisible(find.byKey(const ValueKey('plugins-phone-offer')));
-    }, note: 'Host: Settings › Plugins, after Skip during the phone setup.'),
-
     // -- Hosts ------------------------------------------------------------------------
     CensusShot('team-host-sheet', state: 'empty', (kit) async {
       await _hostForm(kit);

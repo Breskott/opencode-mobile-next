@@ -30113,5 +30113,140 @@
   "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
   "@quotaMonitorConsentDetails": {
     "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
+  },
+  "thisPhoneHostInApp": "In the app",
+  "@thisPhoneHostInApp": {
+    "description": "This phone: where OpenCode runs, when it runs inside this app's own Linux"
+  },
+  "thisPhoneHostTermux": "In Termux",
+  "@thisPhoneHostTermux": {
+    "description": "This phone: where OpenCode runs, when it runs in the Termux app"
+  },
+  "thisPhoneNeedsAttention": "Needs you",
+  "@thisPhoneNeedsAttention": {
+    "description": "This phone: the status word when a start or a switch between OpenCode versions failed or stopped half way"
+  },
+  "thisPhoneSetUp": "Set up OpenCode on this phone",
+  "@thisPhoneSetUp": {
+    "description": "This phone: the button when OpenCode is not set up yet"
+  },
+  "thisPhoneStart": "Start the server on this phone",
+  "@thisPhoneStart": {
+    "description": "This phone: the button that starts the stopped OpenCode server"
+  },
+  "thisPhoneStop": "Stop the server on this phone",
+  "@thisPhoneStop": {
+    "description": "This phone: the button that stops the running OpenCode server (it asks first)"
+  },
+  "thisPhoneUpdate": "Update OpenCode on this phone",
+  "@thisPhoneUpdate": {
+    "description": "This phone: the row that installs the pinned OpenCode version again"
+  },
+  "thisPhoneUpdateDetail": "Installs version {version}",
+  "@thisPhoneUpdateDetail": {
+    "description": "Technical: This phone: the line under Update, naming the pinned version it installs, e.g. 'Installs version 1.18.29'",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneAddTools": "Add tools to this phone",
+  "@thisPhoneAddTools": {
+    "description": "This phone: the row (and sheet title) that adds optional tools"
+  },
+  "thisPhoneAddToolsInApp": "Python, Node.js, AI Team and more",
+  "@thisPhoneAddToolsInApp": {
+    "description": "This phone: the line under Add tools for OpenCode inside the app"
+  },
+  "thisPhoneAddToolsTermux": "AI Team and Claude Code",
+  "@thisPhoneAddToolsTermux": {
+    "description": "This phone: the line under Add tools for OpenCode in Termux"
+  },
+  "thisPhoneInstalled": "Installed on this phone",
+  "@thisPhoneInstalled": {
+    "description": "This phone: the folded row that lists what setup installed"
+  },
+  "thisPhoneShowLog": "Show the server log",
+  "@thisPhoneShowLog": {
+    "description": "This phone: the row that opens the OpenCode server's log"
+  },
+  "thisPhoneTerminal": "Open a terminal on this phone",
+  "@thisPhoneTerminal": {
+    "description": "This phone: the row that opens a shell in this phone's Linux"
+  },
+  "thisPhoneRemove": "Remove OpenCode from this phone",
+  "@thisPhoneRemove": {
+    "description": "This phone: the destructive row that removes OpenCode (it asks first)"
+  },
+  "thisPhoneBusy": "Wait for the current step to finish",
+  "@thisPhoneBusy": {
+    "description": "This phone: why a row is off while OpenCode starts, stops or installs"
+  },
+  "phoneSetupTermuxAllowHow": "In Termux, paste the copied line and press Enter.",
+  "@phoneSetupTermuxAllowHow": {
+    "description": "Termux setup checklist: the instruction under 'Connect Termux once' while it waits for the person"
+  },
+  "phoneSetupTermuxUpdatingTitle": "Updating this phone",
+  "@phoneSetupTermuxUpdatingTitle": {
+    "description": "Termux setup checklist: the title while an update runs"
+  },
+  "phoneSetupTermuxStartingTitle": "Starting the server",
+  "@phoneSetupTermuxStartingTitle": {
+    "description": "Termux setup checklist: the title while OpenCode starts"
+  },
+  "phoneSetupTermuxConnecting": "Connecting",
+  "@phoneSetupTermuxConnecting": {
+    "description": "Termux setup checklist: the line under 'Start OpenCode' while the app connects to it"
+  },
+  "phoneSetupTermuxLeaveHint": "You can leave the app. Termux keeps working and this list picks up where it is when you come back.",
+  "@phoneSetupTermuxLeaveHint": {
+    "description": "Termux setup checklist: the quiet line under the title while setup runs"
+  },
+  "phoneSetupTermuxCost": "About 10–15 minutes the first time, in Termux's storage",
+  "@phoneSetupTermuxCost": {
+    "description": "Phone setup start: the cost line under 'Use Termux instead', said before anything installs"
+  },
+  "removeFromPhoneKeepBody": "OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.",
+  "@removeFromPhoneKeepBody": {
+    "description": "Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromPhoneKeepBodyUnmeasured": "OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.",
+  "@removeFromPhoneKeepBodyUnmeasured": {
+    "description": "Remove from this phone: the default choice's body when the space could not be measured"
+  },
+  "removeFromPhoneKeepConfirm": "Remove OpenCode, keep my projects",
+  "@removeFromPhoneKeepConfirm": {
+    "description": "Remove from this phone: the default confirm button"
+  },
+  "removeFromPhoneDeleteAll": "Delete everything",
+  "@removeFromPhoneDeleteAll": {
+    "description": "Remove from this phone: the other choice, which also deletes every project (asks for the typed name)"
+  },
+  "removeFromPhoneDeleteTitle": "Delete OpenCode and projects?",
+  "@removeFromPhoneDeleteTitle": {
+    "description": "Remove from this phone: the title of the heavy delete"
+  },
+  "removeFromPhoneDeleteBody": "OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.",
+  "@removeFromPhoneDeleteBody": {
+    "description": "Remove from this phone: the heavy delete's body with the space freed",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromPhoneDeleteBodyUnmeasured": "OpenCode, its tools and every project on this phone are deleted. This cannot be undone.",
+  "@removeFromPhoneDeleteBodyUnmeasured": {
+    "description": "Remove from this phone: the heavy delete's body when the space could not be measured"
+  },
+  "thisPhoneManage": "Manage This phone",
+  "@thisPhoneManage": {
+    "description": "The This phone card's menu: opens This phone, where OpenCode on this phone is managed"
   }
 }

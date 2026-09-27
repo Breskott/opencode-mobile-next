@@ -25978,4 +25978,105 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaMonitorConsentDetails =>
       'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
+
+  @override
+  String get thisPhoneHostInApp => 'In the app';
+
+  @override
+  String get thisPhoneHostTermux => 'In Termux';
+
+  @override
+  String get thisPhoneNeedsAttention => 'Needs you';
+
+  @override
+  String get thisPhoneSetUp => 'Set up OpenCode on this phone';
+
+  @override
+  String get thisPhoneStart => 'Start the server on this phone';
+
+  @override
+  String get thisPhoneStop => 'Stop the server on this phone';
+
+  @override
+  String get thisPhoneUpdate => 'Update OpenCode on this phone';
+
+  @override
+  String thisPhoneUpdateDetail(String version) {
+    return 'Installs version $version';
+  }
+
+  @override
+  String get thisPhoneAddTools => 'Add tools to this phone';
+
+  @override
+  String get thisPhoneAddToolsInApp => 'Python, Node.js, AI Team and more';
+
+  @override
+  String get thisPhoneAddToolsTermux => 'AI Team and Claude Code';
+
+  @override
+  String get thisPhoneInstalled => 'Installed on this phone';
+
+  @override
+  String get thisPhoneShowLog => 'Show the server log';
+
+  @override
+  String get thisPhoneTerminal => 'Open a terminal on this phone';
+
+  @override
+  String get thisPhoneRemove => 'Remove OpenCode from this phone';
+
+  @override
+  String get thisPhoneBusy => 'Wait for the current step to finish';
+
+  @override
+  String get phoneSetupTermuxAllowHow =>
+      'In Termux, paste the copied line and press Enter.';
+
+  @override
+  String get phoneSetupTermuxUpdatingTitle => 'Updating this phone';
+
+  @override
+  String get phoneSetupTermuxStartingTitle => 'Starting the server';
+
+  @override
+  String get phoneSetupTermuxConnecting => 'Connecting';
+
+  @override
+  String get phoneSetupTermuxLeaveHint =>
+      'You can leave the app. Termux keeps working and this list picks up where it is when you come back.';
+
+  @override
+  String get phoneSetupTermuxCost =>
+      'About 10–15 minutes the first time, in Termux\'s storage';
+
+  @override
+  String removeFromPhoneKeepBody(String size) {
+    return 'OpenCode and its tools are removed and $size comes back. Your projects stay on this phone and come back when you set up again.';
+  }
+
+  @override
+  String get removeFromPhoneKeepBodyUnmeasured =>
+      'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.';
+
+  @override
+  String get removeFromPhoneKeepConfirm => 'Remove OpenCode, keep my projects';
+
+  @override
+  String get removeFromPhoneDeleteAll => 'Delete everything';
+
+  @override
+  String get removeFromPhoneDeleteTitle => 'Delete OpenCode and projects?';
+
+  @override
+  String removeFromPhoneDeleteBody(String size) {
+    return 'OpenCode, its tools and every project on this phone are deleted and $size comes back. This cannot be undone.';
+  }
+
+  @override
+  String get removeFromPhoneDeleteBodyUnmeasured =>
+      'OpenCode, its tools and every project on this phone are deleted. This cannot be undone.';
+
+  @override
+  String get thisPhoneManage => 'Manage This phone';
 }
