@@ -7,6 +7,8 @@
 // the engine (the pattern of kit_notice_live_region_test.dart): a label a
 // live-region node is sent that differs from the one it was last sent is
 // what Android's live region announces.
+import 'kit_motion_still.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
@@ -139,6 +141,26 @@ class _Announcer {
 
 void main() {
   _SpyBinding();
+
+  kitMotionStillTests(
+    'KitReceipt',
+    builds: {
+      for (final state in KitReceiptState.values)
+        state.name: () => KitReceipt(
+          state: state,
+          reason: 'Access changed',
+          where: 'another device',
+        ),
+    },
+    changes: {
+      'server confirms': KitMotionChange(
+        build: () => const KitReceipt(state: KitReceiptState.sending),
+        act: (tester, stage) =>
+            stage.rebuild(const KitReceipt(state: KitReceiptState.confirmed)),
+        shows: 'Done',
+      ),
+    },
+  );
 
   group('every state', () {
     const cases = <(KitReceiptState, String, IconData?)>[

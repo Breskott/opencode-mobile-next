@@ -2,6 +2,8 @@
 // "Tests required"), plus the pairing scanner screen that now hands its
 // camera frame to the part. Arabic and RTL are out of scope (owner decision
 // 2026-09-27), so tests 7 and 9 run left to right only.
+import 'kit_motion_still.dart';
+
 import 'dart:async';
 import 'dart:ui' as ui;
 
@@ -150,6 +152,30 @@ Future<Set<int>> _paintedColours(WidgetTester tester) async {
 int _argb(Color c) => c.toARGB32();
 
 void main() {
+  Widget motionScanner({String? rejected, bool loading = false}) => KitScanner(
+    camera: FakeScannerCamera(hang: loading),
+    instruction: _instruction,
+    rejected: rejected,
+    onCode: (_) => false,
+    onFailed: (_) {},
+  );
+  kitMotionStillTests(
+    'KitScanner',
+    builds: {
+      'starting camera': () => motionScanner(loading: true),
+      'preview': () => motionScanner(),
+      'rejected code': () => motionScanner(rejected: _rejectedWords),
+    },
+    changes: {
+      'code rejected': KitMotionChange(
+        build: () => motionScanner(),
+        act: (tester, stage) =>
+            stage.rebuild(motionScanner(rejected: _rejectedWords)),
+        shows: _rejectedWords,
+      ),
+    },
+  );
+
   tearDown(() {
     debugPlatformCapabilities = null;
   });

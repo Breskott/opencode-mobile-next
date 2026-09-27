@@ -1,5 +1,7 @@
 // Behaviour tests for KitSearchField and KitSearchNoMatch
 // (docs/ux-system/kit-api/KitSearchField.md, "Tests required").
+import 'kit_motion_still.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +102,42 @@ class _HostState extends State<_Host> {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitSearchField',
+    builds: {
+      'empty': () =>
+          KitSearchField(label: 'Search projects', onChanged: (_) {}),
+      'disabled': () => KitSearchField(
+        label: 'Search projects',
+        onChanged: (_) {},
+        enabled: false,
+        disabledReason: 'Connect first',
+      ),
+    },
+    changes: {
+      'filter applied': KitMotionChange(
+        build: () =>
+            KitSearchField(label: 'Search projects', onChanged: (_) {}),
+        act: (tester, stage) => stage.rebuild(
+          KitSearchField(
+            label: 'Search projects',
+            onChanged: (_) {},
+            activeFilter: 'Archived',
+            onClearFilter: () {},
+          ),
+        ),
+        shows: 'Archived',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitSearchNoMatch',
+    builds: {
+      'no matching projects': () =>
+          KitSearchNoMatch(query: 'release', onClear: () {}),
+    },
+  );
+
   testWidgets('1. onChanged fires once after settling; clear fires at once', (
     tester,
   ) async {
