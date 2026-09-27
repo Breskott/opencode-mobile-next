@@ -786,6 +786,7 @@ class KitReport {
     this.details,
     this.source,
     this.errorType,
+    this.log,
   });
 
   /// The state's title: "Couldn't load files".
@@ -799,6 +800,12 @@ class KitReport {
 
   /// `error.runtimeType.toString()`, no message text.
   final String? errorType;
+
+  /// The failed job's log excerpt (P8.4), already redacted and bounded:
+  /// the report shows it in a KitLogPanel and attaches it. Empty when the
+  /// job kept no log (the report says so); null when the report is not
+  /// about a job.
+  final String? log;
 }
 
 typedef KitReportHandler =

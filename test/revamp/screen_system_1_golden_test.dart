@@ -23,6 +23,7 @@ import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
 import 'screen_system_1_fixtures.dart';
@@ -112,6 +113,20 @@ Future<void> _review(WidgetTester tester, String description) async {
     await tester.pumpAndSettle();
   }
 }
+
+/// A failed team run as Report this failure attaches it (P8.4).
+const _failedJob = KitReport(
+  title: 'Sync engine stopped',
+  details: 'tests failed',
+  source: 'failed job · teamRun · oc-loy',
+  log:
+      '\$ pytest -q\n'
+      '..F.\n'
+      'FAILED tests/test_calc.py::test_subtract\n'
+      '    assert subtract(1, 2) == -1\n'
+      'E   assert 3 == -1\n'
+      '1 failed, 3 passed in 0.42s',
+);
 
 void main() {
   setUpAll(loadCaptureFonts);
@@ -219,6 +234,18 @@ void main() {
       );
     });
 
+    testWidgets('report a problem with a failed job log ($theme)', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await _shot(
+        tester,
+        'system_report_problem_job_log',
+        light: light,
+        home: const AppDiagnosticsScreen(error: _failedJob),
+      );
+    });
+
     testWidgets('keep running ($theme)', (tester) async {
       mockKeepAlive(maker: 'Xiaomi', battery: true);
       await _shot(
@@ -289,6 +316,19 @@ void main() {
       size: _wide,
       home: AppDiagnosticsScreen(controller: controller),
       then: () => _review(tester, 'The file list stays empty after Refresh'),
+    );
+  });
+
+  testWidgets('report a problem with a failed job log wide (dark)', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await _shot(
+      tester,
+      'system_report_problem_job_log',
+      light: false,
+      size: _wide,
+      home: const AppDiagnosticsScreen(error: _failedJob),
     );
   });
 

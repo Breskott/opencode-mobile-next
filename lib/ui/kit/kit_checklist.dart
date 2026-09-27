@@ -36,6 +36,7 @@ class KitStep {
     this.supporting,
     this.personAction,
     this.retry,
+    this.report,
     this.value,
     this.key,
   }) : assert(
@@ -47,6 +48,10 @@ class KitStep {
        assert(
          retry == null || state == KitMarkState.failed,
          'KitStep: "Try again" (retry) belongs on the failed row only',
+       ),
+       assert(
+         report == null || state == KitMarkState.failed,
+         'KitStep: "Report this failure" belongs on the failed row only',
        ),
        assert(
          value == null || (value >= 0 && value <= 1),
@@ -73,6 +78,11 @@ class KitStep {
 
   /// "Try again", on the failed row only (asserted).
   final KitAction? retry;
+
+  /// "Report this failure" (P8.4), on the failed row only (asserted): a
+  /// tertiary action under the row's words, after its one button, that
+  /// opens Report a problem with the job's log attached.
+  final KitAction? report;
 
   /// 0..1 within this step, when measured: a thin bar under the row while
   /// it works.
@@ -518,6 +528,22 @@ class _StepRow extends StatelessWidget {
             role: KitButtonRole.secondary,
             expand: false,
           );
+    final report = step.report == null || person
+        ? null
+        : Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: indent,
+              bottom: tokens.space1,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KitButton.fromAction(
+                step.report!,
+                role: KitButtonRole.tertiary,
+                expand: false,
+              ),
+            ),
+          );
 
     Widget content;
     if (button == null) {
@@ -558,7 +584,7 @@ class _StepRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
-        children: [content, ?bar],
+        children: [content, ?bar, ?report],
       ),
     );
   }

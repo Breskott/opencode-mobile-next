@@ -41121,6 +41121,24 @@ abstract class AppLocalizations {
   /// **'Copy draft'**
   String get chatDraftCopy;
 
+  /// P8.4: action on a failed job (setup step, AI Team start, failed team run, failed dev service) that opens Report a problem with the job's log attached
+  ///
+  /// In en, this message translates to:
+  /// **'Report this failure'**
+  String get failedJobReport;
+
+  /// P8.4: title of the log panel on Report a problem when a failed job's log is attached
+  ///
+  /// In en, this message translates to:
+  /// **'Log of the failed job'**
+  String get reportProblemJobLog;
+
+  /// P8.4: Report a problem, a failed job is attached but no log could be kept for it
+  ///
+  /// In en, this message translates to:
+  /// **'No log was kept for this job, so none is attached.'**
+  String get reportProblemJobLogNone;
+
   /// slice-P8.2 Report a problem: the line under the page title.
   ///
   /// In en, this message translates to:

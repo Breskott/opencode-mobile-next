@@ -26299,6 +26299,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatDraftCopy => 'Copy draft';
 
   @override
+  String get failedJobReport => 'Report this failure';
+
+  @override
+  String get reportProblemJobLog => 'Log of the failed job';
+
+  @override
+  String get reportProblemJobLogNone =>
+      'No log was kept for this job, so none is attached.';
+
+  @override
   String get reportProblemIntro =>
       'Say what went wrong. You see the whole report before anything leaves this phone.';
 

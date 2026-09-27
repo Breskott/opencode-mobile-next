@@ -3,6 +3,7 @@ import '../builtin/team/builtin_team_job.dart';
 import '../domain/development_service.dart';
 import '../domain/managed_shell.dart';
 import '../domain/orchestration_gateway.dart';
+import '../ui/kit/kit_notice.dart' show KitReport;
 import '../ui/kit/kit_redact.dart';
 
 enum FailedJobKind { setup, teamSetup, teamWork, teamRun, developmentService }
@@ -45,6 +46,17 @@ class FailedJobReport {
     if (detail.isNotEmpty) 'Detail: $detail',
     hasLog ? 'Log excerpt:\n$logExcerpt' : 'Log excerpt: unavailable',
   ].join('\n');
+
+  /// This snapshot as the Report a problem page's attachment (P8.4): the
+  /// page shows [logExcerpt] in a KitLogPanel and puts it in the report,
+  /// or says no log was kept. [title] is the failure as the surface that
+  /// offered Report words it (localized); null keeps [title].
+  KitReport toKitReport({String? title}) => KitReport(
+    title: title == null || title.trim().isEmpty ? this.title : title,
+    details: detail.isEmpty ? null : detail,
+    source: 'failed job · ${kind.name} · $jobId',
+    log: logExcerpt,
+  );
 
   /// A v2 failed row receives the job's log, never a different component's
   /// invented log. Omitting [componentId] captures the whole failed job.

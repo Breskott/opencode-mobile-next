@@ -1166,10 +1166,17 @@ void main() {
       await pumpSheet(tester, team, 'run:oc-loy');
       expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
       // Reads are on: the agent screens still open, the two tertiary
-      // actions shown (design standard §2), no More and no Close.
+      // actions shown (design standard §2), no Close. Report this failure
+      // (P8.4) never answers the gate, so it stays too, under More.
       expect(find.byKey(const ValueKey('team-gate-run-agent')), findsOneWidget);
       expect(find.byKey(const ValueKey('team-gate-run-logs')), findsOneWidget);
-      expect(find.byKey(const ValueKey('kit-actions-more')), findsNothing);
+      expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('team-gate-run-report')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
       expect(tester.takeException(), isNull);
     });

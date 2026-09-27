@@ -108,9 +108,20 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
   List<ProblemReportEvent> get _events =>
       problemReportEvents(store: _store, diagnostics: _diagnostics);
 
+  /// The attached failed job's log, as the report's KitLogPanel shows it
+  /// (P8.4); null when no job log is attached or the job kept none.
+  late final ValueNotifier<List<KitLogLine>>? _jobLog =
+      switch (widget.error?.log) {
+        final log? when log.trim().isNotEmpty => ValueNotifier([
+          for (final line in log.trimRight().split('\n')) KitLogLine(line),
+        ]),
+        _ => null,
+      };
+
   @override
   void dispose() {
     _description.dispose();
+    _jobLog?.dispose();
     super.dispose();
   }
 
@@ -295,6 +306,24 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                         message: copy.reportProblemAttached(error.title),
                         liveRegion: false,
                       ),
+                      // A failed job carries its log: shown as it goes in
+                      // the report, or said to be missing (P8.4).
+                      if (_jobLog case final log?) ...[
+                        SizedBox(height: tokens.space2),
+                        KitLogPanel(
+                          panelKey: const ValueKey('report-problem-job-log'),
+                          lines: log,
+                          title: copy.reportProblemJobLog,
+                          ended: const KitLogEnd(failed: true),
+                        ),
+                      ] else if (error.log != null) ...[
+                        SizedBox(height: tokens.space2),
+                        KitText(
+                          copy.reportProblemJobLogNone,
+                          key: const ValueKey('report-problem-job-log-none'),
+                          role: KitTextRole.secondary,
+                        ),
+                      ],
                     ],
                     SizedBox(height: tokens.space3),
                     KitField(
