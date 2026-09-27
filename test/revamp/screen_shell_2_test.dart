@@ -15,6 +15,7 @@ import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/kit/kit_search_field.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart'
     show OpenProjectToolIntent, ProjectTool;
@@ -144,7 +145,7 @@ void main() {
       );
     });
 
-    testWidgets('a PC window gets the sidebar and names the tab', (
+    testWidgets('a PC window gets the sidebar, which alone names the tab', (
       tester,
     ) async {
       _mockSecureStorage(tester);
@@ -157,13 +158,11 @@ void main() {
       expect(find.byType(KitNavBar), findsNothing);
       final rail = tester.widget<KitNavRail>(find.byType(KitNavRail));
       expect(rail.extended, isTrue);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('current-tab-title')),
-          matching: find.text('Inbox'),
-        ),
-        findsOneWidget,
-      );
+      expect(rail.destinations[rail.selected].label, 'Inbox');
+      // slice-R14: the pane has no bar repeating the highlighted
+      // destination; it starts with the destination's own content.
+      expect(find.byType(KitTopBar), findsNothing);
+      expect(find.byKey(const ValueKey('current-tab-title')), findsNothing);
       // The sidebar holds the server pill.
       expect(
         find.descendant(
@@ -171,6 +170,30 @@ void main() {
           matching: find.byKey(const ValueKey('server-switcher-button')),
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('a PC window: the Work pane starts with the project header '
+        '(slice-R14)', (tester) async {
+      _mockSecureStorage(tester);
+      _size(tester, const Size(1280, 800));
+      final controller = await workController(sessions: workLoadedSessions());
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_Shell().app(controller));
+      await _settle(tester);
+
+      final rail = tester.widget<KitNavRail>(find.byType(KitNavRail));
+      expect(rail.destinations[rail.selected].label, 'Work');
+      expect(find.byType(KitTopBar), findsNothing);
+      // "Work" is said once, by the sidebar.
+      expect(find.text('Work'), findsOneWidget);
+      final header = find.byKey(const ValueKey('current-project-entry'));
+      expect(header, findsOneWidget);
+      // Nothing above it in the pane: it is the first thing there.
+      expect(tester.getRect(header).top, lessThan(40));
+      expect(
+        tester.getRect(header).left,
+        greaterThanOrEqualTo(tester.getRect(find.byType(KitNavRail)).right),
       );
     });
 
@@ -242,6 +265,35 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Switch server'), findsOneWidget);
+    });
+
+    testWidgets('the terminal shortcut opens the Terminal page, which says '
+        'why there is none, instead of doing nothing (slice-R14)', (
+      tester,
+    ) async {
+      _mockSecureStorage(tester);
+      _size(tester, const Size(1280, 800));
+      final controller = await workController(sessions: workLoadedSessions());
+      controller.api = _NoProjectApi();
+      addTearDown(controller.dispose);
+      final shell = _Shell();
+      // A PC: the server's terminal is the only source.
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      try {
+        await tester.pumpWidget(shell.app(controller));
+        await _settle(tester);
+
+        expect(shell.signals.dispatch(const OpenTerminalIntent()), isTrue);
+        await _settle(tester);
+        expect(find.byKey(const ValueKey('terminal-page')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('terminal-unavailable')),
+          findsOneWidget,
+        );
+        await tester.pumpWidget(const SizedBox());
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     testWidgets('Ctrl+3 explains instead of silently landing on Work', (

@@ -256,8 +256,9 @@ void main() {
         context,
         WorkRunawayNotice(
           identity: 1,
+          helper: 'node',
           busyFor: '10 min',
-          onOpen: () {},
+          onStop: () {},
           onDismiss: () {},
         ),
       );
