@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/camera.dart';
@@ -9,12 +8,10 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/pairing.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
-import '../kit/kit_notice.dart';
 import '../kit/kit_progress.dart';
+import '../kit/kit_scanner.dart';
 import '../kit/kit_screen.dart';
 import '../kit/kit_state_view.dart';
-import '../kit/kit_text.dart';
-import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../widgets/setup_ui_messages.dart';
 
@@ -27,9 +24,16 @@ import '../widgets/setup_ui_messages.dart';
 ///
 /// The raw decoded text is never held in state, never rendered, and never
 /// logged: any QR in the world can be pointed at this screen, but the one we
-/// are looking for carries the serve password.
+/// are looking for carries the serve password. The camera frame itself, and
+/// that guarantee, is [KitScanner]'s; this screen owns permission, the
+/// recovery states and parsing.
 class PairingScannerScreen extends StatefulWidget {
-  const PairingScannerScreen({super.key});
+  const PairingScannerScreen({super.key, this.scannerCamera});
+
+  /// Where the frames come from; null is the device camera. Tests pass a
+  /// fake, and the screen never disposes one passed in.
+  @visibleForTesting
+  final KitScannerCamera? scannerCamera;
 
   @override
   State<PairingScannerScreen> createState() => _PairingScannerScreenState();
@@ -41,7 +45,8 @@ enum _ScanStage {
   /// Asking the platform for the camera.
   starting,
 
-  /// Preview is up and looking for a code.
+  /// Permission granted: [KitScanner] owns the camera from here (opening,
+  /// looking for a code, paused in the background).
   scanning,
 
   /// The user said no, and can be asked again.
@@ -59,7 +64,6 @@ enum _ScanStage {
 }
 
 class _PairingScannerScreenState extends State<PairingScannerScreen> {
-  MobileScannerController? _controller;
   _ScanStage _stage = _ScanStage.starting;
 
   /// When the camera was asked for: the starting state escalates from here
@@ -74,10 +78,6 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
   /// The device's own words for a camera that would not open (never a
   /// decoded value): the failed state's Details.
   String? _deviceMessage;
-
-  /// Set the instant a valid payload is found, so a second frame decoding the
-  /// same code cannot pop the route twice.
-  bool _handled = false;
 
   @override
   void initState() {
@@ -119,63 +119,34 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
       case CameraPermission.granted:
         break;
     }
-    final controller = MobileScannerController(
-      // Only QR carries pairing codes; narrowing the formats keeps the
-      // decoder from spending frames on barcodes we would reject anyway.
-      formats: const [BarcodeFormat.qrCode],
-      detectionSpeed: DetectionSpeed.noDuplicates,
-    );
-    try {
-      await controller.start();
-    } catch (error) {
-      await controller.dispose();
-      if (!mounted) return;
-      setState(() {
-        _stage = _ScanStage.failed;
-        // A camera failure message is about the device, not the payload, so
-        // it is safe to show — and it is the only clue the user has.
-        _deviceMessage = error is MobileScannerException
-            ? error.errorDetails?.message ?? error.errorCode.name
-            : '$error';
-      });
-      return;
+    // Permission granted: KitScanner opens the camera, and reports a camera
+    // that will not open through onFailed.
+    setState(() => _stage = _ScanStage.scanning);
+  }
+
+  /// One decoded value from [KitScanner]. True pops with the payload (the
+  /// part then stops the camera and delivers nothing more); false says why
+  /// under the preview and keeps scanning — the person has very likely just
+  /// pointed the camera at the wrong QR.
+  bool _onCode(String raw) {
+    final parsed = parsePairingPayload(raw);
+    if (parsed.ok) {
+      Navigator.of(context).pop(parsed.payload);
+      return true;
     }
-    if (!mounted) {
-      await controller.dispose();
-      return;
+    if (_rejected != parsed.error) {
+      setState(() => _rejected = parsed.error);
     }
+    return false;
+  }
+
+  void _onFailed(KitScannerFailure failure) {
     setState(() {
-      _controller = controller;
-      _stage = _ScanStage.scanning;
+      _stage = _ScanStage.failed;
+      // A camera failure message is about the device, not the payload, so
+      // it is safe to show — and it is the only clue the user has.
+      _deviceMessage = failure.deviceMessage;
     });
-  }
-
-  void _onDetect(BarcodeCapture capture) {
-    if (_handled) return;
-    for (final barcode in capture.barcodes) {
-      final raw = barcode.rawValue;
-      if (raw == null || raw.isEmpty) continue;
-      final parsed = parsePairingPayload(raw);
-      if (parsed.ok) {
-        _handled = true;
-        // Stop before popping so no further frame is decoded behind the
-        // closing route.
-        unawaited(_controller?.stop());
-        Navigator.of(context).pop(parsed.payload);
-        return;
-      }
-      // Not a pairing code. Say so and keep scanning — the user has very
-      // likely just pointed the camera at the wrong QR.
-      if (_rejected != parsed.error) {
-        setState(() => _rejected = parsed.error);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    unawaited(_controller?.dispose());
-    super.dispose();
   }
 
   @override
@@ -205,7 +176,7 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
           since: _startedAt,
           onSlow: [paste],
         ),
-        _ScanStage.scanning => _preview(context, l10n),
+        _ScanStage.scanning => _preview(l10n, paste),
         _ScanStage.denied => KitStateView(
           key: const ValueKey('pairing-scanner-denied'),
           icon: AppIconography.camera,
@@ -263,53 +234,17 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
     );
   }
 
-  Widget _preview(BuildContext context, AppLocalizations l10n) {
-    final controller = _controller;
-    if (controller == null) {
-      return KitStateView(
-        icon: AppIconography.camera,
-        tone: AppStatusTone.progress,
-        title: l10n.pairingScannerStarting,
-        progress: const KitProgress.waiting(),
-      );
-    }
-    final tokens = KitTokens.of(context);
+  Widget _preview(AppLocalizations l10n, KitAction paste) {
     final rejected = _rejected;
-    return Column(
-      key: const ValueKey('pairing-scanner-preview'),
-      children: [
-        // The camera surface itself; kit-KitScanner (blocked, not built)
-        // will own it with its viewfinder.
-        Expanded(
-          child: MobileScanner(controller: controller, onDetect: _onDetect),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.gutter,
-            tokens.space4,
-            tokens.gutter,
-            tokens.space5,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              KitText(
-                l10n.e7SetupScanInstruction,
-                textAlign: TextAlign.center,
-                tone: KitTextTone.secondary,
-              ),
-              if (rejected != null) ...[
-                SizedBox(height: tokens.space3),
-                KitNotice(
-                  key: const ValueKey('pairing-scanner-rejected'),
-                  icon: AppIconography.warning,
-                  message: setupUiMessage(l10n, rejected),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
+    return KitScanner(
+      camera: widget.scannerCamera,
+      instruction: l10n.e7SetupScanInstruction,
+      rejected: rejected == null ? null : setupUiMessage(l10n, rejected),
+      onCode: _onCode,
+      onFailed: _onFailed,
+      onSlow: [paste],
+      previewKey: const ValueKey('pairing-scanner-preview'),
+      rejectedKey: const ValueKey('pairing-scanner-rejected'),
     );
   }
 }
