@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/mcp_oauth.dart';
@@ -13,7 +12,6 @@ import '../../state/connection.dart';
 import '../../state/pending_auth.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import '../widgets/file_preview.dart';
 import '../widgets/external_link.dart';
 import '../widgets/connect_methods.dart';
 import '../widgets/info_label.dart';

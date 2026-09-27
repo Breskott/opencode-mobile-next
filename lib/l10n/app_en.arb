@@ -27568,5 +27568,145 @@
   "localTerminalSetUpLinux": "Set up Linux on this phone",
   "@localTerminalSetUpLinux": {
     "description": "Phone terminal before Linux is installed: opens phone setup."
+  },
+  "commandsScreenLoading": "Loading commands",
+  "@commandsScreenLoading": {
+    "description": "Server commands page: the loading bar label while the command list loads."
+  },
+  "commandsScreenLoadFailed": "Couldn’t load commands",
+  "@commandsScreenLoadFailed": {
+    "description": "Server commands page: title of the state shown when the first load of the commands failed."
+  },
+  "commandsScreenWhat": "commands",
+  "@commandsScreenWhat": {
+    "description": "Server commands page: what the search looked through, used in \"Nothing in commands matches …\"."
+  },
+  "commandsScreenRunsWith": "runs with {agent}",
+  "@commandsScreenRunsWith": {
+    "description": "Server commands page: supporting line part naming the agent a command runs with, after its description.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "commandsScreenMenuLabel": "Command actions",
+  "@commandsScreenMenuLabel": {
+    "description": "Server commands page: name of a command row menu."
+  },
+  "commandsScreenRun": "Run {command}…",
+  "@commandsScreenRun": {
+    "description": "Server commands page: row menu item that asks where to run the command (the command is written /name).",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "commandsScreenCopy": "Copy {command}",
+  "@commandsScreenCopy": {
+    "description": "Server commands page: row menu item that copies the command as /name.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "referencesScreenLoading": "Loading references",
+  "@referencesScreenLoading": {
+    "description": "References page: the loading bar label while the list loads."
+  },
+  "referencesScreenLoadFailed": "Couldn’t load references",
+  "@referencesScreenLoadFailed": {
+    "description": "References page: title of the state shown when the first load failed."
+  },
+  "referencesScreenIntro": "Folders this project points its agents to. Add one to a prompt and the agent can read what it holds.",
+  "@referencesScreenIntro": {
+    "description": "References page: one line above the list that says what a reference is."
+  },
+  "referencesScreenEmptyBody": "A reference is a folder the project’s agents can read. References set up for this project appear here.",
+  "@referencesScreenEmptyBody": {
+    "description": "References page: body of the empty state, saying what a reference is."
+  },
+  "referencesScreenMenuLabel": "Reference actions",
+  "@referencesScreenMenuLabel": {
+    "description": "References page: name of a reference row menu."
+  },
+  "referencesScreenAdd": "Add {mention} to the prompt",
+  "@referencesScreenAdd": {
+    "description": "References page: action that adds the reference (written @name) to the conversation prompt.",
+    "placeholders": {
+      "mention": {
+        "type": "String"
+      }
+    }
+  },
+  "referencesScreenShowDetails": "Show {name} details",
+  "@referencesScreenShowDetails": {
+    "description": "References page (picker): row menu item that opens the reference details.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "referencesScreenCopyMention": "Copy {mention}",
+  "@referencesScreenCopyMention": {
+    "description": "References page: action that copies the reference as @name for a prompt.",
+    "placeholders": {
+      "mention": {
+        "type": "String"
+      }
+    }
+  },
+  "referencesScreenCopyPath": "Copy path",
+  "@referencesScreenCopyPath": {
+    "description": "References page: row menu item that copies the folder path of the reference."
+  },
+  "referencesScreenSheetBody": "Write {mention} in a prompt and the agent reads this folder for that reply.",
+  "@referencesScreenSheetBody": {
+    "description": "Reference details sheet: how to use the reference (written @name).",
+    "placeholders": {
+      "mention": {
+        "type": "String"
+      }
+    }
+  },
+  "referencesScreenPathLabel": "Path",
+  "@referencesScreenPathLabel": {
+    "description": "Reference details sheet: label of the folder path under Details."
+  },
+  "skillsScreenLoading": "Loading skills",
+  "@skillsScreenLoading": {
+    "description": "Skills page: the loading bar label while the list loads."
+  },
+  "skillsScreenLoadFailed": "Couldn’t load skills",
+  "@skillsScreenLoadFailed": {
+    "description": "Skills page: title of the state shown when the first load failed."
+  },
+  "skillSheetViewLabel": "How to show the skill",
+  "@skillSheetViewLabel": {
+    "description": "Skill sheet: name of the Rendered / Raw choice."
+  },
+  "skillSheetLocation": "File",
+  "@skillSheetLocation": {
+    "description": "Skill sheet: label of the SKILL.md file path under Details."
+  },
+  "skillSheetCopyCommand": "Copy {command}",
+  "@skillSheetCopyCommand": {
+    "description": "Skill sheet (no conversation): copies the skill slash command (written /name) to use in a prompt.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "skillSheetCheckConversation": "Check the conversation before trying again.",
+  "@skillSheetCheckConversation": {
+    "description": "Skill sheet: why adding is no longer offered after an unconfirmed or moved result."
+  },
+  "skillSheetSending": "Adding the skill…",
+  "@skillSheetSending": {
+    "description": "Skill sheet: why the Run agent now switch cannot change while the skill is being added."
   }
 }
