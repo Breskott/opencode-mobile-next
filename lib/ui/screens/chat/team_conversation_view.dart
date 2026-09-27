@@ -2,13 +2,16 @@ part of '../chat_screen.dart';
 
 // The AI Team as a conversation (docs/design/team-conversation-2026-09-26.md):
 // a task is a conversation, its workers are its sub-agents. The team's own
-// data is assembled into the chat's parts (option A): your prompt is the
-// task, the lead's reply is written by the app from real team events
-// (`teamLeadLines`), each worker or reviewer is a sub-agent card that opens
-// its real OpenCode session in watching mode, the family strip lists them,
-// gates are the request cards, merge is the existing merge section, one
-// "Now" line says what happens next, and the composer's words go through
-// the team's own message control.
+// data is assembled into the chat's kit parts (option A) and follows the
+// transcript turn model (STATE-16, KIT-41): your prompt is the task, the
+// lead's reply is written by the app from real team events
+// (`teamLeadLines`), the task's steps fold under one KitWorkLine, each
+// worker or reviewer is a sub-agent line (KitToolRow.agent) that opens its
+// real OpenCode session in watching mode, gates are the request cards, and
+// the turn has one control row (its footer) once it has ended. Around the
+// turn: the one "Now" line and the agent strip (KitAgentStrip) under the
+// header, the merge section after the turn, and the composer, whose words
+// go through the team's own message control.
 
 /// A task just given to the team, shown before the team lists its run: the
 /// person's words as the prompt, and the conversation binds to the run once
@@ -60,6 +63,11 @@ class TeamConversationScreen extends StatefulWidget {
   final Future<void> Function(BuildContext context, OrchestrationAgent agent)?
   onOpenAgent;
 
+  /// Unsent words per task, kept while the app runs: leaving the page and
+  /// coming back finds the draft where it was (map actionsMissing "draft
+  /// kept when leaving"). Nothing is written to storage.
+  static final Map<String, String> _drafts = <String, String>{};
+
   @override
   State<TeamConversationScreen> createState() => _TeamConversationScreenState();
 }
@@ -67,6 +75,7 @@ class TeamConversationScreen extends StatefulWidget {
 class _TeamConversationScreenState extends State<TeamConversationScreen> {
   final _expansion = <String, bool>{};
   final _message = TextEditingController();
+  final _focus = FocusNode();
   Timer? _tick;
   String? _runId;
 
@@ -79,13 +88,23 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   final _sentHere = <String>{};
   bool _sending = false;
 
+  /// A pending task waits this long before its Now line says it is slow and
+  /// offers the team's page (map statesMissing "still planning after N min
+  /// with an action").
+  static const _pendingSlowAfter = Duration(minutes: 10);
+
   OrchestrationController get _team => widget.team;
   DateTime Function() get _clock => widget.now ?? DateTime.now;
+
+  String get _draftKey =>
+      _runId ?? 'pending:${widget.pending?.sentAt.microsecondsSinceEpoch ?? 0}';
 
   @override
   void initState() {
     super.initState();
     _runId = widget.runId;
+    _message.text = TeamConversationScreen._drafts[_draftKey] ?? '';
+    _message.addListener(_keepDraft);
     _team.watchCycles();
     _team.addListener(_bind);
     _bind();
@@ -100,8 +119,20 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     _tick?.cancel();
     _team.removeListener(_bind);
     _team.unwatchCycles();
-    _message.dispose();
+    _message
+      ..removeListener(_keepDraft)
+      ..dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  void _keepDraft() {
+    final text = _message.text;
+    if (text.trim().isEmpty) {
+      TeamConversationScreen._drafts.remove(_draftKey);
+    } else {
+      TeamConversationScreen._drafts[_draftKey] = text;
+    }
   }
 
   /// Finds the run a pending task became.
@@ -124,7 +155,12 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
         }
       }
     }
-    if (found != null && mounted) setState(() => _runId = found);
+    if (found != null && mounted) {
+      // The draft follows the task to its run.
+      final draft = TeamConversationScreen._drafts.remove(_draftKey);
+      setState(() => _runId = found);
+      if (draft != null) TeamConversationScreen._drafts[_draftKey] = draft;
+    }
   }
 
   OrchestrationRun? _run() {
@@ -143,6 +179,17 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     ];
     if (items.isNotEmpty) _lastWork = items;
     return items.isEmpty ? _lastWork : items;
+  }
+
+  /// The planner's record for a pending task, as it stands now (a refusal
+  /// arrives after the page opened).
+  MutationRecord? _pendingRecord() {
+    final record = widget.pending?.record;
+    if (record == null) return null;
+    for (final latest in _team.mutations) {
+      if (latest.key == record.key) return latest;
+    }
+    return record;
   }
 
   /// Who the composer's words go to: the worker on the task, else the
@@ -185,7 +232,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     final here = ModalRoute.of(context);
     unawaited(
       Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => TeamHomeScreen(
             controller: _team,
             now: widget.now,
@@ -235,19 +282,38 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
 
   void _openDetails(String runId) => unawaited(
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) =>
             RunScreen(controller: _team, runId: runId, now: widget.now),
       ),
     ),
   );
 
+  /// Where the task's one turn stands, from the task's own state.
+  KitTurnPhase _phase(
+    OrchestrationRun? run,
+    List<OrchestrationGate> gates,
+    MutationRecord? pendingRecord,
+  ) {
+    if (run == null) {
+      return pendingRecord?.status == MutationStatus.rejected
+          ? KitTurnPhase.failed
+          : KitTurnPhase.starting;
+    }
+    return switch (run.state) {
+      RunState.completed => KitTurnPhase.finished,
+      RunState.failed => KitTurnPhase.failed,
+      RunState.cancelled => KitTurnPhase.stopped,
+      _ when gates.isNotEmpty => KitTurnPhase.waitingForYou,
+      _ => KitTurnPhase.running,
+    };
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _team,
     builder: (context, _) {
       final l10n = _chatL10n(context);
-      final theme = Theme.of(context);
       final run = _run();
       final work = run == null ? const <WorkItem>[] : _work(run);
       final snapshot = _team.snapshot;
@@ -284,225 +350,316 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       final recipient = _recipient(agents);
       final loading =
           _team.phase != OrchestrationPhase.ready || !snapshot.hasData;
-      return Scaffold(
+      // A task this page knew by id that the team no longer lists, and never
+      // listed while the page was open: removed on the team's computer (map
+      // statesMissing "task cancelled or removed").
+      final gone =
+          _runId != null &&
+          run == null &&
+          snapshot.hasData &&
+          _team.phase == OrchestrationPhase.ready;
+      final pendingRecord = run == null ? _pendingRecord() : null;
+      final working =
+          agents.any(
+            (agent) => teamSessionState(agent) == AgentState.working,
+          ) ||
+          switch (now?.kind) {
+            TeamNowKind.starting ||
+            TeamNowKind.working ||
+            TeamNowKind.review => true,
+            _ => false,
+          };
+      return KitScreen(
         key: const ValueKey('team-conversation'),
-        appBar: AppBar(
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title.isEmpty ? l10n.teamChatUntitled : title,
-                key: const ValueKey('team-conversation-title'),
-                style: theme.textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                l10n.teamChatSubtitle(
-                  // Never "Paused" while this task's worker starts or works:
-                  // the task's own state and its agents' sessions say so.
-                  teamHostPhrase(
-                    l10n,
-                    _team,
-                    working:
-                        agents.any(
-                          (agent) =>
-                              teamSessionState(agent) == AgentState.working,
-                        ) ||
-                        switch (now?.kind) {
-                          TeamNowKind.starting ||
-                          TeamNowKind.working ||
-                          TeamNowKind.review => true,
-                          _ => false,
-                        },
-                  ),
-                ),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+        width: KitScreenWidth.reading,
+        loading: loading,
+        loadingLabel: l10n.teamChatLoading,
+        topBar: KitTopBar(
+          title: title.isEmpty ? l10n.teamChatUntitled : title,
+          titleKey: const ValueKey('team-conversation-title'),
+          // Never "Paused" while this task's worker starts or works: the
+          // task's own state and its agents' sessions say so.
+          subtitle: l10n.teamChatSubtitle(
+            teamHostPhrase(l10n, _team, working: working),
           ),
+          needsYou: gates.length,
           actions: [
-            IconButton(
+            KitAction(
               key: const ValueKey('team-conversation-team-page'),
-              tooltip: l10n.teamChatOpenTeam,
-              icon: const Icon(AppIconography.agent),
+              label: l10n.teamChatOpenTeam,
+              icon: AppIconography.agent,
               onPressed: _openTeamPage,
             ),
-            if (run != null)
-              KitRowMenu(
-                key: const ValueKey('team-conversation-menu'),
-                items: [
-                  KitMenuItem(
-                    key: const ValueKey('team-conversation-details'),
-                    label: l10n.teamChatTaskDetails,
-                    onSelected: () => _openDetails(run.id),
-                  ),
-                  // Only while the task runs and this host can stop it.
-                  if (_canStop(run))
-                    KitMenuItem(
-                      key: const ValueKey('team-conversation-stop'),
-                      label: l10n.teamChatStopTask,
-                      destructive: true,
-                      onSelected: () => unawaited(_stop(run)),
-                    ),
-                ],
-              ),
           ],
-        ),
-        body: Column(
-          children: [
-            KitLoadingBar(loading: loading, label: l10n.teamChatLoading),
-            _TeamNowLine(
-              team: _team,
-              now: now,
-              pending: run == null ? widget.pending : null,
-              clock: _clock,
-            ),
-            if (run != null && agents.isNotEmpty)
-              _TeamFamilyStrip(
-                run: run,
-                agents: agents,
-                onOpen: (agent) => unawaited(_openAgent(agent)),
+          menu: [
+            if (run != null) ...[
+              KitMenuItem(
+                key: const ValueKey('team-conversation-details'),
+                label: l10n.teamChatTaskDetails,
+                icon: AppIconography.info,
+                onSelected: () => _openDetails(run.id),
               ),
-            Expanded(
-              child: ListView(
-                key: const ValueKey('team-conversation-list'),
-                padding: const EdgeInsets.fromLTRB(6, 10, 6, 16),
-                children: [
-                  _MessageView(
-                    key: const ValueKey('team-conversation-prompt'),
-                    m: _teamMessage(
-                      'team-prompt',
-                      'user',
-                      [
-                        title,
-                        ?(run == null
-                            ? widget.pending?.details
-                            : _runDetails(run, work)),
-                      ].where((t) => t.trim().isNotEmpty).join('\n\n'),
-                      run?.startedAt ?? widget.pending?.sentAt,
-                    ),
-                    meta: const _MessageMeta(),
-                    parts: _teamMessage(
-                      'team-prompt',
-                      'user',
-                      [
-                        title,
-                        ?(run == null
-                            ? widget.pending?.details
-                            : _runDetails(run, work)),
-                      ].where((t) => t.trim().isNotEmpty).join('\n\n'),
-                      null,
-                    ).parts,
-                    reasoningExpanded: false,
-                    expansionStore: _expansion,
-                    showTimestamp: false,
-                    showActions: false,
-                    filePreviewLoader: _noFilePreview,
-                    onAttachFile: null,
-                    onDownloadFile: _noFileAction,
-                  ),
-                  const SizedBox(height: 12),
-                  _TeamLeadReply(
-                    lines: lines,
-                    pending: run == null ? widget.pending : null,
-                    expansion: _expansion,
-                  ),
-                  if (work.isNotEmpty)
-                    _TeamStepsFold(
-                      work: work,
-                      now: _clock(),
-                      expansion: _expansion,
-                    ),
-                  for (final agent in agents)
-                    _TeamAgentLine(
-                      agent: agent,
-                      work: [
-                        for (final item in work)
-                          if (item.id == agent.currentWorkId) item,
-                      ].firstOrNull,
-                      now: _clock(),
-                      onOpen: () => unawaited(_openAgent(agent)),
-                    ),
-                  for (final record in _team.mutations)
-                    if (_sentHere.contains(record.key) ||
-                        (record.kind == MutationKind.message &&
-                            agents.any((a) => a.id == record.targetId) &&
-                            (run?.startedAt == null ||
-                                !record.createdAt.isBefore(run!.startedAt!))))
-                      _TeamSentMessage(record: record, expansion: _expansion),
-                  for (final gate in gates)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 12, 10, 0),
-                      child: TeamNeedsYouCard(
-                        keyPrefix: 'team-conversation-gate-${gate.id}',
-                        controller: _team,
-                        gate: gate,
-                        title: teamGateKindWord(
-                          lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ),
-                          gate.kind,
-                        ),
-                        onOpen: () => unawaited(
-                          showGateSheet(
-                            context,
-                            _team,
-                            gate.id,
-                            now: widget.now,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (run == null
-                          ? null
-                          : _team.latestMutation(
-                              kind: MutationKind.cancelRun,
-                              targetId: run.id,
-                            )
-                      case final stop?)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: TeamReceiptChip(
-                        key: const ValueKey('team-conversation-stop-receipt'),
-                        record: stop,
-                        control: l10n.teamChatStopTask,
-                        onRetry: () async {
-                          await _team.retryMutation(stop.key);
-                        },
-                      ),
-                    ),
-                  if (run != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 12, 10, 0),
-                      child: TeamMergeSection(
-                        controller: _team,
-                        run: run,
-                        now: widget.now,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            _TeamChatComposer(
-              controller: _message,
-              recipient: recipient,
-              canMessage: _team.capabilities.controlMessage,
-              sending: _sending,
-              onSend: recipient == null
-                  ? null
-                  : () => unawaited(_send(recipient)),
-            ),
+              // Only while the task runs and this host can stop it.
+              if (_canStop(run))
+                KitMenuItem(
+                  key: const ValueKey('team-conversation-stop'),
+                  label: l10n.teamChatStopTask,
+                  icon: AppIconography.stop,
+                  destructive: true,
+                  onSelected: () => unawaited(_stop(run)),
+                ),
+            ],
           ],
+          menuKey: const ValueKey('team-conversation-menu'),
         ),
+        header: [
+          _TeamNowLine(
+            team: _team,
+            now: now,
+            pending: run == null && !gone ? widget.pending : null,
+            clock: _clock,
+            slowAfter: _pendingSlowAfter,
+            onOpenTeam: _openTeamPage,
+          ),
+          if (run != null && agents.isNotEmpty)
+            KitAgentStrip(
+              stripKey: const ValueKey('team-conversation-family'),
+              agents: [
+                KitAgent(
+                  id: 'lead',
+                  key: const ValueKey('team-conversation-family-lead'),
+                  name: l10n.teamChatLeadName,
+                  state: _teamLeadState(run, gates),
+                ),
+                for (final agent in agents)
+                  KitAgent(
+                    id: agent.id,
+                    key: ValueKey('team-conversation-family-${agent.id}'),
+                    name:
+                        teamAgentShortName(agent) ??
+                        teamAgentRoleWord(l10n, teamAgentRole(agent)),
+                    role: teamAgentShortName(agent) == null
+                        ? null
+                        : teamAgentRoleWord(l10n, teamAgentRole(agent)),
+                    state: _teamAgentState(agent),
+                    onOpen: () => unawaited(_openAgent(agent)),
+                  ),
+              ],
+            ),
+        ],
+        body: gone
+            ? KitStateView(
+                key: const ValueKey('team-conversation-gone'),
+                icon: AppIconography.agent,
+                title: l10n.teamChatGoneTitle,
+                body: l10n.teamChatGoneBody,
+                primary: KitAction(
+                  key: const ValueKey('team-conversation-gone-team-page'),
+                  label: l10n.teamChatGoneOpenTeam,
+                  icon: AppIconography.agent,
+                  onPressed: _openTeamPage,
+                ),
+              )
+            : KitComposer.layer(
+                body: _transcript(
+                  context,
+                  run: run,
+                  work: work,
+                  agents: agents,
+                  gates: gates,
+                  lines: lines,
+                  title: title,
+                  pendingRecord: pendingRecord,
+                ),
+                composer: _composer(context, recipient),
+              ),
       );
     },
   );
+
+  /// The task's one turn, then what the person sent and the merge section.
+  Widget _transcript(
+    BuildContext context, {
+    required OrchestrationRun? run,
+    required List<WorkItem> work,
+    required List<OrchestrationAgent> agents,
+    required List<OrchestrationGate> gates,
+    required List<TeamLeadLine> lines,
+    required String title,
+    required MutationRecord? pendingRecord,
+  }) {
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    final prompt = [
+      title,
+      ?(run == null ? widget.pending?.details : _runDetails(run, work)),
+    ].where((t) => t.trim().isNotEmpty).join('\n\n');
+    final phase = _phase(run, gates, pendingRecord);
+    final leadRows = _TeamLeadReply.rowsFor(
+      context,
+      lines: lines,
+      pending: run == null ? widget.pending : null,
+    );
+    final sent = [
+      for (final record in _team.mutations)
+        if (_sentHere.contains(record.key) ||
+            (record.kind == MutationKind.message &&
+                agents.any((a) => a.id == record.targetId) &&
+                (run?.startedAt == null ||
+                    !record.createdAt.isBefore(run!.startedAt!))))
+          record,
+    ];
+    final stop = run == null
+        ? null
+        : _team.latestMutation(kind: MutationKind.cancelRun, targetId: run.id);
+    final now = _clock();
+    // The end padding is read under the composer layer, which adds its
+    // height to the bottom inset.
+    return Builder(
+      builder: (context) => ListView(
+        key: const ValueKey('team-conversation-list'),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.gutter,
+          tokens.space3,
+          tokens.gutter,
+          KitScreen.endPadding(context),
+        ),
+        children: [
+          KitTurn(
+            turnKey: const ValueKey('team-conversation-turn'),
+            prompt: KitMessage.prompt(
+              key: const ValueKey('team-conversation-prompt'),
+              body: KitMarkdown(prompt, selectable: false),
+            ),
+            phase: phase,
+            since: run?.startedAt ?? widget.pending?.sentAt,
+            latest: sent.isEmpty,
+            footer: KitTurnFooter(copyText: () => leadRows.join('\n')),
+            footerKey: const ValueKey('team-conversation-footer'),
+            blocks: [
+              _TeamLeadReply(rows: leadRows, expansion: _expansion),
+              if (pendingRecord case final record?
+                  when record.status == MutationStatus.rejected)
+                KitNotice(
+                  key: const ValueKey('team-conversation-refused'),
+                  tone: AppStatusTone.failure,
+                  icon: AppIconography.error,
+                  title: l10n.teamChatRefusedTitle,
+                  message: teamReceiptLine(l10n, record),
+                  actions: [
+                    if (record.canRetry)
+                      KitAction(
+                        key: const ValueKey('team-conversation-refused-retry'),
+                        label: l10n.teamChatRefusedRetry,
+                        icon: AppIconography.retry,
+                        onPressed: () =>
+                            unawaited(_team.retryMutation(record.key)),
+                      ),
+                  ],
+                ),
+              if (work.isNotEmpty)
+                _TeamSteps(work: work, expansion: _expansion),
+              for (final agent in agents)
+                KitToolRow.agent(
+                  rowKey: ValueKey('team-conversation-agent-${agent.id}'),
+                  title: _teamAgentTitle(l10n, agent),
+                  status: _teamAgentToolStatus(agent),
+                  task: [
+                    for (final item in work)
+                      if (item.id == agent.currentWorkId) item.title,
+                  ].firstOrNull,
+                  startedAt:
+                      teamSessionState(agent) == AgentState.working &&
+                          agent.sessionStartedAt != null &&
+                          !agent.sessionStartedAt!.isAfter(now)
+                      ? agent.sessionStartedAt
+                      : null,
+                  openLabel: l10n.teamOpenConversation,
+                  onOpen: () => unawaited(_openAgent(agent)),
+                ),
+              for (final gate in gates)
+                TeamNeedsYouCard(
+                  keyPrefix: 'team-conversation-gate-${gate.id}',
+                  controller: _team,
+                  gate: gate,
+                  title: teamGateKindWord(l10n, gate.kind),
+                  onOpen: () => unawaited(
+                    showGateSheet(context, _team, gate.id, now: widget.now),
+                  ),
+                ),
+              if (stop != null)
+                _teamReceipt(
+                  context,
+                  stop,
+                  key: const ValueKey('team-conversation-stop-receipt'),
+                  control: l10n.teamChatStopTask,
+                  onRetry: () => _team.retryMutation(stop.key),
+                ),
+            ],
+          ),
+          for (final record in sent)
+            KitTurn(
+              key: ValueKey('team-conversation-message-${record.key}'),
+              prompt: KitMessage.prompt(
+                body: KitMarkdown(record.request.text ?? '', selectable: false),
+              ),
+              // The message's own receipt; the team's answer arrives in the
+              // task's turn above (the lead's lines and the workers' state).
+              phase: KitTurnPhase.finished,
+              latest: record == sent.last,
+              blocks: [
+                _teamReceipt(
+                  context,
+                  record,
+                  key: ValueKey('team-conversation-sent-${record.key}'),
+                  onRetry: () => _team.retryMutation(record.key),
+                ),
+              ],
+            ),
+          if (run != null)
+            Padding(
+              padding: EdgeInsetsDirectional.only(top: tokens.space4),
+              child: TeamMergeSection(
+                controller: _team,
+                run: run,
+                now: widget.now,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// "Message the team…": the words go through the team's own message
+  /// control to the worker on the task (or the planner), never typed into a
+  /// worker's OpenCode session. The note says who gets them before typing.
+  KitComposer _composer(BuildContext context, OrchestrationAgent? to) {
+    final l10n = _chatL10n(context);
+    final canMessage = _team.capabilities.controlMessage;
+    final readOnly = !canMessage
+        ? l10n.teamChatComposerCannot
+        : to == null
+        ? l10n.teamChatComposerNobody
+        : null;
+    return KitComposer(
+      composerKey: const ValueKey('team-conversation-composer'),
+      fieldKey: const ValueKey('team-conversation-field'),
+      sendKey: const ValueKey('team-conversation-send'),
+      controller: _message,
+      focusNode: _focus,
+      hint: l10n.teamChatComposerHint,
+      fieldLabel: l10n.teamChatComposerHint,
+      readOnlyReason: readOnly,
+      note: to == null
+          ? null
+          : l10n.teamChatComposerGoesTo(_teamAgentTitle(l10n, to)),
+      sending: _sending,
+      canSendWhileBusy: true,
+      onSend: () {
+        if (to != null) unawaited(_send(to));
+      },
+    );
+  }
 
   /// The task's own text beyond its title: a one-step task's description.
   String? _runDetails(OrchestrationRun run, List<WorkItem> work) {
@@ -516,47 +673,47 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   }
 }
 
-/// The app's own messages carry no tool output files.
-Future<FilePreviewData> _noFilePreview(ToolOutputFile file) async =>
-    FilePreviewData(name: file.displayName, text: '');
-
-Future<void> _noFileAction(ToolOutputFile file, FilePreviewData data) async {}
-
-/// A message the app writes itself (the task prompt, the lead's reply),
-/// in the chat's own message shape so the chat's renderer draws it.
-MessageWithParts _teamMessage(
-  String id,
-  String role,
-  String text,
-  DateTime? at,
-) {
-  final ms = at?.millisecondsSinceEpoch;
-  return MessageWithParts(
-    info: MessageInfo(
-      id: id,
-      sessionID: 'team',
-      role: role,
-      // Always finished: the app wrote it whole, so it never wears the
-      // tint of a reply still being written.
-      time: MsgTime(created: ms, completed: ms ?? 1),
+/// A team write's receipt in words: "Message · Sent", then "Confirmed" or
+/// the host's reason, with Try again when the record may be retried.
+Widget _teamReceipt(
+  BuildContext context,
+  MutationRecord record, {
+  required Key key,
+  String? control,
+  Future<void> Function()? onRetry,
+}) {
+  final l10n = _chatL10n(context);
+  final state = switch (record.status) {
+    MutationStatus.sent => KitReceiptState.sent,
+    MutationStatus.confirmed => KitReceiptState.confirmed,
+    MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
+    MutationStatus.rejected => KitReceiptState.refused,
+  };
+  final reason = record.status == MutationStatus.rejected
+      ? record.receipt?.message?.trim()
+      : null;
+  return KitReceipt(
+    key: key,
+    state: state,
+    automatic: true,
+    label: l10n.teamUiControlReceiptLine(
+      control ?? teamControlWord(l10n, record.request),
+      teamControlReceiptWord(l10n, record.status),
     ),
-    parts: [Part(id: '$id-text', messageID: id, type: 'text', text: text)],
+    reason: reason == null || reason.isEmpty ? null : reason,
+    onRetry: onRetry != null && record.canRetry ? () => onRetry() : null,
+    retryKey: ValueKey('${(key as ValueKey<String>).value}-retry'),
   );
 }
 
 /// The lead's reply, read like any reply in the chat: one plain line per
 /// real team event with its time, on the prose's edge, no frame or fill.
-/// When there are many, the earlier ones fold under one line (the chat's
-/// fold) and the newest stay in view.
+/// When there are many, the earlier ones fold under one quiet line and the
+/// newest stay in view.
 class _TeamLeadReply extends StatefulWidget {
-  const _TeamLeadReply({
-    required this.lines,
-    required this.pending,
-    required this.expansion,
-  });
+  const _TeamLeadReply({required this.rows, required this.expansion});
 
-  final List<TeamLeadLine> lines;
-  final TeamPendingTask? pending;
+  final List<String> rows;
   final Map<String, bool> expansion;
 
   /// Up to this many lines show unfolded; beyond it, all but the newest
@@ -565,6 +722,22 @@ class _TeamLeadReply extends StatefulWidget {
   static const _kept = 2;
   static const _storeKey = 'team-lead-earlier';
 
+  /// The lead's lines with their times, oldest first.
+  static List<String> rowsFor(
+    BuildContext context, {
+    required List<TeamLeadLine> lines,
+    required TeamPendingTask? pending,
+  }) {
+    final l10n = _chatL10n(context);
+    String at(DateTime? time) =>
+        time == null ? '' : ' · ${teamClockLabel(context, time)}';
+    return [
+      if (pending case final task?)
+        '${l10n.teamChatLeadSent}${at(task.sentAt)}',
+      for (final line in lines) '${teamLeadSentence(l10n, line)}${at(line.at)}',
+    ];
+  }
+
   @override
   State<_TeamLeadReply> createState() => _TeamLeadReplyState();
 }
@@ -572,33 +745,11 @@ class _TeamLeadReply extends StatefulWidget {
 class _TeamLeadReplyState extends State<_TeamLeadReply> {
   bool get _expanded => widget.expansion[_TeamLeadReply._storeKey] ?? false;
 
-  Widget _reply(String id, List<String> rows) {
-    final message = _teamMessage(id, 'assistant', rows.join('\n\n'), null);
-    return _MessageView(
-      m: message,
-      meta: const _MessageMeta(),
-      parts: message.parts,
-      reasoningExpanded: false,
-      expansionStore: widget.expansion,
-      showTimestamp: false,
-      showActions: false,
-      filePreviewLoader: _noFilePreview,
-      onAttachFile: null,
-      onDownloadFile: _noFileAction,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
-    String at(DateTime? time) =>
-        time == null ? '' : ' · ${teamClockLabel(context, time)}';
-    final rows = <String>[
-      if (widget.pending case final task?)
-        '${l10n.teamChatLeadSent}${at(task.sentAt)}',
-      for (final line in widget.lines)
-        '${teamLeadSentence(l10n, line)}${at(line.at)}',
-    ];
+    final tokens = KitTokens.of(context);
+    final rows = widget.rows;
     final fold = rows.length > _TeamLeadReply._openUpTo;
     final earlier = fold
         ? rows.sublist(0, rows.length - _TeamLeadReply._kept)
@@ -608,41 +759,35 @@ class _TeamLeadReplyState extends State<_TeamLeadReply> {
         : rows;
     return Column(
       key: const ValueKey('team-conversation-lead'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
-          child: Text(
-            l10n.teamChatLeadName,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppTheme.mutedOf(Theme.of(context)),
-            ),
-          ),
+        // Who speaks: the team's lead, whose lines the app writes.
+        KitText(
+          l10n.teamChatLeadName,
+          role: KitTextRole.label,
+          tone: KitTextTone.secondary,
         ),
-        if (fold)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 0),
-            child: _FoldLine(
-              headerKey: const ValueKey('team-conversation-lead-earlier'),
-              icon: AppIconography.timeline,
-              title: l10n.teamChatLeadEarlier(earlier.length),
-              expanded: _expanded,
-              onTap: () => setState(
-                () => widget.expansion[_TeamLeadReply._storeKey] = !_expanded,
-              ),
+        SizedBox(height: tokens.space2),
+        if (fold) ...[
+          KitMessage.notice(
+            noticeKey: const ValueKey('team-conversation-lead-earlier'),
+            icon: AppIconography.timeline,
+            text: l10n.teamChatLeadEarlier(earlier.length),
+            detail: KitMarkdown(earlier.join('\n\n'), selectable: false),
+            expanded: _expanded,
+            onExpansionChanged: (open) => setState(
+              () => widget.expansion[_TeamLeadReply._storeKey] = open,
             ),
           ),
-        if (fold && _expanded)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 0),
-            child: _FoldSteps(
-              key: const ValueKey('team-conversation-lead-earlier-lines'),
-              children: [_reply('team-lead-earlier', earlier)],
+          SizedBox(height: tokens.space2),
+        ],
+        KitMessage.reply(
+          bodyKey: const ValueKey('team-conversation-lead-reply'),
+          body: KitMarkdown(
+            (recent.isEmpty ? [l10n.teamChatLeadNothingYet] : recent).join(
+              '\n\n',
             ),
           ),
-        _reply(
-          'team-lead',
-          recent.isEmpty ? [l10n.teamChatLeadNothingYet] : recent,
         ),
       ],
     );
@@ -675,19 +820,25 @@ String teamLeadSentence(AppLocalizations l10n, TeamLeadLine line) {
 }
 
 /// The one status line: what is happening now and what happens next.
-/// Honest after 8 s: a team that does not answer says so, with Retry.
+/// Honest after 8 s: a team that does not answer says so, with Retry. A
+/// task the team has not picked up after [slowAfter] says so and offers
+/// the team's page.
 class _TeamNowLine extends StatelessWidget {
   const _TeamNowLine({
     required this.team,
     required this.now,
     required this.pending,
     required this.clock,
+    required this.slowAfter,
+    required this.onOpenTeam,
   });
 
   final OrchestrationController team;
   final TeamNow? now;
   final TeamPendingTask? pending;
   final DateTime Function() clock;
+  final Duration slowAfter;
+  final VoidCallback onOpenTeam;
 
   @override
   Widget build(BuildContext context) {
@@ -698,7 +849,7 @@ class _TeamNowLine extends StatelessWidget {
         teamHostCondition(l10n, team, working: true) != null;
     return GraceTimer(
       waiting: waiting,
-      grace: const Duration(seconds: 8),
+      grace: KitMotion.escalateAfter,
       builder: (context, overdue) {
         final line = _line(context, overdue && waiting);
         return KitReveal(child: line);
@@ -708,11 +859,13 @@ class _TeamNowLine extends StatelessWidget {
 
   Widget? _line(BuildContext context, bool overdue) {
     final l10n = _chatL10n(context);
-    String since(DateTime? at) {
-      if (at == null) return '';
-      final waited = clock().difference(at);
-      return teamElapsedLabel(l10n, waited.isNegative ? Duration.zero : waited);
+    Duration waited(DateTime at) {
+      final span = clock().difference(at);
+      return span.isNegative ? Duration.zero : span;
     }
+
+    String since(DateTime? at) =>
+        at == null ? '' : teamElapsedLabel(l10n, waited(at));
 
     KitStatusLine status(
       String message, {
@@ -731,7 +884,9 @@ class _TeamNowLine extends StatelessWidget {
     if (overdue) {
       return status(
         l10n.teamChatNowNotAnswering,
-        tone: AppStatusTone.attention,
+        // A degraded state, never the attention look (LOOK-4): the error
+        // line's neutral glyph, and the fix as its action.
+        tone: AppStatusTone.failure,
         icon: AppIconography.cloudOff,
         action: KitAction(
           key: const ValueKey('team-conversation-retry'),
@@ -746,6 +901,18 @@ class _TeamNowLine extends StatelessWidget {
     }
     final task = pending;
     if (task != null) {
+      if (waited(task.sentAt) >= slowAfter) {
+        return status(
+          l10n.teamChatNowPendingSlow(since(task.sentAt)),
+          tone: AppStatusTone.neutral,
+          icon: AppIconography.waiting,
+          action: KitAction(
+            key: const ValueKey('team-conversation-pending-team-page'),
+            label: l10n.teamChatOpenTeam,
+            onPressed: onOpenTeam,
+          ),
+        );
+      }
       return status(l10n.teamChatNowPending(since(task.sentAt)));
     }
     final now = this.now;
@@ -762,19 +929,15 @@ class _TeamNowLine extends StatelessWidget {
       ),
       TeamNowKind.needsYou => status(
         l10n.teamChatNowNeedsYou(now.gateTitle ?? ''),
-        tone: AppStatusTone.attention,
+        tone: AppStatusTone.neutral,
         icon: AppIconography.question,
       ),
       TeamNowKind.stalled => status(
         [
-          if (now.stall case final stall?)
-            teamCycleStallSentence(
-              lookupAppLocalizations(Localizations.localeOf(context)),
-              stall,
-            ),
+          if (now.stall case final stall?) teamCycleStallSentence(l10n, stall),
           if (now.since != null) since(now.since),
         ].join(' · '),
-        tone: AppStatusTone.attention,
+        tone: AppStatusTone.neutral,
         icon: AppIconography.waiting,
       ),
       TeamNowKind.waitingForWorker => status(
@@ -803,18 +966,43 @@ class _TeamNowLine extends StatelessWidget {
   }
 }
 
-/// The mark for an agent, from its session (the truth about whether it
-/// runs, not the host's agent list).
-KitMarkState _teamAgentMark(OrchestrationAgent agent) =>
+/// An agent's state from its session (the truth about whether it runs, not
+/// the host's agent list), as the agent strip's mark.
+KitTaskState _teamAgentState(OrchestrationAgent agent) =>
     switch (teamSessionState(agent)) {
-      AgentState.working => KitMarkState.working,
-      AgentState.crashed => KitMarkState.failed,
-      AgentState.stopped => KitMarkState.done,
+      AgentState.working => KitTaskState.working,
+      AgentState.crashed => KitTaskState.failed,
+      AgentState.stopped => KitTaskState.done,
       AgentState.idle ||
       AgentState.waiting ||
       AgentState.blocked ||
-      AgentState.unknown => KitMarkState.waiting,
+      AgentState.unknown => KitTaskState.waiting,
     };
+
+/// The same state as a sub-agent line's status word.
+KitToolStatus _teamAgentToolStatus(OrchestrationAgent agent) =>
+    switch (teamSessionState(agent)) {
+      AgentState.working => KitToolStatus.running,
+      AgentState.crashed => KitToolStatus.failed,
+      AgentState.stopped => KitToolStatus.done,
+      AgentState.idle ||
+      AgentState.waiting ||
+      AgentState.blocked ||
+      AgentState.unknown => KitToolStatus.pending,
+    };
+
+/// The lead's mark: the task's own state; it needs the person while a gate
+/// of this task waits.
+KitTaskState _teamLeadState(
+  OrchestrationRun run,
+  List<OrchestrationGate> gates,
+) => switch (run.state) {
+  RunState.completed => KitTaskState.done,
+  RunState.failed => KitTaskState.failed,
+  RunState.cancelled => KitTaskState.stopped,
+  _ when gates.isNotEmpty => KitTaskState.needsYou,
+  _ => KitTaskState.working,
+};
 
 /// "furiosa · Worker": the agent's own name, then its role in plain words.
 String _teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
@@ -823,402 +1011,81 @@ String _teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
   return name == null ? role : '$name · $role';
 }
 
-/// The family strip: the lead, then every worker and reviewer on this
-/// task, each with its mark; a tap opens that agent's conversation.
-class _TeamFamilyStrip extends StatelessWidget {
-  const _TeamFamilyStrip({
-    required this.run,
-    required this.agents,
-    required this.onOpen,
-  });
-
-  final OrchestrationRun run;
-  final List<OrchestrationAgent> agents;
-  final ValueChanged<OrchestrationAgent> onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final team = lookupAppLocalizations(Localizations.localeOf(context));
-    final leadMark = switch (run.state) {
-      RunState.completed => KitMarkState.done,
-      RunState.failed => KitMarkState.failed,
-      RunState.cancelled => KitMarkState.done,
-      _ => KitMarkState.working,
-    };
-    Widget chip({
-      required Key key,
-      required KitMarkState mark,
-      required String label,
-      required String semantics,
-      VoidCallback? onTap,
-    }) => Padding(
-      padding: const EdgeInsetsDirectional.only(end: 8),
-      child: Semantics(
-        button: onTap != null,
-        label: semantics,
-        excludeSemantics: true,
-        child: InkWell(
-          key: key,
-          onTap: onTap,
-          customBorder: const StadiumBorder(),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            padding: const EdgeInsetsDirectional.fromSTEB(2, 0, 12, 0),
-            decoration: ShapeDecoration(
-              shape: StadiumBorder(
-                side: BorderSide(color: AppTheme.hairline(Theme.of(context))),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Transform.scale(scale: .8, child: KitStatusMark(state: mark)),
-                Text(label, style: Theme.of(context).textTheme.labelLarge),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    String word(KitMarkState mark) => switch (mark) {
-      KitMarkState.working => l10n.teamChatFamilyRunning,
-      KitMarkState.waiting => l10n.teamChatFamilyWaiting,
-      KitMarkState.done => l10n.teamChatFamilyDone,
-      KitMarkState.failed => l10n.teamChatFamilyFailed,
-    };
-    return SizedBox(
-      height: 52,
-      child: ListView(
-        key: const ValueKey('team-conversation-family'),
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        children: [
-          chip(
-            key: const ValueKey('team-conversation-family-lead'),
-            mark: leadMark,
-            label: l10n.teamChatLeadName,
-            semantics: '${l10n.teamChatLeadName}, ${word(leadMark)}',
-          ),
-          for (final agent in agents)
-            chip(
-              key: ValueKey('team-conversation-family-${agent.id}'),
-              mark: _teamAgentMark(agent),
-              label:
-                  teamAgentShortName(agent) ??
-                  teamAgentRoleWord(team, teamAgentRole(agent)),
-              semantics:
-                  '${_teamAgentTitle(team, agent)}, '
-                  '${word(_teamAgentMark(agent))}',
-              onTap: () => onOpen(agent),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The task's steps with the Overview's marks; folded under one line when
-/// there are more than three.
-class _TeamStepsFold extends StatelessWidget {
-  const _TeamStepsFold({
-    required this.work,
-    required this.now,
-    required this.expansion,
-  });
+/// The task's steps, folded under the turn's one work line: "{n} steps ·
+/// {done} done" while the task runs. Up to three steps show open; more
+/// fold, and the person's choice is kept in the page's expansion store.
+class _TeamSteps extends StatefulWidget {
+  const _TeamSteps({required this.work, required this.expansion});
 
   final List<WorkItem> work;
-  final DateTime now;
   final Map<String, bool> expansion;
 
   static const _openUpTo = 3;
+  static const _storeKey = 'team-steps';
 
+  @override
+  State<_TeamSteps> createState() => _TeamStepsState();
+}
+
+class _TeamStepsState extends State<_TeamSteps> {
   @override
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
-    final team = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
+    final work = widget.work;
+    final expansion = widget.expansion;
     final done = work.where((item) => item.state == WorkState.completed).length;
-    final rows = [
-      for (final item in work)
-        KitRow(
-          key: ValueKey('team-conversation-step-${item.id}'),
-          leading: KitRow.icon(
-            context,
-            teamWorkGlyph(item.state).$1,
-            color: AppTheme.statusColor(theme, teamWorkGlyph(item.state).$2),
-          ),
-          title: item.title,
-          titleMaxLines: 2,
-          supporting: TextSpan(text: teamWorkStateWord(team, item.state)),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-        ),
-    ];
-    final summary = l10n.teamChatStepsSummary(work.length, done);
-    if (work.length <= _openUpTo) {
-      return Padding(
-        key: const ValueKey('team-conversation-steps'),
-        padding: const EdgeInsets.only(top: 4),
-        child: Column(children: rows),
-      );
-    }
-    return Padding(
+    final failed = work.any((item) => item.state == WorkState.failed);
+    final running = work.any(
+      (item) => switch (item.state) {
+        WorkState.completed || WorkState.failed || WorkState.cancelled => false,
+        _ => true,
+      },
+    );
+    final needsYou = work.any((item) => item.state == WorkState.needsInput);
+    final state = needsYou
+        ? KitWorkState.waitingForYou
+        : running
+        ? KitWorkState.running
+        : failed
+        ? KitWorkState.endedFailed
+        : KitWorkState.done;
+    return KitWorkLine(
       key: const ValueKey('team-conversation-steps'),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: KitExpandRow(
-        headerKey: const ValueKey('team-conversation-steps-fold'),
-        leading: KitRow.icon(context, AppIconography.checklist),
-        title: summary,
-        children: rows,
-      ),
-    );
-  }
-}
-
-/// One worker or reviewer as the chat draws a sub-agent: one line of the
-/// reply on the prose's edge, no frame or fill (as [ToolCard] draws a
-/// `task` call). Who it is, what it works on, its state from its session
-/// and for how long; a tap opens its conversation.
-class _TeamAgentLine extends StatelessWidget {
-  const _TeamAgentLine({
-    required this.agent,
-    required this.work,
-    required this.now,
-    required this.onOpen,
-  });
-
-  final OrchestrationAgent agent;
-  final WorkItem? work;
-  final DateTime now;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final team = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final state = teamSessionState(agent);
-    final started = agent.sessionStartedAt;
-    final elapsed = started == null
-        ? null
-        : teamElapsedLabel(
-            team,
-            now.difference(started).isNegative
-                ? Duration.zero
-                : now.difference(started),
-          );
-    // The state and how long, where a sub-agent call shows its state.
-    final line = [
-      teamAgentStateWord(team, state),
-      ?elapsed,
-    ].join(teamUsageSeparator);
-    final title = _teamAgentTitle(team, agent);
-    final mark = _teamAgentMark(agent);
-    final (markIcon, markColor) = switch (mark) {
-      KitMarkState.working => (
-        AppIconography.waitingStart,
-        theme.colorScheme.primary,
-      ),
-      KitMarkState.done => (
-        AppIconography.checkCircle,
-        AppTheme.successOf(theme),
-      ),
-      KitMarkState.failed => (AppIconography.error, theme.colorScheme.error),
-      KitMarkState.waiting => (
-        AppIconography.waiting,
-        theme.colorScheme.onSurfaceVariant,
-      ),
-    };
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(6, 4, 6, 0),
-      child: Semantics(
-        button: true,
-        label: [title, ?work?.title, line].join(', '),
-        hint: l10n.teamOpenConversation,
-        excludeSemantics: true,
-        child: InkWell(
-          key: ValueKey('team-conversation-agent-${agent.id}'),
-          onTap: onOpen,
-          borderRadius: BorderRadius.circular(8),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              // The prose's inset, as a sub-agent call on its own.
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 8),
-              child: Row(
-                children: [
-                  Icon(
-                    AppIconography.agent,
-                    size: 16,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TitleWithDetail(
-                      title: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall!.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: .9,
-                          ),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      detail: work == null
-                          ? null
-                          : Text(
-                              work!.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 120),
-                    child: Text(
-                      line,
-                      key: ValueKey('team-conversation-agent-line-${agent.id}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(markIcon, size: 14, color: markColor),
-                  const SizedBox(width: 4),
-                  Icon(
-                    AppIconography.chevronRight,
-                    size: 16,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                ],
-              ),
-            ),
+      lineKey: const ValueKey('team-conversation-steps-fold'),
+      counts: KitWorkCounts(steps: work.length),
+      state: state,
+      now: l10n.teamChatStepsSummary(work.length, done),
+      expanded:
+          expansion[_TeamSteps._storeKey] ??
+          work.length <= _TeamSteps._openUpTo,
+      onExpansionChanged: (open) =>
+          setState(() => expansion[_TeamSteps._storeKey] = open),
+      steps: [
+        for (final item in work)
+          KitToolRow(
+            rowKey: ValueKey('team-conversation-step-${item.id}'),
+            kind: KitToolKind.todo,
+            title: item.title,
+            status: _teamStepStatus(item.state),
           ),
-        ),
-      ),
+      ],
     );
   }
 }
 
-/// A message the person sent the team, with what became of it.
-class _TeamSentMessage extends StatelessWidget {
-  const _TeamSentMessage({required this.record, required this.expansion});
-
-  final MutationRecord record;
-  final Map<String, bool> expansion;
-
-  @override
-  Widget build(BuildContext context) {
-    final message = _teamMessage(
-      'team-sent-${record.key}',
-      'user',
-      record.request.text ?? '',
-      record.createdAt,
-    );
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _MessageView(
-            m: message,
-            meta: const _MessageMeta(),
-            parts: message.parts,
-            reasoningExpanded: false,
-            expansionStore: expansion,
-            showTimestamp: false,
-            showActions: false,
-            filePreviewLoader: _noFilePreview,
-            onAttachFile: null,
-            onDownloadFile: _noFileAction,
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 16, top: 4),
-            child: TeamReceiptChip(
-              key: ValueKey('team-conversation-sent-${record.key}'),
-              record: record,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Message the team…": the words go through the team's own message
-/// control to the worker on the task (or the planner), never typed into a
-/// worker's OpenCode session.
-class _TeamChatComposer extends StatelessWidget {
-  const _TeamChatComposer({
-    required this.controller,
-    required this.recipient,
-    required this.canMessage,
-    required this.sending,
-    required this.onSend,
-  });
-
-  final TextEditingController controller;
-  final OrchestrationAgent? recipient;
-  final bool canMessage;
-  final bool sending;
-  final VoidCallback? onSend;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final team = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final to = recipient;
-    final note = !canMessage
-        ? l10n.teamChatComposerCannot
-        : to == null
-        ? l10n.teamChatComposerNobody
-        : l10n.teamChatComposerGoesTo(_teamAgentTitle(team, to));
-    return SafeArea(
-      top: false,
-      child: Padding(
-        key: const ValueKey('team-conversation-composer'),
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (canMessage && to != null)
-              TeamComposerField(
-                controller: controller,
-                hint: l10n.teamChatComposerHint,
-                sendLabel: l10n.chatUiSend,
-                autofocus: false,
-                enabled: !sending,
-                onSend: onSend ?? () {},
-                fieldKey: const ValueKey('team-conversation-field'),
-                sendKey: const ValueKey('team-conversation-send'),
-              ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                note,
-                key: const ValueKey('team-conversation-composer-note'),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+/// A step's state as a work step's status.
+KitToolStatus _teamStepStatus(WorkState state) => switch (state) {
+  WorkState.completed => KitToolStatus.done,
+  WorkState.failed => KitToolStatus.failed,
+  WorkState.cancelled => KitToolStatus.stopped,
+  WorkState.working || WorkState.review => KitToolStatus.running,
+  WorkState.needsInput => KitToolStatus.waitingForYou,
+  WorkState.queued ||
+  WorkState.ready ||
+  WorkState.waiting ||
+  WorkState.blocked ||
+  WorkState.unknown => KitToolStatus.pending,
+};
 
 // ---------------------------------------------------------------------------
 // A worker's own conversation (watching mode)
@@ -1316,7 +1183,7 @@ Future<void> openTeamAgentConversation(
   final controller = team ?? _teamOf(context);
   if (sessionId case final id?) {
     await navigator.push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (context) => ChatScreen(
           sessionID: id,
           watch: teamAgentWatch(context, agent, team: controller),
@@ -1327,7 +1194,7 @@ Future<void> openTeamAgentConversation(
   }
   if (controller == null) return;
   await navigator.push(
-    MaterialPageRoute<void>(
+    KitPageRoute<void>(
       builder: (context) => AgentOutputScreen(
         controller: controller,
         agentId: agent.id,
@@ -1393,83 +1260,148 @@ Future<void> _messageTeamAgent(
   OrchestrationAgent agent,
 ) async {
   final l10n = _chatL10n(context);
-  final text = await showModalBottomSheet<String>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => _TeamMessageSheet(
+  // Typed words survive a swipe or back (DATA-2): kept per agent and server
+  // profile until they are sent.
+  String? profileId;
+  try {
+    profileId = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(connProvider).profile?.id;
+  } catch (_) {
+    profileId = null;
+  }
+  final text = TextEditingController();
+  final draft = profileId == null || profileId.isEmpty
+      ? null
+      : KitDraft(
+          target: 'team-message.${agent.id}',
+          profileId: profileId,
+          controller: text,
+        );
+  try {
+    await showKitSheet<void>(
+      context,
       title: l10n.teamUiControlMessageTitle(
         teamAgentShortName(agent) ??
             teamAgentRoleWord(l10n, teamAgentRole(agent)),
       ),
-    ),
-  );
-  if (text == null || text.trim().isEmpty || !context.mounted) return;
-  final record = await team.messageAgent(agent.id, text.trim());
-  if (!context.mounted) return;
-  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-    SnackBar(
-      key: const ValueKey('chat-watching-message-receipt'),
-      content: Text(
-        record.status == MutationStatus.rejected
-            ? teamReceiptLine(l10n, record)
-            : '${teamControlWord(l10n, record.request)} · '
-                  '${teamControlReceiptWord(l10n, record.status)}',
+      sheetKey: const ValueKey('chat-watching-message-sheet'),
+      draft: draft,
+      body: (_) => _TeamMessageSheet(
+        team: team,
+        agent: agent,
+        controller: text,
+        draft: draft,
       ),
-    ),
-  );
+    );
+  } finally {
+    text.dispose();
+  }
 }
 
-/// The composer field alone; Send pops with the text (as the agent
-/// screen's Message sheet).
+/// The message field for one agent: Send goes through the team's message
+/// control, and the sheet stays open with the message's receipt in words
+/// ("Message · Sent", then Confirmed or the host's reason) until the person
+/// closes it.
 class _TeamMessageSheet extends StatefulWidget {
-  const _TeamMessageSheet({required this.title});
+  const _TeamMessageSheet({
+    required this.team,
+    required this.agent,
+    required this.controller,
+    required this.draft,
+  });
 
-  final String title;
+  final OrchestrationController team;
+  final OrchestrationAgent agent;
+
+  /// Owned by the caller, which disposes it after the sheet closes.
+  final TextEditingController controller;
+  final KitDraft? draft;
 
   @override
   State<_TeamMessageSheet> createState() => _TeamMessageSheetState();
 }
 
 class _TeamMessageSheetState extends State<_TeamMessageSheet> {
-  final _text = TextEditingController();
+  TextEditingController get _text => widget.controller;
+  String? _sentKey;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _text.addListener(_changed);
+  }
 
   @override
   void dispose() {
-    _text.dispose();
+    _text.removeListener(_changed);
     super.dispose();
   }
 
-  void _send() {
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _send() async {
     final text = _text.text.trim();
-    if (text.isEmpty) return;
-    Navigator.of(context).pop(text);
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final record = await widget.team.messageAgent(widget.agent.id, text);
+      if (!mounted) return;
+      _text.clear();
+      unawaited(widget.draft?.clear());
+      setState(() => _sentKey = record.key);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
-    final inset = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      key: const ValueKey('chat-watching-message-sheet'),
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + inset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          TeamComposerField(
-            controller: _text,
-            hint: l10n.teamUiControlMessageHint,
-            sendLabel: l10n.teamUiControlMessageSend,
-            onSend: _send,
-            fieldKey: const ValueKey('chat-watching-message-field'),
-            sendKey: const ValueKey('chat-watching-message-send'),
-          ),
-        ],
-      ),
+    final tokens = KitTokens.of(context);
+    final canSend = !_sending && _text.text.trim().isNotEmpty;
+    return ListenableBuilder(
+      listenable: widget.team,
+      builder: (context, _) {
+        final sent = _sentKey == null
+            ? null
+            : widget.team.mutations
+                  .where((record) => record.key == _sentKey)
+                  .firstOrNull;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitField(
+              label: l10n.teamUiControlMessageHint,
+              controller: _text,
+              kind: KitFieldKind.multiline,
+              autofocus: true,
+              enabled: !_sending,
+              fieldKey: const ValueKey('chat-watching-message-field'),
+              actionKey: const ValueKey('chat-watching-message-send'),
+              action: KitAction(
+                label: l10n.teamUiControlMessageSend,
+                icon: AppIconography.send,
+                onPressed: canSend ? () => unawaited(_send()) : null,
+              ),
+            ),
+            if (sent != null) ...[
+              SizedBox(height: tokens.space3),
+              _teamReceipt(
+                context,
+                sent,
+                key: const ValueKey('chat-watching-message-receipt'),
+                onRetry: () => widget.team.retryMutation(sent.key),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -1535,11 +1467,7 @@ class _TeamOpenConversationRowState extends State<TeamOpenConversationRow> {
             ? l10n.teamOpenConversationFinding
             : l10n.teamOpenConversationHint(who),
       ),
-      trailing: Icon(
-        AppIconography.chevronRight,
-        size: 18,
-        color: AppTheme.mutedOf(Theme.of(context)),
-      ),
+      trailing: const KitChevron(),
       onTap: _opening ? null : () => unawaited(_open()),
     );
   }
@@ -1548,6 +1476,12 @@ class _TeamOpenConversationRowState extends State<TeamOpenConversationRow> {
 // ---------------------------------------------------------------------------
 // An agent's live output, drawn as the chat draws a reply
 // ---------------------------------------------------------------------------
+
+/// Live output carries no tool output files.
+Future<FilePreviewData> _noFilePreview(ToolOutputFile file) async =>
+    FilePreviewData(name: file.displayName, text: '');
+
+Future<void> _noFileAction(ToolOutputFile file, FilePreviewData data) async {}
 
 /// An AI Team agent's live output (Live output, the fallback when its
 /// OpenCode session cannot be read) drawn with the chat's own parts: what

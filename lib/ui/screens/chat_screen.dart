@@ -51,7 +51,6 @@ import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
-import '../widgets/agent_color.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
@@ -85,11 +84,7 @@ import '../../state/team_conversation.dart';
 import '../../state/team_planning.dart'
     show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
 import '../widgets/team_controls.dart'
-    show
-        TeamComposerField,
-        TeamReceiptChip,
-        teamControlReceiptWord,
-        teamControlWord;
+    show teamControlReceiptWord, teamControlWord;
 import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';

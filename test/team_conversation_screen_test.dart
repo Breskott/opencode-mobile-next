@@ -20,6 +20,19 @@ import 'support/team_chat_fixture.dart';
 
 Finder _key(String value) => find.byKey(ValueKey(value));
 
+/// Every word drawn under [finder] (the finder itself included), as the
+/// person reads it.
+String _words(WidgetTester tester, Finder finder) => tester
+    .widgetList<RichText>(
+      find.descendant(
+        of: finder,
+        matching: find.byType(RichText),
+        matchRoot: true,
+      ),
+    )
+    .map((text) => text.text.toPlainText())
+    .join(' ');
+
 /// A time as the page shows it: the phone's own clock, 24-hour.
 String _hhmm(DateTime at) {
   final local = at.toLocal();
@@ -145,32 +158,30 @@ void main() {
       findsWidgets,
     );
     // furiosa: the session runs, whatever /agents said.
-    expect(find.text('furiosa · Worker'), findsOneWidget);
-    expect(
-      tester
-          .widget<Text>(
-            _key('team-conversation-agent-line-my-app/gastown.furiosa'),
-          )
-          .data,
-      startsWith('Working'),
-    );
+    final agentLine = _key('team-conversation-agent-my-app/gastown.furiosa');
+    expect(_words(tester, agentLine), contains('furiosa · Worker · Running'));
     // The one Now line: starting, slow on a phone, with the elapsed time.
     expect(
-      tester.widget<Text>(_key('team-conversation-now-text')).data,
+      _words(tester, _key('team-conversation-now-text')),
       'furiosa is starting · can take a few minutes on a phone · 3 min',
     );
-    // The family strip: the lead and furiosa.
+    // The agent strip: the lead and furiosa, furiosa marked working.
+    expect(find.byType(KitAgentStrip), findsOneWidget);
     expect(_key('team-conversation-family-lead'), findsOneWidget);
+    final chip = _key('team-conversation-family-my-app/gastown.furiosa');
+    expect(chip, findsOneWidget);
     expect(
-      _key('team-conversation-family-my-app/gastown.furiosa'),
+      find.descendant(of: chip, matching: find.textContaining('furiosa')),
       findsOneWidget,
     );
-    // The steps, with the Overview's marks.
+    // The steps, with their marks, open under the one work line (two steps).
+    expect(_key('team-conversation-steps-fold'), findsOneWidget);
     expect(_key('team-conversation-step-ma-1'), findsOneWidget);
     expect(_key('team-conversation-step-ma-2'), findsOneWidget);
+    // Who the message goes to, before typing.
     expect(
-      tester.widget<Text>(_key('team-conversation-composer-note')).data,
-      'Goes to furiosa · Worker through the AI Team',
+      find.text('Goes to furiosa · Worker through the AI Team'),
+      findsOneWidget,
     );
     expect(tester.takeException(), isNull);
   });
@@ -216,7 +227,10 @@ void main() {
     tester,
   ) async {
     await pump(tester);
-    await tester.tap(find.text('furiosa · Worker'));
+    final line = _key('team-conversation-agent-my-app/gastown.furiosa');
+    await tester.ensureVisible(line);
+    await tester.pumpAndSettle();
+    await tester.tap(line);
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatScreen), findsOneWidget);
@@ -247,12 +261,19 @@ void main() {
       ],
     );
     expect(
-      tester.widget<Text>(_key('team-conversation-now-text')).data,
+      _words(tester, _key('team-conversation-now-text')),
       'Needs you · Which default?',
+    );
+    // The header counts it with the one needs-you marker.
+    expect(
+      find.textContaining('Needs you · AI Team', findRichText: true),
+      findsOneWidget,
     );
     await tester.ensureVisible(find.text('Always dark'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Always dark'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(_key('team-conversation-gate-ma-gate-1-send'));
     await tester.pumpAndSettle();
     await tester.tap(_key('team-conversation-gate-ma-gate-1-send'));
     await tester.pumpAndSettle();
@@ -285,6 +306,8 @@ void main() {
     );
     expect(find.text('5 steps · 1 done'), findsOneWidget);
     expect(_key('team-conversation-step-ma-4'), findsNothing);
+    await tester.ensureVisible(_key('team-conversation-steps-fold'));
+    await tester.pumpAndSettle();
     await tester.tap(_key('team-conversation-steps-fold'));
     await tester.pumpAndSettle();
     expect(_key('team-conversation-step-ma-4'), findsOneWidget);
@@ -305,7 +328,7 @@ void main() {
       ),
     );
     expect(
-      tester.widget<Text>(_key('team-conversation-now-text')).data,
+      _words(tester, _key('team-conversation-now-text')),
       'Waiting for the team to pick it up · 5 min',
     );
     expect(
@@ -328,7 +351,10 @@ void main() {
       ),
       findsWidgets,
     );
-    expect(find.text('furiosa · Worker'), findsOneWidget);
+    expect(
+      _words(tester, _key('team-conversation-agent-my-app/gastown.furiosa')),
+      contains('furiosa · Worker'),
+    );
   });
 
   testWidgets('the task Overview opens the task as a conversation', (
@@ -363,9 +389,9 @@ void main() {
       final lead = _key('team-conversation-lead');
       final blocks = find.descendant(
         of: lead,
-        matching: find.byKey(const Key('assistant-text-block')),
+        matching: _key('team-conversation-lead-reply'),
       );
-      expect(blocks, findsWidgets);
+      expect(blocks, findsOneWidget);
       // No fill behind the prose: a reply carries no frame or tint.
       final fills = find.descendant(
         of: blocks,
@@ -457,10 +483,7 @@ void main() {
         findsNothing,
       );
       // One line: who, what it works on, its state and time.
-      expect(
-        find.descendant(of: line, matching: find.text('furiosa · Worker')),
-        findsOneWidget,
-      );
+      expect(_words(tester, line), contains('furiosa · Worker · Running'));
       expect(
         find.descendant(
           of: line,
@@ -468,11 +491,30 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The sub-agent line: who and its state on the first line, what it
+      // works on under it (KitToolRow.agent), no frame around them.
       expect(
-        tester.getSize(line).height,
-        lessThan(64),
-        reason: 'one line of the reply',
+        tester
+            .getRect(
+              find.descendant(
+                of: line,
+                matching: find.text('Add the toggle to Settings'),
+              ),
+            )
+            .top,
+        greaterThanOrEqualTo(
+          tester
+              .getRect(
+                find.descendant(
+                  of: line,
+                  matching: find.textContaining('furiosa · Worker'),
+                ),
+              )
+              .bottom,
+        ),
       );
+      await tester.ensureVisible(line);
+      await tester.pumpAndSettle();
       await tester.tap(line);
       await tester.pumpAndSettle();
       expect(opened?.id, 'my-app/gastown.furiosa');
@@ -505,6 +547,131 @@ void main() {
       );
       expect(find.text('AI Team · On this phone'), findsOneWidget);
       expect(find.textContaining('Paused'), findsNothing);
+    });
+  });
+
+  // Map record team-conversation (proposal fix): the states and actions it
+  // listed as missing.
+  group('what the map asked for', () {
+    testWidgets('a task the team no longer lists says so, with its page', (
+      tester,
+    ) async {
+      await pump(tester, runs: const [], work: const []);
+      expect(_key('team-conversation-gone'), findsOneWidget);
+      expect(find.text('This task is no longer on the team'), findsOneWidget);
+      expect(_key('team-conversation-gone-team-page'), findsOneWidget);
+      // No composer for a task that is gone.
+      expect(_key('team-conversation-field'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a task the planner refused says so with the reason', (
+      tester,
+    ) async {
+      final sent = DateTime.utc(2026, 9, 25, 19, 49, 3);
+      await pump(
+        tester,
+        runId: null,
+        runs: const [],
+        work: const [],
+        pending: TeamPendingTask(
+          title: 'Add a dark mode toggle',
+          sentAt: sent,
+          record: MutationRecord(
+            key: 'plan-1',
+            request: MutationRequest.message(
+              'my-app/planner',
+              'Add a dark mode toggle',
+            ),
+            createdAt: sent,
+            status: MutationStatus.rejected,
+            receipt: const MutationReceipt(
+              id: 'r-1',
+              status: MutationReceiptStatus.rejected,
+              message: 'The planner is off',
+            ),
+          ),
+        ),
+      );
+      expect(_key('team-conversation-refused'), findsOneWidget);
+      expect(find.text("The team didn't take this task"), findsOneWidget);
+      expect(
+        find.textContaining('The planner is off', findRichText: true),
+        findsWidgets,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a task waiting long for the team says so and offers its '
+        'page', (tester) async {
+      await pump(
+        tester,
+        runId: null,
+        runs: const [],
+        work: const [],
+        pending: TeamPendingTask(
+          title: 'Add a dark mode toggle',
+          sentAt: DateTime.utc(2026, 9, 25, 19, 40),
+        ),
+      );
+      expect(
+        _words(tester, _key('team-conversation-now-text')),
+        'Still waiting for the team to plan this · 15 min',
+      );
+      expect(_key('team-conversation-pending-team-page'), findsOneWidget);
+    });
+
+    testWidgets('the draft is kept when the person leaves and comes back', (
+      tester,
+    ) async {
+      final (team, _, _) = await pump(tester);
+      await tester.enterText(_key('team-conversation-field'), 'Half a thought');
+      await tester.pump();
+      // Leave the page and open the same task again.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        teamChatApp(
+          await teamConnection(
+            api: TeamChatApi(const {}),
+            repository: TeamChatRepository(const []),
+          ),
+          TeamConversationScreen(
+            team: team,
+            runId: 'ma-convoy-1',
+            now: () => teamClock,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: _key('team-conversation-field'),
+                matching: find.byType(EditableText),
+                matchRoot: true,
+              ),
+            )
+            .controller
+            .text,
+        'Half a thought',
+      );
+      // Leave nothing behind for the next test.
+      await tester.enterText(_key('team-conversation-field'), '');
+      await tester.pump();
+    });
+
+    testWidgets('Stop task is on the task\'s own menu and asks first', (
+      tester,
+    ) async {
+      final (_, gateway, _) = await pump(tester);
+      await tester.tap(_key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('team-conversation-stop'));
+      await tester.pumpAndSettle();
+      expect(_key('team-conversation-stop-confirm'), findsOneWidget);
+      expect(find.textContaining('Add a dark mode toggle'), findsWidgets);
+      expect(gateway.messages, isEmpty);
     });
   });
 }

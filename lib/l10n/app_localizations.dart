@@ -40310,6 +40310,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer the question about this draft first'**
   String get composerDraftBlockedReason;
+
+  /// Commands and agents sheet: the subtitle under the title while the commands list shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Run an action in this conversation, or a command from this server'**
+  String get commandLauncherSubtitle;
+
+  /// Commands and agents sheet: shown when the session's agent (Codex, Claude Code) cannot list its own slash commands, so only the app's actions appear.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent can\'t list its own commands here yet. These are the app\'s actions.'**
+  String get commandLauncherAgentCommandsUnavailable;
+
+  /// Team conversation Now line: a task given to the team has not been picked up after several minutes. elapsed is a short duration such as '12 min'.
+  ///
+  /// In en, this message translates to:
+  /// **'Still waiting for the team to plan this · {elapsed}'**
+  String teamChatNowPendingSlow(String elapsed);
+
+  /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn\'t take this task'**
+  String get teamChatRefusedTitle;
+
+  /// Team conversation: button on the refused-task notice that sends the same task to the team again.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the task again'**
+  String get teamChatRefusedRetry;
+
+  /// Team conversation: page state when the task this page shows is no longer listed by the team.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is no longer on the team'**
+  String get teamChatGoneTitle;
+
+  /// Team conversation: body under the removed-task title.
+  ///
+  /// In en, this message translates to:
+  /// **'It may have been removed on the team\'s computer. The AI Team page lists the tasks it has now.'**
+  String get teamChatGoneBody;
+
+  /// Team conversation: button on the removed-task page that opens the AI Team page.
+  ///
+  /// In en, this message translates to:
+  /// **'Open AI Team page'**
+  String get teamChatGoneOpenTeam;
 }
 
 class _AppLocalizationsDelegate

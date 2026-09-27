@@ -29753,5 +29753,43 @@
   "composerDraftBlockedReason": "Answer the question about this draft first",
   "@composerDraftBlockedReason": {
     "description": "Composer: typing waits while the person decides what to do with a recovered draft."
+  },
+  "commandLauncherSubtitle": "Run an action in this conversation, or a command from this server",
+  "@commandLauncherSubtitle": {
+    "description": "Commands and agents sheet: the subtitle under the title while the commands list shows."
+  },
+  "commandLauncherAgentCommandsUnavailable": "This agent can't list its own commands here yet. These are the app's actions.",
+  "@commandLauncherAgentCommandsUnavailable": {
+    "description": "Commands and agents sheet: shown when the session's agent (Codex, Claude Code) cannot list its own slash commands, so only the app's actions appear."
+  },
+  "teamChatNowPendingSlow": "Still waiting for the team to plan this · {elapsed}",
+  "@teamChatNowPendingSlow": {
+    "description": "Team conversation Now line: a task given to the team has not been picked up after several minutes. elapsed is a short duration such as '12 min'.",
+    "placeholders": {
+      "elapsed": {
+        "type": "String",
+        "example": "12 min"
+      }
+    }
+  },
+  "teamChatRefusedTitle": "The team didn't take this task",
+  "@teamChatRefusedTitle": {
+    "description": "Team conversation: title of the notice shown when the team refused a task that was just given to it."
+  },
+  "teamChatRefusedRetry": "Send the task again",
+  "@teamChatRefusedRetry": {
+    "description": "Team conversation: button on the refused-task notice that sends the same task to the team again."
+  },
+  "teamChatGoneTitle": "This task is no longer on the team",
+  "@teamChatGoneTitle": {
+    "description": "Team conversation: page state when the task this page shows is no longer listed by the team."
+  },
+  "teamChatGoneBody": "It may have been removed on the team's computer. The AI Team page lists the tasks it has now.",
+  "@teamChatGoneBody": {
+    "description": "Team conversation: body under the removed-task title."
+  },
+  "teamChatGoneOpenTeam": "Open AI Team page",
+  "@teamChatGoneOpenTeam": {
+    "description": "Team conversation: button on the removed-task page that opens the AI Team page."
   }
 }
