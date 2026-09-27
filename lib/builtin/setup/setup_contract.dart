@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../state/download_size.dart';
+
 /// The shared contract of the phone setup engine
 /// (docs/design/phone-setup-v2-2026-09-24.md). Screens depend on these types
 /// only; the engine implements [SetupEngine]. Nothing here knows about any
@@ -25,6 +27,7 @@ class SetupComponent {
     this.defaultOn = false,
     this.estimatedSeconds = 60,
     this.downloadBytes,
+    this.downloadSize = const DownloadSize.unknown(),
     this.removeScript,
     this.presenceScript,
     this.sizeScript,
@@ -53,7 +56,13 @@ class SetupComponent {
 
   /// Measured on a mid-range phone; weights the overall bar and the ETA.
   final int estimatedSeconds;
+
+  /// Display/preflight estimate only. Never use this for mobile consent.
   final int? downloadBytes;
+
+  /// Trusted payload evidence for consent. Unknown unless a pinned manifest
+  /// covers this installation; apt/npm estimates and HEAD overrides are not it.
+  final DownloadSize downloadSize;
 
   /// Exit 0 = installed and healthy; the last line of output is its version.
   final String checkScript;
@@ -91,37 +100,50 @@ class SetupComponent {
 
   /// The same component with [bytes] as its download size: an app-side
   /// component knows its real size only once it has asked the device.
-  SetupComponent withDownloadBytes(int? bytes) => SetupComponent(
-    id: id,
-    title: title,
-    shortTitle: shortTitle,
-    checkScript: checkScript,
-    installScript: installScript,
-    dependsOn: dependsOn,
-    required: required,
-    defaultOn: defaultOn,
-    estimatedSeconds: estimatedSeconds,
-    downloadBytes: bytes,
-    removeScript: removeScript,
-    presenceScript: presenceScript,
-    sizeScript: sizeScript,
-    why: why,
-    summary: summary,
-    native: native,
-    jobStep: jobStep,
-    app: app,
-  );
+  SetupComponent withDownloadBytes(int? bytes, {DownloadSize? evidence}) =>
+      SetupComponent(
+        id: id,
+        title: title,
+        shortTitle: shortTitle,
+        checkScript: checkScript,
+        installScript: installScript,
+        dependsOn: dependsOn,
+        required: required,
+        defaultOn: defaultOn,
+        estimatedSeconds: estimatedSeconds,
+        downloadBytes: bytes,
+        downloadSize: evidence ?? downloadSize,
+        removeScript: removeScript,
+        presenceScript: presenceScript,
+        sizeScript: sizeScript,
+        why: why,
+        summary: summary,
+        native: native,
+        jobStep: jobStep,
+        app: app,
+      );
+
+  /// Keep the selected app component's payload evidence with its display size.
+  SetupComponent withAppOffer(SetupAppOffer offer) =>
+      withDownloadBytes(offer.downloadBytes, evidence: offer.downloadSize);
 }
 
 /// What an app-side component offers this phone, from [SetupAppComponent.offer].
 @immutable
 class SetupAppOffer {
-  const SetupAppOffer({required this.downloadBytes, this.installed = false});
+  const SetupAppOffer({
+    required this.downloadBytes,
+    this.installed = false,
+    this.downloadSize = const DownloadSize.unknown(),
+  });
 
   /// What installing it downloads (for an installed one, what removing it
   /// frees).
   final int downloadBytes;
   final bool installed;
+
+  /// Payload for a new install; independent of removal/storage display bytes.
+  final DownloadSize downloadSize;
 }
 
 /// Where an app-side install is, for the progress row.

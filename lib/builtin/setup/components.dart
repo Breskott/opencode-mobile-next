@@ -1,8 +1,11 @@
+import 'dart:ffi' show Abi;
+
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../../termux/opencode_ubuntu_setup.dart';
 import '../../voice/model_manifest.dart';
+import '../../state/download_size.dart';
 import '../builtin_linux.dart';
 import 'aiteam_scripts.dart';
 import 'setup_contract.dart';
@@ -130,6 +133,8 @@ List<SetupComponent> setupComponents(
       // Mostly the three downloads; the ETA's pace scaling corrects it.
       estimatedSeconds: 150,
       downloadBytes: AiTeamPins.deviceDownloadBytes,
+      // apt dependencies add an unpinned amount to these pinned archives.
+      downloadSize: aiTeamSetupDownloadSize(),
       checkScript: AiTeamScripts.checkScript,
       installScript: AiTeamScripts.installScript(
         downloading: l10n.aiteamComponentStageDownloading('{index}', '{total}'),
@@ -178,6 +183,20 @@ List<SetupComponent> setupComponents(
         app: VoiceSetupComponent.instance,
       ),
   ];
+}
+
+/// Only explicit supported Android architectures select trusted archive pins.
+/// This is a full-install payload lower bound, not remaining bytes after cache
+/// reuse. The estimated extra apt packages are deliberately excluded.
+DownloadSize aiTeamSetupDownloadSize({Abi? abi}) {
+  final downloads = switch (abi ?? Abi.current()) {
+    Abi.androidArm64 => AiTeamPins.arm64,
+    Abi.androidX64 => AiTeamPins.x64,
+    _ => null,
+  };
+  return downloads == null
+      ? const DownloadSize.unknown()
+      : DownloadSize.lowerBound(AiTeamPins.bytesFor(downloads));
 }
 
 const _mb = 1000 * 1000;

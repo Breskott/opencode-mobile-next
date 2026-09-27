@@ -88,7 +88,7 @@ void main() {
       expect(find.textContaining('opencode2 pair'), findsWidgets);
       expect(find.text('Paste it instead'), findsOneWidget);
       // Retryable, because Android will ask again.
-      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Allow camera'), findsOneWidget);
       expect(camera.settingsOpened, 0);
     });
 
@@ -100,7 +100,7 @@ void main() {
       expect(camera.permissionRequests, 1);
 
       camera.permission = CameraPermission.permanentlyDenied;
-      await tester.tap(find.text('Try again'));
+      await tester.tap(find.text('Allow camera'));
       await tester.pumpAndSettle();
 
       expect(camera.permissionRequests, 2);
@@ -120,8 +120,8 @@ void main() {
         find.byKey(const ValueKey('pairing-scanner-blocked')),
         findsOneWidget,
       );
-      // No "Try again": Android will not ask, and offering it would lie.
-      expect(find.text('Try again'), findsNothing);
+      // No permission retry: Android will not ask, and offering it would lie.
+      expect(find.text('Allow camera'), findsNothing);
       expect(find.text('Paste it instead'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('pairing-scanner-primary')));

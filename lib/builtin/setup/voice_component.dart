@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../state/download_size.dart';
 import '../../voice/model_download.dart';
 import '../../voice/model_manager.dart';
 import '../../voice/model_manifest.dart';
@@ -82,7 +83,13 @@ class VoiceSetupComponent implements SetupAppComponent {
     final installed = manager.isInstalled(manager.selectedPack);
     final bytes = installed ? _installedBytes(manager) : pack.downloadBytes;
     _lastOfferBytes = pack.downloadBytes;
-    return SetupAppOffer(downloadBytes: bytes, installed: installed);
+    return SetupAppOffer(
+      downloadBytes: bytes,
+      installed: installed,
+      downloadSize: manager.isInstalled(pack)
+          ? const DownloadSize.exact(0)
+          : DownloadSize.voicePack(pack),
+    );
   }
 
   static int _installedBytes(VoiceModelManager manager) => [
