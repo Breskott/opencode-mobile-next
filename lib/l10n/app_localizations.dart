@@ -3194,10 +3194,10 @@ abstract class AppLocalizations {
   /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.'**
   String get readAloudConsentDetail;
 
-  /// Accept speech disclosure and request installed voice metadata
+  /// Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)
   ///
   /// In en, this message translates to:
-  /// **'Choose voice'**
+  /// **'Read aloud'**
   String get readAloudContinue;
 
   /// Unsupported platform, without native calls
@@ -20748,12 +20748,6 @@ abstract class AppLocalizations {
   /// **'Copy output'**
   String get teamUiAgentOutputCopy;
 
-  /// Live output body when the session has produced no text
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing yet'**
-  String get teamUiAgentOutputEmpty;
-
   /// Live output status line once the host stopped serving the session; cached text stays below
   ///
   /// In en, this message translates to:
@@ -21630,10 +21624,10 @@ abstract class AppLocalizations {
   /// **'Restart or reassign'**
   String get teamUiGateAnswerRunAgent;
 
-  /// Failed-run sheet action opening the agent output page
+  /// Failed-run sheet action opening the agent's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'View logs'**
+  /// **'Watch the agent'**
   String get teamUiGateAnswerRunLogs;
 
   /// Failed-run sheet action cancelling the run; two-step in the error tone
@@ -21767,24 +21761,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task sent to an agent'**
   String get teamUiControlCreateWork;
-
-  /// Title of the message sheet; {agent} is the agent name
-  ///
-  /// In en, this message translates to:
-  /// **'Message {agent}'**
-  String teamUiControlMessageTitle(String agent);
-
-  /// Hint in the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Tell the agent what to do next'**
-  String get teamUiControlMessageHint;
-
-  /// Send button of the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get teamUiControlMessageSend;
 
   /// Title of the two-step Stop confirmation; {agent} is the agent name
   ///
@@ -22110,10 +22086,10 @@ abstract class AppLocalizations {
   /// **'The host refused the objective: {reason}'**
   String teamUiStartRunRefused(String reason);
 
-  /// Button on the pending card opening the planner's live output page
+  /// Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Planner output'**
+  /// **'Watch the planner'**
   String get teamUiStartRunPlannerOutput;
 
   /// Button on the pending card hiding it for good
@@ -22529,10 +22505,10 @@ abstract class AppLocalizations {
   /// **'How the host dispatches'**
   String get teamUiCycleActionHow;
 
-  /// Dispatch cycle action: opens the agent output screen for the agent on the item
+  /// Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Open agent output'**
+  /// **'Watch the agent'**
   String get teamUiCycleActionOpenOutput;
 
   /// Dispatch cycle action: nudges the rig's merge agent (Gas City refinery); refinery is the Gas City term
@@ -28829,41 +28805,47 @@ abstract class AppLocalizations {
   /// **'This conversation fills in as the agent works.'**
   String get chatWatchEmptyBody;
 
-  /// Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team
+  /// Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)
   ///
   /// In en, this message translates to:
-  /// **'Watching {name} · {role} · AI Team'**
-  String teamWatchBanner(String name, String role);
+  /// **'Watching {name} · {role} · {state}'**
+  String teamWatchBanner(String name, String role, String state);
 
-  /// Chat status line in watching mode when the agent has no name of its own: its role in plain words
+  /// Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it
   ///
   /// In en, this message translates to:
-  /// **'Watching the {role} · AI Team'**
-  String teamWatchBannerRole(String role);
+  /// **'Watching the {role} · {state}'**
+  String teamWatchBannerRole(String role, String state);
 
-  /// Where the chat composer was, in watching mode: why there is no text field
+  /// Composer hint while watching an AI Team agent's conversation: the words go to the agent through the AI Team. name is the agent's own name.
   ///
   /// In en, this message translates to:
-  /// **'You\'re watching. Your message goes to it through the AI Team, never into this conversation.'**
-  String get teamWatchNote;
+  /// **'Message {name}…'**
+  String teamWatchComposerHint(String name);
 
-  /// Where the chat composer was, in watching mode, when the team takes no messages from the phone
+  /// Composer hint while watching an AI Team worker that has no name of its own.
   ///
   /// In en, this message translates to:
-  /// **'You\'re watching. This team can\'t be messaged from here.'**
-  String get teamWatchNoteNoMessage;
+  /// **'Message the worker…'**
+  String get teamWatchComposerHintWorker;
 
-  /// Watching mode: the one action in place of the composer, for a worker
+  /// Composer hint while watching an AI Team agent (not a worker) that has no name of its own.
   ///
   /// In en, this message translates to:
-  /// **'Message the worker'**
-  String get teamWatchMessageWorker;
+  /// **'Message this agent…'**
+  String get teamWatchComposerHintAgent;
 
-  /// Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)
+  /// Top bar action while watching an AI Team agent's conversation: opens the agent's own page (its state, controls and technical details). name is the agent's own name.
   ///
   /// In en, this message translates to:
-  /// **'Message this agent'**
-  String get teamWatchMessageAgent;
+  /// **'About {name}'**
+  String teamWatchAbout(String name);
+
+  /// Top bar action while watching an AI Team agent with no name of its own: opens its own page. role is its role in plain words (Worker).
+  ///
+  /// In en, this message translates to:
+  /// **'About the {role}'**
+  String teamWatchAboutRole(String role);
 
   /// Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder
   ///
@@ -34779,12 +34761,6 @@ abstract class AppLocalizations {
   /// **'This phone can\'t pause, stop or message {agent} on this host yet. Run the team\'s host front on the computer to control it from here.'**
   String teamAgentScreenControlsElsewhere(String agent);
 
-  /// Message-an-agent sheet: the field's label.
-  ///
-  /// In en, this message translates to:
-  /// **'Your message'**
-  String get teamAgentScreenMessageLabel;
-
   /// Gate sheet: notice on a destructive confirmation.
   ///
   /// In en, this message translates to:
@@ -34868,12 +34844,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agent id'**
   String get teamAgentScreenLabelId;
-
-  /// Message-an-agent sheet: why Send is off while the field is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'Type a message first'**
-  String get teamAgentScreenMessageFirst;
 
   /// Gate sheet free-text question: why Send is off while the field is empty.
   ///
@@ -38070,7 +38040,7 @@ abstract class AppLocalizations {
   /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
   ///
   /// In en, this message translates to:
-  /// **'The team didn\'t take this task'**
+  /// **'Task not taken'**
   String get teamChatRefusedTitle;
 
   /// Team conversation: button on the refused-task notice that sends the same task to the team again.
@@ -38082,7 +38052,7 @@ abstract class AppLocalizations {
   /// Team conversation: page state when the task this page shows is no longer listed by the team.
   ///
   /// In en, this message translates to:
-  /// **'This task is no longer on the team'**
+  /// **'Task no longer listed'**
   String get teamChatGoneTitle;
 
   /// Team conversation: body under the removed-task title.
@@ -38694,7 +38664,7 @@ abstract class AppLocalizations {
   /// Permission request sheet: the risky switch that saves an always-allow rule.
   ///
   /// In en, this message translates to:
-  /// **'Always allow requests like this'**
+  /// **'Always allow these requests'**
   String get chatRequestAlwaysTitle;
 
   /// Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.

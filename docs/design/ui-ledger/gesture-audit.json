@@ -740,12 +740,12 @@
       "changed": false
     },
     {
-      "page": "team-agent-output",
-      "element": "team-agent-output-scroll",
+      "page": "chat-watching-live",
+      "element": "chat-watching-live-scroll",
       "gesture": "drag the output away from the end",
       "action": "stop following the output",
-      "visibleEquivalent": "visible Follow switch (team-agent-output-follow) toggles the same flag",
-      "evidence": "lib/ui/screens/team/agent_output_screen.dart:201",
+      "visibleEquivalent": "not a feature behind a gesture: scroll tracking pauses follow-latest while the person reads; the visible Jump to latest pill (chat-watching-live-jump) resumes it, as in the chat",
+      "evidence": "lib/ui/screens/chat/team_watch_live.dart:278",
       "changed": false
     },
     {

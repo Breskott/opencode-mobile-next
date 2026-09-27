@@ -429,9 +429,6 @@
     "builtinServerTitle": {
       "product name OpenCode": 1
     },
-    "chatRequestAlwaysTitle": {
-      "title over four words": 1
-    },
     "chatUiAskOpenCode": {
       "product name OpenCode": 1
     },
@@ -942,12 +939,6 @@
     },
     "teamBoardStatusReadOnly": {
       "noun sentence host": 1
-    },
-    "teamChatGoneTitle": {
-      "title over four words": 1
-    },
-    "teamChatRefusedTitle": {
-      "title over four words": 1
     },
     "teamChatStopConfirmBody": {
       "body over two sentences": 1

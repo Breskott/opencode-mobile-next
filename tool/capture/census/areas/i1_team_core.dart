@@ -13,7 +13,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart'
     show TeamConversationScreen;
@@ -21,6 +20,8 @@ import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamWatchLiveScreen;
 
 import '../census_core.dart';
 import '../support/i1_team_core_world.dart';
@@ -468,16 +469,6 @@ final i1TeamCoreArea = CensusArea(
       await kit.tapKey('team-agent-details');
       kit.expectVisible(find.byKey(const ValueKey('team-agent-details-sheet')));
     }),
-    CensusShot('team-agent-message-sheet', (kit) async {
-      final (team, _) = await _team(kit);
-      await _agent(kit, team);
-      await kit.tapKey('team-agent-control-message');
-      await kit.enterText(
-        find.byKey(const ValueKey('team-agent-message-field')),
-        'Use SQLite for the drafts and keep the schema in one file.',
-      );
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-message-sheet')));
-    }),
     CensusShot('team-agent-reassign-sheet', (kit) async {
       final (team, _) = await _team(kit);
       await _agent(kit, team);
@@ -500,27 +491,29 @@ final i1TeamCoreArea = CensusArea(
         find.byKey(const ValueKey('team-agent-restart-confirm')),
       );
     }),
-    CensusShot('team-agent-output', state: 'live', (kit) async {
+    // team-agent-output merged into the chat's watching mode (slice-P3.6):
+    // the same watching page drawn from the team's live output.
+    CensusShot('chat-watching-live', state: 'live', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'fox'));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-text')));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live-text')));
     }, note: 'The recorded polecat transcript, following the end.'),
-    CensusShot('team-agent-output', state: 'ended', (kit) async {
+    CensusShot('chat-watching-live', state: 'ended', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'wolf'));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'wolf'));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
     }, note: 'A session the host no longer serves (404).'),
-    CensusShot('team-agent-output', state: 'scrolled-up', (kit) async {
+    CensusShot('chat-watching-live', state: 'scrolled-up', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'fox'));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
       await kit.tester.drag(
-        find.byKey(const ValueKey('team-agent-output-list')),
+        find.byKey(const ValueKey('chat-watching-live-list')),
         const Offset(0, 600),
       );
       await kit.settle();
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
-    }, note: 'Dragged away from the end: Follow off, Jump to latest.'),
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+    }, note: 'Dragged away from the end: Jump to latest.'),
 
     // -- Dispatch cycle --------------------------------------------------------
     CensusShot('embedded-team-cycle-strip', state: 'host-not-started', (

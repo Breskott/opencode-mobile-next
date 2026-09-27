@@ -55,7 +55,8 @@ import '../app_diagnostics_screen.dart' show openReportProblem;
 import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_receipt.dart' show teamGateMutation;
 import '../../widgets/team_vocabulary.dart';
-import 'agent_output_screen.dart';
+import '../team_conversation/team_conversation.dart'
+    show openTeamAgentConversationById;
 import 'agent_screen.dart';
 import 'work_sheet.dart';
 
@@ -151,12 +152,7 @@ Future<void> showGateSheet(
       },
       onOpenLogs: (id) {
         Navigator.of(sheetContext).pop();
-        unawaited(
-          pushKitPage<void>(
-            context,
-            (_) => AgentOutputScreen(controller: controller, agentId: id),
-          ),
-        );
+        unawaited(openTeamAgentConversationById(context, controller, id));
       },
       onReport: (report) {
         Navigator.of(sheetContext).pop();
@@ -188,7 +184,7 @@ class GateSheet extends StatelessWidget {
   /// null.
   final ValueChanged<String>? onOpenAgent;
 
-  /// Opens the agent's output page (View logs).
+  /// Opens the agent's conversation (Watch the agent).
   final ValueChanged<String>? onOpenLogs;
 
   /// Opens Report a problem with the failed run attached, its log when

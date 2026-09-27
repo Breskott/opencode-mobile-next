@@ -14,7 +14,7 @@
 ///
 /// Built from kit parts only (shared-team-1): [KitStatusMark] for every
 /// step, [KitNotice] for the stall, [KitText] for words, [showKitSheet] for
-/// the How sheet and [KitPageRoute] for the agent's output. The kit's
+/// the How sheet; the agent's output is its conversation. The kit's
 /// working mark owns its own motion and holds still under reduced motion,
 /// so the strip no longer runs a pulse of its own.
 ///
@@ -23,6 +23,8 @@
 /// is deferred to slice-P5.1 (the team's Now line). This is the kit-only
 /// rebuild of today's layout.
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -33,12 +35,12 @@ import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_motion.dart';
 import '../kit/kit_notice.dart';
-import '../kit/kit_page_route.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_status_mark.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
-import '../screens/team/agent_output_screen.dart';
+import '../screens/team_conversation/team_conversation.dart'
+    show openTeamAgentConversationById;
 import 'team_controls.dart';
 import 'team_now.dart' show teamAgentTitle;
 import 'team_vocabulary.dart';
@@ -200,12 +202,10 @@ class TeamCycleStripState extends State<TeamCycleStrip> {
 
   Future<void> _refresh() => _run(widget.controller.refresh);
 
-  void _openOutput(String agentId) {
-    pushKitPage<void>(
-      context,
-      (_) => AgentOutputScreen(controller: widget.controller, agentId: agentId),
-    );
-  }
+  /// The agent's conversation (watching), or its live output.
+  void _openOutput(String agentId) => unawaited(
+    openTeamAgentConversationById(context, widget.controller, agentId),
+  );
 
   // revamp: merge-into:team-agent-stop-confirm-sheet (screen-team-1)
   Future<void> _stop(String agentId) async {

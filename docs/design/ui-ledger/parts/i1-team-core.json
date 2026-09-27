@@ -406,7 +406,7 @@
       "widget": "TeamAgentsScreen",
       "presentedBy": [],
       "line": 26,
-      "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens AgentScreen.",
+      "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens the agent's conversation in watching mode (slice-P3.6); the agent's own page is that conversation's top-bar action (About <name>).",
       "reachedFrom": [
         {
           "page": "team-home",
@@ -425,9 +425,9 @@
           "file": "lib/ui/widgets/team_agent_row.dart",
           "line": 113,
           "action": "navigate",
-          "target": "team-agent",
-          "targetWidget": "AgentScreen",
-          "effect": "TeamAgentRow.onTap -> row()'s onTap -> _openAgent(agent): widget.onOpenAgent ?? Navigator.push(AgentScreen(controller, agentId: agent.id, now: widget.now)) (team_agents_screen.dart:68-80, 151).",
+          "target": "chat",
+          "targetWidget": "openTeamAgentConversation",
+          "effect": "_openAgent(agent): widget.onOpenAgent when given, else openTeamAgentConversation(context, agent, team: controller): ChatScreen in watching mode, or TeamWatchLiveScreen (chat-watching-live) when the session cannot be read.",
           "gates": [],
           "destructive": false
         },
@@ -499,7 +499,7 @@
       "widget": "AgentScreen",
       "presentedBy": [],
       "line": 54,
-      "purpose": "Agent detail: state header, identity, runtime, current work, activity step log, live output entry, capability-gated controls and technical details.",
+      "purpose": "Agent detail, a short status page (slice-P3.6): state from its session, what it works on, the newest step, capability-gated controls in the overflow and technical details. Its one pinned action, Open conversation, opens the worker's conversation in watching mode (chat), or the same watching page drawn from the team's live output (chat-watching-live) when the connected server cannot read the session; messaging the worker happens in that conversation's composer.",
       "reachedFrom": [
         {
           "page": "?",
@@ -524,6 +524,21 @@
         "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
       ],
       "elements": [
+        {
+          "id": "team-agent-open-conversation",
+          "type": "button",
+          "label": "Open conversation",
+          "key": "team-agent-open-conversation",
+          "line": 454,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "openTeamAgentConversation",
+          "effect": "_openConversation(agent): openTeamAgentConversation(context, agent, team, lookup: _lookup, details: false) pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or TeamWatchLiveScreen (chat-watching-live) with a note saying why when the agent's session is not on the connected server. details: false, so the watching page offers no way back to this page (Back returns here).",
+          "gates": [
+            "the agent is listed and the team screen state is ready"
+          ],
+          "destructive": false
+        },
         {
           "id": "team-agent-refresh",
           "type": "icon-button",
@@ -626,36 +641,6 @@
           "destructive": false
         },
         {
-          "id": "team-agent-open-output",
-          "type": "list-tile",
-          "label": "Live output · <Live|Connecting|Ended|Unavailable>",
-          "key": "team-agent-open-output",
-          "line": 1435,
-          "action": "navigate",
-          "target": "team-agent-output",
-          "targetWidget": "AgentOutputScreen",
-          "effect": "_openOutput() (line 144): Navigator.push(AgentOutputScreen(controller, agentId)).",
-          "gates": [
-            "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-control-message",
-          "type": "button",
-          "label": "Message",
-          "key": "team-agent-control-message",
-          "line": 766,
-          "action": "open-sheet",
-          "target": "team-agent-message-sheet",
-          "targetWidget": "_MessageSheet",
-          "effect": "_message(): opens _MessageSheet; on a non-empty result controller.messageAgent(agent.id, text). Disabled while _busy.",
-          "gates": [
-            "controller.capabilities.controlMessage"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-agent-control-nudge",
           "type": "button",
           "label": "Nudge",
@@ -729,21 +714,6 @@
             "controller.capabilities.controlAgent"
           ],
           "destructive": true
-        },
-        {
-          "id": "team-agent-control-reassign",
-          "type": "button",
-          "label": "Reassign work…",
-          "key": "team-agent-control-reassign",
-          "line": 810,
-          "action": "open-sheet",
-          "target": "team-agent-reassign-sheet",
-          "targetWidget": "_ReassignSheet",
-          "effect": "_reassign(): opens _ReassignSheet with the host's ready items; on a pick controller.assignWork(workId, agentId: agent.id).",
-          "gates": [
-            "controller.capabilities.controlAssign"
-          ],
-          "destructive": false
         },
         {
           "id": "team-agent-receipt-retry",
@@ -849,94 +819,6 @@
       "sheetKey": "team-agent-details-sheet"
     },
     {
-      "id": "team-agent-message-sheet",
-      "title": "Message {agent}",
-      "kind": "sheet",
-      "file": "lib/ui/screens/team/agent_screen.dart",
-      "widget": "_MessageSheet",
-      "presentedBy": [
-        "_message"
-      ],
-      "line": 843,
-      "purpose": "Composer sheet for sending words to an agent (no attachments).",
-      "reachedFrom": [
-        {
-          "page": "team-agent",
-          "element": "team-agent-control-message"
-        }
-      ],
-      "gates": [
-        "controller.capabilities.controlMessage"
-      ],
-      "elements": [
-        {
-          "id": "team-agent-message-sheet-field",
-          "type": "text-field",
-          "label": "Tell the agent what to do next",
-          "key": "team-agent-message-field",
-          "file": "lib/ui/widgets/team_controls.dart",
-          "line": 239,
-          "action": "other",
-          "target": null,
-          "effect": "TeamComposerField TextField (autofocus, multi-line) bound to _text.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-message-sheet-send",
-          "type": "icon-button",
-          "label": "Send",
-          "key": "team-agent-message-send",
-          "file": "lib/ui/widgets/team_controls.dart",
-          "line": 261,
-          "action": "submit",
-          "target": null,
-          "effect": "_send() (agent_screen.dart:861): pops the sheet with the trimmed text; _ControlsState._message then calls controller.messageAgent(agent.id, text). Disabled while the text is empty.",
-          "gates": [],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "team-agent-message-sheet"
-    },
-    {
-      "id": "team-agent-reassign-sheet",
-      "title": "Reassign work to {agent}",
-      "kind": "sheet",
-      "file": "lib/ui/screens/team/agent_screen.dart",
-      "widget": "_ReassignSheet",
-      "presentedBy": [
-        "_reassign"
-      ],
-      "line": 899,
-      "purpose": "Picker of the host's ready work items to assign to this agent.",
-      "reachedFrom": [
-        {
-          "page": "team-agent",
-          "element": "team-agent-control-reassign"
-        }
-      ],
-      "gates": [
-        "controller.capabilities.controlAssign"
-      ],
-      "elements": [
-        {
-          "id": "team-agent-reassign-sheet-item",
-          "type": "list-tile",
-          "label": "<work title> · Work · bead {id}",
-          "key": "team-agent-reassign-<item.id>",
-          "line": 953,
-          "action": "mutate",
-          "target": null,
-          "effect": "Navigator.pop(item.id); _ControlsState._reassign then calls controller.assignWork(workId, agentId: agent.id).",
-          "gates": [
-            "ready.isNotEmpty (snapshot.work with state == WorkState.ready, excluding the agent's current item); else an empty line"
-          ],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "team-agent-reassign-sheet"
-    },
-    {
       "id": "team-agent-stop-confirm-sheet",
       "title": "Stop {agent}?",
       "kind": "sheet",
@@ -1037,95 +919,6 @@
         }
       ],
       "sheetKey": "team-agent-restart-confirm"
-    },
-    {
-      "id": "team-agent-output",
-      "title": "Live output",
-      "kind": "screen",
-      "file": "lib/ui/screens/team/agent_output_screen.dart",
-      "widget": "AgentOutputScreen",
-      "presentedBy": [],
-      "line": 23,
-      "purpose": "Live tail of an agent's terminal output with follow, copy and jump-to-latest.",
-      "reachedFrom": [
-        {
-          "page": "team-agent",
-          "element": "team-agent-open-output"
-        },
-        {
-          "page": "embedded-team-cycle-strip",
-          "element": "embedded-team-cycle-strip-open-output"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "TeamPlanningCard._openPlannerOutput",
-          "file": "lib/ui/screens/team/start_run_sheet.dart",
-          "line": 478
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "showGateSheet (onOpenLogs)",
-          "file": "lib/ui/screens/team/gate_sheet.dart",
-          "line": 88
-        }
-      ],
-      "gates": [
-        "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-      ],
-      "elements": [
-        {
-          "id": "team-agent-output-copy",
-          "type": "icon-button",
-          "label": "Copy output",
-          "key": "team-agent-output-copy",
-          "line": 145,
-          "action": "copy",
-          "target": null,
-          "effect": "Clipboard.setData(tail.text) + 'Copied' snackbar; disabled while the text is empty.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-output-follow",
-          "type": "toggle",
-          "label": "Follow",
-          "key": "team-agent-output-follow",
-          "line": 200,
-          "action": "other",
-          "target": null,
-          "effect": "_setFollow(value): view state; when on, jumps to the end after each frame. Disabled unless `!tail.ended && tail.available`.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-output-scroll",
-          "type": "gesture",
-          "label": "[drag the output away from the end]",
-          "key": "team-agent-output-list",
-          "line": 211,
-          "action": "other",
-          "target": null,
-          "effect": "_onScroll: a user drag more than 24px above maxScrollExtent sets _follow = false.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-output-jump",
-          "type": "button",
-          "label": "Jump to latest",
-          "key": "team-agent-output-jump",
-          "line": 250,
-          "action": "other",
-          "target": null,
-          "effect": "_setFollow(true): resumes following and jumps to the end.",
-          "gates": [
-            "!_follow && canFollow (`!tail.ended && tail.available`)"
-          ],
-          "destructive": false
-        }
-      ]
     },
     {
       "id": "team-cycle-how-sheet",
@@ -1263,13 +1056,13 @@
         {
           "id": "embedded-team-cycle-strip-open-output",
           "type": "button",
-          "label": "Open agent output",
+          "label": "Watch the agent",
           "key": "team-cycle-action-output",
           "line": 725,
           "action": "navigate",
-          "target": "team-agent-output",
-          "targetWidget": "AgentOutputScreen",
-          "effect": "_openOutput(agentId): Navigator.push(AgentOutputScreen); disabled when controller.cycleAgentFor(workId) == null.",
+          "target": "chat",
+          "targetWidget": "openTeamAgentConversationById",
+          "effect": "_openOutput(agentId): openTeamAgentConversationById(context, controller, agentId): the agent's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live); disabled when controller.cycleAgentFor(workId) == null.",
           "gates": [
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason in {providerLimit, workingLong}"
@@ -2018,7 +1811,7 @@
           "action": "navigate",
           "target": "chat",
           "targetWidget": "ChatScreen",
-          "effect": "_TeamFamilyStrip chip onTap -> onOpen(agent) -> _openAgent(agent) -> openTeamAgentConversation: pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or AgentOutputScreen (team-agent-output) as Live output when the agent's own OpenCode session cannot be found on the connected server.",
+          "effect": "_TeamFamilyStrip chip onTap -> onOpen(agent) -> _openAgent(agent) -> openTeamAgentConversation: pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or TeamWatchLiveScreen (chat-watching-live), the same watching page drawn from the team's live output, when the agent's own OpenCode session cannot be found on the connected server.",
           "gates": [
             "run != null && agents.isNotEmpty"
           ],

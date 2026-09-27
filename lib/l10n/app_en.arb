@@ -926,9 +926,9 @@
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
-  "readAloudContinue": "Choose voice",
+  "readAloudContinue": "Read aloud",
   "@readAloudContinue": {
-    "description": "Accept speech disclosure and request installed voice metadata"
+    "description": "Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)"
   },
   "readAloudUnsupported": "Read-aloud is not available on this platform.",
   "@readAloudUnsupported": {
@@ -13518,10 +13518,6 @@
   "@teamUiAgentOutputCopy": {
     "description": "Live output app bar button tooltip"
   },
-  "teamUiAgentOutputEmpty": "Nothing yet",
-  "@teamUiAgentOutputEmpty": {
-    "description": "Live output body when the session has produced no text"
-  },
   "teamUiAgentOutputEnded": "Session ended · output no longer on the host",
   "@teamUiAgentOutputEnded": {
     "description": "Live output status line once the host stopped serving the session; cached text stays below"
@@ -14233,9 +14229,9 @@
   "@teamUiGateAnswerRunAgent": {
     "description": "Failed-run sheet action opening the agent screen where restart and reassign live"
   },
-  "teamUiGateAnswerRunLogs": "View logs",
+  "teamUiGateAnswerRunLogs": "Watch the agent",
   "@teamUiGateAnswerRunLogs": {
-    "description": "Failed-run sheet action opening the agent output page"
+    "description": "Failed-run sheet action opening the agent's conversation (watching), or its live output when the conversation cannot be read"
   },
   "teamUiGateAnswerRunCancel": "Stop work",
   "@teamUiGateAnswerRunCancel": {
@@ -14329,23 +14325,6 @@
   "teamUiControlCreateWork": "Task sent to an agent",
   "@teamUiControlCreateWork": {
     "description": "Receipt name of a direct task (TEAM-306): the work item created from the phone and handed to the project's agent pool"
-  },
-  "teamUiControlMessageTitle": "Message {agent}",
-  "@teamUiControlMessageTitle": {
-    "description": "Title of the message sheet; {agent} is the agent name",
-    "placeholders": {
-      "agent": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiControlMessageHint": "Tell the agent what to do next",
-  "@teamUiControlMessageHint": {
-    "description": "Hint in the message composer"
-  },
-  "teamUiControlMessageSend": "Send",
-  "@teamUiControlMessageSend": {
-    "description": "Send button of the message composer"
   },
   "teamUiControlStopConfirmTitle": "Stop {agent}?",
   "@teamUiControlStopConfirmTitle": {
@@ -14601,9 +14580,9 @@
       }
     }
   },
-  "teamUiStartRunPlannerOutput": "Planner output",
+  "teamUiStartRunPlannerOutput": "Watch the planner",
   "@teamUiStartRunPlannerOutput": {
-    "description": "Button on the pending card opening the planner's live output page"
+    "description": "Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read"
   },
   "teamUiStartRunDismiss": "Dismiss",
   "@teamUiStartRunDismiss": {
@@ -15042,9 +15021,9 @@
   "@teamUiCycleActionHow": {
     "description": "Dispatch cycle action and sheet title: opens three lines explaining the host's polling chain"
   },
-  "teamUiCycleActionOpenOutput": "Open agent output",
+  "teamUiCycleActionOpenOutput": "Watch the agent",
   "@teamUiCycleActionOpenOutput": {
-    "description": "Dispatch cycle action: opens the agent output screen for the agent on the item"
+    "description": "Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read"
   },
   "teamUiCycleActionNudgeRefinery": "Nudge refinery",
   "@teamUiCycleActionNudgeRefinery": {
@@ -19976,42 +19955,75 @@
   "@chatWatchEmptyBody": {
     "description": "Chat, watching an AI Team worker: body of the empty state"
   },
-  "teamWatchBanner": "Watching {name} · {role} · AI Team",
+  "teamWatchBanner": "Watching {name} · {role} · {state}",
   "@teamWatchBanner": {
-    "description": "Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team",
+    "description": "Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)",
     "placeholders": {
       "name": {
-        "type": "String"
+        "type": "String",
+        "example": "furiosa"
       },
       "role": {
-        "type": "String"
+        "type": "String",
+        "example": "Worker"
+      },
+      "state": {
+        "type": "String",
+        "example": "Working"
       }
     }
   },
-  "teamWatchBannerRole": "Watching the {role} · AI Team",
+  "teamWatchBannerRole": "Watching the {role} · {state}",
   "@teamWatchBannerRole": {
-    "description": "Chat status line in watching mode when the agent has no name of its own: its role in plain words",
+    "description": "Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it",
     "placeholders": {
       "role": {
-        "type": "String"
+        "type": "String",
+        "example": "Worker"
+      },
+      "state": {
+        "type": "String",
+        "example": "Working"
       }
     }
   },
-  "teamWatchNote": "You're watching. Your message goes to it through the AI Team, never into this conversation.",
-  "@teamWatchNote": {
-    "description": "Where the chat composer was, in watching mode: why there is no text field"
+  "teamWatchComposerHint": "Message {name}…",
+  "@teamWatchComposerHint": {
+    "description": "Composer hint while watching an AI Team agent's conversation: the words go to the agent through the AI Team. name is the agent's own name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "furiosa"
+      }
+    }
   },
-  "teamWatchNoteNoMessage": "You're watching. This team can't be messaged from here.",
-  "@teamWatchNoteNoMessage": {
-    "description": "Where the chat composer was, in watching mode, when the team takes no messages from the phone"
+  "teamWatchComposerHintWorker": "Message the worker…",
+  "@teamWatchComposerHintWorker": {
+    "description": "Composer hint while watching an AI Team worker that has no name of its own."
   },
-  "teamWatchMessageWorker": "Message the worker",
-  "@teamWatchMessageWorker": {
-    "description": "Watching mode: the one action in place of the composer, for a worker"
+  "teamWatchComposerHintAgent": "Message this agent…",
+  "@teamWatchComposerHintAgent": {
+    "description": "Composer hint while watching an AI Team agent (not a worker) that has no name of its own."
   },
-  "teamWatchMessageAgent": "Message this agent",
-  "@teamWatchMessageAgent": {
-    "description": "Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)"
+  "teamWatchAbout": "About {name}",
+  "@teamWatchAbout": {
+    "description": "Top bar action while watching an AI Team agent's conversation: opens the agent's own page (its state, controls and technical details). name is the agent's own name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "furiosa"
+      }
+    }
+  },
+  "teamWatchAboutRole": "About the {role}",
+  "@teamWatchAboutRole": {
+    "description": "Top bar action while watching an AI Team agent with no name of its own: opens its own page. role is its role in plain words (Worker).",
+    "placeholders": {
+      "role": {
+        "type": "String",
+        "example": "Worker"
+      }
+    }
   },
   "teamWatchFallbackUnreadable": "Its conversation can't be read from the server this app is connected to, so this is the team's live output.",
   "@teamWatchFallbackUnreadable": {
@@ -25338,10 +25350,6 @@
       }
     }
   },
-  "teamAgentScreenMessageLabel": "Your message",
-  "@teamAgentScreenMessageLabel": {
-    "description": "Message-an-agent sheet: the field's label."
-  },
   "gateSheetDestructiveBody": "The host marks this action as destructive. Approving it can't be undone from the phone.",
   "@gateSheetDestructiveBody": {
     "description": "Gate sheet: notice on a destructive confirmation."
@@ -25425,10 +25433,6 @@
   "teamAgentScreenLabelId": "Agent id",
   "@teamAgentScreenLabelId": {
     "description": "Agent page technical details: the label of the agent's id."
-  },
-  "teamAgentScreenMessageFirst": "Type a message first",
-  "@teamAgentScreenMessageFirst": {
-    "description": "Message-an-agent sheet: why Send is off while the field is empty."
   },
   "gateSheetSendNeedsText": "Type an answer first",
   "@gateSheetSendNeedsText": {
@@ -28317,7 +28321,7 @@
       }
     }
   },
-  "teamChatRefusedTitle": "The team didn't take this task",
+  "teamChatRefusedTitle": "Task not taken",
   "@teamChatRefusedTitle": {
     "description": "Team conversation: title of the notice shown when the team refused a task that was just given to it."
   },
@@ -28325,7 +28329,7 @@
   "@teamChatRefusedRetry": {
     "description": "Team conversation: button on the refused-task notice that sends the same task to the team again."
   },
-  "teamChatGoneTitle": "This task is no longer on the team",
+  "teamChatGoneTitle": "Task no longer listed",
   "@teamChatGoneTitle": {
     "description": "Team conversation: page state when the task this page shows is no longer listed by the team."
   },
@@ -28910,7 +28914,7 @@
   "@chatRequestNoConnection": {
     "description": "Chat request card: why Allow once and Reject are unavailable (no connection)."
   },
-  "chatRequestAlwaysTitle": "Always allow requests like this",
+  "chatRequestAlwaysTitle": "Always allow these requests",
   "@chatRequestAlwaysTitle": {
     "description": "Permission request sheet: the risky switch that saves an always-allow rule."
   },

@@ -12994,9 +12994,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiAgentOutputCopy => 'نسخ المخرجات';
 
   @override
-  String get teamUiAgentOutputEmpty => 'لا شيء بعد';
-
-  @override
   String get teamUiAgentOutputEnded =>
       'انتهت الجلسة · المخرجات لم تعد على المضيف';
 
@@ -13655,17 +13652,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiControlCreateWork => 'أُرسلت المهمة إلى وكيل';
-
-  @override
-  String teamUiControlMessageTitle(String agent) {
-    return 'رسالة إلى $agent';
-  }
-
-  @override
-  String get teamUiControlMessageHint => 'أخبر الوكيل بما يفعله بعد ذلك';
-
-  @override
-  String get teamUiControlMessageSend => 'إرسال';
 
   @override
   String teamUiControlStopConfirmTitle(String agent) {
@@ -18027,28 +18013,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatWatchEmptyBody => 'تمتلئ هذه المحادثة بينما يعمل الوكيل.';
 
   @override
-  String teamWatchBanner(String name, String role) {
+  String teamWatchBanner(String name, String role, String state) {
     return 'تشاهد $name · $role · فريق الذكاء';
   }
 
   @override
-  String teamWatchBannerRole(String role) {
+  String teamWatchBannerRole(String role, String state) {
     return 'تشاهد $role · فريق الذكاء';
   }
 
   @override
-  String get teamWatchNote =>
-      'أنت تشاهد. تصل رسالتك إليه عبر فريق الذكاء، ولا تُكتب في هذه المحادثة أبدًا.';
+  String teamWatchComposerHint(String name) {
+    return 'Message $name…';
+  }
 
   @override
-  String get teamWatchNoteNoMessage =>
-      'أنت تشاهد. لا يمكن مراسلة هذا الفريق من هنا.';
+  String get teamWatchComposerHintWorker => 'Message the worker…';
 
   @override
-  String get teamWatchMessageWorker => 'راسل العامل';
+  String get teamWatchComposerHintAgent => 'Message this agent…';
 
   @override
-  String get teamWatchMessageAgent => 'راسل هذا الوكيل';
+  String teamWatchAbout(String name) {
+    return 'About $name';
+  }
+
+  @override
+  String teamWatchAboutRole(String role) {
+    return 'About the $role';
+  }
 
   @override
   String get teamWatchFallbackUnreadable =>
@@ -22122,9 +22115,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamAgentScreenMessageLabel => 'Your message';
-
-  @override
   String get gateSheetDestructiveBody =>
       'The host marks this action as destructive. Approving it can\'t be undone from the phone.';
 
@@ -22177,9 +22167,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamAgentScreenLabelId => 'Agent id';
-
-  @override
-  String get teamAgentScreenMessageFirst => 'Type a message first';
 
   @override
   String get gateSheetSendNeedsText => 'Type an answer first';
@@ -24282,13 +24269,13 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamChatRefusedTitle => 'The team didn\'t take this task';
+  String get teamChatRefusedTitle => 'Task not taken';
 
   @override
   String get teamChatRefusedRetry => 'Send the task again';
 
   @override
-  String get teamChatGoneTitle => 'This task is no longer on the team';
+  String get teamChatGoneTitle => 'Task no longer listed';
 
   @override
   String get teamChatGoneBody =>
@@ -24694,7 +24681,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Not connected to the server, so this can’t be answered here.';
 
   @override
-  String get chatRequestAlwaysTitle => 'Always allow requests like this';
+  String get chatRequestAlwaysTitle => 'Always allow these requests';
 
   @override
   String chatRequestAlwaysScope(String patterns, String context) {

@@ -2,41 +2,71 @@ part of '../chat_screen.dart';
 
 /// How the chat page shows a conversation someone else drives: an AI Team
 /// worker's OpenCode session, which the team's own driver (Gas City's
-/// `opencode acp`) owns. The page is the ordinary chat, read-only:
+/// `opencode acp`) owns. The page is the ordinary chat, read-only, with a
+/// composer that writes to the worker through the caller's path:
 ///
-/// - one slim status line says who is being watched ([banner]);
-/// - the composer is replaced by one action ([messageLabel]) that goes
-///   through the caller's own path ([onMessage], the team's message
-///   control), so nothing is ever typed into the watched session;
+/// - one slim status line says who is being watched and how it is doing,
+///   from its session ([banner], read again when [changes] notifies);
+/// - the composer addresses the worker ([hint]) and hands the
+///   words to [onSend] (the team's message control), so nothing is ever
+///   typed into the watched session; the words are kept as a draft per
+///   worker and server ([draftId]) until the team takes them, and the
+///   message's receipt ([receipt]) sits above the composer;
 /// - nothing that changes the session is offered: no conversation menu
 ///   (share, fork, revert, rename, delete, compact), no message actions
-///   beyond copy, no approvals, questions or forms answered here, no
-///   drafts, no read receipts, no model or agent choice;
+///   beyond copy, no approvals, questions or forms answered here, no read
+///   receipts, no model or agent choice;
+/// - the worker's own page ([onDetails]: its state, controls and technical
+///   details) is the top bar's one action;
 /// - it reads the transcript again every [pollInterval]: the watched
 ///   session runs in another OpenCode process on the same store, so the
 ///   connected server's event stream never carries its updates.
+///
+/// When the worker's session cannot be read at all, [TeamWatchLiveScreen]
+/// is the same watching page drawn from the team's live output.
 class ChatWatch {
   const ChatWatch({
     required this.banner,
-    required this.note,
-    this.messageLabel,
-    this.onMessage,
+    required this.hint,
+    this.readOnlyReason,
+    this.onSend,
+    this.draftId,
+    this.receipt,
+    this.changes,
+    this.detailsLabel,
+    this.onDetails,
     this.pollInterval = const Duration(seconds: 4),
   });
 
-  /// The status line: "Watching furiosa · Worker · AI Team".
-  final String banner;
+  /// The status line and its tone: "Watching furiosa · Worker · Working".
+  final (String, AppStatusTone) Function() banner;
 
-  /// One muted sentence where the composer was: why there is no field.
-  final String note;
+  /// The composer's hint and accessible name: "Message furiosa…".
+  final String hint;
 
-  /// The one action where the composer was ("Message the worker"); null
-  /// with [onMessage] null shows only [note].
-  final String? messageLabel;
+  /// Why nothing can be typed, shown in the composer when [onSend] is null:
+  /// "This team can't be messaged from here."
+  final String? readOnlyReason;
 
   /// Sends the person's words the caller's way (the team's message
-  /// control). The chat never sends into the watched session.
-  final Future<void> Function(BuildContext context)? onMessage;
+  /// control); true when they were taken, so the field and its draft are
+  /// cleared. The chat never sends into the watched session.
+  final Future<bool> Function(String text)? onSend;
+
+  /// Keeps the unsent words per worker and server
+  /// (`oc.draft.team-message.<draftId>.<profileId>`); null keeps none.
+  final String? draftId;
+
+  /// The newest message's receipt, above the composer; null for none.
+  final Widget? Function(BuildContext context)? receipt;
+
+  /// Notifies when [banner] or [receipt] may read differently.
+  final Listenable? changes;
+
+  /// The top bar's action to the worker's own page ("About furiosa"),
+  /// with [onDetails].
+  final String? detailsLabel;
+  final void Function(BuildContext context)? onDetails;
 
   /// How often the transcript is read again.
   final Duration pollInterval;
@@ -60,21 +90,45 @@ extension _ChatWatching on _ChatScreenState {
       if (_loading || _loadingOlder) return;
       _scheduleRecentHistoryRefresh();
     });
+    watch.changes?.addListener(_watchChanged);
   }
 
   void _stopWatchPolling() {
     _watchPoll?.cancel();
     _watchPoll = null;
+    widget.watch?.changes?.removeListener(_watchChanged);
+  }
+
+  /// The worker's state moved (its session, from the team): the status
+  /// line reads it again.
+  void _watchChanged() {
+    if (mounted) _setChatState(() {});
   }
 
   /// The one status line while watching.
-  _ChatStatus _watchingStatus(ChatWatch watch) => _ChatStatus(
-    id: 'watching',
-    key: const ValueKey('chat-watching-banner'),
-    icon: AppIconography.agent,
-    tone: AppStatusTone.progress,
-    message: watch.banner,
-  );
+  _ChatStatus _watchingStatus(ChatWatch watch) {
+    final (message, tone) = watch.banner();
+    return _ChatStatus(
+      id: 'watching',
+      key: const ValueKey('chat-watching-banner'),
+      icon: AppIconography.agent,
+      tone: tone,
+      message: message,
+    );
+  }
+
+  /// The worker's own page, the top bar's one action while watching.
+  KitAction? _watchDetailsAction(ChatWatch watch) {
+    final open = watch.onDetails;
+    final label = watch.detailsLabel;
+    if (open == null || label == null) return null;
+    return KitAction(
+      key: const ValueKey('chat-watching-details'),
+      icon: AppIconography.info,
+      label: label,
+      onPressed: () => open(context),
+    );
+  }
 
   /// A child session the watched one delegated to: watched the same way.
   void _openWatchedChild(String id) {
@@ -106,68 +160,122 @@ class _WatchingEmpty extends StatelessWidget {
   }
 }
 
-/// Where the composer was, while watching: the note, then the one action.
-class _WatchingComposer extends StatefulWidget {
-  const _WatchingComposer({required this.watch});
+/// The watching page's floating layer: [body] under the composer that
+/// writes to the worker, with the newest message's receipt above it.
+Widget _watchLayer({required ChatWatch watch, required Widget body}) {
+  final receipt = watch.receipt;
+  return KitComposer.layer(
+    body: body,
+    above: receipt == null
+        ? null
+        : ListenableBuilder(
+            listenable: watch.changes ?? const AlwaysStoppedAnimation(0),
+            builder: (context, _) => receipt(context) ?? const SizedBox(),
+          ),
+    composer: _WatchComposer(watch: watch),
+  );
+}
+
+/// The composer while watching: the person's words for the worker, sent
+/// through [ChatWatch.onSend]. The words are kept as a draft per worker
+/// and server until the team takes them (DATA-1); a refused message stays
+/// in the field, with the refusal in its receipt.
+class _WatchComposer extends StatefulWidget {
+  const _WatchComposer({required this.watch});
 
   final ChatWatch watch;
 
   @override
-  State<_WatchingComposer> createState() => _WatchingComposerState();
+  State<_WatchComposer> createState() => _WatchComposerState();
 }
 
-class _WatchingComposerState extends State<_WatchingComposer> {
-  bool _busy = false;
+class _WatchComposerState extends State<_WatchComposer> {
+  final _text = TextEditingController();
+  final _focus = FocusNode();
+  KitDraft? _draft;
+  Timer? _save;
+  bool _sending = false;
 
-  Future<void> _message() async {
-    final send = widget.watch.onMessage;
-    if (send == null || _busy) return;
-    setState(() => _busy = true);
+  @override
+  void initState() {
+    super.initState();
+    final id = widget.watch.draftId;
+    String? profileId;
     try {
-      await send(context);
+      profileId = ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(connProvider).profile?.id;
+    } catch (_) {
+      profileId = null;
+    }
+    if (id != null && profileId != null && profileId.isNotEmpty) {
+      _draft = KitDraft(
+        target: 'team-message.$id',
+        profileId: profileId,
+        controller: _text,
+      );
+      unawaited(_draft!.restore());
+    }
+    _text.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _save?.cancel();
+    _text.removeListener(_changed);
+    // What was typed and not sent outlives the page.
+    unawaited(_draft?.save());
+    // The field may still read the controller while the page leaves.
+    final text = _text;
+    WidgetsBinding.instance.addPostFrameCallback((_) => text.dispose());
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    if (!mounted) return;
+    setState(() {});
+    final draft = _draft;
+    if (draft == null) return;
+    _save?.cancel();
+    _save = Timer(const Duration(milliseconds: 500), () {
+      unawaited(draft.save());
+    });
+  }
+
+  Future<void> _send() async {
+    final send = widget.watch.onSend;
+    final text = _text.text.trim();
+    if (send == null || text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final taken = await send(text);
+      if (!mounted || !taken) return;
+      _save?.cancel();
+      _text.clear();
+      unawaited(_draft?.clear());
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _sending = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
     final watch = widget.watch;
-    final label = watch.messageLabel;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        key: const ValueKey('chat-watching-composer'),
-        padding: EdgeInsetsDirectional.fromSTEB(
-          tokens.gutter,
-          tokens.space2,
-          tokens.gutter,
-          tokens.space3,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            KitText(
-              watch.note,
-              key: const ValueKey('chat-watching-note'),
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-            if (label != null && watch.onMessage != null) ...[
-              SizedBox(height: tokens.space2),
-              KitButton.secondary(
-                key: const ValueKey('chat-watching-message'),
-                icon: AppIconography.chat,
-                label: label,
-                // The action opens its own sheet; no spinner behind it.
-                onPressed: _busy ? null : () => unawaited(_message()),
-              ),
-            ],
-          ],
-        ),
-      ),
+    final canSend = watch.onSend != null;
+    return KitComposer(
+      composerKey: const ValueKey('chat-watching-composer'),
+      fieldKey: const ValueKey('chat-watching-message-field'),
+      sendKey: const ValueKey('chat-watching-message-send'),
+      controller: _text,
+      focusNode: _focus,
+      hint: watch.hint,
+      fieldLabel: watch.hint,
+      readOnlyReason: canSend ? null : watch.readOnlyReason,
+      sending: _sending,
+      canSendWhileBusy: true,
+      onSend: () => unawaited(_send()),
     );
   }
 }
