@@ -24732,5 +24732,110 @@
   "kitCapNotNow": "Not now",
   "@kitCapNotNow": {
     "description": "KitCapabilityExplainer: folds a turn-on offer into one quiet row"
+  },
+  "guideStepTwoScan": "Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.",
+  "@guideStepTwoScan": {
+    "description": "Setup guide step 2 when this device can scan; names the real Servers buttons"
+  },
+  "guideStepTwoPaste": "Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.",
+  "@guideStepTwoPaste": {
+    "description": "Setup guide step 2 without a camera; names the real Servers buttons"
+  },
+  "guidePhonePathTitle": "No computer? Run it on this phone",
+  "@guidePhonePathTitle": {
+    "description": "Setup guide row that opens phone setup, for people without a computer"
+  },
+  "guidePhonePathBody": "Install OpenCode on this phone and use it here, no computer needed",
+  "@guidePhonePathBody": {
+    "description": "Setup guide phone-path row: what it does"
+  },
+  "pairingScannerAllowCamera": "Allow camera",
+  "@pairingScannerAllowCamera": {
+    "description": "Pairing scanner: primary action when camera access was denied; asks again"
+  },
+  "pairingScannerStarting": "Opening the camera…",
+  "@pairingScannerStarting": {
+    "description": "Pairing scanner: the camera is starting"
+  },
+  "profileMonitorSwitchBody": "A run is going on {current}. Switching shows {target} in this app; the run on {current} keeps going.",
+  "@profileMonitorSwitchBody": {
+    "description": "Switch-server question: names both servers and what keeps running",
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "profileMonitorOpenFailedTitle": "Couldn't open it",
+  "@profileMonitorOpenFailedTitle": {
+    "description": "Alert title when a monitored request could not be opened"
+  },
+  "profileMonitorIfIgnored": "The agent waits until you answer",
+  "@profileMonitorIfIgnored": {
+    "description": "Needs-you row on another server: what happens if it is not answered"
+  },
+  "serverSettingsRestartCommandLabel": "If it runs as a Linux service, run this there",
+  "@serverSettingsRestartCommandLabel": {
+    "description": "Restart sheet: label above the restart command"
+  },
+  "serverSettingsRestartedIt": "I restarted it",
+  "@serverSettingsRestartedIt": {
+    "description": "Restart sheet primary: closes and checks the server again"
+  },
+  "serverSettingsUpgradeBody": "Installs OpenCode {target} on {server} (now {current}) with the server’s own installer.",
+  "@serverSettingsUpgradeBody": {
+    "description": "Server update question body",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "serverSettingsUpgradeKeepsRunning": "The server keeps running {current} while it installs",
+  "@serverSettingsUpgradeKeepsRunning": {
+    "description": "Server update question: what happens during the install",
+    "placeholders": {
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "serverSettingsUpgradeRestartAfter": "The OpenCode process must be restarted on its host to use {target}",
+  "@serverSettingsUpgradeRestartAfter": {
+    "description": "Server update question: restart needed after the install",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "serverSettingsUpgradeKeepsData": "Server data stays in place",
+  "@serverSettingsUpgradeKeepsData": {
+    "description": "Server update question: what is kept"
+  },
+  "serverSettingsCopyUpdateCommands": "Copy update commands",
+  "@serverSettingsCopyUpdateCommands": {
+    "description": "Server settings: copy button for the upgrade commands run on the host"
+  },
+  "serverSettingsPasswordInServers": "Add or change it in Servers",
+  "@serverSettingsPasswordInServers": {
+    "description": "Server settings authentication row: where the password is set"
+  },
+  "serverSettingsAddressLabel": "Address",
+  "@serverSettingsAddressLabel": {
+    "description": "Server settings Details: the server address label"
+  },
+  "serverSettingsRunningVersionLabel": "Running version",
+  "@serverSettingsRunningVersionLabel": {
+    "description": "Server settings Details: the running OpenCode version label"
   }
 }

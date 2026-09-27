@@ -34612,6 +34612,124 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get kitCapNotNow;
+
+  /// Setup guide step 2 when this device can scan; names the real Servers buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.'**
+  String get guideStepTwoScan;
+
+  /// Setup guide step 2 without a camera; names the real Servers buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.'**
+  String get guideStepTwoPaste;
+
+  /// Setup guide row that opens phone setup, for people without a computer
+  ///
+  /// In en, this message translates to:
+  /// **'No computer? Run it on this phone'**
+  String get guidePhonePathTitle;
+
+  /// Setup guide phone-path row: what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Install OpenCode on this phone and use it here, no computer needed'**
+  String get guidePhonePathBody;
+
+  /// Pairing scanner: primary action when camera access was denied; asks again
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera'**
+  String get pairingScannerAllowCamera;
+
+  /// Pairing scanner: the camera is starting
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get pairingScannerStarting;
+
+  /// Switch-server question: names both servers and what keeps running
+  ///
+  /// In en, this message translates to:
+  /// **'A run is going on {current}. Switching shows {target} in this app; the run on {current} keeps going.'**
+  String profileMonitorSwitchBody(String current, String target);
+
+  /// Alert title when a monitored request could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open it'**
+  String get profileMonitorOpenFailedTitle;
+
+  /// Needs-you row on another server: what happens if it is not answered
+  ///
+  /// In en, this message translates to:
+  /// **'The agent waits until you answer'**
+  String get profileMonitorIfIgnored;
+
+  /// Restart sheet: label above the restart command
+  ///
+  /// In en, this message translates to:
+  /// **'If it runs as a Linux service, run this there'**
+  String get serverSettingsRestartCommandLabel;
+
+  /// Restart sheet primary: closes and checks the server again
+  ///
+  /// In en, this message translates to:
+  /// **'I restarted it'**
+  String get serverSettingsRestartedIt;
+
+  /// Server update question body
+  ///
+  /// In en, this message translates to:
+  /// **'Installs OpenCode {target} on {server} (now {current}) with the server’s own installer.'**
+  String serverSettingsUpgradeBody(
+    String target,
+    String server,
+    String current,
+  );
+
+  /// Server update question: what happens during the install
+  ///
+  /// In en, this message translates to:
+  /// **'The server keeps running {current} while it installs'**
+  String serverSettingsUpgradeKeepsRunning(String current);
+
+  /// Server update question: restart needed after the install
+  ///
+  /// In en, this message translates to:
+  /// **'The OpenCode process must be restarted on its host to use {target}'**
+  String serverSettingsUpgradeRestartAfter(String target);
+
+  /// Server update question: what is kept
+  ///
+  /// In en, this message translates to:
+  /// **'Server data stays in place'**
+  String get serverSettingsUpgradeKeepsData;
+
+  /// Server settings: copy button for the upgrade commands run on the host
+  ///
+  /// In en, this message translates to:
+  /// **'Copy update commands'**
+  String get serverSettingsCopyUpdateCommands;
+
+  /// Server settings authentication row: where the password is set
+  ///
+  /// In en, this message translates to:
+  /// **'Add or change it in Servers'**
+  String get serverSettingsPasswordInServers;
+
+  /// Server settings Details: the server address label
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get serverSettingsAddressLabel;
+
+  /// Server settings Details: the running OpenCode version label
+  ///
+  /// In en, this message translates to:
+  /// **'Running version'**
+  String get serverSettingsRunningVersionLabel;
 }
 
 class _AppLocalizationsDelegate

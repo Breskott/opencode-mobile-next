@@ -21812,4 +21812,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kitCapNotNow => 'Not now';
+
+  @override
+  String get guideStepTwoScan =>
+      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+
+  @override
+  String get guideStepTwoPaste =>
+      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+
+  @override
+  String get guidePhonePathTitle => 'No computer? Run it on this phone';
+
+  @override
+  String get guidePhonePathBody =>
+      'Install OpenCode on this phone and use it here, no computer needed';
+
+  @override
+  String get pairingScannerAllowCamera => 'Allow camera';
+
+  @override
+  String get pairingScannerStarting => 'Opening the camera…';
+
+  @override
+  String profileMonitorSwitchBody(String current, String target) {
+    return 'A run is going on $current. Switching shows $target in this app; the run on $current keeps going.';
+  }
+
+  @override
+  String get profileMonitorOpenFailedTitle => 'Couldn\'t open it';
+
+  @override
+  String get profileMonitorIfIgnored => 'The agent waits until you answer';
+
+  @override
+  String get serverSettingsRestartCommandLabel =>
+      'If it runs as a Linux service, run this there';
+
+  @override
+  String get serverSettingsRestartedIt => 'I restarted it';
+
+  @override
+  String serverSettingsUpgradeBody(
+    String target,
+    String server,
+    String current,
+  ) {
+    return 'Installs OpenCode $target on $server (now $current) with the server’s own installer.';
+  }
+
+  @override
+  String serverSettingsUpgradeKeepsRunning(String current) {
+    return 'The server keeps running $current while it installs';
+  }
+
+  @override
+  String serverSettingsUpgradeRestartAfter(String target) {
+    return 'The OpenCode process must be restarted on its host to use $target';
+  }
+
+  @override
+  String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
+
+  @override
+  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+
+  @override
+  String get serverSettingsPasswordInServers => 'Add or change it in Servers';
+
+  @override
+  String get serverSettingsAddressLabel => 'Address';
+
+  @override
+  String get serverSettingsRunningVersionLabel => 'Running version';
 }
