@@ -33509,6 +33509,18 @@ abstract class AppLocalizations {
   /// **'waiting {age}'**
   String kitRequestAge(String age);
 
+  /// KitRequestSheet: why Send is unavailable on a question with several answers until one is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one answer.'**
+  String get kitRequestChooseOneReason;
+
+  /// KitRequestSheet: the default label of a form's pinned submit button, which sends every typed answer to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send answers'**
+  String get kitRequestSendAnswers;
+
   /// KitDiffView: how many files a diff covers, on the file picker row
   ///
   /// In en, this message translates to:

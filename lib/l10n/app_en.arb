@@ -23786,7 +23786,15 @@
       }
     }
   },
-  "kitDiffFiles": "{count, plural, =1{1 file} other{{count} files}}",
+  "kitRequestChooseOneReason": "Choose at least one answer.",
+  "@kitRequestChooseOneReason": {
+    "description": "KitRequestSheet: why Send is unavailable on a question with several answers until one is chosen"
+  },
+  "kitRequestSendAnswers": "Send answers",
+  "@kitRequestSendAnswers": {
+    "description": "KitRequestSheet: the default label of a form's pinned submit button, which sends every typed answer to the agent"
+  },
+  "kitDiffFiles":"{count, plural, =1{1 file} other{{count} files}}",
   "@kitDiffFiles": {
     "description": "KitDiffView: how many files a diff covers, on the file picker row",
     "placeholders": {
