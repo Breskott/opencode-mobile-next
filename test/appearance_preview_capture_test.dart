@@ -140,9 +140,10 @@ void main() {
               supportedLocales: const [Locale('en'), Locale('ar')],
               theme: AppTheme.forLocale(AppTheme.light(), Locale(locale)),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: TextScaler.linear(scale)),
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                  disableAnimations: true,
+                ),
                 child: child!,
               ),
               home: Builder(
@@ -171,10 +172,12 @@ void main() {
         await tester.scrollUntilVisible(
           apply,
           160,
-          scrollable: find.descendant(
-            of: find.byKey(const Key('appearance-picker')),
-            matching: find.byType(Scrollable),
-          ),
+          scrollable: find
+              .descendant(
+                of: find.byKey(const Key('appearance-picker')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

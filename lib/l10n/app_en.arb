@@ -25407,5 +25407,48 @@
         "type": "int"
       }
     }
+  },
+  "languagePickerPartlyTranslated": "Partly translated ({percent} %)",
+  "@languagePickerPartlyTranslated": {
+    "description": "Language sheet: supporting line under the Arabic choice, saying how much of the app is translated. percent is a whole number from the real coverage.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "appearancePickerPreviewLabel": "Preview of {name}",
+  "@appearancePickerPreviewLabel": {
+    "description": "Appearance and theme preview sheets: spoken label of the preview picture. name is a theme name (Graphite) or a light/dark choice (Dark).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "appearancePickerPreviewIn": "Preview in",
+  "@appearancePickerPreviewIn": {
+    "description": "Theme preview sheet: spoken name of the Light / Dark control that switches only the preview."
+  },
+  "appearancePickerInUse": "In use now",
+  "@appearancePickerInUse": {
+    "description": "Appearance and theme preview sheets: status line shown instead of Apply when the previewed choice is already the one in use."
+  },
+  "appearancePickerThemeApplied": "Theme set to {name}",
+  "@appearancePickerThemeApplied": {
+    "description": "Undo bar after applying a theme from its preview sheet. name is the theme's name (Graphite).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamDiscoveryCardTurnOnFailed": "Could not turn the AI team on. Nothing changed. Try again.",
+  "@teamDiscoveryCardTurnOnFailed": {
+    "description": "AI team discovery offer: shown when saving the found team on this server failed."
+  },
+  "teamDiscoveryCardTurningOn": "Turning the AI team on…",
+  "@teamDiscoveryCardTurningOn": {
+    "description": "AI team discovery offer: why Not now cannot be pressed while Turn on is saving."
   }
 }
