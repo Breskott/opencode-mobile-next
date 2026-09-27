@@ -22,11 +22,18 @@ import 'work_status_line.dart' show confirmPhoneServerRestart;
 ///   starts, and no button pretends to be the progress (§2);
 /// - **not answering** (still connecting after [notAnsweringGrace]): says
 ///   so, keeps the progress, and offers Restart for the phone's own server,
-///   Try again, and Choose another server;
-/// - **failed / stopped**: the diagnosis's title and explanation, its one
-///   fixing action as primary, Try again as secondary, Change server and a
-///   setup link as tertiary; what to check, the address and the raw error
-///   are under Details.
+///   Try again, and Switch server;
+/// - **stopped** (the phone's own server): Start as the one action, never
+///   Try again beside it;
+/// - **failed**: the diagnosis's title and explanation (words, no
+///   address), its one fixing action as primary, Try again as secondary,
+///   Switch server and a setup link as tertiary; a remote server that did
+///   not answer shows the unplugged drawing, a Tailscale address offers to
+///   set Tailscale up, and after three failed tries Switch server leads.
+///   What to check, the address and the raw error are under Details.
+///
+/// One name for the way out everywhere on this page: "Switch server"
+/// (map page root-connecting).
 class SavedServerConnectionCard extends StatelessWidget {
   const SavedServerConnectionCard({
     super.key,
@@ -157,7 +164,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     tertiary: [
       KitAction(
         key: const ValueKey('saved-server-change'),
-        label: l10n.e7SetupChangeServer,
+        label: l10n.productStatesSwitchServer,
         onPressed: onChangeServer,
       ),
     ],
@@ -202,7 +209,7 @@ class SavedServerConnectionCard extends StatelessWidget {
       tertiary: [
         KitAction(
           key: const ValueKey('saved-server-choose-another'),
-          label: l10n.workChooseAnotherServer,
+          label: l10n.productStatesSwitchServer,
           onPressed: onChangeServer,
         ),
       ],
@@ -237,7 +244,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     );
     final change = KitAction(
       key: const ValueKey('saved-server-change'),
-      label: l10n.e7SetupChangeServer,
+      label: l10n.productStatesSwitchServer,
       onPressed: onChangeServer,
     );
     final start = onStartPhoneServer;
@@ -277,7 +284,7 @@ class SavedServerConnectionCard extends StatelessWidget {
       ConnectionFailureAction.changeServer => (
         KitAction(
           key: const ValueKey('saved-server-change-primary'),
-          label: l10n.e7SetupChangeServer,
+          label: l10n.productStatesSwitchServer,
           onPressed: onChangeServer,
         ),
         false,
@@ -294,10 +301,23 @@ class SavedServerConnectionCard extends StatelessWidget {
     final startsServer =
         failure.primary == ConnectionFailureAction.startPhoneServer &&
         start != null;
-    final primaryIsChange =
-        failure.primary == ConnectionFailureAction.changeServer;
-    // A stopped phone server is a normal state with one fix, not an error.
+    // A stopped phone server is a normal state with one fix, not an error:
+    // Start is the way, and Try again beside it would only fail again.
     final stopped = startsServer && !inAppStartFailed;
+    // Three failed tries of the same server: the way out leads now, and
+    // Try again stays beside it (no escalation was the old dead end).
+    final escalated = primaryIsRetry && attempts >= 3;
+    final primaryIsChange =
+        failure.primary == ConnectionFailureAction.changeServer || escalated;
+    // A remote server that did not answer: the plug short of the portal.
+    final unplugged =
+        !stopped &&
+        !inAppServer &&
+        failure.primary == ConnectionFailureAction.retry;
+    // A Tailscale address that did not answer: Tailscale being off on this
+    // phone is the likely cause, and the app can lead to its setup.
+    final tailscale =
+        failure.tailnet && KitCapabilities.canEnable(_tailscaleCapability);
     return KitStateView(
       key: const ValueKey('saved-server-failed'),
       icon: stopped ? AppIconography.stopCircle : AppIconography.cloudOff,
@@ -306,16 +326,43 @@ class SavedServerConnectionCard extends StatelessWidget {
       // Other failures keep the icon; a drawing would not say which.
       illustration: stopped
           ? const SetupPhoneScene(mood: SetupPhoneMood.stopped)
+          : unplugged
+          ? const SetupUnpluggedScene()
           : null,
       title: failure.title,
       titleKey: const ValueKey('saved-server-title'),
       body: failure.explanation,
       bodyKey: const ValueKey('saved-server-explanation'),
-      primary: primary,
-      // Starting the in-app server already connects: a second "try again"
-      // next to it would be the same button twice.
-      secondary: primaryIsRetry || (inAppServer && startsServer) ? null : retry,
+      primary: escalated
+          ? KitAction(
+              key: const ValueKey('saved-server-change-primary'),
+              label: l10n.productStatesSwitchServer,
+              onPressed: onChangeServer,
+            )
+          : primary,
+      // Starting the server already connects, and a stopped server does not
+      // answer a retry: no second "Try again" next to Start.
+      secondary: escalated
+          ? retry
+          : primaryIsRetry || startsServer
+          ? null
+          : retry,
       tertiary: [
+        if (tailscale)
+          KitAction(
+            key: const ValueKey('saved-server-tailscale'),
+            label:
+                KitCapabilityExplainer.enableLabelOf(
+                  context,
+                  _tailscaleCapability,
+                ) ??
+                '',
+            onPressed: () => KitCapabilities.enable(
+              context,
+              _tailscaleCapability,
+              source: 'root-connecting',
+            ),
+          ),
         if (!primaryIsChange) change,
         if (inAppServer && onOpenInAppSetup != null)
           KitAction(
@@ -338,3 +385,6 @@ class SavedServerConnectionCard extends StatelessWidget {
     );
   }
 }
+
+/// capabilities.json matrix id of reaching a computer from anywhere.
+const _tailscaleCapability = 'network.tailscale';

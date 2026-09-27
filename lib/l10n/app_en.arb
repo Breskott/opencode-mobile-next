@@ -628,7 +628,6 @@
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
   "commonRetry": "Try again",
   "shareWaitingForServer": "Connect to a server and the shared text opens in a new conversation.",
-  "shareSessionFailed": "Shared text kept. Could not open a conversation. Retry when the connection is ready.",
   "webSourcesDisclosure": "Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.",
   "webSourcesScopeChanged": "Server changed. Close and reopen Add web source.",
   "webSourcesUrl": "Public URL",
@@ -1921,15 +1920,6 @@
   "@launchShortcutConnectionFailed": {
     "description": "Snackbar shown on the servers screen when the New task shortcut arrives after the saved server connection failed"
   },
-  "launchShortcutNewTaskFailed": "Could not start a new conversation. {error}",
-  "@launchShortcutNewTaskFailed": {
-    "description": "Snackbar shown when the New task shortcut reached a connected server but creating the session failed",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "launchUiPinnedUntitled": "Untitled conversation",
   "@launchUiPinnedUntitled": {
     "description": "Launcher shortcut label for a pinned session that has no title yet"
@@ -2833,30 +2823,6 @@
   "@e7ConnectionFailure9": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "@e7ConnectionFailure10": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      },
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "e7ConnectionFailure10": "{hostLabel}:{port} is a local Codex listener, but nothing answered.",
-  "@e7ConnectionFailure11": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      },
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "e7ConnectionFailure11": "Nothing answered at the remote Codex endpoint {hostLabel}:{port}.",
   "e7ConnectionFailure12": "Start the Codex listener on this device.",
   "@e7ConnectionFailure12": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
@@ -2909,18 +2875,6 @@
   "@e7ConnectionFailure24": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "@e7ConnectionFailure25": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      },
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "e7ConnectionFailure25": "{hostLabel}:{port} means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.",
   "e7ConnectionFailure26": "Running OpenCode in Termux? Open Termux and check that the server is still running.",
   "@e7ConnectionFailure26": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
@@ -2937,15 +2891,6 @@
   "@e7ConnectionFailure29": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "@e7ConnectionFailure30": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      }
-    }
-  },
-  "e7ConnectionFailure30": "Something is at {hostLabel}, but it did not reply. Usually the network in between, not the server.",
   "e7ConnectionFailure31": "Are you on the same network or VPN (for example Tailscale) as the computer?",
   "@e7ConnectionFailure31": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
@@ -2963,18 +2908,6 @@
   "@e7ConnectionFailure33": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "@e7ConnectionFailure34": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      },
-      "port": {
-        "type": "int"
-      }
-    }
-  },
-  "e7ConnectionFailure34": "Nothing answered at {hostLabel}:{port}. Either the server is not running or this device cannot reach that address.",
   "e7ConnectionFailure35": "Is opencode serve still running on the computer?",
   "@e7ConnectionFailure35": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
@@ -3007,15 +2940,6 @@
   "@e7ConnectionFailure42": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "@e7ConnectionFailure43": {
-    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
-    "placeholders": {
-      "hostLabel": {
-        "type": "String"
-      }
-    }
-  },
-  "e7ConnectionFailure43": "The connection to {hostLabel} failed. Details below.",
   "e7ConnectionFailure44": "Is the agent server running, and is this the right address?",
   "@e7ConnectionFailure44": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
@@ -3862,22 +3786,6 @@
   "@e7LocaleUiSaveFailed": {
     "description": "Locale selection or app shell: SaveFailed"
   },
-  "e7LocaleUiStarting": "Starting OpenCode…",
-  "@e7LocaleUiStarting": {
-    "description": "Locale selection or app shell: Starting"
-  },
-  "e7LocaleUiStartFailed": "OpenCode could not start",
-  "@e7LocaleUiStartFailed": {
-    "description": "Locale selection or app shell: StartFailed"
-  },
-  "e7LocaleUiUnknownStartupError": "Unknown startup error",
-  "@e7LocaleUiUnknownStartupError": {
-    "description": "Locale selection or app shell: UnknownStartupError"
-  },
-  "e7LocaleUiRetry": "Try again",
-  "@e7LocaleUiRetry": {
-    "description": "Locale selection or app shell: Retry"
-  },
   "e7LocaleUiNewSession": "New conversation",
   "@e7LocaleUiNewSession": {
     "description": "Locale selection or app shell: NewSession"
@@ -3989,10 +3897,6 @@
   "e7LocaleUiContextKeys": "Right click / Shift + F10 / Menu",
   "@e7LocaleUiContextKeys": {
     "description": "App shell command menu or routing: ContextKeys"
-  },
-  "e7LocaleUiShareScopeChanged": "Shared conversation scope changed",
-  "@e7LocaleUiShareScopeChanged": {
-    "description": "App shell command menu or routing: ShareScopeChanged"
   },
   "e7LocaleUiConnectionChanged": "The server changed.",
   "@e7LocaleUiConnectionChanged": {
@@ -19366,10 +19270,6 @@
   "@workServerRestartBody": {
     "description": "Confirm body before restarting the phone's server"
   },
-  "workChooseAnotherServer": "Choose another server",
-  "@workChooseAnotherServer": {
-    "description": "Connecting card action once the server has not answered for 8 seconds"
-  },
   "workStale": "This may be out of date",
   "@workStale": {
     "description": "Status line when waiting requests could not be refreshed"
@@ -31173,5 +31073,81 @@
   "settingsBackgroundOffFailed": "Android did not turn background mode off.",
   "@settingsBackgroundOffFailed": {
     "description": "Settings, Notifications: turning the keep-live-in-background switch off failed (Android's own message is under Copy details)."
+  },
+  "bootstrapOpeningTitle": "Opening…",
+  "@bootstrapOpeningTitle": {
+    "description": "Map page bootstrap-gate: the app is opening and reading its saved servers."
+  },
+  "bootstrapOpeningBody": "Reading your saved servers.",
+  "@bootstrapOpeningBody": {
+    "description": "Map page bootstrap-gate: under \"Opening…\"."
+  },
+  "bootstrapFailedTitle": "Can't read your saved servers",
+  "@bootstrapFailedTitle": {
+    "description": "Map page bootstrap-gate: the saved servers (preferences or the phone keystore) could not be read; the reason is under Details."
+  },
+  "bootstrapFailedBody": "If your phone just restarted, unlock it, then try again.",
+  "@bootstrapFailedBody": {
+    "description": "Map page bootstrap-gate: the likely fix for a locked keystore."
+  },
+  "shareFailedLine": "Shared text saved · couldn't open a conversation",
+  "@shareFailedLine": {
+    "description": "Map page share-session-failed-banner: the status line after text shared into the app could not open a conversation; the reason in words is under it."
+  },
+  "shareFailedAgainLine": "Still couldn't open a conversation · shared text saved",
+  "@shareFailedAgainLine": {
+    "description": "Map page share-session-failed-banner: the same line after Try again failed again."
+  },
+  "shareFailedCopy": "Copy shared text",
+  "@shareFailedCopy": {
+    "description": "Status line More action: copies the saved shared text."
+  },
+  "shareFailedDiscard": "Discard shared text",
+  "@shareFailedDiscard": {
+    "description": "Status line More action: drops the saved shared text, with Undo."
+  },
+  "shareDiscarded": "Shared text discarded",
+  "@shareDiscarded": {
+    "description": "Undo bar after Discard shared text."
+  },
+  "shareConnectionChanged": "The server or project changed while it opened. Try again.",
+  "@shareConnectionChanged": {
+    "description": "Why shared text did not open: the connection moved to another server or project meanwhile."
+  },
+  "appNewConversationFailed": "Couldn't start a new conversation",
+  "@appNewConversationFailed": {
+    "description": "Status line when a new conversation (launcher shortcut, Ctrl+N) could not be created; the reason in words is under it."
+  },
+  "rootPhoneServerStartFailed": "OpenCode on this phone didn't start",
+  "@rootPhoneServerStartFailed": {
+    "description": "Status line on the connecting page when starting the phone server failed; the reason in words is under it."
+  },
+  "connectionFailureLocalCodexBody": "A local Codex listener should answer on this phone, but nothing did.",
+  "@connectionFailureLocalCodexBody": {
+    "description": "Map page root-connecting: the address is under Details."
+  },
+  "connectionFailureRemoteCodexBody": "Nothing answered at the Codex endpoint.",
+  "@connectionFailureRemoteCodexBody": {
+    "description": "Map page root-connecting: the address is under Details."
+  },
+  "connectionFailureLoopbackBody": "This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.",
+  "@connectionFailureLoopbackBody": {
+    "description": "Map page root-connecting: the address is under Details."
+  },
+  "connectionFailureTimedOutBody": "Something is at that address, but it did not reply. Usually the network in between, not the server.",
+  "@connectionFailureTimedOutBody": {
+    "description": "Map page root-connecting: the address is under Details."
+  },
+  "connectionFailureNothingAnsweredBody": "Nothing answered. Either the server is not running, or this phone cannot reach its address.",
+  "@connectionFailureNothingAnsweredBody": {
+    "description": "Map page root-connecting: the address is under Details."
+  },
+  "connectionFailureUnknownBody": "The connection failed. What went wrong is under Details.",
+  "@connectionFailureUnknownBody": {
+    "description": "Map page root-connecting: an unrecognised failure."
+  },
+  "connectionFailureTailnetCheck": "This is a Tailscale address: is Tailscale on, on this phone and on the server?",
+  "@connectionFailureTailnetCheck": {
+    "description": "Map page root-connecting: first thing to check when a Tailscale address did not answer."
   }
 }
