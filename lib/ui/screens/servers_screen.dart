@@ -588,11 +588,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         ref.read(bootstrapProvider).store.activeId == p.id &&
         connection.api != null;
     // Counted now and acted on exactly: a changed queue stops the removal.
-    QueuedPromptRemovalPlan? queued;
+    final QueuedPromptRemovalPlan queued;
     try {
       queued = connection.inspectQueuedPromptsForRemoval(p.id);
     } catch (_) {
-      queued = null;
+      _showFailure(copy.serversRemoveQueuedNotKept(p.name));
+      return;
     }
     var deleteQueued = false;
     final ok = await showKitConfirm(
@@ -609,7 +610,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         queued: queued,
         active: active,
       ),
-      alternative: queued != null && queued.count > 0
+      alternative: queued.count > 0
           ? KitAction(
               key: ValueKey('remove-server-delete-queued-${p.id}'),
               label: copy.serversRemoveDeleteQueued(queued.count),

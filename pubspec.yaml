@@ -48,6 +48,9 @@ dependencies:
   image_picker: 1.2.3
   # Scanning the QR that `opencode2 pair` prints. Pinned exactly, because it
   # registers a platform plugin and ships native camera code.
+  # 7.4.2 passes a clean Android release build on the pinned Flutter/AGP
+  # toolchain and no longer triggers Flutter's mobile_scanner KGP warning.
+  # Reproduction evidence: docs/qa/codex-net-2026-09-27/README.md.
   #
   # Why this package: it is the maintained Flutter barcode scanner (160/160
   # pub points, ~1.3M downloads a month, publisher steenbakker.dev), it is
@@ -56,10 +59,6 @@ dependencies:
   # long-dead qr_code_scanner.
   #
   # Known costs, stated rather than hidden:
-  #  * Like desktop_drop, it applies the Kotlin Gradle Plugin, so the Android
-  #    release build now warns "Your app uses the following plugins that
-  #    apply Kotlin Gradle Plugin (KGP): desktop_drop, mobile_scanner". Real,
-  #    and a future Flutter will turn it into an error.
   #  * It defaults to the *bundled* ML Kit barcode model
   #    (com.google.mlkit:barcode-scanning), not the Play-Services download.
   #    That grows the APK, and buys scanning that works with no Play Services
@@ -69,7 +68,7 @@ dependencies:
   #    `platformCapabilities.supportsQrPairing` (Android only) and desktop
   #    never constructs a controller — but the Linux bundle does resolve a
   #    package it cannot use, exactly as record and file_picker already do.
-  mobile_scanner: 7.4.0
+  mobile_scanner: 7.4.2
   opencode_sdk:
     path: packages/opencode_sdk
   path_provider: 2.1.6

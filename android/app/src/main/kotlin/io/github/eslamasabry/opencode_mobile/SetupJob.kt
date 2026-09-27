@@ -158,6 +158,7 @@ class SetupJobState(
     var updatedAt: Long = startedAt,
     var error: String? = null,
     var logTail: String = "",
+    var errorCode: String? = null,
 ) {
     fun component(id: String) = components.first { it.id == id }
 
@@ -194,6 +195,7 @@ class SetupJobState(
         put("updatedAt", updatedAt)
         put("error", error ?: JSONObject.NULL)
         put("logTail", logTail)
+        put("errorCode", errorCode ?: JSONObject.NULL)
     }
 
     companion object {
@@ -216,6 +218,7 @@ class SetupJobState(
                 updatedAt = json.optLong("updatedAt"),
                 error = if (json.isNull("error")) null else json.optString("error"),
                 logTail = json.optString("logTail"),
+                errorCode = if (json.isNull("errorCode")) null else json.optString("errorCode"),
             )
         }
     }

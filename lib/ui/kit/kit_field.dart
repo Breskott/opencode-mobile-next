@@ -16,6 +16,7 @@ import 'kit_sheet.dart' show KitDraft;
 import 'kit_since.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
+import 'kit_redact.dart';
 import 'motion/kit_reveal.dart';
 
 /// What the field holds (docs/ux-system/kit-api/KitField.md). It decides the
@@ -463,6 +464,8 @@ class _KitFieldState extends State<KitField> {
 
   void _editToHost() {
     final edit = _secretEdit!;
+    // Register before notifying the host controller or field callbacks.
+    KitRedact.registerKnownSecret(edit.text);
     if (_controller.value != edit.value) _controller.value = edit.value;
   }
 
@@ -484,6 +487,7 @@ class _KitFieldState extends State<KitField> {
 
   void _onText() {
     final text = _controller.text;
+    if (widget._isSecret) KitRedact.registerKnownSecret(text);
     if (text == _lastText) return;
     _lastText = text;
     final draft = widget.draft;

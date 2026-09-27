@@ -26680,4 +26680,8 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get tailscaleSetupNoDeviceList =>
       'OpenCode can’t list the devices on your tailnet.';
+
+  @override
+  String get productErrorStagedRevert =>
+      'Review the staged revert before sending this queued prompt.';
 }

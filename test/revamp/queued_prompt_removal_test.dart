@@ -160,6 +160,7 @@ Future<(_Servers, Future<void> Function())> _openRemove(
   GlobalKey? boundary,
   Size size = _phone,
   QueuedPromptRemovalException? fail,
+  bool corruptQueue = false,
 }) async {
   _mockPlatform(tester);
   debugPlatformCapabilities = const PlatformCapabilities.android();
@@ -167,7 +168,10 @@ Future<(_Servers, Future<void> Function())> _openRemove(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final prefs = await setupCapturePreferences();
-  await prefs.setString('oc.offlineQueue', _queue());
+  await prefs.setString(
+    'oc.offlineQueue',
+    corruptQueue ? '{invalid-fixture' : _queue(),
+  );
   final store = _Store(prefs: prefs, seeded: _profiles());
   final controller = _Servers(store, fail: fail);
   await tester.pumpWidget(
@@ -317,6 +321,29 @@ void main() {
   setUpAll(loadCaptureFonts);
 
   group('behaviour', () {
+    testWidgets('unreadable queue blocks removal before confirmation', (
+      tester,
+    ) async {
+      final (controller, done) = await _openRemove(tester, corruptQueue: true);
+      try {
+        expect(
+          find.byKey(const ValueKey('confirm-remove-server-studio')),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).serversRemoveQueuedNotKept('Studio Mac'),
+          ),
+          findsOneWidget,
+        );
+        expect(controller.calls, isEmpty);
+      } finally {
+        await done();
+      }
+    });
+
     testWidgets('the remove sheet counts the queued prompts and keeps them '
         'by default', (tester) async {
       final (controller, done) = await _openRemove(tester);

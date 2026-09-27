@@ -213,8 +213,9 @@ abstract class ThermalTeamPort {
   /// service); the hold as it is afterwards.
   Future<ThermalTeamHold> stop(ThermalTeamHold hold);
 
-  /// Gives back exactly what [hold] took. False when the team could not be
-  /// reached (the guard tries again later).
+  /// Gives back exactly what [hold] took. False when any session's wake is
+  /// unconfirmed (the guard retains the durable hold and tries again later).
+  /// Confirmed running or deleted sessions need no further wake.
   Future<bool> resume(ThermalTeamHold hold);
 }
 

@@ -71,6 +71,23 @@ All the gates pass. Every failure that remains also fails on the base commit a47
 
 `flutter analyze lib test` is clean.
 
+## After merging feat/phone-setup-v2
+
+`feat/phone-setup-v2` (f83e1e30, which carries Codex's F3 removal blocker in `servers_screen.dart`) was merged in with no conflicts. Its `_delete` changes are kept as they were, and gen-l10n was rerun.
+
+After the merge:
+- `flutter analyze lib test` is clean.
+- The slice tests and the gates pass again.
+- `queued_prompt_removal` `remove_sheet` goldens were regenerated, because the Servers list behind the sheet moved up 8 dp.
+
+Golden failures that remain, all pre-existing and matching the base's own regeneration:
+- server switcher and other servers panel
+- pairing scanner (5 dark, 5 light)
+- phone_running / phone_stopped / plugins_server
+- switch-server question
+- `queued_prompt_removal` saved_prompts (copy drift from the merge)
+- screen_servers_1 welcome / add server kind / ready
+
 ## Still needs a device
 
 - A phone with OpenCode in the app, plus a remote server with running work: check the order of the list, and that TalkBack reads the phone row as one row of the list.

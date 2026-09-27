@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 
 import '../domain/server_gateway.dart';
+import '../ui/kit/kit_redact.dart';
 import '../domain/session_command_handoff.dart';
 import '../domain/parallel_requests.dart';
 import 'mcp_oauth.dart';
@@ -1949,6 +1950,7 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> connectIntegrationKey(String id, String key, {String? label}) =>
       _guard('Could not connect the provider', () async {
+        KitRedact.registerKnownSecret(key);
         await _client.getIntegrationsApi().v2IntegrationConnectKey(
           integrationID: id,
           locationLeftSquareBracketDirectoryRightSquareBracket: _directory,

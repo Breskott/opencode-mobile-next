@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_copy.dart';
+import '../kit/kit_redact.dart';
 import '../kit/kit_dialog.dart';
 import '../kit/kit_sheet.dart' show KitConfirmKind, showKitConfirm;
 import '../kit/kit_technical_value.dart';
@@ -83,6 +84,7 @@ Future<ExternalLinkOutcome> openExternalLink(
   }
   final insecure = uri.scheme == 'http';
   final address = uri.toString();
+  final safeAddress = KitRedact.text(address);
 
   // The destination host stays in sight (not folded under Details): it is
   // what the person checks before anything opens. The whole address is one
@@ -96,7 +98,7 @@ Future<ExternalLinkOutcome> openExternalLink(
     title: insecure
         ? copy.e7SharedOpenInsecureHTTPLink
         : copy.e7SharedOpenExternalLink,
-    body: copy.externalLinkOpensHost(externalLinkHost(uri)),
+    body: copy.externalLinkOpensHost(KitRedact.text(externalLinkHost(uri))),
     confirmLabel: insecure ? copy.e7SharedOpenHTTPLink : copy.e7SharedOpenLink,
     kind: insecure ? KitConfirmKind.destructive : KitConfirmKind.neutral,
     cancelLabel: insecure ? copy.externalLinkDontOpen : null,
@@ -107,14 +109,14 @@ Future<ExternalLinkOutcome> openExternalLink(
       label: copy.externalLinkCopy,
       icon: AppIconography.copy,
       onPressed: () {
-        // A link is not a secret, and redaction could change the address
-        // the person meant to copy.
+        // Untrusted links may contain credentials. The approved launcher
+        // alone receives the original URI; display and clipboard stay masked.
         if (context.mounted) {
-          unawaited(KitCopy.copy(context, address, redact: false));
+          unawaited(KitCopy.copy(context, safeAddress));
         }
       },
     ),
-    details: [KitTechnicalValue(copy.externalLinkAddress, address)],
+    details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
     sheetKey: const ValueKey('external-link-confirm'),
   );
   if (!confirmed) return ExternalLinkOutcome.cancelled;
@@ -132,7 +134,7 @@ Future<ExternalLinkOutcome> openExternalLink(
           title: copy.externalLinkOpenFailedTitle,
           body: copy.e7SharedNoAppCouldOpenThisLink,
           icon: AppIconography.externalLink,
-          details: [KitTechnicalValue(copy.externalLinkAddress, address)],
+          details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
           alertKey: const ValueKey('external-link-no-app'),
         ),
       );
@@ -146,7 +148,7 @@ Future<ExternalLinkOutcome> openExternalLink(
           title: copy.externalLinkOpenFailedTitle,
           body: productErrorText(error, l10n: copy),
           icon: AppIconography.error,
-          details: [KitTechnicalValue(copy.externalLinkAddress, address)],
+          details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
           alertKey: const ValueKey('external-link-failed'),
         ),
       );

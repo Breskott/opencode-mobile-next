@@ -31587,5 +31587,9 @@
   "tailscaleSetupNoDeviceList": "OpenCode can’t list the devices on your tailnet.",
   "@tailscaleSetupNoDeviceList": {
     "description": "Tailscale setup and recovery fold: why the address is typed, not picked."
+  },
+  "productErrorStagedRevert": "Review the staged revert before sending this queued prompt.",
+  "@productErrorStagedRevert": {
+    "description": "Safe app-authored explanation when a queued prompt needs staged revert review."
   }
 }

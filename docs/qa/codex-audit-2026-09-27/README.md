@@ -1,6 +1,6 @@
 # Branch security, storage and lifecycle audit — 2026-09-27
 
-Read-only review of `codex/audit` at `6ea5e83c5da3465bc7975c76c17ed9a3eaacef74`, against `master` / merge base `c62f159ae3c1741cb4ec0ef92b4941c0ddfc0a18`, using `git diff master...HEAD`. The initial worktree was clean. Only this report is changed by the audit.
+Read-only review of `codex/audit` at `6ea5e83c5da3465bc7975c76c17ed9a3eaacef74`, against `master` / merge base `c62f159ae3c1741cb4ec0ef92b4941c0ddfc0a18`, using `git diff master...HEAD`. The initial worktree was clean. Only this report was changed by the initial audit. The follow-up remediation is recorded in **Fixed** below.
 
 **Finish line:** ranked, actionable findings with source locations, concrete failure scenarios, verification limits and a UI integration contract. **Non-goals:** implementing fixes, redesigning screens, changing stored formats, publishing, signing or pushing.
 
@@ -112,7 +112,7 @@ After successfully resuming the city, `GasCityThermalTeams.resume` ignores every
 
 ## UI hook-up contract for Claude
 
-This is a remediation contract, not a claim that new APIs were implemented.
+This was the initial remediation contract. The implemented contracts and remaining controller work are recorded in **Fixed** below.
 
 | Owner / boundary | Required behavior | Acceptance evidence |
 | --- | --- | --- |
@@ -194,4 +194,83 @@ The temporary probes assert the currently broken outcomes to establish reproduct
 
 Local raw validation logs (ephemeral, not committed): `/tmp/codex-audit-20260927-analyze.log`, `/tmp/codex-audit-20260927-tests.log`, `/tmp/codex-audit-20260927-probes-final.log`, `/tmp/codex-audit-20260927-loaded-secret.log`. The report retains their relevant outcomes; no private credential output is included.
 
-Final state: report written; fixes not implemented or enabled. Only this file is eligible for the requested local commit; no push.
+Initial audit state: report committed without implementation changes or a push. The subsequent authorized remediation follows.
+
+
+## Fixed
+
+Remediation started from integration tip `d0a8abcc` on `codex/audit`. The six requested fixes have independent commits and committed regression tests. `lib/state/connection.dart` is unchanged from that tip. The original finding locations above remain historical; the locations below were rechecked after integration. No stored-format migration, UI redesign, live credential experiment, push or release was performed.
+
+| Finding | Commit | Implemented behavior and current entry points | Regression evidence |
+| --- | --- | --- | --- |
+| F1 | `a65dcea9` | [domain/product_failure.dart:28](../../../lib/domain/product_failure.dart#L28) classifies both protocols. [product_states.dart:51](../../../lib/ui/widgets/product_states.dart#L51) renders localized categories without API imports; technical reasons pass through redaction only in `productErrorDetails` at line 94. Server-supplied staged-revert tags cannot promote server prose to authored copy. | `product_error_text_test.dart`: v1/v2 400/422 body masking and real widget Details; `no_raw_error_text_test.dart`: direct mapper coverage and no UI-to-API import. The mapper is no longer excluded wholesale from the raw-error scan. |
+| F4 | `509c8cd0` | [profiles.dart:759](../../../lib/state/profiles.dart#L759) registers secure-storage reads; upsert registers before writing (line 804). Secret fields register before controller/change callbacks, authenticated transports before requests, provider credential submissions before transport, and provider/config responses before decoding exposes values. Registration handles credential fields without logging the containing response. | Seven tests in `credential_ingress_redaction_test.dart`, including real `ProfileStore.load` through mocked Keystore into persisted diagnostic/report output, failed upsert, entry callback ordering, transports, provider reads and both submission protocols. Fixtures are synthetic; assertions do not print credential values. |
+| F5 | `8dc17fdc` | [external_link.dart:87](../../../lib/ui/widgets/external_link.dart#L87) creates the masked address for Details and Copy link; only the explicitly approved launcher receives the original URI. The G12 reviewed bypass list shrank by this file. | `external_link_test.dart` exercises the real dialog and clipboard: sensitive query absent, no launch, ordinary URL unchanged. |
+| F6 | `c45c17d9` | [SetupRunner.kt:409](../../../android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt#L409) holds one lock from snapshot through atomic persistence; the periodic writer is interrupted and joined before terminal commit (line 233). `SetupPersistence.kt` syncs a unique temporary file and atomically renames, with no direct-file fallback. `setup_persistence` crosses MethodChannel as a typed, safe failure and maps to `SetupFailureKind.persistence`. | `setup_runner_native_test.dart` runs the real Kotlin owner with deterministic competing-write and storage-failure scenarios; `setup_persistence_failure_test.dart` tests typed Dart status mapping. Kotlin release compile passed. |
+| F7 | `3f14c4ae` | [thermal_guard_teams.dart:158](../../../lib/builtin/thermal_guard_teams.dart#L158) confirms every owned session running, successfully awakened, or absent from its session resource. A failed wake or wake-route 404 is insufficient. The durable hold and its IDs remain while any outcome is uncertain; retry skips confirmed running sessions. | `thermal_guard_test.dart` tests 500/null/wake-404 failure, confirmed absence, partial recovery and retry after restart through the real adapter/controller. No full-recovery notice on failed wake. |
+| F8 | `7c6d009c` | [interaction_defaults.dart:249](../../../lib/state/interaction_defaults.dart#L249) shares one owner per preferences/profile. [profiles.dart:908](../../../lib/state/profiles.dart#L908) closes admission and drains that owner before scoped key discovery/removal, through the existing deletion transaction. Absent/closed profiles reject notice and project-default writes. | `default_notice_deletion_test.dart` delays a real preference write across `ProfileStore.remove`, verifies deletion waits, reloads disk, and verifies no resurrected keys or late writes. Existing interaction-default tests now seed authoritative profile membership. |
+| F3 — screen portion only | `d0f68b35` | [servers_screen.dart:590](../../../lib/ui/screens/servers_screen.dart#L590) stops immediately on inspection failure and uses the existing localized failure surface. No deletion confirmation or controller call follows an unreadable queue. | `revamp/queued_prompt_removal_test.dart`: corrupt queue produces the recovery copy, no confirmation, no deletion call. The controller bypass remains deferred below. |
+
+### Regression evidence and validation scope
+
+Each finding's new safety assertion was run against its original implementation before the fix. F1 exposed server text; all seven F4 ingress tests failed; F5 hit the debug secret assertion; F6 failed deterministic old-writer ordering and typed-failure tests; F7 lost the hold on uncertain wake; all three F8 owner/admission/drain tests failed. F3's screen test found the destructive confirmation despite inspection failure. Those same safety assertions subsequently passed. These are behavior tests, not passing tests that merely assert the old broken outcome.
+
+The local before/after logs are ephemeral: `/tmp/audit-f1-red-f4-f6-green.log`, `/tmp/audit-f4-f5-red.log`, `/tmp/audit-f6-red.log`, `/tmp/audit-f4-f7-red.log`, `/tmp/audit-f8-red.log`, `/tmp/audit-f1-f5-f8-green-f3-red.log`, and `/tmp/audit-f3-green.log`. Mixed discovery runs intentionally contain failures for findings not fixed yet; they are not claimed as successful integration gates.
+
+Behavior-check candidate: `d0f68b35`. Final code candidate: `5da245fb`, which adds analyzer-required braces and removes one redundant test import; it changes no behavior. Pinned Dart formatting checked all 31 changed handwritten Dart files with `--language-version=3.10 --output=none --set-exit-if-changed`: zero changes. `git diff --check` passed.
+
+The 21-file focused manifest below passed **436 tests, zero failures or skips**, serially under `OC_TEST_SLOTS=1 tool/qa/machine_lock.sh test`, with the pinned Flutter, `--no-pub --concurrency=1 --reporter expanded`. This includes all four requested gates. Log: `/tmp/audit-final-focused.log`.
+
+```text
+test/kit_ratchet_test.dart
+test/redaction_test.dart
+test/ui_glossary_test.dart
+test/no_raw_error_text_test.dart
+test/product_error_text_test.dart
+test/external_link_test.dart
+test/credential_ingress_redaction_test.dart
+test/default_notice_deletion_test.dart
+test/interaction_defaults_test.dart
+test/profile_deletion_test.dart
+test/profile_store_test.dart
+test/profile_secure_storage_test.dart
+test/queued_prompt_removal_wiring_test.dart
+test/kit/kit_redact_test.dart
+test/kit/kit_field_test.dart
+test/setup_config_adapter_test.dart
+test/server_probe_test.dart
+test/thermal_guard_test.dart
+test/setup_runner_native_test.dart
+test/setup_persistence_failure_test.dart
+test/setup_engine_test.dart
+```
+
+The removal-screen behavior group also passed **6 tests**, using `flutter test --no-pub --concurrency=1 test/revamp/queued_prompt_removal_test.dart --plain-name behaviour --reporter expanded` under the same machine lock. Log: `/tmp/audit-final-removal.log`. Coverage at `d0f68b35`: **442 tests**. Existing goldens were not regenerated.
+
+Kotlin compile: from `android`, `../tool/qa/machine_lock.sh build -- ./gradlew :app:compileReleaseKotlin` passed in 2m55s, 177 tasks; log `/tmp/audit-f6-kotlin.log`. It covered the final native source. The ignored wrapper launcher/JAR were missing in this worktree and were restored from the existing sibling checkout before running the pinned wrapper. No tracked wrapper change, signing or APK delivery was needed. The deterministic JVM harness executed all three native scenarios without skips.
+
+After the analyzer-only cleanup, the four gates plus `product_error_text_test.dart`, `credential_ingress_redaction_test.dart`, `default_notice_deletion_test.dart` and `interaction_defaults_test.dart` were rerun on `5da245fb`: **122 tests passed, no failures or skips**. Log: `/tmp/audit-final-lint-tests.log`. Unaffected native, thermal and link source is identical to the broader passing candidate.
+
+Final analyzer: pinned `flutter analyze --no-pub`, serialized under the machine lock, passed with **No issues found** on `5da245fb` (78.1s). Log: `/tmp/audit-final-analyze-clean.log`. The first analyzer pass found six style issues; `5da245fb` resolves them without adding ignores.
+
+No full repository suite, device process-death test, thermal hardware test or six-hour foreground-service test is claimed.
+
+### Exact deferred F2/F3 controller plan
+
+The following work is intentionally **not implemented** because `connection.dart` has another owner. Rebase these locations before editing.
+
+1. **F2: split admission/drain from destructive cleanup.** `deleteProfileAndLocalData` at line 5997 currently disables recovery and changes owners before queue validation; lines 6027–6033 invalidate saved-prompt Undo and dispose its controller. `_deleteProfileAndLocalData` calls `AutomaticActivityController.closeProfile` around line 6110, which currently deletes history and disposes inverse actions (`automatic_activity.dart:71`). Move irreversible history deletion, Undo invalidation and controller disposal after successful queue preflight/preservation. Add reversible suspension/drain methods for owners that currently combine closing with deletion. Keep the existing deletion/admission epoch so callbacks cannot write during the transaction.
+2. **F2: validate and preserve under the queue lane before deleting anything.** Inside `_serializeQueueChange` (currently line 6133), inspect authoritative stored queue data, compare the confirmed snapshot with both current in-memory and persisted entries, and verify retained drafts/attachments durably before removing source entries. Do not move preservation outside this serialized transaction. A changed queue, corrupt store, full retained store or refused write must leave profile, source queue, activity history and Undo intact. A verified retained copy may remain after a later failure; use existing idempotent IDs so retry cannot duplicate it.
+3. **F2: reopen after aborted preflight.** On rejection, resume suspended activity/automation/consent/default owners, pending-auth admission, monitors and managed recovery only when the profile remains present and no destructive phase has begun. Restore the prior enabled state rather than blindly enabling services. Keep old callback epochs invalid, but allow new operations and a fresh deletion inspection. F8's shared defaults owner stays closed once its sweep begins; an explicit coordinated reopen is needed if a later partial deletion retains the profile. Do not construct a new owner during the sweep-to-profile-removal gap.
+4. **F3: enforce inspection in the controller independently.** Replace the `if (queuedPrompts != null)` validation bypass at line 6134. Always reject unreadable queue storage, even for callers that omit a plan. For `keepQueuedPrompts: true`, require a valid confirmed plan or return the typed queue-removal failure without mutation; do not equate a missing plan with zero entries. Existing direct destructive callers still need a valid authoritative read. A separate explicit discard-corrupt-data product flow would require its own confirmation; this change must not infer permission for it.
+5. **Acceptance tests for the controller owner.** Extend `queued_prompt_removal_wiring_test.dart` using the real shared activity owner and saved-prompt Undo. Test stale confirmation, unreadable disk with empty memory, null-plan keep, retained-store capacity/refusal, and a racing dispatch marker. Assert byte-preserved source data, retained profile/history/Undo and usable owners after rejection; then repair/reinspect and complete a successful retry. Preserve the existing attachment and duplicate-safe retention checks. Run profile deletion, queue wiring, activity, saved-prompt and default-notice tests before the integration gate.
+
+### Current UI hook-up contract for Claude
+
+- Error surfaces use `productErrorText` for localized prose and `productErrorDetails` only for folded Details/copy/report. `ProductFailure.technicalDetails` is untrusted; never bind it directly to visible body text or announcements. The UI imports the domain mapping, not protocol exception classes. F1 added English copy in `app_en.arb` and regenerated localizations; Arabic currently uses the generated fallback for this new key.
+- Keep all untrusted links behind `openExternalLink`. Its Copy link action now produces a masked URL; Details shows the same representation. Do not bypass it for OAuth or server markdown URLs.
+- Secret-entry kit fields and trusted credential loaders register values before downstream capture. Never render or report whole provider configuration objects. Registration supplements redaction and safe domain messages; it does not authorize raw diagnostic capture.
+- Setup progress consumes typed persistence failure through the existing plain-language failure UI. A failed commit must not be presented as durable completion. The last durable snapshot may recover as interrupted after storage failure; no claim of persisted success is made.
+- Thermal recovery UI announces resumed only when the adapter confirms all owned work. Partial wake failure keeps the existing hold/retry behavior.
+- Construct default notices through the shared `InteractionDefaultsStore` factory. Missing/closed profiles do not admit writes. No screen-local replacement writer is allowed. Existing `ProfileStore.removeScopedPreferences` supplies the deletion hook without a new `connection.dart` edit.
+- Servers removal now stops on inspection failure. The controller owner must complete the deferred F2/F3 transaction contract above before those findings can be marked fully fixed.
