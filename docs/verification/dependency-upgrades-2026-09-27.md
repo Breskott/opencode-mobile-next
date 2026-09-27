@@ -13,3 +13,13 @@ Command: `flutter test --no-pub --concurrency=1 test/kit/kit_scanner_test.dart t
 Result: **21 passed, 2 failed**. The two pairing-scanner permission-denial tests expect a `Try again` button which the current screen does not render. Both fail identically at base `e7762e60` with mobile_scanner 7.4.0, using the exact failure-name filter in the detached base worktree. No new failure identified; existing assertions/UI left unchanged.
 
 Device checks owed: offline/no-Play-Services QR; denied/in-use camera; rotation (including 180°); background/resume; dispose/re-enter; shrinking; camera/sensor release and KGP warning in a native build.
+
+## 2. Paseo 0.9.2
+
+Updated `localAgentsPins.paseo_version` and its exact script-test expectation. `clientAppVersion` remains 0.8.0. Kept prior real-daemon verification history separate from the newly reviewed target.
+
+Command: `flutter test --no-pub --concurrency=1 test/local_agent_runtime_test.dart test/paseo_gateway_test.dart test/local_agent_onboarding_test.dart`.
+
+Result: **80 passed, 1 skipped, 1 failed**. Shellcheck is unavailable (existing optional skip). The onboarding restart/stop confirmation test expects the interruption warning to be absent; the warning is present. The exact same test fails at base `e7762e60` with Paseo 0.9.1. No new failure identified; existing UI/test left unchanged.
+
+Device checks owed: explicit install/repair, node-pty loading, authenticated hello, Claude create/send/stream/approve/cancel, history/reconnect, repeated connection teardown and idle CPU/RSS, restart/reboot/stale-PID recovery. Capture the Claude version because repair also updates unpinned Claude Code.

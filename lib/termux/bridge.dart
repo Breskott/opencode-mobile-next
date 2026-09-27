@@ -3177,7 +3177,8 @@ echo "aiteam-started:\$!"
   ///
   /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
   /// and, with a real Claude Opus 5.5 turn, 0.9.1 (the first release whose
-  /// Claude model list includes Opus 5.5; 2026-09-23).
+  /// Claude model list includes Opus 5.5; 2026-09-23). The 0.9.2 patch is
+  /// reviewed for compatible protocol changes; device validation is pending.
   /// Claude Code is not pinned; the installed version is recorded in the
   /// script's state and shown in the app.
   static const localAgentsPins = <String, String>{
@@ -3187,7 +3188,7 @@ echo "aiteam-started:\$!"
         '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
     'node_sha256_x64':
         '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
-    'paseo_version': '0.9.1',
+    'paseo_version': '0.9.2',
   };
 
   /// The verbs `claude.sh` runs detached from the bridge shell (their
