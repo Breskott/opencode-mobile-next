@@ -285,7 +285,7 @@ function enqueueIntegration(label, done, opts) {
 }
 
 async function integrate(label, done, opts) {
-  const ok = done.filter(Boolean).filter((r) => r.built && r.built.testsPassed && r.built.analyzeClean && r.review && r.review.verdict !== 'reject')
+  const ok = done.filter(Boolean).filter((r) => r.built && r.built.testsPassed && r.built.analyzeClean && (A.review === false ? true : (r.review && r.review.verdict !== 'reject')))
   done.filter(Boolean).filter((r) => !ok.includes(r)).forEach((r) => log(`not ready: ${r.unit}`))
   log(`${label}: ${ok.length}/${done.length} units ready to integrate`)
   if (!ok.length && !opts.goldens) return { label, merged: [], report: null }
