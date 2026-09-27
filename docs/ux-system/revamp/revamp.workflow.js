@@ -245,6 +245,9 @@ function owns(u) {
 function describe(u) {
   const lines = [
     `Unit ${u.id} (wave ${u.wave}${u.tier ? `, tier ${u.tier}` : ''}): ${u.title}.`,
+    u.fromCut ? `Full definition (title, finishLine, nonGoal, acceptance, gate, proof): read the unit with id "${u.id}" in docs/ux-system/revamp/work-units.json and honour all of it.` : '',
+    A.commonAcceptance ? `Also:\n- ${A.commonAcceptance.join('\n- ')}` : '',
+    A.unitNotes && A.unitNotes[u.id] ? `Notes for this unit:\n- ${A.unitNotes[u.id].join('\n- ')}` : '',
     u.write && u.write.length ? `Write set (only these files, plus a new kit part and your tests): ${u.write.join(', ')}.` : '',
     u.region ? `Region: you edit only ${u.region} of the host, plus call sites anywhere in the chat library (R03).` : '',
     u.tests && u.tests.length ? `Tests write set (R08): ${u.tests.join(', ')}.` : 'Tests write set: only new test files of your own (R08).',
