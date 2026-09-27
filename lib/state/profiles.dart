@@ -6,6 +6,7 @@ import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../ui/kit/kit_redact.dart';
 
 import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
@@ -754,12 +755,14 @@ class ProfileStore {
       try {
         if (p.usesAgentSocket) {
           p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
+          KitRedact.registerKnownSecret(p.codexToken);
           p.requiresCodexTokenReentry =
               p.agentSocketSecretRequired && p.codexToken.isEmpty;
           p.password = '';
           p.requiresPasswordReentry = false;
         } else {
           p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
+          KitRedact.registerKnownSecret(p.password);
           p.requiresPasswordReentry = false;
           p.codexToken = '';
           p.requiresCodexTokenReentry = false;
@@ -797,6 +800,9 @@ class ProfileStore {
   }
 
   Future<void> upsert(ServerProfile profile) async {
+    // Register before persistence: a failing keyring may echo its input.
+    KitRedact.registerKnownSecret(profile.password);
+    KitRedact.registerKnownSecret(profile.codexToken);
     final previousRaw = prefs.getString(_profilesKey);
     final next = List<ServerProfile>.of(_cache);
     final i = _cache.indexWhere((p) => p.id == profile.id);
