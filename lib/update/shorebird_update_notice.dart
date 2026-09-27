@@ -1,7 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
+
+import '../l10n/app_localizations.dart';
+import '../ui/app_iconography.dart';
+import '../ui/kit/kit_status_line.dart';
+import '../ui/kit/kit_status_slot.dart';
 
 enum AppUpdateState { current, available, restartRequired, unavailable }
 
@@ -55,17 +61,103 @@ class UnavailableAppUpdateService implements AppUpdateService {
   Future<void> downloadUpdate() async {}
 }
 
+/// Adds one app-wide [status] to the conditions every screen's status line
+/// reads (`KitStatusScope`, kit_status_slot.dart), keeping the conditions of
+/// any scope above it.
+///
+/// The update notices sit above the Navigator (in `MaterialApp.builder`), so
+/// a condition they raise reaches every `KitScreen`'s status slot, where
+/// `KitStatus.highest` keeps it below connection, heat and a screen's own
+/// work line (STATE-19: an update is the lowest condition). A scope that
+/// main.dart provides above the notices keeps working: its conditions come
+/// first.
+class UpdateStatusScope extends StatefulWidget {
+  const UpdateStatusScope({
+    super.key,
+    required this.status,
+    required this.child,
+  });
+
+  /// Null: nothing to add.
+  final KitStatus? status;
+  final Widget child;
+
+  @override
+  State<UpdateStatusScope> createState() => _UpdateStatusScopeState();
+}
+
+class _UpdateStatusScopeState extends State<UpdateStatusScope> {
+  final _conditions = ValueNotifier<List<KitStatus>>(const []);
+  ValueListenable<List<KitStatus>>? _outer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final outer = KitStatusScope.of(context);
+    if (!identical(outer, _outer)) {
+      _outer?.removeListener(_merge);
+      _outer = outer..addListener(_merge);
+      _merge();
+    }
+  }
+
+  @override
+  void didUpdateWidget(UpdateStatusScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_sameStatus(oldWidget.status, widget.status)) _merge();
+  }
+
+  void _merge() {
+    _conditions.value = [...?_outer?.value, ?widget.status];
+  }
+
+  @override
+  void dispose() {
+    _outer?.removeListener(_merge);
+    _conditions.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      KitStatusScope(conditions: _conditions, child: widget.child);
+}
+
+/// Same identity and words: a rebuild that changes nothing the person sees
+/// does not redraw every slot.
+bool _sameStatus(KitStatus? a, KitStatus? b) =>
+    identical(a, b) ||
+    (a != null &&
+        b != null &&
+        a.id == b.id &&
+        a.message == b.message &&
+        a.supporting == b.supporting &&
+        a.action?.label == b.action?.label);
+
+/// Receives a code-push update without a word and, once it is ready, says
+/// so in the app's one status line: "App update ready", "It takes effect
+/// when you fully close the app and open it again." (map page
+/// `shorebird-update-notice`, owner verdict Fix: silent download, one
+/// status line that never covers the pinned action, no tool name).
+///
+/// States: nothing shown (checking, downloading, up to date, unavailable,
+/// and a failed download, which tries again on a later resume), ready (the
+/// status line). Its Dismiss hides the line for the rest of the run and
+/// changes nothing real: the update still applies on the next cold start.
 class ShorebirdUpdateNotice extends StatefulWidget {
   const ShorebirdUpdateNotice({
     super.key,
     required this.service,
-    required this.messengerKey,
     required this.child,
+    this.messengerKey,
   });
 
   final AppUpdateService service;
-  final GlobalKey<ScaffoldMessengerState> messengerKey;
   final Widget child;
+
+  /// Not used: the notice speaks through the status line, never a
+  /// snackbar. Kept so existing callers compile (R11).
+  final GlobalKey<ScaffoldMessengerState>? messengerKey;
 
   @override
   State<ShorebirdUpdateNotice> createState() => _ShorebirdUpdateNoticeState();
@@ -74,7 +166,8 @@ class ShorebirdUpdateNotice extends StatefulWidget {
 class _ShorebirdUpdateNoticeState extends State<ShorebirdUpdateNotice>
     with WidgetsBindingObserver {
   bool _checking = false;
-  bool _readyNoticeShown = false;
+  bool _ready = false;
+  bool _hidden = false;
   DateTime? _lastCheck;
 
   @override
@@ -94,7 +187,7 @@ class _ShorebirdUpdateNoticeState extends State<ShorebirdUpdateNotice>
   }
 
   Future<void> _checkForUpdate() async {
-    if (!widget.service.isAvailable || _checking || _readyNoticeShown) return;
+    if (!widget.service.isAvailable || _checking || _ready) return;
     final now = DateTime.now();
     if (_lastCheck case final previous?
         when now.difference(previous) < const Duration(minutes: 15)) {
@@ -109,58 +202,43 @@ class _ShorebirdUpdateNoticeState extends State<ShorebirdUpdateNotice>
         case AppUpdateState.restartRequired:
           _showReady();
         case AppUpdateState.available:
-          _showDownloading();
+          // Silent: a download is not the person's business until it is
+          // ready (owner verdict). A failure lands in the catch below.
           await widget.service.downloadUpdate();
-          if (mounted) _showReady();
+          _showReady();
       }
     } on Exception catch (error) {
-      widget.messengerKey.currentState?.removeCurrentSnackBar(
-        reason: SnackBarClosedReason.remove,
-      );
-      debugPrint('Shorebird update check failed: $error');
+      // Never claims readiness after a failed download; the next resume
+      // after the throttle tries again.
+      debugPrint('App update check failed: $error');
     } finally {
       _checking = false;
     }
   }
 
-  void _showDownloading() {
-    final messenger = widget.messengerKey.currentState;
-    if (messenger == null) return;
-    messenger.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
-    messenger.showSnackBar(
-      const SnackBar(
-        duration: Duration(days: 1),
-        content: Row(
-          children: [
-            SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Expanded(child: Text('Receiving Shorebird update…')),
-          ],
-        ),
-      ),
-    );
+  void _showReady() {
+    if (!mounted || _ready) return;
+    setState(() => _ready = true);
   }
 
-  void _showReady() {
-    if (_readyNoticeShown) return;
-    _readyNoticeShown = true;
-    final messenger = widget.messengerKey.currentState;
-    if (messenger == null) return;
-    messenger.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
-    messenger.showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 10),
-        content: const Text('Shorebird update ready — restart to apply.'),
-        action: SnackBarAction(label: 'Got it', onPressed: () {}),
-      ),
+  KitStatus? _status(BuildContext context) {
+    if (!_ready || _hidden) return null;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitStatus(
+      kind: KitStatusKind.update,
+      id: 'update:app',
+      icon: AppIconography.download,
+      message: l10n.shorebirdUpdateReadyTitle,
+      supporting: l10n.shorebirdUpdateReadyBody,
+      onDismiss: () {
+        if (mounted) setState(() => _hidden = true);
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) =>
+      UpdateStatusScope(status: _status(context), child: widget.child);
 
   @override
   void dispose() {

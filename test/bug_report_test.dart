@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/feedback/bug_report.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-Widget _app(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _app(Widget child) => MaterialApp(
+  theme: AppTheme.dark(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: child),
+);
 
 void main() {
   tearDown(() => debugPlatformCapabilities = null);
@@ -84,26 +91,94 @@ void main() {
   });
 
   group('openBugReport fallback', () {
-    testWidgets('a failed launch copies the link and explains in one pump', (
+    const link = 'https://github.com/fake/issues/new';
+    const explained =
+        "Your browser didn't open, so the link to the bug form is copied. "
+        'Paste it into a browser to file the report.';
+
+    /// Records what reaches the clipboard.
+    List<String> recordClipboard(WidgetTester tester) {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      return copied;
+    }
+
+    testWidgets('a failed launch copies the link and says so in a sheet', (
       tester,
     ) async {
+      final copied = recordClipboard(tester);
       await tester.pumpWidget(_app(const SizedBox.shrink()));
       final context = tester.element(find.byType(SizedBox));
 
       await openBugReport(
         context,
-        urlBuilder: () async => Uri.parse('https://github.com/fake/issues/new'),
+        urlBuilder: () async => Uri.parse(link),
         launcher: (_) async => false,
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(
-        find.text('Bug report link copied — open it in a browser.'),
-        findsOneWidget,
+      expect(copied, [link]);
+      expect(find.text('Report a bug'), findsOneWidget);
+      expect(find.text(explained), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+
+      await tester.tap(find.text('Copy bug form link'));
+      await tester.pump();
+      expect(copied, [link, link]);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a launch that throws or hangs still ends in the sheet', (
+      tester,
+    ) async {
+      recordClipboard(tester);
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      final context = tester.element(find.byType(SizedBox));
+
+      await openBugReport(
+        context,
+        urlBuilder: () async => Uri.parse(link),
+        launcher: (_) async => throw StateError('no browser'),
       );
+      await tester.pumpAndSettle();
+      expect(find.text(explained), findsOneWidget);
+    });
+
+    testWidgets('an opened browser leaves the app as it was', (tester) async {
+      final copied = recordClipboard(tester);
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      final context = tester.element(find.byType(SizedBox));
+      Uri? launched;
+
+      await openBugReport(
+        context,
+        urlBuilder: () async => Uri.parse(link),
+        launcher: (url) async {
+          launched = url;
+          return true;
+        },
+      );
+      await tester.pumpAndSettle();
+
+      expect(launched, Uri.parse(link));
+      expect(copied, isEmpty);
+      expect(find.text(explained), findsNothing);
     });
   });
-
   group('the failure surface carries the report affordance', () {
     testWidgets('ProductErrorState offers Report a bug next to Try again', (
       tester,

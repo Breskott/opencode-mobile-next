@@ -4,6 +4,12 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_status_line.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/update/desktop_release_check.dart';
 
 class _FakeChecker extends DesktopReleaseChecker {
@@ -57,9 +63,34 @@ class _HangingAdapter implements HttpClientAdapter {
   ) => Completer<ResponseBody>().future;
 }
 
-Widget _host(DesktopReleaseNotice notice) => MaterialApp(
-  scaffoldMessengerKey: notice.messengerKey,
-  home: Scaffold(body: notice),
+const _release = DesktopReleaseInfo(
+  tag: 'v1.0.30+31-preview.9',
+  htmlUrl:
+      'https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v31',
+);
+const _available = 'OpenCode v1.0.30+31-preview.9 is available';
+const _whatChanged =
+    'The release page lists what changed and has the downloads.';
+const _open = 'Open release page';
+
+/// The notice where main.dart mounts it (above the Navigator), with a page
+/// on the kit's screen frame below, whose status slot draws the line.
+Widget _host(
+  DesktopReleaseNotice Function(Widget child) notice, {
+  GlobalKey<NavigatorState>? navigatorKey,
+}) => MaterialApp(
+  navigatorKey: navigatorKey,
+  theme: AppTheme.dark(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => notice(child ?? const SizedBox.shrink()),
+  home: KitScreen(
+    topBar: const KitTopBar(title: 'Work'),
+    body: ListView(children: const [Text('OpenCode')]),
+    bottom: KitActionBlock(
+      primary: KitAction(label: 'New conversation', onPressed: () {}),
+    ),
+  ),
 );
 
 void main() {
@@ -189,41 +220,34 @@ void main() {
     }
   });
 
-  testWidgets('a newer release shows one notice whose View action launches', (
-    tester,
-  ) async {
-    final messengerKey = GlobalKey<ScaffoldMessengerState>();
-    final checker = _FakeChecker(
-      const DesktopReleaseInfo(
-        tag: 'v1.0.30+31-preview.9',
-        htmlUrl:
-            'https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v31',
-      ),
-    );
+  testWidgets('a newer release shows one status line whose Open release '
+      'page launches', (tester) async {
+    final checker = _FakeChecker(_release);
     Uri? launched;
     await tester.pumpWidget(
       _host(
-        DesktopReleaseNotice(
-          messengerKey: messengerKey,
+        (child) => DesktopReleaseNotice(
           checker: checker,
           enabledOverride: true,
           currentBuildNumberLoader: () async => 26,
           launcher: (url) async => launched = url,
-          child: const SizedBox.shrink(),
+          child: child,
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
+    expect(find.text(_available), findsOneWidget);
+    expect(find.text(_whatChanged), findsOneWidget);
+    expect(find.byType(KitStatusLine), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    // The line sits under the top bar, clear of the pinned primary.
     expect(
-      find.text('OpenCode v1.0.30+31-preview.9 is available.'),
-      findsOneWidget,
+      tester.getBottomLeft(find.text(_whatChanged)).dy,
+      lessThan(tester.getTopLeft(find.text('New conversation')).dy),
     );
 
-    // Let the snackbar finish its entrance before tapping its action.
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('View'));
+    await tester.tap(find.text(_open));
     await tester.pump();
     expect(
       launched,
@@ -232,43 +256,30 @@ void main() {
       ),
     );
 
-    // A resume never re-shows the notice within the run.
+    // A resume never re-checks while the line is known.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(checker.calls, 1);
   });
 
-  testWidgets('production View action uses the external-link confirmation', (
-    tester,
-  ) async {
-    final messengerKey = GlobalKey<ScaffoldMessengerState>();
+  testWidgets('production Open release page uses the external-link '
+      'confirmation', (tester) async {
     final navigatorKey = GlobalKey<NavigatorState>();
     await tester.pumpWidget(
-      MaterialApp(
+      _host(
         navigatorKey: navigatorKey,
-        scaffoldMessengerKey: messengerKey,
-        home: const Scaffold(body: SizedBox.shrink()),
-        builder: (context, child) => DesktopReleaseNotice(
-          messengerKey: messengerKey,
+        (child) => DesktopReleaseNotice(
           navigatorKey: navigatorKey,
-          checker: _FakeChecker(
-            const DesktopReleaseInfo(
-              tag: 'v1.0.30+31-preview.9',
-              htmlUrl:
-                  'https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v31',
-            ),
-          ),
+          checker: _FakeChecker(_release),
           enabledOverride: true,
           currentBuildNumberLoader: () async => 26,
-          child: child ?? const SizedBox.shrink(),
+          child: child,
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('View'));
+    await tester.tap(find.text(_open));
     await tester.pumpAndSettle();
 
     expect(find.text('Open external link?'), findsOneWidget);
@@ -276,77 +287,60 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('a missing messenger does not consume the only notice', (
-    tester,
-  ) async {
-    final messengerKey = GlobalKey<ScaffoldMessengerState>();
-    final checker = _FakeChecker(
-      const DesktopReleaseInfo(
-        tag: 'v1.0.30+31-preview.9',
-        htmlUrl:
-            'https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v31',
-      ),
-    );
-    var showMessenger = false;
-    var minutes = 0;
-    StateSetter? rebuild;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: StatefulBuilder(
-          builder: (context, setState) {
-            rebuild = setState;
-            return ScaffoldMessenger(
-              key: showMessenger ? messengerKey : null,
-              child: Scaffold(
-                body: DesktopReleaseNotice(
-                  messengerKey: messengerKey,
-                  checker: checker,
-                  enabledOverride: true,
-                  currentBuildNumberLoader: () async => 26,
-                  now: () =>
-                      DateTime(2026, 1, 1).add(Duration(minutes: minutes)),
-                  child: const SizedBox.shrink(),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-    expect(
-      find.text('OpenCode v1.0.30+31-preview.9 is available.'),
-      findsNothing,
-    );
-
-    showMessenger = true;
-    rebuild!(() {});
-    await tester.pump();
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    await tester.pump();
-
-    expect(
-      find.text('OpenCode v1.0.30+31-preview.9 is available.'),
-      findsOneWidget,
-    );
-    expect(checker.calls, 2);
-  });
-
-  testWidgets('throttle keeps rapid resumes to one check', (tester) async {
-    final messengerKey = GlobalKey<ScaffoldMessengerState>();
-    final checker = _FakeChecker(null);
+  testWidgets('Dismiss hides the line for the rest of the run', (tester) async {
+    final checker = _FakeChecker(_release);
     var minutes = 0;
     await tester.pumpWidget(
       _host(
-        DesktopReleaseNotice(
-          messengerKey: messengerKey,
+        (child) => DesktopReleaseNotice(
           checker: checker,
           enabledOverride: true,
           currentBuildNumberLoader: () async => 26,
           now: () => DateTime(2026, 1, 1).add(Duration(minutes: minutes)),
-          child: const SizedBox.shrink(),
+          child: child,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(_available), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('kit-status-dismiss')));
+    await tester.pumpAndSettle();
+    expect(find.text(_available), findsNothing);
+
+    minutes = 30;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text(_available), findsNothing);
+    expect(checker.calls, 1);
+  });
+
+  testWidgets('an older or equal release shows nothing', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        (child) => DesktopReleaseNotice(
+          checker: _FakeChecker(_release),
+          enabledOverride: true,
+          currentBuildNumberLoader: () async => 31,
+          child: child,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(KitStatusLine), findsNothing);
+  });
+
+  testWidgets('throttle keeps rapid resumes to one check', (tester) async {
+    final checker = _FakeChecker(null);
+    var minutes = 0;
+    await tester.pumpWidget(
+      _host(
+        (child) => DesktopReleaseNotice(
+          checker: checker,
+          enabledOverride: true,
+          currentBuildNumberLoader: () async => 26,
+          now: () => DateTime(2026, 1, 1).add(Duration(minutes: minutes)),
+          child: child,
         ),
       ),
     );
@@ -365,16 +359,14 @@ void main() {
   });
 
   testWidgets('non-desktop platforms never check', (tester) async {
-    final messengerKey = GlobalKey<ScaffoldMessengerState>();
     final checker = _FakeChecker(null);
     await tester.pumpWidget(
       _host(
-        DesktopReleaseNotice(
-          messengerKey: messengerKey,
+        (child) => DesktopReleaseNotice(
           checker: checker,
           enabledOverride: false,
           currentBuildNumberLoader: () async => 26,
-          child: const SizedBox.shrink(),
+          child: child,
         ),
       ),
     );
