@@ -5,24 +5,9 @@
       "SnackBar(": 6,
       "showSnackBar(": 6
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "SnackBar(": 2,
-      "showConfirmSheet(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 2
-    },
     "lib/ui/screens/chat/chat_states.dart": {
       "AlertDialog(": 1,
       "showDialog(": 1
-    },
-    "lib/ui/screens/chat/form_flow.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "AlertDialog(": 1,
-      "showDialog(": 1,
-      "showModalBottomSheet(": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1,
@@ -122,62 +107,12 @@
       "Scaffold": 1,
       "Text": 10
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "ActionChip": 1,
-      "Container": 1,
-      "Divider": 1,
-      "FilledButton": 1,
-      "Icon": 5,
-      "RadioGroup": 1,
-      "RadioListTile": 2,
-      "SingleChildScrollView": 1,
-      "SnackBar": 2,
-      "SwitchListTile": 2,
-      "Text": 22,
-      "TextButton": 2,
-      "Tooltip": 1
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      "ActionChip": 1,
-      "ExpansionTile": 2,
-      "Icon": 1,
-      "SingleChildScrollView": 1,
-      "Text": 7
-    },
     "lib/ui/screens/chat/chat_states.dart": {
       "AlertDialog": 1,
       "SelectableText": 1,
       "SingleChildScrollView": 1,
       "Text": 2,
       "TextButton": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "ActionChip": 1,
-      "Container": 1,
-      "Opacity": 3,
-      "SingleChildScrollView": 2,
-      "Text": 5,
-      "Transform": 2,
-      "TweenAnimationBuilder": 2
-    },
-    "lib/ui/screens/chat/form_flow.dart": {
-      "SnackBar": 1,
-      "Text": 1
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "ActionChip": 1,
-      "AlertDialog": 1,
-      "AnimatedSize": 1,
-      "Container": 2,
-      "Icon": 8,
-      "IconButton": 2,
-      "Material": 2,
-      "MaterialPageRoute": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 4,
-      "Text": 17,
-      "TextButton": 1,
-      "TextField": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "ListTile": 1,
@@ -190,11 +125,11 @@
     "lib/ui/screens/chat/timeline_sheet.dart": {
       "Divider": 1,
       "DraggableScrollableSheet": 1,
-      "Icon": 6,
+      "Icon": 5,
       "IconButton": 2,
-      "ListTile": 2,
+      "ListTile": 1,
       "Material": 1,
-      "Text": 9,
+      "Text": 8,
       "TextButton": 1,
       "TextField": 1
     },
@@ -207,17 +142,6 @@
       "Text": 4,
       "TextButton": 2,
       "TextField": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      "CircularProgressIndicator": 1,
-      "Container": 1,
-      "Icon": 4,
-      "Material": 1,
-      "Scrollbar": 1,
-      "SingleChildScrollView": 1,
-      "SwitchListTile": 1,
-      "Text": 8,
-      "TextButton": 4
     },
     "lib/ui/screens/chat/watching.dart": {
       "MaterialPageRoute": 1,
@@ -303,12 +227,10 @@
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "AlertDialog": 1,
       "CheckboxListTile": 1,
-      "Icon": 1,
-      "IconButton": 1,
       "SelectableText": 1,
       "SingleChildScrollView": 1,
       "SnackBar": 1,
-      "Text": 17,
+      "Text": 15,
       "TextButton": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
@@ -365,12 +287,6 @@
       "SnackBar": 2,
       "Text": 12,
       "TextButton": 5
-    },
-    "lib/ui/widgets/diff_view.dart": {
-      "AppBar": 1,
-      "CloseButton": 1,
-      "Scaffold": 1,
-      "Text": 1
     },
     "lib/ui/widgets/local_agent_onboarding.dart": {
       "CircularProgressIndicator": 1,
@@ -466,21 +382,8 @@
     "lib/ui/screens/attention_overview_screen.dart": {
       "ProductEmptyState(": 1
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/chat/chat_states.dart": {
       "Clipboard.setData(": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "Curves.": 2,
-      "duration: Duration(": 2
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "AnimatedSize(": 1,
-      "Clipboard.setData(": 2,
-      "Curves.": 1,
-      "duration: Duration(": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1
@@ -539,9 +442,6 @@
   "G7": {
     "lib/ui/screens/chat_screen.dart": {
       "Positioned(left|right:)": 1
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "EdgeInsets.fromLTRB asymmetric": 1
     }
   },
   "G15x": {},
@@ -563,25 +463,9 @@
     "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      ".colorScheme": 6,
-      ".textTheme": 8
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      ".textTheme": 4,
-      "attention roles": 1
-    },
     "lib/ui/screens/chat/chat_states.dart": {
       ".textTheme": 1,
       "attention roles": 2
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 4
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      ".colorScheme": 9,
-      ".textTheme": 8
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       ".textTheme": 1
@@ -595,10 +479,6 @@
     },
     "lib/ui/screens/chat/transcript_find.dart": {
       ".colorScheme": 2,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      ".colorScheme": 1,
       ".textTheme": 1
     },
     "lib/ui/screens/chat/watching.dart": {
@@ -620,7 +500,7 @@
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".colorScheme": 4,
-      ".textTheme": 6
+      ".textTheme": 4
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       ".textTheme": 3,
@@ -766,34 +646,6 @@
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 7
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 10,
-      "TextStyle(": 1,
-      "fontSize:": 1,
-      "icon size not 20/22/24": 5
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      "EdgeInsets numeric": 6,
-      "icon size not 20/22/24": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 6,
-      "disableAnimationsOf": 3
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "Border.all(": 2,
-      "BorderRadius.circular(<n>": 3,
-      "EdgeInsets numeric": 6,
-      "Radius.circular(<n>": 1,
-      "SizedBox numeric": 19,
-      "TextStyle(": 3,
-      "disableAnimationsOf": 1,
-      "fontSize:": 3,
-      "icon size not 20/22/24": 6
-    },
     "lib/ui/screens/chat/read_aloud.dart": {
       "EdgeInsets numeric": 1
     },
@@ -809,13 +661,6 @@
     },
     "lib/ui/screens/chat/transcript_find.dart": {
       "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 2,
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 2,
-      "TextStyle(": 1
     },
     "lib/ui/screens/chat/watching.dart": {
       "EdgeInsets numeric": 1,
@@ -855,7 +700,7 @@
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".toUpperCase()": 2,
-      "EdgeInsets numeric": 5,
+      "EdgeInsets numeric": 1,
       "SizedBox numeric": 7,
       "TextStyle(": 4
     },
@@ -921,9 +766,6 @@
     }
   },
   "G48": {
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "sheet multiline without draft:": 1
-    },
     "lib/voice/voice_ui.dart": {
       "sheet multiline without draft:": 1
     }
