@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/app_localizations_en.dart';
 import '../app_iconography.dart';
 import 'kit_buttons.dart';
 import 'kit_icon_button.dart';
@@ -507,8 +508,7 @@ class _KitFieldState extends State<KitField> {
     return _CounterPhase.hidden;
   }
 
-  AppLocalizations _l10n(BuildContext context) =>
-      lookupAppLocalizations(Localizations.localeOf(context));
+  AppLocalizations _l10n(BuildContext context) => _kitFieldWords(context);
 
   String _counterText(BuildContext context, int length) {
     final l10n = _l10n(context);
@@ -1179,4 +1179,17 @@ class KitSecretField extends StatelessWidget {
     fieldKey: fieldKey,
     revealKey: revealKey,
   );
+}
+
+/// The kit's words: the app's bound [AppLocalizations], else the locale's
+/// lookup, else English, so the part never throws in a bare harness with no
+/// localization delegates (R8).
+AppLocalizations _kitFieldWords(BuildContext context) {
+  final bound = Localizations.of<AppLocalizations>(context, AppLocalizations);
+  if (bound != null) return bound;
+  final locale = Localizations.maybeLocaleOf(context);
+  if (locale != null && AppLocalizations.delegate.isSupported(locale)) {
+    return lookupAppLocalizations(locale);
+  }
+  return AppLocalizationsEn();
 }

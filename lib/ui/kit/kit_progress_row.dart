@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/app_localizations_en.dart';
 import '../app_theme.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
@@ -150,7 +151,7 @@ class KitProgressRow extends StatelessWidget {
     final theme = Theme.of(context);
     final roles = AppTheme.rolesOf(theme);
     final tokens = KitTokens.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _kitProgressWords(context);
     final reduceMotion = KitMotion.reduced(context);
     final isLoading = !_isSegments && value == null;
 
@@ -209,10 +210,15 @@ class KitProgressRow extends StatelessWidget {
         ),
       ];
     }
+    // A stacked bar's 4th segment and "Other" fill in `surface3`, so its
+    // unfilled track is a role no fill uses: the panel's own `surface1`
+    // inside a 1 physical px `hairline` outline (R8). 76 % used never reads
+    // as the first three fills' 62 %.
     final bar = _AnimatedBar(
       fills: fills,
-      track: roles.surface3,
+      track: _isSegments ? roles.surface1 : roles.surface3,
       hairline: roles.hairline,
+      outlined: _isSegments,
       reduceMotion: reduceMotion,
     );
 
@@ -541,12 +547,17 @@ class _AnimatedBar extends StatelessWidget {
     required this.track,
     required this.hairline,
     required this.reduceMotion,
+    this.outlined = false,
   });
 
   final List<_BarFill> fills;
   final Color track;
   final Color hairline;
   final bool reduceMotion;
+
+  /// Draws a hairline outline round the whole track (a segments bar, whose
+  /// track is the panel's colour).
+  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
@@ -559,6 +570,7 @@ class _AnimatedBar extends StatelessWidget {
         fills: shown,
         track: track,
         hairline: hairline,
+        outlined: outlined,
         hairlineWidth: hairlineWidth,
         pixelRatio: pixelRatio,
         direction: direction,
@@ -585,6 +597,7 @@ class _BarPainter extends CustomPainter {
     required this.fills,
     required this.track,
     required this.hairline,
+    required this.outlined,
     required this.hairlineWidth,
     required this.pixelRatio,
     required this.direction,
@@ -593,6 +606,7 @@ class _BarPainter extends CustomPainter {
   final _BarFills fills;
   final Color track;
   final Color hairline;
+  final bool outlined;
   final double hairlineWidth;
   final double pixelRatio;
   final TextDirection direction;
@@ -636,6 +650,18 @@ class _BarPainter extends CustomPainter {
       );
       canvas.drawRect(span(from, from + hairlineWidth), line);
     }
+    if (outlined) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          whole.deflate(hairlineWidth / 2),
+          const Radius.circular(KitTokens.progressBarRadius),
+        ),
+        Paint()
+          ..color = hairline
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = hairlineWidth,
+      );
+    }
     canvas.restore();
   }
 
@@ -644,6 +670,7 @@ class _BarPainter extends CustomPainter {
       old.fills != fills ||
       old.track != track ||
       old.hairline != hairline ||
+      old.outlined != outlined ||
       old.hairlineWidth != hairlineWidth ||
       old.pixelRatio != pixelRatio ||
       old.direction != direction;
@@ -668,15 +695,19 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <Widget>[
-      for (var i = 0; i < slices.length; i++)
-        _row(context, slices[i], colorFor(i)),
-    ];
     return LayoutBuilder(
       builder: (context, constraints) {
+        final rows = <Widget>[
+          for (var i = 0; i < slices.length; i++)
+            _row(context, slices[i], colorFor(i), constraints.maxWidth),
+        ];
         final columnWidth = (constraints.maxWidth - tokens.space3) / 2;
+        // At large text (1.3x and above) the legend stacks one entry per
+        // line whatever the width (R8), as the value line does.
         final twoColumns =
-            rows.length >= 3 && columnWidth >= KitLayout.readingWidth / 2;
+            !_largeText(context) &&
+            rows.length >= 3 &&
+            columnWidth >= KitLayout.readingWidth / 2;
         if (!twoColumns) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,36 +731,75 @@ class _Legend extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, _Slice slice, Color color) => Row(
-    children: [
-      DecoratedBox(
-        // A `surface3` swatch gets the bar's hairline edge, or it vanishes
-        // on the `surface1` panel.
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: color == roles.surface3
-              ? Border.all(
-                  color: roles.hairline,
-                  width: KitTokens.hairlineWidth(context),
-                )
-              : null,
+  static bool _largeText(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(100) / 100 >= 1.3;
+
+  /// One legend entry. At large text the label wraps instead of clipping
+  /// and the value label takes at most half the line, wrapping too, so the
+  /// entry never overflows at 2.0 text (R8).
+  Widget _row(
+    BuildContext context,
+    _Slice slice,
+    Color color,
+    double lineWidth,
+  ) {
+    final large = _largeText(context);
+    final value = slice.valueLabel;
+    return Row(
+      children: [
+        DecoratedBox(
+          // A `surface3` swatch gets the bar's hairline edge, or it vanishes
+          // on the `surface1` panel.
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: color == roles.surface3
+                ? Border.all(
+                    color: roles.hairline,
+                    width: KitTokens.hairlineWidth(context),
+                  )
+                : null,
+          ),
+          child: const SizedBox.square(dimension: KitTokens.swatchDot),
         ),
-        child: const SizedBox.square(dimension: KitTokens.swatchDot),
-      ),
-      SizedBox(width: tokens.space2),
-      Expanded(
-        child: KitText(
-          slice.label,
-          role: KitTextRole.secondary,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      if (slice.valueLabel case final v?) ...[
         SizedBox(width: tokens.space2),
-        KitText(v, role: KitTextRole.secondary, tabular: true),
+        Expanded(
+          child: KitText(
+            slice.label,
+            role: KitTextRole.secondary,
+            maxLines: large ? null : 1,
+            overflow: large ? null : TextOverflow.ellipsis,
+          ),
+        ),
+        if (value != null) ...[
+          SizedBox(width: tokens.space2),
+          if (large)
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: lineWidth / 2),
+              child: KitText(
+                value,
+                role: KitTextRole.secondary,
+                tabular: true,
+                textAlign: TextAlign.end,
+              ),
+            )
+          else
+            KitText(value, role: KitTextRole.secondary, tabular: true),
+        ],
       ],
-    ],
-  );
+    );
+  }
+}
+
+/// The kit's words: the app's bound [AppLocalizations], else the locale's
+/// lookup, else English, so the part never throws in a bare harness with no
+/// localization delegates (R8).
+AppLocalizations _kitProgressWords(BuildContext context) {
+  final bound = Localizations.of<AppLocalizations>(context, AppLocalizations);
+  if (bound != null) return bound;
+  final locale = Localizations.maybeLocaleOf(context);
+  if (locale != null && AppLocalizations.delegate.isSupported(locale)) {
+    return lookupAppLocalizations(locale);
+  }
+  return AppLocalizationsEn();
 }
