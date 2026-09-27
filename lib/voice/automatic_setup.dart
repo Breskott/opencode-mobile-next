@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'automatic_pack.dart';
 import 'automatic_setup_platform.dart';
 import 'controller.dart';
 import 'model_manager.dart';
@@ -142,21 +143,18 @@ class VoiceAutomaticSetupController extends ChangeNotifier {
         _set(VoiceSetupStage.blocked, VoiceSetupProblem.unknownMemory);
         return;
       }
-      final candidates =
-          voiceModelPacks
-              .where((pack) => _models.supportFor(pack).supported)
-              .toList()
-            ..sort((a, b) => b.minimumMemoryMb.compareTo(a.minimumMemoryMb));
-      if (candidates.isEmpty) {
+      _pack = automaticVoicePack(_models);
+      if (_pack == null) {
         _set(VoiceSetupStage.blocked, VoiceSetupProblem.noSupportedPack);
         return;
       }
-      final selected = _models.selectedPack;
-      _pack =
-          _models.isInstalled(selected) &&
-              candidates.any((pack) => pack.id == selected.id)
-          ? selected
-          : candidates.first;
+      // Free space can block the chosen tier, but cannot silently choose a
+      // different model from phone setup. The model manager checks again
+      // before downloading in case available space changes after consent.
+      if (!_models.supportFor(_pack!).supported) {
+        _set(VoiceSetupStage.blocked, VoiceSetupProblem.noSupportedPack);
+        return;
+      }
       await _models.selectPack(_pack!);
       if (!_current(generation)) return;
       if (_models.isReady) {

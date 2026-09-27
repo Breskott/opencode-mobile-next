@@ -16,6 +16,7 @@ import 'package:opencode_mobile/platform/keep_alive_advice.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/widgets/app_exit_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -272,6 +273,33 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       return recovery;
     }
+
+    test(
+      'delegates to the shared healing owner without duplicate starts or acts',
+      () async {
+        final delegated = <String>[];
+        final recovery = AppExitRecovery(
+          bridge: _FakeBridge(_report(_ownerRecord, ['server'])),
+        );
+        await recovery.runOnce(
+          store: _Store(prefs: prefs, all: [laptop, phone]),
+          active: phone,
+          starter: starter,
+          recover: (profile) async {
+            delegated.add(profile.id);
+          },
+          onRestart:
+              ({required profileId, required eventId, required at}) async {
+                restartActs.add(eventId);
+                return true;
+              },
+        );
+        expect(delegated, [phone.id]);
+        expect(linux.events, isEmpty);
+        expect(restartActs, isEmpty);
+        recovery.dispose();
+      },
+    );
 
     test('after a force stop with the team running: one notice, and the '
         "phone's OpenCode and the team start again", () async {
@@ -650,7 +678,10 @@ void main() {
     ) async {
       final opened = await mountScreen(tester, manufacturer: 'nubia');
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.keepRunningIntro('nubia')), findsOneWidget);
+      expect(
+        find.text(l10n.keepRunningIntro(KitBidi.auto('nubia'))),
+        findsOneWidget,
+      );
       expect(find.text(l10n.keepRunningSwipeWarning), findsOneWidget);
       expect(find.text(l10n.keepRunningLockNubia), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('keep-running-autostart')));
@@ -720,7 +751,9 @@ void main() {
       await tester.pumpAndSettle();
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
-        find.text(l10n.keepRunningIntro(l10n.keepRunningThisPhone)),
+        find.text(
+          l10n.keepRunningIntro(KitBidi.auto(l10n.keepRunningThisPhone)),
+        ),
         findsOneWidget,
       );
       expect(find.text(l10n.keepRunningBatteryTitle), findsOneWidget);

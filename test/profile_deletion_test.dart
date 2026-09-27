@@ -335,6 +335,21 @@ void main() {
     expect(prefs.getBool('oc.keepLiveInBackground'), isTrue);
   });
 
+  test(
+    'deletion forgets the shared phone owner and sweeps its recovery budget',
+    () async {
+      final (controller, prefs) = await boot();
+      await prefs.setString('oc.builtinServerOwner', 'doomed');
+      await prefs.setString(
+        'oc.builtinRecovery.doomed',
+        '{"version":1,"attempts":3}',
+      );
+      await controller.deleteProfileAndLocalData('doomed');
+      expect(prefs.getString('oc.builtinServerOwner'), '');
+      expect(prefs.getString('oc.builtinRecovery.doomed'), isNull);
+    },
+  );
+
   test('nothing deleted comes back after a restart', () async {
     final (controller, prefs) = await boot();
     await controller.deleteProfileAndLocalData('doomed');

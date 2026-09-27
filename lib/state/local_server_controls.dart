@@ -4,6 +4,7 @@ import '../termux/bridge.dart';
 import '../termux/managed_server_recovery.dart';
 import 'connection.dart';
 import 'profiles.dart';
+import 'termux_host_setup.dart' show ManagedRuntimeFlavor;
 
 /// Why an in-place control of the phone's server did not finish.
 class LocalServerControlFailure implements Exception {
@@ -35,6 +36,11 @@ class LocalServerControls {
   }) async {
     final operationID = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
     try {
+      for (final profile in store.profiles.where(
+        (p) => TermuxBridge.managesServerUrl(p.baseUrl),
+      )) {
+        await ManagedServerRecovery.suspendForProfile(store.prefs, profile.id);
+      }
       await TermuxBridge.run(
         TermuxBridge.restartScript(operationID: operationID),
         timeout: const Duration(seconds: 45),
@@ -54,7 +60,19 @@ class LocalServerControls {
       } on TermuxBridgeException catch (error) {
         throw LocalServerControlFailure(error.message);
       }
-      if (status.isReady) return status;
+      if (status.isReady && status.operationID == operationID) {
+        for (final profile in store.profiles.where(
+          (p) =>
+              TermuxBridge.managesServerUrl(p.baseUrl) &&
+              ManagedRuntimeFlavor.runtimeOf(p) == status.runtime,
+        )) {
+          await ManagedServerRecovery.resumeAfterManualStartForProfile(
+            store.prefs,
+            profile.id,
+          );
+        }
+        return status;
+      }
       if (status.isFailed) throw LocalServerControlFailure(status.message);
       if (!status.isRunning || DateTime.now().isAfter(deadline)) {
         throw const LocalServerControlFailure('');
@@ -63,15 +81,14 @@ class LocalServerControls {
     }
   }
 
-  /// Stops the server. Automatic recovery is switched off first so nothing
-  /// starts it again behind the person's back, and the app lets go of the
-  /// connection it can no longer serve.
+  /// Stops the server and suspends recovery without changing the person's
+  /// restart preference. An explicit successful start resumes monitoring.
   Future<void> stop() async {
     for (final profile in store.profiles.where(
       (p) => TermuxBridge.managesServerUrl(p.baseUrl),
     )) {
       try {
-        await ManagedServerRecovery.disableForProfile(store.prefs, profile.id);
+        await ManagedServerRecovery.suspendForProfile(store.prefs, profile.id);
       } catch (_) {
         // Stop stays available when preference storage fails: the stop script
         // revokes the recovery permit itself before stopping the manager.
