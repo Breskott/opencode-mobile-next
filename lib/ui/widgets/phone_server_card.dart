@@ -445,9 +445,31 @@ class PhoneServerCard extends ConsumerStatefulWidget {
     this.onDisconnect,
     this.linux,
     this.pollInterval = const Duration(seconds: 5),
-  });
+  }) : asRow = false;
+
+  /// The same server as one row of a list's [KitRowGroup] (the Servers
+  /// list's one urgency-ordered group), in place of the card's own panel:
+  /// the act it needs now (Set up, Start OpenCode, Continue setup, Show
+  /// progress) is the row's trailing button, its state word joins the row's
+  /// line, and every other act stays in the row menu. The caller puts it in
+  /// its group; the row draws no panel of its own.
+  const PhoneServerCard.row({
+    super.key,
+    required this.connection,
+    required this.profile,
+    this.connected = false,
+    this.onOpen,
+    this.onAction,
+    this.onRemoved,
+    this.onDisconnect,
+    this.linux,
+    this.pollInterval = const Duration(seconds: 5),
+  }) : asRow = true;
 
   final ConnectionController connection;
+
+  /// Drawn as a row for a caller's group ([PhoneServerCard.row]).
+  final bool asRow;
 
   /// The saved in-app profile ([phoneServerProfile]).
   final ServerProfile profile;
@@ -843,6 +865,20 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       tone: running && !working ? KitTextTone.success : KitTextTone.secondary,
       maxLines: 2,
     );
+    if (widget.asRow) {
+      return _row(
+        context,
+        name: name,
+        label: label,
+        detail: detail,
+        lead: lead,
+        menu: menu,
+        working: working,
+        locked: locked,
+        canOpen: canOpen,
+        large: large,
+      );
+    }
     // The one button sits with the row's words, inside the row: no hairline
     // divides it from the server it acts on.
     final actions = KitActionBlock(primary: lead);
@@ -922,6 +958,105 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       key: const ValueKey('phone-server-card'),
       margin: EdgeInsets.zero,
       children: [row],
+    );
+  }
+
+  /// [PhoneServerCard.row]: the shape of a [LocalServerRow]. The line reads
+  /// "Connected · OpenCode 2 · Running"; Start or Set up is a small trailing
+  /// button (under the line at large text, so the name keeps its width);
+  /// the ⋮ and long-press hold the rest.
+  Widget _row(
+    BuildContext context, {
+    required String name,
+    required String label,
+    required String detail,
+    required KitAction? lead,
+    required List<KitMenuItem> menu,
+    required bool working,
+    required bool locked,
+    required bool canOpen,
+    required bool large,
+  }) {
+    final l10n = _l10n;
+    final failure = _failure;
+    // Start and Set up are short and sit at the row's end, like a
+    // LocalServerRow's Start; the row itself names what they act on, so
+    // Start says only "Start". The longer setup acts (Continue setup, Show
+    // progress) go under the line, as does any act at large text.
+    final key = lead?.key;
+    final short =
+        key == const ValueKey('phone-server-start') ||
+        key == const ValueKey('phone-server-set-up');
+    final Widget? act = lead == null
+        ? null
+        : KitButton.tertiary(
+            key: key,
+            label: key == const ValueKey('phone-server-start')
+                ? l10n.phoneServerStart
+                : lead.label,
+            onPressed: lead.onPressed,
+          );
+    final atEnd = short && !large;
+    final below = <Widget>[
+      // The failure in words, in text1 (LOOK-5).
+      if (failure != null)
+        KitText(
+          failure,
+          key: const ValueKey('phone-server-failure'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.primary,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+        ),
+      if (act != null && !atEnd) KitInset(child: act),
+    ];
+    final trailing = <Widget>[
+      if (act != null && atEnd) act,
+      if (menu.isNotEmpty)
+        KitRowMenu(
+          key: const ValueKey('phone-server-menu'),
+          tooltip: l10n.phoneServerCardMore,
+          menuLabel: name,
+          items: menu,
+        ),
+    ];
+    return KeyedSubtree(
+      key: const ValueKey('phone-server-row'),
+      child: Semantics(
+        container: true,
+        selected: widget.connected,
+        liveRegion: true,
+        child: KitRow(
+          leading: working
+              ? const KitStatusMark(state: KitMarkState.working)
+              : KitRowIcon(AppIconography.phone, current: widget.connected),
+          title: name,
+          titleKey: const ValueKey('phone-server-title'),
+          titleMaxLines: large ? 3 : 1,
+          supporting: TextSpan(
+            children: [
+              if (widget.connected)
+                kitCurrentSpan(context, l10n.serverRowConnected),
+              TextSpan(text: detail),
+              TextSpan(text: ' · $label'),
+            ],
+          ),
+          supportingKey: const ValueKey('phone-server-detail'),
+          supportingMaxLines: large ? 3 : 1,
+          below: below.isEmpty
+              ? null
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: below,
+                ),
+          onTap: canOpen && !locked ? widget.onOpen : null,
+          menu: menu,
+          menuLabel: name,
+          trailing: trailing.isEmpty
+              ? null
+              : Row(mainAxisSize: MainAxisSize.min, children: trailing),
+        ),
+      ),
     );
   }
 }

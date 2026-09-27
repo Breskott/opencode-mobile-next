@@ -15622,10 +15622,6 @@
       }
     }
   },
-  "termuxProcsStop": "Stop",
-  "@termuxProcsStop": {
-    "description": "Button that stops one process"
-  },
   "termuxProcsStopSemantics": "Stop {name}",
   "@termuxProcsStopSemantics": {
     "description": "Accessibility label of a row's Stop button",
@@ -15647,10 +15643,6 @@
   "termuxProcsStopOneBody": "It gets a polite stop, then a forced one after 5 seconds.",
   "@termuxProcsStopOneBody": {
     "description": "Two-step confirmation body for one process"
-  },
-  "termuxProcsKeep": "Keep",
-  "@termuxProcsKeep": {
-    "description": "Two-step confirmation cancel button"
   },
   "termuxProcsProtected": "Protected · control it from This phone",
   "@termuxProcsProtected": {
@@ -19090,9 +19082,23 @@
       }
     }
   },
-  "workRunawaySee": "See what's running",
-  "@workRunawaySee": {
-    "description": "Status line action opening the Running now screen"
+  "workRunawayStopped": "Stopped {helper}",
+  "@workRunawayStopped": {
+    "description": "Announced once after the Work status line's Stop ended the leftover process",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawayStopFailed": "Couldn't stop {helper}. Try again, or stop it from Termux.",
+  "@workRunawayStopFailed": {
+    "description": "Work status line when stopping the leftover process did not end it",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
   },
   "connectStartingPhone": "Starting OpenCode on this phone…",
   "@connectStartingPhone": {

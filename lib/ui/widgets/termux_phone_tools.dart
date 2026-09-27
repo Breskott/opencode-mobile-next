@@ -20,7 +20,8 @@ import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/termux_storage_screen.dart';
-import 'work_status_line.dart' show WorkRunawayNotice;
+import 'work_status_line.dart'
+    show RunawayStopOutcome, WorkRunawayNotice, stopRunawayHelper;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -146,6 +147,7 @@ class TermuxRunawayWatcher extends StatefulWidget {
     this.interval = const Duration(seconds: 60),
     this.threshold = const Duration(minutes: 10),
     this.scan,
+    this.stop,
   });
 
   final Widget Function(BuildContext context, WorkRunawayNotice? notice)
@@ -155,6 +157,9 @@ class TermuxRunawayWatcher extends StatefulWidget {
 
   /// Test seam; defaults to [TermuxProcesses.scan] behind the bridge check.
   final Future<TermuxProcessReport> Function()? scan;
+
+  /// Test seam; defaults to [TermuxProcesses.stopPid].
+  final Future<TermuxProcessStopResult> Function(int pid)? stop;
 
   /// Dismissed processes, by pid and name, for the life of the app: the line
   /// comes back only for a different process.
@@ -170,6 +175,9 @@ class TermuxRunawayWatcher extends StatefulWidget {
 class _TermuxRunawayWatcherState extends State<TermuxRunawayWatcher> {
   TermuxProcess? _worst;
   Timer? _timer;
+
+  /// The process whose last stop did not end it.
+  (int, String)? _stopFailed;
 
   @override
   void initState() {
@@ -212,18 +220,36 @@ class _TermuxRunawayWatcherState extends State<TermuxRunawayWatcher> {
       context,
       WorkRunawayNotice(
         identity: identity!,
+        helper: worst.name,
         project: runawayProjectName(worst.cwd),
         busyFor: formatTermuxDuration(l10n, worst.cpuSeconds),
+        stopFailed: _stopFailed == identity,
         onDismiss: () =>
             setState(() => TermuxRunawayWatcher._dismissed.add(identity)),
-        onOpen: () async {
-          await pushKitPage<void>(
-            context,
-            (_) => const TermuxProcessesScreen(),
-          );
-          unawaited(_check());
-        },
+        onStop: () => unawaited(_stop(worst, identity)),
       ),
     );
+  }
+
+  /// Asks, stops exactly this process, and hides the line at once when it
+  /// ended (the next scan confirms); a stop that failed keeps the line in
+  /// its failure words.
+  Future<void> _stop(TermuxProcess process, (int, String) identity) async {
+    final outcome = await stopRunawayHelper(
+      context,
+      pid: process.pid,
+      helper: process.name,
+      stop: widget.stop,
+    );
+    if (!mounted || outcome == RunawayStopOutcome.kept) return;
+    setState(() {
+      if (outcome == RunawayStopOutcome.stopped) {
+        TermuxRunawayWatcher._dismissed.add(identity);
+        _stopFailed = null;
+      } else {
+        _stopFailed = identity;
+      }
+    });
+    unawaited(_check());
   }
 }

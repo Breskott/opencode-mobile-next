@@ -195,25 +195,3 @@ Future<bool> confirmDisconnectMcp(
     confirmKey: const ValueKey('confirm-mcp-disconnect'),
   );
 }
-
-/// Stopping one process on the phone. An orphan has nothing waiting on it,
-/// but the classification is a heuristic, so it still gets a sheet; only the
-/// body differs.
-Future<bool> confirmStopProcess(
-  BuildContext context, {
-  required String processName,
-  required bool orphan,
-}) {
-  final l10n = _copy(context);
-  return showKitConfirm(
-    context,
-    title: l10n.termuxProcsStopOneTitle(processName),
-    body: orphan ? l10n.safetyStopOrphanBody : l10n.termuxProcsStopOneBody,
-    confirmLabel: l10n.termuxProcsStop,
-    cancelLabel: l10n.termuxProcsKeep,
-    icon: AppIcons.stop,
-    kind: KitConfirmKind.stop,
-    sheetKey: const Key('termux-procs-confirm'),
-    confirmKey: const Key('termux-procs-confirm-stop'),
-  );
-}

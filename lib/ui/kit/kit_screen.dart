@@ -76,6 +76,7 @@ class KitScreen extends StatelessWidget {
     this.jump,
     this.width = KitScreenWidth.full,
     this.bottomKey,
+    this.page = false,
   }) : detail = null,
        emptyDetail = null,
        side = null,
@@ -105,6 +106,7 @@ class KitScreen extends StatelessWidget {
        jump = null,
        width = KitScreenWidth.full,
        bottomKey = null,
+       page = false,
        side = null,
        sidePaneKey = null;
 
@@ -131,7 +133,8 @@ class KitScreen extends StatelessWidget {
        header = const [],
        jump = null,
        width = KitScreenWidth.full,
-       bottomKey = null;
+       bottomKey = null,
+       page = false;
 
   /// The single scroll view; for the pane constructors, the list.
   final Widget body;
@@ -155,6 +158,12 @@ class KitScreen extends StatelessWidget {
 
   /// A page: builds the frame (ground, bar, safe area).
   final KitTopBar? topBar;
+
+  /// A page with no bar: the frame [topBar] builds (ground, top safe area,
+  /// content above the keyboard, the snack bar host) without a [KitTopBar].
+  /// The PC shell's content pane, where the sidebar beside it already
+  /// names the destination and holds the shell controls (slice-R14).
+  final bool page;
 
   /// Pinned under the bar and the status line.
   final KitSearchField? search;
@@ -230,7 +239,7 @@ class KitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(
-      this.topBar == null || _pageAllowedAt(context),
+      (this.topBar == null && !page) || _pageAllowedAt(context),
       'KitScreen: a KitScreen(topBar:) inside another KitScreen body — one '
       'bar per window area (KIT-36); only a twoPane/threePane detail or side '
       'may hold its own page',
@@ -246,8 +255,9 @@ class KitScreen extends StatelessWidget {
         ? KitStatusContribution(status: status, child: content)
         : KitStatusLineSlot(status: status, child: content);
     final topBar = this.topBar;
+    final isPage = topBar != null || page;
     final Widget framed;
-    if (topBar == null) {
+    if (!isPage) {
       framed = slotted;
     } else {
       framed = _PageFrame(topBar: panes ? null : topBar, child: slotted);
@@ -255,7 +265,7 @@ class KitScreen extends StatelessWidget {
     // A page with no Scaffold above it hosts one, so the screens that still
     // call ScaffoldMessenger.showSnackBar (until they move to KitUndo) show
     // their snack bar instead of queueing it with nowhere to draw.
-    final hostsSnackBars = topBar != null && Scaffold.maybeOf(context) == null;
+    final hostsSnackBars = isPage && Scaffold.maybeOf(context) == null;
     return _KitScreenCheck(
       child: hostsSnackBars ? _SnackBarHost(child: framed) : framed,
     );

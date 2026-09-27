@@ -257,6 +257,7 @@ void main() {
     double textScale = 1,
     // The working mark turns while a job runs, so such a card never settles.
     bool settle = true,
+    bool asRow = false,
   }) async {
     final saved = profile ?? phone();
     store
@@ -272,15 +273,33 @@ void main() {
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              PhoneServerCard(
-                connection: connection,
-                profile: saved,
-                connected: connected,
-                onOpen: onOpen,
-                onAction: onAction,
-                onRemoved: onRemoved,
-                pollInterval: null,
-              ),
+              if (asRow)
+                // The Servers list's one group: the phone is one of its rows.
+                KitRowGroup(
+                  margin: EdgeInsets.zero,
+                  children: [
+                    PhoneServerCard.row(
+                      connection: connection,
+                      profile: saved,
+                      connected: connected,
+                      onOpen: onOpen,
+                      onAction: onAction,
+                      onRemoved: onRemoved,
+                      pollInterval: null,
+                    ),
+                    KitRow(title: 'Laptop', onTap: () {}),
+                  ],
+                )
+              else
+                PhoneServerCard(
+                  connection: connection,
+                  profile: saved,
+                  connected: connected,
+                  onOpen: onOpen,
+                  onAction: onAction,
+                  onRemoved: onRemoved,
+                  pollInterval: null,
+                ),
             ],
           ),
         ),
@@ -420,6 +439,85 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('phone-server-continue')));
       await tester.pumpAndSettle();
       expect(progressOpened, 1);
+    });
+  });
+
+  group('row variant for the Servers list (slice-R14)', () {
+    testWidgets('stopped: Start is the row\'s trailing button, the '
+        'state joins the line, and the row draws no panel of its own', (
+      tester,
+    ) async {
+      linux.running = false;
+      await mountCard(tester, asRow: true);
+      expect(find.byKey(const ValueKey('phone-server-row')), findsOneWidget);
+      expect(find.byKey(const ValueKey('phone-server-card')), findsNothing);
+      // One group: the caller's, holding the phone and the other server.
+      expect(find.byType(KitRowGroup), findsOneWidget);
+      expect(find.byKey(const ValueKey('phone-server-status')), findsNothing);
+      expect(detail(tester), 'OpenCode 1.18.29 · Stopped');
+      final start = find.byKey(const ValueKey('phone-server-start'));
+      expect(start, findsOneWidget);
+      // The row names the server; its button says only what it does.
+      expect(
+        find.descendant(of: start, matching: find.text('Start')),
+        findsOneWidget,
+      );
+      // Trailing, on the row's own line: level with the name, at its end.
+      final title = tester.getRect(
+        find.byKey(const ValueKey('phone-server-title')),
+      );
+      final button = tester.getRect(start);
+      expect(button.left, greaterThanOrEqualTo(title.right));
+      expect(button.center.dy, closeTo(title.center.dy, 16));
+      await tester.tap(start);
+      await tester.pumpAndSettle();
+      expect(linux.calls, ['start']);
+      expect(detail(tester), 'OpenCode 1.18.29 · Running');
+      expect(start, findsNothing);
+      expectNoForbiddenText();
+    });
+
+    testWidgets('320 dp at 2.5x text: Start moves under the line, nothing '
+        'overflows', (tester) async {
+      linux.running = false;
+      await mountCard(
+        tester,
+        asRow: true,
+        size: const Size(320, 800),
+        textScale: 2.5,
+      );
+      expect(tester.takeException(), isNull);
+      final start = tester.getRect(
+        find.byKey(const ValueKey('phone-server-start')),
+      );
+      final title = tester.getRect(
+        find.byKey(const ValueKey('phone-server-title')),
+      );
+      expect(start.top, greaterThan(title.bottom));
+    });
+
+    testWidgets('not set up: Set up is the trailing button; the rest is in '
+        'the row menu', (tester) async {
+      linux.installed = false;
+      linux.running = false;
+      await mountCard(tester, asRow: true);
+      expect(detail(tester), 'OpenCode 1.18.29 · Not set up');
+      await tester.tap(find.byKey(const ValueKey('phone-server-set-up')));
+      await tester.pumpAndSettle();
+      expect(startOpened, 1);
+      await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('phone-server-remove')), findsOneWidget);
+    });
+
+    testWidgets('running and connected: no button; Stop lives in the menu', (
+      tester,
+    ) async {
+      await mountCard(tester, asRow: true, connected: true);
+      expect(detail(tester), 'Connected · OpenCode 1.18.29 · Running');
+      expect(find.byType(KitButton), findsNothing);
+      await choose(tester, 'phone-server-stop');
+      expect(linux.calls, ['stop']);
     });
   });
 

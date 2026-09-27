@@ -14562,9 +14562,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get termuxProcsStop => 'إيقاف';
-
-  @override
   String termuxProcsStopSemantics(String name) {
     return 'إيقاف $name';
   }
@@ -14577,9 +14574,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get termuxProcsStopOneBody =>
       'تتلقى إيقافًا لطيفًا، ثم إيقافًا قسريًا بعد 5 ثوانٍ.';
-
-  @override
-  String get termuxProcsKeep => 'إبقاء';
 
   @override
   String get termuxProcsProtected => 'محمية · افتح «على هذا الهاتف»';
@@ -17442,7 +17436,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get workRunawaySee => 'عرض ما يعمل';
+  String workRunawayStopped(String helper) {
+    return 'Stopped $helper';
+  }
+
+  @override
+  String workRunawayStopFailed(String helper) {
+    return 'Couldn\'t stop $helper. Try again, or stop it from Termux.';
+  }
 
   @override
   String get connectStartingPhone => 'جارٍ تشغيل OpenCode على هذا الهاتف…';
