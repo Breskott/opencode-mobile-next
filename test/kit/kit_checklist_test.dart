@@ -1,5 +1,7 @@
 // Behaviour tests for KitChecklist and the SetupProgressView adapter
 // (docs/ux-system/kit-api/KitChecklist.md "Tests required").
+import 'kit_motion_still.dart';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,6 +69,25 @@ String _label(WidgetTester tester, Finder finder) =>
     tester.getSemantics(finder).label;
 
 void main() {
+  Widget motionChecklist(KitMarkState state) => KitChecklist(
+    steps: [KitStep(title: 'Install tools', state: state)],
+  );
+  kitMotionStillTests(
+    'KitChecklist',
+    builds: {
+      'working': () => motionChecklist(KitMarkState.working),
+      'waiting': () => motionChecklist(KitMarkState.waiting),
+    },
+    changes: {
+      'step completes': KitMotionChange(
+        build: () => motionChecklist(KitMarkState.working),
+        act: (tester, stage) =>
+            stage.rebuild(motionChecklist(KitMarkState.done)),
+        shows: 'Install tools',
+      ),
+    },
+  );
+
   testWidgets('1. each row reads "Step n of N, title, state, supporting"', (
     tester,
   ) async {

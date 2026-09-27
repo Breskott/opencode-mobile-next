@@ -21,6 +21,8 @@ import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 const _bubbleKey = ValueKey('user-prompt-1');
 const _thoughtKey = ValueKey('thought-1');
 const _noticeKey = ValueKey('notice-1');
@@ -97,6 +99,49 @@ ThemeRoles _roles(WidgetTester tester) =>
     KitTokens.of(tester.element(find.byType(KitMessage))).roles;
 
 void main() {
+  kitMotionStillTests(
+    'KitMessage',
+    builds: {
+      'prompt': () => const KitMessage.prompt(
+        body: KitMarkdown('Review checkout', selectable: false),
+      ),
+      'working thought': () => const KitMessage.thought(
+        body: KitMarkdown('Inspecting the change', selectable: false),
+        working: true,
+      ),
+      'notice': () =>
+          const KitMessage.notice(text: 'The request failed', failed: true),
+    },
+    changes: {
+      'thought opens': KitMotionChange(
+        build: () => const KitMessage.thought(
+          body: KitMarkdown('Inspecting the change', selectable: false),
+          expanded: false,
+        ),
+        act: (tester, stage) => stage.rebuild(
+          const KitMessage.thought(
+            body: KitMarkdown('Inspecting the change', selectable: false),
+            expanded: true,
+          ),
+        ),
+        shows: 'Inspecting the change',
+      ),
+      'thought closes': KitMotionChange(
+        build: () => const KitMessage.thought(
+          body: KitMarkdown('Inspecting the change', selectable: false),
+          expanded: true,
+        ),
+        act: (tester, stage) => stage.rebuild(
+          const KitMessage.thought(
+            body: KitMarkdown('Inspecting the change', selectable: false),
+            expanded: false,
+          ),
+        ),
+        hides: 'Inspecting the change',
+      ),
+    },
+  );
+
   group('1. prompt bubble', () {
     for (final direction in TextDirection.values) {
       testWidgets('sits at the end edge, surface2, 20/20/6/20, at most 85 % '

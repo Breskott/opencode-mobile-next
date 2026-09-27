@@ -17,6 +17,8 @@ import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/motion/kit_motion_parts.dart';
 
+import 'kit_motion_still.dart';
+
 const _rowKey = ValueKey('embedded-tool-row');
 
 Future<void> _pump(
@@ -123,6 +125,28 @@ List<Widget> _body() => const [
 ];
 
 void main() {
+  kitMotionStillTests(
+    'KitToolRow',
+    builds: {
+      'running': () => _row(status: KitToolStatus.running),
+      'failed': () => _row(status: KitToolStatus.failed, body: _body()),
+    },
+    changes: {
+      'output opens': KitMotionChange(
+        build: () => _row(body: _body(), expanded: false),
+        act: (tester, stage) =>
+            stage.rebuild(_row(body: _body(), expanded: true)),
+        shows: 'second output',
+      ),
+      'output closes': KitMotionChange(
+        build: () => _row(body: _body(), expanded: true),
+        act: (tester, stage) =>
+            stage.rebuild(_row(body: _body(), expanded: false)),
+        hides: 'second output',
+      ),
+    },
+  );
+
   group('status marks and words', () {
     final expectations = <KitToolStatus, (String?, Type?)>{
       KitToolStatus.notRun: ('Not run', null),

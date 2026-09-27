@@ -214,7 +214,7 @@
      "type": "gesture",
      "label": "Arrow Up / Arrow Down in composer",
      "key": null,
-     "line": 573,
+     "line": 970,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -224,7 +224,8 @@
       "!_sending && !_promptShelfBusy",
       "isPromptHistoryKey(...): no slash-command or @agent suggestions open, collapsed selection, no IME composing, no Ctrl/Alt/Meta/Shift held"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat_screen.dart"
     },
     {
      "id": "chat-watching-composer",

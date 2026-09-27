@@ -1,5 +1,7 @@
 # Codex tests-c — 2026-09-28
 
+Latest verification: see [merge follow-up](#merge-follow-up-tests-d-integration). Earlier batch counts and source locations describe the pre-merge snapshot.
+
 Finish line: repair the assigned non-golden tests against the intentional September 27 UI changes; preserve meaningful failures for product-owner handoff. Non-goals: production edits, golden refresh, gate or baseline changes, publication.
 
 ## Prerequisite integration
@@ -106,3 +108,31 @@ Final checks:
 Repair commits: `19fbb4f7` reference/menu/localization; `036cf28c` transcript/capabilities; `d2f8ad75` queue/desktop; `0bfe00e5` voice/nudges; `dfd55589` product UI; `b1f78307` voice pipeline/release; `68f23ddd` model sheet; `3d34b1e9` overflow coverage; `5bb46ad3` live events. The final evidence commit also removes the two redundant imports discovered by analysis.
 
 **Left for product owners:** fix the 24 enabled failures detailed above, then rerun those scenarios/files. This test lane made no product fixes because the chat/team and state libraries are concurrently owned. The reviewed golden refresh remains separate. No unexplained stale failure remains in this batch.
+
+
+## Merge follow-up: tests-d integration
+
+Merged `feat/phone-setup-v2` at `90db3565` into `codex/tests-b` at `b6fcc8ba`. Resolved all seven conflicts while retaining both jobs' repairs:
+
+- `lib/ui/setup_commands.dart` exactly matches the incoming branch, including both private `IFS= read -rsp` password commands.
+- Chat and home fixtures retain the incoming shared connection-status scope and prior behavior assertions. Home attention fixtures now include the saved profile required by the profile-scoped feed; disconnected fixtures stop polling before timer checks. Its initial merge run was 18 pass / 7 fail; corrected rerun is 25/25, with all seven expectations retained.
+- Nudges use the incoming `KitNotice.offer` while preserving prior reachability checks.
+- Both overflow scene sets remain. Incoming additions use `tests-d-` state IDs to avoid collisions; builders, hosts and KIT-24 flags are unchanged. Deleted product-state wrappers (`LoadingList`, `ProductEmptyState`, `ProductErrorState`, `ProductInlineEmpty`, `SectionLabel`) and the retired `KitSecretField` have no scenes. Strict manifest inheritance and typed generic KIT-24 detection remain.
+
+Only conflicted test files and the four requested gates were run, serially with pinned Flutter, `--no-pub --concurrency=1`. The conflicted scene registry is exercised through the overflow test, not as a standalone test entrypoint. Persistent logs: `/home/eslam/Storage/tmp/codex-tests-c-20260928/merge2-*.jsonl`.
+
+| Test | Pass | Fail |
+|---|---:|---:|
+| chat_live_events | 103 | 2 |
+| chat_states_standard | 6 | 0 |
+| home_navigation | 25 | 0 |
+| nudge_moments | 18 | 2 |
+| text_scale_overflow | 498 | 4 |
+| kit_ratchet | 34 | 0 |
+| redaction | 16 | 0 |
+| ui_glossary | 21 | 0 |
+| no_raw_error_text | 5 | 0 |
+
+The five conflicted test entrypoints total **650 pass / 8 fail**. The eight retained product failures are: unknown-limit context token display and MCP primary-action hierarchy (live events); two approval-tip overflow scenarios (nudges); narrow composer chips, loading diff, and both jobs' long-label segmented scenes (overflow). All remain enabled; no gate was weakened or baseline raised. The incoming branch fixes the prior standard-state diagnostic failure and home/shell status overflows.
+
+`flutter pub get --offline` succeeded. `flutter analyze --no-pub`: **No issues found** (`merge2-analyze.log`). Pinned Dart formatting at language version 3.10: all seven resolved files clean. Conflict-marker and staged diff checks pass. No golden generation, unrelated test run or push.

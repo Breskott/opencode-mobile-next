@@ -125,7 +125,14 @@ class _KitStatusLineSlotState extends State<KitStatusLineSlot> {
               if (contribution.active) contribution.widget.status,
           ]);
           return KitReveal(
-            child: shown == null ? null : KitStatusLine.of(shown),
+            child: shown == null
+                ? null
+                : widget.child == null
+                ? KitStatusLine.of(shown)
+                : SingleChildScrollView(
+                    primary: false,
+                    child: KitStatusLine.of(shown),
+                  ),
           );
         },
       ),
@@ -135,12 +142,22 @@ class _KitStatusLineSlotState extends State<KitStatusLineSlot> {
       state: this,
       child: child == null
           ? line
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                line,
-                Expanded(child: child),
-              ],
+          : LayoutBuilder(
+              builder: (context, constraints) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // A large-text status can be taller than the entire area
+                  // above the keyboard. Keep its full message and actions
+                  // scrollable while reserving room for the page itself.
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: constraints.maxHeight * .4,
+                    ),
+                    child: line,
+                  ),
+                  Expanded(child: child),
+                ],
+              ),
             ),
     );
   }

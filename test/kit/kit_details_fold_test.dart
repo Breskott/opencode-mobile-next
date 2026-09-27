@@ -17,6 +17,7 @@ import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_technical_value.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 const _toggle = ValueKey('kit-details-toggle');
 const _copyAll = ValueKey('kit-details-copy-all');
@@ -72,6 +73,43 @@ Future<void> _pump(
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitDetailsFold',
+    builds: {
+      'collapsed': () => const KitDetailsFold(notes: ['Connection details']),
+      'expanded': () => const KitDetailsFold(
+        initiallyExpanded: true,
+        notes: ['Connection details'],
+      ),
+    },
+    changes: {
+      'expand': KitMotionChange(
+        build: () => const KitDetailsFold(notes: ['Connection details']),
+        act: (tester, stage) =>
+            stage.press(find.byKey(const ValueKey('kit-details-toggle'))),
+        shows: 'Connection details',
+      ),
+    },
+  );
+  Future<void> openMotionDetails(BuildContext context) =>
+      showKitTechnicalDetails(
+        context,
+        title: 'Connection details',
+        text: 'Connection refused',
+      );
+  kitMotionStillTests(
+    'showKitTechnicalDetails',
+    opens: {
+      'default': KitMotionOpen(openMotionDetails, shows: 'Connection details'),
+    },
+    changes: {
+      'dismissed': kitModalDismiss(
+        openMotionDetails,
+        shows: 'Connection details',
+      ),
+    },
+  );
+
   late List<MethodCall> platform;
   late List<Map<Object?, Object?>> announcements;
 

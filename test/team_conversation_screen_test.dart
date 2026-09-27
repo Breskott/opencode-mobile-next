@@ -159,10 +159,16 @@ void main() {
     // furiosa: the session runs, whatever /agents said.
     final agentLine = _key('team-conversation-agent-my-app/gastown.furiosa');
     expect(_words(tester, agentLine), contains('furiosa · Worker · Running'));
-    // The one Now line: starting, slow on a phone, with the elapsed time.
+    // The one Now line (slice-P5.1): what happens, for how long, what
+    // comes next and how long that usually takes; the worker's name is its
+    // own line's, not said again.
     expect(
       _words(tester, _key('team-conversation-now-text')),
-      'furiosa is starting · can take a few minutes on a phone · 3 min',
+      'Starting a worker · 3 min',
+    );
+    expect(
+      _words(tester, _key('team-conversation-now-next')),
+      'Next: the worker begins the task · usually within 5 min',
     );
     // The agent strip: the lead and furiosa, furiosa marked working.
     expect(find.byType(KitAgentStrip), findsOneWidget);
@@ -264,7 +270,15 @@ void main() {
     );
     expect(
       _words(tester, _key('team-conversation-now-text')),
-      'Needs you · Which default?',
+      'Waiting for your answer',
+    );
+    // The question itself is its card's, not the Now line's.
+    expect(
+      find.descendant(
+        of: _key('team-conversation-now'),
+        matching: find.textContaining('Which default?', findRichText: true),
+      ),
+      findsNothing,
     );
     // The header counts it with the one needs-you marker.
     expect(
@@ -332,7 +346,7 @@ void main() {
     );
     expect(
       _words(tester, _key('team-conversation-now-text')),
-      'Waiting for the team to pick it up · 5 min',
+      'Waiting for a worker · 5 min',
     );
     expect(
       find.textContaining(
@@ -583,8 +597,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a task waiting long for the team says so and offers its '
-        'page', (tester) async {
+    testWidgets('a task waiting long for the team says why and unfolds its '
+        'ways out in place', (tester) async {
       await pump(
         tester,
         runId: null,
@@ -597,9 +611,16 @@ void main() {
       );
       expect(
         _words(tester, _key('team-conversation-now-text')),
-        'Still waiting for the team to plan this · 15 min',
+        'Waiting for a worker · 15 min',
       );
-      expect(_key('team-conversation-pending-team-page'), findsOneWidget);
+      expect(
+        _words(tester, _key('team-conversation-now-reason')),
+        'No worker has been reported yet.',
+      );
+      await tester.tap(_key('team-conversation-now-why'));
+      await tester.pumpAndSettle();
+      expect(_key('team-conversation-now-why-fold'), findsOneWidget);
+      expect(_key('team-conversation-now-refresh'), findsOneWidget);
     });
 
     testWidgets('the draft is kept when the person leaves and comes back', (

@@ -21,6 +21,9 @@ import 'kit_overflow_chat_scenes.dart';
 import 'kit_overflow_data_scenes.dart';
 import 'kit_overflow_form_scenes.dart';
 import 'kit_overflow_layout_scenes.dart';
+import 'kit_chat_overflow_scenes.dart';
+import 'kit_core_overflow_scenes.dart';
+import 'kit_forms_overflow_scenes.dart';
 
 /// Where the matrix puts a scene.
 enum KitOverflowHost {
@@ -163,62 +166,6 @@ Future<void> _confirm(
 
 /// Every scene in the matrix, one block per part, appended at the end.
 final kitOverflowScenes = <KitOverflowScene>[
-  // product_states.dart (re-exported by kit.dart)
-  KitOverflowScene(
-    const ['LoadingList'],
-    'loading',
-    host: KitOverflowHost.fill,
-    build: (_, _) => const LoadingList(),
-  ),
-  KitOverflowScene(
-    const ['ProductEmptyState'],
-    'empty',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductEmptyState(
-      icon: AppIconography.search,
-      title: c.t('No conversations yet', 'لا محادثات بعد'),
-      message: c.t(
-        'Start one from the composer below, or open a project first.',
-        'ابدأ واحدة من خانة الكتابة، أو افتح مشروعاً أولاً.',
-      ),
-      actionLabel: c.t('Open a project', 'فتح مشروع'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductErrorState'],
-    'error',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductErrorState(
-      message: c.t(
-        'The server did not answer. Check that it is running.',
-        'لم يرد الخادم. تأكد أنه يعمل.',
-      ),
-      onRetry: () async {},
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductInlineEmpty'],
-    'empty',
-    build: (_, c) => ProductInlineEmpty(
-      icon: AppIconography.info,
-      title: c.t('Nothing is waiting for you', 'لا شيء بانتظارك'),
-      message: c.t(
-        'Requests from your agents appear here.',
-        'تظهر طلبات الوكلاء هنا.',
-      ),
-      actionLabel: c.t('Open activity', 'فتح النشاط'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['SectionLabel'],
-    'default',
-    build: (_, c) => SectionLabel(
-      c.t('Servers on this network', 'الخوادم على هذه الشبكة'),
-      trailing: const KitChevron(),
-    ),
-  ),
   // kit_action_stack.dart
   KitOverflowScene(
     const ['KitActionStack'],
@@ -624,7 +571,7 @@ final kitOverflowScenes = <KitOverflowScene>[
     'default',
     host: KitOverflowHost.fill,
     build: (_, c) => KitScreen(
-      header: [SectionLabel(c.t('Servers', 'الخوادم'))],
+      header: [KitText(c.t('Servers', 'الخوادم'), role: KitTextRole.label)],
       body: ListView(children: [_row(c), _row(c), _row(c)]),
       bottom: KitActionBlock(
         primary: KitAction(
@@ -643,32 +590,6 @@ final kitOverflowScenes = <KitOverflowScene>[
       loading: true,
       loadingLabel: c.t('Loading servers', 'جارٍ تحميل الخوادم'),
       body: const KitSkeletonRows(),
-    ),
-  ),
-  // kit_secret_field.dart
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'default',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(text: 'sk-test-not-a-real-key'),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      hint: c.t(
-        'Paste the key from your account page',
-        'الصق المفتاح من صفحة حسابك',
-      ),
-    ),
-  ),
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'disabled',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      enabled: false,
     ),
   ),
   // kit_sheet.dart (KitSheet, showKitSheet)
@@ -1515,7 +1436,184 @@ final kitOverflowScenes = <KitOverflowScene>[
       onChanged: (_) {},
     ),
   ),
+  // The two repair lanes exercised different states under some identical
+  // part/state names. Keep both sets; name the incoming variants explicitly
+  // rather than discard a scenario or permit duplicate manifest ids.
+  ..._testsDScenes([
+    ...kitChatOverflowScenes,
+    ...kitCoreOverflowScenes,
+    ...kitFormsOverflowScenes,
+    // Infrastructure parts introduced by the September 27 kit migration.
+    for (final segments in <String, List<String>>{
+      'root': [],
+      'default': ['lib', 'screens'],
+      'collapsed': ['lib', 'features', 'projects', 'screens'],
+      'long': ['a-long-project-folder-name', 'a-long-screen-file-name'],
+    }.entries)
+      KitOverflowScene(
+        const ['KitBreadcrumb'],
+        segments.key,
+        build: (_, c) => KitBreadcrumb(
+          rootLabel: c.t('Project root', 'جذر المشروع'),
+          segments: segments.value,
+          onSelected: (_) {},
+        ),
+      ),
+    KitOverflowScene(
+      const ['KitGroupNote'],
+      'default',
+      build: (_, c) => KitGroupNote(
+        message: c.t(
+          'Two settings are not available on this server.',
+          'إعدادان غير متاحين على هذا الخادم.',
+        ),
+        action: KitAction(label: c.t('Why', 'لماذا'), onPressed: _noop),
+      ),
+    ),
+    for (final state in ['default', 'filled', 'error', 'disabled'])
+      KitOverflowScene(
+        const ['KitField'],
+        state,
+        build: (_, c) => _OverflowTextController(
+          text: state == 'default' ? '' : 'release-notes',
+          builder: (controller) => KitField(
+            label: c.t('Project name', 'اسم المشروع'),
+            controller: controller,
+            helper: c.t(
+              'Used to find this project later.',
+              'للعثور على المشروع لاحقاً.',
+            ),
+            error: state == 'error'
+                ? c.t(
+                    'Choose a name that is not already used.',
+                    'اختر اسماً غير مستخدم.',
+                  )
+                : null,
+            enabled: state != 'disabled',
+            disabledReason: state == 'disabled'
+                ? c.t(
+                    'Reconnect to rename the project.',
+                    'أعد الاتصال لتغيير اسم المشروع.',
+                  )
+                : null,
+          ),
+        ),
+      ),
+    for (final state in ['default', 'filled', 'partial', 'disabled'])
+      KitOverflowScene(
+        const ['KitSearchField'],
+        state,
+        build: (_, c) => _OverflowTextController(
+          text: state == 'default' ? '' : 'release',
+          builder: (controller) => KitSearchField(
+            controller: controller,
+            label: c.t('Search conversations', 'ابحث في المحادثات'),
+            onChanged: (_) {},
+            resultCount: state == 'default' ? null : 12,
+            partial: state == 'partial',
+            enabled: state != 'disabled',
+            disabledReason: state == 'disabled'
+                ? c.t(
+                    'Connect to search conversations.',
+                    'اتصل للبحث في المحادثات.',
+                  )
+                : null,
+          ),
+        ),
+      ),
+    KitOverflowScene(
+      const ['KitSearchNoMatch'],
+      'no-match',
+      build: (_, c) => KitSearchNoMatch(
+        query: 'release-notes',
+        what: c.t('conversations', 'المحادثات'),
+        onClear: _noop,
+      ),
+    ),
+    KitOverflowScene(
+      const ['KitScrollArea', 'KitScrollbar', 'KitOwnScrollbar'],
+      'scrollable',
+      host: KitOverflowHost.fill,
+      build: (_, c) => _OverflowScrollFrame(copy: c),
+    ),
+    for (final layout in KitShellControlsLayout.values)
+      KitOverflowScene(
+        const ['KitTopBar', 'KitShellControls'],
+        layout.name,
+        build: (_, c) => KitTopBar.shell(
+          controls: KitShellControls(
+            server: c.t('Office computer', 'حاسوب المكتب'),
+            serverStatus: c.t('Reconnecting', 'جارٍ إعادة الاتصال'),
+            onServer: _noop,
+            onSearch: _noop,
+            needsYou: 2,
+            project: 'opencode',
+            onProject: _noop,
+            layout: layout,
+          ),
+        ),
+      ),
+    KitOverflowScene(
+      const ['KitStatusScope', 'KitStatusLineSlot', 'KitStatusContribution'],
+      'contributed',
+      host: KitOverflowHost.fill,
+      build: (_, c) => _OverflowStatusFrame(copy: c),
+    ),
+    KitOverflowScene(
+      const ['KitTabStrip'],
+      'counts-and-attention',
+      build: (_, c) => KitTabStrip(
+        selected: 1,
+        onSelected: (_) {},
+        tabs: [
+          KitTab(label: c.t('Working', 'قيد العمل'), count: 12),
+          KitTab(
+            label: c.t('Needs your answer', 'بانتظار إجابتك'),
+            count: 3,
+            needsYou: 3,
+          ),
+          KitTab(label: c.t('Finished', 'مكتمل'), count: 48),
+        ],
+      ),
+    ),
+    for (final enabled in [true, false])
+      KitOverflowScene(
+        const ['KitTappable'],
+        enabled ? 'enabled' : 'disabled',
+        build: (_, c) => KitTappable(
+          onTap: enabled ? _noop : null,
+          disabledReason: enabled
+              ? null
+              : c.t('Reconnect first.', 'أعد الاتصال أولاً.'),
+          child: KitText(c.t('Open project details', 'افتح تفاصيل المشروع')),
+        ),
+      ),
+    for (final kind in KitCodeKind.values)
+      KitOverflowScene(
+        const ['KitCodeBlock'],
+        kind.name,
+        build: (_, c) => KitCodeBlock(
+          text:
+              'flutter test test/project_settings_test.dart\nAll tests passed.',
+          kind: kind,
+          language: kind == KitCodeKind.code ? 'dart' : null,
+          caption: c.t('Project checks', 'فحوصات المشروع'),
+        ),
+      ),
+  ]),
 ];
+
+Iterable<KitOverflowScene> _testsDScenes(List<KitOverflowScene> scenes) =>
+    scenes.map(
+      (scene) => KitOverflowScene(
+        scene.parts,
+        'tests-d-${scene.state}',
+        build: scene.build,
+        open: scene.open,
+        host: scene.host,
+        labelsOverflow: scene.labelsOverflow,
+      ),
+    );
 
 /// A valid 1x1 opaque PNG (the fixture kit_image_test.dart uses).
 const _onePixelPng = <int>[
@@ -1528,3 +1626,92 @@ const _onePixelPng = <int>[
   0x18, 0xDD, 0x8D, 0xB0,
   0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82, //
 ];
+
+/// Owns the editing state for one matrix mount and releases it on teardown.
+class _OverflowTextController extends StatefulWidget {
+  const _OverflowTextController({required this.text, required this.builder});
+  final String text;
+  final Widget Function(TextEditingController) builder;
+  @override
+  State<_OverflowTextController> createState() =>
+      _OverflowTextControllerState();
+}
+
+class _OverflowTextControllerState extends State<_OverflowTextController> {
+  late final controller = TextEditingController(text: widget.text);
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(controller);
+}
+
+class _OverflowScrollFrame extends StatefulWidget {
+  const _OverflowScrollFrame({required this.copy});
+  final KitSceneCopy copy;
+  @override
+  State<_OverflowScrollFrame> createState() => _OverflowScrollFrameState();
+}
+
+class _OverflowScrollFrameState extends State<_OverflowScrollFrame> {
+  final controller = ScrollController();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => KitScrollArea(
+    builder: (_) => KitScrollbar(
+      controller: controller,
+      child: ListView.builder(
+        controller: controller,
+        itemCount: 30,
+        itemBuilder: (_, i) =>
+            KitRow(title: widget.copy.t('Conversation $i', 'المحادثة $i')),
+      ),
+    ),
+  );
+}
+
+class _OverflowStatusFrame extends StatefulWidget {
+  const _OverflowStatusFrame({required this.copy});
+  final KitSceneCopy copy;
+  @override
+  State<_OverflowStatusFrame> createState() => _OverflowStatusFrameState();
+}
+
+class _OverflowStatusFrameState extends State<_OverflowStatusFrame> {
+  final conditions = ValueNotifier<List<KitStatus>>(const []);
+  @override
+  void dispose() {
+    conditions.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => KitStatusScope(
+    conditions: conditions,
+    child: KitStatusLineSlot(
+      child: KitStatusContribution(
+        status: KitStatus(
+          kind: KitStatusKind.info,
+          icon: AppIconography.info,
+          message: widget.copy.t(
+            'Your settings were saved on this phone.',
+            'حُفظت إعداداتك على هذا الهاتف.',
+          ),
+        ),
+        child: ListView(
+          children: [
+            KitText(widget.copy.t('Project settings', 'إعدادات المشروع')),
+          ],
+        ),
+      ),
+    ),
+  );
+}

@@ -3,6 +3,8 @@
 // copy (verbatim, SEC-13), states, too big, wrap, RTL, virtualisation,
 // reduced motion (G8x) and the overflow matrix (G6). The wrapper's own
 // compatibility (test 12) is test/diff_view_test.dart.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,6 +101,32 @@ KitDiffFile _spaced(String path, int changes) {
 Finder _key(String key) => find.byKey(ValueKey(key));
 
 void main() {
+  Future<void> openMotionDiff(BuildContext context) => showKitDiff(
+    context,
+    title: 'Review changes',
+    files: [
+      KitDiffFile.fromTexts('notes.txt', before: 'Before', after: 'After'),
+    ],
+  );
+  kitMotionStillTests(
+    'showKitDiff',
+    opens: {'loaded': KitMotionOpen(openMotionDiff, shows: 'Review changes')},
+    changes: {
+      'dismissed': KitMotionChange(
+        build: () => const SizedBox.expand(),
+        act: (tester, stage) async {
+          final navigator = Navigator.of(stage.context);
+          unawaited(openMotionDiff(stage.context));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          expect(find.text('Review changes'), findsOneWidget);
+          navigator.pop();
+        },
+        hides: 'Review changes',
+      ),
+    },
+  );
+
   group('1. parser', () {
     test('fromPatch: counts, numbers and hunk lines', () {
       final file = KitDiffFile.fromPatch('lib/a.dart', _twoHunks);

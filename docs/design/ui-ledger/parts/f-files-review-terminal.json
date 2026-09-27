@@ -809,22 +809,23 @@
           "type": "icon-button",
           "label": "Close (CloseButton)",
           "key": null,
-          "line": 2088,
+          "line": 1029,
           "action": "dismiss",
           "target": null,
           "effect": "Navigator.pop(context).",
           "gates": [
             "!widget.embedded"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_viewer.dart"
         },
         {
           "id": "files-file-viewer-sheet-wrap",
           "type": "toggle",
           "label": "Wrap lines / Scroll lines",
           "key": null,
-          "file": "lib/ui/widgets/reader_preferences.dart",
-          "line": 2098,
+          "file": "lib/ui/kit/kit_viewer.dart",
+          "line": 854,
           "action": "toggle-setting",
           "target": null,
           "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
@@ -839,35 +840,37 @@
           "type": "button",
           "label": "Copy",
           "key": null,
-          "line": 2099,
+          "line": 838,
           "action": "copy",
           "target": null,
           "effect": "Clipboard.setData(file content) + snackbar \"Copied\".",
           "gates": [
             "disabled when _content == null or binary"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_viewer.dart"
         },
         {
           "id": "files-file-viewer-sheet-reference",
           "type": "button",
           "label": "Reference",
           "key": "project-file-add-reference",
-          "line": 2121,
+          "line": 658,
           "action": "mutate",
           "target": null,
           "effect": "widget.onAddReference -> FilesScreen._stageProjectFile(path, initialLine) -> handoff.stage().",
           "gates": [
             "widget.onAddReference != null (widget.handoff != null)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/files_screen.dart"
         },
         {
           "id": "files-file-viewer-sheet-attach",
           "type": "button",
           "label": "Attach",
           "key": "project-file-attach",
-          "line": 2128,
+          "line": 666,
           "action": "mutate",
           "target": null,
           "effect": "_attach(): calls host onAttachFile(path, exportData) and shows \"attached\" snackbar.",
@@ -875,49 +878,53 @@
             "widget.onAttachFile != null",
             "disabled while _content == null || _attaching"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/files_screen.dart"
         },
         {
           "id": "files-file-viewer-sheet-save",
           "type": "button",
           "label": "Save",
           "key": "project-file-download",
-          "line": 2143,
+          "line": 694,
           "action": "external-link",
           "target": null,
           "effect": "_download(): FilePicker.saveFile(...) writes the file to the device; snackbar on success.",
           "gates": [
             "disabled while _content == null || _downloading"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/files_screen.dart"
         },
         {
           "id": "files-file-viewer-sheet-reload",
           "type": "button",
           "label": "Reload",
           "key": null,
-          "line": 2156,
+          "line": 702,
           "action": "other",
           "target": null,
           "effect": "_fetch(): re-reads the file content from the server.",
           "gates": [
             "disabled when _scopeInvalid"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/files_screen.dart"
         },
         {
           "id": "files-file-viewer-sheet-error-retry",
           "type": "button",
           "label": "Try again (ProductErrorState)",
           "key": null,
-          "line": 2171,
+          "line": 1217,
           "action": "other",
           "target": null,
           "effect": "ProductErrorState.onRetry -> _fetch().",
           "gates": [
             "_error != null && !_scopeInvalid"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_viewer.dart"
         }
       ]
     },
@@ -1092,93 +1099,72 @@
           "destructive": false
         },
         {
-          "id": "review-workspace-mode-unified",
-          "type": "button",
-          "label": "Unified",
-          "key": "review-mode-unified",
-          "line": 1145,
-          "action": "other",
-          "target": null,
-          "effect": "onModeChanged(ReviewDiffMode.unified): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1145, 1239, 1405).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "review-workspace-mode-split",
-          "type": "button",
-          "label": "Split",
-          "key": "review-mode-split",
-          "line": 1151,
-          "action": "other",
-          "target": null,
-          "effect": "onModeChanged(ReviewDiffMode.split): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1151, 1245, 1413).",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "review-workspace-previous-hunk",
           "type": "icon-button",
           "label": "Previous hunk",
           "key": "review-previous-hunk",
-          "line": 1432,
+          "line": 1601,
           "action": "other",
           "target": null,
           "effect": "_jumpToHunk(-1, hunks): canvas.revealSourceIndex(previous hunk header), wrapping. Key only on the phone toolbar; unkeyed twins at 1158 and 1252.",
           "gates": [
             "disabled when hunks.isEmpty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-next-hunk",
           "type": "icon-button",
           "label": "Next hunk",
           "key": "review-next-hunk",
-          "line": 1438,
+          "line": 1608,
           "action": "other",
           "target": null,
           "effect": "_jumpToHunk(1, hunks): canvas.revealSourceIndex(next hunk header), wrapping. Unkeyed twins at 1166 and 1260.",
           "gates": [
             "disabled when hunks.isEmpty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-ask-file",
-          "type": "button",
-          "label": "Ask about file (compact toolbar: Ask)",
-          "key": null,
-          "line": 1227,
+          "type": "menu-item",
+          "label": "Comment on {file}",
+          "key": "review-file-comment",
+          "line": 614,
           "action": "open-sheet",
           "target": "review-comment-sheet",
-          "targetWidget": "_ReviewCommentComposer",
-          "effect": "_openCommentComposer(diff, lines, wholeFile: true).",
+          "targetWidget": null,
+          "effect": "The file menu calls _openCommentComposer(file, null), retaining a per-file comment draft.",
           "gates": [
-            "wide or compact toolbar (toolbar width >= 560 or compact height); phone uses the overflow menu"
+            "a file is shown"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-add-file",
-          "type": "button",
-          "label": "Add file to prompt (compact toolbar: Add file)",
+          "type": "menu-item",
+          "label": "Add file to prompt",
           "key": "review-add-file",
-          "line": 1222,
+          "line": 621,
           "action": "mutate",
           "target": null,
-          "effect": "_stageFile(diff): handoff.stage(ReviewReference changedFile) on the originating composer; snackbar review-staged-notice. Compact twin key review-add-file-compact (line 1176).",
+          "effect": "The file menu calls _stageFile(file), adding a structured reference to the originating draft.",
           "gates": [
-            "widget.handoff != null",
-            "wide or compact toolbar"
+            "widget.handoff != null"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-copy-patch",
           "type": "button",
           "label": "Copy patch (compact toolbar: Copy)",
           "key": null,
-          "line": 1265,
+          "line": 629,
           "action": "copy",
           "target": null,
           "effect": "_copyText(diff.patch ?? diff.after): clipboard + snackbar. Compact twin at line 1181.",
@@ -1186,43 +1172,46 @@
             "disabled when (diff.patch ?? diff.after ?? '').isEmpty",
             "wide or compact toolbar"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-file-actions",
           "type": "icon-button",
           "label": "File review actions",
           "key": "review-file-actions",
-          "line": 1353,
+          "line": 1642,
           "action": "other",
           "target": null,
           "effect": "Opens overflow menu.",
           "gates": [
             "phone toolbar: !compact && toolbar width < 560"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-file-actions-ask",
           "type": "menu-item",
-          "label": "Ask about file",
-          "key": null,
-          "line": 1367,
+          "label": "Comment on {file}",
+          "key": "review-file-comment",
+          "line": 614,
           "action": "open-sheet",
           "target": "review-comment-sheet",
-          "targetWidget": "_ReviewCommentComposer",
-          "effect": "onAsk -> _openCommentComposer(diff, lines, wholeFile: true).",
+          "targetWidget": null,
+          "effect": "The file menu calls _openCommentComposer(file, null), retaining a per-file comment draft.",
           "gates": [
             "phone toolbar"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-file-actions-add",
           "type": "menu-item",
           "label": "Add file to prompt",
           "key": null,
-          "line": 1376,
+          "line": 621,
           "action": "mutate",
           "target": null,
           "effect": "onAddFile -> _stageFile(diff) -> handoff.stage().",
@@ -1230,14 +1219,15 @@
             "phone toolbar",
             "onAddFile != null (widget.handoff != null)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-file-actions-copy",
           "type": "menu-item",
           "label": "Copy patch",
           "key": null,
-          "line": 1386,
+          "line": 629,
           "action": "copy",
           "target": null,
           "effect": "onCopy -> _copyText(patch).",
@@ -1245,40 +1235,43 @@
             "phone toolbar",
             "enabled only when patch/after text is non-empty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-workspace-diff-line",
           "type": "gesture",
           "label": "[tap diff line]",
           "key": "review-line-<index>",
-          "line": 1891,
+          "line": 2161,
           "action": "other",
           "target": null,
           "effect": "_selectLine(index): first tap selects a line, a second tap on another line extends to a range, tapping the single selected line clears. Rows key review-line-<index>; split rows review-split-row-<index> (line 1879); wrapped phone rows at 2016.",
           "gates": [
             "line.selectable"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-hunk-header",
           "type": "gesture",
           "label": "[tap hunk header]",
           "key": "review-line-<index>",
-          "line": 1897,
+          "line": 2004,
           "action": "other",
           "target": null,
           "effect": "_selectHunk(index, lines): selects every selectable line of the hunk (toggle) so the selection bar can add the hunk. In the wrapped phone canvas this is the right zone of _CompactHunkBar (line 2256).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-expand-above",
           "type": "gesture",
           "label": "+{count} lines",
           "key": null,
-          "line": 2222,
+          "line": 2350,
           "action": "other",
           "target": null,
           "effect": "_CompactHunkBar left zone -> _expandAbove(hunkIndex, hiddenAbove): reveals hidden unchanged lines above the hunk.",
@@ -1286,56 +1279,60 @@
             "wrapped (phone) canvas",
             "row.expandable && row.hiddenAbove > 0"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-expand-below",
           "type": "gesture",
           "label": "Expand ({count} more)",
           "key": "review-expand-below-<hunk>",
-          "line": 2302,
+          "line": 2337,
           "action": "other",
           "target": null,
           "effect": "_CompactExpandBar -> _expandBelow(hunk, remaining): reveals the next 20 unchanged lines. \"Expand\" is a hard-coded English string.",
           "gates": [
             "wrapped (phone) canvas"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-selection-clear",
           "type": "icon-button",
           "label": "Clear selection",
           "key": "review-selection-clear",
-          "line": 2675,
+          "line": 1709,
           "action": "other",
           "target": null,
           "effect": "setState(_clearSelection).",
           "gates": [
             "selectedCount > 0"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-selection-copy",
           "type": "icon-button",
           "label": "Copy selection",
           "key": "review-selection-copy",
-          "line": 2681,
+          "line": 1721,
           "action": "copy",
           "target": null,
           "effect": "_copyText(_selectedSnippet(lines)).",
           "gates": [
             "selectedCount > 0"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-selection-add",
           "type": "icon-button",
           "label": "Add selection to prompt / Add hunk to prompt",
           "key": "review-selection-add",
-          "line": 2688,
+          "line": 1717,
           "action": "mutate",
           "target": null,
           "effect": "_stageSelection(diff, lines): handoff.stage(ReviewReference kind hunk|selection with snippet).",
@@ -1343,14 +1340,15 @@
             "selectedCount > 0",
             "widget.handoff != null"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-selection-comment",
           "type": "button",
           "label": "Comment",
           "key": "review-comment-action",
-          "line": 2697,
+          "line": 1714,
           "action": "open-sheet",
           "target": "review-comment-sheet",
           "targetWidget": "_ReviewCommentComposer",
@@ -1358,35 +1356,38 @@
           "gates": [
             "selectedCount > 0"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-hunk-bar-previous",
           "type": "icon-button",
           "label": "Previous hunk",
           "key": "review-hunk-bar-previous",
-          "line": 2737,
+          "line": 1601,
           "action": "other",
           "target": null,
           "effect": "_jumpToHunk(-1, hunks) from the bottom hunk bar (key review-hunk-bar).",
           "gates": [
             "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "review-workspace-hunk-bar-next",
           "type": "icon-button",
           "label": "Next hunk",
           "key": "review-hunk-bar-next",
-          "line": 2743,
+          "line": 1608,
           "action": "other",
           "target": null,
           "effect": "_jumpToHunk(1, hunks) from the bottom hunk bar.",
           "gates": [
             "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         }
       ]
     },
@@ -1399,7 +1400,7 @@
       "presentedBy": [
         "_openCommentComposer"
       ],
-      "line": 2755,
+      "line": 698,
       "purpose": "Composer for a review comment on the selected lines or the entire change; the result is staged on the chat composer (handoff) or popped back as a formatted prompt.",
       "reachedFrom": [
         {
@@ -1422,38 +1423,41 @@
           "type": "text-field",
           "label": "What should OpenCode inspect or change?",
           "key": "review-comment-field",
-          "line": 2809,
+          "line": 950,
           "action": "submit",
           "target": null,
           "effect": "Autofocused multiline field; onSubmitted -> _submit() pops the sheet with the trimmed text.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         },
         {
           "id": "review-comment-sheet-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 2830,
+          "type": "icon-button",
+          "label": "Close",
+          "key": "kit-sheet-close",
+          "line": 435,
           "action": "dismiss",
           "target": null,
-          "effect": "Navigator.pop(context) with no result.",
+          "effect": "Closes the comment sheet; KitDraft retains unsent comment text where a profile is present.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_sheet.dart"
         },
         {
           "id": "review-comment-sheet-add",
           "type": "button",
           "label": "Add to prompt",
           "key": "review-add-to-prompt",
-          "line": 2836,
+          "line": 688,
           "action": "submit",
           "target": null,
           "effect": "_submit(): pops with the comment; _openCommentComposer then either _stage()s a ReviewReference(kind comment) via handoff.stage(), or, without a handoff, pops ReviewWorkspace with _reviewPrompt(...) (caller sends it to the chat or clipboard).",
           "gates": [
             "disabled while the field is empty"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/review_workspace.dart"
         }
       ]
     },
@@ -2625,42 +2629,45 @@
           "type": "gesture",
           "label": "Hide revealed context",
           "key": "diff-collapse-<index>",
-          "line": 594,
+          "line": 2321,
           "action": "other",
           "target": null,
           "effect": "_GapBar: removes _shownTop/_shownBottom for that gap.",
           "gates": [
             "gap has revealed rows"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "diff-view-expand-down",
           "type": "gesture",
           "label": "Show next {count} lines",
           "key": "diff-expand-down-<index>",
-          "line": 615,
+          "line": 2337,
           "action": "other",
           "target": null,
           "effect": "_GapBar -> _expandTop(index) reveals up to 20 lines below the previous hunk.",
           "gates": [
             "gap rows available && index > 0 && remaining > 0"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         },
         {
           "id": "diff-view-expand-up",
           "type": "gesture",
           "label": "Show {count} previous lines ({remaining} hidden)",
           "key": "diff-gap-<index>",
-          "line": 627,
+          "line": 2350,
           "action": "other",
           "target": null,
           "effect": "_GapBar -> _expandBottom(index) reveals up to 20 lines above the next hunk; inert \"missing context\" label when rows are unavailable.",
           "gates": [
             "expandable (gap.rows != null)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_diff_view.dart"
         }
       ]
     },

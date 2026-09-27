@@ -16,11 +16,13 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
 import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
-import 'package:opencode_mobile/ui/kit/kit_nav.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
@@ -119,6 +121,23 @@ Future<ConnectionController> _controller({
     ..directory = directory;
 }
 
+Widget _shellHome(ConnectionController controller, {int? initialTab}) =>
+    Builder(
+      builder: (context) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => AppConditionsScope(
+          conditions: [
+            connectionKitStatus(
+              context,
+              controller,
+              actionContext: () => context,
+            ),
+          ],
+          child: HomeScreen(initialTab: initialTab),
+        ),
+      ),
+    );
+
 Future<void> _pumpShell(
   WidgetTester tester,
   ConnectionController controller, {
@@ -136,7 +155,7 @@ Future<void> _pumpShell(
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: _shellHome(controller),
       ),
     ),
   );
@@ -211,7 +230,7 @@ void main() {
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const HomeScreen(),
+            home: _shellHome(controller),
           ),
         ),
       );
@@ -585,7 +604,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
+    final controller = await _controller(profileName: 'Test server');
     addTearDown(controller.dispose);
 
     await _pumpShell(tester, controller);
@@ -703,7 +722,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: HomeScreen(initialTab: initialTab),
+            home: _shellHome(controller, initialTab: initialTab),
           ),
         ),
       );
@@ -712,7 +731,7 @@ void main() {
     }
 
     testWidgets('nothing waiting: Work', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       await pump(tester, controller);
       expect(title(tester), 'Work');
@@ -725,7 +744,7 @@ void main() {
     testWidgets('something waiting: Inbox, on the request itself', (
       tester,
     ) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissions = {'perm-1': permission('perm-1')};
       await pump(tester, controller);
@@ -744,7 +763,7 @@ void main() {
     testWidgets('the first read of pending requests decides, once', (
       tester,
     ) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       // Connect starts this read before the shell mounts.
       controller.permissionsLoading = true;
@@ -780,7 +799,7 @@ void main() {
 
     testWidgets('a read that finds nothing leaves Work, and a late request '
         'does not move the person', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller
         ..permissionsLoading = true
@@ -808,7 +827,7 @@ void main() {
     });
 
     testWidgets('picking a tab during the read is final', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissionsLoading = true;
       await pump(tester, controller);
@@ -827,7 +846,7 @@ void main() {
     });
 
     testWidgets('an explicit destination is respected', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissions = {'perm-1': permission('perm-1')};
       await pump(tester, controller, initialTab: 0);
@@ -916,14 +935,9 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(KitNavBar), findsOneWidget);
-    // On Work, the failed attempt is the one status line, at once (no
-    // grace: nothing is in flight), not the shell banner.
-    expect(
-      find.byKey(const ValueKey('connection-status-banner')),
-      findsNothing,
-    );
-    final line = find.byKey(const ValueKey('work-status-server'));
+    expect(find.byType(KitNav), findsOneWidget);
+    // A completed failure occupies the one shared status slot immediately.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
     expect(line, findsOneWidget);
     expect(
       find.descendant(
@@ -933,20 +947,24 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: line, matching: find.text('Try again')),
+      find.descendant(
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
+      ),
       findsOneWidget,
     );
     // The raw error and the secondary action live behind Details.
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.byKey(const ValueKey('work-status-details')));
+    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
     expect(find.text('Change server'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+    // Stop the controller-owned fallback poll before widget-test invariants.
     controller.dispose();
   });
 
@@ -975,7 +993,7 @@ void main() {
               data: MediaQuery.of(
                 context,
               ).copyWith(textScaler: const TextScaler.linear(2)),
-              child: const HomeScreen(),
+              child: _shellHome(controller),
             ),
           ),
         ),
@@ -983,14 +1001,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final line = find.byKey(const ValueKey('work-status-server'));
+    final line = find.byKey(const ValueKey('connection-status-banner'));
     expect(
-      find.descendant(of: line, matching: find.text('Try again')),
+      find.descendant(
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
+      ),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('kit-status-more')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+    // Stop the controller-owned fallback poll before widget-test invariants.
     controller.dispose();
   });
 
@@ -1004,28 +1026,33 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomeScreen(),
+          home: _shellHome(controller),
         ),
       ),
     );
     await tester.pump();
-    // Quiet while the automatic reconnect has its grace time, then the one
-    // status line offers a manual retry.
-    expect(find.byKey(const ValueKey('work-status-server')), findsNothing);
-    await tester.pump(const Duration(seconds: 9));
+    // The shared line reports reconnection immediately, then escalates after
+    // the controller's eight-second grace period without adding another slot.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
+    expect(line, findsOneWidget);
+    expect(find.text('Reconnecting to This device (Termux)…'), findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsNothing);
+    await tester.pump(const Duration(seconds: 8));
     await tester.pump(const Duration(milliseconds: 300));
+    expect(line, findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsOneWidget);
 
     final retry = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Try again'),
+      find.widgetWithText(TextButton, 'Reconnect to This device (Termux)'),
     );
     expect(retry.onPressed, isNotNull);
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.byKey(const ValueKey('work-status-details')));
+    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Change server'), findsOneWidget);

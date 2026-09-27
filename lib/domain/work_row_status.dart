@@ -9,6 +9,7 @@ import 'run_result.dart';
 enum WorkRowPhase {
   working,
   needsYou,
+  stalled,
   done,
   failed,
   stopped,
@@ -75,6 +76,9 @@ class WorkRowFacts {
   factory WorkRowFacts.team({
     required WorkItem item,
     bool needsYou = false,
+    // Supply the current task's P3.5 TeamNowKind.stalled or dispatch-cycle
+    // evidence. Row age and transport silence alone never establish a stall.
+    bool stalled = false,
     WorkRowSteps? steps,
     DateTime? startedAt,
     DateTime? finishedAt,
@@ -82,11 +86,12 @@ class WorkRowFacts {
     phase: needsYou
         ? WorkRowPhase.needsYou
         : switch (item.state) {
-            WorkState.working => WorkRowPhase.working,
             WorkState.needsInput => WorkRowPhase.needsYou,
             WorkState.completed => WorkRowPhase.done,
             WorkState.failed => WorkRowPhase.failed,
             WorkState.cancelled => WorkRowPhase.stopped,
+            _ when stalled => WorkRowPhase.stalled,
+            WorkState.working => WorkRowPhase.working,
             WorkState.waiting || WorkState.blocked => WorkRowPhase.waiting,
             WorkState.queued => WorkRowPhase.queued,
             WorkState.ready => WorkRowPhase.ready,
@@ -121,6 +126,7 @@ class WorkRowStatus {
   String word(AppLocalizations l10n) => switch (facts.phase) {
     WorkRowPhase.working => l10n.kitMarkWorking,
     WorkRowPhase.needsYou => l10n.e7WorkspaceNeedsYou,
+    WorkRowPhase.stalled => l10n.workStalled,
     WorkRowPhase.done => l10n.kitMarkDone,
     WorkRowPhase.failed => l10n.kitMarkFailed,
     WorkRowPhase.stopped => l10n.workStopped,

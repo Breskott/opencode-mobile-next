@@ -1,6 +1,8 @@
 // Behaviour tests for KitNav (docs/ux-system/kit-api/KitNav.md, "Tests
 // required"). Owner decision 2026-09-27: Arabic/RTL review dropped, so the
 // spec's RTL case (9) is not run here.
+import 'kit_motion_still.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +17,6 @@ import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 
 import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
@@ -125,6 +126,56 @@ KitNavRail? _rail(WidgetTester tester) {
 }
 
 void main() {
+  Widget motionNav(int selected) => KitNav(
+    destinations: _destinations(inbox: 2),
+    selected: selected,
+    onSelected: (_) {},
+    child: Text(selected == 0 ? 'Work content' : 'Inbox content'),
+  );
+  Widget motionBar(int selected) => KitNavBar(
+    destinations: _destinations(inbox: 2),
+    selected: selected,
+    onSelected: (_) {},
+  );
+  Widget motionRail(int selected) => KitNavRail(
+    destinations: _destinations(inbox: 2),
+    selected: selected,
+    onSelected: (_) {},
+  );
+  kitMotionStillTests(
+    'KitNav',
+    builds: {'needs you': () => motionNav(0)},
+    changes: {
+      'destination changes': KitMotionChange(
+        build: () => motionNav(0),
+        act: (tester, stage) => stage.rebuild(motionNav(1)),
+        shows: 'Inbox content',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitNavBar',
+    builds: {'selected work': () => motionBar(0)},
+    changes: {
+      'inbox selected': KitMotionChange(
+        build: () => motionBar(0),
+        act: (tester, stage) => stage.rebuild(motionBar(1)),
+        shows: 'Inbox',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitNavRail',
+    builds: {'selected work': () => motionRail(0)},
+    changes: {
+      'inbox selected': KitMotionChange(
+        build: () => motionRail(0),
+        act: (tester, stage) => stage.rebuild(motionRail(1)),
+        shows: 'Inbox',
+      ),
+    },
+  );
+
   // Real faces, so label widths (and the A11Y-8 clamp) are the device's.
   setUpAll(loadKitGalleryFonts);
 
@@ -383,16 +434,5 @@ void main() {
     expect(after.left, greaterThan(before.left));
     await tester.pumpAndSettle();
     expect(tester.getRect(lens), after);
-  });
-
-  testWidgets('GlassSurface forwards to KitGlass at radius 22', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark(),
-        home: const GlassSurface(child: SizedBox(width: 100, height: 60)),
-      ),
-    );
-    final glass = tester.widget<KitGlass>(find.byType(KitGlass));
-    expect(glass.borderRadius, BorderRadius.circular(22));
   });
 }

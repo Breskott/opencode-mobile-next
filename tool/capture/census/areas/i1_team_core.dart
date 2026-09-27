@@ -515,49 +515,23 @@ final i1TeamCoreArea = CensusArea(
       kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
     }, note: 'Dragged away from the end: Jump to latest.'),
 
-    // -- Dispatch cycle --------------------------------------------------------
-    CensusShot('embedded-team-cycle-strip', state: 'host-not-started', (
-      kit,
-    ) async {
+    // -- The step's Now line (slice-P5.1: it replaced the dispatch cycle
+    // strip, its How sheet and its Stop confirmation) ----------------------
+    CensusShot('work-sheet', state: 'now-line-host-not-started', (kit) async {
       final (team, _) = await _team(
         kit,
         configure: (g) => g.workList = [...g.workList, _routedStep()],
       );
       await _conversation(kit, team);
       await _openWork(kit, team, 'w-banner');
-      kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
+      kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
     }, note: 'Host: the Work sheet over the task\'s conversation.'),
-    CensusShot('embedded-team-cycle-strip', state: 'provider-limit', (
-      kit,
-    ) async {
+    CensusShot('work-sheet', state: 'now-line-provider-limit', (kit) async {
       final (team, _) = await _team(kit, configure: _providerLimit);
       await _conversation(kit, team);
       await _openWork(kit, team, 'w-limit');
-      kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
+      kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
     }, note: 'Host: the Work sheet over the task\'s conversation.'),
-    CensusShot('embedded-team-cycle-strip', state: 'working', (kit) async {
-      final (team, _) = await _team(kit);
-      await _conversation(kit, team);
-      await _openWork(kit, team, 'w-sync');
-      kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
-    }, note: 'Host: the Work sheet over the task\'s conversation.'),
-    CensusShot('team-cycle-how-sheet', (kit) async {
-      final (team, _) = await _team(
-        kit,
-        configure: (g) => g.workList = [...g.workList, _routedStep()],
-      );
-      await _conversation(kit, team);
-      await _openWork(kit, team, 'w-banner');
-      await kit.tapKey('team-cycle-action-how');
-      kit.expectVisible(find.byKey(const ValueKey('team-cycle-how-sheet')));
-    }),
-    CensusShot('team-cycle-stop-confirm-sheet', (kit) async {
-      final (team, _) = await _team(kit, configure: _providerLimit);
-      await _conversation(kit, team);
-      await _openWork(kit, team, 'w-limit');
-      await kit.tapKey('team-cycle-action-stop');
-      kit.expectVisible(find.byKey(const ValueKey('team-cycle-stop-confirm')));
-    }),
 
     // -- Receipt chip on Activity ------------------------------------------------
     CensusShot('embedded-team-receipt-chip', state: 'unconfirmed', (kit) async {

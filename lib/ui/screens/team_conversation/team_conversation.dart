@@ -4,6 +4,8 @@
 ///
 /// Frozen for callers (New conversation's "Solo · Team", the Work tab):
 /// - [TeamConversation.open]: an existing task's conversation;
+/// - [TeamConversation.openPlanning]: a task the planner has not listed
+///   yet, from the team page's row for it;
 /// - [TeamConversation.start]: give the team a new task (the existing
 ///   Start-a-task sheet), then open its conversation, which binds to the
 ///   task's run as soon as the team lists it.
@@ -50,6 +52,32 @@ abstract final class TeamConversation {
     builder: (_) => TeamControllerScope(
       team: team,
       child: TeamConversationScreen(team: team, runId: runId),
+    ),
+  );
+
+  /// Opens the conversation of a task the planner has not listed yet
+  /// ([request], a Start-a-task message): its Now line says where it
+  /// stands, and it binds to the task once the team lists it. The team
+  /// page's row for a task being planned opens this.
+  static Future<void> openPlanning(
+    BuildContext context,
+    OrchestrationController team,
+    TeamPlanningRequest request, {
+    DateTime Function()? now,
+  }) => Navigator.of(context).push(
+    KitPageRoute<void>(
+      builder: (_) => TeamControllerScope(
+        team: team,
+        child: TeamConversationScreen(
+          team: team,
+          now: now,
+          pending: TeamPendingTask(
+            title: request.objective,
+            sentAt: request.sentAt,
+            record: request.record,
+          ),
+        ),
+      ),
     ),
   );
 

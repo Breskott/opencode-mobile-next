@@ -147,6 +147,31 @@ class ReportProblem extends ChangeNotifier {
     '',
   );
 
+  /// Imports already-buffered timings with one synchronous durable commit.
+  /// Live timings still use [recordTiming], preserving same-turn crash evidence.
+  /// Order, redaction, eviction and byte limits are identical to individual
+  /// records; listeners observe the final imported snapshot once.
+  void recordTimings(Iterable<PerfSpan> spans) {
+    final next = [..._entries];
+    var added = false;
+    for (final span in spans) {
+      added = true;
+      next.add(
+        ProblemEvent._(
+          kind: ProblemEventKind.timing,
+          timestamp: span.wallStart,
+          source: 'OCTRACE',
+          message: span.toLogLine(),
+          stack: '',
+        ),
+      );
+      if (next.length > maxEntries) next.removeAt(0);
+    }
+    if (!added) return;
+    _commit(next);
+    notifyListeners();
+  }
+
   void recordAndroidExit(AppExitRecord record) => _record(
     ProblemEventKind.androidExit,
     record.timestamp,

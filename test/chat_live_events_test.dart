@@ -16,6 +16,8 @@ import 'package:opencode_mobile/ui/kit/kit.dart'
         KitMessage,
         KitMotion,
         KitRow,
+        KitSkeletonTranscript,
+        KitStateView,
         KitSwitchRow,
         KitTurn,
         KitZoom,
@@ -38,7 +40,8 @@ import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -553,20 +556,35 @@ Future<ConnectionController> _pumpChat(
   bool reduceMotion = false,
 }) async {
   final activeController = controller ?? await _controller(api);
+  final navigatorKey = GlobalKey<NavigatorState>();
   activeController.repository = repository;
   addTearDown(activeController.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(activeController)],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
 
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(disableAnimations: reduceMotion),
-          child: child!,
+        builder: (context, child) => ListenableBuilder(
+          listenable: activeController,
+          builder: (context, _) => AppConditionsScope(
+            conditions: [
+              connectionKitStatus(
+                context,
+                activeController,
+                actionContext: () =>
+                    navigatorKey.currentState?.overlay?.context,
+              ),
+            ],
+            child: MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: reduceMotion),
+              child: child!,
+            ),
+          ),
         ),
         home: ChatScreen(
           sessionID: 'session-1',
@@ -1739,7 +1757,9 @@ void main() {
           ),
         ]),
       ];
-    final controller = await _pumpChat(tester, api);
+    // App-wide status belongs to an actual saved profile, like production.
+    final controller = await _controller(api, savedProfile: true);
+    await _pumpChat(tester, api, controller: controller);
     expect(find.text('Retained response'), findsOneWidget);
 
     controller
@@ -1756,8 +1776,8 @@ void main() {
     );
     // The Work tab's words (design standard §5): the last attempt failed,
     // so the line says so at once.
-    expect(find.text("OpenCode isn't answering"), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text("Synthetic isn't answering"), findsOneWidget);
+    expect(find.text('Reconnect to Synthetic'), findsOneWidget);
     // The raw error and the secondary action live behind Details, in the
     // status line's menu (design standard §5: one action per line).
     // The status line unfolds first (design standard §10).
@@ -1796,7 +1816,7 @@ void main() {
 
     final controller = await _pumpChat(tester, api);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
 
     controller.signalDataRefreshForTesting();
     await tester.pump();
@@ -1806,15 +1826,15 @@ void main() {
     // skeleton and no full-screen error.
     expect(loads, 2);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
 
     // Even a failed refresh keeps the transcript instead of a dead end.
     pending!.completeError(StateError('stream reset during rehydrate'));
     await tester.pumpAndSettle();
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
   });
 
   testWidgets('renders current OpenCode unified patches and server counts', (

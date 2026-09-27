@@ -133,7 +133,7 @@
       "gesture": "pull to refresh",
       "action": "reload from the server",
       "visibleEquivalent": "automatic load on open; 'Try again' on failure (lib/ui/screens/review_workspace.dart:340)",
-      "evidence": "lib/ui/screens/review_workspace.dart:94",
+      "evidence": "lib/ui/screens/review_workspace.dart:453",
       "changed": false
     },
     {
@@ -179,15 +179,6 @@
       "action": "refresh the AI Team snapshot",
       "visibleEquivalent": "visible 'Refresh' icon button in the app bar (tooltip teamUiRefresh); 'Try again' on failure (lib/ui/screens/team/agent_screen.dart:238)",
       "evidence": "lib/ui/screens/team/agent_screen.dart:200",
-      "changed": false
-    },
-    {
-      "page": "team-run-overview-tab",
-      "element": "team-run-overview-pull",
-      "gesture": "pull to refresh",
-      "action": "refresh the AI Team snapshot",
-      "visibleEquivalent": "visible 'Refresh' icon button in the app bar (tooltip teamUiRefresh); 'Try again' on failure (lib/ui/screens/team/run_screen.dart:355)",
-      "evidence": "lib/ui/screens/team/run_screen.dart:296",
       "changed": false
     },
     {
@@ -367,7 +358,7 @@
       "gesture": "keyboard shortcut: Ctrl/Cmd+Enter (desktop: Enter)",
       "action": "send the prompt",
       "visibleEquivalent": "visible Send button (tooltip 'Send'); also listed in Keyboard shortcuts help (lib/ui/desktop/shortcuts.dart:121)",
-      "evidence": "lib/ui/screens/chat/composer.dart:1205",
+      "evidence": "lib/ui/kit/chat/kit_composer.dart:450",
       "changed": false
     },
     {
@@ -376,7 +367,7 @@
       "gesture": "keyboard shortcut: Arrow Up / Arrow Down at the caret edge",
       "action": "recall an earlier / later prompt",
       "visibleEquivalent": "visible 'Reuse a prompt' row in the composer tools sheet (composer-tool-history); now also listed in Keyboard shortcuts help (lib/ui/desktop/shortcuts.dart:130)",
-      "evidence": "lib/ui/screens/chat/composer.dart:980",
+      "evidence": "lib/ui/screens/chat_screen.dart:970",
       "changed": true
     },
     {
@@ -385,7 +376,7 @@
       "gesture": "keyboard shortcut: Arrow Up / Arrow Down in composer",
       "action": "recall an earlier / later prompt",
       "visibleEquivalent": "visible 'Reuse a prompt' row in the composer tools sheet (composer-tool-history); now also listed in Keyboard shortcuts help (lib/ui/desktop/shortcuts.dart:130)",
-      "evidence": "lib/ui/screens/chat/composer.dart:980",
+      "evidence": "lib/ui/screens/chat_screen.dart:970",
       "changed": true
     },
     {
@@ -403,7 +394,7 @@
       "gesture": "keyboard shortcut: Ctrl+K",
       "action": "open the conversation command launcher",
       "visibleEquivalent": "visible 'Commands' row in the composer tools sheet; listed in Keyboard shortcuts help",
-      "evidence": "lib/ui/screens/chat/composer.dart:860",
+      "evidence": "lib/ui/screens/chat_screen.dart:5342",
       "changed": false
     },
     {
@@ -493,16 +484,7 @@
       "gesture": "keyboard shortcut: Shift+F10 / Menu key",
       "action": "open the row context menu from the keyboard",
       "visibleEquivalent": "listed in Keyboard shortcuts help ('Right click / Shift + F10 / Menu'); every region also has a visible control, see the right-click row",
-      "evidence": "lib/ui/desktop/shortcuts.dart:134",
-      "changed": false
-    },
-    {
-      "page": "embedded-composer",
-      "element": "embedded-composer-tools-button-long-press",
-      "gesture": "long-press on the composer tools button",
-      "action": "open the file picker to attach",
-      "visibleEquivalent": "visible 'Attach file' row in the tools sheet that the same button opens on tap (composer-tool-attach, same onAttach)",
-      "evidence": "lib/ui/screens/chat/composer.dart:868",
+      "evidence": "lib/ui/kit/kit_context_region.dart:81",
       "changed": false
     },
     {
@@ -592,7 +574,7 @@
       "gesture": "right-click (desktop)",
       "action": "open the context menu of a row",
       "visibleEquivalent": "every ContextMenuRegion wraps a row with a visible door to the same actions: the message 'Message actions' button; the trailing overflow menus of Work, all-conversations, worktree, environment and terminal rows; the new trailing button on Files rows",
-      "evidence": "lib/ui/desktop/context_menu.dart:100",
+      "evidence": "lib/ui/kit/kit_context_region.dart:103",
       "changed": false
     },
     {
@@ -601,7 +583,7 @@
       "gesture": "drop files onto the composer (desktop)",
       "action": "attach the dropped files",
       "visibleEquivalent": "visible 'Attach file' row in the composer tools sheet",
-      "evidence": "lib/ui/screens/chat/composer.dart:868",
+      "evidence": "lib/ui/desktop/file_drop.dart:96",
       "changed": false
     },
     {
@@ -610,7 +592,7 @@
       "gesture": "drop files onto the composer (desktop)",
       "action": "attach the dropped files",
       "visibleEquivalent": "visible 'Attach file' row in the composer tools sheet",
-      "evidence": "lib/ui/screens/chat/composer.dart:868",
+      "evidence": "lib/ui/screens/chat_screen.dart:6745",
       "changed": false
     },
     {
@@ -619,7 +601,7 @@
       "gesture": "keyboard (IME) image/GIF insertion or image paste",
       "action": "attach the inserted image",
       "visibleEquivalent": "visible 'Attach file' and 'Photo library' rows in the composer tools sheet attach the same kind of content",
-      "evidence": "lib/ui/screens/chat/composer.dart:888",
+      "evidence": "lib/ui/screens/chat_screen.dart:7303",
       "changed": false
     },
     {
@@ -753,8 +735,8 @@
       "element": "review-workspace-diff-line",
       "gesture": "tap a diff line",
       "action": "select the line (a second tap makes a range)",
-      "visibleEquivalent": "plain tap on a visible row, not an accelerator gesture; the selection bar it opens labels every action (Clear, Copy, Add to prompt, Comment); whole-file equivalents sit in the visible 'File review actions' menu (lib/ui/screens/review_workspace.dart:1354)",
-      "evidence": "lib/ui/screens/review_workspace.dart:2698",
+      "visibleEquivalent": "Tap a numbered diff line; the visible KitDiffView selection bar offers Clear, Copy, Add to prompt and Comment.",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2161",
       "changed": false
     },
     {
@@ -762,8 +744,8 @@
       "element": "review-workspace-hunk-header",
       "gesture": "tap a hunk header",
       "action": "select the whole hunk",
-      "visibleEquivalent": "plain tap on a visible row, not an accelerator gesture; the selection bar it opens labels every action (Clear, Copy, Add to prompt, Comment); whole-file equivalents sit in the visible 'File review actions' menu (lib/ui/screens/review_workspace.dart:1354)",
-      "evidence": "lib/ui/screens/review_workspace.dart:2698",
+      "visibleEquivalent": "Tap the labelled hunk header; the visible KitDiffView selection bar offers Clear, Copy, Add to prompt and Comment.",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2004",
       "changed": false
     },
     {
@@ -772,7 +754,7 @@
       "gesture": "tap \"+N lines\"",
       "action": "reveal hidden context above",
       "visibleEquivalent": "is itself a visible, labeled tap target ('+{count} lines')",
-      "evidence": "lib/ui/screens/review_workspace.dart:2223",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2350",
       "changed": false
     },
     {
@@ -781,7 +763,7 @@
       "gesture": "tap \"Expand (N more)\"",
       "action": "reveal hidden context below",
       "visibleEquivalent": "is itself a visible, labeled button (semantics 'Expand. N unchanged lines hidden below')",
-      "evidence": "lib/ui/screens/review_workspace.dart:2301",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2337",
       "changed": false
     },
     {
@@ -790,7 +772,7 @@
       "gesture": "tap \"Hide revealed context\"",
       "action": "collapse revealed context",
       "visibleEquivalent": "is itself a visible, labeled tap target",
-      "evidence": "lib/ui/widgets/diff_view.dart:599",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2321",
       "changed": false
     },
     {
@@ -799,7 +781,7 @@
       "gesture": "tap \"Show next N lines\"",
       "action": "reveal the next lines of a hidden gap",
       "visibleEquivalent": "is itself a visible, labeled tap target",
-      "evidence": "lib/ui/widgets/diff_view.dart:622",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2337",
       "changed": false
     },
     {
@@ -808,7 +790,7 @@
       "gesture": "tap \"Show N previous lines\"",
       "action": "reveal the previous lines of a hidden gap",
       "visibleEquivalent": "is itself a visible, labeled tap target",
-      "evidence": "lib/ui/widgets/diff_view.dart:637",
+      "evidence": "lib/ui/kit/kit_diff_view.dart:2350",
       "changed": false
     },
     {
@@ -835,7 +817,7 @@
       "gesture": "pinch-zoom / drag-pan the work graph",
       "action": "zoom and pan",
       "visibleEquivalent": "view-only manipulation, no action; a visible 'Fit' button resets the view, and the visible List/Graph switch shows the same items as a list (lib/ui/screens/team/run_screen.dart:1364)",
-      "evidence": "lib/ui/screens/team/work_graph.dart:468",
+      "evidence": "lib/ui/screens/team/work_graph.dart:258",
       "changed": false
     },
     {
@@ -844,16 +826,7 @@
       "gesture": "tap a graph node",
       "action": "open the work sheet",
       "visibleEquivalent": "plain tap on a visible, titled node; the visible List view (List/Graph switch) opens the same work sheet from a labeled row",
-      "evidence": "lib/ui/screens/team/run_screen.dart:1364",
-      "changed": false
-    },
-    {
-      "page": "team-run-work-tab",
-      "element": "team-run-work-graph-node",
-      "gesture": "tap a graph node",
-      "action": "open the work sheet",
-      "visibleEquivalent": "plain tap on a visible, titled node; the visible List view (List/Graph switch) opens the same work sheet from a labeled row",
-      "evidence": "lib/ui/screens/team/run_screen.dart:1364",
+      "evidence": "lib/ui/screens/team/work_graph.dart:256",
       "changed": false
     },
     {
@@ -862,7 +835,7 @@
       "gesture": "point the camera at a pairing QR",
       "action": "submit the scanned pairing code",
       "visibleEquivalent": "not a user gesture: automatic camera detection, announced by the visible on-screen instruction; when the camera cannot be used the screen offers a visible 'Paste instead' button (lib/ui/screens/pairing_scanner_screen.dart:200)",
-      "evidence": "lib/ui/screens/pairing_scanner_screen.dart:287",
+      "evidence": "lib/ui/screens/pairing_scanner_screen.dart:243",
       "changed": false
     },
     {
@@ -893,21 +866,12 @@
       "changed": false
     },
     {
-      "page": "model-picker-sheet",
-      "element": "model-picker-sheet-unloaded-providers-info",
-      "gesture": "tap the \"providers not loaded\" notice",
-      "action": "open the details dialog",
-      "visibleEquivalent": "is itself a visible, labeled tap target (the text ends in 'View details')",
-      "evidence": "lib/ui/widgets/pickers.dart:518",
-      "changed": false
-    },
-    {
       "page": "team-board",
       "element": "team-board-card-long-press",
       "gesture": "long press on a card",
       "action": "open the move sheet",
       "visibleEquivalent": "visible '⋯' icon button on the same card (team-board-card-moves, tooltip 'Move or change') when moves exist; the card's own tap already opens the same conversation directly (team-board-card)",
-      "evidence": "lib/ui/widgets/team_board_card.dart:322",
+      "evidence": "lib/ui/widgets/team_board_card.dart:248",
       "changed": false
     }
   ]

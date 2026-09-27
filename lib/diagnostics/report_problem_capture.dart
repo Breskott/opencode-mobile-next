@@ -35,9 +35,7 @@ class ReportProblemCapture {
     diagnostics.addListener(_onDiagnostics);
     _timings = PerfTrace.recorded.listen(_onTiming);
     _captureErrors();
-    for (final span in timings.skip(first)) {
-      _onTiming(span);
-    }
+    _safely(() => _report.recordTimings(timings.skip(first)));
     _thermal = thermalReadings?.listen(
       (reading) => _safely(() => _report.recordThermal(reading)),
       onError: (Object error, StackTrace stack) => _safely(

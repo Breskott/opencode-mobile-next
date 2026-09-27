@@ -2131,26 +2131,28 @@
           "type": "button",
           "label": "<confirmLabel>",
           "key": "<confirmKey>",
-          "line": 68,
+          "line": 422,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop(context, true) (HapticFeedback.mediumImpact when destructive); the caller then performs the confirmed action.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_confirm_sheet.dart"
         },
         {
           "id": "confirm-sheet-cancel",
           "type": "button",
           "label": "<cancelLabel> (default 'Cancel')",
           "key": null,
-          "line": 85,
+          "line": 431,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop(context, false).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_confirm_sheet.dart"
         }
       ]
     },
@@ -2207,13 +2209,14 @@
           "type": "gesture",
           "label": "[drop files]",
           "key": "composer-drop-highlight",
-          "line": 105,
+          "line": 96,
           "action": "other",
           "target": "file-drop-failed-dialog",
           "targetWidget": null,
           "effect": "DropTarget.onDragDone -> _handle(files) -> host onDrop(List<DroppedFile>) (ChatScreen attachment pipeline); a throw opens the drop-failed dialog.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/desktop/file_drop.dart"
         }
       ],
       "embeddedIn": [
@@ -2241,39 +2244,42 @@
           "type": "gesture",
           "label": "[right-click]",
           "key": null,
-          "line": 100,
+          "line": 103,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "GestureDetector.onSecondaryTapDown -> _open(globalPosition) -> showContextMenu(context, position, widget.actions()); opens overflow menu.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_context_region.dart"
         },
         {
           "id": "embedded-context-menu-region-keyboard",
           "type": "gesture",
           "label": "Shift+F10 / Menu key",
           "key": null,
-          "line": 78,
+          "line": 81,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "CallbackShortcuts -> _openFromKeyboard opens the same menu at the row centre (row must have focus).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_context_region.dart"
         },
         {
           "id": "embedded-context-menu-region-item",
           "type": "menu-item",
           "label": "<action label>",
           "key": "<action.menuKey>",
-          "line": 131,
+          "line": 656,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "PopupMenuItem template: after selection calls actions[selected].onSelected() supplied by the host; destructive entries are rendered in the error colour.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_menu.dart"
         }
       ],
       "embeddedIn": [
@@ -2558,10 +2564,6 @@
     {
       "file": "lib/ui/widgets/glass_surface.dart",
       "reason": "pure rendering helper (frosted dock surface), no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/retained_tab_view.dart",
-      "reason": "keeps root tab bodies alive and cross-fades them; no interactive element"
     },
     {
       "file": "lib/ui/widgets/entrance.dart",

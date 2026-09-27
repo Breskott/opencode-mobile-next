@@ -15,6 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/widgets/agent_blocks.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
+import 'kit_motion_still.dart';
+
 Future<void> _pump(
   WidgetTester tester,
   Widget child, {
@@ -77,6 +79,27 @@ TextSpan? _spanWith(WidgetTester tester, String text) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitMarkdown',
+    builds: {
+      'prose': () => const KitMarkdown(
+        'Review **checkout** before release.',
+        selectable: false,
+      ),
+      'streaming fence': () =>
+          const KitMarkdown('```dart\nfinal ready = true;', selectable: false),
+    },
+    changes: {
+      'reply grows': KitMotionChange(
+        build: () => const KitMarkdown('Checking files', selectable: false),
+        act: (tester, stage) => stage.rebuild(
+          const KitMarkdown('The checkout is ready.', selectable: false),
+        ),
+        shows: 'The checkout is ready.',
+      ),
+    },
+  );
+
   setUp(() => KitMarkdown.debugParseCount = 0);
 
   testWidgets('1. blocks render in the role table', (tester) async {
@@ -370,22 +393,6 @@ void main() {
     MarkdownText.debugParseCount = 7;
     expect(KitMarkdown.debugParseCount, 7);
 
-    await _pump(
-      tester,
-      const CodeBlock(
-        code: 'npm run dev',
-        originalSource: 'npm run dev\n',
-        language: 'bash',
-        highlightEnabled: false,
-        canExpand: false,
-      ),
-    );
-    final block = tester.widget<KitCodeBlock>(find.byType(KitCodeBlock));
-    expect(block.text, 'npm run dev');
-    expect(block.copyText, 'npm run dev\n');
-    expect(block.language, 'bash');
-    expect(block.highlight, isFalse);
-    expect(block.maxLines, isNull);
     expect(
       markdownProseForSpeech('# Hi\n\n```\ncode\n```\n[a](https://x.y)'),
       'Hi\n\na',

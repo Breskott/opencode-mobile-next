@@ -42,11 +42,7 @@ import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
-import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_host_form.dart';
-import '../../widgets/team_vocabulary.dart';
-import '../team_conversation/team_conversation.dart'
-    show openTeamAgentConversationById;
 import 'policy_block.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -704,148 +700,12 @@ class _PlannerOff extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// The pending card on the home
+// Requests the planner has not listed yet
 // ---------------------------------------------------------------------------
 
-// revamp: merge-into:team-conversation (slice-P6.3)
-/// "Planning… (Mayor)" for one Start-a-run request: the objective, the
-/// state line, "Planner output" (the Mayor's live output page) and
-/// Dismiss. Resolved requests (a run appeared) are not shown at all — the
-/// run is in the list.
-class TeamPlanningCard extends StatelessWidget {
-  const TeamPlanningCard({
-    super.key,
-    required this.controller,
-    required this.request,
-    this.now,
-    this.ambient = true,
-  });
-
-  final OrchestrationController controller;
-  final TeamPlanningRequest request;
-  final DateTime Function()? now;
-
-  /// Whether the drawing keeps moving while the planner plans: only one
-  /// card on a screen moves (design standard §10).
-  final bool ambient;
-
-  void _openPlannerOutput(BuildContext context) => unawaited(
-    openTeamAgentConversationById(context, controller, request.plannerId),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final tokens = KitTokens.of(context);
-    final waiting =
-        request.status == TeamPlanningStatus.planning ||
-        request.status == TeamPlanningStatus.stillPlanning;
-    final (icon, tone, title) = switch (request.status) {
-      TeamPlanningStatus.planning => (
-        AppIconography.waiting,
-        AppStatusTone.progress,
-        l10n.teamUiStartRunPlanning,
-      ),
-      TeamPlanningStatus.stillPlanning => (
-        AppIconography.timer,
-        AppStatusTone.progress,
-        l10n.teamUiStartRunStillPlanning,
-      ),
-      TeamPlanningStatus.unconfirmed => (
-        AppIconography.warning,
-        AppStatusTone.neutral,
-        l10n.teamUiStartRunUnconfirmed,
-      ),
-      TeamPlanningStatus.refused => (
-        AppIconography.error,
-        AppStatusTone.failure,
-        l10n.teamUiStartRunRefused(request.record.receipt?.message ?? ''),
-      ),
-      TeamPlanningStatus.started => (
-        AppIconography.checkCircle,
-        AppStatusTone.ok,
-        request.run?.title ?? request.objective,
-      ),
-    };
-    return KitPanel(
-      key: ValueKey('team-planning-${request.key}'),
-      tone: tone,
-      icon: icon,
-      title: title,
-      titleKey: const ValueKey('team-planning-title'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    KitText(
-                      request.objective,
-                      key: const ValueKey('team-planning-objective'),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: tokens.space1),
-                    if (request.status == TeamPlanningStatus.planning)
-                      KitText(
-                        l10n.teamUiStartRunPlanningHint,
-                        role: KitTextRole.secondary,
-                        tone: KitTextTone.secondary,
-                      ),
-                    KitText(
-                      l10n.teamUiStartRunSentAt(
-                        teamClockLabel(context, request.sentAt),
-                      ),
-                      role: KitTextRole.secondary,
-                      tone: KitTextTone.secondary,
-                    ),
-                  ],
-                ),
-              ),
-              // While the planner plans: two agents pass the task's card
-              // between them (a wait, so it moves).
-              if (waiting) ...[
-                SizedBox(width: tokens.space3),
-                KitIllustration(
-                  key: const ValueKey('team-planning-drawing'),
-                  scene: const TeamPlanningScene(),
-                  width: 84,
-                  ambient: ambient,
-                ),
-              ],
-            ],
-          ),
-          SizedBox(height: tokens.space1),
-          KitInset(
-            child: Wrap(
-              spacing: tokens.space1,
-              children: [
-                KitButton.tertiary(
-                  key: const ValueKey('team-planning-output'),
-                  onPressed: () => _openPlannerOutput(context),
-                  icon: AppIconography.terminal,
-                  label: l10n.teamUiStartRunPlannerOutput,
-                ),
-                KitButton.tertiary(
-                  key: const ValueKey('team-planning-dismiss'),
-                  onPressed: () => controller.dismissPlanning(request.key),
-                  label: l10n.teamUiStartRunDismiss,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The pending cards for [controller] at [now]: every Start-a-run request
-/// still waiting on a run, newest first; resolved and dismissed ones drop.
+/// The requests for [controller] at [now] the planner has not listed yet:
+/// every Start-a-run request still waiting on a run, newest first (the team
+/// page's rows for them); resolved and dismissed ones drop.
 List<TeamPlanningRequest> teamPendingPlanning(
   OrchestrationController controller,
   DateTime now,

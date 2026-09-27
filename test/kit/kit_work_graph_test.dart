@@ -27,6 +27,8 @@ import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 
+import 'kit_motion_still.dart';
+
 /// Pumps [child] as a screen's body, with the real test window sized to
 /// [size], so tap and semantics geometry line up with what a person sees.
 ///
@@ -195,6 +197,66 @@ Future<void> _tapThroughZoom(WidgetTester tester, Offset point) async {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitWorkGraph',
+    builds: {
+      'rows working': () => KitWorkGraph(
+        nodes: const [
+          KitWorkGraphNode(
+            id: 'review',
+            title: 'Review checkout',
+            mark: KitTaskState.working,
+          ),
+        ],
+        onOpen: (_) {},
+      ),
+      'layers working': () => KitWorkGraph(
+        layout: KitWorkGraphLayout.layers,
+        nodes: const [
+          KitWorkGraphNode(
+            id: 'review',
+            title: 'Review checkout',
+            mark: KitTaskState.working,
+          ),
+        ],
+        onOpen: (_) {},
+      ),
+    },
+    changes: {
+      'dependent task arrives': KitMotionChange(
+        build: () => KitWorkGraph(
+          nodes: const [
+            KitWorkGraphNode(
+              id: 'review',
+              title: 'Review checkout',
+              mark: KitTaskState.done,
+            ),
+          ],
+          onOpen: (_) {},
+        ),
+        act: (tester, stage) => stage.rebuild(
+          KitWorkGraph(
+            nodes: const [
+              KitWorkGraphNode(
+                id: 'review',
+                title: 'Review checkout',
+                mark: KitTaskState.done,
+              ),
+              KitWorkGraphNode(
+                id: 'ship',
+                title: 'Ship checkout',
+                mark: KitTaskState.working,
+                dependsOn: ['review'],
+              ),
+            ],
+            onOpen: (_) {},
+          ),
+        ),
+        shows: KitBidi.auto('Ship checkout'),
+      ),
+    },
+  );
+
   group('KitWorkGraphGeometry', () {
     test('layers is deterministic and matches the retired layout', () {
       const nodeSize = Size(156, 44);

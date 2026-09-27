@@ -10,6 +10,7 @@ import '../platform/camera.dart';
 import '../platform/platform_capabilities.dart';
 import '../state/connection.dart';
 import '../state/phone_host.dart' show PhoneHostKind;
+import '../state/profiles.dart' show ServerBackend;
 import '../voice/device.dart';
 import '../voice/model_manager.dart';
 import '../voice/voice_ui.dart';
@@ -63,10 +64,11 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
   final phone = platform.supportsTermux;
   return {
     KitEnableFlows.addServer: _addServer,
-    // Codex and Paseo are answers to Add server's first step, "What runs
-    // there?" (P3.9).
-    KitEnableFlows.addServerCodex: _addServer,
-    KitEnableFlows.addServerPaseo: _addServer,
+    // These entry points already chose the kind; Back can change it.
+    KitEnableFlows.addServerCodex: (context, request) =>
+        _addServer(context, request, backend: ServerBackend.codex),
+    KitEnableFlows.addServerPaseo: (context, request) =>
+        _addServer(context, request, backend: ServerBackend.paseo),
     KitEnableFlows.serverGeneration: (context, request) =>
         _switchGeneration(context, request, phone: phone),
     KitEnableFlows.modelSignIn: (context, _) => _signIn(context, controller),
@@ -134,11 +136,15 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
   };
 }
 
-/// Add server, at its first step.
-Future<void> _addServer(BuildContext context, KitEnableRequest? _) async {
+/// Add server, optionally carrying the kind selected by the entry point.
+Future<void> _addServer(
+  BuildContext context,
+  KitEnableRequest? _, {
+  ServerBackend? backend,
+}) async {
   await Navigator.of(
     context,
-  ).pushNamed('/servers', arguments: const ServersRouteRequest.add());
+  ).pushNamed('/servers', arguments: ServersRouteRequest.add(backend: backend));
 }
 
 /// OpenCode 2: on this phone it is the This phone card's switch; on a

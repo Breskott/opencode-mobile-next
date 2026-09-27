@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/kit/kit_capability_explainer.dart';
 import 'package:opencode_mobile/ui/kit/kit_notice.dart';
 import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
+import 'kit_motion_still.dart';
 
 const _hostColumns = <String, KitHost>{
   'builtin': KitHost.thisPhone,
@@ -100,6 +101,34 @@ List<KitEnableRequest> _record(String capability) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitCapabilityExplainer',
+    builds: {
+      'explains': () => const KitCapabilityExplainer.row(
+        capability: 'flag:fileBrowsing+terminal',
+        host: KitHost.codex,
+        title: 'Files',
+      ),
+    },
+    changes: {
+      'host changes': KitMotionChange(
+        build: () => const KitCapabilityExplainer.row(
+          capability: 'flag:fileBrowsing+terminal',
+          host: KitHost.codex,
+          title: 'Files',
+        ),
+        act: (tester, stage) => stage.rebuild(
+          const KitCapabilityExplainer.row(
+            capability: 'flag:fileBrowsing+terminal',
+            host: KitHost.paseo,
+            title: 'Files',
+          ),
+        ),
+        shows: 'Files',
+      ),
+    },
+  );
+
   tearDown(KitCapabilities.debugReset);
 
   group('registry parity with capabilities.json', () {

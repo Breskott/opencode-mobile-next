@@ -10,11 +10,17 @@ import 'prompt_shelf.dart';
 /// the person confirmed ([changed]), or they could not be kept as drafts.
 /// Nothing was removed in either case.
 class QueuedPromptRemovalException implements Exception {
-  const QueuedPromptRemovalException({required this.changed});
+  const QueuedPromptRemovalException({
+    required this.changed,
+    this.unreadable = false,
+  });
   final bool changed;
+  final bool unreadable;
 
   @override
-  String toString() => changed
+  String toString() => unreadable
+      ? 'Queued prompts cannot be read; the server was kept'
+      : changed
       ? 'Queued prompts changed; confirm removal again'
       : 'Queued prompts could not be kept; nothing was removed';
 }

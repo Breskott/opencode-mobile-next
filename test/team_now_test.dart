@@ -379,9 +379,12 @@ void main() {
         '${_en.teamUiCardRunStateWaiting} · 6 min · '
         '${_en.teamNowNoWorkerStarted}',
       );
+      // The Now line is about the team, never the task's title or its
+      // wait: the row above says those (slice-P5.1).
+      expect(text(tester, 'team-home-now-stuck'), _en.teamNowNotStartingLine);
       expect(
         text(tester, 'team-home-now-stuck'),
-        _en.teamNowStuckLine('Get all skills required online', '6 min'),
+        isNot(contains('Get all skills required online')),
       );
       await tester.tap(_key('team-home-now-wake'));
       await tester.pump();

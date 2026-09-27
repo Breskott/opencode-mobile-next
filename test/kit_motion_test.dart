@@ -85,7 +85,6 @@ const _predatesG8x = {
   'KitRowIcon',
   'KitRowMenu',
   'KitScreen',
-  'KitSecretField',
   'KitSheet',
   'KitSkeletonRows',
   'KitSkeletonTranscript',
@@ -95,11 +94,6 @@ const _predatesG8x = {
   'KitSwitchRow',
   'KitTabSwitcher',
   'KitTaskMark',
-  'LoadingList',
-  'ProductEmptyState',
-  'ProductErrorState',
-  'ProductInlineEmpty',
-  'SectionLabel',
   'showKitConfirm',
   'showKitSheet',
 };
@@ -112,8 +106,6 @@ const _frozenBaseline = <String>{
   'KitLoadingBar / loading / system',
   'KitRefresh / pulled and released / effectsOff',
   'KitRefresh / pulled and released / system',
-  'KitRowMenu / menu opens / effectsOff',
-  'KitRowMenu / menu opens / system',
   'KitScreen / loading / effectsOff',
   'KitScreen / loading / system',
   'KitSheet / loading / effectsOff',
@@ -502,9 +494,8 @@ void _predatingParts() {
     changes: {
       'menu opens': KitMotionChange(
         build: menu,
-        act: (tester, stage) async => tester
-            .state<PopupMenuButtonState<int>>(find.byType(PopupMenuButton<int>))
-            .showButtonMenu(),
+        act: (tester, stage) =>
+            stage.press(find.byKey(const ValueKey('kit-row-menu-button'))),
         shows: 'Rename',
       ),
     },
@@ -533,23 +524,6 @@ void _predatingParts() {
           ),
         ),
         shows: 'Body',
-      ),
-    },
-  );
-  Widget secret() => KitSecretField(
-    controller: TextEditingController(text: 'hunter2'),
-    label: 'Password',
-    showLabel: 'Show password',
-    hideLabel: 'Hide password',
-  );
-  kitMotionStillTests(
-    'KitSecretField',
-    builds: {'default': secret},
-    changes: {
-      'revealed': KitMotionChange(
-        build: secret,
-        act: (tester, stage) => stage.press(find.byType(KitIconButton)),
-        shows: 'hunter2',
       ),
     },
   );
@@ -678,41 +652,6 @@ void _predatingParts() {
     },
   );
   kitMotionStillTests(
-    'LoadingList',
-    builds: {'default': () => const LoadingList()},
-  );
-  kitMotionStillTests(
-    'ProductEmptyState',
-    builds: {
-      'default': () => const ProductEmptyState(
-        icon: AppIconography.info,
-        title: 'No servers',
-        message: 'Add one to start.',
-      ),
-    },
-  );
-  kitMotionStillTests(
-    'ProductErrorState',
-    builds: {
-      'default': () =>
-          ProductErrorState(message: 'Could not load', onRetry: () async {}),
-    },
-  );
-  kitMotionStillTests(
-    'ProductInlineEmpty',
-    builds: {
-      'default': () => const ProductInlineEmpty(
-        icon: AppIconography.info,
-        title: 'Nothing here',
-        message: 'Items appear here.',
-      ),
-    },
-  );
-  kitMotionStillTests(
-    'SectionLabel',
-    builds: {'default': () => const SectionLabel('Servers')},
-  );
-  kitMotionStillTests(
     'showKitConfirm',
     opens: {
       'destructive': const KitMotionOpen(_openConfirm, shows: _confirmTitle),
@@ -749,9 +688,12 @@ void main() {
         if (p.kind != KitManifestKind.scope && p.exported) p.name,
       for (final o in manifest.openers) o.name,
     };
+    final withRetired = readKitManifest(includeRetired: true);
     final exported = <String>{
-      for (final p in manifest.parts) p.name,
-      for (final o in manifest.openers) o.name,
+      for (final p in withRetired.parts)
+        if (p.exported) p.name,
+      for (final o in withRetired.openers)
+        if (o.exported) o.name,
     };
 
     test('the G4 manifest is read (the parser still works)', () {
@@ -765,7 +707,7 @@ void main() {
           'KitConfirmSheet',
           'KitStatusMark',
           'KitPortalScene',
-          'SectionLabel',
+          'KitRow',
         ]),
       );
       // Not parts: data, tokens, controllers, builders, unexported widgets,
@@ -776,7 +718,6 @@ void main() {
         'KitDraft',
         'KitEffects',
         'KitPageTransitionsBuilder',
-        'GatedRow',
         'TerminalKeyBar',
         'KitEffectsScope',
       ]) {
@@ -800,7 +741,7 @@ void main() {
             'Each part kit.dart exports needs kitMotionStillTests(\'<Name>\', '
             '...) in its own test/kit/kit_<snake>_test.dart '
             '(test/kit/kit_motion_still.dart shows how; a stateful part also '
-            'registers changes:).',
+            'registers changes:). Missing samples:\n${missing.join('\n')}',
       );
     });
 

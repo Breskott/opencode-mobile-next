@@ -16,10 +16,10 @@ import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitAction, KitNotice;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/nudge_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi with CompleteMessageHistory {
@@ -204,9 +204,9 @@ const _catalog = CatalogSnapshot(
   agents: [],
 );
 
-Finder _nudge(NudgeId id) => find.byKey(
-  ValueKey('nudge-${id == NudgeId.pinConversations ? id.name : id.wire}'),
-);
+ValueKey<String> _nudgeKey(NudgeId id) =>
+    ValueKey('nudge-${id == NudgeId.pinConversations ? id.name : id.wire}');
+Finder _nudge(NudgeId id) => find.byKey(_nudgeKey(id));
 Finder _action(NudgeId id) => id == NudgeId.pinConversations
     ? find.descendant(of: _nudge(id), matching: find.text('Got it'))
     : find.byKey(ValueKey('nudge-${id.wire}-action'));
@@ -701,14 +701,22 @@ void main() {
             ),
             home: Scaffold(
               body: SingleChildScrollView(
-                child: NudgeCard(
-                  id: NudgeId.approvals,
+                // The offer as the chat's nudge slot draws it.
+                child: KitNotice.offer(
+                  key: _nudgeKey(NudgeId.approvals),
                   // The longest sentence and the longest action label.
                   message: strings.nudgeApprovals(strings.e7PermissionAction4),
-                  actionLabel: strings.chatUiCompactSession,
-                  dismissTooltip: strings.nudgeDismiss,
-                  onAction: () => actions += 1,
+                  icon: AppIconography.idea,
+                  action: KitAction(
+                    key: ValueKey('nudge-${NudgeId.approvals.wire}-action'),
+                    label: strings.chatUiCompactSession,
+                    onPressed: () => actions += 1,
+                  ),
                   onDismiss: () => dismissals += 1,
+                  dismissKey: ValueKey(
+                    'nudge-${NudgeId.approvals.wire}-dismiss',
+                  ),
+                  dismissLabel: strings.nudgeDismiss,
                 ),
               ),
             ),

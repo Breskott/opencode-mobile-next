@@ -83,8 +83,7 @@ Future<ExternalLinkOutcome> openExternalLink(
     return ExternalLinkOutcome.blocked;
   }
   final insecure = uri.scheme == 'http';
-  final address = uri.toString();
-  final safeAddress = KitRedact.text(address);
+  final safeAddress = _safeLinkAddress(uri);
 
   // The destination host stays in sight (not folded under Details): it is
   // what the person checks before anything opens. The whole address is one
@@ -155,6 +154,61 @@ Future<ExternalLinkOutcome> openExternalLink(
     }
     return ExternalLinkOutcome.failed;
   }
+}
+
+// Authorization URLs also carry opaque codes and CSRF state. Those names are
+// ordinary words in prose, so mask them only in URI parameters. Decode each
+// component before checking registered values; retain untouched URL spelling
+// for ordinary links. This representation never goes to the launcher.
+String _safeLinkAddress(Uri uri) {
+  String redactParameters(String value) => value
+      .split('&')
+      .map((part) {
+        final separator = part.indexOf('=');
+        if (separator < 0) return KitRedact.text(part);
+        try {
+          final name = Uri.decodeQueryComponent(part.substring(0, separator));
+          final decoded = Uri.decodeQueryComponent(
+            part.substring(separator + 1),
+          );
+          final sensitive = const {
+            'code',
+            'state',
+            'session_state',
+            'code_verifier',
+          }.contains(name.toLowerCase());
+          if (sensitive ||
+              KitRedact.containsSecret('$name=$decoded') ||
+              KitRedact.containsSecret(decoded)) {
+            return '${part.substring(0, separator + 1)}${KitRedact.mask}';
+          }
+        } on FormatException {
+          // A malformed encoded component cannot be inspected reliably.
+          return '${part.substring(0, separator + 1)}${KitRedact.mask}';
+        }
+        return part;
+      })
+      .join('&');
+
+  final address = uri.toString();
+  final fragmentStart = address.indexOf('#');
+  final head = fragmentStart < 0
+      ? address
+      : address.substring(0, fragmentStart);
+  final queryStart = head.indexOf('?');
+  final safeHead = queryStart < 0
+      ? head
+      : '${head.substring(0, queryStart + 1)}'
+            '${redactParameters(head.substring(queryStart + 1))}';
+  if (fragmentStart < 0) return KitRedact.text(safeHead);
+  final fragment = address.substring(fragmentStart + 1);
+  // SPA callbacks may use #/callback?code=... rather than #code=....
+  final fragmentQuery = fragment.indexOf('?');
+  final safeFragment = fragmentQuery < 0
+      ? redactParameters(fragment)
+      : '${fragment.substring(0, fragmentQuery + 1)}'
+            '${redactParameters(fragment.substring(fragmentQuery + 1))}';
+  return KitRedact.text('$safeHead#$safeFragment');
 }
 
 /// The parsed URL when [value] passes the policy documented on

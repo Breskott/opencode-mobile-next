@@ -17,6 +17,8 @@ import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_harness.dart';
 
+import 'kit_motion_still.dart';
+
 const _send = Key('chat-send-button');
 const _stop = Key('chat-stop-button');
 const _field = Key('chat-composer-field');
@@ -133,6 +135,23 @@ KitSuggestion _suggestion(String id) =>
     KitSuggestion(id: id, label: '/$id', kind: KitSuggestionKind.command);
 
 void main() {
+  kitMotionStillTests(
+    'KitComposer',
+    builds: {
+      'idle': () => _composer(_host('Review the checkout changes')),
+      'busy': () => _composer(_host(''), busy: true),
+      'sending': () =>
+          _composer(_host('Review the checkout changes'), sending: true),
+    },
+    changes: {
+      'reply starts': KitMotionChange(
+        build: () => _composer(_host('Review the checkout changes')),
+        act: (tester, stage) => stage.rebuild(_composer(_host(''), busy: true)),
+        shows: 'Ask OpenCode…',
+      ),
+    },
+  );
+
   tearDown(() => debugPlatformCapabilities = null);
 
   group('trailing control (the table)', () {

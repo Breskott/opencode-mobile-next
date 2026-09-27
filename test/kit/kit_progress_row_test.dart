@@ -3,6 +3,8 @@
 // merged semantics node, the tap target and reduced motion (STANDARDS.md
 // TEST-15). Arabic and RTL galleries are dropped for the revamp (owner
 // decision 2026-09-27; STANDARDS.md header), so this file stays English.
+import 'kit_motion_still.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,6 +65,31 @@ SemanticsData _rowSemantics(WidgetTester tester, [Key key = _rowKey]) =>
     tester.getSemantics(find.byKey(key)).getSemanticsData();
 
 void main() {
+  kitMotionStillTests(
+    'KitProgressRow',
+    builds: {
+      'loading': () => const KitProgressRow(title: 'Context', value: null),
+      'measured': () => const KitProgressRow(
+        title: 'Context',
+        value: .6,
+        valueLabel: '60 percent used',
+      ),
+    },
+    changes: {
+      'measurement arrives': KitMotionChange(
+        build: () => const KitProgressRow(title: 'Context', value: null),
+        act: (tester, stage) => stage.rebuild(
+          const KitProgressRow(
+            title: 'Context',
+            value: .6,
+            valueLabel: '60 percent used',
+          ),
+        ),
+        shows: '60 percent used',
+      ),
+    },
+  );
+
   group('KitProgressRow loading', () {
     testWidgets('a null value shows no percentage and says loading', (
       tester,

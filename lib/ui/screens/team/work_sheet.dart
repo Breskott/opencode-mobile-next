@@ -1,9 +1,10 @@
 /// The Work sheet (02-ux §4.2): what a step row of a task, a node of the
 /// graph, a gate chip, the merge changes or a board card opens. The sheet
 /// is titled with the item's title and its Gas City term ("Work · bead
-/// oc-loy"); then the dispatch cycle strip (TEAM-116: which step, since
-/// when, why it waits), state and owner, the description as markdown, what
-/// it depends on and what waits on it as rows that open the other item's
+/// oc-loy"); then the step's Now line (slice-P5.1: what is happening to
+/// it, since when, what comes next, and why it waits after 8 s), owner,
+/// the description as markdown, what it depends on and what waits on it
+/// as rows that open the other item's
 /// sheet in this one's place, "Open this step's conversation" only when the
 /// adapter can link sessions and this item carries one (Gas City never
 /// does) or else the working agent's conversation, the output excerpt and
@@ -43,7 +44,7 @@ import '../../kit/kit_technical_value.dart';
 import '../../kit/kit_text.dart';
 import '../../kit/kit_tokens.dart';
 import '../../widgets/relative_time.dart';
-import '../../widgets/team_cycle_strip.dart';
+import '../../widgets/team_now_line_view.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
 import '../team_conversation/team_conversation.dart'
@@ -162,17 +163,6 @@ String? workOwnerName(OrchestrationSnapshot snapshot, WorkItem item) {
   return assignee;
 }
 
-/// Retired by screen-team-3: use KitAvatar(name:), which draws the
-/// initials; kept for the run screen's owner glyph until it moves.
-///
-/// The letter of an owner glyph: the first letter of the last segment of
-/// the name ("ocproof/gastown.refinery" → "R").
-String workOwnerInitial(String name) {
-  final last = name.split(RegExp(r'[/.\s]+')).where((s) => s.isNotEmpty);
-  final word = last.isEmpty ? name : last.last;
-  return word.isEmpty ? '' : word.substring(0, 1).toUpperCase();
-}
-
 /// The output excerpt the host attached to an item, if any.
 String? workOutputExcerpt(WorkItem item) {
   final metadata = _map(item.raw['metadata']);
@@ -287,6 +277,7 @@ class WorkSheet extends StatelessWidget {
         snapshot: snapshot,
         sessionLink: controller.capabilities.sessionLink,
         now: (now ?? DateTime.now)(),
+        clock: now ?? DateTime.now,
         onJump: onJump,
         onOpenSession: onOpenSession,
       );
@@ -324,6 +315,7 @@ class _Body extends StatelessWidget {
     required this.snapshot,
     required this.sessionLink,
     required this.now,
+    required this.clock,
     required this.onJump,
     required this.onOpenSession,
   });
@@ -333,6 +325,9 @@ class _Body extends StatelessWidget {
   final OrchestrationSnapshot snapshot;
   final bool sessionLink;
   final DateTime now;
+
+  /// The page's clock, for the Now line's 8 s explanation.
+  final DateTime Function() clock;
   final ValueChanged<String> onJump;
   final ValueChanged<String>? onOpenSession;
 
@@ -358,6 +353,10 @@ class _Body extends StatelessWidget {
     final openSession = onOpenSession;
     final agent = _agentOn(snapshot, item);
     final closedAt = _closedAt(item);
+    OrchestrationRun? run;
+    for (final candidate in snapshot.runs) {
+      if (candidate.id == item.runId) run = candidate;
+    }
 
     Widget rows(String prefix, List<(String, WorkItem?)> items) => KitRowGroup(
       margin: EdgeInsetsDirectional.zero,
@@ -392,14 +391,39 @@ class _Body extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TeamCycleStrip(
-          key: const ValueKey('team-work-sheet-cycle'),
-          controller: controller,
-          workId: item.id,
-        ),
-        SizedBox(height: tokens.space3),
-        // The strip above carries the state; this line says only who owns
-        // the work, by the agent's name.
+        // The step's Now line: what is happening to it, for how long and
+        // what comes next, in the person's words (slice-P5.1; it replaced
+        // the dispatch cycle strip and its seven engine steps). A step in
+        // no task says its state on the owner line instead.
+        if (run != null) ...[
+          TeamNowLineView(
+            keyPrefix: 'team-work-sheet',
+            watchCycles: controller,
+            watchWorkId: item.id,
+            clock: clock,
+            input: TeamNowInput.forRun(
+              activityKey: '${controller.profileId}:work:${item.id}',
+              run: run,
+              work: [item],
+              cycleOf: controller.cycleFor,
+              agents: snapshot.agents,
+              connected: controller.phase == OrchestrationPhase.ready,
+              now: now,
+            ),
+            // The step's conversation is its own row below; checking
+            // again is this sheet's one way out.
+            wayOut: (action) => action == TeamNowAction.refresh
+                ? KitAction(
+                    key: const ValueKey('team-work-sheet-now-refresh'),
+                    label: l10n.teamUiRefresh,
+                    onPressed: () => unawaited(controller.refresh()),
+                  )
+                : null,
+          ),
+          SizedBox(height: tokens.space3),
+        ],
+        // The Now line above carries the state; this line says only who
+        // owns the work, by the agent's name.
         Row(
           children: [
             const KitIcon(
@@ -410,7 +434,10 @@ class _Body extends StatelessWidget {
             SizedBox(width: tokens.space2),
             Flexible(
               child: KitText(
-                owner ?? l10n.teamUiWorkOwnerNone,
+                [
+                  if (run == null) teamWorkStateWord(l10n, item.state),
+                  owner ?? l10n.teamUiWorkOwnerNone,
+                ].join(teamUsageSeparator),
                 key: const ValueKey('team-work-sheet-owner'),
                 role: KitTextRole.secondary,
               ),

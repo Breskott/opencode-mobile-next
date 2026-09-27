@@ -19,6 +19,8 @@ import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 const _bubbleKey = ValueKey('bubble');
 
 Widget _app(
@@ -91,6 +93,29 @@ final _isolates = RegExp('[\\u2066-\\u2069]');
 String _plain(String s) => s.replaceAll(_isolates, '');
 
 void main() {
+  kitMotionStillTests(
+    'KitQueuedMessage',
+    builds: {
+      'waiting': () => KitQueuedMessage(items: [_item(1)]),
+      'sending': () =>
+          KitQueuedMessage(items: [_item(1, state: KitQueuedState.sending)]),
+    },
+    changes: {
+      'message added': KitMotionChange(
+        build: () => KitQueuedMessage(items: [_item(1)]),
+        act: (tester, stage) =>
+            stage.rebuild(KitQueuedMessage(items: [_item(1), _item(2)])),
+        shows: 'Message 2',
+      ),
+      'message removed': KitMotionChange(
+        build: () => KitQueuedMessage(items: [_item(1), _item(2)]),
+        act: (tester, stage) =>
+            stage.rebuild(KitQueuedMessage(items: [_item(1)])),
+        hides: 'Message 2',
+      ),
+    },
+  );
+
   testWidgets('1. empty items render nothing and no semantics node', (
     tester,
   ) async {

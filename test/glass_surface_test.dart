@@ -4,8 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
+
+/// The bottom dock's glass as the shell draws it: a dimmed [KitGlass] at
+/// the floating tab bar's 22 dp corners (the retired GlassSurface did this).
+Widget _dock(Widget child) => KitGlass(
+  dim: true,
+  borderRadius: const BorderRadius.all(Radius.circular(22)),
+  child: child,
+);
 
 void main() {
   for (final media in <String, MediaQueryData>{
@@ -21,14 +29,14 @@ void main() {
             theme: AppTheme.dark(),
             home: MediaQuery(
               data: media.value,
-              child: const GlassSurface(child: Text('Workspace')),
+              child: _dock(Text('Workspace')),
             ),
           ),
         );
         final decorations = tester
             .widgetList<DecoratedBox>(
               find.descendant(
-                of: find.byType(GlassSurface),
+                of: find.byType(KitGlass),
                 matching: find.byType(DecoratedBox),
               ),
             )
@@ -51,9 +59,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(),
-        home: const KitEffectsScope(
-          effects: KitEffects(glass: false),
-          child: GlassSurface(child: SizedBox(width: 320, height: 72)),
+        home: KitEffectsScope(
+          effects: const KitEffects(glass: false),
+          child: _dock(const SizedBox(width: 320, height: 72)),
         ),
       ),
     );
@@ -61,7 +69,7 @@ void main() {
     final fills = tester
         .widgetList<DecoratedBox>(
           find.descendant(
-            of: find.byType(GlassSurface),
+            of: find.byType(KitGlass),
             matching: find.byType(DecoratedBox),
           ),
         )
@@ -78,7 +86,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(),
-        home: const GlassSurface(child: SizedBox(width: 320, height: 72)),
+        home: _dock(SizedBox(width: 320, height: 72)),
       ),
     );
     expect(find.byType(BackdropFilter), findsOneWidget);
@@ -92,7 +100,7 @@ void main() {
     final fills = tester
         .widgetList<DecoratedBox>(
           find.descendant(
-            of: find.byType(GlassSurface),
+            of: find.byType(KitGlass),
             matching: find.byType(DecoratedBox),
           ),
         )
@@ -115,13 +123,13 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: theme,
-              home: const GlassSurface(child: SizedBox(width: 320, height: 72)),
+              home: _dock(SizedBox(width: 320, height: 72)),
             ),
           );
           final fill = tester
               .widgetList<DecoratedBox>(
                 find.descendant(
-                  of: find.byType(GlassSurface),
+                  of: find.byType(KitGlass),
                   matching: find.byType(DecoratedBox),
                 ),
               )
@@ -141,7 +149,7 @@ void main() {
                 );
                 for (final background in [surface, selected]) {
                   final luminances = [
-                    GlassSurface.foregroundColor(theme).computeLuminance(),
+                    KitGlass.foregroundColor(theme).computeLuminance(),
                     background.computeLuminance(),
                   ]..sort();
                   final contrast =

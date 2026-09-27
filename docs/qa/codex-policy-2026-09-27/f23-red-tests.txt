@@ -1,0 +1,24 @@
+F2/F3 failing-before evidence, base 42d3932d plus regression tests.
+Pinned Flutter; serial through tool/qa/machine_lock.sh.
+
+Controller/owner red run: 32 passed, 14 failed (before production fixes).
+00:00 +4 -1: test/queued_prompt_removal_wiring_test.dart: aborted removal after changed queue preserves history, Undo and the same usable policy and activity owners [E]
+00:00 +4 -2: test/queued_prompt_removal_wiring_test.dart: aborted removal after full saved prompts preserves history, Undo and the same usable policy and activity owners [E]
+00:00 +4 -3: test/queued_prompt_removal_wiring_test.dart: unreadable JSON queue with no plan and keep=true retains the profile and history [E]
+00:00 +4 -4: test/queued_prompt_removal_wiring_test.dart: unreadable JSON queue with no plan and keep=false retains the profile and history [E]
+00:00 +4 -5: test/queued_prompt_removal_wiring_test.dart: unreadable platform type queue with no plan and keep=true retains the profile and history [E]
+00:00 +4 -6: test/queued_prompt_removal_wiring_test.dart: unreadable platform type queue with no plan and keep=false retains the profile and history [E]
+00:00 +4 -7: test/queued_prompt_removal_wiring_test.dart: preservation without a confirmed plan retains readable queued work [E]
+00:00 +4 -8: test/queued_prompt_removal_wiring_test.dart: a deletion refusal at oc.agent.doomed retains history and usable owners until the profile commit succeeds [E]
+00:00 +4 -9: test/queued_prompt_removal_wiring_test.dart: a deletion refusal at oc.profiles retains history and usable owners until the profile commit succeeds [E]
+00:03 +20 -10: test/automatic_activity_test.dart: reversible deletion preparation preserves shared owner history and Undo [E]
+00:03 +20 -11: test/automatic_activity_test.dart: deletion preparation drains admitted records and retains their Undo [E]
+00:03 +20 -12: test/automatic_activity_test.dart: deletion preparation persists confirmed in-flight Undo before cancellation [E]
+00:03 +20 -13: test/automatic_activity_test.dart: deletion preparation drains Undo admitted behind a pending record [E]
+00:05 +28 -14: test/automation_policy_test.dart: reversible deletion pause drains admitted edits and resumes the same owner [E]
+
+Owner/UI red run: 0 passed, 4 failed (before production fixes).
+00:00 +0 -1: test/automatic_activity_test.dart: reversible deletion preparation preserves shared owner history and Undo [E]
+00:00 +0 -2: test/automatic_activity_test.dart: deletion preparation drains admitted records and retains their Undo [E]
+00:00 +0 -3: test/automatic_activity_test.dart: deletion preparation persists confirmed in-flight Undo before cancellation [E]
+00:30 +0 -4: test/revamp/queued_prompt_removal_test.dart: behaviour an unreadable queue stops removal and can be retried [E]

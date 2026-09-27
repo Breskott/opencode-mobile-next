@@ -7,17 +7,17 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/server_gateway.dart' show QuestionChoice;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
 import 'package:opencode_mobile/ui/kit/kit_field.dart';
 import 'package:opencode_mobile/ui/kit/kit_receipt.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
 import 'package:opencode_mobile/ui/kit/motion/kit_haptics.dart';
-import 'package:opencode_mobile/ui/widgets/question_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'kit_motion_still.dart';
 
 Future<void> _pump(
   WidgetTester tester,
@@ -114,6 +114,99 @@ int _vibrations(List<MethodCall> calls) =>
     calls.where((c) => c.method == 'HapticFeedback.vibrate').length;
 
 void main() {
+  const motionChoices = [
+    KitChoice(value: 'a', title: 'Balanced'),
+    KitChoice(value: 'b', title: 'Thorough'),
+  ];
+  Widget choices(String value) => KitChoiceList<String>.single(
+    choices: motionChoices,
+    selected: value,
+    onSelected: (_) {},
+  );
+  kitMotionStillTests(
+    'KitChoiceList',
+    builds: {'default': () => choices('a')},
+    changes: {
+      'selection changes': KitMotionChange(
+        build: () => choices('a'),
+        act: (tester, stage) => stage.rebuild(choices('b')),
+        shows: 'Thorough',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitChoiceRow',
+    builds: {
+      'default': () => KitChoiceRow(
+        choice: motionChoices.first,
+        selected: false,
+        onTap: () {},
+      ),
+    },
+    changes: {
+      'selected': KitMotionChange(
+        build: () => KitChoiceRow(
+          choice: motionChoices.first,
+          selected: false,
+          onTap: () {},
+        ),
+        act: (tester, stage) => stage.rebuild(
+          KitChoiceRow(
+            choice: motionChoices.first,
+            selected: true,
+            onTap: () {},
+          ),
+        ),
+        shows: 'Balanced',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitPickerRow',
+    builds: {
+      'default': () => KitPickerRow(
+        title: 'Model',
+        choices: motionChoices,
+        selected: 'a',
+        onSelected: (_) {},
+      ),
+    },
+    changes: {
+      'value changes': KitMotionChange(
+        build: () => KitPickerRow(
+          title: 'Model',
+          choices: motionChoices,
+          selected: 'a',
+          onSelected: (_) {},
+        ),
+        act: (tester, stage) => stage.rebuild(
+          KitPickerRow(
+            title: 'Model',
+            choices: motionChoices,
+            selected: 'b',
+            onSelected: (_) {},
+          ),
+        ),
+        shows: KitBidi.auto('Thorough'),
+      ),
+    },
+  );
+  Future<void> openMotionChoices(BuildContext context) async {
+    await showKitChoiceSheet(
+      context,
+      title: 'Choose model',
+      choices: motionChoices,
+    );
+  }
+
+  kitMotionStillTests(
+    'showKitChoiceSheet',
+    opens: {'default': KitMotionOpen(openMotionChoices, shows: 'Choose model')},
+    changes: {
+      'dismissed': kitModalDismiss(openMotionChoices, shows: 'Choose model'),
+    },
+  );
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('single: one tap, one callback (G9)', () {
@@ -592,37 +685,6 @@ void main() {
         greaterThanOrEqualTo(56),
       );
     }
-  });
-
-  testWidgets('QuestionOptionRow forwards to KitChoiceRow', (tester) async {
-    var taps = 0;
-    await _pump(
-      tester,
-      Column(
-        children: [
-          QuestionOptionRow(
-            choice: const QuestionChoice(label: 'Staging', description: 'x'),
-            selected: true,
-            multiple: true,
-            onTap: () => taps++,
-          ),
-          QuestionCustomAnswerField(
-            controller: TextEditingController(),
-            onChanged: (_) {},
-          ),
-        ],
-      ),
-    );
-    final row = tester.widget<KitChoiceRow<String>>(
-      find.byType(KitChoiceRow<String>),
-    );
-    expect(row.choice.title, 'Staging');
-    expect(row.selected, isTrue);
-    expect(row.mark, KitChoiceMark.check);
-    await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
-    expect(taps, 1);
-    final field = tester.widget<KitField>(find.byType(KitField));
-    expect(field.kind, KitFieldKind.multiline);
   });
 
   testWidgets('reduced motion settles in one pump', (tester) async {

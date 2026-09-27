@@ -1,17 +1,13 @@
-// Behaviour of shared-system-1's pages (wave 2a): the shared product states
-// as kit wrappers (embedded-product-states), the run-command sheet
-// (run-command-dialog). The external-link gate's own tests live in
-// test/external_link_test.dart.
+// Behaviour of shared-system-1's pages (wave 2a): the failed-act alert
+// (embedded-product-states; its wrapper widgets were retired by
+// kit-hygiene) and the run-command sheet (run-command-dialog). The
+// external-link gate's own tests live in test/external_link_test.dart.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/ui/kit/kit_notice.dart' show KitErrorKind;
-import 'package:opencode_mobile/ui/kit/kit_row.dart';
-import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:opencode_mobile/ui/widgets/run_command_dialog.dart';
 
@@ -26,123 +22,6 @@ Widget _app(Widget child, {Map<String, WidgetBuilder> routes = const {}}) =>
     );
 
 void main() {
-  group('ProductErrorState is a KitStateView', () {
-    testWidgets('an unexpected error: a title, the cause, Try again and '
-        'Report a problem', (tester) async {
-      var retried = 0;
-      await tester.pumpWidget(
-        _app(
-          ProductErrorState(
-            message: 'The file list is not available.',
-            onRetry: () async => retried++,
-          ),
-        ),
-      );
-      expect(find.byType(KitStateView), findsOneWidget);
-      expect(find.text("Couldn't load this"), findsOneWidget);
-      expect(find.text('The file list is not available.'), findsOneWidget);
-      expect(find.text('Report a problem'), findsOneWidget);
-      expect(find.text('Switch server'), findsNothing);
-      await tester.tap(find.text('Try again'));
-      expect(retried, 1);
-    });
-
-    testWidgets('a network error offers Switch server, not Report', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _app(
-          ProductErrorState(
-            message: 'OpenCode is unreachable. Try again.',
-            error: const SocketException('refused'),
-            onRetry: () async {},
-          ),
-          routes: {'/servers': (_) => const Text('Server list')},
-        ),
-      );
-      expect(find.text("Can't reach the server"), findsOneWidget);
-      expect(find.text('Report a problem'), findsNothing);
-      await tester.tap(find.text('Switch server'));
-      await tester.pumpAndSettle();
-      expect(find.text('Server list'), findsOneWidget);
-    });
-
-    testWidgets('a caller title and errorKind win; raw details fold away', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _app(
-          ProductErrorState(
-            title: "Couldn't load files",
-            message: 'The server did not answer.',
-            errorKind: KitErrorKind.network,
-            details: 'GET /file 504 after 30 s',
-            onSwitchServer: () {},
-            onRetry: () async {},
-          ),
-        ),
-      );
-      expect(find.text("Couldn't load files"), findsOneWidget);
-      expect(find.text('Switch server'), findsOneWidget);
-      expect(find.text('Copy details'), findsOneWidget);
-      // Raw text is folded, never above the actions.
-      expect(find.text('GET /file 504 after 30 s'), findsNothing);
-    });
-  });
-
-  testWidgets('ProductEmptyState and ProductInlineEmpty are KitStateViews '
-      'with the one action', (tester) async {
-    var tapped = 0;
-    await tester.pumpWidget(
-      _app(
-        Column(
-          children: [
-            const Expanded(
-              child: ProductEmptyState(
-                icon: Icons.inbox_outlined,
-                title: 'No skills yet',
-                message: 'Skills the server knows appear here.',
-              ),
-            ),
-            ProductInlineEmpty(
-              icon: Icons.inbox_outlined,
-              title: 'No references',
-              message: 'Add one from a conversation.',
-              actionLabel: 'Add reference',
-              onAction: () => tapped++,
-            ),
-          ],
-        ),
-      ),
-    );
-    expect(find.byType(KitStateView), findsNWidgets(2));
-    expect(find.text('No skills yet'), findsOneWidget);
-    await tester.tap(find.text('Add reference'));
-    expect(tapped, 1);
-  });
-
-  testWidgets('a refresh failure is a notice over the kept content', (
-    tester,
-  ) async {
-    var retried = 0;
-    await tester.pumpWidget(
-      _app(
-        ProductRefreshBody(
-          message: 'The server did not answer.',
-          onRetry: () => retried++,
-          child: const Text('Kept content'),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Kept content'), findsOneWidget);
-    expect(find.text('Couldn’t refresh'), findsOneWidget);
-    expect(find.text('The server did not answer.'), findsOneWidget);
-    expect(find.byType(MaterialBanner), findsNothing);
-    await tester.tap(find.text('Try again'));
-    expect(retried, 1);
-  });
-
   testWidgets('showProductError is an alert, never a snackbar', (tester) async {
     await tester.pumpWidget(
       _app(
@@ -160,32 +39,6 @@ void main() {
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Disk full'), findsNothing);
-  });
-
-  testWidgets('GatedRow is an unavailable KitRow with its reason', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _app(
-        ListView(
-          children: const [
-            SectionLabel('Server'),
-            GatedRow(
-              feature: 'shell',
-              title: 'Default shell',
-              explainer: gatedOnV2Explainer,
-            ),
-          ],
-        ),
-      ),
-    );
-    final row = tester.widget<KitRow>(
-      find.byKey(const ValueKey('gated-shell')),
-    );
-    expect(row.enabled, isFalse);
-    expect(find.text('Default shell'), findsOneWidget);
-    expect(find.text('Not available on OpenCode 2 servers'), findsOneWidget);
-    expect(find.text('Server'), findsOneWidget);
   });
 
   group('run-command sheet', () {

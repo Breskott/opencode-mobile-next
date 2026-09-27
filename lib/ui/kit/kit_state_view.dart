@@ -196,6 +196,7 @@ class KitStateView extends StatefulWidget {
     this.detailNotes = const [],
     this.detailValues = const [],
     this.retry,
+    this.secondary,
     this.switchServer,
     this.reportSource,
     this.icon = AppIconography.error,
@@ -210,7 +211,6 @@ class KitStateView extends StatefulWidget {
   }) : tone = AppStatusTone.failure,
        progress = null,
        primary = null,
-       secondary = null,
        tertiary = const [],
        liveRegion = true,
        iconChild = null,
@@ -403,10 +403,10 @@ class _KitStateViewState extends State<KitStateView> {
               );
         final network =
             (w.errorKind ?? KitErrorKind.of(w.error)) == KitErrorKind.network;
-        if (network) return (w.retry, w.switchServer, [?copy]);
+        if (network) return (w.retry, w.secondary ?? w.switchServer, [?copy]);
         return (
           w.retry,
-          null,
+          w.secondary,
           [
             ?copy,
             if (KitReportHook.available)

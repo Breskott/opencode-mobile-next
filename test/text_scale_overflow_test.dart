@@ -970,6 +970,7 @@ void main() {
           File('${dir.path}/$name').writeAsStringSync(text);
       write('kit.dart', '''
 export 'fine.dart';
+export 'utilities.dart';
 export 'hidden.dart' hide KitHidden;
 export "quoted.dart";
 export 'io.dart' if (dart.library.html) 'web.dart';
@@ -987,9 +988,20 @@ KitHandle showKitThing(BuildContext context) => KitHandle();
 class KitHidden extends StatelessWidget {}
 class KitShown extends StatelessWidget {}
 ''');
+      File('${dir.path}/utilities.dart').writeAsStringSync('''
+class KitScrollBehavior extends MaterialScrollBehavior {}
+class KitNumberFormatter extends TextInputFormatter {}
+class KitLogBuffer extends ValueNotifier<List<String>> {}
+class KitUtilityView extends StatelessWidget {}
+''');
       final manifest = readKitManifest(kitFile: '${dir.path}/kit.dart');
       // `hide` is read (the hidden class drops out), unlike the forms below.
-      expect(manifest.parts, {'KitFine', 'showKitThing', 'KitShown'});
+      expect(manifest.parts, {
+        'KitFine',
+        'showKitThing',
+        'KitShown',
+        'KitUtilityView',
+      });
       expect(
         manifest.problems,
         unorderedEquals([

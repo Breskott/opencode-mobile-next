@@ -1,5 +1,7 @@
 // Behaviour tests for KitTabSwitcher v2 and KitTabStrip
 // (docs/ux-system/kit-api/KitTabSwitcher.md "Tests required").
+import 'kit_motion_still.dart';
+
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -7,11 +9,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/state/team_board.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/motion/kit_tab_switcher.dart';
-import 'package:opencode_mobile/ui/widgets/team_board_tabs.dart';
 
 Widget _host(
   Widget child, {
@@ -96,6 +96,18 @@ class _PageState extends State<_Page> {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitTabStrip',
+    builds: {'selected work': () => _strip()},
+    changes: {
+      'selection moves': KitMotionChange(
+        build: () => _strip(selected: 0),
+        act: (tester, stage) => stage.rebuild(_strip(selected: 3)),
+        shows: 'Review',
+      ),
+    },
+  );
+
   group('strip', () {
     testWidgets('another tab calls onSelected once; the selected one nothing', (
       tester,
@@ -478,67 +490,6 @@ void main() {
       expect(find.text('Two 0'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
       expect(find.text('1'), findsNothing);
-    });
-  });
-
-  group('TeamBoardTabs wrapper', () {
-    testWidgets('renders a KitTabStrip with the board keys', (tester) async {
-      final picked = <TeamBoardColumn>[];
-      await tester.pumpWidget(
-        _host(
-          TeamBoardTabs(
-            counts: {for (final c in TeamBoardColumn.values) c: c.index + 1},
-            needsYou: const {TeamBoardColumn.working},
-            selected: TeamBoardColumn.working,
-            onSelect: picked.add,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(KitTabStrip), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-board-tabs')), findsOneWidget);
-      for (final c in TeamBoardColumn.values) {
-        expect(find.byKey(ValueKey('team-board-tab-${c.name}')), findsOne);
-        expect(
-          find.descendant(
-            of: find.byKey(ValueKey('team-board-tab-count-${c.name}')),
-            matching: find.text('${c.index + 1}'),
-          ),
-          findsOneWidget,
-        );
-      }
-      expect(
-        find.byKey(const ValueKey('team-board-tab-needs-you-working')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('team-board-tab-needs-you-ready')),
-        findsNothing,
-      );
-      await tester.tap(find.byKey(const ValueKey('team-board-tab-ready')));
-      await tester.pumpAndSettle();
-      expect(picked, [TeamBoardColumn.ready]);
-    });
-
-    testWidgets('loading columns show no counts', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          TeamBoardTabs(
-            counts: null,
-            needsYou: const {},
-            selected: TeamBoardColumn.working,
-            onSelect: (_) {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      for (final c in TeamBoardColumn.values) {
-        expect(
-          find.byKey(ValueKey('team-board-tab-count-${c.name}')),
-          findsNothing,
-        );
-      }
-      expect(find.text('0'), findsNothing);
     });
   });
 }

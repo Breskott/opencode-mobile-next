@@ -160,7 +160,7 @@ Future<(_Servers, Future<void> Function())> _openRemove(
   GlobalKey? boundary,
   Size size = _phone,
   QueuedPromptRemovalException? fail,
-  bool corruptQueue = false,
+  String? queueData,
 }) async {
   _mockPlatform(tester);
   debugPlatformCapabilities = const PlatformCapabilities.android();
@@ -168,10 +168,7 @@ Future<(_Servers, Future<void> Function())> _openRemove(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final prefs = await setupCapturePreferences();
-  await prefs.setString(
-    'oc.offlineQueue',
-    corruptQueue ? '{invalid-fixture' : _queue(),
-  );
+  await prefs.setString('oc.offlineQueue', queueData ?? _queue());
   final store = _Store(prefs: prefs, seeded: _profiles());
   final controller = _Servers(store, fail: fail);
   await tester.pumpWidget(
@@ -321,24 +318,48 @@ void main() {
   setUpAll(loadCaptureFonts);
 
   group('behaviour', () {
-    testWidgets('unreadable queue blocks removal before confirmation', (
+    testWidgets('an unreadable queue stops removal and can be retried', (
       tester,
     ) async {
-      final (controller, done) = await _openRemove(tester, corruptQueue: true);
+      const corruptQueue = '{unreadable queue';
+      final (controller, done) = await _openRemove(
+        tester,
+        queueData: corruptQueue,
+      );
       try {
         expect(
           find.byKey(const ValueKey('confirm-remove-server-studio')),
           findsNothing,
         );
+        expect(controller.calls, isEmpty);
+        expect(
+          controller.store.prefs.getString('oc.offlineQueue'),
+          corruptQueue,
+        );
+        expect(find.byKey(const ValueKey('server-row-studio')), findsOne);
         expect(
           find.text(
             lookupAppLocalizations(
               const Locale('en'),
-            ).serversRemoveQueuedNotKept('Studio Mac'),
+            ).serversRemoveQueuedUnreadable('Studio Mac'),
           ),
-          findsOneWidget,
+          findsOne,
         );
-        expect(controller.calls, isEmpty);
+        expect(find.text('Details'), findsOne);
+        expect(find.textContaining('StateError'), findsNothing);
+
+        await controller.store.prefs.setString('oc.offlineQueue', _queue());
+        final row = find.byKey(const ValueKey('server-row-studio'));
+        await tester.ensureVisible(row);
+        await tester.longPress(row);
+        await _settle(tester, frames: 6);
+        await tester.tap(find.text('Remove').last);
+        await _settle(tester);
+        await tester.tap(
+          find.byKey(const ValueKey('confirm-remove-server-studio')),
+        );
+        await _settle(tester);
+        expect(controller.calls, [(id: 'studio', count: 2, keep: true)]);
       } finally {
         await done();
       }
@@ -411,6 +432,37 @@ void main() {
         );
         expect(find.textContaining('Exception'), findsNothing);
         expect(find.byKey(const ValueKey('server-row-studio')), findsOne);
+      } finally {
+        await done();
+      }
+    });
+
+    testWidgets('a queue unreadable after confirmation keeps its server', (
+      tester,
+    ) async {
+      final (controller, done) = await _openRemove(
+        tester,
+        fail: const QueuedPromptRemovalException(
+          changed: false,
+          unreadable: true,
+        ),
+      );
+      try {
+        await tester.tap(
+          find.byKey(const ValueKey('confirm-remove-server-studio')),
+        );
+        await _settle(tester);
+        expect(controller.calls, [(id: 'studio', count: 2, keep: true)]);
+        expect(
+          find.textContaining(
+            'The queued prompts for Studio Mac cannot be read.',
+            findRichText: true,
+          ),
+          findsOne,
+        );
+        expect(find.text('Details'), findsOne);
+        expect(find.byKey(const ValueKey('server-row-studio')), findsOne);
+        expect(controller.store.prefs.getString('oc.offlineQueue'), _queue());
       } finally {
         await done();
       }

@@ -150,7 +150,9 @@ KitTaskFlag? _teamBoardKitFlag(AppLocalizations l10n, TeamBoardCard card) {
   return KitTaskFlag(kind: KitTaskFlagKind.info, label: flag.$3, icon: flag.$1);
 }
 
-KitPriority _kitPriority(WorkPriority priority) => switch (priority) {
+/// The kit's priority level for the app's [WorkPriority]: what a
+/// `KitPriorityGlyph` draws for a card.
+KitPriority teamBoardKitPriority(WorkPriority priority) => switch (priority) {
   WorkPriority.urgent => KitPriority.urgent,
   WorkPriority.high => KitPriority.high,
   WorkPriority.normal => KitPriority.normal,
@@ -200,7 +202,7 @@ class TeamBoardCardView extends StatelessWidget {
       if (card.priority != WorkPriority.normal)
         KitTaskMeta(
           teamBoardPriorityWord(l10n, card.priority),
-          priority: _kitPriority(card.priority),
+          priority: teamBoardKitPriority(card.priority),
           strong: card.priority.value <= WorkPriority.high.value,
         ),
       if (typeWord != null)
@@ -248,17 +250,4 @@ class TeamBoardCardView extends StatelessWidget {
       onLongPress: onLongPress,
     );
   }
-}
-
-/// A priority drawn as signal bars; forwards to [KitPriorityGlyph].
-///
-/// Retired by kit-KitTaskCard: use KitPriorityGlyph.
-class TeamBoardPriorityGlyph extends StatelessWidget {
-  const TeamBoardPriorityGlyph({super.key, required this.priority});
-
-  final WorkPriority priority;
-
-  @override
-  Widget build(BuildContext context) =>
-      KitPriorityGlyph(priority: _kitPriority(priority));
 }

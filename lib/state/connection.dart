@@ -4,6 +4,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
 import 'automation_policy.dart';
+import 'builtin_server_owner.dart';
 import 'consent_owners.dart';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
+import '../domain/session_history.dart';
 import '../codex/gateway.dart';
 import '../codex/transport.dart' show CodexFailure, CodexFailureKind;
 import '../paseo/gateway.dart';
@@ -24,6 +26,9 @@ import '../termux/managed_server_recovery.dart';
 import 'notification_preferences.dart';
 import 'nudges.dart';
 import 'profile_monitor.dart';
+import 'attention_feed.dart';
+import 'monitor_attention_reader.dart';
+import '../domain/work_row_status.dart';
 import 'provider_quota_monitor.dart';
 import '../quota/provider_quota_client.dart';
 import '../api/sse.dart';
@@ -61,12 +66,15 @@ import 'migration_runner.dart';
 import 'prompt_photos.dart';
 import 'saved_prompts_controller.dart';
 import 'session_pins.dart';
+import 'session_inventory_cache.dart';
+import 'session_tail_cache.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
 import 'queued_prompt_removal.dart';
 import 'session_read_state.dart';
 import 'automatic_activity.dart';
 import 'return_brief_state.dart';
+import '../domain/connection_status.dart';
 import '../domain/return_brief.dart';
 import '../domain/while_away.dart';
 import '../domain/workspace_paths.dart';
@@ -167,6 +175,13 @@ CatalogModel _mergeCatalogModel(CatalogModel detailed, CatalogModel base) {
 class AppBootstrap {
   final ProfileStore store;
   AppBootstrap(this.store);
+
+  /// Bootstrap recovery intentionally works even when profile loading fails.
+  /// The gate must drain outstanding loads before invoking this operation.
+  static Future<void> resetSavedSignIns() async {
+    final prefs = await SharedPreferences.getInstance();
+    await ProfileStore(prefs: prefs).resetSavedSignIns();
+  }
 
   static Future<AppBootstrap> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -373,9 +388,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   final MonitorGatewayFactory? _monitorGatewayFactory;
+  final _monitorAttentionReader = MonitorAttentionReader();
   ProfileMonitor get profileMonitor => _profileMonitor ??= ProfileMonitor(
     store: store,
     createGateway: _monitorGatewayFactory ?? _buildTransportPair,
+    readAttention: _readMonitorAttention,
     isReadable: (id) => !isIsolated && isProfileReadable(id),
     networkWifi: backgroundLive.monitorWifiAvailable,
     dismiss: backgroundLive.dismissCodingAlert,
@@ -394,6 +411,34 @@ class ConnectionController extends ChangeNotifier {
       monitorToken: token,
     ),
   )..addListener(_monitorChanged);
+  Future<MonitorAttentionDetails> _readMonitorAttention(
+    ServerProfile saved,
+    MonitorGatewayPair pair,
+    List<Session> sessions,
+    Map<String, String> statuses,
+    bool Function() current,
+  ) async {
+    final generation = _generation;
+    final began = DateTime.now();
+    final details = await _monitorAttentionReader.read(
+      saved,
+      pair,
+      sessions,
+      statuses,
+      current,
+    );
+    if (current() && generation == _generation && profile?.id == saved.id) {
+      // A complete observation of a later turn may retire an SSE failure.
+      // A failure arriving during this read remains authoritative.
+      _failedAttentionSessions.removeWhere(
+        (id, failure) =>
+            details.checkedSessionIDs.contains(id) &&
+            failure.at.isBefore(began),
+      );
+    }
+    return details;
+  }
+
   void _monitorChanged() {
     if (_disposed) return;
     if (_lifecycleWasBackgrounded && !_canShowCodingAlert) {
@@ -578,32 +623,189 @@ class ConnectionController extends ChangeNotifier {
         isProfileReadable(target.profileID);
   }
 
-  int get unknownAttentionProfileCount => store.profiles
-      .where(
-        (p) =>
-            isProfileReadable(p.id) &&
-            !(p.id == profile?.id && isConnected) &&
-            !profileMonitor.snapshotFor(p.id).isCurrent,
-      )
-      .length;
+  // Receipt times belong to gateway reads/events, never to a widget rebuild.
+  final _attentionReads = <AttentionKind, DateTime>{};
+  final _attentionEvents = <AttentionKind, DateTime>{};
+  final _attentionReadRevisions = <AttentionKind, int>{};
+  final _failedAttentionSessions = <String, ({DateTime at, int revision})>{};
+  int _attentionTransportRevision = 0;
 
-  int get unifiedAttentionCount {
-    final selected = profile?.id;
-    return awaitingPermissionCount +
-        questions.length +
-        forms.length +
-        (orchestration?.attentionCount ?? 0) +
-        // This server's other projects: the Inbox badge counts what needs
-        // you wherever it is.
-        waitingElsewhereCount +
-        store.profiles
-            .where((p) => p.id != selected && isProfileReadable(p.id))
-            .fold<int>(
-              0,
-              (sum, p) =>
-                  sum + (profileMonitor.snapshotFor(p.id).pendingCount ?? 0),
+  void _observeAttentionRead(AttentionKind kind) {
+    _attentionReads[kind] = DateTime.now();
+    _attentionReadRevisions[kind] = _attentionTransportRevision;
+  }
+
+  /// One read-only projection for Inbox, Work and their badge. Merely reading
+  /// it never polls, switches servers, acknowledges work or records an act.
+  AttentionFeed get attentionFeed {
+    final now = DateTime.now();
+    return AttentionFeed.fromServers([
+      for (final saved in store.profiles)
+        if (isProfileReadable(saved.id))
+          AttentionServer(
+            profileID: saved.id,
+            name: saved.name,
+            snapshot:
+                saved.id == profile?.id &&
+                    !isIsolated &&
+                    _attentionUsesSavedSource(saved)
+                ? _activeAttentionSnapshot(saved.id, now)
+                : profileMonitor.snapshotFor(saved.id),
+          ),
+    ], now: now);
+  }
+
+  bool _attentionUsesSavedSource(ServerProfile saved) {
+    final connected = _connectedProfile;
+    return connected == null ||
+        (
+              connected.baseUrl,
+              connected.username,
+              connected.password,
+              connected.backend,
+              connected.codexToken,
+              connected.flavor,
+              connected.orchestration,
+            ) ==
+            (
+              saved.baseUrl,
+              saved.username,
+              saved.password,
+              saved.backend,
+              saved.codexToken,
+              saved.flavor,
+              saved.orchestration,
             );
   }
+
+  ProfileAttentionSnapshot _activeAttentionSnapshot(String id, DateTime now) {
+    final monitored = profileMonitor.snapshotFor(id);
+    final sameLocation =
+        monitored.directory == directory && monitored.workspace == workspace;
+    final dates = [..._attentionReads.values, ..._attentionEvents.values]
+      ..sort();
+    final checkedAt = dates.lastOrNull ?? monitored.checkedAt;
+    bool readCurrent(AttentionKind kind) =>
+        _attentionReadRevisions[kind] == _attentionTransportRevision;
+    final requestsComplete =
+        readCurrent(AttentionKind.permission) &&
+        readCurrent(AttentionKind.question) &&
+        (!supportsForms || readCurrent(AttentionKind.form));
+    final requestsFailed =
+        permissionsError != null ||
+        questionsError != null ||
+        formsError != null;
+    final observations = <AttentionObservation>[];
+    void request(String requestID, String sessionID, AttentionKind kind) {
+      final session = sessionsById[sessionID];
+      final receipts = [?_attentionEvents[kind], ?_attentionReads[kind]]
+        ..sort();
+      final at = receipts.lastOrNull;
+      observations.add(
+        AttentionObservation(
+          id: requestID,
+          kind: kind,
+          facts: const WorkRowFacts(phase: WorkRowPhase.needsYou),
+          observedAt: at ?? DateTime.fromMillisecondsSinceEpoch(0),
+          isFresh: at != null && readCurrent(kind),
+          sessionID: sessionID,
+          requestID: requestID,
+          title: session?.title,
+          directory: session?.directory ?? directory,
+          workspace: session?.workspaceID ?? workspace,
+        ),
+      );
+    }
+
+    for (final permission in awaitingPermissions) {
+      request(permission.id, permission.sessionID, AttentionKind.permission);
+    }
+    for (final question in questions.values) {
+      request(question.id, question.sessionID, AttentionKind.question);
+    }
+    for (final form in forms.values) {
+      request(form.id, form.sessionID, AttentionKind.form);
+    }
+    if (_elsewhereProfileID == id) {
+      observations.addAll(elsewhereAttention.observations(except: directory));
+    }
+    if (sameLocation) {
+      observations.addAll(
+        monitored.attention.where(
+          (item) =>
+              item.kind == AttentionKind.failedRun &&
+              item.taskID == null &&
+              item.runID == null &&
+              !busySessions.contains(item.sessionID) &&
+              !_deletedSessionIDs.contains(item.sessionID) &&
+              !_failedAttentionSessions.containsKey(item.sessionID),
+        ),
+      );
+    }
+    for (final failure in _failedAttentionSessions.entries) {
+      if (busySessions.contains(failure.key)) continue;
+      final session = sessionsById[failure.key];
+      observations.add(
+        AttentionObservation(
+          id: 'session-failure:${failure.key}',
+          kind: AttentionKind.failedRun,
+          facts: const WorkRowFacts(phase: WorkRowPhase.failed),
+          observedAt: failure.value.at,
+          isFresh: failure.value.revision == _attentionTransportRevision,
+          sessionID: failure.key,
+          title: session?.title,
+          directory: session?.directory ?? directory,
+          workspace: session?.workspaceID ?? workspace,
+        ),
+      );
+    }
+    final team = orchestration;
+    final teamAt = team?.snapshot.refreshedAt;
+    if (team != null && team.profileId == id && teamAt != null) {
+      observations.addAll(
+        MonitorAttentionReader.teamObservations(
+          gates: team.snapshot.gates,
+          work: team.snapshot.work,
+          runs: team.snapshot.runs,
+          observedAt: teamAt,
+          directory: directory,
+          workspace: workspace,
+          isFresh:
+              team.phase == OrchestrationPhase.ready &&
+              !team.isStale &&
+              !team.dirtyScopes.contains('gates') &&
+              !team.dirtyScopes.contains('work'),
+        ),
+      );
+    }
+    return ProfileAttentionSnapshot(
+      profileID: id,
+      status: !isConnected
+          ? ProfileMonitorStatus.paused
+          : requestsFailed
+          ? ProfileMonitorStatus.unavailable
+          : requestsComplete
+          ? ProfileMonitorStatus.current
+          : ProfileMonitorStatus.checking,
+      checkedAt: checkedAt,
+      directory: directory,
+      workspace: workspace,
+      attention: List.unmodifiable(observations),
+      complete: requestsComplete,
+      // The selected transport does not enumerate all run histories. Its
+      // requests can be current while the wider failed-run inventory is not.
+      attentionComplete:
+          sameLocation &&
+          monitored.attentionComplete &&
+          monitored.isCurrent &&
+          (team == null || !team.isStale),
+    );
+  }
+
+  int get unknownAttentionProfileCount =>
+      attentionFeed.servers.where((server) => !server.isCurrent).length;
+
+  int get unifiedAttentionCount => attentionFeed.knownAttentionCount;
 
   final WidgetSessionSnapshot _widgetSnapshot;
 
@@ -667,7 +869,84 @@ class ConnectionController extends ChangeNotifier {
   final Map<String, String> sessionRevertErrors = {};
   final Map<String, String> sessionSelectionErrors = {};
 
-  StreamStatus status = StreamStatus.disconnected;
+  StreamStatus _status = StreamStatus.disconnected;
+  StreamStatus get status => _status;
+  set status(StreamStatus value) {
+    if (_status != value && value != StreamStatus.connected) {
+      _attentionTransportRevision++;
+    }
+    _status = value;
+    _syncConnectionStatusClock();
+  }
+
+  Timer? _connectionStatusTimer;
+  String? _connectionStatusOwner;
+  int? _connectionStatusAttempt;
+  DateTime? _connectionStatusSince;
+  bool _connectionStatusExpired = false;
+
+  /// One eight-second grace period per attempt, independent of route lifetime.
+  /// Stream reconnect churn preserves the period; an explicit retry resets it.
+  void _syncConnectionStatusClock() {
+    final owner = _connectedProfile ?? profile;
+    if (_disposed ||
+        isIsolated ||
+        owner == null ||
+        status == StreamStatus.connected) {
+      _resetConnectionStatusClock();
+      return;
+    }
+    if (_connectionStatusOwner != owner.id ||
+        _connectionStatusAttempt != connectionAttemptRevision) {
+      _resetConnectionStatusClock();
+      _connectionStatusOwner = owner.id;
+      _connectionStatusAttempt = connectionAttemptRevision;
+    }
+    if (!connectionLoading || _connectionStatusSince != null) return;
+    _connectionStatusSince = DateTime.now();
+    _connectionStatusTimer = Timer(const Duration(seconds: 8), () {
+      _connectionStatusTimer = null;
+      if (_disposed) return;
+      _connectionStatusExpired = true;
+      notifyListeners();
+    });
+  }
+
+  void _resetConnectionStatusClock() {
+    _connectionStatusTimer?.cancel();
+    _connectionStatusTimer = null;
+    _connectionStatusOwner = null;
+    _connectionStatusAttempt = null;
+    _connectionStatusSince = null;
+    _connectionStatusExpired = false;
+  }
+
+  /// Consumers localize this snapshot; they never infer their own grace period
+  /// or promote a disconnected transport to a healthy status.
+  ConnectionStatusSnapshot get connectionStatus {
+    final owner = _connectedProfile ?? profile;
+    final phase = isIsolated || owner == null
+        ? ConnectionStatusPhase.hidden
+        : passwordRejected
+        ? ConnectionStatusPhase.credentialsRequired
+        : status == StreamStatus.connected
+        ? ConnectionStatusPhase.connected
+        : !connectionLoading || _connectionStatusExpired
+        ? ConnectionStatusPhase.notAnswering
+        : status == StreamStatus.connecting
+        ? ConnectionStatusPhase.connecting
+        : ConnectionStatusPhase.reconnecting;
+    return ConnectionStatusSnapshot(
+      phase: phase,
+      profileId: owner?.id,
+      serverName: owner?.name ?? '',
+      since: _connectionStatusSince,
+      usesToken: owner?.usesAgentSocket ?? false,
+      retrying: manualReconnectInProgress,
+      attemptRevision: connectionAttemptRevision,
+    );
+  }
+
   String? version;
   bool _transportReady = false;
 
@@ -780,6 +1059,147 @@ class ConnectionController extends ChangeNotifier {
   Future<void> _modelLibraryWrite = Future.value();
   bool transcriptReasoningExpanded = false;
   bool transcriptTimestampsVisible = false;
+
+  late final _sessionInventoryCache = SessionInventoryCache(store.prefs);
+
+  /// Last-known read-only labels for Work/session opening shells. Separate
+  /// from sessionsById: these rows never establish existence, running state,
+  /// capabilities, permission decisions or a connected transport.
+  SessionInventoryPreview? get cachedSessionInventory {
+    final owner = _connectedProfile ?? profile;
+    if (owner == null || !isProfileReadable(owner.id)) return null;
+    final saved = store.locationFor(owner.id);
+    final restoring = api == null || _restoringSavedLocation;
+    final previewDirectory = restoring
+        ? (owner.usesAgentSocket ? owner.codexDirectory : saved?.directory)
+        : directory;
+    final previewWorkspace = restoring
+        ? (owner.usesAgentSocket ? null : saved?.workspace)
+        : workspace;
+    return _sessionInventoryCache.read(
+      owner.id,
+      SessionInventoryCache.scopeFor(owner, previewDirectory, previewWorkspace),
+    );
+  }
+
+  late final _sessionTailCache = SessionTailCache(store.prefs);
+  final _sessionTailReads =
+      <(int, String, int, String?), Future<ServerPage<MessageWithParts>>>{};
+
+  /// A read-only text excerpt for the opening frame. It has no pagination or
+  /// message-state authority; replace it with the normal live hydration result.
+  SessionTailPreview? cachedSessionTail(String sessionID) {
+    final owner = _connectedProfile ?? profile;
+    if (owner == null ||
+        !isProfileReadable(owner.id) ||
+        _deletedSessionIDs.contains(sessionID) ||
+        sessionsById[sessionID]?.stagedRevert != null) {
+      return null;
+    }
+    final saved = store.locationFor(owner.id);
+    final restoring = api == null || _restoringSavedLocation;
+    return _sessionTailCache.read(
+      owner.id,
+      SessionInventoryCache.scopeFor(
+        owner,
+        restoring
+            ? (owner.usesAgentSocket ? owner.codexDirectory : saved?.directory)
+            : directory,
+        restoring
+            ? (owner.usesAgentSocket ? null : saved?.workspace)
+            : workspace,
+      ),
+      sessionID,
+    );
+  }
+
+  /// Authoritative newest page; prefetch and route hydration share an in-flight
+  /// read. UI still applies its event-version merge and uses gateway.messagePage
+  /// for older cursors. Failures retain existing product-error handling.
+  Future<ServerPage<MessageWithParts>> loadSessionTail(String sessionID) {
+    final owner = _connectedProfile ?? profile;
+    final currentApi = api;
+    final generation = _generation;
+    if (owner == null ||
+        currentApi == null ||
+        !hasConnectedServer ||
+        !isProfileReadable(owner.id) ||
+        _deletedSessionIDs.contains(sessionID)) {
+      return Future.error(const ProductException('OpenCode is reconnecting.'));
+    }
+    final historyRevision = sessionHistoryRevision(sessionID);
+    final boundary = sessionsById[sessionID]?.stagedRevert?.messageID;
+    final key = (generation, sessionID, historyRevision, boundary);
+    final existing = _sessionTailReads[key];
+    if (existing != null) return existing;
+    final scope = SessionInventoryCache.scopeFor(owner, directory, workspace);
+    final deletionRevision = _profileDeletionRevisions[owner.id];
+    bool current() =>
+        _isCurrent(generation, currentApi) &&
+        isProfileReadable(owner.id) &&
+        _profileDeletionRevisions[owner.id] == deletionRevision &&
+        sessionHistoryRevision(sessionID) == historyRevision &&
+        sessionsById[sessionID]?.stagedRevert?.messageID == boundary &&
+        !_deletedSessionIDs.contains(sessionID);
+    late final Future<ServerPage<MessageWithParts>> read;
+    read = () async {
+      try {
+        final page = await readHistoryAtStagedBoundary(
+          currentApi,
+          sessionID,
+          boundary: boundary,
+          isCurrent: current,
+        );
+        if (!current()) throw const ProductException('The session changed.');
+        // Disk caching is best effort and never delays authoritative hydration.
+        if (boundary == null) {
+          unawaited(
+            _sessionTailCache.save(
+              owner.id,
+              scope,
+              sessionID,
+              page.items,
+              isCurrent: current,
+            ),
+          );
+        }
+        return page;
+      } finally {
+        _sessionTailReads.remove(key);
+      }
+    }();
+    _sessionTailReads[key] = read;
+    return read;
+  }
+
+  /// Invoke only for the next intentional navigation, never every visible row.
+  /// A failed speculative read cannot surface a toast or raw transport error.
+  Future<void> prefetchSessionTail(String sessionID) async {
+    try {
+      await loadSessionTail(sessionID);
+    } catch (_) {}
+  }
+
+  void _saveSessionInventoryPreview() {
+    final owner = _connectedProfile ?? profile;
+    final currentApi = api;
+    final generation = _generation;
+    if (owner == null || currentApi == null || !isProfileReadable(owner.id)) {
+      return;
+    }
+    final deletionRevision = _profileDeletionRevisions[owner.id];
+    unawaited(
+      _sessionInventoryCache.save(
+        owner.id,
+        SessionInventoryCache.scopeFor(owner, directory, workspace),
+        sortedSessions(),
+        isCurrent: () =>
+            _isCurrent(generation, currentApi) &&
+            isProfileReadable(owner.id) &&
+            _profileDeletionRevisions[owner.id] == deletionRevision,
+      ),
+    );
+  }
 
   Map<String, Session> sessionsById = {};
   String? _sessionsCursor;
@@ -1383,6 +1803,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _markSessionAttentionActive(String sessionID) {
+    _failedAttentionSessions.remove(sessionID);
     if (sessionID.isEmpty) return;
     _attentionActiveSessions.add(sessionID);
     if (_alertedStatusSessions.remove(sessionID)) {
@@ -2670,6 +3091,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _startGlobalEvents(int generation, ServerGateway currentApi) {
+    elsewhereAttention.markStale();
     late final LiveEventChannel stream;
     // What this server's other projects are doing is only knowable from
     // here; a different server's tally would be wrong.
@@ -2692,6 +3114,7 @@ class ConnectionController extends ChangeNotifier {
     void handleStatus(StreamStatus value) {
       if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
       _globalStreamStatus = value;
+      if (value != StreamStatus.connected) elsewhereAttention.markStale();
       if ((value == StreamStatus.reconnecting ||
               value == StreamStatus.disconnected) &&
           !automationPolicy.allows(AutomationBehavior.reconnect)) {
@@ -2946,6 +3369,14 @@ class ConnectionController extends ChangeNotifier {
   void _onEvent(EventEnvelope env) {
     if (_disposed) return;
     final props = env.properties;
+    final attentionKind = env.type.startsWith('permission.')
+        ? AttentionKind.permission
+        : env.type.startsWith('question.')
+        ? AttentionKind.question
+        : env.type.startsWith('form.')
+        ? AttentionKind.form
+        : null;
+    if (attentionKind != null) _attentionEvents[attentionKind] = DateTime.now();
     PromptTrace.observe(env.type, props);
     switch (env.type) {
       case 'server.connected':
@@ -3292,6 +3723,10 @@ class ConnectionController extends ChangeNotifier {
       case 'session.error':
         final sid = props['sessionID']?.toString();
         if (sid != null) {
+          _failedAttentionSessions[sid] = (
+            at: DateTime.now(),
+            revision: _attentionTransportRevision,
+          );
           _markSessionChanged(sid);
           busySessions.remove(sid);
           retryStates.remove(sid);
@@ -3707,6 +4142,7 @@ class ConnectionController extends ChangeNotifier {
       }
       permissionsLoading = false;
       permissionsError = null;
+      _observeAttentionRead(AttentionKind.permission);
       _syncInputAlerts();
       notifyListeners();
     } catch (error) {
@@ -4059,6 +4495,7 @@ class ConnectionController extends ChangeNotifier {
         }
       }
       questionsLoading = false;
+      _observeAttentionRead(AttentionKind.question);
       _syncInputAlerts();
       notifyListeners();
     } catch (error) {
@@ -4618,6 +5055,8 @@ class ConnectionController extends ChangeNotifier {
   int get readPrivacyRevision => _readPrivacyRevision;
   final _viewOperations = <Object, Future<void>>{};
   final _deletingReadProfiles = <String>{};
+  final _closedQueueProfiles = <String>{};
+  final _profileDeletionRevisions = <String, int>{};
   final _profileDeletions = <String, Future<DeleteProfileResult>>{};
   Future<void> _profileDeletionChanges = Future.value();
   bool _readProfileAvailable(String id) =>
@@ -4873,6 +5312,7 @@ class ConnectionController extends ChangeNotifier {
         hydrated.removeWhere((id, _) => _resolvedFormIDs.contains(id));
       }
       forms = hydrated;
+      _observeAttentionRead(AttentionKind.form);
       formsLoading = false;
       _syncInputAlerts();
       notifyListeners();
@@ -5106,6 +5546,16 @@ class ConnectionController extends ChangeNotifier {
     sessionsMoreError = null;
     notifyListeners();
     try {
+      // Both reads describe this location independently. Attach the status
+      // error handler immediately so even a failed/retired page cannot leave
+      // an unhandled background error. SSE revisions still win below.
+      final statusRead = () async {
+        try {
+          return (await currentApi.sessionStatuses(), null);
+        } catch (error) {
+          return (null, error);
+        }
+      }();
       final page = await currentApi.sessionPage();
       if (!_isCurrentSessionsRefresh(
         generation,
@@ -5114,13 +5564,7 @@ class ConnectionController extends ChangeNotifier {
       )) {
         return;
       }
-      Map<String, String>? statuses;
-      Object? statusError;
-      try {
-        statuses = await currentApi.sessionStatuses();
-      } catch (error) {
-        statusError = error;
-      }
+      final (statuses, statusError) = await statusRead;
       // Retry details ride on the same v1 status payload; fetch them only
       // when a session is actually retrying so the common path stays one
       // request.
@@ -5182,6 +5626,7 @@ class ConnectionController extends ChangeNotifier {
       sessionsError = statusError?.toString();
       if (statusError != null) _recordLocationError(sessionsError!);
       notifyListeners();
+      _saveSessionInventoryPreview();
       unawaited(_refreshPinnedSessions());
     } catch (error) {
       if (!_isCurrentSessionsRefresh(
@@ -5199,8 +5644,13 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _removeSession(String id) {
+    _failedAttentionSessions.remove(id);
     _markSessionChanged(id);
     _deletedSessionIDs.add(id);
+    final tailOwner = _connectedProfile ?? profile;
+    if (tailOwner != null) {
+      unawaited(_sessionTailCache.removeSession(tailOwner.id, id));
+    }
     sessionsById.remove(id);
     sessionDetailsErrors.remove(id);
     _sessionInventoryIDs.remove(id);
@@ -5239,6 +5689,7 @@ class ConnectionController extends ChangeNotifier {
     }
     if (_inboxBySession.remove(id) != null) inboxRevision += 1;
     _syncInputAlerts();
+    _saveSessionInventoryPreview();
     notifyListeners();
   }
 
@@ -5590,6 +6041,7 @@ class ConnectionController extends ChangeNotifier {
           }
         });
     _manualReconnect = tracked;
+    notifyListeners();
     return tracked;
   }
 
@@ -5772,7 +6224,10 @@ class ConnectionController extends ChangeNotifier {
   Future<bool> queuePrompt(QueuedPrompt prompt) =>
       _serializeQueueChange(() async {
         final target = store.profiles.where((p) => p.id == prompt.profileID);
-        if (target.any((p) => p.usesAgentSocket)) return false;
+        if (_closedQueueProfiles.contains(prompt.profileID) ||
+            target.any((p) => p.usesAgentSocket)) {
+          return false;
+        }
         if (prompt.payloadBytes > OfflineQueueStore.maxEntryBytes) return false;
         final eviction = OfflineQueueStore.enforceLimits([..._queue, prompt]);
         // The new entry losing its own eviction pass means the queue could not
@@ -6107,12 +6562,11 @@ class ConnectionController extends ChangeNotifier {
     // Close admission synchronously, before any drain can yield. An epoch also
     // rejects old callbacks after a failed deletion makes the profile usable.
     _deletingReadProfiles.add(profileId);
-    _profileMonitor?.removeProfile(profileId);
-    _quotaMonitor?.removeProfile(profileId);
-    final recoveryDisabled = Future.wait<void>([
-      BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
-      ManagedServerRecovery.disableForProfile(store.prefs, profileId),
-    ]).then<Object?>((_) => null, onError: (Object error) => error);
+    _profileDeletionRevisions[profileId] =
+        (_profileDeletionRevisions[profileId] ?? 0) + 1;
+    _monitorAttentionReader.forget(profileId);
+    _profileMonitor?.removeProfile(profileId, retainIdentity: true);
+    _quotaMonitor?.removeProfile(profileId, retainIdentity: true);
     _pendingAuth.block(profileId);
     _integrationCommandAttempts.removeWhere(
       (key, _) => _authKeyProfile(key) == profileId,
@@ -6121,22 +6575,22 @@ class ConnectionController extends ChangeNotifier {
     _authRecoveryActions.removeWhere(
       (key) => _authKeyProfile(key) == profileId,
     );
-    _promptShelfDeletionRevisions[profileId] =
-        (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
-    // Outstanding saved-prompt Undo handles refuse from here on; a deleted
-    // server's prompts never come back.
-    if (_savedPrompts?.profileID == profileId) {
-      _savedPrompts!.dispose();
-      _savedPrompts = null;
-    }
+    final activity = _automaticActivityFor(profileId);
+    final policy = AutomationPolicyController.forProfile(
+      store.prefs,
+      profileId,
+    );
     final operation = _profileDeletionChanges
         .then((_) async {
-          final recoveryError = await recoveryDisabled;
-          if (recoveryError != null) {
-            throw StateError(
-              'Could not disable server recovery before deletion',
-            );
-          }
+          // Drain admitted Undo before entering the queue lane: an inverse may
+          // itself need that lane. Preparation retains history and callbacks.
+          await Future.wait([
+            if (activity != null) activity.prepareForDeletion(),
+            policy.pauseForDeletion(),
+          ]);
+          // Admitted activity inverses have finished; from here no new prompt
+          // may join this profile while the removal is in progress.
+          _closedQueueProfiles.add(profileId);
           await _profileMonitor?.drain(profileId);
           await _quotaMonitor?.drain(profileId);
           return _deleteProfileAndLocalData(
@@ -6147,6 +6601,23 @@ class ConnectionController extends ChangeNotifier {
         })
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
+          if (store.profiles.any((p) => p.id == profileId)) {
+            _closedQueueProfiles.remove(profileId);
+            activity?.cancelDeletion();
+            policy.cancelDeletion();
+            ConsentOwners.cancelDeletion(store.prefs, profileId);
+            BuiltinServerOwner.forPreferences(
+              store.prefs,
+            ).cancelDeletion(profileId);
+            _profileMonitor?.cancelDeletion(profileId);
+            _quotaMonitor?.cancelDeletion(profileId);
+            _pendingAuth.cancelDeletion(profileId);
+            if (_orchestration?.profileId == profileId &&
+                _orchestration?.phase == OrchestrationPhase.stopped) {
+              _syncOrchestration(null);
+              _syncOrchestration(profile);
+            }
+          }
           _profileDeletions.remove(profileId);
           _syncProfileServices();
         });
@@ -6189,38 +6660,20 @@ class ConnectionController extends ChangeNotifier {
       await sessionAutoApproval.drain(profileId);
     } catch (_) {}
     try {
-      // Stop accepting edits and drain a write in flight, so the sweep below
-      // removes `oc.automation.<id>` for good.
-      await AutomationPolicyController.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
-      // The in-flow consents (P6.7) drain the same way, so the sweep below
-      // removes `oc.inFlowConsent.<id>` and `oc.permissionConsent.<id>`.
-      await ConsentOwners.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
-      // The While you were away history closes and drains its writes (and
-      // any Undo in flight) first, so a late write cannot bring back
-      // `oc.automaticActivity.<id>` after the sweep below.
-      await AutomaticActivityController.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
       await _promptShelf.drain(profileId);
     } catch (_) {}
-    try {
-      // The plugin's sibling stops first so no refetch can rewrite the
-      // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
-      if (_orchestration?.profileId == profileId) await _orchestration!.stop();
-      await _orchestrationStore.drain(profileId);
-    } catch (_) {}
-    // One native runtime is shared by local profiles. Forget its deleted
-    // owner without falling back to another profile's runtime or policy.
-    if (store.prefs.getString('oc.builtinServerOwner') == profileId) {
-      if (!await store.prefs.setString('oc.builtinServerOwner', '')) {
-        throw StateError('The phone server setting could not be cleared.');
-      }
-    }
+
+    await _sessionTailCache.drain(profileId);
+    _sessionTailCache.forget(profileId);
+    await _sessionInventoryCache.drain(profileId);
+    _sessionInventoryCache.forget(profileId);
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
+    // Retain these owners through a failed row/Keystore commit as well as
+    // through queue preflight. ProfileStore sweeps them after the row commits.
+    final retainedKeys = {
+      'oc.automaticActivity.$profileId',
+      AutomationPolicyController.keyFor(profileId),
+    };
     final failures = <String>[];
 
     // Snapshot writes stay suspended for the whole transaction: any
@@ -6236,6 +6689,19 @@ class ConnectionController extends ChangeNotifier {
       //    prompt is on the wire.
       var clearedQueued = 0;
       await _serializeQueueChange(() async {
+        // Unknown is never empty, including callers without a confirmation.
+        if (!_queueStore.readable) {
+          throw const QueuedPromptRemovalException(
+            changed: false,
+            unreadable: true,
+          );
+        }
+        if (keepQueuedPrompts && queuedPrompts == null) {
+          throw const QueuedPromptRemovalException(changed: true);
+        }
+        // A repaired source may differ from a previously unreadable cache.
+        // Every controller queue writer has drained before this fresh read.
+        _offlineQueue = _queueStore.load();
         if (queuedPrompts != null) {
           // The person confirmed a count: act on exactly that, or on nothing.
           final live = [
@@ -6257,10 +6723,44 @@ class ConnectionController extends ChangeNotifier {
             try {
               await _keptQueued.keepAsDrafts(queuedPrompts);
             } on StateError {
-              throw const QueuedPromptRemovalException(changed: false);
+              throw QueuedPromptRemovalException(
+                changed: false,
+                unreadable: !_queueStore.readable,
+              );
             }
           }
         }
+        // Queue validation and preservation succeeded within this lane.
+        // Only now invalidate destructive owners and begin cleanup.
+        await Future.wait<void>([
+          BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
+          ManagedServerRecovery.prepareForProfileDeletion(
+            store.prefs,
+            profileId,
+          ),
+        ]);
+        // Keep the shared runtime owner through queue preflight failures.
+        // Once preservation succeeds, prevent fallback to another profile.
+        await BuiltinServerOwner.forPreferences(
+          store.prefs,
+        ).clearProfile(profileId);
+        _promptShelfDeletionRevisions[profileId] =
+            (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
+        // Outstanding saved-prompt Undo handles refuse from here on; a deleted
+        // server's prompts never come back.
+        if (_savedPrompts?.profileID == profileId) {
+          _savedPrompts!.dispose();
+          _savedPrompts = null;
+        }
+        await ConsentOwners.closeProfile(store.prefs, profileId);
+        try {
+          // The plugin's sibling stops first so no refetch can rewrite the
+          // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
+          if (_orchestration?.profileId == profileId) {
+            await _orchestration!.stop();
+          }
+          await _orchestrationStore.drain(profileId);
+        } catch (_) {}
         final keptQueue = [
           for (final entry in _queue)
             if (entry.profileID != profileId) entry,
@@ -6328,7 +6828,10 @@ class ConnectionController extends ChangeNotifier {
       final clearedStash = await _promptShelf.clearForProfile(profileId);
       if (!clearedStash) failures.add('stashed prompts and attachments');
       final unclearedKeys = clearedStash
-          ? await store.removeScopedPreferences(profileId)
+          ? await store.removeScopedPreferences(
+              profileId,
+              excluding: retainedKeys,
+            )
           : scopedKeys;
       if (clearedStash && unclearedKeys.isNotEmpty) {
         failures.add(
@@ -6342,7 +6845,9 @@ class ConnectionController extends ChangeNotifier {
       //    told a deletion happened that did not.
       if (failures.isNotEmpty) {
         return DeleteProfileResult(
-          removedPreferenceKeys: scopedKeys.difference(unclearedKeys),
+          removedPreferenceKeys: scopedKeys
+              .difference(unclearedKeys)
+              .difference(retainedKeys),
           removedQueuedPrompts: clearedQueued,
           removedDrafts: clearedDrafts,
           clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
@@ -6354,6 +6859,30 @@ class ConnectionController extends ChangeNotifier {
         );
       }
       await store.remove(profileId);
+      _profileMonitor?.removeProfile(profileId);
+      _quotaMonitor?.removeProfile(profileId);
+      final unclearedCommittedKeys = <String>{};
+      await AutomationPolicyController.closeProfile(store.prefs, profileId);
+      final policyKey = AutomationPolicyController.keyFor(profileId);
+      if (scopedKeys.contains(policyKey)) {
+        try {
+          if (!await store.prefs.remove(policyKey)) {
+            unclearedCommittedKeys.add(policyKey);
+          }
+        } catch (_) {
+          unclearedCommittedKeys.add(policyKey);
+        }
+        if (unclearedCommittedKeys.contains(policyKey)) {
+          failures.add('automation settings');
+        }
+      }
+      if (!await AutomaticActivityController.closeProfile(
+        store.prefs,
+        profileId,
+      )) {
+        failures.add('automatic activity');
+        unclearedCommittedKeys.add('oc.automaticActivity.$profileId');
+      }
       // The plugin's Keystore entries go with the password, never before
       // the row: a kept server keeps its secrets.
       try {
@@ -6361,7 +6890,8 @@ class ConnectionController extends ChangeNotifier {
       } catch (_) {}
 
       return DeleteProfileResult(
-        removedPreferenceKeys: scopedKeys,
+        removedPreferenceKeys: scopedKeys.difference(unclearedCommittedKeys),
+        failures: List.unmodifiable(failures),
         removedQueuedPrompts: clearedQueued,
         removedDrafts: clearedDrafts,
         clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
@@ -6859,7 +7389,7 @@ class ConnectionController extends ChangeNotifier {
     final origin = owner.baseUrl;
     final originalDirectory = directory;
     final originalWorkspace = workspace;
-    final deletion = _promptShelfDeletionRevisions[owner.id] ?? 0;
+    final deletion = _profileDeletionRevisions[owner.id] ?? 0;
     final deadline = DateTime.now()
         .add(PendingAuthStore.retention)
         .millisecondsSinceEpoch;
@@ -6885,7 +7415,7 @@ class ConnectionController extends ChangeNotifier {
       // the currently selected one. Deletion closes admission before any await.
       if (_disposed ||
           !isProfileReadable(owner.id) ||
-          (_promptShelfDeletionRevisions[owner.id] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner.id] ?? 0) != deletion) {
         return false;
       }
       final expiry = launch.expiresAt;
@@ -7142,7 +7672,7 @@ class ConnectionController extends ChangeNotifier {
     final origin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     final identity = (saved.username, saved.flavor);
     final connectedIdentity = (connected.username, connected.flavor);
     void check() {
@@ -7161,7 +7691,7 @@ class ConnectionController extends ChangeNotifier {
           validateServerProfileUrl(origin) != null ||
           locationRevision != expectedLocationRevision ||
           (directory, workspace) != location ||
-          (_promptShelfDeletionRevisions[owner] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner] ?? 0) != deletion) {
         throw StateError('The command sign-in location changed.');
       }
     }
@@ -7499,7 +8029,7 @@ class ConnectionController extends ChangeNotifier {
     final savedOrigin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     void checkScope() {
       if (!isProfileReadable(owner) ||
           store.activeId != owner ||
@@ -7511,7 +8041,7 @@ class ConnectionController extends ChangeNotifier {
           savedOrigin != connectedOrigin ||
           this.locationRevision != locationRevision ||
           (directory, workspace) != location ||
-          (_promptShelfDeletionRevisions[owner] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner] ?? 0) != deletion) {
         throw StateError(
           'The credential location changed. Refresh and try again.',
         );
@@ -7626,7 +8156,7 @@ class ConnectionController extends ChangeNotifier {
     final savedOrigin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     bool currentScope() =>
         isProfileReadable(owner) &&
         store.activeId == owner &&
@@ -7638,7 +8168,7 @@ class ConnectionController extends ChangeNotifier {
         savedOrigin == connectedOrigin &&
         this.locationRevision == locationRevision &&
         (directory, workspace) == location &&
-        (_promptShelfDeletionRevisions[owner] ?? 0) == deletion;
+        (_profileDeletionRevisions[owner] ?? 0) == deletion;
     void checkScope() {
       if (!currentScope()) {
         throw StateError('The MCP location changed. Refresh and try again.');
@@ -7883,6 +8413,7 @@ class ConnectionController extends ChangeNotifier {
     repository = currentRepository;
     status = StreamStatus.connecting;
     lastError = null;
+    passwordRejected = false;
     notifyListeners();
     enablePollingFallback();
     try {
@@ -7919,6 +8450,7 @@ class ConnectionController extends ChangeNotifier {
 
   @override
   void notifyListeners() {
+    _syncConnectionStatusClock();
     super.notifyListeners();
     // Keep the Android home-screen widget's snapshot in step with session
     // truth; the writer itself skips unchanged payloads. Profile deletion
@@ -8053,27 +8585,41 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  List<Session>? _sortedSessionInputs;
+  Set<String>? _sortedSessionPins;
+  List<Session> _sortedSessionResult = const [];
+
+  /// Immutable ordering snapshot. Session and SessionTime ordering fields are
+  /// final; compare eligible object identities in input order so even callers
+  /// mutating the public map, equal-time reorders and inventory changes count.
+  /// Status-only notifications retain this list, without suppressing listeners.
   List<Session> sortedSessions() {
     final pins = pinnedSessionIDs;
-    final list =
-        sessionsById.values
-            .where(
-              (s) =>
-                  s.parentID == null &&
-                  !s.archived &&
-                  (!_sessionInventoryInitialized ||
-                      _sessionInventoryIDs.contains(s.id)),
-            )
-            .toList()
-          ..sort((a, b) {
-            final pinOrder =
-                (pins.contains(b.id) ? 1 : 0) - (pins.contains(a.id) ? 1 : 0);
-            if (pinOrder != 0) return pinOrder;
-            final au = a.time?.updated ?? a.time?.created ?? 0;
-            final bu = b.time?.updated ?? b.time?.created ?? 0;
-            return bu.compareTo(au);
-          });
-    return list;
+    final inputs = sessionsById.values
+        .where(
+          (s) =>
+              s.parentID == null &&
+              !s.archived &&
+              (!_sessionInventoryInitialized ||
+                  _sessionInventoryIDs.contains(s.id)),
+        )
+        .toList();
+    if (listEquals(inputs, _sortedSessionInputs) &&
+        setEquals(pins, _sortedSessionPins)) {
+      return _sortedSessionResult;
+    }
+    _sortedSessionInputs = inputs;
+    _sortedSessionPins = pins;
+    final sorted = List<Session>.of(inputs)
+      ..sort((a, b) {
+        final pinOrder =
+            (pins.contains(b.id) ? 1 : 0) - (pins.contains(a.id) ? 1 : 0);
+        if (pinOrder != 0) return pinOrder;
+        final au = a.time?.updated ?? a.time?.created ?? 0;
+        final bu = b.time?.updated ?? b.time?.created ?? 0;
+        return bu.compareTo(au);
+      });
+    return _sortedSessionResult = List.unmodifiable(sorted);
   }
 
   late final _sessionPins = SessionPinStore(store.prefs);
@@ -9032,6 +9578,8 @@ class ConnectionController extends ChangeNotifier {
 
   void _resetSessionHistory(String id, {String? removedFrom}) {
     _historyRevisions[id] = sessionHistoryRevision(id) + 1;
+    final owner = _connectedProfile ?? profile;
+    if (owner != null) unawaited(_sessionTailCache.removeSession(owner.id, id));
     _eventBus.add(
       EventEnvelope(
         type: 'session.history.reset',
@@ -9604,11 +10152,13 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
+    elsewhereAttention.markStale();
     final policyListener = _streamPolicyChanged;
     if (policyListener != null) _streamPolicy?.removeListener(policyListener);
     _streamPolicy = null;
     _streamPolicyChanged = null;
     _transportReady = false;
+    _sessionTailReads.clear();
     _cancelPermissionHydration();
     final oldEvents = _events;
     _events = null;
@@ -9626,6 +10176,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _clearLocationData() {
+    _attentionReads.clear();
+    _attentionEvents.clear();
+    _attentionReadRevisions.clear();
+    _failedAttentionSessions.clear();
+    _attentionTransportRevision++;
     _noteRevisions.clear();
     _noteReceipts.clear();
     _dismissAllCodingAlerts(clearActive: true);
@@ -9643,6 +10198,9 @@ class ConnectionController extends ChangeNotifier {
     sessionRevertErrors.clear();
     sessionSelectionErrors.clear();
     sessionsById = {};
+    _sortedSessionInputs = null;
+    _sortedSessionPins = null;
+    _sortedSessionResult = const [];
     _sessionsCursor = null;
     sessionsLoadingMore = false;
     sessionsMoreError = null;
@@ -9652,6 +10210,7 @@ class ConnectionController extends ChangeNotifier {
     _sessionInventoryIDs.clear();
     _sessionInventoryInitialized = false;
     _sessionReads.clear();
+    _sessionTailReads.clear();
     sessionDetailsErrors.clear();
     _deletedSessionIDs.clear();
     sessionModels = {};
@@ -9717,6 +10276,7 @@ class ConnectionController extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _resetConnectionStatusClock();
     _savedPrompts?.dispose();
     _savedPrompts = null;
     store.changes.removeListener(_profilesSaved);
@@ -9734,6 +10294,7 @@ class ConnectionController extends ChangeNotifier {
       history.removeListener(_automaticActivityChanged);
     }
     _watchedActivity.clear();
+    _monitorAttentionReader.dispose();
     _profileMonitor?.removeListener(_monitorChanged);
     _profileMonitor?.dispose();
     _quotaMonitor?.removeListener(_quotaMonitorChanged);
