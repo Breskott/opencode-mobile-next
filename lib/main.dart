@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'background/live_background.dart';
 import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
+import 'builtin/phone_server_healing.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
 import 'builtin/setup/termux_setup_finish.dart';
@@ -428,6 +429,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     // Every capabilities.json enable flow resolves to its page (C20), so a
     // missing capability offers "Turn it on" wherever that can happen here.
     registerCapabilityFlows(_controller);
+    ref.read(phoneServerHealingProvider);
     _controller.addListener(_controllerChanged);
     _share = widget.shareIntent ?? ShareIntent();
     _share.pending.addListener(_scheduleShareRoute);
@@ -455,6 +457,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    ref
+        .read(phoneServerHealingProvider)
+        .setForeground(state == AppLifecycleState.resumed);
     switch (state) {
       case AppLifecycleState.resumed:
         unawaited(_resumeAndConsumeCodingAlert());
@@ -478,49 +483,13 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     ]);
   }
 
-  /// Coming back to the app with OpenCode-inside-the-app selected: if Android
-  /// stopped that server meanwhile, start it once before reconnecting, so
-  /// the person returns to their work rather than a "stopped" card.
+  /// Resume uses the same durable recovery budget as crash monitoring.
   Future<void> _resumeTransport() async {
     final profile = _controller.profile;
-    var started = false;
-    if (profile != null &&
-        looksLikeInAppServer(profile) &&
-        AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile.id,
-        ).value.allows(AutomationBehavior.restartPhoneServer)) {
-      final starter = ref.read(builtinServerStarterProvider)..allowAutoStart();
-      started = await starter.autoStartIfStopped(
-        profile,
-        mayStart: () => AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile.id,
-        ).value.allows(AutomationBehavior.restartPhoneServer),
-      );
-      if (started) {
-        final at = DateTime.now();
-        await _controller.recordServerAct(
-          profileId: profile.id,
-          kind: AutomaticActKind.restart,
-          eventId: 'phone.resume:${at.microsecondsSinceEpoch}',
-          at: at,
-        );
-      }
-    }
+    final healing = ref.read(phoneServerHealingProvider);
+    if (looksLikeInAppServer(profile)) await healing.check(profile!);
     await _controller.resumeFromLifecycle();
-    // The opening card was up (nothing to resume): connect to the server
-    // that now answers.
-    if (started &&
-        AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile!.id,
-        ).value.allows(AutomationBehavior.reconnect) &&
-        !_controller.hasConnectedServer &&
-        _controller.api == null &&
-        _controller.profile?.id == profile.id) {
-      await _controller.connect(profile);
-    }
+    if (looksLikeInAppServer(profile)) await healing.connectIfNeeded(profile!);
   }
 
   /// Shows [status] as the app's line. A [lasting] one stays until its
@@ -1794,13 +1763,7 @@ class _RootState extends ConsumerState<_Root> {
             active: _controller.profile,
             starter: _builtin,
             diagnostics: _controller.diagnostics,
-            onRestart: ({required profileId, required eventId, required at}) =>
-                _controller.recordServerAct(
-                  profileId: profileId,
-                  kind: AutomaticActKind.restart,
-                  eventId: eventId,
-                  at: at,
-                ),
+            recover: ref.read(phoneServerHealingProvider).check,
           ),
     );
   }
@@ -1906,7 +1869,7 @@ class _RootState extends ConsumerState<_Root> {
     }
     _started = true;
     _attempts += 1;
-    if (looksLikeInAppServer(profile) && _builtin.autoStartAvailable) {
+    if (looksLikeInAppServer(profile)) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => unawaited(_autoStartThenConnect(profile)),
       );
@@ -1915,47 +1878,26 @@ class _RootState extends ConsumerState<_Root> {
     WidgetsBinding.instance.addPostFrameCallback((_) => conn.connect(profile));
   }
 
-  /// The app opened on OpenCode-inside-the-app: when that server is stopped
-  /// (the app was closed or updated), start it first, so the person sees
-  /// "Starting…" instead of a failure. Runs once; a start that fails leaves
-  /// the card with its Start button rather than trying again by itself.
+  /// Launch joins the same foreground recovery owner as resume and polling.
   Future<void> _autoStartThenConnect(ServerProfile profile) async {
-    final allowed = AutomationPolicyController.forProfile(
-      _controller.store.prefs,
-      profile.id,
-    ).value.allows(AutomationBehavior.restartPhoneServer);
-    final started =
-        allowed &&
-        await _builtin.autoStartIfStopped(
-          profile,
-          mayStart: () => AutomationPolicyController.forProfile(
-            _controller.store.prefs,
-            profile.id,
-          ).value.allows(AutomationBehavior.restartPhoneServer),
-        );
-    if (started) {
-      final at = DateTime.now();
-      await _controller.recordServerAct(
-        profileId: profile.id,
-        kind: AutomaticActKind.restart,
-        eventId: 'phone.launch:${at.microsecondsSinceEpoch}',
-        at: at,
-      );
-    }
-    if (!mounted || _builtin.failureFor(profile) != null) return;
-    if (_controller.api != null || _controller.profile?.id != profile.id) {
-      return;
-    }
-    await _controller.connect(profile);
+    final healing = ref.read(phoneServerHealingProvider);
+    await healing.check(profile);
+    if (mounted) await healing.connectIfNeeded(profile);
   }
 
   Future<void> _startInAppServer() async {
     final profile = _controller.profile;
     if (profile == null || _builtin.starting) return;
     final failure = await _builtin.start(profile);
-    if (!mounted || failure != null) return;
-    _started = false;
-    _connectSaved();
+    if (!mounted || failure != null || _controller.profile?.id != profile.id) {
+      return;
+    }
+    // This explicit action also authorizes connecting when automatic
+    // reconnect is off. The recovery owner may already have connected it.
+    _started = true;
+    await ref
+        .read(phoneServerHealingProvider)
+        .connectIfNeeded(profile, automatic: false);
   }
 
   @override

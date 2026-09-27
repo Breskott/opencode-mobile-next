@@ -1,8 +1,9 @@
 // screen-team-1: the agent page, the Gate sheet and the AI Team intro on
 // the kit. What the person sees, what is sent and what is kept:
 //
-// - the agent message survives type, swipe and reopen, and is cleared once
-//   sent (P7.1, DATA-1);
+// - the message typed to a worker in its conversation's composer
+//   (slice-P3.6) survives type, leave and reopen, and is cleared once sent
+//   (P7.1, DATA-1);
 // - the Gate sheet's free-text answer survives the same (P7.1);
 // - a host that takes no controls explains it with the host guide instead
 //   of hiding the controls (P7.4);
@@ -13,9 +14,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -23,6 +27,8 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart' show KitDraft;
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamWatchLiveScreen;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Call {
@@ -299,41 +305,92 @@ void main() {
   }
 
   group('agent message draft (P7.1)', () {
-    testWidgets('survives type, swipe and reopen; cleared once sent', (
-      tester,
-    ) async {
+    testWidgets('the conversation composer keeps it through leave and '
+        'reopen; cleared once sent', (tester) async {
+      // The saved server the draft is kept for (ProfileStore.upsert reads
+      // the secure store, which is answered here).
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+            (_) async => null,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel(
+                'plugins.it_nomads.com/flutter_secure_storage',
+              ),
+              null,
+            ),
+      );
       final (controller, gateway) = await boot();
-      await pumpAgent(tester, controller);
+      final prefs = await SharedPreferences.getInstance();
+      final profiles = ProfileStore(prefs: prefs);
+      await profiles.upsert(
+        ServerProfile(
+          id: 'srv-1',
+          name: 'Development PC',
+          baseUrl: 'https://server.example:4096',
+        ),
+      );
+      await profiles.setActiveId('srv-1');
+      final connection = ConnectionController(profiles);
+      addTearDown(connection.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(connection)],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: const SizedBox(),
+          ),
+        ),
+      );
+      NavigatorState navigator() =>
+          tester.state<NavigatorState>(find.byType(Navigator));
+      void open() => unawaited(
+        navigator().push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                TeamWatchLiveScreen(team: controller, agentId: 'fox'),
+          ),
+        ),
+      );
 
-      await tester.tap(key('team-agent-control-message'));
+      open();
       await settle(tester);
-      expect(key('team-agent-message-sheet'), findsOneWidget);
-      await tester.enterText(key('team-agent-message-field'), 'Rebase first');
+      expect(key('chat-watching-composer'), findsOneWidget);
+      await tester.enterText(
+        key('chat-watching-message-field'),
+        'Rebase first',
+      );
       await tester.pump();
 
-      // Swipe it away: nothing is asked, nothing is lost.
+      // Leave the conversation: nothing is asked, nothing is lost.
       await tester.binding.handlePopRoute();
       await settle(tester);
-      expect(key('team-agent-message-sheet'), findsNothing);
-      final prefs = await SharedPreferences.getInstance();
-      final draftKey = KitDraft.keyFor(
-        teamAgentMessageDraftTarget('fox'),
-        'srv-1',
-      );
+      expect(key('chat-watching-composer'), findsNothing);
+      final draftKey = KitDraft.keyFor('team-message.fox', 'srv-1');
       expect(prefs.getString(draftKey), 'Rebase first');
 
       // Reopen: the words are back.
-      await tester.tap(key('team-agent-control-message'));
+      open();
       await settle(tester);
       expect(find.text('Rebase first'), findsOneWidget);
 
-      await tester.tap(key('team-agent-message-send'));
+      await tester.tap(key('chat-watching-message-send'));
       await settle(tester);
       final sent = gateway.calls.where((c) => c.verb == 'message').toList();
       expect(sent, hasLength(1));
       expect(sent.single.target, 'fox');
       expect(sent.single.arg, 'Rebase first');
       expect(prefs.getString(draftKey), isNull);
+      await tester.pumpWidget(const SizedBox());
       await drain(tester);
     });
   });
@@ -381,7 +438,6 @@ void main() {
         capabilities: OrchestrationCapabilities.gascityRead,
       );
       await pumpAgent(tester, controller);
-      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-controls-elsewhere'), findsOneWidget);
       expect(key('team-agent-controls-how'), findsOneWidget);
     });
@@ -448,7 +504,10 @@ void main() {
       await settle(tester);
       expect(key('team-agent-stop-confirm'), findsOneWidget);
       expect(find.textContaining('Worker · fox'), findsWidgets);
-      expect(find.textContaining("stops working on “Sync engine”"), findsOneWidget);
+      expect(
+        find.textContaining("stops working on “Sync engine”"),
+        findsOneWidget,
+      );
       // Nothing is sent before the second step.
       expect(gateway.calls.where((c) => c.verb == 'controlAgent'), isEmpty);
       await tester.tap(key('team-agent-stop-confirm-action'));

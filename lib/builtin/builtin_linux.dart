@@ -29,6 +29,8 @@ class BuiltinLinuxStatus {
     required this.phase,
     this.message,
     this.serverRunning = false,
+    this.serverRestartWanted = false,
+    this.serverRecoveryGeneration,
     this.serverPort,
     this.abi = '',
     this.bytesUsed,
@@ -42,6 +44,8 @@ class BuiltinLinuxStatus {
       phase = BuiltinLinuxPhase.idle,
       message = null,
       serverRunning = false,
+      serverRestartWanted = false,
+      serverRecoveryGeneration = null,
       serverPort = null,
       abi = '',
       bytesUsed = null,
@@ -55,6 +59,8 @@ class BuiltinLinuxStatus {
       phase: BuiltinLinuxPhase.parse(map['phase']),
       message: message is String && message.trim().isNotEmpty ? message : null,
       serverRunning: map['serverRunning'] == true,
+      serverRestartWanted: map['serverRestartWanted'] == true,
+      serverRecoveryGeneration: asInt(map['serverRecoveryGeneration']),
       serverPort: asInt(map['serverPort']),
       abi: (map['abi'] ?? '').toString(),
       bytesUsed: asInt(map['bytesUsed']),
@@ -70,6 +76,13 @@ class BuiltinLinuxStatus {
   final BuiltinLinuxPhase phase;
   final String? message;
   final bool serverRunning;
+
+  /// Native intent survives a crash, but explicit Stop and service timeout
+  /// clear it. An older APK without this authority never opts in.
+  final bool serverRestartWanted;
+
+  /// Admission token invalidated by pause, cancellation and manual actions.
+  final int? serverRecoveryGeneration;
   final int? serverPort;
   final String abi;
   final int? bytesUsed;
@@ -214,6 +227,42 @@ class BuiltinLinux {
 
   Future<void> startServer(String script, {int port = serverPort}) =>
       _invoke<void>('startServer', {'script': script, 'port': port});
+
+  /// Restarts only a stopped server whose native intent and admission token
+  /// still match, while the Android activity is resumed. Does not opt in.
+  Future<void> restartServer(
+    String script, {
+    int port = serverPort,
+    required int expectedGeneration,
+  }) => _invokeRecovery('restartServer', {
+    'script': script,
+    'port': port,
+    'expectedGeneration': expectedGeneration,
+  });
+
+  /// Releases ownership of an automatic attempt after the health probe.
+  /// Repeated confirmation is allowed only for the same live native process
+  /// and generation, so durable act recording can retry after confirmation.
+  /// Before confirmation, lifecycle/policy cancellation stops only that attempt.
+  Future<void> confirmServerRecovery({required int expectedGeneration}) =>
+      _invokeRecovery('confirmServerRecovery', {
+        'expectedGeneration': expectedGeneration,
+      });
+
+  /// Invalidates pending automatic work without changing the person's intent.
+  Future<void> cancelServerRecovery() =>
+      _invokeRecovery('cancelServerRecovery');
+
+  Future<void> _invokeRecovery(String method, [Object? arguments]) async {
+    try {
+      await _invoke<void>(method, arguments);
+    } on BuiltinLinuxException {
+      throw const BuiltinLinuxException(
+        'The phone server could not restart.',
+        code: 'recovery_unavailable',
+      );
+    }
+  }
 
   Future<void> stopServer() => _invoke<void>('stopServer');
 

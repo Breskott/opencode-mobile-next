@@ -189,6 +189,60 @@ void main() {
       expect(_titleColor(tester, 'Voice input'), _tokens(tester).roles.text3);
     });
 
+    testWidgets('3: unavailable at 2.0 text: the reason wraps in full and '
+        'the enable action moves under it', (tester) async {
+      const reason =
+          'Needs a voice model on this phone. It downloads once and then '
+          'works without a connection.';
+      await _pump(
+        tester,
+        KitRow.unavailable(
+          title: 'Voice typing',
+          reason: reason,
+          enable: KitAction(label: 'Download voice model', onPressed: () {}),
+        ),
+        textScale: 2,
+      );
+      final text = find.text(reason);
+      final paragraph = tester.renderObject<RenderParagraph>(text);
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(paragraph.maxLines, isNull);
+      final button = find.byType(KitButton);
+      // Under the reason, starting on its line: not squeezed beside it.
+      expect(
+        tester.getTopLeft(button).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(text).dy),
+      );
+      expect(
+        tester.getSize(text).width,
+        greaterThan(tester.view.physicalSize.width / 2),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('3: unavailable at 1.0 text keeps enable trailing', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        KitRow.unavailable(
+          title: 'Voice typing',
+          reason: 'Needs a voice model.',
+          enable: KitAction(label: 'Download', onPressed: () {}),
+        ),
+      );
+      final text = find.text('Needs a voice model.');
+      final button = find.byType(KitButton);
+      expect(
+        tester.getTopLeft(button).dx,
+        greaterThanOrEqualTo(tester.getTopRight(text).dx),
+      );
+      expect(
+        tester.getTopLeft(button).dy,
+        lessThan(tester.getBottomLeft(text).dy),
+      );
+    });
+
     testWidgets('3: unavailable without enable has no button and no action', (
       tester,
     ) async {

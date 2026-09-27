@@ -23,10 +23,9 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamConversationScreen;
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1240,13 +1239,14 @@ void main() {
       expect(key('team-cycle-action-stop'), findsOneWidget);
       expect(controller.cycleAgentFor('oc-loy'), 'gastown.furiosa');
 
-      // Open agent output → the AgentOutputScreen for that agent.
+      // Watch the agent → that agent's conversation (here its live
+      // output: no connected server lists its session).
       await tester.tap(key('team-cycle-action-output'));
       await tester.pumpAndSettle();
-      expect(find.byType(AgentOutputScreen), findsOneWidget);
+      expect(find.byType(TeamWatchLiveScreen), findsOneWidget);
       expect(
         tester
-            .widget<AgentOutputScreen>(find.byType(AgentOutputScreen))
+            .widget<TeamWatchLiveScreen>(find.byType(TeamWatchLiveScreen))
             .agentId,
         'gastown.furiosa',
       );
@@ -1323,7 +1323,7 @@ void main() {
       expect(key('team-cycle-action-stop'), findsNothing);
     });
 
-    testWidgets('workingLong: sentence and Open agent output', (tester) async {
+    testWidgets('workingLong: sentence and Watch the agent', (tester) async {
       final t0 = clock.subtract(const Duration(minutes: 40));
       final (controller, _) = await boot(
         configure: (g) => g.workOverride = [

@@ -1058,7 +1058,21 @@ class _KitComposerLayerState extends State<_KitComposerLayer> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         maxHeight == null ? band : Flexible(child: band),
-        composer,
+        if (maxHeight == null)
+          composer
+        else
+          // Never taller than the room: on a small window at a large text
+          // size (320 dp, 2.5x) the composer scrolls within it, its field
+          // and Send in view, instead of running off the screen.
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: SingleChildScrollView(
+              key: const ValueKey('kit-composer-room'),
+              reverse: true,
+              primary: false,
+              child: composer,
+            ),
+          ),
       ],
     );
     if (maxHeight == null) return column;

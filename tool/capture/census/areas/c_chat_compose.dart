@@ -441,7 +441,12 @@ final cChatComposeArea = CensusArea(
       _mockVoices(kit);
       await _chat(kit);
       await _startReadAloud(kit);
-      await kit.tapText('Choose voice');
+      // Consent reads with the voice for the app's language (P10.4); the
+      // choice is "Read with another voice".
+      await kit.tapText('Read aloud');
+      await kit.realWait();
+      await kit.tapKey('message-actions-msg_assistant');
+      await kit.tapText('Read with another voice');
       await kit.realWait();
       kit.expectText('Choose a reading voice');
     }, note: 'Four offline voices from a mocked system engine.'),

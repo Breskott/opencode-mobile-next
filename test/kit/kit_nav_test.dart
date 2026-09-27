@@ -2,6 +2,7 @@
 // required"). Owner decision 2026-09-27: Arabic/RTL review dropped, so the
 // spec's RTL case (9) is not run here.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -208,6 +209,42 @@ void main() {
 
     probe = await _pump(tester, size: const Size(1280, 800));
     expect(probe.clearance!.start, 296);
+  });
+
+  testWidgets('the sidebar widens with larger text so its primary keeps one '
+      'line, capped at 400 dp and a third of the window', (tester) async {
+    final primary = KitAction(label: 'New conversation', onPressed: () {});
+    var probe = await _pump(
+      tester,
+      size: const Size(1280, 800),
+      textScale: 2,
+      panes: true,
+      primary: primary,
+    );
+    expect(tester.getSize(find.byType(KitNavRail)).width, 400);
+    expect(probe.clearance!.start, 400);
+    final label = find.descendant(
+      of: find.byType(KitButton),
+      matching: find.text('New conversation'),
+    );
+    // One line: the label is as tall as one line of its own style.
+    final paragraph = tester.renderObject<RenderParagraph>(label);
+    final tops = {
+      for (final box in paragraph.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 16),
+      ))
+        box.top,
+    };
+    expect(tops, hasLength(1));
+    expect(tester.takeException(), isNull);
+
+    probe = await _pump(tester, size: const Size(1280, 800), textScale: 1.1);
+    expect(tester.getSize(find.byType(KitNavRail)).width, closeTo(325.6, .01));
+
+    // An expanded window keeps a third for the sidebar at most.
+    probe = await _pump(tester, size: const Size(900, 800), textScale: 2);
+    expect(tester.getSize(find.byType(KitNavRail)).width, 300);
+    expect(probe.clearance!.start, 300);
   });
 
   testWidgets('sidebar holds header, destinations, pane and primary', (

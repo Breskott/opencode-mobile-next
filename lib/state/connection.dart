@@ -44,6 +44,7 @@ import '../termux/bridge.dart';
 // A plain value type (no widgets): the person's effect choices.
 import 'effects.dart' show KitEffects;
 import '../builtin/builtin_linux.dart';
+import '../builtin/builtin_server_recovery.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
@@ -51,6 +52,7 @@ import 'orchestration.dart';
 import 'orchestration_store.dart';
 import 'elsewhere_attention.dart';
 import 'profiles.dart';
+import 'termux_host_setup.dart' show ManagedRuntimeFlavor;
 import 'pending_auth.dart';
 import 'session_drafts.dart';
 import 'draft_attachments.dart';
@@ -417,9 +419,16 @@ class ConnectionController extends ChangeNotifier {
           .where(
             (p) =>
                 TermuxBridge.supported &&
+                isProfileReadable(p.id) &&
                 TermuxBridge.managesServerUrl(p.baseUrl),
           )
           .map((p) => p.id),
+      runtimes: {
+        for (final p in store.profiles)
+          if (isProfileReadable(p.id) &&
+              TermuxBridge.managesServerUrl(p.baseUrl))
+            p.id: ManagedRuntimeFlavor.runtimeOf(p),
+      },
       onRestart: ({required profileId, required eventId, required at}) =>
           recordServerAct(
             profileId: profileId,
@@ -1227,6 +1236,7 @@ class ConnectionController extends ChangeNotifier {
   /// nobody, so connecting does not rebuild the shell twice.
   void _profilesSaved() {
     if (_disposed) return;
+    _syncProfileServices();
     final next = _profilesSignature();
     if (next == _profilesShown) return;
     _profilesShown = next;
@@ -2936,7 +2946,7 @@ class ConnectionController extends ChangeNotifier {
     checkKnownWork();
     try {
       for (final id in managedIDs()) {
-        await ManagedServerRecovery.disableForProfile(store.prefs, id);
+        await ManagedServerRecovery.suspendForProfile(store.prefs, id);
       }
     } catch (_) {
       throw StateError(
@@ -6237,6 +6247,7 @@ class ConnectionController extends ChangeNotifier {
             }
           }
           _profileDeletions.remove(profileId);
+          _syncProfileServices();
         });
     _profileDeletions[profileId] = operation;
     _profileDeletionChanges = operation.then<void>(
@@ -6279,6 +6290,7 @@ class ConnectionController extends ChangeNotifier {
     try {
       await _promptShelf.drain(profileId);
     } catch (_) {}
+
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
     // Retain these owners through a failed row/Keystore commit as well as
     // through queue preflight. ProfileStore sweeps them after the row commits.
@@ -6344,7 +6356,17 @@ class ConnectionController extends ChangeNotifier {
         }
         // Queue validation and preservation succeeded within this lane.
         // Only now invalidate destructive owners and begin cleanup.
-        await ManagedServerRecovery.disableForProfile(store.prefs, profileId);
+        await Future.wait<void>([
+          BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
+          ManagedServerRecovery.disableForProfile(store.prefs, profileId),
+        ]);
+        // Keep the shared runtime owner through queue preflight failures.
+        // Once preservation succeeds, prevent fallback to another profile.
+        if (store.prefs.getString('oc.builtinServerOwner') == profileId) {
+          if (!await store.prefs.setString('oc.builtinServerOwner', '')) {
+            throw StateError('The phone server setting could not be cleared.');
+          }
+        }
         _promptShelfDeletionRevisions[profileId] =
             (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
         // Outstanding saved-prompt Undo handles refuse from here on; a deleted
@@ -6519,6 +6541,7 @@ class ConnectionController extends ChangeNotifier {
       // caller disconnects, and a republish would put their titles straight
       // back onto the home screen.
       _deletingReadProfiles.remove(profileId);
+      _syncProfileServices();
       if (!_disposed) notifyListeners();
       _widgetSnapshotSuspended = false;
     }

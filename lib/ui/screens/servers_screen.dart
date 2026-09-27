@@ -860,35 +860,23 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               null => null,
             },
           ),
-          // OpenCode inside this app is "This phone", managed in place with
-          // its own controls; its saved entries are how the app reaches it,
-          // so they are not listed again below.
-          if (phoneServer != null)
-            _Rails(
-              child: PhoneServerCard(
-                key: ValueKey('phone-server-card-${phoneServer.id}'),
-                connection: accountConnection,
-                profile: phoneServer,
-                connected:
-                    accountConnection.api != null &&
-                    accountConnection.profile?.id == phoneServer.id,
-                onOpen: _busy ? null : () => _connect(phoneServer),
-                onRemoved: () {
-                  if (mounted) setState(() {});
-                },
-              ),
-            ),
-          SizedBox(height: tokens.space4),
+          SizedBox(height: tokens.space2),
           // Every server in one list (R1): the rows ordered by urgency,
           // each saying first what it needs ("Needs you"), what runs there
           // or that its password must be entered again, then the phone's own
-          // servers, which decide on their own whether they show. A server
+          // servers, which decide on their own whether they show. OpenCode
+          // inside this app ("This phone") is one of the rows, ranked like
+          // the others and first among equals; its saved entries are how
+          // the app reaches it, so they are not listed again. A server
           // added or forgotten while the list is open unfolds in or folds
           // away where it was (design standard §10).
           ListenableBuilder(
             listenable: Listenable.merge([accountConnection, ?monitor]),
             builder: (context, _) {
-              final ordered = _byUrgency(saved, accountConnection);
+              final ordered = _byUrgency([
+                ?phoneServer,
+                ...saved,
+              ], accountConnection);
               return KitRowGroup(
                 key: const ValueKey('servers-list'),
                 children: [
@@ -903,32 +891,59 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                             children: [
                               if (i > 0)
                                 const KitDivider(inset: KitDividerInset.text),
-                              _ServerRow(
-                                profile: p,
-                                connected:
-                                    accountConnection.api != null &&
-                                    accountConnection.profile?.id == p.id,
-                                snapshot: _snapshotFor(p, accountConnection),
-                                working:
-                                    accountConnection.api != null &&
-                                        accountConnection.profile?.id == p.id
-                                    ? accountConnection.busySessions.length
-                                    : null,
-                                busy: _busy,
-                                showAccount:
-                                    p.id == activeId &&
-                                    accountConnection.isConnected &&
-                                    accountConnection.capabilities.agentAccount,
-                                onConnect: () => _connect(p),
-                                onEdit: () => _edit(existing: p),
-                                onRemove: () => _delete(p),
-                                onAccount: () => pushKitPage<void>(
-                                  context,
-                                  (_) => AgentAccountScreen(
-                                    connection: accountConnection,
+                              if (p == phoneServer)
+                                PhoneServerCard.row(
+                                  key: ValueKey('phone-server-card-${p.id}'),
+                                  connection: accountConnection,
+                                  profile: p,
+                                  connected:
+                                      accountConnection.api != null &&
+                                      accountConnection.profile?.id == p.id,
+                                  onOpen: _busy ? null : () => _connect(p),
+                                  onDisconnect: () async {
+                                    if (!await confirmDisconnectServer(
+                                      context,
+                                      accountConnection,
+                                    )) {
+                                      return;
+                                    }
+                                    await accountConnection.disconnect(
+                                      keepActive: true,
+                                    );
+                                  },
+                                  onRemoved: () {
+                                    if (mounted) setState(() {});
+                                  },
+                                )
+                              else
+                                _ServerRow(
+                                  profile: p,
+                                  connected:
+                                      accountConnection.api != null &&
+                                      accountConnection.profile?.id == p.id,
+                                  snapshot: _snapshotFor(p, accountConnection),
+                                  working:
+                                      accountConnection.api != null &&
+                                          accountConnection.profile?.id == p.id
+                                      ? accountConnection.busySessions.length
+                                      : null,
+                                  busy: _busy,
+                                  showAccount:
+                                      p.id == activeId &&
+                                      accountConnection.isConnected &&
+                                      accountConnection
+                                          .capabilities
+                                          .agentAccount,
+                                  onConnect: () => _connect(p),
+                                  onEdit: () => _edit(existing: p),
+                                  onRemove: () => _delete(p),
+                                  onAccount: () => pushKitPage<void>(
+                                    context,
+                                    (_) => AgentAccountScreen(
+                                      connection: accountConnection,
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -938,7 +953,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                   _runningServerEntry(
                     store.profiles,
                     accountConnection,
-                    dividerAbove: saved.isNotEmpty,
+                    dividerAbove: ordered.isNotEmpty,
                   ),
                 ],
               );

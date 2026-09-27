@@ -79,10 +79,14 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
   final _description = TextEditingController();
 
   /// What the person typed survives leaving the page (DATA-2); it is
-  /// forgotten once the report went to GitHub or the share sheet.
+  /// forgotten once the report went to GitHub or the share sheet. A report
+  /// is about the app, and the page also opens with no server (a failure's
+  /// details), so it is one app-wide draft, the same from every entry
+  /// point, rather than one per server that a server-less entry could
+  /// never sweep (KitDraft.appWide, G10).
   late final _draft = KitDraft(
     target: 'report-problem',
-    profileId: widget.controller?.profile?.id ?? 'app',
+    profileId: KitDraft.appWide,
     controller: _description,
   );
   bool _includeDiagnostics = true;

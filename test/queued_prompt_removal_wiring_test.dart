@@ -197,6 +197,7 @@ void main() {
   test('a queue that changed after the confirmation stops the removal and '
       'loses nothing', () async {
     final c = await boot(values: _seed());
+    await c.store.prefs.setString('oc.builtinServerOwner', 'doomed');
     final plan = c.inspectQueuedPromptsForRemoval('doomed');
     expect(plan.count, 2);
     // A prompt leaves the queue while the question is open.
@@ -217,6 +218,7 @@ void main() {
       ),
     );
     expect(c.store.profiles.map((p) => p.id), containsAll(['doomed']));
+    expect(c.store.prefs.getString('oc.builtinServerOwner'), 'doomed');
     expect(c.queuedPromptCountForProfile('doomed'), 1);
     expect(c.promptStash, isEmpty);
 

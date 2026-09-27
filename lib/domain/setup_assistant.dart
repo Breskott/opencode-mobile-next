@@ -11,7 +11,7 @@ class SetupSupport {
   });
   final bool readConfig;
 
-  /// Requires reversible writes. Current production adapters keep this false.
+  /// Requires the atomic transaction facet. Production adapters keep this false.
   final bool writeConfig;
   final bool mcpInventory;
 
@@ -51,6 +51,64 @@ abstract interface class SetupConfigGateway {
   Future<List<SetupMcpStatus>> listMcpServers();
 }
 
+/// Optional host transaction contract. Never emulate this with GET plus PATCH.
+/// The host binds immutable source identity and atomically compares [expected]
+/// before committing all edits. Conflict means no write occurred. Snapshots
+/// include exact source values (including absence), not merged effective config.
+/// Disabled MCP definition transactions must not start connections or change
+/// authentication state. Runtime-only MCP mutation is not this contract.
+/// Restore consumes a host-owned handle and conditionally restores the exact
+/// original source against commit.after; credentials never return in edits.
+/// Implementations must not log snapshots, receipts, handles or response bodies.
+abstract interface class SetupTransactionalConfigGateway
+    implements SetupConfigGateway {
+  Future<SetupConfigRevision> readSnapshot();
+  Future<SetupConfigCommit> commit({
+    required SetupConfigRevision expected,
+    required List<SetupEdit> edits,
+    required String operationId,
+  });
+  Future<SetupConfigCommit> restore({
+    required SetupConfigCommit commit,
+    required String operationId,
+  });
+}
+
+/// Raw controller-only source snapshot. Never expose to UI or persistence.
+class SetupConfigRevision {
+  SetupConfigRevision({
+    required this.targetId,
+    required this.revision,
+    required Map<String, Object?> config,
+  }) : config = _freezeSetup(config) as Map<String, Object?>;
+  final String targetId;
+  final String revision;
+  final Map<String, Object?> config;
+}
+
+/// Raw memory-only receipt. The opaque restore handle remains on this boundary.
+class SetupConfigCommit {
+  const SetupConfigCommit({
+    required this.before,
+    required this.after,
+    required this.undoHandle,
+  });
+  final SetupConfigRevision before;
+  final SetupConfigRevision after;
+  final String undoHandle;
+}
+
+Object? _freezeSetup(Object? value) {
+  if (value is Map) {
+    return Map<String, Object?>.unmodifiable({
+      for (final entry in value.entries)
+        entry.key as String: _freezeSetup(entry.value),
+    });
+  }
+  if (value is List) return List<Object?>.unmodifiable(value.map(_freezeSetup));
+  return value;
+}
+
 class SetupMcpStatus {
   const SetupMcpStatus({required this.name, required this.status});
   final String name;
@@ -73,12 +131,16 @@ class SetupDiff {
     required Object? before,
     required Object? after,
     required this.remove,
+    this.beforePresent = true,
+    this.afterPresent = true,
   }) : path = List.unmodifiable(path.map(KitRedact.text)),
        before = setupRedact(before),
        after = setupRedact(after);
   final List<String> path;
   final Object? before;
   final Object? after;
+  final bool beforePresent;
+  final bool afterPresent;
   final bool remove;
 }
 
@@ -102,6 +164,10 @@ class SetupProposal {
 enum SetupPhase {
   idle,
   loading,
+  applying,
+  verifying,
+  undoing,
+  uncertain,
   ready,
   empty,
   offline,

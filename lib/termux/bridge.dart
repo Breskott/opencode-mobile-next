@@ -1971,11 +1971,23 @@ recovery_arm() {
   local token="$1" pid='' saved_start=''
   [[ "$token" =~ ^[a-zA-Z0-9_-]{1,64}$ ]] || return 64
   [ ! -e "$LOCK_DIR" ] || return 75
-  [ "$(read_state_value phase)" = ready ] || return 75
   [ "$(read_state_value runner)" = proot ] || return 75
-  read -r pid saved_start < "$SERVER_PID" 2>/dev/null || return 75
-  [ -n "$saved_start" ] && [ "$(process_start "$pid" 2>/dev/null || true)" = "$saved_start" ] || return 75
-  server_process "$pid" "$(read_state_value port)" || return 75
+  CURRENT_PORT=$(read_state_value port)
+  [ "$CURRENT_PORT" = 4096 ] || return 75
+  case "$(read_state_value phase)" in
+    ready)
+      read -r pid saved_start < "$SERVER_PID" 2>/dev/null || return 75
+      [ -n "$saved_start" ] && [ "$(process_start "$pid" 2>/dev/null || true)" = "$saved_start" ] || return 75
+      server_process "$pid" "$CURRENT_PORT" || return 75
+      ;;
+    failed)
+      # A policy owner may first attach after a confirmed crash. This only
+      # arms a permit: restart still repeats the full locked preflight.
+      case "$(read_state_value failure_kind)" in crash|recovery) ;; *) return 75 ;; esac
+      recovery_server_absent || return 75
+      ;;
+    *) return 75 ;;
+  esac
   umask 077
   printf '%s' "$token" > "$RECOVERY_PERMIT.tmp.$$"
   mv "$RECOVERY_PERMIT.tmp.$$" "$RECOVERY_PERMIT"

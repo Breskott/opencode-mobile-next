@@ -19,6 +19,7 @@ import '../platform/platform_capabilities.dart';
 import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
 import 'interaction_defaults.dart';
+import 'setup_audit_store.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
 export '../domain/loopback_host.dart' show isLoopbackHost;
@@ -985,7 +986,12 @@ class ProfileStore {
     if (profileId.isEmpty) return const {};
     // This method already runs inside the controller's deletion transaction.
     // Drain before key discovery so a late platform write cannot resurrect data.
-    await InteractionDefaultsStore.closeProfile(prefs, profileId);
+    final defaultsDrain = InteractionDefaultsStore.closeProfile(
+      prefs,
+      profileId,
+    );
+    final auditDrain = SetupAuditStore.closeProfile(prefs, profileId);
+    await Future.wait([defaultsDrain, auditDrain]);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
       if (excluding.contains(key)) continue;

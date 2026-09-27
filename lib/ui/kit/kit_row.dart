@@ -66,7 +66,8 @@ class KitRow extends StatelessWidget {
   /// row that says why and, when the capability can be turned on, offers
   /// the flow. Never a dead row; `whenMissing: hidden` only where no enable
   /// flow exists (built by KitCapabilityExplainer.row from the registry,
-  /// kit-CapabilityExplainer, tier 1e).
+  /// kit-CapabilityExplainer, tier 1e). The reason wraps in full, never
+  /// cut; from 1.3× text the enable action sits under it (A11Y-8).
   const KitRow.unavailable({
     super.key,
     required this.title,
@@ -237,14 +238,18 @@ class KitRow extends StatelessWidget {
         : titleMaxLines;
 
     final enable = this.enable;
+    final enableButton = !_unavailable || enable == null
+        ? null
+        : KitButton.fromAction(
+            enable,
+            role: KitButtonRole.tertiary,
+            expand: false,
+          );
+    // From 1.3× text the enable action moves under the reason, so the
+    // reason keeps the row's width instead of sharing it (A11Y-8).
+    final enableBelow = enableButton != null && textScale >= 1.3;
     final Widget? trailing = _unavailable
-        ? (enable == null
-              ? null
-              : KitButton.fromAction(
-                  enable,
-                  role: KitButtonRole.tertiary,
-                  expand: false,
-                ))
+        ? (enableBelow ? null : enableButton)
         : this.trailing;
 
     Widget? leading = this.leading;
@@ -292,8 +297,10 @@ class KitRow extends StatelessWidget {
                     Text.rich(
                       line,
                       key: supportingKey,
-                      maxLines: supportingMaxLines,
-                      overflow: TextOverflow.ellipsis,
+                      // An unavailable row's reason is why the row is dim:
+                      // it wraps in full, never cut (A11Y-8, STATE-12).
+                      maxLines: _unavailable ? null : supportingMaxLines,
+                      overflow: _unavailable ? null : TextOverflow.ellipsis,
                       style: tokens.rowSupporting,
                     ),
                   ],
@@ -301,6 +308,7 @@ class KitRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     below,
                   ],
+                  if (enableBelow) KitInset(child: enableButton),
                 ],
               ),
             ),
