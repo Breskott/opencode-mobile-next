@@ -124,7 +124,7 @@ void main() {
         expect(_ids(controller, query).first, id, reason: query);
       }
       // "crash" also finds what went wrong, after the restart itself.
-      expect(_ids(controller, 'crash'), contains('app-diagnostics-entry'));
+      expect(_ids(controller, 'crash'), contains('library-report-bug'));
       final byId = {
         for (final entry in searchIndex(_en, _scope(controller)))
           entry.id: entry,
@@ -189,7 +189,7 @@ void main() {
         isNot(contains('inside-keep-running-thermal')),
       );
       // No Termux server: "crash" still finds the app's diagnostics.
-      expect(_ids(controller, 'crash'), ['app-diagnostics-entry']);
+      expect(_ids(controller, 'crash'), ['library-report-bug']);
       // A computer: neither Keep running nor its rows.
       final desktop = _ids(
         controller,
