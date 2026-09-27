@@ -15,12 +15,6 @@
       "AlertDialog(": 1,
       "showDialog(": 1
     },
-    "lib/ui/screens/chat/command_launcher.dart": {
-      "DraggableScrollableSheet(": 1
-    },
-    "lib/ui/screens/chat/composer.dart": {
-      "showModalBottomSheet(": 1
-    },
     "lib/ui/screens/chat/form_flow.dart": {
       "SnackBar(": 1,
       "showSnackBar(": 1
@@ -30,20 +24,9 @@
       "showDialog(": 1,
       "showModalBottomSheet(": 1
     },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1,
       "showModalBottomSheet(": 1
-    },
-    "lib/ui/screens/chat/team_conversation_view.dart": {
-      "SnackBar(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
     },
     "lib/ui/screens/chat/timeline_sheet.dart": {
       "DraggableScrollableSheet(": 1
@@ -168,48 +151,6 @@
       "Text": 2,
       "TextButton": 1
     },
-    "lib/ui/screens/chat/command_launcher.dart": {
-      "Container": 3,
-      "Divider": 4,
-      "DraggableScrollableSheet": 1,
-      "Icon": 11,
-      "IconButton": 3,
-      "InkWell": 2,
-      "LinearProgressIndicator": 2,
-      "ListTile": 4,
-      "Material": 1,
-      "Tab": 4,
-      "TabBar": 1,
-      "Text": 23,
-      "TextButton": 3,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/composer.dart": {
-      "AnimatedContainer": 1,
-      "AnimatedSwitcher": 1,
-      "CircularProgressIndicator": 2,
-      "ClipRRect": 2,
-      "ColoredBox": 2,
-      "CustomPaint": 1,
-      "ExpansionTile": 2,
-      "FractionallySizedBox": 1,
-      "GestureDetector": 1,
-      "Icon": 29,
-      "IconButton": 8,
-      "Image": 1,
-      "InkWell": 1,
-      "LinearProgressIndicator": 1,
-      "ListTile": 13,
-      "Material": 2,
-      "Positioned": 1,
-      "SegmentedButton": 1,
-      "SingleChildScrollView": 1,
-      "Text": 40,
-      "TextButton": 2,
-      "TextField": 1,
-      "Tooltip": 5,
-      "TweenAnimationBuilder": 1
-    },
     "lib/ui/screens/chat/empty_chat.dart": {
       "ActionChip": 1,
       "Container": 1,
@@ -238,33 +179,6 @@
       "TextButton": 1,
       "TextField": 1
     },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "AppBar": 1,
-      "Icon": 2,
-      "IconButton": 2,
-      "Scaffold": 1,
-      "Text": 2,
-      "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/prompt_history.dart": {
-      "Divider": 1,
-      "Icon": 2,
-      "ListTile": 1,
-      "Text": 4,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "Card": 1,
-      "ExpansionTile": 1,
-      "Icon": 4,
-      "IconButton": 1,
-      "LinearProgressIndicator": 1,
-      "SelectableText": 1,
-      "Text": 14,
-      "TextButton": 3,
-      "TextField": 1
-    },
     "lib/ui/screens/chat/read_aloud.dart": {
       "ListTile": 1,
       "Text": 3
@@ -272,18 +186,6 @@
     "lib/ui/screens/chat/session_sheets.dart": {
       "CheckboxListTile": 1,
       "Text": 2
-    },
-    "lib/ui/screens/chat/team_conversation_view.dart": {
-      "AppBar": 1,
-      "Container": 1,
-      "Icon": 5,
-      "IconButton": 1,
-      "InkWell": 2,
-      "MaterialPageRoute": 4,
-      "Scaffold": 1,
-      "SnackBar": 1,
-      "Text": 10,
-      "Transform": 1
     },
     "lib/ui/screens/chat/timeline_sheet.dart": {
       "Divider": 1,
@@ -441,10 +343,6 @@
       "TabBarView": 1,
       "Text": 22
     },
-    "lib/ui/screens/team_conversation/team_conversation.dart": {
-      "Icon": 1,
-      "MaterialPageRoute": 2
-    },
     "lib/ui/screens/termux_setup_screen.dart": {
       "AppBar": 4,
       "CircleAvatar": 1,
@@ -490,12 +388,6 @@
       "Text": 36,
       "TextButton": 2,
       "TextField": 1
-    },
-    "lib/ui/widgets/model_shortcuts.dart": {
-      "Icon": 1,
-      "PopupMenuButton": 1,
-      "PopupMenuItem": 3,
-      "Text": 3
     },
     "lib/ui/widgets/session_handoff.dart": {
       "AlertDialog": 1,
@@ -580,9 +472,6 @@
     "lib/ui/screens/chat/chat_states.dart": {
       "Clipboard.setData(": 1
     },
-    "lib/ui/screens/chat/composer.dart": {
-      "Curves.": 2
-    },
     "lib/ui/screens/chat/empty_chat.dart": {
       "Curves.": 2,
       "duration: Duration(": 2
@@ -592,12 +481,6 @@
       "Clipboard.setData(": 2,
       "Curves.": 1,
       "duration: Duration(": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "showConfirmSheet(": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1
@@ -692,15 +575,6 @@
       ".textTheme": 1,
       "attention roles": 2
     },
-    "lib/ui/screens/chat/command_launcher.dart": {
-      ".colorScheme": 14,
-      ".textTheme": 14
-    },
-    "lib/ui/screens/chat/composer.dart": {
-      ".colorScheme": 13,
-      ".textTheme": 10,
-      "attention roles": 1
-    },
     "lib/ui/screens/chat/empty_chat.dart": {
       ".colorScheme": 3,
       ".textTheme": 4
@@ -709,23 +583,11 @@
       ".colorScheme": 9,
       ".textTheme": 8
     },
-    "lib/ui/screens/chat/prompt_history.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 3
-    },
     "lib/ui/screens/chat/read_aloud.dart": {
       ".textTheme": 1
     },
     "lib/ui/screens/chat/session_sheets.dart": {
       ".textTheme": 1
-    },
-    "lib/ui/screens/chat/team_conversation_view.dart": {
-      ".colorScheme": 6,
-      ".textTheme": 9,
-      "attention roles": 3
     },
     "lib/ui/screens/chat/timeline_sheet.dart": {
       ".colorScheme": 3,
@@ -915,22 +777,6 @@
       "EdgeInsets numeric": 6,
       "icon size not 20/22/24": 1
     },
-    "lib/ui/screens/chat/command_launcher.dart": {
-      "Border.all(": 1,
-      "EdgeInsets numeric": 8,
-      "SizedBox numeric": 4,
-      "icon size not 20/22/24": 2
-    },
-    "lib/ui/screens/chat/composer.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 3,
-      "EdgeInsets numeric": 16,
-      "Image.asset|network|memory|file(": 1,
-      "SizedBox numeric": 15,
-      "TextStyle(": 1,
-      "disableAnimationsOf": 3,
-      "icon size not 20/22/24": 10
-    },
     "lib/ui/screens/chat/empty_chat.dart": {
       "BorderRadius.circular(<n>": 1,
       "EdgeInsets numeric": 5,
@@ -948,19 +794,6 @@
       "fontSize:": 3,
       "icon size not 20/22/24": 6
     },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 3
-    },
-    "lib/ui/screens/chat/prompt_history.dart": {
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 3,
-      "TextStyle(": 1
-    },
     "lib/ui/screens/chat/read_aloud.dart": {
       "EdgeInsets numeric": 1
     },
@@ -968,12 +801,6 @@
       "EdgeInsets numeric": 1,
       "SizedBox numeric": 2,
       "TextStyle(": 1
-    },
-    "lib/ui/screens/chat/team_conversation_view.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 20,
-      "SizedBox numeric": 7,
-      "icon size not 20/22/24": 4
     },
     "lib/ui/screens/chat/timeline_sheet.dart": {
       "EdgeInsets numeric": 5,
@@ -1046,9 +873,6 @@
     "lib/ui/screens/team/work_sheet.dart": {
       ".toUpperCase()": 1
     },
-    "lib/ui/screens/team_conversation/team_conversation.dart": {
-      "icon size not 20/22/24": 1
-    },
     "lib/ui/screens/termux_setup_screen.dart": {
       "Border.all(": 1,
       "BorderRadius.circular(<n>": 5,
@@ -1097,14 +921,8 @@
     }
   },
   "G48": {
-    "lib/ui/screens/chat/composer.dart": {
-      "sheet multiline without draft:": 2
-    },
     "lib/ui/screens/chat/permission_sheet.dart": {
       "sheet multiline without draft:": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "sheet multiline without draft:": 2
     },
     "lib/voice/voice_ui.dart": {
       "sheet multiline without draft:": 1
