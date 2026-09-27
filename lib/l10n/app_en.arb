@@ -27568,5 +27568,13 @@
   "localTerminalSetUpLinux": "Set up Linux on this phone",
   "@localTerminalSetUpLinux": {
     "description": "Phone terminal before Linux is installed: opens phone setup."
+  },
+  "messageViewSendAgain": "Send this message again",
+  "@messageViewSendAgain": {
+    "description": "Queued-message menu item and bubble action: sends again a message whose delivery was never confirmed (chat-1)."
+  },
+  "messageViewContinueReply": "Continue this reply",
+  "@messageViewContinueReply": {
+    "description": "Chat error action after an answer was cut off by the output limit: asks the agent to continue the same reply (chat-1)."
   }
 }

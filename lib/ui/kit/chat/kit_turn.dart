@@ -48,6 +48,24 @@ enum KitTurnPhase {
   failed,
 }
 
+/// Which part of one turn a [KitTurn] draws. A virtualised transcript
+/// builds each server message as its own row, so one turn can span several
+/// rows; each row names its part and the turn keeps its rhythm: no section
+/// gap inside it, and the footer only on the part that ends it.
+enum KitTurnSegment {
+  /// The whole turn in one widget (the default).
+  whole,
+
+  /// The turn's first row (its prompt); the rest follows in later rows.
+  first,
+
+  /// A row inside the turn: neither its prompt nor its end.
+  middle,
+
+  /// The row that ends the turn: it carries the phase line and the footer.
+  last,
+}
+
 /// The one footer of a finished turn (STATE-16).
 @immutable
 class KitTurnFooter {
@@ -55,6 +73,8 @@ class KitTurnFooter {
     required this.copyText,
     this.meta,
     this.menu = const <KitMenuItem>[],
+    this.onMore,
+    this.copyLabel,
   });
 
   /// The whole turn's reply prose, read at tap time (KIT-23). Never tool
@@ -69,6 +89,16 @@ class KitTurnFooter {
 
   /// More: Fork from here, Revert, Read aloud, Details…
   final List<KitMenuItem> menu;
+
+  /// Non-null: More calls this instead of showing [menu] (a host whose
+  /// reply actions still live in its own sheet). More is then shown even
+  /// when [menu] is empty; long-press keeps showing Copy and [menu].
+  final VoidCallback? onMore;
+
+  /// The host's words for what Copy copies when the turn is not simply
+  /// done ("Copy reply so far", "Copy loaded reply"); null reads "Copy
+  /// reply". The Copy button's tooltip and the long-press item use it.
+  final String? copyLabel;
 }
 
 /// One turn: a prompt, then everything until the agent hands back, made of
@@ -98,6 +128,7 @@ class KitTurn extends StatelessWidget {
     this.footer,
     this.latest = false,
     this.highlighted = false,
+    this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
     this.copyKey,
@@ -125,6 +156,13 @@ class KitTurn extends StatelessWidget {
 
   /// The find-in-conversation current match: a surface1 band.
   final bool highlighted;
+
+  /// Which part of the turn this widget draws ([KitTurnSegment]). Only
+  /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
+  /// and the footer and end with the section gap; [KitTurnSegment.first]
+  /// ends with the prompt's gap and [KitTurnSegment.middle] with the gap
+  /// between blocks.
+  final KitTurnSegment segment;
 
   final Key? turnKey, footerKey, copyKey, moreKey;
 
@@ -172,7 +210,7 @@ class _TurnFrameState extends State<_TurnFrame> {
     if (footer == null) return const <KitMenuItem>[];
     return <KitMenuItem>[
       KitMenuItem(
-        label: _l10n.kitTurnCopy,
+        label: footer.copyLabel ?? _l10n.kitTurnCopy,
         icon: AppIconography.copy,
         onSelected: _copyReply,
       ),
@@ -265,13 +303,16 @@ class _TurnFrameState extends State<_TurnFrame> {
       add(blocks, tokens.space4);
     }
 
-    final phaseLine = _phaseLine(context, turn, l10n);
+    final ends =
+        turn.segment == KitTurnSegment.whole ||
+        turn.segment == KitTurnSegment.last;
+    final phaseLine = ends ? _phaseLine(context, turn, l10n) : null;
     if (phaseLine != null) {
       add(phaseLine, turn.blocks.isEmpty ? tokens.space4 : tokens.space3);
     }
 
     final footer = turn.footer;
-    if (footer != null && _ended(turn.phase)) {
+    if (footer != null && ends && _ended(turn.phase)) {
       add(_footerRow(context, turn, footer, tokens, l10n), tokens.space1);
     }
 
@@ -290,8 +331,13 @@ class _TurnFrameState extends State<_TurnFrame> {
       child: body,
     );
 
+    final gapAfter = switch (turn.segment) {
+      KitTurnSegment.whole || KitTurnSegment.last => tokens.sectionGap,
+      KitTurnSegment.first => tokens.space4,
+      KitTurnSegment.middle => tokens.space3,
+    };
     return Padding(
-      padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
+      padding: EdgeInsetsDirectional.only(bottom: gapAfter),
       child: Semantics(
         key: turn.turnKey,
         container: true,
@@ -349,17 +395,19 @@ class _TurnFrameState extends State<_TurnFrame> {
         KitIconButton(
           key: turn.copyKey,
           icon: AppIconography.copy,
-          tooltip: l10n.kitTurnCopy,
+          tooltip: footer.copyLabel ?? l10n.kitTurnCopy,
           onPressed: _copyReply,
         ),
-        if (footer.menu.isNotEmpty) ...[
+        if (footer.menu.isNotEmpty || footer.onMore != null) ...[
           SizedBox(width: tokens.space2),
           Builder(
             builder: (anchor) => KitIconButton(
               key: turn.moreKey,
               icon: AppIconography.more,
               tooltip: l10n.kitTurnMore,
-              onPressed: () => _openMenu(items: footer.menu, anchor: anchor),
+              onPressed:
+                  footer.onMore ??
+                  () => _openMenu(items: footer.menu, anchor: anchor),
             ),
           ),
         ],

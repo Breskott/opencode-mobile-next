@@ -1,5 +1,10 @@
 part of '../chat_screen.dart';
 
+// The conversation transcript, drawn from the kit's chat parts only
+// (KitTurn, KitMessage, KitWorkLine, KitQueuedMessage; STANDARDS STATE-16,
+// KIT-41). This file decides what a server message is (a prompt, a step, a
+// notice) and which part draws it; the parts draw.
+
 /// A floating affordance shown when the transcript is scrolled away from the
 /// newest message; tapping returns to the live end of the conversation.
 class _JumpToLatestButton extends StatelessWidget {
@@ -8,44 +13,12 @@ class _JumpToLatestButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final pill = Material(
-      key: const ValueKey('jump-to-latest'),
-      color: theme.colorScheme.surfaceContainerHigh,
-      elevation: 3,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Tooltip(
-          message: _chatL10n(context).chatUiJumpToLatest,
-          // 48dp target: this pill floats over a scrolling list, where
-          // undersized targets cause accidental transcript scrolls.
-          // Smaller than a FAB: it sits over the ends of text lines.
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Icon(
-              AppIconography.down,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-      ),
-    );
-    if (MediaQuery.disableAnimationsOf(context)) return pill;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutBack,
-      child: pill,
-      builder: (context, t, child) => Opacity(
-        opacity: t.clamp(0, 1),
-        child: Transform.scale(scale: .9 + t * .1, child: child),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => KitJumpPill(
+    pillKey: const ValueKey('jump-to-latest'),
+    label: KitJumpPill.latestLabel(context),
+    onPressed: onTap,
+    visible: true,
+  );
 }
 
 /// A floating chip over long transcripts naming how much history sits above,
@@ -57,41 +30,12 @@ class _EarlierMessagesPill extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      key: const ValueKey('earlier-messages-pill'),
-      color: theme.colorScheme.surfaceContainerHigh,
-      elevation: 2,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        // 44dp floor: the pill floats over the scrolling transcript, so an
-        // undersized target scrolls the list instead of opening the timeline.
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 10, 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _chatL10n(context).chatUiEarlierMessageCount(count),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Icon(
-                AppIconography.chevronDown,
-                size: 15,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => KitJumpPill.older(
+    pillKey: const ValueKey('earlier-messages-pill'),
+    label: _chatL10n(context).chatUiEarlierMessageCount(count),
+    onPressed: onTap,
+    visible: true,
+  );
 }
 
 /// Finds the mapper's v2-only variant tag on a message, if any: a part whose
@@ -106,8 +50,9 @@ Part? v2VariantPart(MessageWithParts message) {
   return null;
 }
 
-// The transcript's vocabulary. The server stores a conversation as a flat
-// list of messages, and that list is not how a person reads it:
+// The transcript's vocabulary (STANDARDS STATE-16 is its frozen form). The
+// server stores a conversation as a flat list of messages, and that list is
+// not how a person reads it:
 //
 //  * A **prompt** is what you sent: your words and attachments.
 //  * A **turn** is one prompt and everything the agent did about it, until it
@@ -121,6 +66,11 @@ Part? v2VariantPart(MessageWithParts message) {
 //    typed: the project moved, instructions changed, context was added. The
 //    server files it under the `user` role; it does not end the turn.
 //  * The **reply** is the prose of a whole turn, which is what "copy" copies.
+//
+// The list is virtualised, one server message per row, so one turn spans
+// several rows: each row draws its part of the turn as a KitTurn segment
+// (first: the prompt; middle: a step; last: the step that ends the turn and
+// carries the footer).
 
 /// Whether [message] is something a person wrote, as opposed to a notice the
 /// server filed under the same role.
@@ -204,9 +154,9 @@ List<MessageWithParts> _turnSteps(List<MessageWithParts> messages, int index) {
   ];
 }
 
-/// A quiet divider-row for session-state changes (`model-switched`,
-/// `agent-switched`, `location-switched`) and the compaction-running pill:
-/// hairline — center pill — hairline, deliberately quieter than any bubble.
+/// A quiet divider row for session-state changes (`model-switched`,
+/// `agent-switched`, `location-switched`) and the compaction-running line:
+/// hairline, centred words, hairline ([KitMessage.marker]).
 class TranscriptMarker extends StatelessWidget {
   const TranscriptMarker({
     super.key,
@@ -219,61 +169,19 @@ class TranscriptMarker extends StatelessWidget {
   final String label;
   final IconData? icon;
 
-  /// Replaces [icon] when set (compaction-running uses an inline spinner).
+  /// Any non-null value draws the marker as working (compaction running);
+  /// the kit's working mark replaces [icon].
   final Widget? leading;
 
-  /// Long-press/tooltip detail (e.g. the previous model); not shown inline.
+  /// Retired by chat-1: the previous value is not shown (a switch says what
+  /// it switched to). Kept so existing callers compile.
   final String? detail;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hairline = Expanded(child: Divider(color: AppTheme.hairline(theme)));
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: ShapeDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        shape: StadiumBorder(
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          leading ??
-              Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          hairline,
-          const SizedBox(width: 8),
-          detail == null ? pill : Tooltip(message: detail!, child: pill),
-          const SizedBox(width: 8),
-          Expanded(child: Divider(color: AppTheme.hairline(theme))),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      KitMessage.marker(text: label, icon: icon, working: leading != null);
 }
 
-/// Full-width quiet card for `synthetic` / `system` / `skill` messages and
-/// completed/failed compaction: collapsed two-line preview, tap toggles the
-/// full text.
 /// A background command that finished, as one line like the work lines:
 /// the command as a person would say it and how it ended. The full command
 /// and its output open under it. OpenCode 2 files these as notices whose
@@ -294,99 +202,40 @@ class _BackgroundShellResultRowState extends State<BackgroundShellResultRow> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
     final result = widget.result;
-    final failed = result.outcome == BackgroundShellOutcome.failed;
-    final status = switch (result.outcome) {
-      BackgroundShellOutcome.finished => strings.workFinished,
-      BackgroundShellOutcome.stopped => strings.workStopped,
-      BackgroundShellOutcome.failed =>
-        result.exitCode == null
-            ? strings.chatUiBackgroundError
-            : strings.workExitCode(result.exitCode!),
+    final (status, detail) = switch (result.outcome) {
+      BackgroundShellOutcome.finished => (KitToolStatus.done, null),
+      BackgroundShellOutcome.stopped => (KitToolStatus.stopped, null),
+      BackgroundShellOutcome.failed => (
+        KitToolStatus.failed,
+        result.exitCode == null ? null : strings.workExitCode(result.exitCode!),
+      ),
     };
-    final title = shortCommand(result.command);
-    return Column(
+    return KeyedSubtree(
       key: const Key('background-shell-result'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          button: true,
-          expanded: _open,
-          label: '$title, $status',
-          excludeSemantics: true,
-          child: InkWell(
-            onTap: () => setState(() => _open = !_open),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      AppIconography.terminal,
-                      size: 16,
-                      color: failed
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TitleWithDetail(
-                        gap: 8,
-                        title: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        detail: Text(
-                          status,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: failed
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    AnimatedRotation(
-                      turns: _open ? .5 : 0,
-                      duration: MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 150),
-                      child: Icon(
-                        AppIconography.chevronDown,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+      child: KitToolRow(
+        kind: KitToolKind.shell,
+        title: shortCommand(result.command),
+        status: status,
+        detail: detail,
+        expanded: _open,
+        onExpansionChanged: (open) => setState(() => _open = open),
+        body: [
+          TerminalView(
+            key: const Key('background-shell-output'),
+            command: result.command,
+            output: result.output,
           ),
-        ),
-        if (_open)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 4, 8),
-            child: TerminalView(
-              key: const Key('background-shell-output'),
-              command: result.command,
-              output: result.output,
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
 
+/// Something that happened during a turn and that nobody typed (context
+/// added, instructions updated, a compaction), as one line
+/// ([KitMessage.notice]) that opens to its text.
 class TranscriptNotice extends StatefulWidget {
   const TranscriptNotice({
     super.key,
@@ -400,21 +249,23 @@ class TranscriptNotice extends StatefulWidget {
     this.onAction,
   });
 
-  /// The one thing to do about this notice, on its header line ("Compact
-  /// again" on a failed compaction). Absent when there is nothing to do.
+  /// The one thing to do about this notice, on its line ("Compact again" on
+  /// a failed compaction). Absent when there is nothing to do.
   final String? actionLabel;
   final VoidCallback? onAction;
 
   final String header;
 
-  /// Appended to [header] in the mono app font (the skill name chip).
+  /// Appended to [header] in mono, isolated left-to-right (a skill name).
   final String? headerMono;
   final IconData icon;
   final String text;
 
-  /// Renders the expanded body through the markdown widget (compaction
-  /// summaries).
+  /// Retired by chat-1: the opened text is always Markdown now.
   final bool markdown;
+
+  /// A failure: said in words ("Failed"), never in red, and opened at first
+  /// so its reason is in view.
   final bool error;
 
   @override
@@ -422,112 +273,28 @@ class TranscriptNotice extends StatefulWidget {
 }
 
 class _TranscriptNoticeState extends State<TranscriptNotice> {
-  bool _open = false;
+  late bool _open = widget.error;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final tint = widget.error
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurfaceVariant;
     final body = widget.text.trim();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Semantics(
-        button: body.isNotEmpty,
-        expanded: body.isEmpty ? null : _open,
-        label: widget.headerMono == null
-            ? widget.header
-            : '${widget.header} ${widget.headerMono}',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: body.isEmpty ? null : () => setState(() => _open = !_open),
-          child: Container(
-            width: double.infinity,
-            // A notice is a line in the transcript, not a card: no frame, and
-            // it shares the prose's left edge.
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(widget.icon, size: 16, color: tint),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          text: widget.header,
-                          children: [
-                            if (widget.headerMono case final mono?)
-                              TextSpan(
-                                text: ' $mono',
-                                style: const TextStyle(
-                                  fontFamily: AppTheme.monoFamily,
-                                ),
-                              ),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: tint,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (widget.onAction != null && widget.actionLabel != null)
-                      TextButton(
-                        key: const Key('transcript-notice-action'),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        onPressed: widget.onAction,
-                        child: Text(widget.actionLabel!),
-                      ),
-                    if (body.isNotEmpty)
-                      Icon(
-                        _open
-                            ? AppIconography.chevronUp
-                            : AppIconography.chevronDown,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                  ],
-                ),
-                // Closed, a routine notice is its header alone; the detail is one
-                // tap away. An error keeps its first lines in view.
-                if (body.isNotEmpty && (_open || widget.error))
-                  _chatSizeTransition(
-                    reduceMotion: reduceMotion,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.topCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: _open && widget.markdown
-                          ? ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: _proseWidthCap,
-                              ),
-                              child: MarkdownText(body, selectable: false),
-                            )
-                          : Text(
-                              body,
-                              maxLines: _open ? null : 2,
-                              overflow: _open ? null : TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                    ),
-                  ),
-              ],
+    final label = widget.actionLabel;
+    final onAction = widget.onAction;
+    return KitMessage.notice(
+      text: widget.header,
+      icon: widget.icon,
+      technical: widget.headerMono,
+      failed: widget.error,
+      detail: body.isEmpty ? null : _proseMarkdown(context, body),
+      expanded: body.isEmpty ? null : _open,
+      onExpansionChanged: (open) => setState(() => _open = open),
+      action: label == null || onAction == null
+          ? null
+          : KitAction(
+              key: const Key('transcript-notice-action'),
+              label: label,
+              onPressed: onAction,
             ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -557,6 +324,7 @@ class V2TranscriptRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = _chatL10n(context);
     final result = BackgroundAgentResult.fromPart(part);
     if (result != null) {
       return BackgroundAgentResultCard(
@@ -578,53 +346,43 @@ class V2TranscriptRow extends StatelessWidget {
     switch (part.type) {
       case 'v2:switch':
         final (icon, prefix) = switch (kind) {
-          'model' => (AppIconography.processor, _chatL10n(context).chatUiModel),
-          'agent' => (AppIconography.support, _chatL10n(context).chatUiAgent),
-          _ => (Icons.drive_file_move_outline, _chatL10n(context).chatUiMoved),
+          'model' => (AppIconography.processor, strings.chatUiModel),
+          'agent' => (AppIconography.support, strings.chatUiAgent),
+          _ => (AppIconography.folderOpen, strings.chatUiMoved),
         };
-        final detail = kind == 'location'
-            ? part.url
-            : part.filename == null
-            ? null
-            : _chatL10n(context).chatUiPreviouslyValue(part.filename ?? '');
         return TranscriptMarker(
           key: ValueKey('transcript-marker-$kind-switched-$messageId'),
           icon: icon,
           label: '$prefix → ${part.text}',
-          detail: detail,
         );
       case 'v2:compaction':
         return switch (kind) {
-          'running' => TranscriptMarker(
+          'running' => KitMessage.marker(
             key: ValueKey('compaction-running-$messageId'),
-            label: part.text.isEmpty
-                ? _chatL10n(context).chatUiCompactingConversation
+            text: part.text.isEmpty
+                ? strings.chatUiCompactingConversation
                 : part.text,
-            leading: const SizedBox.square(
-              dimension: 12,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            working: true,
           ),
           'failed' => TranscriptNotice(
             key: ValueKey('compaction-failed-$messageId'),
             icon: AppIconography.collapse,
-            header: _chatL10n(context).chatUiCompactionFailed,
+            header: strings.chatUiCompactionFailed,
             // What it means for the reader, then the server's own reason.
             text: [
-              _chatL10n(context).chatUiCompactionFailedHint,
+              strings.chatUiCompactionFailedHint,
               if (part.text.trim().isNotEmpty)
-                agentErrorWords(part.text, _chatL10n(context)).headline,
+                agentErrorWords(part.text, strings).headline,
             ].join(' '),
             error: true,
-            actionLabel: _chatL10n(context).chatUiCompactAgain,
+            actionLabel: strings.chatUiCompactAgain,
             onAction: onCompactAgain,
           ),
           _ => TranscriptNotice(
             key: ValueKey('compaction-completed-$messageId'),
             icon: AppIconography.collapse,
-            header: _chatL10n(context).chatUiContextCompacted,
+            header: strings.chatUiContextCompacted,
             text: part.text,
-            markdown: true,
           ),
         };
       default:
@@ -638,29 +396,29 @@ class V2TranscriptRow extends StatelessWidget {
         final (icon, header, mono) = switch (kind) {
           'instructions' => (
             AppIconography.note,
-            _chatL10n(context).sessionInstructionsUpdated,
+            strings.sessionInstructionsUpdated,
             null,
           ),
           'synthetic' => (
             AppIconography.sparkle,
-            part.filename ?? _chatL10n(context).chatUiContextAdded,
+            part.filename ?? strings.chatUiContextAdded,
             null,
           ),
           'system' => (
             AppIconography.settingsAdvanced,
-            part.filename ?? _chatL10n(context).chatUiSystemUpdate,
+            part.filename ?? strings.chatUiSystemUpdate,
             null,
           ),
           'skill' => (
             AppIcons.run,
-            _chatL10n(context).chatUiSkill,
+            strings.chatUiSkill,
             part.filename ?? part.text,
           ),
           _ => (
             AppIconography.server,
             part.filename ??
                 _noticeTitle(part.text) ??
-                _chatL10n(context).chatUiServerMessage,
+                strings.chatUiServerMessage,
             null,
           ),
         };
@@ -679,7 +437,7 @@ class V2TranscriptRow extends StatelessWidget {
           header: header,
           headerMono: mono,
           text: kind == 'instructions'
-              ? _chatL10n(context).sessionInstructionsApplied
+              ? strings.sessionInstructionsApplied
               : kind == 'skill' && part.filename == null
               ? ''
               : titledByText
@@ -704,32 +462,70 @@ String _noticeRest(String text) {
   return breakAt < 0 ? '' : trimmed.substring(breakAt).trim();
 }
 
-const _contextToolNames = {'read', 'list', 'glob', 'grep'};
+/// Agent or person Markdown that no one selects or acts on inside it: a
+/// prompt bubble (its long-press is the prompt's menu), a thought, a notice.
+/// A reply's prose goes through [MarkdownText], which adds the agent blocks
+/// (```choices```), file links and the code reader.
+KitMarkdown _proseMarkdown(
+  BuildContext context,
+  String text, {
+  KitTextRole role = KitTextRole.body,
+}) => KitMarkdown(
+  text,
+  role: role,
+  tone: role == KitTextRole.secondary ? KitTextTone.secondary : null,
+  selectable: false,
+  interactive: MarkdownInteractionScope.enabledOf(context),
+  highlighter: TranscriptHighlight.decorate,
+);
 
-/// Says what kind of work a set of tool calls was: looking, editing,
-/// running commands, or a mix.
-IconData _workIcon(Iterable<Part> parts) {
-  final names = {
-    for (final part in parts)
-      if (part.type == 'tool') part.toolName?.trim().toLowerCase(),
-  };
-  if (names.isEmpty) return AppIconography.timeline;
-  if (names.every(_contextToolNames.contains)) return AppIconography.search;
-  if (names.any(
-    (name) => const {
-      'edit',
-      'write',
-      'patch',
-      'apply_patch',
-      'multiedit',
-    }.contains(name),
-  )) {
-    return AppIconography.edit;
+/// What the work of [tools] did, counted for the work line's words.
+KitWorkCounts _workCounts(Iterable<Part> tools, {required int steps}) {
+  var read = 0;
+  var searched = 0;
+  var listed = 0;
+  var edited = 0;
+  var ran = 0;
+  var fetched = 0;
+  var delegated = 0;
+  var other = 0;
+  var notRun = 0;
+  for (final part in tools) {
+    if (!part.toolState.executed) {
+      notRun++;
+      continue;
+    }
+    switch (part.toolName?.trim().toLowerCase() ?? '') {
+      case 'read':
+        read++;
+      case 'glob' || 'grep':
+        searched++;
+      case 'list':
+        listed++;
+      case 'edit' || 'write' || 'patch' || 'apply_patch' || 'multiedit':
+        edited++;
+      case 'bash' || 'shell':
+        ran++;
+      case 'webfetch' || 'websearch':
+        fetched++;
+      case 'task' || 'subagent':
+        delegated++;
+      default:
+        other++;
+    }
   }
-  if (names.any((name) => name == 'bash' || name == 'shell')) {
-    return AppIconography.terminal;
-  }
-  return AppIconography.tools;
+  return KitWorkCounts(
+    read: read,
+    searched: searched,
+    listed: listed,
+    edited: edited,
+    ran: ran,
+    fetched: fetched,
+    delegated: delegated,
+    other: other,
+    notRun: notRun,
+    steps: steps,
+  );
 }
 
 bool _isToolPart(Part part) => part.type == 'tool';
@@ -1019,349 +815,37 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
   return runs;
 }
 
-/// One human sentence for a tool group's header, e.g. "Read 3 files, edited
-/// 1, ran 2 commands". Segments follow the way a turn unfolds — look, change,
-/// run — and the file noun is elided after a read segment already names it.
-String _toolRunSentence(List<Part> parts, AppLocalizations strings) {
-  var reads = 0;
-  var searches = 0;
-  var lists = 0;
-  var edits = 0;
-  var commands = 0;
-  var web = 0;
-  var agents = 0;
-  var other = 0;
-  var notRun = 0;
-  for (final part in parts) {
-    if (!part.toolState.executed) {
-      notRun++;
-      continue;
-    }
-    switch (part.toolName?.trim().toLowerCase() ?? '') {
-      case 'read':
-        reads++;
-      case 'glob' || 'grep':
-        searches++;
-      case 'list':
-        lists++;
-      case 'edit' || 'write' || 'patch' || 'apply_patch' || 'multiedit':
-        edits++;
-      case 'bash' || 'shell':
-        commands++;
-      case 'webfetch' || 'websearch':
-        web++;
-      case 'task' || 'subagent':
-        agents++;
-      default:
-        other++;
-    }
-  }
-  final segments = <String>[
-    if (reads > 0) strings.chatUiReadFiles(reads),
-    if (searches > 0) strings.chatUiSearched(searches),
-    if (lists > 0) strings.chatUiListedFolders(lists),
-    if (edits > 0) strings.chatUiEditedFiles(edits),
-    if (commands > 0) strings.chatUiRanCommands(commands),
-    if (web > 0) strings.chatUiFetchedPages(web),
-    if (agents > 0) strings.chatUiDelegatedTasks(agents),
-    if (other > 0) strings.chatUiOtherCalls(other),
-    if (notRun > 0) strings.chatUiStepsNotRun(notRun),
-  ];
-  if (segments.isEmpty) return '';
-  final sentence = segments.join(strings.chatUiSeparator);
-  return sentence[0].toUpperCase() + sentence.substring(1);
-}
-
-class _ToolCallGroup extends StatefulWidget {
-  const _ToolCallGroup({
-    super.key,
-    required this.parts,
-    required this.expansionStore,
-    required this.filePreviewLoader,
-    required this.onAttachFile,
-    required this.onDownloadFile,
-    this.onOpenSession,
-    this.heading,
-    this.note,
-  });
-
-  /// The agent's own one-line name for this step; replaces the generic
-  /// "Explored" / "Tools" title when present.
-  final String? heading;
-  final String? note;
-  final List<Part> parts;
-  final Map<String, bool> expansionStore;
-  final ToolOutputFileLoader filePreviewLoader;
-  final ToolOutputFileAction? onAttachFile;
-  final ToolOutputFileAction onDownloadFile;
-
-  /// Opens a subagent's child session from a `task` card; null hides it.
-  final ValueChanged<String>? onOpenSession;
-
-  @override
-  State<_ToolCallGroup> createState() => _ToolCallGroupState();
-}
-
-class _ToolCallGroupState extends State<_ToolCallGroup> {
-  late bool _expanded;
-
-  String get _storeKey =>
-      'tools:${widget.parts.first.id ?? widget.parts.first.callID}';
-
-  /// The user's explicit toggle, surviving list recycling; null when the
-  /// group has never been toggled by hand.
-  bool? get _userChoice => widget.expansionStore[_storeKey];
-
-  @override
-  void initState() {
-    super.initState();
-    _expanded = _userChoice ?? _shouldOpen(widget.parts);
-  }
-
-  @override
-  void didUpdateWidget(covariant _ToolCallGroup oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // A manual collapse is never undone by the run itself: auto-expansion
-    // only applies while the user has not toggled the group.
-    if (_userChoice case final choice?) {
-      _expanded = choice;
-      return;
-    }
-    if (_shouldOpen(widget.parts)) {
-      _expanded = true;
-    }
-  }
-
-  void _toggle() {
-    setState(() {
-      _expanded = !_expanded;
-      widget.expansionStore[_storeKey] = _expanded;
-    });
-  }
-
-  bool _shouldOpen(List<Part> parts) => parts.any(
-    (part) =>
-        // Running progress is already named in the summary header. Only
-        // actionable errors and produced files reveal the full group by default.
-        part.toolState.status == 'error' ||
-        part.toolState.outputFiles.isNotEmpty,
-  );
-
-  bool get _running => widget.parts.any(
-    (part) =>
-        part.toolState.executed &&
-        (part.toolState.status == 'pending' ||
-            part.toolState.status == 'running'),
-  );
-
-  bool get _failed =>
-      widget.parts.any((part) => part.toolState.status == 'error');
-
-  bool get _notRun => widget.parts.any((part) => !part.toolState.executed);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    // While running, the header names the tool actually executing instead of
-    // the static run summary, like a build log's live line.
-    Part? runningPart;
-    for (final part in widget.parts.reversed) {
-      final status = part.toolState.status;
-      if (part.toolState.executed &&
-          (status == 'running' || status == 'pending')) {
-        runningPart = part;
-        break;
-      }
-    }
-    final summary = runningPart != null
-        ? runningToolTicker(
-            runningPart.toolName ?? 'tool',
-            runningPart.toolState,
-            l10n: _chatL10n(context),
-          )
-        : _toolRunSentence(widget.parts, _chatL10n(context));
-    final allContext = widget.parts.every(
-      (part) => _contextToolNames.contains(part.toolName?.trim().toLowerCase()),
-    );
-    final kind = allContext && !_notRun
-        ? (_running
-              ? _chatL10n(context).chatUiExploring
-              : _chatL10n(context).chatUiExplored)
-        : (_running
-              ? _chatL10n(context).chatUiRunningTools
-              : _chatL10n(context).chatUiTools);
-    // Without the agent's own name for the step, what was done is the
-    // title ("Ran 4 commands"), not the word "Tools" beside it.
-    final bareTitle =
-        widget.heading == null && runningPart == null && summary.isNotEmpty;
-    final title = widget.heading ?? (bareTitle ? summary : kind);
-    final detailText = bareTitle ? '' : summary;
-    final icon = _workIcon(widget.parts);
-    final status = _failed
-        ? _chatL10n(context).chatUiBackgroundError
-        : _running
-        ? _chatL10n(context).chatUiRunning
-        : _notRun
-        ? _chatL10n(context).chatUiIncludesStepsNotRun
-        : _chatL10n(context).chatUiCompleted;
-    return Container(
-      key: const Key('tool-call-group'),
-      // No frame: a run of tool calls is a line of the reply. Its steps,
-      // when opened, hang off a single rule on the leading edge.
-      child: Column(
-        children: [
-          Semantics(
-            button: true,
-            expanded: _expanded,
-            label: _chatL10n(
-              context,
-            ).chatUiToolGroupSemantics(title, widget.parts.length, status),
-            child: InkWell(
-              key: const Key('tool-call-group-header'),
-              onTap: _toggle,
-              borderRadius: BorderRadius.circular(8),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        icon,
-                        size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TitleWithDetail(
-                          gap: 8,
-                          title: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          detail: detailText.isEmpty
-                              ? null
-                              : Text(
-                                  detailText,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      if (_running && !reduceMotion)
-                        SizedBox.square(
-                          dimension: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.6,
-                            color: theme.colorScheme.primary,
-                          ),
-                        )
-                      // Finished is the normal state; only the others are
-                      // marked.
-                      else if (_failed || _running || _notRun)
-                        Icon(
-                          _failed
-                              ? AppIconography.error
-                              : _running
-                              ? AppIconography.waitingStart
-                              : _notRun
-                              ? AppIconography.blocked
-                              : AppIconography.checkCircle,
-                          size: 14,
-                          color: _failed
-                              ? theme.colorScheme.error
-                              : _notRun
-                              ? theme.colorScheme.onSurfaceVariant
-                              : AppTheme.successOf(theme),
-                        ),
-                      const SizedBox(width: 4),
-                      AnimatedRotation(
-                        turns: _expanded ? .5 : 0,
-                        duration: reduceMotion
-                            ? Duration.zero
-                            : const Duration(milliseconds: 150),
-                        child: Icon(
-                          AppIconography.chevronDown,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (_expanded)
-            Container(
-              key: const Key('tool-call-group-steps'),
-              margin: const EdgeInsetsDirectional.only(start: 11),
-              decoration: BoxDecoration(
-                border: BorderDirectional(
-                  start: BorderSide(color: AppTheme.hairline(theme)),
-                ),
-              ),
-              child: Column(
-                children: [
-                  if (widget.note case final note?) StepNote(note),
-                  for (var index = 0; index < widget.parts.length; index++) ...[
-                    ToolCard(
-                      key: ValueKey(
-                        widget.parts[index].id ?? widget.parts[index].callID,
-                      ),
-                      toolName: widget.parts[index].toolName!,
-                      state: widget.parts[index].toolState,
-                      embedded: true,
-                      expansionStore: widget.expansionStore,
-                      expansionKey:
-                          'tool:${widget.parts[index].id ?? widget.parts[index].callID}',
-                      filePreviewLoader: widget.filePreviewLoader,
-                      onAttachFile: widget.onAttachFile,
-                      onDownloadFile: widget.onDownloadFile,
-                      onOpenSession: widget.onOpenSession,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Everything the agent did between two things it said: thoughts, tool calls
-/// and runs of them, folded under one line. Closed, the line says how much
-/// was done and what kind; while work is going on it names the step in hand.
-/// Open, the steps hang off a rule in the order they happened.
+/// and runs of them, folded under one [KitWorkLine]. Closed, the line says
+/// how much was done; while work is going on it names the step in hand, and
+/// while a request waits for the person it says "Waiting for you" (never a
+/// spinner, AUTO-15). Open, the steps hang off a rule in the order they
+/// happened.
 class _WorkGroup extends StatefulWidget {
   const _WorkGroup({
     super.key,
     required this.runs,
     required this.expansionStore,
     required this.buildRun,
+    this.waitingForYou = false,
+    this.stopped = false,
   });
 
   final List<_AssistantPartRun> runs;
   final Map<String, bool> expansionStore;
-  final Widget Function(_AssistantPartRun run) buildRun;
+  final List<Widget> Function(_AssistantPartRun run) buildRun;
+
+  /// A permission or question for this conversation waits for the person.
+  final bool waitingForYou;
+
+  /// The person stopped the turn this work belongs to.
+  final bool stopped;
 
   @override
   State<_WorkGroup> createState() => _WorkGroupState();
 }
 
 class _WorkGroupState extends State<_WorkGroup> {
-  late bool _expanded;
-
   Iterable<Part> get _tools => widget.runs
       .expand((run) => run.parts)
       .where((part) => part.type == 'tool');
@@ -1371,41 +855,15 @@ class _WorkGroupState extends State<_WorkGroup> {
     return 'work:${first.id ?? first.callID ?? first.messageID}';
   }
 
-  bool? get _userChoice => widget.expansionStore[_storeKey];
-
   /// Whether the work ended on a failure. Agents fail and retry all the
   /// time (a patch that did not apply, then one that did); a failure they got
   /// past is a detail of the steps, not the state of the work.
   bool get _endedFailed =>
       _tools.isNotEmpty && _tools.last.toolState.status == 'error';
 
-  // Only an unrecovered failure or a produced file is worth opening unasked.
-  // Progress is already named on the closed line.
-  bool get _shouldOpen =>
-      _endedFailed ||
-      _tools.any((part) => part.toolState.outputFiles.isNotEmpty);
-
-  @override
-  void initState() {
-    super.initState();
-    _expanded = _userChoice ?? _shouldOpen;
-  }
-
-  @override
-  void didUpdateWidget(covariant _WorkGroup oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_userChoice case final choice?) {
-      _expanded = choice;
-    } else if (_shouldOpen) {
-      _expanded = true;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     _AssistantPartRun? liveRun;
     Part? livePart;
     for (final run in widget.runs.reversed) {
@@ -1421,76 +879,47 @@ class _WorkGroupState extends State<_WorkGroup> {
       }
       if (livePart != null) break;
     }
-    final running = livePart != null;
-    final failed = _endedFailed;
-    final title = running
+    final state = livePart != null
+        ? (widget.waitingForYou
+              ? KitWorkState.waitingForYou
+              : KitWorkState.running)
+        : _endedFailed
+        ? KitWorkState.endedFailed
+        : widget.stopped
+        ? KitWorkState.stopped
+        : KitWorkState.done;
+    final now = state == KitWorkState.running
         ? liveRun!.heading ??
               runningToolTicker(
-                livePart.toolName ?? 'tool',
+                livePart!.toolName ?? 'tool',
                 livePart.toolState,
                 l10n: strings,
               )
         : null;
-    final sentence = _toolRunSentence(_tools.toList(), strings);
-    final steps = strings.usageModelSteps('${widget.runs.length}');
-    // Done: what was done is the title ("Edited 1 file, ran 4 commands"),
-    // the step count is detail. "2 steps" alone said nothing.
-    final titleText = title ?? (sentence.isEmpty ? steps : sentence);
-    // "2 steps" beside "Edited 1 file" said nothing; the count is kept only
-    // when there is no sentence and it is the title.
-    final summary = title == null && sentence.isNotEmpty ? null : steps;
-    return Column(
+    // Only an unrecovered failure or a produced file is worth opening
+    // unasked; progress is already named on the closed line.
+    final opensByDefault =
+        KitWorkLine.opensByDefault(state) ||
+        _tools.any((part) => part.toolState.outputFiles.isNotEmpty);
+    return KeyedSubtree(
       key: const Key('work-group'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _FoldLine(
-          headerKey: const Key('work-group-header'),
-          icon: running ? AppIconography.timeline : _workIcon(_tools),
-          title: titleText,
-          detail: summary,
-          expanded: _expanded,
-          onTap: () => setState(() {
-            _expanded = !_expanded;
-            widget.expansionStore[_storeKey] = _expanded;
-          }),
-          mark: running && !reduceMotion
-              ? SizedBox.square(
-                  dimension: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.6,
-                    color: theme.colorScheme.primary,
-                  ),
-                )
-              // Finished is the normal state and needs no mark; only
-              // running and failed are worth a glance.
-              : running || failed
-              ? Icon(
-                  failed
-                      ? AppIconography.error
-                      : running
-                      ? AppIconography.waitingStart
-                      : AppIconography.checkCircle,
-                  size: 14,
-                  color: failed
-                      ? theme.colorScheme.error
-                      : AppTheme.successOf(theme),
-                )
-              : null,
-        ),
-        if (_expanded)
-          _FoldSteps(
-            key: const Key('work-group-steps'),
-            children: [for (final run in widget.runs) widget.buildRun(run)],
-          ),
-      ],
+      child: KitWorkLine(
+        counts: _workCounts(_tools, steps: widget.runs.length),
+        state: state,
+        now: now,
+        expanded: widget.expansionStore[_storeKey] ?? opensByDefault,
+        onExpansionChanged: (open) =>
+            setState(() => widget.expansionStore[_storeKey] = open),
+        lineKey: const Key('work-group-header'),
+        stepsKey: const Key('work-group-steps'),
+        steps: [for (final run in widget.runs) ...widget.buildRun(run)],
+      ),
     );
   }
 }
 
-/// The one line work folds under: a glyph, what was done, an optional
-/// detail and mark, and the chevron that opens it. The work of a turn and
-/// anything else that folds the same way (an AI Team lead's earlier lines)
-/// share it, so every fold in a transcript looks and reads alike.
+/// A fold line outside a turn's work (an AI Team lead's earlier lines): the
+/// kit's summary chip, so every fold in a transcript looks and reads alike.
 class _FoldLine extends StatelessWidget {
   const _FoldLine({
     required this.headerKey,
@@ -1498,110 +927,49 @@ class _FoldLine extends StatelessWidget {
     required this.title,
     required this.expanded,
     required this.onTap,
-    this.detail,
-    this.mark,
   });
 
   final Key headerKey;
   final IconData icon;
   final String title;
-  final String? detail;
-  final Widget? mark;
   final bool expanded;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final detail = this.detail;
-    return Semantics(
-      button: true,
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.centerStart,
+    child: KitChip.summary(
+      key: headerKey,
+      icon: icon,
+      label: title,
       expanded: expanded,
-      label: detail == null ? title : '$title, $detail',
-      child: InkWell(
-        key: headerKey,
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TitleWithDetail(
-                    gap: 8,
-                    title: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    detail: detail == null
-                        ? null
-                        : Text(
-                            detail,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                ?mark,
-                const SizedBox(width: 4),
-                AnimatedRotation(
-                  turns: expanded ? .5 : 0,
-                  duration: reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 150),
-                  child: Icon(
-                    AppIconography.chevronDown,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      onPressed: onTap,
+    ),
+  );
 }
 
-/// What a [_FoldLine] opens: the steps hanging off one rule on the leading
-/// edge, in the order they happened.
+/// What a [_FoldLine] opens: its lines one indent in, in the order they
+/// happened.
 class _FoldSteps extends StatelessWidget {
   const _FoldSteps({super.key, required this.children});
 
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsetsDirectional.only(start: 11),
-    padding: const EdgeInsetsDirectional.only(start: 6),
-    decoration: BoxDecoration(
-      border: BorderDirectional(
-        start: BorderSide(color: AppTheme.hairline(Theme.of(context))),
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.space3,
+        top: tokens.space1,
       ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
-    ),
-  );
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
 }
-
-/// Upper bound for assistant prose line length on wide screens; tool cards
-/// and diffs keep the full transcript width.
-const _proseWidthCap = 640.0;
 
 class _AssistantMessagePart extends StatelessWidget {
   const _AssistantMessagePart({
@@ -1613,7 +981,6 @@ class _AssistantMessagePart extends StatelessWidget {
     required this.onDownloadFile,
     this.streaming = false,
     this.onOpenSession,
-    this.searchQuery = '',
     this.heading,
     this.note,
   });
@@ -1622,14 +989,12 @@ class _AssistantMessagePart extends StatelessWidget {
   final String? heading;
   final String? note;
   final Part part;
-  final String searchQuery;
   final bool reasoningExpanded;
 
   /// Opens a subagent's child session from a `task` card; null hides it.
   final ValueChanged<String>? onOpenSession;
 
-  /// True while this is the text block the assistant is still writing; it
-  /// gets a soft primary tint so the eye lands where the transcript grows.
+  /// True while this is the block the assistant is still writing.
   final bool streaming;
   final Map<String, bool> expansionStore;
   final ToolOutputFileLoader filePreviewLoader;
@@ -1639,34 +1004,19 @@ class _AssistantMessagePart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (part.type == 'text') {
-      final theme = Theme.of(context);
-      final reduceMotion = MediaQuery.disableAnimationsOf(context);
-      return Padding(
+      // The reply's prose: plain body text at the prose's start edge, capped
+      // at a reading width on wide windows ([KitMessage.reply]'s look).
+      // Selectable on touch; desktop keeps the transcript-wide selection.
+      return KeyedSubtree(
         key: const Key('assistant-text-block'),
-        padding: const EdgeInsets.only(bottom: 4),
-        child: AnimatedContainer(
-          key: const Key('assistant-text-surface'),
-          duration: reduceMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          decoration: BoxDecoration(
-            color: streaming ? AppTheme.liveTint(theme) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        child: Align(
+          alignment: AlignmentDirectional.topStart,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _proseWidthCap),
-            // Selectable on touch platforms: message actions live behind the
-            // ⋯ button in the meta row, so prose no longer has to give up
-            // selection for the long-press. Desktop keeps the transcript-wide
-            // SelectionArea instead of nesting a second selection surface.
-            child: TranscriptHighlight(
-              query: searchQuery,
-              child: MarkdownText(
-                part.text,
-                selectable: !desktopInteractions,
-                onChoice: (option) => _insertChoice(context, option),
-              ),
+            constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
+            child: MarkdownText(
+              part.text,
+              selectable: !desktopInteractions,
+              onChoice: (option) => _insertChoice(context, option),
             ),
           ),
         ),
@@ -1676,6 +1026,7 @@ class _AssistantMessagePart extends StatelessWidget {
       return _Reasoning(
         text: part.text,
         expanded: reasoningExpanded,
+        working: streaming,
         expansionStore: expansionStore,
         expansionKey: 'reasoning:${part.id ?? part.messageID}',
       );
@@ -1705,11 +1056,11 @@ class _AssistantMessagePart extends StatelessWidget {
       );
     }
     if (part.type == 'file') {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Chip(
-          avatar: const Icon(AppIconography.attach, size: 16),
-          label: Text(part.filename ?? _chatL10n(context).chatUiAttachment),
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: KitChip(
+          icon: AppIconography.attach,
+          label: part.filename ?? _chatL10n(context).chatUiAttachment,
         ),
       );
     }
@@ -1718,20 +1069,14 @@ class _AssistantMessagePart extends StatelessWidget {
 
   /// Routes a tapped ```choices option into the composer through the same
   /// path the empty-transcript suggestion chips use. Hosts without the chat
-  /// screen (isolated previews) fall back to the clipboard.
-  static Future<void> _insertChoice(BuildContext context, String option) async {
+  /// screen (isolated previews) copy it instead (the kit says "Copied").
+  static void _insertChoice(BuildContext context, String option) {
     final chat = context.findAncestorStateOfType<_ChatScreenState>();
     if (chat != null) {
       chat._insertSuggestion(option);
       return;
     }
-    await Clipboard.setData(ClipboardData(text: option));
-    if (!context.mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(_chatL10n(context).chatUiCopiedPasteItIntoTheComposer),
-      ),
-    );
+    unawaited(KitCopy.copy(context, option));
   }
 }
 
@@ -1747,11 +1092,12 @@ class _MessageView extends StatelessWidget {
   final TranscriptMatch? searchMatch;
   final String searchLabel;
   final ValueChanged<BuildContext>? onSearchExcerptContext;
+
+  /// Opens the host's actions for this message; the footer's More calls it.
   final VoidCallback? onLongPress;
 
-  /// Desktop right-click menu for this message. Built on click so it reflects
-  /// current capabilities, and it carries the same actions as the long-press
-  /// sheet [onLongPress] opens.
+  /// The message's actions as menu entries (copy, fork, revert, delete):
+  /// the prompt's long-press and right-click menu, and the reply's.
   final List<ContextMenuAction> Function()? contextActions;
   final ToolOutputFileLoader filePreviewLoader;
   final ToolOutputFileAction? onAttachFile;
@@ -1797,33 +1143,148 @@ class _MessageView extends StatelessWidget {
     this.onCopy,
   });
 
-  /// Copies the turn's reply. The footer is one line per turn; the action
-  /// people reach for most sits on it directly, next to the menu.
+  /// The host's copy of the turn's reply. The footer copies through the
+  /// kit (KitCopy); a non-null value says there is a reply to copy.
   final VoidCallback? onCopy;
 
   /// See [_AssistantErrorRow.recovered].
   final bool errorRecovered;
 
-  /// Whether the "more" control is drawn under this message. A reply is
-  /// usually several messages; only the one that ends it carries the control,
-  /// so it appears once per turn. Long-press and right-click stay on every
-  /// message.
+  /// Whether this message ends its turn and carries the turn's footer. A
+  /// reply is usually several messages; only the one that ends it carries
+  /// the footer, so it appears once per turn. Long-press and right-click
+  /// stay on every message.
   final bool showActions;
 
   /// True for a user prompt the server has accepted but not started: it
   /// runs after the current turn (OpenCode 1 queues mid-turn sends).
   final bool queued;
 
+  _ChatScreenState? _chat(BuildContext context) =>
+      context.findAncestorStateOfType<_ChatScreenState>();
+
+  List<KitMenuItem> _menuItems({bool withCopy = true}) => [
+    for (final action in contextActions?.call() ?? const <ContextMenuAction>[])
+      if (withCopy || action.menuKey != const ValueKey('message-menu-copy'))
+        action.toKitMenuItem(),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isUser = m.info.role == 'user';
     final visibleParts = parts
         .where((p) => p.isRenderable || _isFoldedIntoWork(p))
         .toList();
-    final assistantRuns = isUser
-        ? const <_AssistantPartRun>[]
-        : _groupAssistantParts(visibleParts);
+    if (m.info.role == 'user') {
+      return _frame(context, _promptTurn(context, visibleParts));
+    }
+    return _frame(context, _replyTurn(context, visibleParts));
+  }
+
+  /// The find-in-conversation excerpt above the turn, and the highlight of
+  /// the words it matched.
+  Widget _frame(BuildContext context, Widget turn) {
+    final match = searchMatch;
+    return TranscriptHighlight(
+      query: searchQuery,
+      child: match == null
+          ? turn
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Builder(
+                  builder: (context) {
+                    onSearchExcerptContext?.call(context);
+                    return TranscriptMatchExcerpt(
+                      match: match,
+                      label: searchLabel,
+                    );
+                  },
+                ),
+                turn,
+              ],
+            ),
+    );
+  }
+
+  Widget _promptTurn(BuildContext context, List<Part> visibleParts) {
+    final text = visibleParts
+        .where((part) => part.type == 'text')
+        .map((part) => part.text)
+        .where((value) => value.trim().isNotEmpty)
+        .join('\n');
+    final created = m.info.time?.created;
+    return KitTurn(
+      segment: KitTurnSegment.first,
+      phase: KitTurnPhase.finished,
+      highlighted: highlighted,
+      prompt: KitMessage.prompt(
+        bubbleKey: ValueKey('user-prompt-${m.info.id}'),
+        body: _proseMarkdown(context, text),
+        attachments: [
+          for (final part in visibleParts)
+            if (part.type == 'file') _attachment(context, part),
+        ],
+        time: showTimestamp && created != null
+            ? DateTime.fromMillisecondsSinceEpoch(created)
+            : null,
+        menu: _menuItems(),
+      ),
+      blocks: [
+        if (queued)
+          Align(
+            key: ValueKey('queued-message-${m.info.id}'),
+            alignment: AlignmentDirectional.centerEnd,
+            child: KitText(
+              _chatL10n(context).chatUiQueuedRunsAfterThisTurn,
+              role: KitTextRole.caption,
+              tone: KitTextTone.tertiary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// A sent file as a read-only chip under the prompt; a picture or file
+  /// opens its preview, a project reference names the folder it points at.
+  KitAttachment _attachment(BuildContext context, Part part) {
+    final strings = _chatL10n(context);
+    final name = part.filename?.trim().isNotEmpty == true
+        ? part.filename!.trim()
+        : strings.chatUiAttachment;
+    final reference =
+        part.mime == PromptAttachment.directoryReferenceMime &&
+        Uri.tryParse(part.url ?? '')?.scheme == 'file';
+    final image = part.mime?.startsWith('image/') ?? false;
+    return KitAttachment(
+      id: part.id ?? part.url ?? name,
+      label: reference ? '@$name' : name,
+      kind: reference
+          ? KitAttachmentKind.reference
+          : image
+          ? KitAttachmentKind.image
+          : KitAttachmentKind.file,
+      detail: reference ? strings.chatUiProjectReference : null,
+      onOpen: reference
+          ? null
+          : () => unawaited(
+              showFilePreviewSheet(
+                context,
+                FilePreviewData.fromDataUrl(
+                  name: name,
+                  mimeType: part.mime,
+                  url: part.url,
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _replyTurn(BuildContext context, List<Part> visibleParts) {
+    final strings = _chatL10n(context);
+    final chat = _chat(context);
+    final messages = chat?._messages;
+    final index = messages?.indexWhere((item) => item.info.id == m.info.id);
     final createdAt = m.info.time?.created;
 
     // Usage rides on the same preference as timestamps: both are detail a
@@ -1834,282 +1295,152 @@ class _MessageView extends StatelessWidget {
       ?meta.modelLabel,
       if (showTimestamp) ...[
         if (meta.turnTokens case final tokens?)
-          _chatL10n(context).chatUiTokenCount(_fmtTokens(tokens)),
+          strings.chatUiTokenCount(_fmtTokens(tokens)),
         if (meta.turnCost case final cost?) _fmtCost(cost),
       ],
     ];
-    final streaming =
-        !isUser && m.info.errorText == null && m.info.time?.isDone == false;
+    final raw = m.info.errorText;
     // A message whose parts are all non-renderable bookkeeping (`step-finish`,
-    // `patch`, `snapshot`) has nothing to say; without this guard it drew an
-    // empty bubble with a lone "…" actions button after every tool card and
-    // at the end of the turn.
-    if (!isUser &&
-        visibleParts.isEmpty &&
+    // `patch`, `snapshot`) has nothing to say.
+    if (visibleParts.isEmpty &&
         metaParts.isEmpty &&
-        m.info.errorText == null &&
+        raw == null &&
         m.info.finish != 'length') {
       return const SizedBox.shrink();
     }
 
-    final body = GestureDetector(
-      onLongPress: onLongPress,
-      behavior: HitTestBehavior.translucent,
-      // Where the "more" control is drawn, the long-press is only a shortcut
-      // to it, and excluding it keeps each message part as its own semantics
-      // node. Where it is not, the long-press is the way in, so assistive
-      // technology must see it.
-      excludeFromSemantics: showActions,
-      child: AnimatedContainer(
-        // The key must not encode the highlight flag: a highlight-driven
-        // remount would kill this fade and reset per-part expansion state.
-        key: ValueKey('message-highlight-${m.info.id}'),
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
-        padding: isUser
-            ? const EdgeInsetsDirectional.fromSTEB(6, 10, 6, 6)
-            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 2),
-        decoration: BoxDecoration(
-          color: highlighted
-              ? theme.colorScheme.primaryContainer.withValues(alpha: .24)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (searchMatch case final match?)
-              Builder(
-                builder: (context) {
-                  onSearchExcerptContext?.call(context);
-                  return TranscriptMatchExcerpt(
-                    match: match,
-                    label: searchLabel,
-                  );
-                },
-              ),
-            Container(
-              key: isUser ? ValueKey('user-prompt-${m.info.id}') : null,
-              // Keep prompts readable on wide screens instead of stretching
-              // them across a tablet.
-              width: isUser ? double.infinity : null,
-              constraints: isUser
-                  ? const BoxConstraints(maxWidth: _proseWidthCap)
-                  : null,
-              // Your words and the agent's share one column and one left
-              // edge. A rule in the accent colour on the leading side is what
-              // says "you wrote this": no bubble, no fill, no lost width.
-              margin: isUser
-                  ? const EdgeInsetsDirectional.only(start: 8)
-                  : EdgeInsets.zero,
-              padding: isUser
-                  ? const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8)
-                  : const EdgeInsets.symmetric(horizontal: 4),
-              // The rule says whose words these are; the wash behind them,
-              // fading out from the rule, makes that unmistakable at a
-              // glance without boxing the text in or costing any width.
-              decoration: isUser
-                  ? BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: AlignmentDirectional.centerStart.resolve(
-                          Directionality.of(context),
-                        ),
-                        end: AlignmentDirectional.centerEnd.resolve(
-                          Directionality.of(context),
-                        ),
-                        colors: [
-                          theme.colorScheme.primary.withValues(alpha: .20),
-                          theme.colorScheme.primary.withValues(alpha: .06),
-                          theme.colorScheme.primary.withValues(alpha: 0),
-                        ],
-                        stops: const [0, .55, 1],
-                      ),
-                      border: BorderDirectional(
-                        start: BorderSide(
-                          color: theme.colorScheme.primary,
-                          width: 3,
-                        ),
-                      ),
-                    )
-                  : null,
-              child: isUser
-                  ? _UserMessageContent(
-                      parts: visibleParts,
-                      searchQuery: searchQuery,
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final stretch in _stretches(assistantRuns))
-                          if (stretch.length > 1)
-                            _WorkGroup(
-                              key: ValueKey(
-                                'work:${stretch.first.parts.first.id ?? stretch.first.parts.first.callID}',
-                              ),
-                              runs: stretch,
-                              expansionStore: expansionStore,
-                              buildRun: (run) =>
-                                  _runWidget(run, assistantRuns, streaming),
-                            )
-                          else
-                            _runWidget(
-                              stretch.single,
-                              assistantRuns,
-                              streaming,
-                            ),
-                      ],
-                    ),
+    final errorKind = raw == null
+        ? null
+        : MessageErrorKind.refineFromText(
+            m.info.errorKind ?? MessageErrorKind.unknown,
+            raw,
+          );
+    final stopped = errorKind == MessageErrorKind.aborted;
+    final streaming = raw == null && m.info.time?.isDone == false;
+    final waiting = streaming && _requestWaits(chat);
+    final endsTurn =
+        showActions ||
+        (messages != null &&
+            index != null &&
+            index >= 0 &&
+            _endsTurn(messages, index));
+
+    final runs = _groupAssistantParts(visibleParts);
+    final blocks = <Widget>[
+      for (final stretch in _stretches(runs))
+        if (stretch.length > 1 || stretch.single.grouped)
+          _WorkGroup(
+            key: ValueKey(
+              'work:${stretch.first.parts.first.id ?? stretch.first.parts.first.callID}',
             ),
-            if (queued)
-              Padding(
-                key: ValueKey('queued-message-${m.info.id}'),
-                padding: const EdgeInsetsDirectional.only(top: 3, end: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      AppIcons.queue,
-                      size: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _chatL10n(context).chatUiQueuedRunsAfterThisTurn,
-                      style: theme.textTheme.labelSmall!.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (m.info.errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: _AssistantErrorRow(
-                  info: m.info,
-                  recovered: errorRecovered,
-                  onCompact: onCompact,
-                  onOpenProviders: onOpenProviders,
-                  onContinue: onContinue,
-                  onChooseModel: onChooseModel,
-                ),
-              ),
-            if (m.info.finish == 'length' &&
-                m.info.errorKind != MessageErrorKind.outputLength)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
-                  key: const Key('message-length-footer'),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                ),
-              ),
-            if (metaParts.isNotEmpty || (showActions && onLongPress != null))
-              Padding(
-                // The first control's disc starts where the prose starts.
-                padding: const EdgeInsetsDirectional.only(top: 1, end: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (showActions && onCopy != null)
-                      Semantics(
-                        button: true,
-                        label: _chatL10n(context).chatUiCopyMessageText,
-                        child: Tooltip(
-                          message: _chatL10n(context).chatUiCopyMessageText,
-                          child: InkWell(
-                            key: ValueKey('message-copy-${m.info.id}'),
-                            customBorder: const StadiumBorder(),
-                            onTap: onCopy,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 44,
-                                minHeight: 44,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: _MessageActionsDisc.diameter,
-                                  height: _MessageActionsDisc.diameter,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        theme.colorScheme.surfaceContainerHigh,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    AppIcons.copy,
-                                    size: 15,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (showActions && onLongPress != null)
-                      Semantics(
-                        button: true,
-                        label: _chatL10n(context).chatUiMessageActions,
-                        child: Tooltip(
-                          message: _chatL10n(context).chatUiMessageActions,
-                          child: InkWell(
-                            key: ValueKey('message-actions-${m.info.id}'),
-                            customBorder: const StadiumBorder(),
-                            onTap: onLongPress,
-                            // The target keeps the 44dp floor the rest of
-                            // the product enforces. The glyph sits on a
-                            // small tonal disc so it reads as a button
-                            // instead of a bare "…" that, under the newest
-                            // reply, looked like the answer trailing off.
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 44,
-                                minHeight: 44,
-                              ),
-                              child: Center(
-                                child: _MessageActionsDisc(
-                                  key: ValueKey(
-                                    'message-actions-disc-${m.info.id}',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (metaParts.isNotEmpty)
-                      Flexible(
-                        child: Padding(
-                          // After the controls; alone, it starts on the
-                          // prose edge like everything else.
-                          padding: EdgeInsetsDirectional.only(
-                            start: showActions ? 4 : 8,
-                          ),
-                          child: Text(
-                            key: ValueKey('message-meta-${m.info.id}'),
-                            metaParts.join('  ·  '),
-                            style: theme.textTheme.labelSmall!.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-          ],
+            runs: stretch,
+            expansionStore: expansionStore,
+            waitingForYou: waiting,
+            stopped: stopped,
+            buildRun: (run) => _stepWidgets(run, runs, streaming),
+          )
+        else
+          _runWidget(stretch.single, runs, streaming),
+      if (raw != null && !stopped)
+        _AssistantErrorRow(
+          info: m.info,
+          recovered: errorRecovered,
+          onCompact: onCompact,
+          onOpenProviders: onOpenProviders,
+          onContinue: onContinue,
+          onChooseModel: onChooseModel,
         ),
-      ),
+      if (m.info.finish == 'length' &&
+          m.info.errorKind != MessageErrorKind.outputLength)
+        KitMessage.notice(
+          noticeKey: const Key('message-length-footer'),
+          icon: AppIconography.textShort,
+          text: strings.chatUiAnswerWasCutOffByTheLength,
+        ),
+    ];
+
+    // The conversation is still working on this turn: it has no footer yet,
+    // even when its newest step is already written.
+    final latest = _inLatestTurn(messages, index);
+    final busy =
+        chat != null &&
+        latest &&
+        chat._conn.busySessions.contains(chat.widget.sessionID);
+    final interrupted =
+        streaming &&
+        endsTurn &&
+        chat != null &&
+        !chat._conn.isIsolated &&
+        !busy &&
+        createdAt != null &&
+        DateTime.now().millisecondsSinceEpoch - createdAt >
+            KitMotion.escalateAfter.inMilliseconds;
+    final phase = stopped
+        ? KitTurnPhase.stopped
+        : raw != null && !errorRecovered
+        ? KitTurnPhase.failed
+        : interrupted
+        ? KitTurnPhase.interrupted
+        : waiting
+        ? KitTurnPhase.waitingForYou
+        : streaming || (busy && endsTurn)
+        ? KitTurnPhase.running
+        : KitTurnPhase.finished;
+
+    final footer = onCopy == null && onLongPress == null
+        ? null
+        : KitTurnFooter(
+            copyText: () =>
+                chat?._messageCopy(m).text ?? _replyText(visibleParts),
+            copyLabel: chat?._messageCopy(m).label,
+            meta: metaParts.isEmpty ? null : metaParts.join(' · '),
+            menu: _menuItems(withCopy: false),
+            onMore: onLongPress,
+          );
+
+    final Widget turn = KitTurn(
+      segment: endsTurn ? KitTurnSegment.last : KitTurnSegment.middle,
+      phase: phase,
+      since: createdAt == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(createdAt),
+      blocks: blocks,
+      footer: footer,
+      latest: latest,
+      highlighted: highlighted,
+      footerKey: ValueKey('message-meta-${m.info.id}'),
+      copyKey: ValueKey('message-copy-${m.info.id}'),
+      moreKey: ValueKey('message-actions-${m.info.id}'),
     );
-    final menu = contextActions;
-    final content = TranscriptHighlight(query: searchQuery, child: body);
-    if (menu == null) return content;
-    return ContextMenuRegion(actions: menu, child: content);
+    return stopped
+        ? KeyedSubtree(key: const Key('message-stopped'), child: turn)
+        : turn;
   }
+
+  /// A permission or question for this conversation waits for the person:
+  /// the running work then says "Waiting for you", never that it is running
+  /// (AUTO-15).
+  static bool _requestWaits(_ChatScreenState? chat) {
+    if (chat == null) return false;
+    final session = chat.widget.sessionID;
+    return chat._conn.permissionsForSession(session).isNotEmpty ||
+        chat._conn.questionForSession(session) != null;
+  }
+
+  /// Whether no prompt follows this message: its footer then shows the
+  /// turn's model, time and usage words (older turns keep a quiet footer).
+  static bool _inLatestTurn(List<MessageWithParts>? messages, int? index) {
+    if (messages == null || index == null || index < 0) return true;
+    for (var next = index + 1; next < messages.length; next += 1) {
+      if (_isPrompt(messages[next])) return false;
+    }
+    return true;
+  }
+
+  static String _replyText(List<Part> parts) => parts
+      .where((part) => part.type == 'text' && part.text.trim().isNotEmpty)
+      .map((part) => part.text)
+      .join('\n\n');
 
   /// Splits a message's runs into what is said and what is done: each text
   /// block (or attachment) stands alone, and each unbroken stretch of
@@ -2135,6 +1466,33 @@ class _MessageView extends StatelessWidget {
     return stretches;
   }
 
+  /// A run inside a work line: a run of tool calls is one step per call (the
+  /// agent's heading and note on the first), anything else is its own step.
+  List<Widget> _stepWidgets(
+    _AssistantPartRun run,
+    List<_AssistantPartRun> all,
+    bool streaming,
+  ) {
+    if (!run.grouped) return [_runWidget(run, all, streaming)];
+    return [
+      for (final (index, part) in run.parts.indexed)
+        ToolCard(
+          key: ValueKey(part.id ?? part.callID),
+          toolName: part.toolName ?? 'tool',
+          state: part.toolState,
+          embedded: true,
+          heading: index == 0 ? run.heading : null,
+          note: index == 0 ? run.note : null,
+          expansionStore: expansionStore,
+          expansionKey: 'tool:${part.id ?? part.callID}',
+          filePreviewLoader: filePreviewLoader,
+          onAttachFile: onAttachFile,
+          onDownloadFile: onDownloadFile,
+          onOpenSession: onOpenSession,
+        ),
+    ];
+  }
+
   Widget _runWidget(
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
@@ -2145,24 +1503,15 @@ class _MessageView extends StatelessWidget {
           messageId: run.parts.first.messageID ?? run.parts.first.id ?? '',
         )
       : run.grouped
-      ? _ToolCallGroup(
-          key: ValueKey(
-            'tools:${run.parts.first.id ?? run.parts.first.callID}',
-          ),
-          parts: run.parts,
-          heading: run.heading,
-          note: run.note,
-          expansionStore: expansionStore,
-          filePreviewLoader: filePreviewLoader,
-          onAttachFile: onAttachFile,
-          onDownloadFile: onDownloadFile,
-          onOpenSession: onOpenSession,
+      ? Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: _stepWidgets(run, all, streaming),
         )
       : _AssistantMessagePart(
           part: run.parts.single,
           heading: run.heading,
           note: run.note,
-          searchQuery: searchQuery,
           reasoningExpanded: reasoningExpanded,
           expansionStore: expansionStore,
           filePreviewLoader: filePreviewLoader,
@@ -2184,37 +1533,11 @@ class _MessageView extends StatelessWidget {
       cost < .001 ? '< \$0.001' : '\$${cost.toStringAsFixed(3)}';
 }
 
-/// The visible face of the message-actions target: a "more" glyph on a small
-/// tonal disc. The disc is what makes it read as a control; a bare glyph
-/// under the newest reply looked like the answer trailing off.
-class _MessageActionsDisc extends StatelessWidget {
-  const _MessageActionsDisc({super.key});
-
-  static const double diameter = 28;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: diameter,
-      height: diameter,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        AppIconography.more,
-        size: 16,
-        color: scheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-/// The assistant error row, keyed on the server's typed error: overflow,
-/// auth and length errors get the one action that fixes them; an abort is a
-/// quiet "Stopped"; anything else keeps the plain red message.
+/// The assistant error, keyed on the server's typed error: overflow, auth,
+/// length and model errors get the one action that fixes them, named for
+/// what it acts on; anything else says what happened. Every error offers
+/// its exact server words ("Error details"), which can be copied (P8.3).
+/// A stop is not an error: the turn says "You stopped this reply."
 class _AssistantErrorRow extends StatelessWidget {
   const _AssistantErrorRow({
     required this.info,
@@ -2237,225 +1560,84 @@ class _AssistantErrorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final strings = _chatL10n(context);
     final raw = info.errorText ?? '';
-    final words = agentErrorWords(raw, _chatL10n(context));
+    final words = agentErrorWords(raw, strings);
     final text = words.headline;
-    final details = words.humanized || errorHasDetails(raw) ? raw : null;
     final kind = MessageErrorKind.refineFromText(
       info.errorKind ?? MessageErrorKind.unknown,
       raw,
     );
-    switch (kind) {
-      case MessageErrorKind.modelNotFound:
-        return _ErrorActionCard(
-          key: const Key('error-card-model-not-found'),
-          icon: AppIconography.model,
-          text: text,
-          details: details,
-          actionKey: const Key('error-action-choose-model'),
-          actionLabel: _chatL10n(context).chatUiChooseModel,
-          onAction: onChooseModel,
-        );
-      case MessageErrorKind.contextOverflow:
-        return _ErrorActionCard(
-          key: const Key('error-card-context-overflow'),
-          icon: AppIconography.collapse,
-          text: text,
-          details: details,
-          actionKey: const Key('error-action-compact'),
-          actionLabel: _chatL10n(context).chatUiCompactSession,
-          onAction: onCompact,
-        );
-      case MessageErrorKind.providerAuth:
-        return _ErrorActionCard(
-          key: const Key('error-card-provider-auth'),
-          icon: Icons.key_off_rounded,
-          text: text,
-          actionKey: const Key('error-action-providers'),
-          actionLabel: _chatL10n(context).chatUiOpenProviders,
-          onAction: onOpenProviders,
-        );
-      case MessageErrorKind.outputLength:
-        return _ErrorActionCard(
-          key: const Key('error-card-output-length'),
-          icon: AppIconography.textShort,
-          text: text,
-          details: details,
-          actionKey: const Key('error-action-continue'),
-          actionLabel: _chatL10n(context).returnBriefContinue,
-          onAction: onContinue,
-        );
-      case MessageErrorKind.aborted:
-        return Row(
-          key: const Key('message-stopped'),
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.stop, size: 14, color: AppTheme.mutedOf(theme)),
-            const SizedBox(width: 4),
-            Text(
-              _chatL10n(context).workStopped,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
+    final (String id, KitAction? fix) = switch (kind) {
+      MessageErrorKind.modelNotFound => (
+        'model-not-found',
+        onChooseModel == null
+            ? null
+            : KitAction(
+                key: const Key('error-action-choose-model'),
+                label: strings.chatUiChooseModel,
+                onPressed: onChooseModel,
+              ),
+      ),
+      MessageErrorKind.contextOverflow => (
+        'context-overflow',
+        onCompact == null
+            ? null
+            : KitAction(
+                key: const Key('error-action-compact'),
+                label: strings.chatUiCompactSession,
+                onPressed: onCompact,
+              ),
+      ),
+      MessageErrorKind.providerAuth => (
+        'provider-auth',
+        onOpenProviders == null
+            ? null
+            : KitAction(
+                key: const Key('error-action-providers'),
+                label: strings.chatUiOpenProviders,
+                onPressed: onOpenProviders,
+              ),
+      ),
+      MessageErrorKind.outputLength => (
+        'output-length',
+        onContinue == null
+            ? null
+            : KitAction(
+                key: const Key('error-action-continue'),
+                label: strings.messageViewContinueReply,
+                onPressed: onContinue,
+              ),
+      ),
+      _ => ('generic', null),
+    };
+    final hint =
+        kind == MessageErrorKind.contentFilter ||
+            kind == MessageErrorKind.unknown
+        ? (recovered ? strings.agentErrorRecovered : words.hint)
+        : null;
+    return KeyedSubtree(
+      key: Key('error-card-$id'),
+      child: KitNotice(
+        // The kit's one error glyph for every kind (map Fix: no per-kind
+        // icon in the error tone).
+        tone: recovered ? AppStatusTone.neutral : AppStatusTone.failure,
+        message: text,
+        liveRegion: false,
+        notes: [?hint],
+        actions: [
+          ?fix,
+          KitAction(
+            key: const Key('error-action-details'),
+            label: strings.chatUiErrorDetails,
+            onPressed: () => unawaited(
+              showKitTechnicalDetails(
+                context,
+                title: strings.chatUiErrorDetails,
+                text: raw.trim().isEmpty ? text : raw,
               ),
             ),
-          ],
-        );
-      case MessageErrorKind.contentFilter:
-      case MessageErrorKind.unknown:
-        return _ErrorActionCard(
-          key: const Key('error-card-generic'),
-          icon: AppIconography.error,
-          text: text,
-          hint: recovered ? _chatL10n(context).agentErrorRecovered : words.hint,
-          recovered: recovered,
-          details: details,
-          actionKey: const Key('error-action-none'),
-          actionLabel: '',
-          onAction: null,
-        );
-    }
-  }
-}
-
-class _ErrorActionCard extends StatelessWidget {
-  const _ErrorActionCard({
-    super.key,
-    required this.icon,
-    required this.text,
-    required this.actionKey,
-    required this.actionLabel,
-    required this.onAction,
-    this.details,
-    this.hint,
-    this.recovered = false,
-  });
-
-  final IconData icon;
-  final String text;
-
-  /// What happens next, or what to do; under the headline.
-  final String? hint;
-
-  /// A past problem the turn got over: drawn as a quiet line, no card.
-  final bool recovered;
-  final Key actionKey;
-  final String actionLabel;
-  final VoidCallback? onAction;
-
-  /// The full server text (stack trace included) behind a Details button;
-  /// null when the headline is the whole message.
-  final String? details;
-
-  Future<void> _showDetails(BuildContext context) =>
-      _showChatErrorDetails(context, details ?? text);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Container(
-      // Same language as the rest of the transcript: no card. A problem that
-      // needs you is marked by a rule in the error colour on the leading
-      // edge (as your own prompts are by the accent); one the turn got over
-      // is a quiet line.
-      margin: EdgeInsetsDirectional.only(start: recovered ? 0 : 4),
-      padding: recovered
-          ? const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 0)
-          : const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 0),
-      decoration: recovered
-          ? null
-          : BoxDecoration(
-              border: BorderDirectional(
-                start: BorderSide(color: scheme.error, width: 3),
-              ),
-            ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: recovered ? scheme.onSurfaceVariant : scheme.error,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      text,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: recovered
-                            ? scheme.onSurfaceVariant
-                            : scheme.onSurface,
-                      ),
-                    ),
-                    if (hint case final hint?)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          hint,
-                          key: const Key('error-hint'),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // Details alone sits at the end of the sentence's line
-              // instead of costing a row (as a status line's action does).
-              if (onAction == null && details != null)
-                // A problem the turn got over keeps even its Details quiet.
-                Theme(
-                  data: recovered
-                      ? theme.copyWith(
-                          colorScheme: scheme.copyWith(
-                            primary: scheme.onSurfaceVariant,
-                          ),
-                        )
-                      : theme,
-                  child: KitButton.tertiary(
-                    key: const Key('error-action-details'),
-                    label: _chatL10n(context).chatUiDetails,
-                    onPressed: () => _showDetails(context),
-                  ),
-                ),
-            ],
           ),
-          // With an action to take, the actions get their own row under the
-          // words, start-aligned, the fix first (design standard §2).
-          if (onAction != null)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 24),
-              child: KitInset(
-                child: Wrap(
-                  spacing: 4,
-                  children: [
-                    KitButton.tertiary(
-                      key: actionKey,
-                      label: actionLabel,
-                      onPressed: onAction,
-                    ),
-                    if (details != null)
-                      KitButton.tertiary(
-                        key: const Key('error-action-details'),
-                        label: _chatL10n(context).chatUiDetails,
-                        onPressed: () => _showDetails(context),
-                      ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -2533,151 +1715,19 @@ _MessageMeta _messageMeta(List<MessageWithParts> messages, int index) {
   );
 }
 
-class _UserMessageContent extends StatelessWidget {
-  final List<Part> parts;
-  final String searchQuery;
-
-  const _UserMessageContent({required this.parts, this.searchQuery = ''});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = parts
-        .where((part) => part.type == 'text')
-        .map((part) => part.text)
-        .where((value) => value.trim().isNotEmpty)
-        .join('\n');
-    final files = parts.where((part) => part.type == 'file').toList();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (text.isNotEmpty)
-          TranscriptHighlight(
-            query: searchQuery,
-            child: MarkdownText(text, selectable: false),
-          ),
-        if (text.isNotEmpty && files.isNotEmpty) const SizedBox(height: 8),
-        for (final file in files) _AttachmentPart(part: file),
-      ],
-    );
-  }
-}
-
-class _AttachmentPart extends StatelessWidget {
-  final Part part;
-
-  const _AttachmentPart({required this.part});
-
-  String _filename(BuildContext context) =>
-      part.filename?.trim().isNotEmpty == true
-      ? part.filename!.trim()
-      : _chatL10n(context).chatUiAttachment;
-
-  String _type(BuildContext context) {
-    final dot = _filename(context).lastIndexOf('.');
-    if (dot < 0 || dot == _filename(context).length - 1) {
-      return _chatL10n(context).chatUiFILE;
-    }
-    return _filename(context).substring(dot + 1).toUpperCase();
-  }
-
-  bool get _isReference =>
-      part.mime == PromptAttachment.directoryReferenceMime &&
-      Uri.tryParse(part.url ?? '')?.scheme == 'file';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reference = _isReference;
-    void openPreview() => showFilePreviewSheet(
-      context,
-      FilePreviewData.fromDataUrl(
-        name: _filename(context),
-        mimeType: part.mime,
-        url: part.url,
-      ),
-    );
-
-    return Semantics(
-      container: true,
-      button: !reference,
-      excludeSemantics: true,
-      label: reference
-          ? _chatL10n(context).chatUiReferenceName(_filename(context))
-          : _chatL10n(context).chatUiPreviewAttachmentName(_filename(context)),
-      onTap: reference ? null : openPreview,
-      child: Tooltip(
-        message: reference
-            ? _chatL10n(context).chatUiProjectReferenceName(_filename(context))
-            : _chatL10n(context).chatUiPreviewAttachment,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-          onTap: reference ? null : openPreview,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: .5),
-              borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-              border: Border.all(color: AppTheme.hairline(theme)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  reference ? AppIconography.bookmark : AppIconography.attach,
-                  size: 17,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        reference
-                            ? '@${_filename(context)}'
-                            : _filename(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        reference
-                            ? _chatL10n(context).chatUiProjectReference
-                            : _chatL10n(
-                                context,
-                              ).chatUiAttachmentType(_type(context)),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!reference) ...[
-                  const SizedBox(width: 8),
-                  const Icon(AppIconography.visible, size: 15),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// A thought, folded under its first line ([KitMessage.thought]). The
+/// transcript-wide "show reasoning" setting is the default; a per-thought
+/// choice outlives only the default it was made under.
 class _Reasoning extends StatefulWidget {
   final String text;
   final bool expanded;
+  final bool working;
   final Map<String, bool>? expansionStore;
   final String? expansionKey;
   const _Reasoning({
     required this.text,
     required this.expanded,
+    this.working = false,
     this.expansionStore,
     this.expansionKey,
   });
@@ -2689,25 +1739,15 @@ class _Reasoning extends StatefulWidget {
 class _ReasoningState extends State<_Reasoning> {
   late bool _open;
 
+  /// The thought's first line, as its title: what it was thinking about.
   static String? _preview(String text) {
     final line = text.trim().split('\n').first;
     final plain = line.replaceAll(RegExp(r'[*_`#]+'), '').trim();
     if (plain.isEmpty) return null;
-    // One line's worth: the row is a label for the thought, not the thought.
     return plain.length <= 80
         ? plain
         : '${plain.substring(0, 80).trimRight()}…';
   }
-
-  // Measurement cache: the painter is retained by the State and re-laid-out
-  // only when the text, style, direction, or width actually changes, instead
-  // of allocating a fresh TextPainter on every rebuild of a streaming turn.
-  TextPainter? _painter;
-  String? _measuredText;
-  TextStyle? _measuredStyle;
-  TextDirection? _measuredDirection;
-  double? _measuredWidth;
-  bool _short = true;
 
   bool? get _stored => widget.expansionKey == null
       ? null
@@ -2750,9 +1790,7 @@ class _ReasoningState extends State<_Reasoning> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.expanded != widget.expanded) {
       // The transcript-wide toggle sets a new default. Per-part overrides are
-      // dropped rather than overwritten with the toggle's value: stamping the
-      // store meant one flip permanently erased every per-part choice in the
-      // session, and flipping back could not restore them.
+      // dropped rather than overwritten with the toggle's value.
       if (widget.expansionKey case final key?) {
         widget.expansionStore?.remove(key);
         widget.expansionStore?.remove(_defaultKey);
@@ -2762,178 +1800,27 @@ class _ReasoningState extends State<_Reasoning> {
   }
 
   @override
-  void dispose() {
-    _painter?.dispose();
-    super.dispose();
-  }
-
-  bool _isShort(TextStyle style, TextDirection direction, double maxWidth) {
-    if (_painter == null ||
-        _measuredText != widget.text ||
-        _measuredStyle != style ||
-        _measuredDirection != direction ||
-        _measuredWidth != maxWidth) {
-      final painter = _painter ?? TextPainter();
-      painter
-        ..text = TextSpan(text: widget.text, style: style)
-        ..textDirection = direction
-        ..layout(maxWidth: maxWidth);
-      _painter = painter;
-      _measuredText = widget.text;
-      _measuredStyle = style;
-      _measuredDirection = direction;
-      _measuredWidth = maxWidth;
-      _short = painter.computeLineMetrics().length < 2;
-    }
-    return _short;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodySmall!.copyWith(
-      fontStyle: FontStyle.italic,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final short = _isShort(
-          textStyle,
-          Directionality.of(context),
-          constraints.maxWidth - 14,
-        );
-        return Container(
-          key: const Key('assistant-reasoning-block'),
-          // Its rule stands on the same edge as the prose and as the rule
-          // of your own messages.
-          margin: const EdgeInsetsDirectional.only(start: 4, bottom: 6),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: theme.colorScheme.secondary.withValues(alpha: .5),
-                width: 2,
-              ),
-            ),
-          ),
-          child: short
-              ? KeyedSubtree(
-                  key: const Key('reasoning-inline'),
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(8, 5, 4, 5),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: _proseWidthCap,
-                      ),
-                      child: MarkdownText(
-                        widget.text,
-                        baseStyle: textStyle,
-                        selectable: false,
-                      ),
-                    ),
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Semantics(
-                      button: true,
-                      expanded: _open,
-                      excludeSemantics: true,
-                      label: _open
-                          ? _chatL10n(context).chatUiCollapseReasoningDetails
-                          : _chatL10n(context).chatUiExpandReasoningDetails,
-                      child: InkWell(
-                        key: const Key('reasoning-toggle'),
-                        onTap: () => setState(() {
-                          _open = !_open;
-                          _persist(_open);
-                        }),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                              8,
-                              4,
-                              4,
-                              4,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  AppIconography.model,
-                                  size: 13,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 5),
-                                // Closed, the row is the thought's first
-                                // line. The word "Reasoning" and what it
-                                // means appear once it is opened.
-                                if (_open)
-                                  InfoLabel.glossary(
-                                    Glossary.reasoning,
-                                    key: const Key('reasoning-glossary'),
-                                    iconSize: 13,
-                                    style: theme.textTheme.labelSmall!.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                if (!_open) ...[
-                                  Flexible(
-                                    child: Text(
-                                      // What it was thinking about, not an
-                                      // instruction to tap.
-                                      _preview(widget.text) ??
-                                          _chatL10n(context).chatUiTapToExpand,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelSmall!
-                                          .copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (_open)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                          8,
-                          4,
-                          4,
-                          4,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: _proseWidthCap,
-                          ),
-                          child: MarkdownText(
-                            widget.text,
-                            baseStyle: textStyle,
-                            selectable: false,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => KeyedSubtree(
+    key: const Key('assistant-reasoning-block'),
+    child: KitMessage.thought(
+      thoughtKey: const Key('reasoning-toggle'),
+      heading: widget.working ? null : _preview(widget.text),
+      working: widget.working,
+      body: _proseMarkdown(context, widget.text, role: KitTextRole.secondary),
+      expanded: _open,
+      onExpansionChanged: (open) => setState(() {
+        _open = open;
+        _persist(open);
+      }),
+    ),
+  );
 }
 
-/// The single surface for everything pending between the transcript and the
-/// composer (design doc §5): offline drafts waiting for a reconnect, and —
-/// on OpenCode 2 — server inbox items (admitted, not-yet-delivered sends).
-/// One bubble anatomy; only icon and status line differ by kind. Both kinds
-/// coexist in arrival order, so the user sees one list of "things that will
-/// reach the agent", never two queue UIs.
+/// Everything waiting to reach the agent, as one bubble between the
+/// transcript and the composer ([KitQueuedMessage], "Waiting to send · N"):
+/// offline drafts waiting for a reconnect and, on OpenCode 2, sends the
+/// server accepted but has not delivered. Oldest first, each with its own
+/// state words and its own menu; the bubble never acts on its own.
 class _PendingSendsStrip extends StatelessWidget {
   const _PendingSendsStrip({
     super.key,
@@ -2965,148 +1852,147 @@ class _PendingSendsStrip extends StatelessWidget {
   final ValueChanged<Api2InboxItem> onCancelInbox;
   final ValueChanged<Api2InboxItem> onFlipDelivery;
 
-  @override
-  Widget build(BuildContext context) {
-    // Merge both kinds into arrival order. Each row is keyed by what it
-    // stands for, so a message that leaves folds away where it was.
-    final entries = <({int time, Key id, Widget child})>[
-      for (var index = 0; index < drafts.length; index++)
-        (
-          time: drafts[index].createdAt,
-          id: ValueKey('queued-row-${drafts[index].id}'),
-          child: _QueuedPromptBubble(
-            key: ValueKey('queued-send-$index'),
-            entry: drafts[index],
-            sending: isSending(drafts[index]),
-            acceptedUnrecorded: isAcceptedUnrecorded(drafts[index]),
-            onEdit: () => onEdit(drafts[index]),
-            onResend: () => onResend(drafts[index]),
-            onDiscard: () => onDiscard(drafts[index]),
+  /// A draft whose send left and never came back confirmed: it can be sent
+  /// again (the person decides; it never resends on its own).
+  bool _unconfirmed(QueuedPrompt entry) =>
+      entry.dispatched && !isSending(entry) && !isAcceptedUnrecorded(entry);
+
+  KitQueuedItem _draftItem(
+    BuildContext context,
+    QueuedPrompt entry,
+    int index,
+  ) {
+    final strings = _chatL10n(context);
+    final sending = isSending(entry);
+    final review = entry.dispatched && !sending;
+    final accepted = review && isAcceptedUnrecorded(entry);
+    final state = sending
+        ? KitQueuedState.sending
+        : accepted
+        ? KitQueuedState.reachedServer
+        : review
+        ? KitQueuedState.notConfirmed
+        : entry.error != null
+        ? KitQueuedState.failed
+        : KitQueuedState.waiting;
+    return KitQueuedItem(
+      id: entry.id,
+      key: ValueKey('queued-send-$index'),
+      text: entry.text,
+      state: state,
+      attachmentCount: entry.attachments.length,
+      reason: entry.error,
+      menu: [
+        if (review && !accepted)
+          KitMenuItem(
+            key: const ValueKey('queued-action-resend'),
+            icon: AppIconography.send,
+            label: strings.messageViewSendAgain,
+            onSelected: () => onResend(entry),
           ),
+        KitMenuItem(
+          key: const ValueKey('queued-action-edit'),
+          icon: AppIconography.edit,
+          label: strings.chatUiEditDraft,
+          enabled: !sending,
+          onSelected: () => onEdit(entry),
         ),
-      for (final item in inboxItems)
-        (
-          time: item.timeCreated ?? 0,
-          id: ValueKey('pending-row-${item.id}'),
-          child: _InboxSendBubble(
-            key: ValueKey('pending-send-${item.id}'),
-            item: item,
-            onCancel: () => onCancelInbox(item),
-            onFlipDelivery: () => onFlipDelivery(item),
-          ),
+        KitMenuItem(
+          key: const ValueKey('queued-action-discard'),
+          icon: AppIconography.delete,
+          label: strings.chatUiDiscardDraft,
+          destructive: true,
+          enabled: !sending,
+          onSelected: () => onDiscard(entry),
         ),
-    ]..sort((a, b) => a.time.compareTo(b.time));
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860, maxHeight: 180),
-        // No container-level size animation here: the strip lives inside a
-        // scroll view, where an AnimatedSize re-measures every frame and
-        // never settles. Items unfold in and fold away individually
-        // (KitAnimatedRows), each settling after KitMotion.standard.
-        child: SingleChildScrollView(
-          // Always mounted now: never claim the page's primary controller.
-          primary: false,
-          child: KitAnimatedRows(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (final entry in entries)
-                Padding(
-                  key: entry.id,
-                  padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 8, 2),
-                  child: entry.child,
-                ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
   }
-}
 
-/// Shared bubble anatomy for the pending-sends strip: right-aligned
-/// 14-radius `surfaceContainerLow` bubble with an `outlineVariant` border,
-/// two-line text preview, and an icon + status line.
-class _PendingSendBubble extends StatelessWidget {
-  const _PendingSendBubble({
-    required this.text,
-    required this.attachmentCount,
-    required this.icon,
-    required this.label,
-    required this.semanticsLabel,
-    this.error = false,
-    this.actions = const [],
-  });
-
-  final String text;
-  final int attachmentCount;
-  final IconData icon;
-  final String label;
-  final String semanticsLabel;
-  final bool error;
-
-  /// Inline actions on the status row (flip delivery, cancel, edit): one tap
-  /// each, no sheet in between.
-  final List<Widget> actions;
+  KitQueuedItem _inboxItem(BuildContext context, Api2InboxItem item) {
+    final strings = _chatL10n(context);
+    final isUser = item.type == 'user';
+    final steering = item.delivery == Api2Delivery.steer;
+    return KitQueuedItem(
+      id: item.id,
+      key: ValueKey('pending-send-${item.id}'),
+      text: isUser ? (item.promptText ?? '') : '',
+      state: !isUser
+          ? KitQueuedState.contextUpdate
+          : steering
+          ? KitQueuedState.addToThisTurn
+          : KitQueuedState.afterThisReply,
+      menu: [
+        // Only the flip that changes the current mode is offered; the server
+        // has no reorder, so none is faked.
+        if (isUser)
+          steering
+              ? KitMenuItem(
+                  key: const ValueKey('inbox-action-queue'),
+                  icon: AppIcons.queue,
+                  label: strings.chatUiWaitForThisRunInstead,
+                  onSelected: () => onFlipDelivery(item),
+                )
+              : KitMenuItem(
+                  key: const ValueKey('inbox-action-steer'),
+                  icon: AppIcons.run,
+                  label: strings.chatUiSendNowAndSteerInstead,
+                  onSelected: () => onFlipDelivery(item),
+                ),
+        if (isUser)
+          KitMenuItem(
+            key: const ValueKey('inbox-action-cancel'),
+            icon: AppIconography.close,
+            label: strings.chatUiCancelAndReturnToTheComposer,
+            onSelected: () => onCancelInbox(item),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final statusColor = error
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurfaceVariant;
-    return Semantics(
-      container: true,
-      label: semanticsLabel,
-      child: Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: error
-                ? theme.colorScheme.error.withValues(alpha: .6)
-                : theme.colorScheme.outlineVariant,
-          ),
+    final tokens = KitTokens.of(context);
+    final entries = <({int time, KitQueuedItem item})>[
+      for (final (index, draft) in drafts.indexed)
+        (time: draft.createdAt, item: _draftItem(context, draft, index)),
+      for (final item in inboxItems)
+        (time: item.timeCreated ?? 0, item: _inboxItem(context, item)),
+    ]..sort((a, b) => a.time.compareTo(b.time));
+    // The bubble's one call to action: sending again the one message whose
+    // delivery is unconfirmed. With several, each item's menu offers it
+    // (the host confirms each resend; a batch resend waits for its own
+    // confirmation).
+    final unconfirmed = drafts.where(_unconfirmed).toList();
+    final resend = unconfirmed.length == 1
+        ? KitAction(
+            key: const ValueKey('queued-bubble-resend'),
+            icon: AppIconography.send,
+            label: _chatL10n(context).messageViewSendAgain,
+            onPressed: () => onResend(unconfirmed.single),
+          )
+        : null;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: KitLayout.paneDetailMaxWidth,
+          maxHeight:
+              MediaQuery.sizeOf(context).height * KitLayout.composerMaxShare,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
+        child: ListView(
+          // Always mounted: never claim the page's primary controller.
+          primary: false,
+          shrinkWrap: true,
+          padding: entries.isEmpty
+              ? EdgeInsets.zero
+              : EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.space4,
+                  vertical: tokens.space1,
+                ),
           children: [
-            if (text.isNotEmpty)
-              Text(
-                text,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
-              ),
-            if (attachmentCount > 0)
-              Text(
-                _chatL10n(context).chatUiAttachmentCount(attachmentCount),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 13, color: statusColor),
-                const SizedBox(width: 5),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-                if (actions.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  for (final action in actions) action,
-                ],
-              ],
+            KitQueuedMessage(
+              items: [for (final entry in entries) entry.item],
+              action: resend,
             ),
           ],
         ),
@@ -3115,184 +2001,10 @@ class _PendingSendBubble extends StatelessWidget {
   }
 }
 
-/// A 32 dp inline action on a pending-send bubble.
-class _PendingSendAction extends StatelessWidget {
-  const _PendingSendAction({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-
-  /// Null renders the action disabled — a draft whose send is on the wire
-  /// must not be edited into a second send or discarded as unsent.
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: tooltip,
-    onPressed: onPressed,
-    visualDensity: VisualDensity.compact,
-    constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-    padding: EdgeInsets.zero,
-    iconSize: 17,
-    icon: Icon(icon),
-  );
-}
-
-/// A queued draft in one of three states: waiting for the next flush,
-/// on the wire right now, or dispatched without a confirmed outcome. The
-/// last state never resends on its own — the socket may have dropped after
-/// the prompt reached the server — so it offers an explicit resend beside
-/// the usual edit and discard.
-class _QueuedPromptBubble extends StatelessWidget {
-  const _QueuedPromptBubble({
-    super.key,
-    required this.entry,
-    required this.sending,
-    required this.acceptedUnrecorded,
-    required this.onEdit,
-    required this.onResend,
-    required this.onDiscard,
-  });
-
-  final QueuedPrompt entry;
-  final bool sending;
-  final bool acceptedUnrecorded;
-  final VoidCallback onEdit;
-  final VoidCallback onResend;
-  final VoidCallback onDiscard;
-
-  @override
-  Widget build(BuildContext context) {
-    final error = entry.error;
-    final review = entry.dispatched && !sending;
-    final l10n = _chatL10n(context);
-    final String label;
-    final IconData icon;
-    if (sending) {
-      label = l10n.queuedSending;
-      icon = AppIconography.upload;
-    } else if (review && acceptedUnrecorded) {
-      // The controller's recorded reason names the acceptance; the generic
-      // "unconfirmed" copy would invite a resend that is a certain duplicate.
-      label = error ?? l10n.queuedDeliveryUnconfirmed;
-      icon = AppIconography.cloudCheck;
-    } else if (review) {
-      label = error == null
-          ? l10n.queuedDeliveryUnconfirmed
-          : l10n.queuedDeliveryUnconfirmedWithError(error);
-      icon = AppIconography.question;
-    } else if (error != null) {
-      label = _chatL10n(context).chatUiFailedDetail(error);
-      icon = AppIconography.error;
-    } else {
-      label = _chatL10n(context).chatUiQueuedWillSendWhenReconnected;
-      icon = AppIconography.clock;
-    }
-    return _PendingSendBubble(
-      text: entry.text,
-      attachmentCount: entry.attachments.length,
-      icon: icon,
-      label: label,
-      error: review || (!sending && error != null),
-      semanticsLabel: _chatL10n(context).chatUiQueuedDraftLabel(label),
-      actions: [
-        if (review && !acceptedUnrecorded)
-          _PendingSendAction(
-            key: const ValueKey('queued-action-resend'),
-            icon: AppIconography.send,
-            tooltip: l10n.queuedResendTooltip,
-            onPressed: onResend,
-          ),
-        _PendingSendAction(
-          key: const ValueKey('queued-action-edit'),
-          icon: AppIconography.edit,
-          tooltip: _chatL10n(context).chatUiEditDraft,
-          onPressed: sending ? null : onEdit,
-        ),
-        _PendingSendAction(
-          key: const ValueKey('queued-action-discard'),
-          icon: AppIconography.delete,
-          tooltip: _chatL10n(context).chatUiDiscardDraft,
-          onPressed: sending ? null : onDiscard,
-        ),
-      ],
-    );
-  }
-}
-
-/// A server inbox item in the strip. `user` items get inline flip and
-/// cancel actions (server items are immutable, so cancel-back-to-composer
-/// is the edit affordance); synthetic/compaction/move items are
-/// informational.
-class _InboxSendBubble extends StatelessWidget {
-  const _InboxSendBubble({
-    super.key,
-    required this.item,
-    required this.onCancel,
-    required this.onFlipDelivery,
-  });
-
-  final Api2InboxItem item;
-  final VoidCallback onCancel;
-  final VoidCallback onFlipDelivery;
-
-  bool get _isUser => item.type == 'user';
-  bool get _steering => item.delivery == Api2Delivery.steer;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = !_isUser
-        ? _chatL10n(context).chatUiContextUpdatePending
-        : _steering
-        ? _chatL10n(context).chatUiSteeringAtTheNextStep
-        : _chatL10n(context).chatUiWaitingForThisRunToFinish;
-    return _PendingSendBubble(
-      text: _isUser ? (item.promptText ?? '') : '',
-      attachmentCount: 0,
-      icon: !_isUser
-          ? AppIconography.sparkle
-          : _steering
-          ? AppIcons.run
-          : AppIcons.queue,
-      label: label,
-      semanticsLabel: _chatL10n(context).chatUiPendingSendLabel(label),
-      actions: [
-        // Only the flip that changes the current mode is offered; the server
-        // has no reorder, so none is faked.
-        if (_isUser)
-          _steering
-              ? _PendingSendAction(
-                  key: const ValueKey('inbox-action-queue'),
-                  icon: AppIcons.queue,
-                  tooltip: _chatL10n(context).chatUiWaitForThisRunInstead,
-                  onPressed: onFlipDelivery,
-                )
-              : _PendingSendAction(
-                  key: const ValueKey('inbox-action-steer'),
-                  icon: AppIcons.run,
-                  tooltip: _chatL10n(context).chatUiSendNowAndSteerInstead,
-                  onPressed: onFlipDelivery,
-                ),
-        if (_isUser)
-          _PendingSendAction(
-            key: const ValueKey('inbox-action-cancel'),
-            icon: AppIconography.close,
-            tooltip: _chatL10n(context).chatUiCancelAndReturnToTheComposer,
-            onPressed: onCancel,
-          ),
-      ],
-    );
-  }
-}
-
 /// A server-authored background result remains separate from the parent's own
-/// reply. The readable outcome is primary; exact protocol text is inspectable.
-class BackgroundAgentResultCard extends StatefulWidget {
+/// reply. The readable outcome is primary; exact protocol text is inspectable
+/// behind its details fold.
+class BackgroundAgentResultCard extends StatelessWidget {
   const BackgroundAgentResultCard({
     super.key,
     required this.result,
@@ -3305,115 +2017,59 @@ class BackgroundAgentResultCard extends StatefulWidget {
   final ValueChanged<String>? onOpenChild;
 
   @override
-  State<BackgroundAgentResultCard> createState() =>
-      _BackgroundAgentResultCardState();
-}
-
-class _BackgroundAgentResultCardState extends State<BackgroundAgentResultCard> {
-  bool _details = false;
-
-  @override
   Widget build(BuildContext context) {
     final strings = _chatL10n(context);
-    final theme = Theme.of(context);
-    final result = widget.result;
-    final status = switch (result.state) {
-      'completed' => strings.chatUiBackgroundComplete,
-      'error' => strings.chatUiBackgroundError,
-      _ => strings.chatUiBackgroundCancelled,
+    final tokens = KitTokens.of(context);
+    final (status, mark) = switch (result.state) {
+      'completed' => (strings.chatUiBackgroundComplete, KitMarkState.done),
+      'error' => (strings.chatUiBackgroundError, KitMarkState.failed),
+      _ => (strings.chatUiBackgroundCancelled, KitMarkState.waiting),
     };
-    final color = switch (result.state) {
-      'completed' => AppTheme.successOf(theme),
-      'error' => theme.colorScheme.error,
-      _ => theme.colorScheme.onSurfaceVariant,
-    };
-    return Card.filled(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    final open = onOpenChild;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitText(
+          strings.chatUiBackgroundResult,
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+        ),
+        SizedBox(height: tokens.space1),
+        KitText(
+          result.description.isEmpty ? result.agent : result.description,
+          role: KitTextRole.rowTitle,
+        ),
+        SizedBox(height: tokens.space1),
+        Row(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  result.state == 'completed'
-                      ? AppIconography.checkCircle
-                      : Icons.info_outline,
-                  color: color,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strings.chatUiBackgroundResult,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        result.description.isEmpty
-                            ? result.agent
-                            : result.description,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${result.agent} · $status',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: color,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            MarkdownText(
-              result.body.isEmpty ? strings.chatUiNoResultText : result.body,
-              selectable: false,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                if (widget.onOpenChild != null)
-                  TextButton.icon(
-                    onPressed: () => widget.onOpenChild!(result.childID),
-                    icon: const Icon(AppIconography.branch, size: 18),
-                    label: Text(strings.chatUiResultOpenChild),
-                  ),
-                TextButton.icon(
-                  onPressed: () => setState(() => _details = !_details),
-                  icon: Icon(
-                    _details ? Icons.expand_less : Icons.expand_more,
-                    size: 18,
-                  ),
-                  label: Text(strings.chatUiResultSourceDetails),
-                ),
-              ],
-            ),
-            if (_details)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: SelectableText(
-                  widget.rawText,
-                  textDirection: TextDirection.ltr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: AppTheme.monoFamily,
-                  ),
-                ),
+            KitStatusMark(state: mark, label: status),
+            SizedBox(width: tokens.space2),
+            Expanded(
+              child: KitText(
+                '${result.agent} · $status',
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
               ),
+            ),
           ],
         ),
-      ),
+        SizedBox(height: tokens.space3),
+        MarkdownText(
+          result.body.isEmpty ? strings.chatUiNoResultText : result.body,
+          selectable: false,
+        ),
+        if (open != null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitButton.tertiary(
+              icon: AppIconography.branch,
+              label: strings.chatUiResultOpenChild,
+              onPressed: () => open(result.childID),
+            ),
+          ),
+        KitDetailsFold(label: strings.chatUiResultSourceDetails, text: rawText),
+      ],
     );
   }
 }

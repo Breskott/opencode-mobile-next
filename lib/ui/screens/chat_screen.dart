@@ -58,7 +58,6 @@ import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
-import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
 import '../widgets/nudge_card.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
