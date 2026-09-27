@@ -9,14 +9,19 @@
 ///    answering"); Technical details and the board are its actions. Search
 ///    joins them only when there are more than eight tasks, and opens the
 ///    pinned [KitSearchField] with its one filter menu.
-/// 2. **Needs you**, only when something does: one question as a request
-///    block with its answers, several as rows on one panel (the Gate sheet
-///    of `gate_sheet.dart` holds the rest).
-/// 3. **Tasks**: one panel of rows, what needs the person and what runs
-///    first, then what waits; then **Done today** (three shown, the rest
-///    behind one row). A row is the task's title, one supporting line
-///    ("Working · 3 of 5 steps done") and one leading mark ([KitTaskMark]);
-///    it opens the task's conversation ([TeamConversation.open]), the same
+/// 2. What needs the person, only when something does, with no heading of
+///    its own: one question as a request block with its answers, several as
+///    rows on one panel (the Gate sheet of `gate_sheet.dart` holds the
+///    rest). The one question's block is also its task's row: it names the
+///    task, carries its step count and opens its conversation, so the task
+///    is not listed again below.
+/// 3. **Tasks**: ONE panel of rows under one heading, ordered by urgency
+///    (owner rule 2026-09-27): what needs the person, then what runs, then
+///    what waits, then what finished (three shown, the rest behind one
+///    row), never split into state sections. A row is the task's title,
+///    one supporting line ("Working · 3 of 5 steps done", "Done · merged 5h
+///    ago") and one leading mark ([KitTaskMark]) that carries the state; it
+///    opens the task's conversation ([TeamConversation.open]), the same
 ///    page every other door to a task opens.
 /// 4. One **agents** row ("3 agents · 1 working") that opens
 ///    [TeamAgentsScreen], and the board row.
@@ -41,7 +46,6 @@ import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
-import '../../widgets/team_moments.dart';
 import '../../widgets/team_now.dart';
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
@@ -317,15 +321,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     };
   }
 
-  bool _today(OrchestrationRun run) {
-    final at = (run.finishedAt ?? run.updatedAt ?? run.startedAt)?.toLocal();
-    if (at == null) return false;
-    final local = _now.toLocal();
-    return at.year == local.year &&
-        at.month == local.month &&
-        at.day == local.day;
-  }
-
   Widget _body(BuildContext context) {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
@@ -349,6 +344,10 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final upkeep = teamUpkeepRuns(snapshot.runs)
       ..sort((a, b) => teamCompareRuns(a, b, gated));
     final ordered = [...runs]..sort((a, b) => teamCompareRuns(a, b, gated));
+    // One question in place names its task and stands for its row.
+    final carded = gates.length == 1
+        ? teamGateRun(snapshot, gates.single)
+        : null;
     final query = (_searchOpen ? _query : '').trim().toLowerCase();
     final filtering =
         _searchOpen && (query.isNotEmpty || _filter != TeamRunFilter.all);
@@ -356,12 +355,16 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       for (final run in ordered)
         if (!filtering || _matches(run, query, gated)) run,
     ];
-    final open = [
+    final listed = [
       for (final run in visible)
+        if (run.id != carded?.id) run,
+    ];
+    final open = [
+      for (final run in listed)
         if (!_isFinished(run)) run,
     ];
     final done = [
-      for (final run in visible)
+      for (final run in listed)
         if (_isFinished(run)) run,
     ];
     final doneShown = _doneExpanded || filtering
@@ -449,29 +452,23 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             ambient: index == 0,
           ),
         ),
-      // 1. What needs the person, first, and only when something does.
+      // 1. What needs the person, first, and only when something does: the
+      // answer surface itself, no section heading over it.
       if (gates.isNotEmpty) ...[
-        // The heading's agent peeks over the block and waves once.
-        TeamNeedsYouLabel(
-          l10n.teamUiRunNeedsYou,
-          key: const ValueKey('team-home-needs-you'),
-          profileId: controller.profileId,
-          gateIds: [for (final gate in gates) gate.id],
-          padding: EdgeInsets.fromLTRB(
-            tokens.gutter,
-            tokens.space3,
-            tokens.gutter,
-            tokens.labelGap,
-          ),
-        ),
+        SizedBox(height: tokens.space3),
         if (gates.length == 1)
           TeamNeedsYouCard(
             keyPrefix: 'team-home-gate-${gates.single.id}',
             controller: controller,
             gate: gates.single,
-            title:
-                teamGateRun(snapshot, gates.single)?.title ??
-                l10n.teamUiHomeNeedsYouFallbackTitle,
+            title: carded?.title ?? l10n.teamUiHomeNeedsYouFallbackTitle,
+            detail: carded == null || _isFinished(carded)
+                ? null
+                : teamTaskSteps(
+                    l10n,
+                    TeamRunProgress.of(carded, snapshot.work),
+                  ),
+            onOpenTask: carded == null ? null : () => _openRun(carded),
             onOpen: () => _openGate(gates.single),
           )
         else
@@ -491,7 +488,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         gap,
       ] else
         SizedBox(height: tokens.space3),
-      // 2. The tasks: one panel, then what finished.
+      // 2. The tasks: one panel, most urgent first, what finished last.
       if (runs.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty'),
@@ -521,21 +518,12 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           body: l10n.teamUiHomeRunsEmptyHint,
         ),
       if (runs.isEmpty || visible.isEmpty) gap,
-      if (open.isNotEmpty) ...[
+      if (listed.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),
           label: l10n.teamUiHomeTasksHeading,
-          children: [for (final run in open) row(run)],
-        ),
-        gap,
-      ],
-      if (done.isNotEmpty) ...[
-        KitRowGroup(
-          key: const ValueKey('team-home-completed-group'),
-          label: done.every(_today)
-              ? l10n.teamUiHomeDoneToday
-              : l10n.teamUiHomeDoneEarlier,
           children: [
+            for (final run in open) row(run),
             for (final run in doneShown) row(run),
             if (hiddenDone > 0)
               KitRow(
