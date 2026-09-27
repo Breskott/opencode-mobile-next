@@ -20978,6 +20978,227 @@ class AppLocalizationsEn extends AppLocalizations {
   String get folderBrowserFirstProject => 'Name your first project';
 
   @override
+  String kitChecklistNext(String step) {
+    return 'next: $step';
+  }
+
+  @override
+  String kitChecklistNeedsYou(String action) {
+    return 'needs you, $action';
+  }
+
+  @override
+  String get kitChecklistShowSteps => 'Show steps';
+
+  @override
+  String get kitChecklistHideSteps => 'Hide steps';
+
+  @override
+  String get kitRequestAllowOnce => 'Allow once';
+
+  @override
+  String get kitRequestReject => 'Reject';
+
+  @override
+  String get kitRequestApprove => 'Approve';
+
+  @override
+  String get kitRequestSendBack => 'Send back';
+
+  @override
+  String get kitRequestAnswer => 'Answer';
+
+  @override
+  String get kitRequestSend => 'Send';
+
+  @override
+  String get kitRequestReplyEmptyReason => 'Type a reply first.';
+
+  @override
+  String kitRequestMoreAnswers(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString more answers',
+      one: '1 more answer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitRequestExpired => 'Expired · the agent stopped waiting';
+
+  @override
+  String kitRequestAge(String age) {
+    return 'waiting $age';
+  }
+
+  @override
+  String kitDiffFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitDiffChangeOf(int index, int count) {
+    final intl.NumberFormat indexNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String indexString = indexNumberFormat.format(index);
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Change $indexString of $countString';
+  }
+
+  @override
+  String get kitDiffPreviousChange => 'Previous change';
+
+  @override
+  String get kitDiffNextChange => 'Next change';
+
+  @override
+  String kitDiffLines(int start, int end) {
+    final intl.NumberFormat startNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String startString = startNumberFormat.format(start);
+    final intl.NumberFormat endNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String endString = endNumberFormat.format(end);
+
+    return 'Lines $startString–$endString';
+  }
+
+  @override
+  String kitDiffShowUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count unchanged lines',
+      one: 'Show 1 unchanged line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitDiffHideUnchanged => 'Hide unchanged lines';
+
+  @override
+  String kitDiffUnchangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unchanged lines',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitDiffNoChanges => 'No changes';
+
+  @override
+  String get kitDiffBinary => 'Binary file · not shown';
+
+  @override
+  String kitDiffRenamed(String path) {
+    return 'Renamed from $path';
+  }
+
+  @override
+  String get kitDiffAddedFile => 'New file';
+
+  @override
+  String get kitDiffDeletedFile => 'Deleted';
+
+  @override
+  String kitDiffTooBig(int shown, int total) {
+    final intl.NumberFormat shownNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String shownString = shownNumberFormat.format(shown);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Showing $shownString of $totalString lines';
+  }
+
+  @override
+  String get kitDiffOpenAll => 'Open all';
+
+  @override
+  String kitDiffLineAdded(int number) {
+    return 'Line $number added';
+  }
+
+  @override
+  String kitDiffLineRemoved(int number) {
+    return 'Line $number removed';
+  }
+
+  @override
+  String get kitDiffComment => 'Comment';
+
+  @override
+  String get kitDiffAddToPrompt => 'Add to prompt';
+
+  @override
+  String get kitDiffCopyLines => 'Copy lines';
+
+  @override
+  String get kitDiffClearSelection => 'Clear selection';
+
+  @override
+  String kitDiffSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lines selected',
+      one: '1 line selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitDiffCounts(int added, int removed) {
+    return '$added added, $removed removed';
+  }
+
+  @override
+  String get kitDiffLoadFailed => 'Couldn\'t load the changes';
+
+  @override
+  String kitDiffLine(int number) {
+    return 'Line $number';
+  }
+
+  @override
+  String kitBoardLane(String column, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+      zero: 'no tasks',
+    );
+    return '$column, $_temp0';
+  }
+
+  @override
+  String kitBoardLaneLoading(String column) {
+    return 'Loading $column';
+  }
+
+  @override
   String get kitMarkdownOpenLink => 'Open link';
 
   @override

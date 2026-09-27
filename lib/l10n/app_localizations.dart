@@ -33425,6 +33425,252 @@ abstract class AppLocalizations {
   /// **'Name your first project'**
   String get folderBrowserFirstProject;
 
+  /// KitChecklist compact line: the next step's words after the current one, as in 'Step 3 of 7 · Reviewing · next: merge'
+  ///
+  /// In en, this message translates to:
+  /// **'next: {step}'**
+  String kitChecklistNext(String step);
+
+  /// KitChecklist: spoken after a step only the person can do, naming the button that does it ('needs you, Allow')
+  ///
+  /// In en, this message translates to:
+  /// **'needs you, {action}'**
+  String kitChecklistNeedsYou(String action);
+
+  /// KitChecklist compact line: tooltip and hint of the folded one-line form; unfolds the full list of steps
+  ///
+  /// In en, this message translates to:
+  /// **'Show steps'**
+  String get kitChecklistShowSteps;
+
+  /// KitChecklist compact line: tooltip and hint once the list of steps is unfolded; folds it back to one line
+  ///
+  /// In en, this message translates to:
+  /// **'Hide steps'**
+  String get kitChecklistHideSteps;
+
+  /// KitRequestCard: a permission's allow button (one time only)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow once'**
+  String get kitRequestAllowOnce;
+
+  /// KitRequestCard: a permission's reject button
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get kitRequestReject;
+
+  /// KitRequestCard: an AI Team gate's approve button
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get kitRequestApprove;
+
+  /// KitRequestCard: an AI Team gate's reject button; the work goes back to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send back'**
+  String get kitRequestSendBack;
+
+  /// KitRequestCard: the one button that opens the request's details sheet to answer it (a form, several answers)
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get kitRequestAnswer;
+
+  /// KitRequestCard: sends the typed reply to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitRequestSend;
+
+  /// KitRequestCard: why Send is unavailable while the reply field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Type a reply first.'**
+  String get kitRequestReplyEmptyReason;
+
+  /// KitRequestCard: opens the details sheet with the answers that do not fit in the card
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 more answer} other{{count} more answers}}'**
+  String kitRequestMoreAnswers(int count);
+
+  /// KitRequestCard: a request the agent no longer waits for; nothing to press
+  ///
+  /// In en, this message translates to:
+  /// **'Expired · the agent stopped waiting'**
+  String get kitRequestExpired;
+
+  /// KitRequestCard: the header's age, composed with KitSince.ageLabel, mid-sentence ("waiting 4 min")
+  ///
+  /// In en, this message translates to:
+  /// **'waiting {age}'**
+  String kitRequestAge(String age);
+
+  /// KitDiffView: how many files a diff covers, on the file picker row
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String kitDiffFiles(int count);
+
+  /// KitDiffView: the change navigator's label, also announced when moving to a change
+  ///
+  /// In en, this message translates to:
+  /// **'Change {index} of {count}'**
+  String kitDiffChangeOf(int index, int count);
+
+  /// KitDiffView: tooltip of the navigator's up arrow
+  ///
+  /// In en, this message translates to:
+  /// **'Previous change'**
+  String get kitDiffPreviousChange;
+
+  /// KitDiffView: tooltip of the navigator's down arrow
+  ///
+  /// In en, this message translates to:
+  /// **'Next change'**
+  String get kitDiffNextChange;
+
+  /// KitDiffView: a hunk header (@@ … @@) read as the line range it covers in the new file
+  ///
+  /// In en, this message translates to:
+  /// **'Lines {start}–{end}'**
+  String kitDiffLines(int start, int end);
+
+  /// KitDiffView: a folded run of unchanged lines; tapping reveals this many more
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 unchanged line} other{Show {count} unchanged lines}}'**
+  String kitDiffShowUnchanged(int count);
+
+  /// KitDiffView: folds the unchanged lines revealed from a gap again
+  ///
+  /// In en, this message translates to:
+  /// **'Hide unchanged lines'**
+  String get kitDiffHideUnchanged;
+
+  /// KitDiffView: a gap the patch does not carry, so it cannot be expanded; only its size is stated
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{{count} unchanged lines}}'**
+  String kitDiffUnchangedCount(int count);
+
+  /// KitDiffView: the empty state when there are no changed files
+  ///
+  /// In en, this message translates to:
+  /// **'No changes'**
+  String get kitDiffNoChanges;
+
+  /// KitDiffView: a binary file's body; its lines are not shown
+  ///
+  /// In en, this message translates to:
+  /// **'Binary file · not shown'**
+  String get kitDiffBinary;
+
+  /// KitDiffView: the file header's supporting line for a renamed file; path is the old path
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed from {path}'**
+  String kitDiffRenamed(String path);
+
+  /// KitDiffView: the status word of a file the change creates
+  ///
+  /// In en, this message translates to:
+  /// **'New file'**
+  String get kitDiffAddedFile;
+
+  /// KitDiffView: the status word of a file the change deletes
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get kitDiffDeletedFile;
+
+  /// KitDiffView: a preview capped at a number of lines
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} lines'**
+  String kitDiffTooBig(int shown, int total);
+
+  /// KitDiffView: opens the whole diff from a capped preview
+  ///
+  /// In en, this message translates to:
+  /// **'Open all'**
+  String get kitDiffOpenAll;
+
+  /// KitDiffView: screen-reader label of an added line, followed by its text
+  ///
+  /// In en, this message translates to:
+  /// **'Line {number} added'**
+  String kitDiffLineAdded(int number);
+
+  /// KitDiffView: screen-reader label of a removed line, followed by its text
+  ///
+  /// In en, this message translates to:
+  /// **'Line {number} removed'**
+  String kitDiffLineRemoved(int number);
+
+  /// KitDiffView: the selection bar's primary; comments on the selected lines
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get kitDiffComment;
+
+  /// KitDiffView: puts the selected lines into the message being written
+  ///
+  /// In en, this message translates to:
+  /// **'Add to prompt'**
+  String get kitDiffAddToPrompt;
+
+  /// KitDiffView: copies the selected lines, exactly as they are
+  ///
+  /// In en, this message translates to:
+  /// **'Copy lines'**
+  String get kitDiffCopyLines;
+
+  /// KitDiffView: tooltip of the button that clears the selected lines
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get kitDiffClearSelection;
+
+  /// KitDiffView: the selection bar's count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 line selected} other{{count} lines selected}}'**
+  String kitDiffSelected(int count);
+
+  /// KitDiffView: a file's +n −n counts, spoken in full to a screen reader
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {removed} removed'**
+  String kitDiffCounts(int added, int removed);
+
+  /// KitDiffView: the error state's title when the diff could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the changes'**
+  String get kitDiffLoadFailed;
+
+  /// KitDiffView: screen-reader label of an unchanged line, followed by its text
+  ///
+  /// In en, this message translates to:
+  /// **'Line {number}'**
+  String kitDiffLine(int number);
+
+  /// KitBoardLanes: a board lane's screen-reader label, the column's name and how many tasks it holds
+  ///
+  /// In en, this message translates to:
+  /// **'{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}'**
+  String kitBoardLane(String column, int count);
+
+  /// KitBoardLanes: the screen-reader label of the skeleton lane while the board's first answer comes
+  ///
+  /// In en, this message translates to:
+  /// **'Loading {column}'**
+  String kitBoardLaneLoading(String column);
+
   /// KitMarkdown: the screen-reader hint on a link in an agent's reply
   ///
   /// In en, this message translates to:

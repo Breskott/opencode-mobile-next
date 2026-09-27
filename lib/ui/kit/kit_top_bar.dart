@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'glass/kit_glass.dart';
+import 'kit_screen.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
 import 'kit_icon.dart';
@@ -145,6 +146,9 @@ class KitTopBar extends StatelessWidget {
   /// The exit [exit] resolves to at [context]'s route.
   static KitTopBarExit resolveExit(BuildContext context, KitTopBarExit exit) {
     if (exit != KitTopBarExit.auto) return exit;
+    // A detail or side pane of KitScreen.twoPane/threePane has no Back
+    // (KitScreen.md §6, KitTopBar.md test 2).
+    if (KitScreen.inPane(context)) return KitTopBarExit.none;
     final route = ModalRoute.of(context);
     if (route == null) return KitTopBarExit.none;
     if (route is PageRoute && route.fullscreenDialog) {
