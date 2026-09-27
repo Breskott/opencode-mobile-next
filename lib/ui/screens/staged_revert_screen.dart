@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/models.dart';
 import '../../domain/server_gateway.dart';
+import '../../domain/staged_revert_message_count.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
@@ -29,27 +30,42 @@ bool _revertBusy(ConnectionController controller, String sessionID) =>
     controller.sessionRevertSaving(sessionID) ||
     controller.busySessions.contains(sessionID);
 
-/// "Undo from this prompt?" (map stage-revert-sheet): the prompt the undo
-/// starts from, what happens to the conversation, and whether files go back
-/// too. Resolves to the files choice when the person chooses "Undo and
-/// review", null when they close the sheet.
+/// "Undo from this prompt?" (map stage-revert-sheet): the one "Undo from
+/// here" flow on every server. It quotes the prompt the undo starts from,
+/// says what happens to the conversation, and covers the files.
 ///
-/// With [stage], the sheet runs the staging itself: the primary shows it is
-/// working, and a failure keeps the sheet open with a notice ("stage
-/// failed"), so the choice is never lost to an error. Without it the caller
-/// stages after the sheet closes (today's chat caller).
+/// Two shapes, by what the server allows (never by server name):
 ///
-/// The primary turns off, and says why, while the conversation is busy or
-/// its undo state changed on the server (stale).
+/// * Staged ([stage], or neither callback): the prompt and everything after
+///   it are hidden while the person reviews, with a "Put files back too"
+///   choice. Resolves to that files choice after "Undo and review"; the
+///   review page then lists the files and the exact message count. With
+///   [stage] the sheet stages itself: the primary shows the work, and a
+///   failure keeps the sheet open with a notice, so the choice is never lost
+///   to an error. Without it the caller stages after the sheet closes.
+/// * One step ([undo]): the server undoes at once, so the sheet is the
+///   honest confirm. It says how many messages go ([messagesAfter], null when
+///   unknown), that files go back, and lists the files the agent reported
+///   editing after the prompt ([editedFiles]). "Undo now" runs [undo] inside
+///   the sheet; a failure keeps it open. Resolves to true once it ran.
+///
+/// Resolves to null when the person closes the sheet. The primary turns
+/// off, and says why, while the conversation is busy or its undo state
+/// changed on the server (stale).
 Future<bool?> showStageRevertSheet(
   BuildContext context, {
   required ConnectionController controller,
   required SessionRevertReview review,
   required String prompt,
   Future<void> Function(bool applyFiles)? stage,
+  Future<void> Function()? undo,
+  List<String> editedFiles = const [],
+  int? messagesAfter,
 }) async {
+  assert(stage == null || undo == null, 'one shape at a time');
   final l10n = _strings(context);
   final navigator = Navigator.of(context);
+  final oneStep = undo != null;
   final applyFiles = ValueNotifier<bool>(true);
   final working = ValueNotifier<bool>(false);
   final failure = ValueNotifier<Object?>(null);
@@ -57,8 +73,9 @@ Future<bool?> showStageRevertSheet(
   var open = true;
 
   Future<void> submit() async {
-    final value = applyFiles.value;
-    final run = stage;
+    final value = oneStep || applyFiles.value;
+    final Future<void> Function()? run =
+        undo ?? (stage == null ? null : () => stage(value));
     if (run == null) {
       if (open) navigator.pop(value);
       return;
@@ -66,7 +83,7 @@ Future<bool?> showStageRevertSheet(
     working.value = true;
     failure.value = null;
     try {
-      await run(value);
+      await run();
     } catch (error) {
       working.value = false;
       failure.value = error;
@@ -77,14 +94,18 @@ Future<bool?> showStageRevertSheet(
     if (open) navigator.pop(value);
   }
 
+  final label = oneStep
+      ? l10n.undoFromHereNowAction
+      : l10n.reviewRevertSheetAction;
   void sync() {
     if (working.value) {
       // A working action is never shown disabled (STATE-7); a second tap
       // does nothing.
       primary.value = KitAction(
         key: const ValueKey('stage-revert-confirm'),
-        label: l10n.reviewRevertSheetAction,
+        label: label,
         icon: AppIconography.undo,
+        destructive: oneStep,
         working: true,
         onPressed: () {},
       );
@@ -97,8 +118,10 @@ Future<bool?> showStageRevertSheet(
         : null;
     primary.value = KitAction(
       key: const ValueKey('stage-revert-confirm'),
-      label: l10n.reviewRevertSheetAction,
+      label: label,
       icon: AppIconography.undo,
+      // One step cannot be reviewed first, so it carries the error tone.
+      destructive: oneStep,
       disabledReason: reason,
       onPressed: reason == null ? () => unawaited(submit()) : null,
     );
@@ -128,11 +151,20 @@ Future<bool?> showStageRevertSheet(
           final busy = _revertBusy(controller, review.sessionID);
           final error = failure.value;
           final text = prompt.trim();
+          final count = messagesAfter;
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              KitText(l10n.reviewRevertSheetBody, tone: KitTextTone.secondary),
+              KitText(
+                key: const ValueKey('stage-revert-body'),
+                !oneStep
+                    ? l10n.reviewRevertSheetBody
+                    : count == null
+                    ? l10n.undoFromHereBodyUnknown
+                    : l10n.undoFromHereBody(count),
+                tone: KitTextTone.secondary,
+              ),
               SizedBox(height: tokens.space4),
               KitRowGroup(
                 label: l10n.reviewRevertPromptLabel,
@@ -147,26 +179,46 @@ Future<bool?> showStageRevertSheet(
                 ],
               ),
               SizedBox(height: tokens.space4),
-              KitRowGroup(
-                margin: EdgeInsets.zero,
-                children: [
-                  KitSwitchRow(
-                    switchKey: const ValueKey('stage-revert-files'),
-                    leading: const KitRowIcon(AppIconography.file),
-                    title: l10n.reviewRevertFilesToggle,
-                    supporting: l10n.reviewRevertFilesToggleHint,
-                    value: applyFiles.value,
-                    onChanged: current && !busy && !working.value
-                        ? (value) => applyFiles.value = value
-                        : null,
-                  ),
-                ],
-              ),
+              if (oneStep)
+                KitRowGroup(
+                  label: l10n.undoFromHereFilesLabel,
+                  margin: EdgeInsets.zero,
+                  children: [
+                    if (editedFiles.isEmpty)
+                      KitRow(
+                        key: const ValueKey('stage-revert-no-edits'),
+                        leading: const KitRowIcon(AppIconography.file),
+                        title: l10n.undoFromHereNoEdits,
+                        titleMaxLines: 3,
+                      )
+                    else
+                      for (final path in editedFiles)
+                        _editedFileRow(l10n, path),
+                  ],
+                )
+              else
+                KitRowGroup(
+                  margin: EdgeInsets.zero,
+                  children: [
+                    KitSwitchRow(
+                      switchKey: const ValueKey('stage-revert-files'),
+                      leading: const KitRowIcon(AppIconography.file),
+                      title: l10n.reviewRevertFilesToggle,
+                      supporting: l10n.reviewRevertFilesToggleHint,
+                      value: applyFiles.value,
+                      onChanged: current && !busy && !working.value
+                          ? (value) => applyFiles.value = value
+                          : null,
+                    ),
+                  ],
+                ),
               if (error != null) ...[
                 SizedBox(height: tokens.space4),
                 KitNotice.error(
                   key: const ValueKey('stage-revert-failed'),
-                  message: l10n.reviewRevertStageFailed,
+                  message: oneStep
+                      ? l10n.reviewRevertFailed
+                      : l10n.reviewRevertStageFailed,
                   error: error,
                   details: '$error',
                 ),
@@ -181,6 +233,20 @@ Future<bool?> showStageRevertSheet(
     controller.removeListener(sync);
     working.removeListener(sync);
   }
+}
+
+/// A file the agent reported editing after the prompt: its name, with the
+/// folder beneath. Read-only: one-step servers give no preview to open.
+Widget _editedFileRow(AppLocalizations l10n, String path) {
+  final cut = path.lastIndexOf('/');
+  final name = cut < 0 ? path : path.substring(cut + 1);
+  final folder = cut <= 0 ? null : path.substring(0, cut);
+  return KitRow(
+    key: ValueKey('stage-revert-edited-$path'),
+    leading: const KitRowIcon(AppIconography.file),
+    title: name,
+    supporting: folder == null ? null : TextSpan(text: KitBidi.ltr(folder)),
+  );
 }
 
 /// What the person chose on the review page, once it went through.
@@ -221,6 +287,11 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
   bool _promptUnavailable = false;
   _Outcome? _outcome;
 
+  /// How many messages follow the hidden prompt, read from the server for
+  /// exactly [_review]. Null while loading, or when it could not be counted:
+  /// the page then says "everything after it", never zero.
+  int? _count;
+
   /// True while a confirmed act runs inside its question: the question
   /// stays open through the controller changes the act itself causes.
   bool _acting = false;
@@ -230,6 +301,39 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
     super.initState();
     _review = widget.controller.reviewSessionRevert(widget.sessionID);
     unawaited(_loadPrompt());
+    unawaited(_loadCount());
+  }
+
+  /// A point-in-time count for the reviewed boundary (SV1). It is dropped
+  /// as soon as the review is replaced or goes stale, and never shown for a
+  /// review other than the one it was read for.
+  Future<void> _loadCount() async {
+    final review = _review;
+    final controller = widget.controller;
+    final api = controller.api;
+    final revert = review.revert;
+    final operations = controller.repository;
+    if (api == null ||
+        revert == null ||
+        !api.canCountStagedRevertMessages(operations)) {
+      return;
+    }
+    bool current() =>
+        mounted &&
+        identical(_review, review) &&
+        controller.isRevertReviewCurrent(review);
+    try {
+      final result = await api.countStagedRevertMessages(
+        widget.sessionID,
+        expected: revert,
+        operations: operations,
+        isCurrent: current,
+      );
+      if (!current()) return;
+      setState(() => _count = result.messagesAfterPrompt);
+    } on StagedRevertCountException {
+      // Unknown stays unknown: the page keeps its "everything after it" copy.
+    }
   }
 
   Future<void> _loadPrompt() async {
@@ -265,8 +369,10 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
       _error = controller.sessionDetailsErrors[widget.sessionID];
       _prompt = null;
       _promptUnavailable = false;
+      _count = null;
     });
     unawaited(_loadPrompt());
+    unawaited(_loadCount());
   }
 
   Future<void> _apply({required bool commit}) async {
@@ -274,6 +380,7 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
     final reviewed = _review;
     final l10n = _strings(context);
     final files = reviewed.revert?.files;
+    final count = _count;
     final routes = RequestRoutes(
       changes: controller,
       isPending: () => _acting || controller.isRevertReviewCurrent(reviewed),
@@ -305,7 +412,9 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
         kind: KitConfirmKind.destructive,
         consequenceItems: [
           KitConsequence(
-            l10n.reviewRevertKeepConsequenceMessages,
+            count == null
+                ? l10n.reviewRevertKeepConsequenceMessages
+                : l10n.reviewRevertKeepConsequenceCount(count),
             mark: KitConsequenceMark.lost,
           ),
           KitConsequence(
@@ -477,7 +586,10 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
           children: [
             onRails(
               KitText(
-                l10n.reviewRevertScreenIntro,
+                key: const ValueKey('staged-revert-intro'),
+                _count == null
+                    ? l10n.reviewRevertScreenIntro
+                    : l10n.reviewRevertScreenIntroCount(_count!),
                 tone: KitTextTone.secondary,
               ),
             ),

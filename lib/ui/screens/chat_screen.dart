@@ -22,6 +22,7 @@ import '../../domain/background_work.dart';
 import '../../domain/background_agent_result.dart';
 import '../../domain/background_shell_result.dart';
 import '../../domain/session_handoff.dart';
+import '../../domain/run_result.dart';
 import '../../domain/session_history.dart';
 import '../../domain/transcript_search.dart';
 import 'running_work_sheet.dart';
@@ -1958,9 +1959,7 @@ class _ChatScreenState extends State<ChatScreen>
       final page = await readHistoryAtStagedBoundary(
         api,
         scope.session,
-        boundary: _conn.supportsStagedRevert
-            ? _conn.sessionsById[scope.session]?.stagedRevert?.messageID
-            : null,
+        boundary: _conn.sessionsById[scope.session]?.stagedRevert?.messageID,
         isCurrent: () => _currentHistory(generation, scope),
       );
       if (!_currentHistory(generation, scope)) return;
@@ -4074,12 +4073,12 @@ class _ChatScreenState extends State<ChatScreen>
     return pinned < count ? pinned : count;
   }
 
-  /// The pinned v2 API returns staged-away rows until commit. Keep them in
-  /// the hydration cache, but apply the server's boundary to every chat view.
+  /// Servers return undone rows until the undo is final (v2 until commit,
+  /// v1 until the next prompt). Keep them in the hydration cache, but apply
+  /// the server's boundary to every chat view on every server.
   Iterable<MessageWithParts> get _visibleHistory {
-    final boundary = _conn.supportsStagedRevert
-        ? _conn.sessionsById[widget.sessionID]?.stagedRevert?.messageID
-        : null;
+    final boundary =
+        _conn.sessionsById[widget.sessionID]?.stagedRevert?.messageID;
     return boundary == null
         ? _messages
         : _messages.takeWhile(
@@ -4409,12 +4408,12 @@ class _ChatScreenState extends State<ChatScreen>
         icon: AppIconography.speakUser,
         onSelected: () => unawaited(_readReply(message, chooseVoice: true)),
       ),
-    if (_canStageFrom(message))
+    if (_canUndoFrom(message))
       ContextMenuAction(
         menuKey: const ValueKey('message-menu-revert'),
         label: _chatL10n(context).revertFromHere,
         icon: AppIconography.history,
-        onSelected: () => unawaited(_stageFromMessage(message)),
+        onSelected: () => unawaited(_undoFrom(message)),
       ),
     if (_conn.capabilities.messageDelete)
       ContextMenuAction(
@@ -4567,39 +4566,19 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// "Undo last prompt" (conversation menu, /undo): the same "Undo from
+  /// here" flow as a prompt's own menu, from the newest prompt.
   Future<void> _revertLast() async {
     if (!_conn.capabilities.sessionRevert) return;
     MessageWithParts? target;
     for (final message in _visibleHistory.toList().reversed) {
-      if (message.info.role == 'user' &&
-          !message.info.id.startsWith('local-') &&
-          !_conn
-              .inboxItemsFor(widget.sessionID)
-              .any((item) => item.id == message.info.id)) {
+      if (_isUndoTarget(message)) {
         target = message;
         break;
       }
     }
     if (target == null) return;
-    if (_conn.supportsStagedRevert) {
-      await _stageFromMessage(target);
-      return;
-    }
-    final confirmed = await showKitConfirm(
-      context,
-      icon: AppIconography.history,
-      title: _chatL10n(context).chatUiRevertFromThisPrompt,
-      body: _chatL10n(context).chatUiMessagesAndFileChangesAfterTheMost,
-      confirmLabel: _chatL10n(context).chatUiRevert,
-    );
-    if (!confirmed) return;
-    try {
-      final repository = await _requireActionRepository();
-      await repository.revertSession(widget.sessionID, target.info.id);
-      await _load(resetHistory: true);
-    } catch (error) {
-      if (mounted) _showActionError(error);
-    }
+    await _undoFrom(target);
   }
 
   Future<void> _restore() async {
@@ -4611,46 +4590,93 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final repository = await _requireActionRepository();
       await repository.restoreSession(widget.sessionID);
+      // The boundary clears on the session: read it so the turns come back.
+      await _conn.ensureSession(widget.sessionID);
       await _load(resetHistory: true);
     } catch (error) {
       if (mounted) _showActionError(error);
     }
   }
 
-  bool _canStageFrom(MessageWithParts message) =>
-      _conn.supportsStagedRevert &&
-      !_conn.sessionRevertSaving(widget.sessionID) &&
-      !_conn.busySessions.contains(widget.sessionID) &&
+  /// A prompt the server saved and still holds: undo can start there.
+  bool _isUndoTarget(MessageWithParts message) =>
       message.info.role == 'user' &&
       !message.info.id.startsWith('local-') &&
       !_conn
           .inboxItemsFor(widget.sessionID)
           .any((item) => item.id == message.info.id);
 
-  Future<void> _stageFromMessage(MessageWithParts message) async {
-    if (!_canStageFrom(message)) return;
+  /// Whether a prompt's menu offers "Undo from here". A busy conversation
+  /// still offers it: the sheet says why its primary is off.
+  bool _canUndoFrom(MessageWithParts message) =>
+      _conn.capabilities.sessionRevert && _isUndoTarget(message);
+
+  /// The one "Undo from here" flow (map stage-revert-sheet) behind every
+  /// door: a prompt's menu, the conversation menu and /undo. Where the
+  /// server stages an undo, the sheet stages it and the review page follows;
+  /// otherwise the sheet is the honest one-step confirm and undoes at once.
+  Future<void> _undoFrom(MessageWithParts message) async {
+    if (!_canUndoFrom(message)) return;
     final review = _conn.reviewSessionRevert(widget.sessionID);
-    // The sheet stages itself: its primary shows the work, and a failure
-    // stays in the sheet with the choice kept, instead of an alert after
-    // it closed.
-    final applyFiles = await showStageRevertSheet(
+    final prompt = message.parts
+        .where((part) => part.type == 'text')
+        .map((part) => part.text)
+        .join('\n');
+    if (_conn.supportsStagedRevert) {
+      // The sheet stages itself: its primary shows the work, and a failure
+      // stays in the sheet with the choice kept, instead of an alert after
+      // it closed.
+      final applyFiles = await showStageRevertSheet(
+        context,
+        controller: _conn,
+        review: review,
+        prompt: prompt,
+        stage: (applyFiles) => _conn.stageSessionRevert(
+          review,
+          message.info.id,
+          applyFiles: applyFiles,
+        ),
+      );
+      if (!mounted || applyFiles == null) return;
+      if (review.scope == _conn.reviewSessionRevert(widget.sessionID).scope) {
+        await _reviewStagedRevert();
+      }
+      return;
+    }
+    final after = _messagesAfter(message);
+    final undone = await showStageRevertSheet(
       context,
       controller: _conn,
       review: review,
-      prompt: message.parts
-          .where((part) => part.type == 'text')
-          .map((part) => part.text)
-          .join('\n'),
-      stage: (applyFiles) => _conn.stageSessionRevert(
-        review,
-        message.info.id,
-        applyFiles: applyFiles,
-      ),
+      prompt: prompt,
+      messagesAfter: after?.length,
+      editedFiles: after == null ? const [] : RunResult.editedPaths(after),
+      undo: () async {
+        final repository = await _requireActionRepository();
+        await repository.revertSession(widget.sessionID, message.info.id);
+      },
     );
-    if (!mounted || applyFiles == null) return;
-    if (review.scope == _conn.reviewSessionRevert(widget.sessionID).scope) {
-      await _reviewStagedRevert();
+    if (!mounted || undone != true) return;
+    try {
+      // The undo boundary comes from the session; read it now rather than
+      // wait for its event, so the undone turns hide at once.
+      await _conn.ensureSession(widget.sessionID);
+      await _load(resetHistory: true);
+    } catch (error) {
+      if (mounted) _showActionError(error);
     }
+  }
+
+  /// The server's messages after [message] in the loaded transcript, or null
+  /// when [message] is not in it. History loads newest first, so a loaded
+  /// prompt has everything after it loaded too.
+  List<MessageWithParts>? _messagesAfter(MessageWithParts message) {
+    final index = _messages.indexWhere((m) => m.info.id == message.info.id);
+    if (index < 0) return null;
+    return [
+      for (final m in _messages.skip(index + 1))
+        if (!m.info.id.startsWith('local-')) m,
+    ];
   }
 
   Future<void> _reviewStagedRevert() => Navigator.of(context).push<void>(
@@ -5346,9 +5372,7 @@ class _ChatScreenState extends State<ChatScreen>
       _ChatCommand.mobile(
         slash: 'undo',
         title: _chatL10n(context).chatUiRevertLastPrompt,
-        description: _conn.supportsStagedRevert
-            ? _chatL10n(context).revertUndoDescription
-            : _chatL10n(context).chatUiRollBackMessagesAndFileChangesAfter,
+        description: _chatL10n(context).revertUndoDescription,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.undo,
         enabled:
@@ -7542,6 +7566,13 @@ class _ChatScreenState extends State<ChatScreen>
                   _stagedRevertStatus(
                     context,
                     onReview: () => unawaited(_reviewStagedRevert()),
+                  )
+                else if (!_conn.isIsolated &&
+                    _conn.capabilities.sessionRevert &&
+                    session?.reverted == true)
+                  _undoneStatus(
+                    context,
+                    onPutBack: () => unawaited(_restore()),
                   ),
                 if (!_conn.isIsolated && parentID != null)
                   _subagentStatus(

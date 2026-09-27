@@ -225,6 +225,26 @@ _ChatStatus _stagedRevertStatus(
   );
 }
 
+/// An undo the server applied at once (no review step): it holds until the
+/// next prompt, so the way back sits on the line.
+_ChatStatus _undoneStatus(
+  BuildContext context, {
+  required VoidCallback onPutBack,
+}) {
+  final l10n = _chatL10n(context);
+  return _ChatStatus(
+    id: 'undone',
+    icon: AppIconography.history,
+    message: l10n.undoneStatus,
+    action: KitAction(
+      key: const ValueKey('chat-status-undo-put-back'),
+      label: l10n.undonePutBack,
+      icon: AppIconography.restore,
+      onPressed: onPutBack,
+    ),
+  );
+}
+
 /// This conversation is one another agent delegated: where it sits among
 /// its siblings, the way back to the conversation that delegated it, and
 /// the siblings behind More.

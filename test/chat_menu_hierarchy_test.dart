@@ -59,7 +59,7 @@ void main() {
       await tester.pumpAndSettle();
       for (final title in [
         'Retry last prompt',
-        'Revert last prompt',
+        'Undo last prompt',
         'Fork conversation',
         'Compact context',
         'Share conversation',

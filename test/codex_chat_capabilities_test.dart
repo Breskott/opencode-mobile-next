@@ -167,7 +167,7 @@ void main() {
 
     expect(find.text('Changes'), findsNothing);
     expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
+    expect(find.text('Undo last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Subagent conversations'), findsNothing);
@@ -177,7 +177,7 @@ void main() {
     await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
+    expect(find.text('Undo last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Share conversation'), findsNothing);

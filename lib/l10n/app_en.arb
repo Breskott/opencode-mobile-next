@@ -361,8 +361,8 @@
   "revertPreviewEmpty": "No file changes were reported for this stage.",
   "revertStaged": "Revert staged",
   "revertReview": "Review",
-  "revertFromHere": "Revert from this prompt",
-  "revertUndoDescription": "Stage a revert and review the affected files",
+  "revertFromHere": "Undo from here",
+  "revertUndoDescription": "Undo the last prompt and everything after it",
   "revertClearShortDescription": "Review and clear the staged revert",
   "revertPromptUnavailable": "The boundary prompt could not be loaded.",
   "revertPromptLoading": "Loading the boundary prompt…",
@@ -7125,10 +7125,6 @@
   "@chatUiMessageTimestampsShown": {
     "description": "Chat journey: Message timestamps shown"
   },
-  "chatUiMessagesAndFileChangesAfterTheMost": "Messages and file changes after the most recent prompt will be rolled back.",
-  "@chatUiMessagesAndFileChangesAfterTheMost": {
-    "description": "Chat journey: Messages and file changes after the most recent prompt will be rolled back."
-  },
   "chatUiMobileActionsAndCommandsFromThisServer": "Mobile actions and commands from this server",
   "@chatUiMobileActionsAndCommandsFromThisServer": {
     "description": "Chat journey: Mobile actions and commands from this server"
@@ -7381,17 +7377,9 @@
   "@chatUiRetryServerCommands": {
     "description": "Chat journey: Retry server commands"
   },
-  "chatUiRevert": "Revert",
-  "@chatUiRevert": {
-    "description": "Chat journey: Revert"
-  },
-  "chatUiRevertFromThisPrompt": "Revert from this prompt?",
-  "@chatUiRevertFromThisPrompt": {
-    "description": "Chat journey: Revert from this prompt?"
-  },
-  "chatUiRevertLastPrompt": "Revert last prompt",
+  "chatUiRevertLastPrompt": "Undo last prompt",
   "@chatUiRevertLastPrompt": {
-    "description": "Chat journey: Revert last prompt"
+    "description": "Conversation menu and /undo command: opens the one \"Undo from this prompt?\" sheet for the newest prompt."
   },
   "chatUiReviewCommentAddedToThePrompt": "Review comment added to the prompt",
   "@chatUiReviewCommentAddedToThePrompt": {
@@ -7404,10 +7392,6 @@
   "chatUiReviewTheActualDiffForThisSession": "Review the actual diff for this conversation",
   "@chatUiReviewTheActualDiffForThisSession": {
     "description": "Chat journey: Review the actual diff for this session"
-  },
-  "chatUiRollBackMessagesAndFileChangesAfter": "Roll back messages and file changes after the prompt",
-  "@chatUiRollBackMessagesAndFileChangesAfter": {
-    "description": "Chat journey: Roll back messages and file changes after the prompt"
   },
   "chatUiRunOnYourComputer": "Run on your computer",
   "@chatUiRunOnYourComputer": {
@@ -30676,5 +30660,56 @@
   "phoneSetupTermuxOtherRuntime": "Termux already runs the other OpenCode. Switch it on This phone, then continue setup.",
   "@phoneSetupTermuxOtherRuntime": {
     "description": "Termux setup: the job installed one OpenCode generation but Termux serves the other; switching is This phone's job"
+  },
+  "undoFromHereNowAction": "Undo now",
+  "@undoFromHereNowAction": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once (no review step): the primary button that undoes."
+  },
+  "undoFromHereBody": "{count, plural, =0{This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.} =1{This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.} other{This prompt and the {count} messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.}}",
+  "@undoFromHereBody": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: what happens, with the number of messages after the prompt, and the way back.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undoFromHereBodyUnknown": "This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.",
+  "@undoFromHereBodyUnknown": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once, when the number of messages is not known."
+  },
+  "undoFromHereFilesLabel": "Files the agent edited after it",
+  "@undoFromHereFilesLabel": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: label above the files the agent reported editing after the prompt."
+  },
+  "undoFromHereNoEdits": "The agent reported no file edits after this prompt.",
+  "@undoFromHereNoEdits": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: the files list when the agent reported no edits."
+  },
+  "undoneStatus": "Undone from a prompt",
+  "@undoneStatus": {
+    "description": "Conversation status line on a server that undoes at once: the conversation was undone from a prompt and can still be put back."
+  },
+  "undonePutBack": "Put back",
+  "@undonePutBack": {
+    "description": "Conversation status line after an undo: brings the removed messages and files back."
+  },
+  "reviewRevertScreenIntroCount": "{count, plural, =0{This prompt is hidden; nothing came after it. Nothing is final until you choose below.} =1{This prompt and the message after it are hidden. Nothing is final until you choose below.} other{This prompt and the {count} messages after it are hidden. Nothing is final until you choose below.}}",
+  "@reviewRevertScreenIntroCount": {
+    "description": "Review the undo page: first line with the number of messages after the hidden prompt, as the server counted them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRevertKeepConsequenceCount": "{count, plural, =0{The hidden prompt is deleted} =1{The hidden prompt and the message after it are deleted} other{The hidden prompt and the {count} messages after it are deleted}}",
+  "@reviewRevertKeepConsequenceCount": {
+    "description": "Review the undo page: consequence line (lost) in the delete-hidden-messages question, with the number of messages the server counted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
