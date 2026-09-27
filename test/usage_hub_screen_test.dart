@@ -186,7 +186,7 @@ void main() {
     await tester.tap(remaining);
     await tester.pumpAndSettle();
     expect(find.byType(ProviderQuotaScreen), findsOneWidget);
-    expect(find.text(_en.quotaSetupTitle), findsOneWidget);
+    expect(find.text(_en.quotaNeedsCollector('Workstation')), findsOneWidget);
     expect(find.byType(AppBar), findsOneWidget);
     overview.dispose();
     await _finish(tester, h.connection);

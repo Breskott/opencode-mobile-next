@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../api2/transport.dart';
+import '../../domain/quota_answers.dart';
 import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
@@ -44,8 +45,8 @@ AppLocalizations _strings(BuildContext context) =>
 /// (activity, tokens, providers, models, tools). The long explanations of
 /// what the numbers are and are not fold under one Details at the end; the
 /// one sentence that this is not the provider's bill stays visible.
-/// Deeper restructuring (sentences, filters in a sheet) is deferred to
-/// slice-P5.4.
+/// The total's label names the days the server actually covered
+/// (slice-P5.4).
 ///
 /// A server without usage statistics is explained in place
 /// (KitCapabilityExplainer, `server.oc2`) instead of an error line.
@@ -293,8 +294,10 @@ class _Label extends StatelessWidget {
   }
 }
 
-/// The answer first: the reported cost for the range, and which days and
-/// project it covers.
+/// The answer first: what was spent and over which days. The label names
+/// the days the server actually covered: when they differ from the range
+/// asked for (a 30-day request answered for Sep 2 – 6) it gives those
+/// dates instead of claiming the range (slice-P5.4).
 class _UsageTotal extends StatelessWidget {
   const _UsageTotal({required this.snapshot});
   final UsageSnapshot snapshot;
@@ -304,23 +307,34 @@ class _UsageTotal extends StatelessWidget {
     final l10n = _strings(context);
     final tokens = KitTokens.of(context);
     final stats = snapshot.statistics;
-    final date = DateFormat.yMMMd(
+    final covered = SpentPeriod.fromUsage(
+      query: snapshot.query,
+      statistics: stats,
+      requestedRange: snapshot.range,
+    );
+    final days = spentDays(
+      covered,
       Localizations.localeOf(context).toLanguageTag(),
+      l10n,
     );
-    final period = l10n.usagePeriod(
-      date.format(DateTime.fromMillisecondsSinceEpoch(stats.from)),
-      date.format(
-        DateTime.fromMillisecondsSinceEpoch(
-          stats.to > stats.from ? stats.to - 1 : stats.to,
-        ),
-      ),
-    );
+    final spent = covered.matchesRequestedRange
+        ? switch (snapshot.range) {
+            UsageRange.today => l10n.usageSpentToday,
+            UsageRange.thirtyDays => l10n.usageSpentThirtyDays,
+            UsageRange.year => l10n.usageSpentYear,
+            UsageRange.allTime => l10n.usageSpentAllTime,
+          }
+        : l10n.usageSpentPeriod(days);
     return KitSurface.panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          KitText(l10n.usageReportedCost, role: KitTextRole.label),
+          KitText(
+            spent,
+            key: const ValueKey('usage-total-period'),
+            role: KitTextRole.label,
+          ),
           SizedBox(height: tokens.space1),
           KitText(
             _money(context, stats.cost),
@@ -329,10 +343,12 @@ class _UsageTotal extends StatelessWidget {
             tabular: true,
           ),
           SizedBox(height: tokens.space2),
+          // The dates show once: in the label when they are not the range
+          // asked for, otherwise here beside the project.
           KitText(
             [
               if (snapshot.projectName case final name?) KitBidi.auto(name),
-              period,
+              if (covered.matchesRequestedRange) days,
             ].join(' · '),
             role: KitTextRole.secondary,
           ),
@@ -348,6 +364,34 @@ class _UsageTotal extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The days [period] covers, compact: "Sep 2 – 6", "Aug 30 – Sep 3",
+/// "Sep 2", or with years when they differ. The end is the last included
+/// instant (the interval is half-open). The query's timezone is this
+/// device's own (UsageOverview reads it from the device), so local time is
+/// the display timezone.
+String spentDays(SpentPeriod period, String locale, AppLocalizations l10n) {
+  final from = period.from.toLocal();
+  final last =
+      (period.to.isAfter(period.from)
+              ? period.to.subtract(const Duration(milliseconds: 1))
+              : period.to)
+          .toLocal();
+  final sameDay =
+      from.year == last.year &&
+      from.month == last.month &&
+      from.day == last.day;
+  if (sameDay) return DateFormat.MMMd(locale).format(from);
+  if (from.year != last.year) {
+    final full = DateFormat.yMMMd(locale);
+    return l10n.usagePeriod(full.format(from), full.format(last));
+  }
+  final start = DateFormat.MMMd(locale).format(from);
+  final end = from.month == last.month
+      ? DateFormat.d(locale).format(last)
+      : DateFormat.MMMd(locale).format(last);
+  return l10n.usagePeriod(start, end);
 }
 
 /// The range and the project scope: what the total above covers.

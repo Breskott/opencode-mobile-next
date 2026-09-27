@@ -465,11 +465,14 @@ void main() {
     final before = {for (final key in prefs.getKeys()) key: prefs.get(key)};
     await _pumpQuota(tester, h);
 
-    expect(find.text(_l10n.quotaSetupTitle), findsOneWidget);
+    expect(
+      find.text(_l10n.quotaNeedsCollector('Synthetic collector')),
+      findsOneWidget,
+    );
     expect(find.text(_origin), findsOneWidget);
     expect(find.text(providerQuotaPath), findsOneWidget);
-    expect(find.text(_l10n.quotaSetupGuide), findsOneWidget);
-    expect(_l10n.quotaSetupGuide, contains('tool/quota/README.md'));
+    expect(find.text(_l10n.quotaCollectorHowTo), findsOneWidget);
+    expect(_l10n.quotaCollectorStepInstall('x'), contains('tool/quota'));
     expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
     expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
     expect(_refreshIcon, findsNothing);
@@ -555,7 +558,7 @@ void main() {
       await _pumpQuota(tester, h);
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot());
-      expect(find.text(_l10n.quotaHours(5)), findsOneWidget);
+      expect(find.textContaining('5-hour window'), findsOneWidget);
 
       await _refresh(tester, h);
       await _finishRead(
@@ -574,7 +577,7 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text(_l10n.quotaResetUnknown), findsNWidgets(2));
       expect(find.textContaining('Reported reset:'), findsNothing);
-      expect(find.text(_l10n.quotaHours(5)), findsNothing);
+      expect(find.textContaining('5-hour window'), findsNothing);
 
       await _refresh(tester, h);
       await _finishRead(
@@ -738,7 +741,7 @@ void main() {
         ),
         (
           const ProviderQuotaFailure(QuotaFailureKind.unsupported),
-          _l10n.quotaCollectorMissing,
+          _l10n.quotaNeedsCollector('Synthetic collector'),
         ),
         (
           const ProviderQuotaFailure(QuotaFailureKind.unavailable),
@@ -898,10 +901,10 @@ void main() {
         ),
       );
       expect(find.text('0% remaining'), findsOneWidget);
-      expect(find.text(_l10n.quotaResetPassed), findsNothing);
+      expect(find.textContaining(_l10n.quotaAnswerResetPassed), findsNothing);
       h.now = h.now.add(const Duration(seconds: 2));
       await tester.pump(const Duration(seconds: 2));
-      expect(find.text(_l10n.quotaResetPassed), findsOneWidget);
+      expect(find.textContaining(_l10n.quotaAnswerResetPassed), findsOneWidget);
       expect(find.text(_l10n.quotaStale), findsOneWidget);
       expect(find.text('0% remaining'), findsOneWidget);
       expect(find.text('100% remaining'), findsNothing);

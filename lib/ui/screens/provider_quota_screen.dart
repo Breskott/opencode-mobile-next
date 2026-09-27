@@ -3,21 +3,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../domain/agent_account.dart';
 import '../../domain/provider_quota.dart';
+import '../../domain/quota_answers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/quota_answer_preferences.dart';
+import '../../state/quota_answers_controller.dart';
 import '../../state/provider_quota_monitor.dart' show QuotaMonitorTarget;
 import '../../state/provider_quota_overview.dart';
 import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/quota_monitor_section.dart';
+import 'agent_account_screen.dart';
 import 'settings_screen.dart' show NotificationsSettingsScreen;
 import 'usage_refresh_slot.dart';
 
-// revamp: redesign (slice-P5.4). Rebuilt from kit parts in today's layout;
-// the per-provider answer rows, the agent-driven collector setup and the
-// one-alert-per-provider switch arrive with slice-P5.4.
+/// Remaining: what a provider account has left, as sentences ("About 40%
+/// left this week · resets Tue", slice-P5.4).
+///
+/// On a server that hosts a Codex account the answer comes from that
+/// account ([QuotaAnswersController.codex]): no collector, no consent step,
+/// and "Alert me at 80% used" is on by default. Elsewhere it comes from the
+/// server's quota collector after the person trusts it; a missing collector
+/// says so, naming the server, with how to get it.
 class ProviderQuotaScreen extends StatefulWidget {
   final ConnectionController controller;
   final ProviderQuotaOverview? overview;
@@ -42,8 +53,26 @@ class ProviderQuotaScreen extends StatefulWidget {
   State<ProviderQuotaScreen> createState() => _ProviderQuotaScreenState();
 }
 
-class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
+class _ProviderQuotaScreenState extends State<ProviderQuotaScreen>
+    with WidgetsBindingObserver {
   late ProviderQuotaOverview _overview;
+
+  /// The Codex account answer, on a server that hosts one and is connected.
+  QuotaAnswersController? _answers;
+
+  /// The scope the answer belongs to: profile, location and gateway.
+  (String, int, Object)? _answerScope;
+
+  /// The connection dropped since the account session was opened; the next
+  /// connect opens a fresh one (reconcile by refetch, never replay).
+  bool _answerDropped = false;
+
+  /// The server or project changed under the answer: it is gone.
+  bool _answerScopeLost = false;
+
+  /// Saving the alert switch failed; said under it.
+  bool _alertSaveFailed = false;
+  bool _alertSaving = false;
   final _scroll = ScrollController();
   bool _trusted = false;
 
@@ -58,6 +87,131 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
   void initState() {
     super.initState();
     _overview = widget.overview ?? ProviderQuotaOverview(widget.controller);
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller.addListener(_syncAnswers);
+    _bindAnswers();
+  }
+
+  /// True when this server hosts a Codex account: Remaining reads it there.
+  bool get _accountHost =>
+      widget.controller.capabilities.agentAccount &&
+      widget.controller.api is AgentAccountGateway;
+
+  /// Opens a dedicated account session for the answer (never the sign-in
+  /// page's) when the server hosts a Codex account and is connected.
+  void _bindAnswers() {
+    final connection = widget.controller;
+    final profile = connection.profile;
+    final gateway = connection.api;
+    if (profile == null ||
+        !connection.isConnected ||
+        !connection.capabilities.agentAccount ||
+        gateway is! AgentAccountGateway) {
+      return;
+    }
+    final id = profile.id;
+    final origin = profile.baseUrl;
+    final username = profile.username;
+    final location = connection.locationRevision;
+    final scope = (id, location, gateway as Object);
+    if (_answerScope != null && _answerScope != scope) return;
+    _answerScope = scope;
+    bool current() =>
+        connection.profile?.id == id &&
+        connection.profile?.baseUrl == origin &&
+        connection.profile?.username == username &&
+        connection.locationRevision == location &&
+        identical(connection.api, gateway) &&
+        connection.isProfileReadable(id);
+    final answers = QuotaAnswersController.codex(
+      session: (gateway as AgentAccountGateway).openAccountSession(),
+      preferences: QuotaAnswerPreferences(
+        preferences: connection.store.prefs,
+        profileId: id,
+        isCurrent: current,
+        isProfilePresent: () => connection.isProfileReadable(id),
+      ),
+      isCurrent: current,
+      // One clock for the page: ages and resets agree with the collector's.
+      clock: _overview.clock,
+    );
+    _answers = answers;
+    _answerDropped = false;
+    unawaited(answers.refresh());
+  }
+
+  /// Follows the connection: a changed server forgets the answer, a drop
+  /// keeps it with its age, a reconnect reads again on a fresh session.
+  void _syncAnswers() {
+    if (!mounted || _answerScopeLost) return;
+    final connection = widget.controller;
+    final scope = _answerScope;
+    if (scope != null &&
+        (connection.profile?.id != scope.$1 ||
+            connection.locationRevision != scope.$2 ||
+            !identical(connection.api, scope.$3) ||
+            !connection.isProfileReadable(scope.$1))) {
+      final answers = _answers;
+      _answers = null;
+      // Forget first, then release: nothing of the old server survives.
+      answers?.invalidate(forget: true);
+      answers?.dispose();
+      setState(() => _answerScopeLost = true);
+      return;
+    }
+    final answers = _answers;
+    if (!connection.isConnected) {
+      if (answers != null && !_answerDropped) {
+        _answerDropped = true;
+        answers.invalidate();
+      }
+      return;
+    }
+    if (answers == null) {
+      if (_accountHost) setState(_bindAnswers);
+    } else if (_answerDropped) {
+      _answerDropped = false;
+      answers.replaceAccountSession(
+        (connection.api as AgentAccountGateway).openAccountSession(),
+      );
+      unawaited(answers.refresh());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final answers = _answers;
+    if (state != AppLifecycleState.resumed || answers == null) return;
+    if (_answerDropped) {
+      // Still offline: the last known answer's age is said again.
+      setState(() {});
+    } else {
+      unawaited(answers.refresh());
+    }
+  }
+
+  void _releaseAnswers() {
+    _answers?.dispose();
+    _answers = null;
+    _answerScope = null;
+    _answerDropped = false;
+    _answerScopeLost = false;
+    _alertSaveFailed = false;
+  }
+
+  Future<void> _setAlert(bool enabled) async {
+    final answers = _answers;
+    if (answers == null || _alertSaving) return;
+    setState(() {
+      _alertSaving = true;
+      _alertSaveFailed = false;
+    });
+    final saved = await answers.setAlert80Enabled(enabled);
+    if (!mounted) return;
+    setState(() {
+      _alertSaving = false;
+      _alertSaveFailed = !saved || answers.preferences.failed;
+    });
   }
 
   @override
@@ -73,10 +227,19 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     _overview = widget.overview ?? ProviderQuotaOverview(widget.controller);
     _trusted = false;
     _monitorSaveFailed = false;
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncAnswers);
+      widget.controller.addListener(_syncAnswers);
+      _releaseAnswers();
+      _bindAnswers();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller.removeListener(_syncAnswers);
+    _answers?.dispose();
     _scroll.dispose();
     if (widget.overview == null) {
       _overview.dispose();
@@ -98,7 +261,9 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
   String _failure(ProviderQuotaFailure failure, AppLocalizations l10n) =>
       switch (failure.kind) {
         QuotaFailureKind.collectorAuth => l10n.quotaCollectorAuth,
-        QuotaFailureKind.unsupported => l10n.quotaCollectorMissing,
+        QuotaFailureKind.unsupported => l10n.quotaNeedsCollector(
+          _serverName(l10n),
+        ),
         QuotaFailureKind.unavailable => l10n.quotaUnavailable,
         QuotaFailureKind.invalidResponse => l10n.quotaInvalidResponse,
       };
@@ -122,9 +287,9 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         QuotaProvider.glm => l10n.quotaGlm,
       };
 
-  /// The threshold a newly monitored source alerts at; its row changes it
-  /// once monitoring is on.
-  static const _defaultThreshold = 90.0;
+  /// The threshold a newly monitored source alerts at, the same 80% the
+  /// answer alerts at; its row changes it once monitoring is on.
+  static const _defaultThreshold = 80.0;
 
   /// Turns monitoring on for the account shown, in place (slice-P3.11a: the
   /// enrol sheet merged into this page). The row that starts it says what
@@ -217,137 +382,232 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([_overview, widget.controller.quotaMonitor]),
-    builder: (context, _) {
-      final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-      final tokens = KitTokens.of(context);
-      final snapshot = _overview.snapshot;
-      final canRefresh = _overview.canRead && !_overview.loading;
-      final detached = _overview.detached;
-      final consented = _overview.consented && !detached;
-      final origin = _origin();
-      Widget gap([double? height]) => SizedBox(height: height ?? tokens.space4);
-      final refreshAction = KitAction(
-        key: const ValueKey('quota-refresh'),
-        label: l10n.quotaRefresh,
-        icon: AppIconography.retry,
-        onPressed: canRefresh ? () => unawaited(_overview.refresh()) : null,
-        disabledReason: canRefresh ? null : l10n.quotaLoading,
-      );
-      // Inside Usage the one top bar holds Refresh for the active tab.
-      widget.refreshSlot?.offer(
-        visible: _overview.consented,
-        onRefresh: refreshAction.onPressed,
-        disabledReason: refreshAction.disabledReason,
-      );
-      final shownSource = _shownSource(snapshot);
+    listenable: Listenable.merge([
+      _overview,
+      widget.controller.quotaMonitor,
+      ?_answers,
+    ]),
+    builder: (context, _) =>
+        _accountHost || _answers != null || _answerScopeLost
+        ? _buildAccount(context)
+        : _buildCollector(context),
+  );
 
-      final children = <Widget>[
-        SizedBox(height: tokens.space3),
-        if (detached)
-          KitNotice(
-            key: const ValueKey('quota-detached'),
-            icon: AppIconography.swap,
-            message: l10n.quotaSourceChanged,
-          )
-        else ...[
-          KitSegmented<QuotaProvider>(
-            key: const ValueKey('quota-provider'),
-            semanticsLabel: l10n.providerQuotaProviderLabel,
-            selected: _overview.provider,
-            segments: [
-              for (final provider in QuotaProvider.values)
-                KitSegment(
-                  key: ValueKey('quota-provider-${provider.name}'),
-                  value: provider,
-                  label: _providerName(provider, l10n),
-                ),
-            ],
-            onChanged: (provider) {
-              if (_overview.provider == provider) {
-                return;
-              }
-              setState(() {
-                _trusted = false;
-                _monitorSaveFailed = false;
-              });
-              _overview.selectProvider(provider);
-            },
+  /// Remaining on a server that hosts a Codex account: the account's answer,
+  /// the alert switch, then any sources monitored elsewhere.
+  Widget _buildAccount(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final answers = _answers;
+    final canRefresh = answers != null && !answers.loading && !_answerDropped;
+    final refreshAction = KitAction(
+      key: const ValueKey('quota-refresh'),
+      label: l10n.quotaRefresh,
+      icon: AppIconography.retry,
+      onPressed: canRefresh ? () => unawaited(answers.refresh()) : null,
+      disabledReason: canRefresh ? null : l10n.quotaLoading,
+    );
+    widget.refreshSlot?.offer(
+      visible: answers != null,
+      onRefresh: refreshAction.onPressed,
+      disabledReason: refreshAction.disabledReason,
+    );
+    final monitored = widget.controller.quotaMonitor.sources.isNotEmpty;
+    final children = <Widget>[
+      SizedBox(height: tokens.space3),
+      if (_answerScopeLost)
+        KitNotice(
+          key: const ValueKey('quota-detached'),
+          icon: AppIconography.swap,
+          message: l10n.quotaSourceChanged,
+        )
+      else if (answers == null)
+        KitNotice(
+          key: const ValueKey('quota-answer-not-connected'),
+          icon: AppIconography.cloudOff,
+          message: l10n.quotaAnswerNotConnected(_serverName(l10n)),
+        )
+      else
+        _AccountAnswer(
+          answers: answers,
+          serverName: _serverName(l10n),
+          alertSaving: _alertSaving,
+          alertSaveFailed: _alertSaveFailed,
+          onAlertChanged: _setAlert,
+          onRetry: canRefresh ? () => unawaited(answers.refresh()) : null,
+          onSignIn: () => unawaited(
+            pushKitPage<void>(
+              context,
+              (_) => AgentAccountScreen(connection: widget.controller),
+            ),
           ),
-          gap(tokens.sectionGap),
-          if (!_overview.providerSupported)
-            KitNotice(
-              key: const ValueKey('quota-provider-unavailable'),
-              icon: AppIconography.info,
-              message: l10n.quotaClaudeUnavailable,
-            )
-          else if (!_overview.consented)
-            ..._setup(context, l10n, tokens)
-          else
-            ..._reading(context, l10n, tokens, snapshot, canRefresh),
-          gap(tokens.sectionGap),
-          _CollectorRows(
-            origin: origin,
-            consented: consented,
-            onStop: _stopUsingCollector,
-          ),
-        ],
-        // Monitored sources belong to any saved server, so they stay listed
-        // when this server's reading is unavailable.
-        gap(tokens.sectionGap),
+        ),
+      // Sources monitored on other servers stay reachable here.
+      if (monitored) ...[
+        SizedBox(height: tokens.sectionGap),
         QuotaMonitorSection(
           controller: widget.controller,
           onOpenNotifications: _openNotifications,
-          shownAbove: shownSource,
+        ),
+      ],
+      SizedBox(height: tokens.sectionGap),
+      KitDetailsFold(
+        key: const ValueKey('quota-details'),
+        notes: [
+          l10n.quotaAnswerCodexNote,
+          if (monitored) l10n.quotaMonitorRuntime,
+        ],
+      ),
+    ];
+    final list = ListView(
+      key: const ValueKey('quota-content'),
+      controller: _scroll,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: KitScreen.padding(context),
+      children: children,
+    );
+    return KitScreen(
+      topBar: widget.embedded
+          ? null
+          : KitTopBar(
+              title: l10n.quotaTitle,
+              actions: [if (answers != null) refreshAction],
+            ),
+      width: KitScreenWidth.reading,
+      loading: answers?.loading ?? false,
+      loadingLabel: l10n.quotaLoading,
+      body: answers != null && canRefresh
+          ? KitRefresh(onRefresh: answers.refresh, child: list)
+          : list,
+    );
+  }
+
+  /// Remaining through the server's quota collector.
+  Widget _buildCollector(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final snapshot = _overview.snapshot;
+    final canRefresh = _overview.canRead && !_overview.loading;
+    final detached = _overview.detached;
+    final consented = _overview.consented && !detached;
+    final origin = _origin();
+    Widget gap([double? height]) => SizedBox(height: height ?? tokens.space4);
+    final refreshAction = KitAction(
+      key: const ValueKey('quota-refresh'),
+      label: l10n.quotaRefresh,
+      icon: AppIconography.retry,
+      onPressed: canRefresh ? () => unawaited(_overview.refresh()) : null,
+      disabledReason: canRefresh ? null : l10n.quotaLoading,
+    );
+    // Inside Usage the one top bar holds Refresh for the active tab.
+    widget.refreshSlot?.offer(
+      visible: _overview.consented,
+      onRefresh: refreshAction.onPressed,
+      disabledReason: refreshAction.disabledReason,
+    );
+    final shownSource = _shownSource(snapshot);
+
+    final children = <Widget>[
+      SizedBox(height: tokens.space3),
+      if (detached)
+        KitNotice(
+          key: const ValueKey('quota-detached'),
+          icon: AppIconography.swap,
+          message: l10n.quotaSourceChanged,
+        )
+      else ...[
+        KitSegmented<QuotaProvider>(
+          key: const ValueKey('quota-provider'),
+          semanticsLabel: l10n.providerQuotaProviderLabel,
+          selected: _overview.provider,
+          segments: [
+            for (final provider in QuotaProvider.values)
+              KitSegment(
+                key: ValueKey('quota-provider-${provider.name}'),
+                value: provider,
+                label: _providerName(provider, l10n),
+              ),
+          ],
+          onChanged: (provider) {
+            if (_overview.provider == provider) {
+              return;
+            }
+            setState(() {
+              _trusted = false;
+              _monitorSaveFailed = false;
+            });
+            _overview.selectProvider(provider);
+          },
         ),
         gap(tokens.sectionGap),
-        // Every technical value on the page, once, last and folded
-        // (KIT-33).
-        KitDetailsFold(
-          key: const ValueKey('quota-details'),
-          values: [
-            if (origin != null) KitTechnicalValue(l10n.quotaSource, origin),
-            if (!detached && _overview.providerSupported)
-              KitTechnicalValue(
-                l10n.providerQuotaRouteLabel,
-                quotaPathFor(_overview.provider),
-              ),
-          ],
-          notes: [
-            if (!_overview.consented) ...[
-              l10n.quotaSetupTrustNote,
-              l10n.quotaSetupGuide,
-            ],
-            l10n.quotaMonitorRuntime,
-            l10n.quotaSourceDisclosure,
-          ],
+        if (!_overview.providerSupported)
+          KitNotice(
+            key: const ValueKey('quota-provider-unavailable'),
+            icon: AppIconography.info,
+            message: l10n.quotaClaudeUnavailable,
+          )
+        else if (!_overview.consented)
+          ..._setup(context, l10n, tokens)
+        else
+          ..._reading(context, l10n, tokens, snapshot, canRefresh),
+        gap(tokens.sectionGap),
+        _CollectorRows(
+          origin: origin,
+          consented: consented,
+          onStop: _stopUsingCollector,
         ),
-      ];
+      ],
+      // Monitored sources belong to any saved server, so they stay listed
+      // when this server's reading is unavailable.
+      gap(tokens.sectionGap),
+      QuotaMonitorSection(
+        controller: widget.controller,
+        onOpenNotifications: _openNotifications,
+        shownAbove: shownSource,
+      ),
+      gap(tokens.sectionGap),
+      // Every technical value on the page, once, last and folded
+      // (KIT-33).
+      KitDetailsFold(
+        key: const ValueKey('quota-details'),
+        values: [
+          if (!detached && _overview.providerSupported)
+            KitTechnicalValue(
+              l10n.providerQuotaRouteLabel,
+              quotaPathFor(_overview.provider),
+            ),
+        ],
+        notes: [
+          if (!_overview.consented) l10n.quotaSetupTrustNote,
+          l10n.quotaMonitorRuntime,
+          l10n.quotaSourceDisclosure,
+        ],
+      ),
+    ];
 
-      final list = ListView(
-        key: const ValueKey('quota-content'),
-        controller: _scroll,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: KitScreen.padding(context),
-        children: children,
-      );
-      final body = consented && _overview.canRead
-          ? KitRefresh(onRefresh: _overview.refresh, child: list)
-          : list;
-      return KitScreen(
-        topBar: widget.embedded
-            ? null
-            : KitTopBar(
-                title: l10n.quotaTitle,
-                actions: [if (_overview.consented) refreshAction],
-              ),
-        width: KitScreenWidth.reading,
-        loading: _overview.loading,
-        loadingLabel: l10n.quotaLoading,
-        body: body,
-      );
-    },
-  );
+    final list = ListView(
+      key: const ValueKey('quota-content'),
+      controller: _scroll,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: KitScreen.padding(context),
+      children: children,
+    );
+    final body = consented && _overview.canRead
+        ? KitRefresh(onRefresh: _overview.refresh, child: list)
+        : list;
+    return KitScreen(
+      topBar: widget.embedded
+          ? null
+          : KitTopBar(
+              title: l10n.quotaTitle,
+              actions: [if (_overview.consented) refreshAction],
+            ),
+      width: KitScreenWidth.reading,
+      loading: _overview.loading,
+      loadingLabel: l10n.quotaLoading,
+      body: body,
+    );
+  }
 
   /// No consent yet: what the collector is, the promise, and the explicit
   /// read.
@@ -360,12 +620,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     final canRead = _trusted && !setupNeeded;
     return [
       KitText(
-        l10n.quotaSetupTitle,
+        l10n.quotaNeedsCollector(_serverName(l10n)),
         key: const ValueKey('quota-setup-title'),
         role: KitTextRole.headline,
       ),
       SizedBox(height: tokens.space2),
       KitText(l10n.quotaSetupDescription, role: KitTextRole.secondary),
+      SizedBox(height: tokens.space3),
+      _CollectorHowTo(serverName: _serverName(l10n)),
       if (setupNeeded) ...[
         SizedBox(height: tokens.space3),
         KitNotice(
@@ -431,6 +693,10 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
             disabledReason: canRefresh ? null : l10n.quotaLoading,
           ),
         ),
+        if (failure.kind == QuotaFailureKind.unsupported) ...[
+          SizedBox(height: tokens.space3),
+          _CollectorHowTo(serverName: _serverName(l10n)),
+        ],
         SizedBox(height: tokens.space4),
       ],
       if (snapshot == null && _overview.failure == null)
@@ -554,8 +820,6 @@ class _QuotaReport extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).add_jm();
-    final percent = NumberFormat.percentPattern(locale)
-      ..maximumFractionDigits = 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -651,16 +915,23 @@ class _QuotaReport extends StatelessWidget {
           SizedBox(height: tokens.space4),
           KitText(l10n.quotaNotReported, role: KitTextRole.secondary),
         ],
-        for (var index = 0; index < snapshot.windows.length; index++) ...[
+        if (snapshot.windows.isNotEmpty) ...[
           SizedBox(height: tokens.sectionGap),
-          _WindowGroup(
-            snapshot: snapshot,
-            window: snapshot.windows[index],
-            index: index,
-            stale: stale,
-            now: now,
-            date: date,
-            percent: percent,
+          // One row per reported window, each an answer sentence.
+          KitRowGroup(
+            key: const ValueKey('quota-windows'),
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              for (var index = 0; index < snapshot.windows.length; index++)
+                _windowRow(
+                  context,
+                  snapshot: snapshot,
+                  window: snapshot.windows[index],
+                  index: index,
+                  stale: stale,
+                  now: now,
+                ),
+            ],
           ),
         ],
       ],
@@ -668,30 +939,19 @@ class _QuotaReport extends StatelessWidget {
   }
 }
 
-/// One reported window as a panel of rows: how much is left and when it
-/// resets. The alert threshold is the monitored source's, one per source.
-class _WindowGroup extends StatelessWidget {
-  const _WindowGroup({
-    required this.snapshot,
-    required this.window,
-    required this.index,
-    required this.stale,
-    required this.now,
-    required this.date,
-    required this.percent,
-  });
-
-  final ProviderQuotaSnapshot snapshot;
-  final ProviderQuotaWindow window;
-  final int index;
-  final bool stale;
-  final DateTime now;
-  final DateFormat date;
-  final NumberFormat percent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+/// One reported window as an answer: "About 40% left this week · resets
+/// Tue", its bar filled with what is used and the words saying so.
+Widget _windowRow(
+  BuildContext context, {
+  required ProviderQuotaSnapshot snapshot,
+  required ProviderQuotaWindow window,
+  required int index,
+  required bool stale,
+  required DateTime now,
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final used = window.usedPercent;
+  if (used == null) {
     final title = switch (window.id) {
       'tokens' when snapshot.provider == QuotaProvider.glm =>
         l10n.quotaGlmTokenWindow,
@@ -701,49 +961,309 @@ class _WindowGroup extends StatelessWidget {
       'secondary' => l10n.quotaSecondaryWindow,
       _ => l10n.quotaOtherWindow(index + 1),
     };
-    final duration = window.durationSeconds;
-    final length = duration == null
-        ? title
-        : duration % 86400 == 0
-        ? l10n.quotaDays(duration ~/ 86400)
-        : duration % 3600 == 0
-        ? l10n.quotaHours(duration ~/ 3600)
-        : l10n.quotaSeconds(duration);
-    final remaining = window.remainingPercent;
-    final used = window.usedPercent;
-    final reset = window.resetsAt;
-    final passed = reset != null && !now.isBefore(reset);
-    return KitRowGroup(
+    return KitRow(
       key: ValueKey('quota-window-${window.id}'),
-      margin: EdgeInsetsDirectional.zero,
-      label: title,
-      children: [
-        if (remaining == null || used == null)
+      leading: KitRow.icon(context, AppIconography.usageRing),
+      title: title,
+      trailing: KitRowValue(l10n.quotaNotReported, chevron: false),
+    );
+  }
+  final seconds = window.durationSeconds;
+  return _AnswerRow(
+    key: ValueKey('quota-window-${window.id}'),
+    barKey: ValueKey('quota-window-bar-${window.id}'),
+    window: QuotaAnswerWindow(
+      id: window.id,
+      usedPercent: used,
+      durationMinutes: seconds != null && seconds % 60 == 0
+          ? seconds ~/ 60
+          : null,
+      resetsAt: window.resetsAt,
+    ),
+    now: now,
+    asOf: stale ? snapshot.fetchedAt : null,
+  );
+}
+
+/// A quota window as one sentence row (KitProgressRow): the title says what
+/// is left, over which window and when it resets; the bar fills with what
+/// is used and its words say so, so bar and words agree.
+class _AnswerRow extends StatelessWidget {
+  const _AnswerRow({
+    super.key,
+    required this.window,
+    required this.now,
+    this.asOf,
+    this.barKey,
+  });
+
+  final QuotaAnswerWindow window;
+  final DateTime now;
+  final DateTime? asOf;
+  final Key? barKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final percent = NumberFormat.percentPattern(locale)
+      ..maximumFractionDigits = 1;
+    return KitProgressRow(
+      key: barKey,
+      leading: KitRow.icon(context, AppIconography.usageRing),
+      title: quotaAnswerSentence(l10n, locale, window, now),
+      value: window.usedPercent / 100,
+      valueLabel: l10n.quotaUsed(percent.format(window.usedPercent / 100)),
+      asOf: asOf,
+    );
+  }
+}
+
+/// "About 40% left this week · resets Tue": what is left of [window],
+/// rounded, over its length when reported, and when it resets. An unknown
+/// length or reset is left out, never guessed; a passed reset says so and
+/// never assumes the allowance came back.
+String quotaAnswerSentence(
+  AppLocalizations l10n,
+  String locale,
+  QuotaAnswerWindow window,
+  DateTime now,
+) {
+  final left = NumberFormat.percentPattern(
+    locale,
+  ).format(window.remainingPercent / 100);
+  final minutes = window.durationMinutes;
+  final amount = window.isWeekly
+      ? l10n.quotaAnswerLeftWeek(left)
+      : minutes != null && minutes > 0 && minutes % 1440 == 0
+      ? l10n.quotaAnswerLeftDays(left, minutes ~/ 1440)
+      : minutes != null && minutes > 0 && minutes % 60 == 0
+      ? l10n.quotaAnswerLeftHours(left, minutes ~/ 60)
+      : l10n.quotaAnswerLeft(left);
+  final reset = window.resetsAt?.toLocal();
+  if (reset == null) return amount;
+  final local = now.toLocal();
+  final String when;
+  if (!local.isBefore(reset)) {
+    when = l10n.quotaAnswerResetPassed;
+  } else if (reset.year == local.year &&
+      reset.month == local.month &&
+      reset.day == local.day) {
+    when = l10n.quotaAnswerResetsAt(DateFormat.jm(locale).format(reset));
+  } else if (reset.difference(local) < const Duration(days: 6)) {
+    when = l10n.quotaAnswerResetsOn(DateFormat.E(locale).format(reset));
+  } else {
+    when = l10n.quotaAnswerResetsOn(DateFormat.MMMd(locale).format(reset));
+  }
+  return '$amount · $when';
+}
+
+/// The Codex account's answer: whose limits these are, one sentence row
+/// per window (with the reading's age when it is the last known one), the
+/// alert switch, or why there is no answer and what to do.
+class _AccountAnswer extends StatelessWidget {
+  const _AccountAnswer({
+    required this.answers,
+    required this.serverName,
+    required this.alertSaving,
+    required this.alertSaveFailed,
+    required this.onAlertChanged,
+    required this.onRetry,
+    required this.onSignIn,
+  });
+
+  final QuotaAnswersController answers;
+  final String serverName;
+  final bool alertSaving;
+  final bool alertSaveFailed;
+  final ValueChanged<bool> onAlertChanged;
+  final VoidCallback? onRetry;
+  final VoidCallback onSignIn;
+
+  static const _alertAt = 0.8;
+
+  String _age(AppLocalizations l10n, Duration age) => age.inDays >= 1
+      ? l10n.quotaAnswerAgeDays(age.inDays)
+      : age.inHours >= 1
+      ? l10n.quotaAnswerAgeHours(age.inHours)
+      : age.inMinutes >= 1
+      ? l10n.quotaAnswerAgeMinutes(age.inMinutes)
+      : l10n.quotaAnswerAgeNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final alertAt = NumberFormat.percentPattern(locale).format(_alertAt);
+    final snapshot = answers.snapshot;
+    final windows = snapshot?.windows ?? const <QuotaAnswerWindow>[];
+    final stale = answers.stale;
+    final age = answers.age;
+    final now = answers.clock();
+    final retry = KitAction(
+      key: const ValueKey('quota-retry'),
+      label: l10n.quotaRefresh,
+      icon: AppIconography.retry,
+      onPressed: onRetry,
+      disabledReason: onRetry == null ? l10n.quotaLoading : null,
+    );
+    // Why there is no fresh answer; a retained one stays shown with its age.
+    final Widget? status = switch (answers.status) {
+      QuotaAnswerStatus.ready => null,
+      _ when answers.loading => null,
+      QuotaAnswerStatus.needsSignIn => KitRowGroup(
+        margin: EdgeInsetsDirectional.zero,
+        children: [
           KitRow(
-            leading: KitRow.icon(context, AppIconography.usageRing),
-            title: length,
-            trailing: KitRowValue(l10n.quotaNotReported, chevron: false),
-          )
-        else
-          // The bar fills with what is used, so the part's near-limit and
-          // at-limit words follow consumption; the words say what is left.
-          KitProgressRow(
-            key: ValueKey('quota-window-bar-${window.id}'),
-            leading: KitRow.icon(context, AppIconography.usageRing),
-            title: length,
-            value: used / 100,
-            valueLabel: l10n.quotaRemaining(percent.format(remaining / 100)),
-            asOf: stale ? snapshot.fetchedAt.toLocal() : null,
+            key: const ValueKey('quota-answer-sign-in'),
+            leading: KitRow.icon(context, AppIconography.login),
+            title: l10n.quotaAnswerSignIn(serverName),
+            titleMaxLines: 2,
+            supporting: TextSpan(text: l10n.quotaAnswerSignInDetail),
+            supportingMaxLines: 2,
+            trailing: const KitChevron(),
+            onTap: onSignIn,
           ),
-        KitRow(
-          key: ValueKey('quota-window-reset-${window.id}'),
-          leading: KitRow.icon(context, AppIconography.timer),
-          title: reset == null
-              ? l10n.quotaResetUnknown
-              : l10n.quotaResetAt(date.format(reset.toLocal())),
-          titleMaxLines: 2,
-          supporting: passed ? TextSpan(text: l10n.quotaResetPassed) : null,
-          supportingMaxLines: 3,
+        ],
+      ),
+      QuotaAnswerStatus.unsupported => KitNotice(
+        key: const ValueKey('quota-answer-unsupported'),
+        icon: AppIconography.info,
+        message: l10n.quotaAnswerUnsupported,
+      ),
+      QuotaAnswerStatus.invalidResponse => KitNotice.error(
+        key: const ValueKey('quota-answer-invalid'),
+        message: l10n.quotaAnswerInvalid,
+        retry: retry,
+      ),
+      _ when snapshot != null && windows.isEmpty => KitNotice(
+        key: const ValueKey('quota-answer-empty'),
+        icon: AppIconography.info,
+        message: l10n.quotaAnswerNoWindows,
+      ),
+      _ when snapshot == null => KitNotice.error(
+        key: const ValueKey('quota-answer-unavailable'),
+        message: l10n.quotaAnswerUnavailable,
+        retry: retry,
+      ),
+      _ => null,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (snapshot == null && status == null)
+          KitText(l10n.quotaLoading, role: KitTextRole.secondary),
+        ?status,
+        if (windows.isNotEmpty) ...[
+          if (status != null) SizedBox(height: tokens.space4),
+          if (stale && age != null) ...[
+            KitNotice(
+              key: const ValueKey('quota-answer-age'),
+              icon: AppIconography.history,
+              message: _age(l10n, age),
+            ),
+            SizedBox(height: tokens.space3),
+          ],
+          if (answers.attentionRequired) ...[
+            KitNotice(
+              key: const ValueKey('quota-answer-attention'),
+              icon: AppIconography.warning,
+              tone: AppStatusTone.attention,
+              message: l10n.quotaAnswerAttention(alertAt),
+            ),
+            SizedBox(height: tokens.space3),
+          ],
+          KitRowGroup(
+            key: const ValueKey('quota-answer'),
+            margin: EdgeInsetsDirectional.zero,
+            label: l10n.quotaAnswerFromCodex(serverName),
+            children: [
+              for (final window in windows)
+                _AnswerRow(
+                  key: ValueKey('quota-answer-${window.id}'),
+                  window: window,
+                  now: now,
+                  asOf: stale ? snapshot!.observedAt : null,
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              KitSwitchRow(
+                switchKey: const ValueKey('quota-answer-alert'),
+                leading: KitRow.icon(
+                  context,
+                  AppIconography.notificationImportant,
+                ),
+                title: l10n.quotaAnswerAlert(alertAt),
+                supporting: l10n.quotaAnswerAlertDetail,
+                value: answers.alert80Enabled,
+                onChanged: alertSaving ? null : onAlertChanged,
+                disabledReason: alertSaving ? l10n.quotaMonitorSaving : null,
+                below: alertSaveFailed
+                    ? KitNotice.error(
+                        key: const ValueKey('quota-answer-alert-failed'),
+                        message: l10n.quotaAnswerAlertSaveFailed,
+                      )
+                    : null,
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// How to get the quota collector: the operator's steps, unfolded in place
+/// (the page's one Details fold holds the technical values). The app
+/// installs nothing; this is a request to whoever runs the server
+/// (tool/quota/README.md in the repository has the full guide).
+class _CollectorHowTo extends StatelessWidget {
+  const _CollectorHowTo({required this.serverName});
+
+  final String serverName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final steps = [
+      l10n.quotaCollectorStepInstall(serverName),
+      l10n.quotaCollectorStepRoute,
+      l10n.quotaCollectorStepRetry,
+    ];
+    return KitRowGroup(
+      margin: EdgeInsetsDirectional.zero,
+      children: [
+        KitExpandRow(
+          headerKey: const ValueKey('quota-collector-how-to'),
+          leading: KitRow.icon(context, AppIconography.info),
+          title: l10n.quotaCollectorHowTo,
+          children: [
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(
+                tokens.gutter,
+                tokens.space1,
+                tokens.gutter,
+                tokens.space3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < steps.length; i++) ...[
+                    if (i > 0) SizedBox(height: tokens.space2),
+                    KitText(steps[i], role: KitTextRole.secondary),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );

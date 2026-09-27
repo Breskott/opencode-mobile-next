@@ -1634,12 +1634,6 @@ abstract class AppLocalizations {
   /// **'Less than \$0.000001'**
   String get usageTinyCost;
 
-  /// No description provided for @usageReportedCost.
-  ///
-  /// In en, this message translates to:
-  /// **'Reported cost · USD'**
-  String get usageReportedCost;
-
   /// No description provided for @usageSessions.
   ///
   /// In en, this message translates to:
@@ -4202,23 +4196,11 @@ abstract class AppLocalizations {
   /// **'The server or project changed, or its local data is being removed. Reopen Remaining usage to review the source again.'**
   String get quotaSourceChanged;
 
-  /// First-visit quota setup heading; no claim of built-in OpenCode support
-  ///
-  /// In en, this message translates to:
-  /// **'An optional collector is required'**
-  String get quotaSetupTitle;
-
   /// Informed consent before sending existing server authentication to an optional same-origin route
   ///
   /// In en, this message translates to:
-  /// **'Needs a usage collector installed on this server. Provider tokens stay on the server.'**
+  /// **'Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.'**
   String get quotaSetupDescription;
-
-  /// Explains operator configuration and visit-only consent
-  ///
-  /// In en, this message translates to:
-  /// **'Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.'**
-  String get quotaSetupGuide;
 
   /// Quota reads are unavailable for missing credentials or an unsafe source
   ///
@@ -4261,12 +4243,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.'**
   String get quotaCollectorAuth;
-
-  /// Optional collector returned a missing route or unsupported method
-  ///
-  /// In en, this message translates to:
-  /// **'The optional collector route is not available on this server. Check its installation and proxy routing.'**
-  String get quotaCollectorMissing;
 
   /// Safe quota network/service failure without raw errors
   ///
@@ -4393,30 +4369,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset time not reported'**
   String get quotaResetUnknown;
-
-  /// Passing a reset deadline does not invent a new allowance
-  ///
-  /// In en, this message translates to:
-  /// **'Reset time passed — refresh to check. The displayed allowance has not been replenished locally.'**
-  String get quotaResetPassed;
-
-  /// Exact whole-day provider window duration
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1-day window} other{{count}-day window}}'**
-  String quotaDays(int count);
-
-  /// Exact whole-hour provider window duration
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1-hour window} other{{count}-hour window}}'**
-  String quotaHours(int count);
-
-  /// Exact duration when a provider window is not whole hours or days
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1-second window} other{{count}-second window}}'**
-  String quotaSeconds(int count);
 
   /// Honest limits and provenance of optional provider quota collectors
   ///
@@ -40922,6 +40874,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'cloud environments managed workspaces remote sandbox'**
   String get discoverCloudEnvironmentsAliases;
+
+  /// Remaining (answer sentence): what is left of a quota window whose length is not reported, e.g. "About 40% left"
+  ///
+  /// In en, this message translates to:
+  /// **'About {percent} left'**
+  String quotaAnswerLeft(String percent);
+
+  /// Remaining (answer sentence): what is left of a weekly quota window
+  ///
+  /// In en, this message translates to:
+  /// **'About {percent} left this week'**
+  String quotaAnswerLeftWeek(String percent);
+
+  /// Remaining (answer sentence): what is left of a quota window counted in days
+  ///
+  /// In en, this message translates to:
+  /// **'About {percent} left in this {days}-day window'**
+  String quotaAnswerLeftDays(String percent, int days);
+
+  /// Remaining (answer sentence): what is left of a quota window counted in hours
+  ///
+  /// In en, this message translates to:
+  /// **'About {percent} left in this {hours}-hour window'**
+  String quotaAnswerLeftHours(String percent, int hours);
+
+  /// Remaining (answer sentence, after " · "): the window resets later today
+  ///
+  /// In en, this message translates to:
+  /// **'resets at {time}'**
+  String quotaAnswerResetsAt(String time);
+
+  /// Remaining (answer sentence, after " · "): the window resets on a later day, e.g. "resets Tue" or "resets Oct 3"
+  ///
+  /// In en, this message translates to:
+  /// **'resets {day}'**
+  String quotaAnswerResetsOn(String day);
+
+  /// Remaining (answer sentence, after " · "): the reported reset time has passed; the app never assumes the allowance came back
+  ///
+  /// In en, this message translates to:
+  /// **'reset time passed, refresh to check'**
+  String get quotaAnswerResetPassed;
+
+  /// Remaining: whose limits the rows show, above them
+  ///
+  /// In en, this message translates to:
+  /// **'From your Codex account on {server}'**
+  String quotaAnswerFromCodex(String server);
+
+  /// Remaining: the rows show a retained reading (offline or refresh failed), less than a minute old
+  ///
+  /// In en, this message translates to:
+  /// **'Last known reading, from just now'**
+  String get quotaAnswerAgeNow;
+
+  /// Remaining: the rows show a retained reading (offline or refresh failed) and its age
+  ///
+  /// In en, this message translates to:
+  /// **'Last known reading, from {minutes} min ago'**
+  String quotaAnswerAgeMinutes(int minutes);
+
+  /// Remaining: the rows show a retained reading (offline or refresh failed) and its age
+  ///
+  /// In en, this message translates to:
+  /// **'Last known reading, from {hours} h ago'**
+  String quotaAnswerAgeHours(int hours);
+
+  /// Remaining: the rows show a retained reading (offline or refresh failed) and its age
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{Last known reading, from yesterday} other{Last known reading, from {days} days ago}}'**
+  String quotaAnswerAgeDays(int days);
+
+  /// Remaining: the switch (on by default) that says so on this page when a fresh reading reaches the percentage used
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me at {percent} used'**
+  String quotaAnswerAlert(String percent);
+
+  /// Remaining: what the alert switch does, under it
+  ///
+  /// In en, this message translates to:
+  /// **'Says so here when a fresh reading reaches it.'**
+  String get quotaAnswerAlertDetail;
+
+  /// Remaining: the alert switch could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save this. The alert stays as it was.'**
+  String get quotaAnswerAlertSaveFailed;
+
+  /// Remaining: a fresh reading reached the alert percentage
+  ///
+  /// In en, this message translates to:
+  /// **'You’ve used {percent} or more of a Codex limit.'**
+  String quotaAnswerAttention(String percent);
+
+  /// Remaining on a Codex host that is not connected
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to {server} to see what’s left on its Codex account.'**
+  String quotaAnswerNotConnected(String server);
+
+  /// Remaining on a Codex host with no signed-in account: the row that opens the Codex account page
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Codex on {server}'**
+  String quotaAnswerSignIn(String server);
+
+  /// Remaining: under the sign-in row
+  ///
+  /// In en, this message translates to:
+  /// **'What’s left shows here once you’re signed in with ChatGPT.'**
+  String get quotaAnswerSignInDetail;
+
+  /// Remaining: the Codex host is signed in with an API key, or cannot report limits
+  ///
+  /// In en, this message translates to:
+  /// **'This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.'**
+  String get quotaAnswerUnsupported;
+
+  /// Remaining: reading the Codex account limits failed and nothing is known yet
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t read the Codex limits. Check the connection, then refresh.'**
+  String get quotaAnswerUnavailable;
+
+  /// Remaining: the Codex account returned an invalid limits answer
+  ///
+  /// In en, this message translates to:
+  /// **'Codex sent limits this app can’t read. Nothing new is shown.'**
+  String get quotaAnswerInvalid;
+
+  /// Remaining: the Codex account answered with no limit windows
+  ///
+  /// In en, this message translates to:
+  /// **'Codex reported no limits for this account.'**
+  String get quotaAnswerNoWindows;
+
+  /// Remaining (Codex host): the note in Details about what the numbers cover
+  ///
+  /// In en, this message translates to:
+  /// **'Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.'**
+  String get quotaAnswerCodexNote;
+
+  /// Remaining: the server has no quota collector (setup title, and the notice when its route is missing)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs the quota collector on {server}'**
+  String quotaNeedsCollector(String server);
+
+  /// Remaining: the fold with the steps to get the quota collector
+  ///
+  /// In en, this message translates to:
+  /// **'How to get it'**
+  String get quotaCollectorHowTo;
+
+  /// Remaining: collector setup step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.'**
+  String quotaCollectorStepInstall(String server);
+
+  /// Remaining: collector setup step 2
+  ///
+  /// In en, this message translates to:
+  /// **'They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.'**
+  String get quotaCollectorStepRoute;
+
+  /// Remaining: collector setup step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Then come back here and read again.'**
+  String get quotaCollectorStepRetry;
+
+  /// Usage (Spent): above the total, when the server covered exactly today
+  ///
+  /// In en, this message translates to:
+  /// **'Spent today'**
+  String get usageSpentToday;
+
+  /// Usage (Spent): above the total, when the server covered exactly the last 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'Spent in the last 30 days'**
+  String get usageSpentThirtyDays;
+
+  /// Usage (Spent): above the total, when the server covered exactly this year
+  ///
+  /// In en, this message translates to:
+  /// **'Spent this year'**
+  String get usageSpentYear;
+
+  /// Usage (Spent): above the total, for all time
+  ///
+  /// In en, this message translates to:
+  /// **'Spent in total'**
+  String get usageSpentAllTime;
+
+  /// Usage (Spent): above the total, when the server covered other days than the range asked for; the days it covered, e.g. "Spent · Sep 2 – 6"
+  ///
+  /// In en, this message translates to:
+  /// **'Spent · {period}'**
+  String usageSpentPeriod(String period);
 }
 
 class _AppLocalizationsDelegate

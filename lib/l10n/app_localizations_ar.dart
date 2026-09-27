@@ -898,9 +898,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageTinyCost => 'أقل من \$0.000001';
 
   @override
-  String get usageReportedCost => 'التكلفة المُبلّغ عنها · USD';
-
-  @override
   String get usageSessions => 'المحادثات';
 
   @override
@@ -2498,15 +2495,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'تغيّر الخادم أو المشروع، أو تجري إزالة بياناته المحلية. افتح رصيد الاستخدام المتبقي مجددًا لمراجعة المصدر.';
 
   @override
-  String get quotaSetupTitle => 'يلزم جامع بيانات اختياري';
-
-  @override
   String get quotaSetupDescription =>
-      'يجب على مسؤول الخادم تثبيت هذا المسار وحمايته على عنوان أصل OpenCode نفسه. تستخدم قراءته بيانات دخول هذا الخادم المحفوظ. أكّد فقط إذا ثبّتّ هذه الخدمة أو كنت تثق بها. تبقى رموز مزوّد الخدمة على الخادم.';
-
-  @override
-  String get quotaSetupGuide =>
-      'تعليمات الإعداد في tool/quota/README.md داخل مستودع التطبيق. لا تثبّت هذه الشاشة أي خدمات، ولا تحتفظ بالإذن بعد مغادرتها.';
+      'Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.';
 
   @override
   String get quotaSetupNeeded =>
@@ -2530,10 +2520,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaCollectorAuth =>
       'لم يقبل مسار جامع البيانات بيانات دخول هذا الخادم. اطلب من مسؤول الخادم التحقق من إعدادات المصادقة.';
-
-  @override
-  String get quotaCollectorMissing =>
-      'مسار جامع البيانات الاختياري غير متاح على هذا الخادم. تحقّق من تثبيته وتوجيه الوكيل.';
 
   @override
   String get quotaUnavailable =>
@@ -2619,55 +2605,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaResetUnknown => 'لم يُبلّغ عن موعد التجديد';
-
-  @override
-  String get quotaResetPassed =>
-      'مرّ موعد التجديد — حدّث للتحقق. لم يُجدَّد الرصيد المعروض محليًا.';
-
-  @override
-  String quotaDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count يوم',
-      many: 'فترة مدتها $count يومًا',
-      few: 'فترة مدتها $count أيام',
-      two: 'فترة مدتها يومان',
-      one: 'فترة مدتها يوم واحد',
-      zero: 'فترة مدتها $count يوم',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaHours(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count ساعة',
-      many: 'فترة مدتها $count ساعة',
-      few: 'فترة مدتها $count ساعات',
-      two: 'فترة مدتها ساعتان',
-      one: 'فترة مدتها ساعة واحدة',
-      zero: 'فترة مدتها $count ساعة',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaSeconds(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count ثانية',
-      many: 'فترة مدتها $count ثانية',
-      few: 'فترة مدتها $count ثوانٍ',
-      two: 'فترة مدتها ثانيتان',
-      one: 'فترة مدتها ثانية واحدة',
-      zero: 'فترة مدتها $count ثانية',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get quotaSourceDisclosure =>
@@ -26251,4 +26188,155 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get discoverCloudEnvironmentsAliases =>
       'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String quotaAnswerLeft(String percent) {
+    return 'About $percent left';
+  }
+
+  @override
+  String quotaAnswerLeftWeek(String percent) {
+    return 'About $percent left this week';
+  }
+
+  @override
+  String quotaAnswerLeftDays(String percent, int days) {
+    return 'About $percent left in this $days-day window';
+  }
+
+  @override
+  String quotaAnswerLeftHours(String percent, int hours) {
+    return 'About $percent left in this $hours-hour window';
+  }
+
+  @override
+  String quotaAnswerResetsAt(String time) {
+    return 'resets at $time';
+  }
+
+  @override
+  String quotaAnswerResetsOn(String day) {
+    return 'resets $day';
+  }
+
+  @override
+  String get quotaAnswerResetPassed => 'reset time passed, refresh to check';
+
+  @override
+  String quotaAnswerFromCodex(String server) {
+    return 'From your Codex account on $server';
+  }
+
+  @override
+  String get quotaAnswerAgeNow => 'Last known reading, from just now';
+
+  @override
+  String quotaAnswerAgeMinutes(int minutes) {
+    return 'Last known reading, from $minutes min ago';
+  }
+
+  @override
+  String quotaAnswerAgeHours(int hours) {
+    return 'Last known reading, from $hours h ago';
+  }
+
+  @override
+  String quotaAnswerAgeDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Last known reading, from $days days ago',
+      one: 'Last known reading, from yesterday',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String quotaAnswerAlert(String percent) {
+    return 'Alert me at $percent used';
+  }
+
+  @override
+  String get quotaAnswerAlertDetail =>
+      'Says so here when a fresh reading reaches it.';
+
+  @override
+  String get quotaAnswerAlertSaveFailed =>
+      'Couldn’t save this. The alert stays as it was.';
+
+  @override
+  String quotaAnswerAttention(String percent) {
+    return 'You’ve used $percent or more of a Codex limit.';
+  }
+
+  @override
+  String quotaAnswerNotConnected(String server) {
+    return 'Connect to $server to see what’s left on its Codex account.';
+  }
+
+  @override
+  String quotaAnswerSignIn(String server) {
+    return 'Sign in to Codex on $server';
+  }
+
+  @override
+  String get quotaAnswerSignInDetail =>
+      'What’s left shows here once you’re signed in with ChatGPT.';
+
+  @override
+  String get quotaAnswerUnsupported =>
+      'This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.';
+
+  @override
+  String get quotaAnswerUnavailable =>
+      'Couldn’t read the Codex limits. Check the connection, then refresh.';
+
+  @override
+  String get quotaAnswerInvalid =>
+      'Codex sent limits this app can’t read. Nothing new is shown.';
+
+  @override
+  String get quotaAnswerNoWindows =>
+      'Codex reported no limits for this account.';
+
+  @override
+  String get quotaAnswerCodexNote =>
+      'Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.';
+
+  @override
+  String quotaNeedsCollector(String server) {
+    return 'Needs the quota collector on $server';
+  }
+
+  @override
+  String get quotaCollectorHowTo => 'How to get it';
+
+  @override
+  String quotaCollectorStepInstall(String server) {
+    return 'Ask whoever runs $server to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.';
+  }
+
+  @override
+  String get quotaCollectorStepRoute =>
+      'They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.';
+
+  @override
+  String get quotaCollectorStepRetry => 'Then come back here and read again.';
+
+  @override
+  String get usageSpentToday => 'Spent today';
+
+  @override
+  String get usageSpentThirtyDays => 'Spent in the last 30 days';
+
+  @override
+  String get usageSpentYear => 'Spent this year';
+
+  @override
+  String get usageSpentAllTime => 'Spent in total';
+
+  @override
+  String usageSpentPeriod(String period) {
+    return 'Spent · $period';
+  }
 }
