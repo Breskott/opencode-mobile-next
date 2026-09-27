@@ -23855,113 +23855,11 @@ abstract class AppLocalizations {
   /// **'Optional · experimental'**
   String get teamUiPhoneOptionalTag;
 
-  /// On-device AI Team block: title
-  ///
-  /// In en, this message translates to:
-  /// **'Also run an AI team on this phone'**
-  String get teamUiPhoneOfferTitle;
-
-  /// On-device AI Team block: body
-  ///
-  /// In en, this message translates to:
-  /// **'Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.'**
-  String get teamUiPhoneOfferBody;
-
-  /// On-device AI Team block: download size line
-  ///
-  /// In en, this message translates to:
-  /// **'Downloads about {size} MB (Gas City, beads and Dolt, from each project\'s own releases).'**
-  String teamUiPhoneOfferSize(int size);
-
-  /// On-device AI Team block: lifecycle warning
-  ///
-  /// In en, this message translates to:
-  /// **'Keep Termux open or hold its wake lock while the team works; Android may stop it in the background. Nothing is lost; runs resume when you start it again.'**
-  String get teamUiPhoneOfferWarning;
-
-  /// On-device AI Team block: primary (skip) action
-  ///
-  /// In en, this message translates to:
-  /// **'Skip for now'**
-  String get teamUiPhoneSkip;
-
-  /// On-device AI Team block: set-up action
-  ///
-  /// In en, this message translates to:
-  /// **'Set up AI Team on this phone'**
-  String get teamUiPhoneSetUp;
-
-  /// On-device setup step 1
-  ///
-  /// In en, this message translates to:
-  /// **'Download & verify'**
-  String get teamUiPhoneStepDownload;
-
-  /// On-device setup step 2
-  ///
-  /// In en, this message translates to:
-  /// **'Install prerequisites'**
-  String get teamUiPhoneStepPackages;
-
-  /// On-device setup step 3
-  ///
-  /// In en, this message translates to:
-  /// **'Create a city next to the project'**
-  String get teamUiPhoneStepCity;
-
-  /// On-device setup step 4
-  ///
-  /// In en, this message translates to:
-  /// **'Start the supervisor on this phone'**
-  String get teamUiPhoneStepStart;
-
-  /// On-device setup step 5
-  ///
-  /// In en, this message translates to:
-  /// **'Connect'**
-  String get teamUiPhoneStepConnect;
-
-  /// On-device setup: the steps keep running while away
-  ///
-  /// In en, this message translates to:
-  /// **'You can leave this screen and return to check progress.'**
-  String get teamUiPhoneLeaveNote;
-
-  /// On-device setup: which project folder the city is created next to
-  ///
-  /// In en, this message translates to:
-  /// **'Project: {path}'**
-  String teamUiPhoneProjectLine(String path);
-
   /// On-device setup: project picker title
   ///
   /// In en, this message translates to:
   /// **'Choose a project'**
   String get teamUiPhoneChooseProjectTitle;
-
-  /// On-device setup: project picker body
-  ///
-  /// In en, this message translates to:
-  /// **'The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team\'s merged work comes back into the folder by itself.'**
-  String get teamUiPhoneChooseProjectBody;
-
-  /// On-device setup: project picker when the server has no folders
-  ///
-  /// In en, this message translates to:
-  /// **'No project folder yet. Name one and it will be created under {directory}.'**
-  String teamUiPhoneNoProjects(String directory);
-
-  /// On-device setup: new project folder field label
-  ///
-  /// In en, this message translates to:
-  /// **'Folder name'**
-  String get teamUiPhoneNewFolderLabel;
-
-  /// On-device setup: create the folder and start the setup
-  ///
-  /// In en, this message translates to:
-  /// **'Create and continue'**
-  String get teamUiPhoneCreateAndContinue;
 
   /// On-device setup: continue with the chosen project
   ///
@@ -23969,41 +23867,17 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get teamUiPhoneContinue;
 
-  /// On-device setup: heading while the steps run
-  ///
-  /// In en, this message translates to:
-  /// **'Setting up the AI team'**
-  String get teamUiPhoneSetupRunning;
-
   /// On-device setup: success card title
   ///
   /// In en, this message translates to:
   /// **'AI team is running on this phone'**
   String get teamUiPhoneSuccessTitle;
 
-  /// On-device setup: success card agent count
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{no agents yet} =1{1 agent ready} other{{count} agents ready}}'**
-  String teamUiPhoneAgentsReady(int count);
-
-  /// On-device setup: success card action
-  ///
-  /// In en, this message translates to:
-  /// **'Open Work'**
-  String get teamUiPhoneOpenWorkspace;
-
   /// On-device setup: retry after a failure
   ///
   /// In en, this message translates to:
   /// **'Try again'**
   String get teamUiPhoneRetry;
-
-  /// On-device setup: failure heading
-  ///
-  /// In en, this message translates to:
-  /// **'The AI team could not be set up.'**
-  String get teamUiPhoneFailedTitle;
 
   /// On-device setup: checksum mismatch failure
   ///
@@ -24233,12 +24107,6 @@ abstract class AppLocalizations {
   /// **'Android stopped the team while the app was away. Nothing is lost.'**
   String get teamUiPhoneKilled;
 
-  /// On this phone: restart after Android killed the team
-  ///
-  /// In en, this message translates to:
-  /// **'Start again'**
-  String get teamUiPhoneStartAgain;
-
   /// On this phone: tips row title
   ///
   /// In en, this message translates to:
@@ -24352,12 +24220,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up'**
   String get teamUiPhoneReofferAction;
-
-  /// On this phone: open the Termux setup screen to set up or resume
-  ///
-  /// In en, this message translates to:
-  /// **'Open phone setup'**
-  String get teamUiPhoneOpenSetup;
 
   /// On-device setup: the runtime refused to install or create the city for lack of free space
   ///
@@ -29560,18 +29422,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn it on for each project you want it to work on.'**
   String get teamDiscoverProjectBody;
-
-  /// AI Team intro, OpenCode in Termux on a phone that cannot run the team: the notice title
-  ///
-  /// In en, this message translates to:
-  /// **'This phone can\'t run the AI Team'**
-  String get teamDiscoverUnsupportedTitle;
-
-  /// AI Team intro, phone that cannot run the team: what is possible instead
-  ///
-  /// In en, this message translates to:
-  /// **'It needs a 64-bit phone and an app build that carries the team\'s programs. A computer can run it for you instead.'**
-  String get teamDiscoverUnsupportedBody;
 
   /// AI Team intro, a computer: the row that says where the team runs; {server} is the server's name
   ///
@@ -41030,6 +40880,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off'**
   String get automationValueOff;
+
+  /// Phone setup start screen: headline while a setup job in Termux is running or stopped part way. {percent} is a whole number.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup in Termux is {percent}% done'**
+  String phoneSetupStartTermuxProgressHeadline(int percent);
+
+  /// AI Team ready page (after Add tools installed AI Team): title when no project is open yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the team\'s project'**
+  String get teamPhoneReadyChooseTitle;
+
+  /// AI Team ready page: title while the team is turned on for the project; the stages below name the project.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning on AI Team'**
+  String get teamPhoneReadyTurningOnTitle;
+
+  /// AI Team ready page: title when turning the team on failed; the reason follows.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team didn\'t start'**
+  String get teamPhoneReadyFailedTitle;
+
+  /// AI Team ready page: line under the success title. {project} is the project's folder name.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it a first task. It plans the work, shares it between its agents and brings the result back into {project}.'**
+  String teamPhoneReadyBody(String project);
+
+  /// AI Team ready page: the primary action; opens the task sheet, and the task lands in its conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the team a first task'**
+  String get teamPhoneReadyFirstTask;
 }
 
 class _AppLocalizationsDelegate

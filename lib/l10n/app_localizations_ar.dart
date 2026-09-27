@@ -14991,103 +14991,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiPhoneOptionalTag => 'اختياري · تجريبي';
 
   @override
-  String get teamUiPhoneOfferTitle =>
-      'شغّل فريق ذكاء اصطناعي على هذا الهاتف أيضًا';
-
-  @override
-  String get teamUiPhoneOfferBody =>
-      'يتيح لعدة وكلاء برمجة العمل على مشروعك بينما تشرف عليهم من تبويب «العمل». يستخدم بيئة لينكس نفسها التي أعددتها للتو.';
-
-  @override
-  String teamUiPhoneOfferSize(int size) {
-    return 'يُنزّل نحو $size م.ب (Gas City وbeads وDolt من الإصدارات الرسمية لكل مشروع).';
-  }
-
-  @override
-  String get teamUiPhoneOfferWarning =>
-      'أبقِ Termux مفتوحًا أو فعّل قفل الاستيقاظ فيه أثناء عمل الفريق؛ فقد يوقفه أندرويد في الخلفية. لا يُفقد شيء؛ وتُستأنف التشغيلات عند بدئه من جديد.';
-
-  @override
-  String get teamUiPhoneSkip => 'تخطَّ الآن';
-
-  @override
-  String get teamUiPhoneSetUp => 'إعداد فريق الذكاء الاصطناعي';
-
-  @override
-  String get teamUiPhoneStepDownload => 'التنزيل والتحقق';
-
-  @override
-  String get teamUiPhoneStepPackages => 'تثبيت المتطلبات';
-
-  @override
-  String get teamUiPhoneStepCity => 'إنشاء مدينة بجوار المشروع';
-
-  @override
-  String get teamUiPhoneStepStart => 'بدء المشرف على هذا الهاتف';
-
-  @override
-  String get teamUiPhoneStepConnect => 'الاتصال';
-
-  @override
-  String get teamUiPhoneLeaveNote =>
-      'يمكنك مغادرة هذه الشاشة والعودة لمتابعة التقدّم.';
-
-  @override
-  String teamUiPhoneProjectLine(String path) {
-    return 'المشروع: $path';
-  }
-
-  @override
   String get teamUiPhoneChooseProjectTitle => 'اختر مشروعًا';
 
   @override
-  String get teamUiPhoneChooseProjectBody =>
-      'يعمل الفريق على مجلد مشروع واحد من خادم الهاتف. المشروع الذي ليس له أصل git يحصل على أصل على الهاتف، ويعود عمل الفريق المدمج إلى المجلد تلقائيًا.';
-
-  @override
-  String teamUiPhoneNoProjects(String directory) {
-    return 'لا يوجد مجلد مشروع بعد. سمِّ واحدًا وسيُنشأ ضمن $directory.';
-  }
-
-  @override
-  String get teamUiPhoneNewFolderLabel => 'اسم المجلد';
-
-  @override
-  String get teamUiPhoneCreateAndContinue => 'إنشاء ومتابعة';
-
-  @override
   String get teamUiPhoneContinue => 'متابعة';
-
-  @override
-  String get teamUiPhoneSetupRunning => 'جارٍ إعداد فريق الذكاء الاصطناعي';
 
   @override
   String get teamUiPhoneSuccessTitle =>
       'فريق الذكاء الاصطناعي يعمل على هذا الهاتف';
 
   @override
-  String teamUiPhoneAgentsReady(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count وكيل جاهز',
-      many: '$count وكيلًا جاهزًا',
-      few: '$count وكلاء جاهزون',
-      two: 'وكيلان جاهزان',
-      one: 'وكيل واحد جاهز',
-      zero: 'لا وكلاء بعد',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get teamUiPhoneOpenWorkspace => 'فتح «العمل»';
-
-  @override
   String get teamUiPhoneRetry => 'إعادة المحاولة';
-
-  @override
-  String get teamUiPhoneFailedTitle => 'تعذّر إعداد فريق الذكاء الاصطناعي.';
 
   @override
   String teamUiPhoneFailedChecksum(String name) {
@@ -15253,9 +15167,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أوقف أندرويد الفريق أثناء غياب التطبيق. لم يُفقد شيء.';
 
   @override
-  String get teamUiPhoneStartAgain => 'ابدأ من جديد';
-
-  @override
   String get teamUiPhoneKeepRunningTitle => 'أبقِه يعمل';
 
   @override
@@ -15323,9 +15234,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneReofferAction => 'إعداد';
-
-  @override
-  String get teamUiPhoneOpenSetup => 'فتح إعداد الهاتف';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -18512,14 +18420,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamDiscoverProjectBody => 'شغّله لكل مشروع تريده أن يعمل عليه.';
-
-  @override
-  String get teamDiscoverUnsupportedTitle =>
-      'لا يستطيع هذا الهاتف تشغيل فريق الذكاء الاصطناعي';
-
-  @override
-  String get teamDiscoverUnsupportedBody =>
-      'يحتاج إلى هاتف 64 بت وإصدار من التطبيق يحمل برامج الفريق. يمكن لحاسوب أن يشغّله لك بدلًا من ذلك.';
 
   @override
   String teamDiscoverComputerTitle(String server) {
@@ -26311,4 +26211,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get automationValueOff => 'Off';
+
+  @override
+  String phoneSetupStartTermuxProgressHeadline(int percent) {
+    return 'Setup in Termux is $percent% done';
+  }
+
+  @override
+  String get teamPhoneReadyChooseTitle => 'Choose the team\'s project';
+
+  @override
+  String get teamPhoneReadyTurningOnTitle => 'Turning on AI Team';
+
+  @override
+  String get teamPhoneReadyFailedTitle => 'AI Team didn\'t start';
+
+  @override
+  String teamPhoneReadyBody(String project) {
+    return 'Give it a first task. It plans the work, shares it between its agents and brings the result back into $project.';
+  }
+
+  @override
+  String get teamPhoneReadyFirstTask => 'Give the team a first task';
 }
