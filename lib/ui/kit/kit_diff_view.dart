@@ -579,7 +579,7 @@ class KitDiffView extends StatefulWidget {
 
 /// Opens a read-only diff as a page (KitPageRoute, Close at the end),
 /// titled by what it shows ("Changes in this reply"), never a sheet on a
-/// sheet. Returns when it closes.
+/// sheet. Returns when it closes. [pageKey] keys the page (KIT-10).
 Future<void> showKitDiff(
   BuildContext context, {
   required String title,
@@ -587,9 +587,11 @@ Future<void> showKitDiff(
   int? initialFile,
   bool? wrap,
   ValueChanged<bool>? onWrapChanged,
+  Key? pageKey,
 }) => pushKitPage<void>(
   context,
   (context) => _KitDiffPage(
+    key: pageKey,
     title: title,
     files: files,
     initialFile: initialFile,
@@ -601,6 +603,7 @@ Future<void> showKitDiff(
 
 class _KitDiffPage extends StatelessWidget {
   const _KitDiffPage({
+    super.key,
     required this.title,
     required this.files,
     this.initialFile,

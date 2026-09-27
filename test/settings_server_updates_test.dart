@@ -279,10 +279,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Update remote OpenCode?'), findsOneWidget);
-    expect(
-      find.textContaining('must be restarted on its host'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('on its computer to use'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirm-server-upgrade')));
     await tester.pumpAndSettle();
 
@@ -844,7 +841,9 @@ void main() {
         findsOneWidget,
       );
       expect(controller.store.prefs.getString('oc.offlineQueue'), '{broken');
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Delete queued prompts'),
+      );
       await tester.pumpAndSettle();
       expect(controller.store.prefs.getString('oc.offlineQueue'), isNull);
       expect(controller.queuedPromptStorageReadable, isTrue);

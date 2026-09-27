@@ -3,8 +3,9 @@
 // declared states at 412x915 and the default (row-enable) at 1280x800, in
 // light and dark, DPR 3, rendered as Android, with a fake handler registered
 // for the enable scenes. The owner decision of 2026-09-27 (STANDARDS.md
-// header) drops the Arabic/RTL and text-2.0 shots and narrows this wave's
-// sizes to the phone and one wide size.
+// header) drops the Arabic/RTL shots and narrows this wave's sizes to the
+// phone and one wide size; the default is also shot at text 2.0 at both
+// sizes (TEST-9, G4).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_capability_explainer_golden_test.dart
@@ -98,5 +99,25 @@ void main() {
         child: _states()['row_enable']!(),
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets('default · text 2.0 · ${kitGallerySize(size)} · $mode', (
+        tester,
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_capability_explainer_default',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _states()['row_enable']!(),
+        );
+      });
+    }
   }
 }

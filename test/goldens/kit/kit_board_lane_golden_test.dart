@@ -6,11 +6,11 @@
 // and look at every changed image before committing it.
 //
 // Owner decision 2026-09-27 (dated later than KitBoardLane.md, R15): Arabic
-// is dropped — no Arabic/RTL galleries, no text-2.0 sweep; galleries are
-// phone 412x915 and one wide size 1280x800 only, light and dark. This
-// replaces KitBoardLane.md's own 24-shot list (a PROC-20 note in the unit's
-// QA record): each declared state at 412x915, and `loaded` at 1280x800
-// (four lanes side by side).
+// is dropped — no Arabic/RTL galleries; galleries are phone 412x915 and
+// one wide size 1280x800 only, light and dark. This replaces
+// KitBoardLane.md's own 24-shot list (a PROC-20 note in the unit's QA
+// record): each declared state at 412x915, `loaded` at 1280x800 (four lanes
+// side by side), and `loaded` at text 2.0 at both sizes (TEST-9, G4).
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +117,7 @@ Future<void> _shot(
   required Size size,
   required bool light,
   required _Scene scene,
+  double textScale = 1,
 }) async {
   final own = light ? 'light' : 'dark';
   final stem = name.substring(0, name.length - own.length - 1);
@@ -140,7 +141,10 @@ Future<void> _shot(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(textScale),
+              ),
               child: child!,
             ),
             home: Scaffold(
@@ -222,5 +226,25 @@ void main() {
         scene: _Scene(() => _board(selected: 0)),
       );
     });
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_board_lane loaded · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await _shot(
+            tester,
+            name: kitGalleryName(
+              'kit_board_lane_loaded',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            scene: _Scene(() => _board(selected: 2)),
+          );
+        },
+      );
+    }
   }
 }

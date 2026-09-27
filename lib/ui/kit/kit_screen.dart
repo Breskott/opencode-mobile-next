@@ -184,11 +184,10 @@ class KitScreen extends StatelessWidget {
   /// [endPadding] at the bottom (LAY-6).
   static EdgeInsetsDirectional padding(BuildContext context) {
     final gutter = KitTokens.of(context).gutter;
-    return EdgeInsetsDirectional.fromSTEB(
-      gutter,
-      0,
-      gutter,
-      endPadding(context),
+    return EdgeInsetsDirectional.only(
+      start: gutter,
+      end: gutter,
+      bottom: endPadding(context),
     );
   }
 

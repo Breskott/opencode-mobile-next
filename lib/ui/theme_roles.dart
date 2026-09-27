@@ -133,6 +133,12 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
 
   bool get isDark => brightness == Brightness.dark;
 
+  /// Neutral ink on glass (§6): pure white on dark, pure black on light, so
+  /// labels stay readable whatever crosses behind the translucent material;
+  /// the muted text roles are not enough there.
+  Color get glassInk =>
+      isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+
   /// The roles in force: the theme's extension, or ones derived from its
   /// colour scheme (a bare `ThemeData` in a test).
   static ThemeRoles of(BuildContext context) => resolve(Theme.of(context));

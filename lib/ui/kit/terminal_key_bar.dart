@@ -413,9 +413,9 @@ class TerminalKeyBar extends StatelessWidget {
                           alignment: AlignmentDirectional.topStart,
                           heightFactor: 1,
                           child: Padding(
-                            padding: EdgeInsetsDirectional.only(
-                              start: math.max(0, lead),
-                            ),
+                            padding: outer > span
+                                ? EdgeInsetsDirectional.only(start: lead)
+                                : EdgeInsets.zero,
                             child: grid,
                           ),
                         );

@@ -355,7 +355,10 @@ class _KitChecklistState extends State<KitChecklist> {
             container: true,
             liveRegion: true,
             label: _summary(context, slow: slow),
-            child: const SizedBox(width: 1, height: 1),
+            child: const SizedBox(
+              width: KitTokens.liveRegionSize,
+              height: KitTokens.liveRegionSize,
+            ),
           ),
         if (beforeStart) ...[
           if (estimate != null)

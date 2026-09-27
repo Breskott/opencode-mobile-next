@@ -384,6 +384,7 @@ class _KitBoardLanesState extends State<KitBoardLanes> {
 
   Widget _paged(BuildContext context, double width) {
     final tokens = KitTokens.of(context);
+    final laneHalfGap = tokens.space1 / 2;
     final lane = _pagedLaneWidth(width);
     final pages = _pagesFor(width <= 0 ? 1 : lane / width);
     return NotificationListener<ScrollEndNotification>(
@@ -404,9 +405,10 @@ class _KitBoardLanesState extends State<KitBoardLanes> {
           controller: pages,
           itemCount: widget.columns.length,
           itemBuilder: (context, index) => Padding(
+            // Half of space1 on each side: space1 between two paged lanes.
             padding: EdgeInsetsDirectional.only(
-              start: tokens.space1 / 2,
-              end: tokens.space1 / 2,
+              start: laneHalfGap,
+              end: laneHalfGap,
               bottom: tokens.space2,
             ),
             child: _lane(
@@ -492,9 +494,8 @@ class _KitBoardLanesState extends State<KitBoardLanes> {
     }
     return Padding(
       padding: EdgeInsetsDirectional.only(
-        start: _isWide ? tokens.gutter : 0,
         bottom: tokens.space2,
-      ),
+      ).copyWith(start: _isWide ? tokens.gutter : null),
       child: Align(
         alignment: align,
         child: SizedBox(

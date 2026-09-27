@@ -83,7 +83,7 @@ void main() {
 
       // The same title, and it says the server works in one folder.
       expect(find.text('Projects'), findsOneWidget);
-      expect(find.text('This server works in one folder'), findsOneWidget);
+      expect(find.text('Server uses one folder'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('projects-configured-folder')),
         findsOneWidget,

@@ -2,8 +2,9 @@
 // the declared states (header with counts, command, capped output, wrapped,
 // copied, `.fill` with find marks, empty), on `ground`, at the two sizes
 // the owner's 2026-09-27 decision keeps (412x915 phone, 1280x800 wide),
-// light and dark. Arabic and text-2.0 galleries are dropped by that same
-// decision (no RTL review for this wave).
+// light and dark, and the default (code_header) at text 2.0 at both sizes
+// (TEST-9, G4). Arabic galleries are dropped by that same decision (no RTL
+// review for this wave).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_code_block_golden_test.dart
@@ -197,7 +198,7 @@ void main() {
   });
 
   // The owner's 2026-09-27 decision: phone and one wide size only, no
-  // Arabic and no text-2.0 gallery for this wave.
+  // Arabic for this wave.
   const sizes = [Size(412, 915), Size(1280, 800)];
 
   for (final light in [false, true]) {
@@ -244,6 +245,27 @@ void main() {
         // Timer now so it is not still pending when the test ends.
         await tester.pump(const Duration(seconds: 2));
       });
+    }
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_code_block code_header · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await kitGalleryShot(
+            tester,
+            name: kitGalleryName(
+              'kit_code_block_code_header',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            open: _push(_codeHeaderScene()),
+          );
+        },
+      );
     }
   }
 }

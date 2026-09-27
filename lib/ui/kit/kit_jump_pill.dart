@@ -33,6 +33,8 @@ enum KitJumpEdge {
 /// "Purpose", "Non-goals"). The host decides [visible] (not at the newest
 /// end; for logs, the person scrolled up) and owns [onPressed] (scrolling);
 /// the pill never scrolls anything itself and never invents its own count.
+///
+/// States: none — the host shows it only when it can act.
 class KitJumpPill extends StatelessWidget {
   const KitJumpPill({
     super.key,
@@ -100,6 +102,8 @@ class KitJumpPill extends StatelessWidget {
 /// published bottom inset (the composer, the pinned primary, the dock)
 /// unless [clearBottomInset] is false (a pill inside a panel mid-page, e.g.
 /// `KitLogPanel`).
+///
+/// States: none — a layout layer that places one pill.
 class KitJumpPillLayer extends StatelessWidget {
   const KitJumpPillLayer({
     super.key,

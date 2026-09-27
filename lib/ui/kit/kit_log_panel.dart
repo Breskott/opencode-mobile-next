@@ -614,11 +614,10 @@ class _KitLogPanelState extends State<KitLogPanel> with WidgetsBindingObserver {
         if (_readFailed)
           Padding(
             key: const ValueKey('kit-log-read-failed'),
-            padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.space3,
-              tokens.space2,
-              tokens.space3,
-              0,
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.space3,
+              top: tokens.space2,
+              end: tokens.space3,
             ),
             child: KitNotice.error(
               message: _l10n(context).kitLogReadFailed,

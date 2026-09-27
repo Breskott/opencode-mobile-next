@@ -2,8 +2,9 @@
 //
 // Owner decision 2026-09-27 (dated later than KitTaskCard.md, R15): Arabic
 // is dropped and the sizes narrow to the phone (412x915) and one wide size
-// (1280x800), light and dark. This replaces the spec's own grid (360x800,
-// 915x412, 800x1280, 1600x1000, text 2.0 and Arabic); recorded in
+// (1280x800), light and dark, with the default also at text 2.0 at both
+// sizes (TEST-9, G4). This replaces the spec's own grid (360x800, 915x412,
+// 800x1280, 1600x1000 and Arabic); recorded in
 // docs/qa/revamp-kit-KitTaskCard/README.md.
 //
 // Regenerate deliberately:
@@ -174,5 +175,25 @@ void main() {
         child: _lane(_states['default']!()),
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets('default · text 2.0 · ${kitGallerySize(size)} · $mode', (
+        tester,
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_task_card_default',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _lane(_states['default']!()),
+        );
+      });
+    }
   }
 }

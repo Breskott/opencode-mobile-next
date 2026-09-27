@@ -514,11 +514,44 @@ const _glassFiles = <String, String>{
   'lib/ui/kit/glass/': 'the glass part itself (LOOK-27)',
   'lib/ui/kit/chat/kit_composer.dart':
       'the composer is navigation-layer glass (LOOK-27; planned path)',
+  'lib/ui/kit/kit_nav.dart':
+      'the floating tab bar and rail are navigation-layer glass (LOOK-27)',
+  'lib/ui/kit/kit_top_bar.dart':
+      'the top controls are navigation-layer glass (LOOK-27)',
   'lib/ui/screens/home_screen.dart':
       'shrinking allowlist until the dock moves into a kit part (LOOK-27)',
   'lib/ui/widgets/glass_surface.dart':
       'shrinking allowlist: the old wrapper forwards to KitGlass (LOOK-27)',
 };
+
+/// KitScene drawings (TEST-14) shape their paths with arc and corner radii in
+/// the illustration's own coordinate space; LOOK-19 governs surface radii.
+const _sceneRadiusFiles = <String, String>{
+  ..._tokenFiles,
+  'lib/ui/kit/scenes/':
+      'KitScene drawings: path radii in the illustration space, not surfaces',
+};
+
+/// The look gates, absolute inside `lib/ui/kit/` now that every kit unit
+/// has merged (kit-gates-manifest, cut v2 C21 correction): a kit file's G17
+/// or G21 hit is never baselined. The exceptions are the kit files an open
+/// slice holds right now, which keep their committed baseline entries until
+/// that slice brings them to zero; each names its owner, and the map only
+/// shrinks (a file that reaches zero must leave it).
+const _lookGates = {'G17', 'G21'};
+const _kitLookDeferrals = <String, String>{
+  'lib/ui/kit/kit_row.dart':
+      'slice-R4 (row groups on one inset) holds kit_row.dart',
+  'lib/ui/kit/kit_row_parts.dart':
+      'slice-R4 (row groups on one inset) holds kit_row_parts.dart',
+};
+
+/// Whether [rule]'s hit in [path] is never baselined.
+bool _absoluteAt(_Rule rule, String path) =>
+    rule.absolute ||
+    (_lookGates.contains(rule.gate) &&
+        path.startsWith(_kitDir) &&
+        !_kitLookDeferrals.containsKey(path));
 
 /// The forced-LTR subtrees where left alignment is correct (LAY-8).
 const _forcedLtrFiles = <String, String>{
@@ -1096,7 +1129,7 @@ final List<_Rule> _rules = [
       roots: _uiRoots,
       scope: scope,
       skipThemeFiles: true,
-      allow: _tokenFiles,
+      allow: name == 'Radius.circular(<n>' ? _sceneRadiusFiles : _tokenFiles,
     ),
 
   // G21 — the absolute rows.
@@ -1249,17 +1282,16 @@ Map<String, int> _scanRule(_Rule rule) {
   final absoluteProblems = <String>[];
   for (final rule in _rules.where((r) => r.gate == gate)) {
     final hits = _scanRule(rule);
-    if (rule.absolute) {
-      for (final MapEntry(key: path, value: n) in hits.entries) {
+    for (final MapEntry(key: path, value: n) in hits.entries) {
+      if (_absoluteAt(rule, path)) {
+        final where = rule.absolute ? 'absolute' : 'absolute in the kit';
         absoluteProblems.add(
-          '$gate: $path "${rule.name}" x$n — absolute, never baselined: '
+          '$gate: $path "${rule.name}" x$n — $where, never baselined: '
           '${rule.fix} (${rule.ids.join(', ')})',
         );
+      } else {
+        (current[path] ??= {})[rule.name] = n;
       }
-      continue;
-    }
-    for (final MapEntry(key: path, value: n) in hits.entries) {
-      (current[path] ??= {})[rule.name] = n;
     }
   }
   return (current, absoluteProblems);
@@ -1583,6 +1615,35 @@ void main() {
       expect(problems, isEmpty, reason: problems.join('\n'));
     });
   }
+
+  test('G17/G21 inside the kit: only deferred files keep a baseline, and '
+      'each deferral still needs it', () {
+    final problems = <String>[];
+    for (final gate in _lookGates) {
+      final gateBaseline = baseline[gate] as Map<String, dynamic>? ?? {};
+      for (final path in gateBaseline.keys) {
+        if (path.startsWith(_kitDir) && !_kitLookDeferrals.containsKey(path)) {
+          problems.add(
+            '$gate: $path is in the baseline, but the look gates are absolute '
+            'in the kit — bring the file to zero and drop its entry',
+          );
+        }
+      }
+    }
+    for (final MapEntry(key: path, value: owner) in _kitLookDeferrals.entries) {
+      expect(owner.length, greaterThan(10), reason: path);
+      final hits = _lookGates.any(
+        (gate) => ruleCurrent[gate]!.containsKey(path),
+      );
+      if (!hits) {
+        problems.add(
+          '$path reached zero in G17 and G21 — drop it from _kitLookDeferrals '
+          'and its baseline entries (the deferrals only shrink)',
+        );
+      }
+    }
+    expect(problems, isEmpty, reason: problems.join('\n'));
+  });
 
   test('allowlists never grow (KIT-5)', () {
     final (grew, shrank) = _allowlistDiff(

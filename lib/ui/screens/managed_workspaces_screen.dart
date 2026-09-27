@@ -265,7 +265,7 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
         if (active) l10n.managedWorkspacesRemoveLeavesFirst,
         l10n.managedWorkspacesRemoveHistoryStays,
       ],
-      confirmLabel: l10n.managedWorkspacesRemoveAction,
+      confirmLabel: l10n.managedWorkspacesRemoveConfirm,
       kind: KitConfirmKind.destructive,
       typedName: workspace.name,
       confirmKey: const ValueKey('confirm-remove-managed-workspace'),
