@@ -14,9 +14,11 @@ import 'perf_trace_section.dart';
 /// the connected server's own log or copied, and the Performance timings.
 ///
 /// Built from kit parts only (screen-system-1): a [KitScreen] page, the
-/// intro and its button block on the gutters, the errors as [KitExpandRow]s
-/// on one panel, then [PerfTraceSection]. The result of a send is a
-/// [KitNotice] under the buttons, not a snackbar (KIT-34). Clearing asks
+/// intro and its one primary on the gutters (Send to the server's log, or
+/// Copy when the server does not accept client logs), the errors as
+/// [KitExpandRow]s on one panel whose header menu holds Copy and Clear for
+/// exactly those errors, then [PerfTraceSection]. The result of a send is a
+/// [KitNotice] under the button, not a snackbar (KIT-34). Clearing asks
 /// first with the count (map: app-diagnostics-clear-sheet).
 // revamp: redesign (slice-P8.2)
 class AppDiagnosticsScreen extends StatefulWidget {
@@ -96,6 +98,12 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
     setState(() => _sent = null);
   }
 
+  void _copyErrors() => KitCopy.copy(
+    context,
+    _diagnostics.reportText(),
+    announcement: _screenCopy(context).e7SettingsDetailUi0,
+  );
+
   String _time(DateTime value) {
     final local = value.toLocal();
     String two(int part) => part.toString().padLeft(2, '0');
@@ -143,32 +151,33 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                       role: KitTextRole.secondary,
                     ),
                     SizedBox(height: tokens.space4),
-                    // One block in the one hierarchy: Send is what this
-                    // screen is for and names where it goes, Copy the other
-                    // path, Clear the destructive one, confirmed first.
-                    // With nothing captured they rest; the state below
-                    // says so.
-                    KitButton.primary(
-                      key: const ValueKey('send-app-diagnostics'),
-                      onPressed: entries.isEmpty || _sending || gated
-                          ? null
-                          : _send,
-                      working: _sending,
-                      icon: AppIconography.send,
-                      label: _sending
-                          ? copy.queuedSending
-                          : copy.appDiagnosticsSendTo(_serverName(copy)),
-                    ),
-                    SizedBox(height: tokens.space1),
-                    KitText(
-                      gated
-                          ? copy.e7SettingsDetailUi12
-                          : copy.appDiagnosticsSendWhere(_serverName(copy)),
-                      key: gated
-                          ? const ValueKey('gated-client-diagnostics')
-                          : const ValueKey('app-diagnostics-send-where'),
-                      role: KitTextRole.secondary,
-                    ),
+                    // One primary: Send names where it goes. A server that
+                    // does not take client logs gets no dead button; Copy
+                    // is then the way out.
+                    if (gated)
+                      KitButton.primary(
+                        key: const ValueKey('copy-app-diagnostics'),
+                        onPressed: entries.isEmpty ? null : _copyErrors,
+                        icon: AppIconography.copy,
+                        label: copy.appDiagnosticsCopyCount(entries.length),
+                      )
+                    else ...[
+                      KitButton.primary(
+                        key: const ValueKey('send-app-diagnostics'),
+                        onPressed: entries.isEmpty || _sending ? null : _send,
+                        working: _sending,
+                        icon: AppIconography.send,
+                        label: _sending
+                            ? copy.queuedSending
+                            : copy.appDiagnosticsSendTo(_serverName(copy)),
+                      ),
+                      SizedBox(height: tokens.space1),
+                      KitText(
+                        copy.appDiagnosticsSendWhere(_serverName(copy)),
+                        key: const ValueKey('app-diagnostics-send-where'),
+                        role: KitTextRole.secondary,
+                      ),
+                    ],
                     if (sent != null) ...[
                       SizedBox(height: tokens.space2),
                       KitNotice(
@@ -182,31 +191,6 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                         message: sent.message,
                       ),
                     ],
-                    SizedBox(height: tokens.space2),
-                    KitButton.secondary(
-                      key: const ValueKey('copy-app-diagnostics'),
-                      onPressed: entries.isEmpty
-                          ? null
-                          : () => KitCopy.copy(
-                              context,
-                              _diagnostics.reportText(),
-                              announcement: copy.e7SettingsDetailUi0,
-                            ),
-                      icon: AppIconography.copy,
-                      label: copy.appDiagnosticsCopyErrors,
-                    ),
-                    SizedBox(height: tokens.space1),
-                    KitInset(
-                      child: KitButton.tertiary(
-                        key: const ValueKey('clear-app-diagnostics'),
-                        destructive: true,
-                        onPressed: entries.isEmpty
-                            ? null
-                            : () => unawaited(_clear()),
-                        icon: AppIconography.delete,
-                        label: copy.appDiagnosticsClearErrors,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -222,6 +206,44 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
               else
                 KitRowGroup(
                   label: copy.e7SettingsDiagnosticTotal(entries.length),
+                  // Copy and Clear act on exactly these errors, so they sit
+                  // on this list's header (owner rule 2026-09-27).
+                  labelTrailing: Builder(
+                    builder: (menuContext) => KitIconButton(
+                      key: const ValueKey('app-diagnostics-actions'),
+                      icon: AppIconography.more,
+                      size: 20,
+                      tooltip: copy.appDiagnosticsActions(entries.length),
+                      onPressed: () => unawaited(
+                        showKitMenu(
+                          menuContext,
+                          semanticsLabel: copy.appDiagnosticsActions(
+                            entries.length,
+                          ),
+                          items: [
+                            if (!gated)
+                              KitMenuItem(
+                                key: const ValueKey('copy-app-diagnostics'),
+                                label: copy.appDiagnosticsCopyCount(
+                                  entries.length,
+                                ),
+                                icon: AppIconography.copy,
+                                onSelected: _copyErrors,
+                              ),
+                            KitMenuItem(
+                              key: const ValueKey('clear-app-diagnostics'),
+                              label: copy.appDiagnosticsClearConfirm(
+                                entries.length,
+                              ),
+                              icon: AppIconography.delete,
+                              destructive: true,
+                              onSelected: () => unawaited(_clear()),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   children: [
                     for (final entry in entries)
                       KitExpandRow(

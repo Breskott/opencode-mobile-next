@@ -186,7 +186,7 @@ void main() {
     await tester.tap(remaining);
     await tester.pumpAndSettle();
     expect(find.byType(ProviderQuotaScreen), findsOneWidget);
-    expect(find.text(_en.quotaDescription), findsOneWidget);
+    expect(find.text(_en.quotaSetupTitle), findsOneWidget);
     expect(find.byType(AppBar), findsOneWidget);
     overview.dispose();
     await _finish(tester, h.connection);
@@ -302,7 +302,10 @@ void main() {
     expect(h.connection.quotaMonitor.sources, hasLength(1));
     final threshold = _key('quota-threshold-profile-1-codex');
     expect(threshold, findsOneWidget);
-    expect(find.text(_en.quotaMonitorDisable), findsOneWidget);
+    expect(
+      find.text(_en.quotaMonitorDisable(_en.quotaCodex, 'Workstation')),
+      findsOneWidget,
+    );
     // The three notification toggles moved to Notifications.
     expect(find.byType(Switch), findsNothing);
 

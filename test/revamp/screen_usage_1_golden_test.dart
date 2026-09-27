@@ -209,6 +209,8 @@ void main() {
           page(),
           light: light,
           act: (tester) async {
+            // Clear is offered only once a budget is set.
+            await _setBudget(tester, '25');
             final row = find.byKey(const ValueKey('usage-budget-clear'));
             await _scrollTo(tester, row);
             await tester.tap(row);

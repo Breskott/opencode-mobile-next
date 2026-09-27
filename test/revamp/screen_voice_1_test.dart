@@ -53,10 +53,15 @@ void main() {
         find.textContaining('Download a speech model once'),
         findsOneWidget,
       );
+      // The privacy line says it once, without repeating the subtitle.
+      expect(find.text('Audio never leaves this phone.'), findsOneWidget);
       final download = find.textContaining('Download Balanced (');
       expect(download, findsOneWidget);
-      // Nothing is on the phone, so there is nothing to delete.
+      // Nothing is on the phone, so there is nothing to delete; a pack that
+      // is not on the phone says so instead of being marked "Current".
       expect(find.byKey(const Key('voice-delete-base')), findsNothing);
+      expect(find.textContaining('Not downloaded · '), findsWidgets);
+      expect(find.textContaining('Current'), findsNothing);
 
       await tester.tap(download);
       await tester.pump();
@@ -70,7 +75,9 @@ void main() {
       addTearDown(models.dispose);
       await openSetup(tester, models);
 
-      expect(find.text('Use Balanced'), findsOneWidget);
+      // Already on the phone and in use: nothing to start, only Done.
+      expect(find.byKey(const Key('voice-model-primary-action')), findsNothing);
+      expect(find.text('Done'), findsOneWidget);
       await tester.ensureVisible(find.byKey(const Key('voice-model-tiny')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('voice-model-tiny')));
@@ -81,15 +88,14 @@ void main() {
       expect(find.textContaining('Download Compact fallback'), findsOneWidget);
     });
 
-    testWidgets('Use <model> closes the sheet with the model ready', (
-      tester,
-    ) async {
+    testWidgets('Done closes the sheet with the model ready', (tester) async {
       final models = await ScriptedVoiceModels.create(installed: {'base'});
       addTearDown(models.dispose);
       bool? result;
       await openSetup(tester, models, onResult: (ready) => result = ready);
 
-      await tester.tap(find.text('Use Balanced'));
+      expect(find.text('Use Balanced'), findsNothing);
+      await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
       expect(result, isTrue);
       expect(find.text('Local voice input'), findsNothing);
@@ -113,20 +119,21 @@ void main() {
       addTearDown(models.dispose);
       await openSetup(tester, models);
 
-      await tester.ensureVisible(find.text('Delete Balanced'));
+      final delete = find.textContaining('Delete Balanced speech model (');
+      await tester.ensureVisible(delete);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete Balanced'));
+      await tester.tap(delete);
       await tester.pumpAndSettle();
-      expect(find.text('Delete Balanced?'), findsOneWidget);
+      expect(find.text('Delete Balanced speech model?'), findsOneWidget);
       expect(find.textContaining('This removes'), findsOneWidget);
       await tester.tap(find.text('Keep Balanced'));
       await tester.pumpAndSettle();
       expect(models.acts, isEmpty);
       expect(models.isInstalled(voiceModelPack('base')), isTrue);
 
-      await tester.ensureVisible(find.text('Delete Balanced'));
+      await tester.ensureVisible(delete);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete Balanced'));
+      await tester.tap(delete);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('voice-delete-confirm')));
       await tester.pumpAndSettle();
@@ -140,9 +147,10 @@ void main() {
       addTearDown(models.dispose);
       await openSetup(tester, models);
 
-      await tester.ensureVisible(find.text('Download Balanced again'));
+      final again = find.text('Download Balanced speech model again');
+      await tester.ensureVisible(again);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Download Balanced again'));
+      await tester.tap(again);
       await tester.pump();
       expect(models.acts, ['redownload:base']);
     });
@@ -161,8 +169,21 @@ void main() {
       await tester.ensureVisible(title);
       await tester.pumpAndSettle();
       expect(title, findsOneWidget);
-      // No pinned Download stands in for the progress.
+      // No pinned Download stands in for the progress, and the resting
+      // rows do not each repeat why they rest.
       expect(find.byKey(const Key('voice-model-primary-action')), findsNothing);
+      for (final id in ['tiny', 'base']) {
+        expect(
+          find.descendant(
+            of: find.byKey(Key('voice-model-$id')),
+            matching: find.textContaining(
+              'Available after the download',
+              findRichText: true,
+            ),
+          ),
+          findsNothing,
+        );
+      }
       final cancel = find.byKey(
         const Key('voice-model-cancel-download'),
         skipOffstage: false,
@@ -277,7 +298,9 @@ void main() {
       await tester.tap(find.text('Stop recording'));
       await pumpSheet(tester);
 
-      expect(find.text('Transcript ready to review'), findsOneWidget);
+      // No headline over the field: the field is labelled Transcript.
+      expect(find.text('Transcript ready to review'), findsNothing);
+      expect(find.text('Transcript'), findsOneWidget);
       expect(find.text('Fix the flaky checkout test'), findsOneWidget);
       await tester.tap(find.text('Insert & send'));
       await pumpSheet(tester);
@@ -285,7 +308,7 @@ void main() {
       expect(result?.send, isTrue);
     });
 
-    testWidgets('a blocked microphone explains and offers app settings', (
+    testWidgets('a blocked microphone makes Android settings the primary', (
       tester,
     ) async {
       final models = await ScriptedVoiceModels.create();
@@ -299,8 +322,15 @@ void main() {
       await pumpSheet(tester);
 
       expect(find.textContaining('Microphone access is blocked'), findsOne);
-      expect(find.text('Open app settings'), findsOneWidget);
-      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Voice input needs attention'), findsNothing);
+      expect(
+        find.byKey(const Key('voice-composer-open-settings')),
+        findsOneWidget,
+      );
+      expect(find.text('Allow microphone in Android settings'), findsOneWidget);
+      // Try again steps back to the secondary; no second settings link.
+      expect(find.byKey(const Key('voice-composer-retry')), findsOneWidget);
+      expect(find.text('Open app settings'), findsNothing);
     });
 
     testWidgets('Cancel stops the recorder and closes', (tester) async {

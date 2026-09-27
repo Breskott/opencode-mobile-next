@@ -384,20 +384,25 @@ void main() {
       expect(find.textContaining('longest 7700ms'), findsOneWidget);
       expect(find.text('sessions.refresh'), findsNWidgets(2));
 
+      await tester.tap(find.byKey(const ValueKey('perf-trace-actions')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('perf-trace-copy')));
       await tester.pump();
       expect(clipboard, contains('http oc1 GET /provider'));
       expect(clipboard, contains('7700ms'));
       expect(clipboard, isNot(contains('abc')));
-      expect(find.text('Performance report copied'), findsOneWidget);
+      // The copy is announced to assistive tech (KitCopy), not drawn.
 
       // A span finishing while the screen is open shows up.
       PerfTrace.recordDuration('catalog.load', const Duration(seconds: 3));
       await tester.pump();
       expect(find.text('catalog.load'), findsNWidgets(2));
 
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('perf-trace-actions')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('perf-trace-clear')));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(PerfTrace.spans, isEmpty);
       expect(find.text('Nothing measured yet.'), findsOneWidget);
     });

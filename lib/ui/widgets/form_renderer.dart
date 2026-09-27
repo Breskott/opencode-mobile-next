@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_chip.dart';
+import 'package:opencode_mobile/ui/kit/kit_date_time_picker.dart';
 import 'package:opencode_mobile/ui/kit/kit_field.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
@@ -24,7 +25,8 @@ import 'request_routes.dart';
 
 /// Delivers the assembled answer payload (active fields only) to the caller.
 /// Throwing keeps the form open and surfaces the message in the error notice
-/// (`form-error-banner`) with Try again; returning normally closes the form.
+/// (`form-error-banner`); Send answers is the retry. Returning normally
+/// closes the form.
 typedef FormRendererSubmit = Future<void> Function(Map<String, dynamic> answer);
 
 /// Called after the user confirms "Dismiss". Throwing keeps the question
@@ -46,12 +48,11 @@ void debugForgetFormAnswers() => _FormAnswers._kept.clear();
 
 /// Presents [form] in the kit's one sheet frame ([showKitSheet]): content
 /// height for four or fewer declared fields, full height otherwise, with
-/// Send answers, Dismiss and Finish later pinned under the fields.
+/// Send answers and Decline this request pinned under the fields.
 /// Completes when the sheet closes.
 ///
 /// Draft carry: what the person typed and chose is kept per form until it
-/// is sent or dismissed, so swipe, back, Esc, close and Finish later all
-/// close silently and reopening the form brings the answers back. With
+/// is sent or declined, so swipe, back, Esc and close all close silently and reopening the form brings the answers back. With
 /// [profileId], multiline answers are also saved as a [KitDraft]
 /// (`oc.draft.form.<formId>.<fieldKey>.<profileId>`) and survive a restart.
 Future<void> presentForm(
@@ -90,7 +91,7 @@ Future<void> presentForm(
       ),
       secondary: KitAction(
         key: const Key('form-cancel'),
-        label: l10n.workspaceDismissNotice,
+        label: l10n.formRendererDecline,
         onPressed: () => unawaited(
           answers.dismiss(
             context,
@@ -100,14 +101,7 @@ Future<void> presentForm(
           ),
         ),
       ),
-      tertiary: [
-        KitAction(
-          key: const Key('form-later'),
-          label: l10n.formRendererFinishLater,
-          onPressed: close,
-        ),
-      ],
-      body: (_) => _FormBody(answers: answers, onRetry: submit),
+      body: (_) => _FormBody(answers: answers),
     );
   } finally {
     open = false;
@@ -119,8 +113,9 @@ Future<void> presentForm(
 /// pure presentation plus the kept answer state — no networking. Fields map
 /// to kit parts, `when` conditions fold slots open and closed with
 /// [KitReveal] (drafts of inactive fields are retained but excluded from
-/// the payload and validation), and the pinned actions carry Send answers,
-/// Dismiss and (with [onClose]) Finish later.
+/// the payload and validation), and the pinned actions carry Send answers
+/// and Decline this request; the header's close (with [onClose]) keeps the
+/// answers for later.
 class FormRenderer extends StatefulWidget {
   const FormRenderer({
     super.key,
@@ -136,8 +131,8 @@ class FormRenderer extends StatefulWidget {
   final FormRendererSubmit onSubmit;
   final FormRendererCancel onCancel;
 
-  /// Invoked after a successful submit, a confirmed cancel, Finish later
-  /// and the header's close; the presenting surface pops itself here.
+  /// Invoked after a successful submit, a confirmed cancel and the header's
+  /// close; the presenting surface pops itself here.
   final VoidCallback? onClose;
 
   /// Also retires nested decisions when the presenting request is invalidated.
@@ -193,7 +188,7 @@ class _FormRendererState extends State<FormRenderer> {
         ),
         secondary: KitAction(
           key: const Key('form-cancel'),
-          label: l10n.workspaceDismissNotice,
+          label: l10n.formRendererDecline,
           onPressed: busy
               ? null
               : () => unawaited(
@@ -206,15 +201,7 @@ class _FormRendererState extends State<FormRenderer> {
                 ),
           disabledReason: busy ? l10n.formRendererSending : null,
         ),
-        tertiary: [
-          if (onClose != null)
-            KitAction(
-              key: const Key('form-later'),
-              label: l10n.formRendererFinishLater,
-              onPressed: onClose,
-            ),
-        ],
-        child: _FormBody(answers: _answers, onRetry: _submit),
+        child: _FormBody(answers: _answers),
       ),
     );
   }
@@ -654,7 +641,7 @@ class _FormAnswers extends ChangeNotifier {
       context,
       title: l10n.e7SharedDismissThisRequest,
       body: l10n.e7SharedTheAgentContinuesWithoutYourAnswers,
-      confirmLabel: l10n.workspaceDismissNotice,
+      confirmLabel: l10n.formRendererDecline,
       kind: KitConfirmKind.destructive,
       icon: AppIconography.blocked,
       sheetKey: const Key('form-dismiss-confirm'),
@@ -691,10 +678,9 @@ class _FormAnswers extends ChangeNotifier {
 
 /// The fields and the send-failure notice, laid out for a [KitSheet] body.
 class _FormBody extends StatefulWidget {
-  const _FormBody({required this.answers, required this.onRetry});
+  const _FormBody({required this.answers});
 
   final _FormAnswers answers;
-  final VoidCallback onRetry;
 
   @override
   State<_FormBody> createState() => _FormBodyState();
@@ -756,7 +742,6 @@ class _FormBodyState extends State<_FormBody> {
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
-    final l10n = _sharedCopy(context);
     final active = _answers.evaluate().active;
     final banner = _answers.bannerError;
     return Column(
@@ -790,10 +775,6 @@ class _FormBodyState extends State<_FormBody> {
                     message: banner,
                     error: _answers.bannerCause,
                     reportSource: 'form-sheet',
-                    retry: KitAction(
-                      label: l10n.commonRetry,
-                      onPressed: widget.onRetry,
-                    ),
                   ),
                 ),
         ),
@@ -987,36 +968,30 @@ class _FormBodyState extends State<_FormBody> {
     );
   }
 
+  /// The kit's date sheet (the calendar, then the time entry for a
+  /// date-time field), never the stock Material dialogs.
   Future<void> _pickDate(Api2FormField field) async {
     final l10n = _sharedCopy(context);
-    final current =
-        DateTime.tryParse(_answers.dateIso[field.key] ?? '') ?? DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2100),
-      confirmText: l10n.formRendererUseDate,
-    );
-    if (date == null || !mounted) return;
-    var value = date;
-    if (_FormAnswers.isDateTime(field)) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(current),
-        confirmText: l10n.formRendererUseTime,
-      );
-      if (!mounted) return;
-      if (time != null) {
-        value = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
-      }
-    }
+    final current = DateTime.tryParse(_answers.dateIso[field.key] ?? '');
+    final value = _FormAnswers.isDateTime(field)
+        ? await showKitDateTimePicker(
+            context,
+            title: _label(field),
+            initial: current,
+            first: DateTime(1900),
+            last: DateTime(2100),
+            sheetKey: Key('form-field-${field.key}-picker'),
+          )
+        : await showKitDatePicker(
+            context,
+            title: _label(field),
+            initial: current,
+            first: DateTime(1900),
+            last: DateTime(2100),
+            confirmLabel: l10n.formRendererUseDate,
+            sheetKey: Key('form-field-${field.key}-picker'),
+          );
+    if (value == null || !mounted) return;
     _answers.setDate(field, value);
   }
 

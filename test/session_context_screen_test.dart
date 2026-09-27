@@ -8,6 +8,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -280,7 +281,7 @@ void main() {
     expect(find.text('GPT Context'), findsOneWidget);
     expect(find.text('200 of 1,000 tokens'), findsOneWidget);
     // The verdict in plain words comes first (map infoMissing).
-    expect(find.text('20 % used · plenty left'), findsOneWidget);
+    expect(find.text('20% used · plenty left'), findsOneWidget);
     expect(find.byType(Card), findsNothing);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('session-context-breakdown')),
@@ -456,10 +457,23 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('85 % used · near the limit'), findsOneWidget);
+    // Said once in the verdict and once in the notice: the verdict is the
+    // number, the gauge carries no "Near limit" word of its own, and the
+    // bar's menu does not offer Compact beside the notice's own.
+    expect(find.text('85% used'), findsOneWidget);
+    expect(find.textContaining('near the limit'), findsNothing);
+    expect(find.textContaining('Near limit'), findsNothing);
     expect(
       find.byKey(const ValueKey('session-context-near-limit')),
       findsOneWidget,
+    );
+    List<Key?> menuKeys() => [
+      for (final item in tester.widget<KitTopBar>(find.byType(KitTopBar)).menu)
+        item.key,
+    ];
+    expect(
+      menuKeys(),
+      isNot(contains(const Key('session-context-compact-menu'))),
     );
     await tester.tap(find.byKey(const Key('session-context-compact')));
     await tester.pumpAndSettle();
@@ -481,6 +495,46 @@ void main() {
       find.byKey(const ValueKey('session-context-near-limit')),
       findsNothing,
     );
+    // With the notice gone, the menu holds Compact again (disabled, with
+    // its reason).
+    expect(menuKeys(), contains(const Key('session-context-compact-menu')));
+  });
+
+  testWidgets('the totals say the message count once, with who wrote them', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final api = _ContextApi()..messagesResult = _messages();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _app(
+        SessionContextScreen(
+          controller: controller,
+          sessionID: 'session-1',
+          initialMessages: _messages(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('session-context-messages')),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('session-context-list')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('session-context-messages')),
+        matching: find.text('2 (1 yours, 1 agent)'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('User / assistant'), findsNothing);
   });
 
   testWidgets('under half the limit there is no near-limit notice', (

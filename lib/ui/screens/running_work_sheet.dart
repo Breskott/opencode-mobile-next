@@ -101,9 +101,10 @@ String _elapsed(ManagedShell shell) => _clockText(
   (shell.completedAt ?? clock.now()).difference(shell.startedAt).inSeconds,
 );
 
-/// "Running now": the agents and commands this conversation started, in one
-/// list ordered by urgency (running first, then the rest newest first). Each
-/// row carries its own mark and word; there are no state sections.
+/// "Work in this conversation": the agents and commands this conversation
+/// started, in one list ordered by urgency (failed first, then running, then
+/// the rest newest first). Each row carries its own mark and word; there are
+/// no state sections.
 Future<String?> showRunningWorkSheet(
   BuildContext context, {
   required ConnectionController controller,
@@ -130,7 +131,7 @@ Future<String?> showRunningWorkSheet(
   ),
 );
 
-/// The body of the "Running now" sheet. It is not its own scroll view: the
+/// The body of the "Work in this conversation" sheet. It is not its own scroll view: the
 /// sheet frame scrolls it (KIT-17).
 class RunningWorkSheet extends StatefulWidget {
   const RunningWorkSheet({
@@ -410,8 +411,13 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     );
   }
 
-  int _newest(ManagedShell a, ManagedShell b) =>
-      (b.completedAt ?? b.startedAt).compareTo(a.completedAt ?? a.startedAt);
+  static DateTime _shellTime(ManagedShell shell) =>
+      shell.completedAt ?? shell.startedAt;
+
+  static DateTime _agentTime(RunningAgentEntry entry) =>
+      DateTime.fromMillisecondsSinceEpoch(
+        entry.session.time?.updated ?? entry.session.time?.created ?? 0,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -430,26 +436,45 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
         (widget.onBackground != null && _promotion == null);
     final gap = SizedBox(height: tokens.space3);
 
-    // One list ordered by urgency: what runs now (agents, then commands),
-    // then the rest newest first. The mark and word on each row say how it
-    // stands; there are no state sections (owner rule 2026-09-27).
-    final running = <Widget>[
+    // One list ordered by urgency (owner rule 2026-09-27): first what needs
+    // the person (failed or timed-out commands), then what works now (busy
+    // agents, then running commands), then everything else merged by
+    // recency, newest first. The mark and word on each row say how it
+    // stands; there are no state sections.
+    bool needsYou(ManagedShell shell) => switch (_outcome(shell)) {
+      _Outcome.failed || _Outcome.timedOut => true,
+      _ => false,
+    };
+    final needs = [
+      for (final shell in _shells)
+        if (needsYou(shell)) shell,
+    ]..sort((a, b) => _shellTime(b).compareTo(_shellTime(a)));
+    final working = <Widget>[
       for (final entry in agents)
         if (entry.busy && !offline) _agentRow(entry, _Outcome.running, false),
       for (final shell in _shells)
         if (_outcome(shell) == _Outcome.running) _shellRow(shell, offline),
     ];
-    final rest = <Widget>[
-      for (final shell in [
-        for (final shell in _shells)
-          if (_outcome(shell) != _Outcome.running) shell,
-      ]..sort(_newest))
-        _shellRow(shell, offline),
+    final rest = <(DateTime, Widget Function())>[
+      for (final shell in _shells)
+        if (_outcome(shell) != _Outcome.running && !needsYou(shell))
+          (_shellTime(shell), () => _shellRow(shell, offline)),
       for (final entry in agents)
         if (!entry.busy || offline)
-          _agentRow(entry, offline ? _Outcome.unknown : _Outcome.idle, offline),
+          (
+            _agentTime(entry),
+            () => _agentRow(
+              entry,
+              offline ? _Outcome.unknown : _Outcome.idle,
+              offline,
+            ),
+          ),
+    ]..sort((a, b) => b.$1.compareTo(a.$1));
+    final rows = [
+      for (final shell in needs) _shellRow(shell, offline),
+      ...working,
+      for (final (_, row) in rest) row(),
     ];
-    final rows = [...running, ...rest];
     final blocked =
         widget.onBackground != null &&
         (canBackground || _promoting || _promotion != null);

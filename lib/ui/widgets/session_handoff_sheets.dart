@@ -21,8 +21,9 @@ AppLocalizations _l10n(BuildContext context) =>
 /// exact `--help` output.
 const sessionResumeVerifiedVersions = 'opencode 1.18.25, opencode2 beta-19242';
 
-/// What [showContinueOnComputerSheet] (and [ContinueOnComputerSheet]) pop
-/// with when the person picks "Export conversation".
+/// What [showContinueOnComputerSheet] (and [ContinueOnComputerSheet]) used
+/// to pop with for "Export conversation". Export now lives only in the
+/// conversation menu (one entry point); kept for hosts that still check it.
 const continueOnComputerExport = 'export';
 
 /// What they pop with when the person picks "Reload conversation" on the
@@ -30,12 +31,12 @@ const continueOnComputerExport = 'export';
 const continueOnComputerReload = 'reload';
 
 /// F4-S1 in the kit sheet frame: the terminal command that resumes this
-/// session on the computer running the server. Resolves to
-/// [continueOnComputerExport] when the person chooses the cross-server
-/// export route, [continueOnComputerReload] when they ask to reload a
+/// session on the computer running the server, wrapped so all of it shows.
+/// Resolves to [continueOnComputerReload] when the person asks to reload a
 /// conversation whose folder the server did not report, and null when they
 /// close it. The sheet itself never connects or sends anything; copying
-/// only writes the clipboard.
+/// only writes the clipboard. [exportAvailable] is ignored: Export lives in
+/// the conversation menu.
 Future<String?> showContinueOnComputerSheet(
   BuildContext context, {
   required SessionResumeCommand command,
@@ -47,12 +48,6 @@ Future<String?> showContinueOnComputerSheet(
     context,
     title: l10n.handoffUiComputerTitle,
     icon: AppIconography.computer,
-    secondary: exportAvailable
-        ? _exportAction(
-            l10n,
-            () => Navigator.of(context).pop(continueOnComputerExport),
-          )
-        : null,
     body: (context) =>
         _ContinueOnComputerBody(command: command, offerReload: offerReload),
   );
@@ -72,18 +67,9 @@ Future<void> showContinueOnPhoneSheet(
   );
 }
 
-KitAction _exportAction(AppLocalizations l10n, VoidCallback onPressed) =>
-    KitAction(
-      key: const Key('continue-on-computer-export'),
-      label: l10n.handoffUiExportAction,
-      icon: AppIconography.download,
-      onPressed: onPressed,
-    );
-
-/// F4-S1 as a whole sheet (header, body, pinned export action) for a host
-/// that opens its own modal route; [showContinueOnComputerSheet] is the
-/// kit way to open it. Pops with [continueOnComputerExport] or
-/// [continueOnComputerReload]; otherwise closes with null.
+/// F4-S1 as a whole sheet (header and body) for a host that opens its own
+/// modal route; [showContinueOnComputerSheet] is the kit way to open it.
+/// Pops with [continueOnComputerReload]; otherwise closes with null.
 class ContinueOnComputerSheet extends StatelessWidget {
   const ContinueOnComputerSheet({
     super.key,
@@ -94,9 +80,7 @@ class ContinueOnComputerSheet extends StatelessWidget {
 
   final SessionResumeCommand command;
 
-  /// Whether the connected server can export this session as a file; the
-  /// hint still reads as guidance when false, but without a button that
-  /// would only fail.
+  /// Ignored: Export lives in the conversation menu (one entry point).
   final bool exportAvailable;
 
   /// Offer "Reload conversation" when the server did not report a folder;
@@ -112,12 +96,6 @@ class ContinueOnComputerSheet extends StatelessWidget {
       // The host's modal route draws its own drag handle.
       handle: false,
       onClose: () => Navigator.maybePop(context),
-      secondary: exportAvailable
-          ? _exportAction(
-              l10n,
-              () => Navigator.pop(context, continueOnComputerExport),
-            )
-          : null,
       child: _ContinueOnComputerBody(
         command: command,
         offerReload: offerReload,
@@ -152,7 +130,14 @@ class _ContinueOnComputerBody extends StatelessWidget {
         if (command.command case final text?) ...[
           KitCodeBlock(
             text: text,
-            kind: KitCodeKind.command,
+            // The command is what this sheet exists to show: all of it,
+            // wrapped, never cut at the sheet's edge. A `command` block
+            // never wraps (it scrolls sideways), so this one is shown as
+            // wrapped text with the command's own copy label.
+            kind: KitCodeKind.output,
+            caption: l10n.handoffUiComputerCommandLabel,
+            wrap: true,
+            showWrapToggle: false,
             highlight: false,
             copyLabel: l10n.handoffSheetCopyCommand,
             blockKey: const Key('continue-on-computer-command'),
@@ -202,12 +187,6 @@ class _ContinueOnComputerBody extends StatelessWidget {
                 ),
             ],
           ),
-        gap,
-        KitText(
-          l10n.handoffUiExportHint,
-          role: KitTextRole.secondary,
-          tone: KitTextTone.secondary,
-        ),
       ],
     );
   }

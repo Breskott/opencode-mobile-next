@@ -90,9 +90,13 @@ void main() {
     expect(find.byKey(const Key('form-field-name')), findsOneWidget);
     expect(find.byKey(const Key('kit-sheet-actions')), findsOneWidget);
     expect(find.text('Send answers'), findsOneWidget);
-    expect(find.text('Dismiss'), findsOneWidget);
-    // Save answers and come back (map actionsMissing).
-    expect(find.text('Finish later'), findsOneWidget);
+    // The decline says what it declines; there is no separate "Finish
+    // later": close, swipe and back keep the answers (owner rule
+    // 2026-09-27, one way out each).
+    expect(find.text('Decline this request'), findsOneWidget);
+    expect(find.text('Dismiss'), findsNothing);
+    expect(find.text('Finish later'), findsNothing);
+    expect(find.byKey(const Key('form-later')), findsNothing);
   });
 
   testWidgets('global forms are attributed to an MCP server', (tester) async {
@@ -460,8 +464,14 @@ void main() {
 
     await tester.tap(find.byKey(const Key('form-field-deploy-pick')));
     await tester.pumpAndSettle();
-    expect(find.byType(DatePickerDialog), findsOneWidget);
-    await tester.tap(find.text('28'));
+    // The kit's date sheet, never the stock Material dialog.
+    expect(find.byKey(const Key('form-field-deploy-picker')), findsOneWidget);
+    expect(find.byType(DatePickerDialog), findsNothing);
+    await tester.tap(
+      find
+          .descendant(of: find.byType(Semantics), matching: find.text('28'))
+          .first,
+    );
     await tester.tap(find.text('Use date'));
     await tester.pumpAndSettle();
 
@@ -681,7 +691,7 @@ void main() {
     expect(sent, {'name': 'Eslam', 'code': 'abcd'});
   });
 
-  testWidgets('send failure shows the error notice with Try again', (
+  testWidgets('send failure shows the error notice; Send answers retries', (
     tester,
   ) async {
     var closed = false;
@@ -711,7 +721,15 @@ void main() {
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(closed, isFalse);
 
-    await tapText(tester, 'Try again');
+    // The notice has no Try again of its own: Send answers is the retry.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('form-error-banner')),
+        matching: find.text('Try again'),
+      ),
+      findsNothing,
+    );
+    await submit(tester);
     expect(attempts, 2);
     expect(sent, {'name': 'x'});
     expect(closed, isTrue);
@@ -730,7 +748,7 @@ void main() {
     // Backing out of the confirm leaves the form untouched.
     await tester.tap(find.byKey(const Key('form-cancel')));
     await tester.pumpAndSettle();
-    expect(find.text('Dismiss this request?'), findsOneWidget);
+    expect(find.text('Decline this request?'), findsOneWidget);
     expect(
       find.text('The agent continues without your answers.'),
       findsOneWidget,
@@ -882,7 +900,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('form-sheet')), findsNothing);
-      expect(find.text('Dismiss this request?'), findsNothing);
+      expect(find.text('Decline this request?'), findsNothing);
 
       await tester.tap(find.text('Open form'));
       await tester.pumpAndSettle();
@@ -902,17 +920,10 @@ void main() {
       expect(textOf(tester, 'note'), isEmpty);
     });
 
-    testWidgets('draft carry: Finish later and close keep the answers', (
-      tester,
-    ) async {
+    testWidgets('draft carry: close keeps the answers', (tester) async {
       await pumpPresenter(tester, carryForm());
       await fill(tester);
-
-      await tapText(tester, 'Finish later');
-      expect(find.byKey(const Key('form-sheet')), findsNothing);
-      await tester.tap(find.text('Open form'));
-      await tester.pumpAndSettle();
-      expect(textOf(tester, 'note'), 'ship it friday');
+      expect(find.text('Finish later'), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pumpAndSettle();
@@ -935,7 +946,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('form-cancel')));
       await tester.pumpAndSettle();
-      expect(find.text('Dismiss this request?'), findsOneWidget);
+      expect(find.text('Decline this request?'), findsOneWidget);
       // One sheet: the question replaced its content (no sheet on a sheet).
       expect(find.byType(BottomSheet), findsOneWidget);
 

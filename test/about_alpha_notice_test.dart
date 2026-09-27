@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart' show KitSkeletonRows;
 import 'package:opencode_mobile/ui/screens/about_screen.dart'
-    show AboutScreen, buildProvenanceBody;
+    show AboutScreen, aboutNoticesForReaders, buildProvenanceBody;
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -78,20 +78,17 @@ void main() {
     // Retitled "About"; the version is shown once, above the tabs.
     expect(find.text('About'), findsOneWidget);
     expect(find.text('OpenCode Mobile 1.0.44+52'), findsOneWidget);
-    // The app-bar bug icon is gone: the one report path is in the notice,
-    // and it says where it goes.
+    // No report path here: Settings has the one "Report a problem" row.
     expect(find.byKey(const ValueKey('about-report-bug')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('about-alpha-report-bug')),
-      findsOneWidget,
-    );
-    expect(find.text('Report a bug on GitHub'), findsOneWidget);
+    expect(find.byKey(const ValueKey('about-alpha-report-bug')), findsNothing);
+    expect(find.text('Report a bug on GitHub'), findsNothing);
     expect(find.text('About this build'), findsOneWidget);
     expect(
-      find.textContaining('built heavily with AI assistance'),
+      find.text(
+        'Android is the supported platform; desktop builds are experimental.',
+      ),
       findsOneWidget,
     );
-    expect(find.textContaining('not been hardware-tested'), findsOneWidget);
     expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
     // The package id sits under Details, folded.
     expect(find.text('com.example.opencode_mobile'), findsNothing);
@@ -216,4 +213,34 @@ void main() {
       expect(buildProvenanceBody, contains('not been hardware-tested'));
     },
   );
+
+  test('the open source notices leave out the maintainer intro and '
+      'regeneration steps', () {
+    const file = '''# Third-Party Notices
+
+OpenCode Mobile is an independent community project.
+
+**How this file is verified.** Every version below is read from pubspec.lock.
+
+## Bundled components
+
+### Phosphor icon artwork
+
+MIT.
+
+## Package inventory
+
+| Package | License |
+
+## Regenerating this file
+
+Run the tool.
+''';
+    final shown = aboutNoticesForReaders(file);
+    expect(shown, startsWith('## Bundled components'));
+    expect(shown, contains('## Package inventory'));
+    expect(shown, isNot(contains('independent community project')));
+    expect(shown, isNot(contains('How this file is verified')));
+    expect(shown, isNot(contains('Regenerating')));
+  });
 }

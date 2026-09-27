@@ -1,6 +1,6 @@
 // Behaviour of screen-usage-2's pages (wave 2b): Usage (usage-hub) and its
-// Remaining section (provider-quota) with the clear-thresholds confirmation
-// and the monitoring sheet, rebuilt from kit parts. The tests assert what the
+// Remaining section (provider-quota) with the monitoring sheet, rebuilt from
+// kit parts; one alert threshold per source (owner rule 2026-09-27). The tests assert what the
 // person sees, what is read and what is stored.
 import 'dart:convert';
 
@@ -132,40 +132,68 @@ void main() {
       expect(find.byType(AppBar), findsNothing);
     });
 
-    testWidgets('a threshold saved from its picker is cleared only after the '
-        'destructive confirmation', (tester) async {
+    testWidgets('one threshold per source: the windows carry none, and a '
+        'monitored account keeps its threshold and Stop in its own block, '
+        'not again under Quota monitoring', (tester) async {
       final h = await _pumpQuota(tester);
       await _consentAndRead(tester, h);
-      final prefs = h.connection.store.prefs;
-      final budgetKey = 'oc.budgets.$quotaProfileId';
-
-      await _scrollTo(tester, _key('quota-threshold-primary'));
-      await tester.tap(_key('quota-threshold-primary'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(_en.quotaBudgetPercent('90')).last);
-      await tester.pumpAndSettle();
-      expect(prefs.getString(budgetKey), contains('90'));
-      // With a rule, its attention switch appears in the same panel.
-      expect(_key('quota-attention-primary'), findsOneWidget);
-
-      await _scrollTo(tester, _key('quota-clear'));
-      await tester.tap(_key('quota-clear'));
-      await tester.pumpAndSettle();
-      expect(_key('quota-clear-sheet'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.text(_en.quotaBudgetClearDescription), findsOneWidget);
-      // Cancel keeps the rule.
-      await tester.tap(find.text(_en.kitConfirmCancel).last);
-      await tester.pumpAndSettle();
-      expect(prefs.getString(budgetKey), contains('90'));
-
-      await tester.tap(_key('quota-clear'));
-      await tester.pumpAndSettle();
-      await tester.tap(_key('quota-clear-confirm'));
-      await tester.pumpAndSettle();
-      final stored = prefs.getString(budgetKey);
-      expect(stored == null || !stored.contains('90'), isTrue);
+      // No personal page threshold, attention switch or clear row.
+      expect(_key('quota-threshold-primary'), findsNothing);
       expect(_key('quota-attention-primary'), findsNothing);
+      expect(_key('quota-clear'), findsNothing);
+      expect(find.text(_en.quotaBudgetClearAll), findsNothing);
+
+      await _scrollTo(tester, _key('quota-enable-monitoring'));
+      await tester.tap(_key('quota-enable-monitoring'));
+      await tester.pumpAndSettle();
+      // One line that leads into the choice names the provider and server.
+      expect(
+        find.text(_en.quotaMonitorConsent(_en.quotaCodex, 'Studio')),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('90%').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('90%').last);
+      await tester.pumpAndSettle();
+      await tester.tap(_key('quota-enroll-confirm'));
+      await tester.pumpAndSettle();
+      // The save touches the device alert (a platform call) before it
+      // notifies; let that real async work finish.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pumpAndSettle();
+
+      // The account block now holds the threshold and the named Stop.
+      expect(_key('quota-enable-monitoring'), findsNothing);
+      final threshold = _key('quota-threshold-$quotaProfileId-codex');
+      await _scrollTo(tester, threshold);
+      expect(
+        find.descendant(
+          of: _key('quota-account-monitoring'),
+          matching: find.text(_en.quotaBudgetPercent('90')),
+        ),
+        findsOneWidget,
+      );
+      final stop = _en.quotaMonitorDisable(_en.quotaCodex, 'Studio');
+      expect(find.text(stop), findsOneWidget);
+      // The monitoring section lists no card for the source shown above,
+      // and its cards carry no Refresh of their own.
+      expect(_key('quota-source-$quotaProfileId-codex'), findsNothing);
+      expect(threshold, findsOneWidget);
+      expect(_key('quota-monitor-empty'), findsNothing);
+
+      await tester.tap(find.text(stop));
+      await tester.pumpAndSettle();
+      // The save touches the device alert (a platform call) before it
+      // notifies; let that real async work finish.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(stop), findsNothing);
+      await _scrollTo(tester, _key('quota-enable-monitoring'));
+      expect(_key('quota-enable-monitoring'), findsOneWidget);
     });
 
     testWidgets('monitoring is enabled from a sheet with the chosen '
@@ -251,10 +279,45 @@ void main() {
       expect(
         find.descendant(
           of: _key('usage-section-remaining'),
-          matching: find.text(_en.quotaDescription),
+          matching: find.text(_en.quotaSetupTitle),
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('the bar holds one Refresh, named for the active tab; the '
+        'sections carry none of their own', (tester) async {
+      final h = await _pumpQuota(tester, hub: true);
+      KitTopBar bar() => tester.widget<KitTopBar>(find.byType(KitTopBar));
+      expect(bar().actions.map((a) => a.label), [_en.usageRefreshSpending]);
+      expect(
+        find.descendant(
+          of: _key('usage-section-spent'),
+          matching: _key('refresh-usage'),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(_key('usage-tab-remaining'));
+      await tester.pumpAndSettle();
+      // Nothing to refresh before the collector may be read.
+      expect(bar().actions, isEmpty);
+      await _consentAndRead(tester, h);
+      expect(bar().actions.map((a) => a.label), [_en.quotaRefresh]);
+      bar().actions.single.onPressed!();
+      await tester.pumpAndSettle();
+      expect(h.gateways.fold<int>(0, (n, g) => n + g.reads), 2);
+      expect(
+        find.descendant(
+          of: _key('usage-section-remaining'),
+          matching: _key('quota-refresh'),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(_key('usage-tab-spent'));
+      await tester.pumpAndSettle();
+      expect(bar().actions.map((a) => a.label), [_en.usageRefreshSpending]);
     });
 
     testWidgets('one section left: no tab strip', (tester) async {

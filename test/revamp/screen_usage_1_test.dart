@@ -205,6 +205,8 @@ void main() {
         usageApp(UsageScreen(controller: h.connection, overview: h.overview)),
       );
       await tester.pumpAndSettle();
+      // With both budgets "Not set" there is nothing to clear: no row.
+      expect(find.byKey(const ValueKey('usage-budget-clear')), findsNothing);
       await _tapKey(tester, const ValueKey('usage-budget-usd'));
       await tester.enterText(
         find.byKey(const ValueKey('usage-budget-amount')),
@@ -212,10 +214,17 @@ void main() {
       );
       await tester.pump();
       await _tapText(tester, 'Save');
+      expect(find.text('Budgets'), findsOneWidget);
+      expect(find.text('Clear both budgets'), findsOneWidget);
       await _tapKey(tester, const ValueKey('usage-budget-clear'));
       expect(find.text('Clear consumption budgets?'), findsOneWidget);
       await _tapText(tester, 'Clear budgets');
-      expect(find.text('Not set'), findsNWidgets(2));
+      // The page may have scrolled past the rows to reach Clear.
+      expect(find.text('Not set', skipOffstage: false), findsNWidgets(2));
+      expect(
+        find.byKey(const ValueKey('usage-budget-clear'), skipOffstage: false),
+        findsNothing,
+      );
     });
 
     for (final size in const [

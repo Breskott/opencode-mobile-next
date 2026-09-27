@@ -131,10 +131,14 @@ void main() {
         ),
         findsOneWidget,
       );
+      // Copy and Clear live in the menu on the timings list's header.
+      await tester.tap(find.byKey(const ValueKey('perf-trace-actions')));
+      await tester.pumpAndSettle();
+      expect(find.text('Copy timing report'), findsOneWidget);
       expect(find.text('Clear timings'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('perf-trace-clear')));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(PerfTrace.spans, isEmpty);
       expect(find.text(_en.perfTraceEmpty), findsOneWidget);
     });

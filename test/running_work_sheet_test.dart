@@ -146,7 +146,9 @@ void main() {
     // Only while it applies, one line says what moving the work frees
     // (map infoMissing).
     expect(
-      find.textContaining('This conversation waits for the work above.'),
+      find.text(
+        'The work keeps running on the server and its results come back here.',
+      ),
       findsOneWidget,
     );
     eligible = false;
@@ -634,7 +636,7 @@ void main() {
   );
 
   testWidgets(
-    'Running now lists running work first, then the rest, by outcome',
+    'one list by urgency: failed first, then running, then the rest newest first',
     (tester) async {
       final started = DateTime.now().subtract(const Duration(minutes: 3));
       ManagedShell shell(
@@ -642,16 +644,17 @@ void main() {
         String command,
         ManagedShellStatus status, {
         int? exitCode,
+        Duration offset = Duration.zero,
       }) => ManagedShell(
         id: id,
         sessionID: 'ses_a',
         command: command,
         status: status,
         exitCode: exitCode,
-        startedAt: started,
+        startedAt: started.add(offset),
         completedAt: status == ManagedShellStatus.running
             ? null
-            : started.add(const Duration(seconds: 30)),
+            : started.add(offset).add(const Duration(seconds: 30)),
       );
       final repo = FakeManagedShellRepository()
         ..shells = [
@@ -673,6 +676,7 @@ void main() {
             'uvicorn old',
             ManagedShellStatus.exited,
             exitCode: 143,
+            offset: const Duration(minutes: 1),
           ),
         ];
       final conn = await connection(repo);
@@ -689,16 +693,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Running first, whatever order the server listed them in.
-      final live = tester.getTopLeft(
-        find.byKey(const Key('work-shell-sh_live')),
-      );
-      for (final id in ['sh_ok', 'sh_bad', 'sh_term']) {
-        expect(
-          live.dy,
-          lessThan(tester.getTopLeft(find.byKey(Key('work-shell-$id'))).dy),
-        );
-      }
+      // Whatever order the server listed them in: the failed run needs the
+      // person, so it leads; then what runs now; then the rest, newest
+      // first (the stopped server ended after the clean analyze).
+      double top(String id) =>
+          tester.getTopLeft(find.byKey(Key('work-shell-$id'))).dy;
+      expect(top('sh_bad'), lessThan(top('sh_live')));
+      expect(top('sh_live'), lessThan(top('sh_term')));
+      expect(top('sh_term'), lessThan(top('sh_ok')));
       // Finished work, newest first, in one list: no state sections.
       expect(find.text('Running'), findsNothing);
       expect(find.text('Finished'), findsNothing);

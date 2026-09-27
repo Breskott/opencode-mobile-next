@@ -1184,9 +1184,15 @@ final gServersArea = CensusArea(
         _rawApp(UsageScreen(controller: controller, overview: overview)),
       );
       await kit.settle();
-      await kit.scrollTo(find.text('Clear saved consumption budgets'));
-      await kit.tapText('Clear saved consumption budgets');
-      kit.expectText('Clear saved consumption budgets');
+      await kit.tap(find.byKey(const ValueKey('usage-budget-usd')));
+      await kit.tester.enterText(
+        find.byKey(const ValueKey('usage-budget-amount')),
+        '25',
+      );
+      await kit.tapText('Save');
+      await kit.scrollTo(find.text('Clear both budgets'));
+      await kit.tapText('Clear both budgets');
+      kit.expectText('Clear budgets');
     }),
   ],
   notRendered: {},

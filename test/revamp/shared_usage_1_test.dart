@@ -115,9 +115,17 @@ void main() {
       expect(find.text(_en.quotaMonitorSourceChanged), findsOneWidget);
       expect(find.text(_en.quotaMonitorThreshold), findsOneWidget);
       expect(find.text(_en.quotaBudgetPercent('90')), findsOneWidget);
-      expect(find.text(_en.quotaRefresh), findsOneWidget);
-      expect(find.text(_en.quotaMonitorDisable), findsOneWidget);
+      // The page's own Refresh reads again; the card has none of its own.
+      expect(find.text(_en.quotaRefresh), findsNothing);
+      // Stop names the provider and server it acts on.
+      expect(
+        find.text(_en.quotaMonitorDisable(_en.quotaCodex, 'Workstation')),
+        findsOneWidget,
+      );
       expect(find.text(_en.quotaMonitorEmpty), findsNothing);
+      // Quota alerts is a row that says what it opens.
+      expect(find.text(_en.quotaAlertsRowTitle), findsOneWidget);
+      expect(find.text(_en.quotaAlertsRowSupporting), findsOneWidget);
       // G1: a failed save is said in place, never a SnackBar.
       expect(find.byType(SnackBar), findsNothing);
       await _finish(tester, c);
@@ -149,9 +157,33 @@ void main() {
       await _finish(tester, c);
     });
 
-    testWidgets('Notification settings opens the shared settings', (
+    testWidgets('the source the page already shows is not listed again', (
       tester,
     ) async {
+      final c = await _connection();
+      await tester.pumpWidget(
+        _app(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: QuotaMonitorSection(
+              controller: c,
+              onOpenNotifications: () {},
+              shownAbove: const QuotaMonitorTarget(
+                'profile-1',
+                QuotaProvider.codex,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(_key('quota-source-profile-1-codex'), findsNothing);
+      // It is monitored, so the empty state does not claim otherwise.
+      expect(find.text(_en.quotaMonitorEmpty), findsNothing);
+      await _finish(tester, c);
+    });
+
+    testWidgets('Quota alerts opens the shared settings', (tester) async {
       final c = await _connection();
       var opened = 0;
       await tester.pumpWidget(_app(_section(c, onOpen: () => opened++)));
@@ -161,8 +193,8 @@ void main() {
       await _finish(tester, c);
     });
 
-    testWidgets('Disable removes the source and the empty state says how to '
-        'add one', (tester) async {
+    testWidgets('Stop monitoring removes the source and the empty state says '
+        'how to add one', (tester) async {
       tester.view.physicalSize = const Size(412, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -170,7 +202,9 @@ void main() {
       await tester.pumpWidget(_app(_section(c)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(_en.quotaMonitorDisable));
+      await tester.tap(
+        find.text(_en.quotaMonitorDisable(_en.quotaCodex, 'Workstation')),
+      );
       // The save clears the source's device alert (a platform call) before
       // it notifies; let that real async work finish.
       await tester.runAsync(

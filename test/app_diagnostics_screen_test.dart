@@ -108,6 +108,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Copy and Clear sit in the menu on the errors list's header, named
+    // with the count they act on.
+    await tester.tap(find.byKey(const Key('app-diagnostics-actions')));
+    await tester.pumpAndSettle();
+    expect(find.text('Copy 2 errors'), findsOneWidget);
+    expect(find.text('Clear 2 errors'), findsOneWidget);
     await tester.tap(find.byKey(const Key('clear-app-diagnostics')));
     await tester.pumpAndSettle();
     expect(find.text('Clear 2 errors?'), findsOneWidget);
@@ -117,6 +123,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.diagnostics.count, 2);
 
+    await tester.tap(find.byKey(const Key('app-diagnostics-actions')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('clear-app-diagnostics')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('clear-app-diagnostics-confirm')));

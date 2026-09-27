@@ -145,7 +145,10 @@ void main() {
         home: voiceLauncher((c) => showVoiceModelSetupSheet(c, models)),
         then: () async {
           await _open(tester);
-          final delete = find.text('Delete Balanced', skipOffstage: false);
+          final delete = find.textContaining(
+            'Delete Balanced speech model (',
+            skipOffstage: false,
+          );
           await tester.ensureVisible(delete);
           await tester.pumpAndSettle();
           await tester.tap(delete);
