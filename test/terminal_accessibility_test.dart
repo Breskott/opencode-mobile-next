@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/ui/kit/terminal_key_bar.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 
 class _MemoryTerminalChannel implements TerminalChannel {
@@ -116,6 +117,25 @@ Future<_TerminalRepository> _pumpTerminal(WidgetTester tester) async {
   return repository;
 }
 
+/// Opens the terminal page's menu and chooses the item keyed [key].
+Future<void> _choose(WidgetTester tester, Key key) async {
+  await tester.tap(find.byKey(const ValueKey('terminal-surface-menu')));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.tap(find.byKey(key));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
+/// Whether the key bar (Ctrl-C and the rest) sends.
+bool _keysEnabled(WidgetTester tester) =>
+    tester.widget<TerminalKeyBar>(find.byType(TerminalKeyBar)).enabled;
+
+/// The one status line shows only while the terminal is not connected.
+final _statusLine = find.byKey(
+  const ValueKey('kit-status-terminal-connection'),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -152,9 +172,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       expect(tester.takeException(), isNull);
-      await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-      await tester.pump();
-      final input = find.byKey(const Key('terminal-accessible-input'));
+      await _choose(tester, const Key('terminal-accessible-mode'));
+      final input = find.descendant(
+        of: find.byKey(const Key('terminal-accessible-input')),
+        matching: find.byType(TextField),
+      );
       expect(tester.widget<TextField>(input).textDirection, TextDirection.ltr);
       await tester.enterText(input, 'pwd');
       await tester.testTextInput.receiveAction(TextInputAction.send);
@@ -169,8 +191,7 @@ void main() {
     tester,
   ) async {
     final repository = await _pumpTerminal(tester);
-    await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-    await tester.pump();
+    await _choose(tester, const Key('terminal-accessible-mode'));
 
     final channel = repository.channels.single.outputController;
     channel.add('\x1b]0;private');
@@ -183,6 +204,7 @@ void main() {
     channel.add('BISO ');
     channel.add('\x1b)0text\n');
     channel.add('{"cursor":99}\n');
+    await tester.pump();
     await tester.pump();
 
     expect(
@@ -198,19 +220,16 @@ void main() {
     'terminal reconnect resumes from its cursor without replaying transcript',
     (tester) async {
       final repository = await _pumpTerminal(tester);
-      await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-      await tester.pump();
+      await _choose(tester, const Key('terminal-accessible-mode'));
 
       const initial = 'prompt\ncommand\nresult\n';
       repository.channels.single.addOutput(initial);
       await tester.pump();
+      await tester.pump();
       expect(find.text(initial), findsOneWidget);
 
-      final reconnect = tester.widget<IconButton>(
-        find.byKey(const Key('terminal-reconnect')),
-      );
+      await _choose(tester, const Key('terminal-reconnect'));
       await tester.runAsync(() async {
-        reconnect.onPressed!();
         await Future<void>.delayed(const Duration(milliseconds: 20));
       });
       await tester.pump();
@@ -219,14 +238,13 @@ void main() {
       expect(repository.channels, hasLength(2));
       repository.channels.last.addOutput('next\n');
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('${initial}next\n'), findsOneWidget);
     },
   );
 
-  testWidgets('terminal key strip scrolls on phones with 48dp targets', (
-    tester,
-  ) async {
+  testWidgets('terminal keys keep 48dp targets on phones', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -234,17 +252,16 @@ void main() {
 
     await _pumpTerminal(tester);
 
-    final strip = tester.widget<ListView>(
-      find.byKey(const Key('terminal-control-strip')),
+    expect(find.byType(TerminalKeyBar), findsOneWidget);
+    final interrupt = find.byKey(const ValueKey('terminal-key-interrupt'));
+    expect(interrupt, findsOneWidget);
+    final keys = find.byWidgetPredicate(
+      (widget) =>
+          widget.key is ValueKey<String> &&
+          (widget.key! as ValueKey<String>).value.startsWith('terminal-key-'),
     );
-    expect(strip.scrollDirection, Axis.horizontal);
-
-    final visibleKeys = find.descendant(
-      of: find.byKey(const Key('terminal-control-strip')),
-      matching: find.byType(OutlinedButton),
-    );
-    expect(visibleKeys, findsWidgets);
-    for (final element in visibleKeys.evaluate()) {
+    expect(keys, findsWidgets);
+    for (final element in keys.evaluate()) {
       final size = tester.getSize(find.byWidget(element.widget));
       expect(size.width, greaterThanOrEqualTo(48));
       expect(size.height, greaterThanOrEqualTo(48));
@@ -259,20 +276,13 @@ void main() {
     final repository = await _pumpTerminal(tester);
     final firstChannel = repository.channels.single;
 
-    expect(
-      tester
-          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Ctrl-C'))
-          .onPressed,
-      isNotNull,
-    );
+    expect(_keysEnabled(tester), isTrue);
+    expect(_statusLine, findsNothing);
     await firstChannel.outputController.close();
     await tester.pump();
 
     expect(find.text('Connection closed'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel(RegExp('Terminal status: Connection closed')),
-      findsOneWidget,
-    );
+    expect(_statusLine, findsOneWidget);
     final controlNode = tester.getSemantics(
       find.bySemanticsLabel('Interrupt, Control C'),
     );
@@ -280,24 +290,24 @@ void main() {
       controlNode.getSemanticsData().flagsCollection.isEnabled,
       Tristate.isFalse,
     );
-    expect(
-      tester
-          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Ctrl-C'))
-          .onPressed,
-      isNull,
-    );
+    expect(_keysEnabled(tester), isFalse);
 
-    await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-    await tester.pump();
+    await _choose(tester, const Key('terminal-accessible-mode'));
     final input = tester.widget<TextField>(
-      find.byKey(const Key('terminal-accessible-input')),
+      find.descendant(
+        of: find.byKey(const Key('terminal-accessible-input')),
+        matching: find.byType(TextField),
+      ),
     );
     expect(input.enabled, isFalse);
     expect(
       find.text('Input is unavailable while disconnected.'),
       findsOneWidget,
     );
-    expect(find.byTooltip('Terminal input unavailable'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('terminal-accessible-send')),
+      findsOneWidget,
+    );
 
     semantics.dispose();
   });
@@ -318,18 +328,14 @@ void main() {
         final channelCount = repository.channels.length;
 
         tester.binding.handleAppLifecycleStateChanged(state);
+        // Frames are off while the app is away; the next frame it draws
+        // (a forced one here) shows the paused line.
+        tester.binding.scheduleForcedFrame();
         await tester.pump();
         expect(channel.closeCalls, 1);
-        expect(find.text('Paused'), findsOneWidget);
+        expect(find.textContaining('Paused'), findsOneWidget);
         expect(find.byType(TerminalSurface), findsOneWidget);
-        expect(
-          tester
-              .widget<OutlinedButton>(
-                find.widgetWithText(OutlinedButton, 'Ctrl-C'),
-              )
-              .onPressed,
-          isNull,
-        );
+        expect(_keysEnabled(tester), isFalse);
 
         tester.binding.handleAppLifecycleStateChanged(state);
         await tester.pump();
@@ -373,7 +379,8 @@ void main() {
     await tester.pump();
 
     expect(repository.channels.single.closeCalls, 0);
-    expect(find.textContaining('Connected - PID 42'), findsOneWidget);
+    expect(_statusLine, findsNothing);
+    expect(_keysEnabled(tester), isTrue);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
@@ -408,12 +415,7 @@ void main() {
     repository.requests.last.complete(activeChannel);
     await tester.pump();
     expect(activeChannel.closeCalls, 0);
-    expect(
-      tester
-          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Ctrl-C'))
-          .onPressed,
-      isNotNull,
-    );
+    expect(_keysEnabled(tester), isTrue);
     expect(find.byType(TerminalSurface), findsOneWidget);
   });
 
@@ -448,7 +450,8 @@ void main() {
       // resume before the app-wide controller has installed its new transport.
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
-      expect(find.text('Unavailable'), findsOneWidget);
+      await tester.pump();
+      expect(find.textContaining('reconnecting'), findsOneWidget);
 
       router.repository = replacementRepository;
       await tester.pump();
@@ -457,7 +460,10 @@ void main() {
       expect(retiredRepository.channels, hasLength(1));
       expect(retiredRepository.channels.single.closeCalls, 1);
       expect(replacementRepository.channels, hasLength(1));
-      expect(find.textContaining('Connected - PID 42'), findsOneWidget);
+      // The line folds away once the terminal is back.
+      await tester.pump(const Duration(seconds: 1));
+      expect(_statusLine, findsNothing);
+      expect(_keysEnabled(tester), isTrue);
     },
   );
 
@@ -493,6 +499,7 @@ void main() {
 
     expect(repository.channels, hasLength(2));
     expect(repository.channels.first.closeCalls, 1);
-    expect(find.textContaining('Connected - PID 84'), findsOneWidget);
+    expect(find.text('Second shell'), findsOneWidget);
+    expect(_statusLine, findsNothing);
   });
 }

@@ -157,14 +157,20 @@ void main() {
       linux.services = ['server', 'aiteam'];
       backend.processes = 9;
       await mountPhone(tester);
-      expect(find.byKey(const ValueKey('local-terminal-cost')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('kit-status-local-terminal-cost')),
+        findsOneWidget,
+      );
       expect(find.textContaining('Each shell runs 2 programs'), findsOneWidget);
       expect(find.textContaining('the app runs 8'), findsOneWidget);
     });
 
     testWidgets('AI Team off: no cost line', (tester) async {
       await mountPhone(tester);
-      expect(find.byKey(const ValueKey('local-terminal-cost')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('kit-status-local-terminal-cost')),
+        findsNothing,
+      );
     });
   });
 

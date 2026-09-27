@@ -26205,5 +26205,283 @@
   "teamStartRunRefusedKept": "Your task is still here. Edit it and send it again.",
   "@teamStartRunRefusedKept": {
     "description": "AI Team start-a-task sheet: under the planner's refusal, says the typed task is kept so the person can edit and resend it."
+  },
+  "terminalScreenSourceLabel": "Where the shell runs",
+  "@terminalScreenSourceLabel": {
+    "description": "Terminal page: the name of the choice between this phone and the OpenCode server."
+  },
+  "terminalScreenNameLabel": "Name",
+  "@terminalScreenNameLabel": {
+    "description": "Rename terminal dialog: the field label for the terminal's name."
+  },
+  "terminalScreenRenameConfirm": "Rename",
+  "@terminalScreenRenameConfirm": {
+    "description": "Rename terminal dialog: the button that saves the new name."
+  },
+  "terminalScreenNameEmpty": "Type a name.",
+  "@terminalScreenNameEmpty": {
+    "description": "Rename terminal dialog: why Rename is disabled while the name is empty."
+  },
+  "terminalScreenStopTitle": "Stop {name}?",
+  "@terminalScreenStopTitle": {
+    "description": "Stop terminal question: title naming the terminal.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenStopBody": "The program and everything it started stop, and the terminal goes away. Its output can't be brought back.",
+  "@terminalScreenStopBody": {
+    "description": "Stop terminal question: what stopping does and that it cannot be undone."
+  },
+  "terminalScreenRemoveTitle": "Remove {name}?",
+  "@terminalScreenRemoveTitle": {
+    "description": "Remove ended terminal question: title naming the terminal.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenRemoveBody": "The terminal and its output go away. This can't be undone.",
+  "@terminalScreenRemoveBody": {
+    "description": "Remove ended terminal question: what removing does."
+  },
+  "terminalScreenStopConfirm": "Stop terminal",
+  "@terminalScreenStopConfirm": {
+    "description": "Stop terminal question: the confirm button."
+  },
+  "terminalScreenRemoveConfirm": "Remove terminal",
+  "@terminalScreenRemoveConfirm": {
+    "description": "Remove terminal question: the confirm button."
+  },
+  "terminalScreenCreateFailed": "Couldn't start a terminal",
+  "@terminalScreenCreateFailed": {
+    "description": "Terminal list: notice title when starting a new terminal failed."
+  },
+  "terminalScreenRemoveEnded": "{count, plural, =1{Remove 1 ended terminal} other{Remove {count} ended terminals}}",
+  "@terminalScreenRemoveEnded": {
+    "description": "Terminal list: the action under the list that removes every ended terminal.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "terminalScreenRemoveEndedTitle": "{count, plural, =1{Remove 1 ended terminal?} other{Remove {count} ended terminals?}}",
+  "@terminalScreenRemoveEndedTitle": {
+    "description": "Remove ended terminals question: title.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "terminalScreenRemoveEndedBody": "Their output goes away too. Running terminals stay.",
+  "@terminalScreenRemoveEndedBody": {
+    "description": "Remove ended terminals question: what is lost and what is kept."
+  },
+  "terminalScreenUsePhone": "Use this phone's terminal",
+  "@terminalScreenUsePhone": {
+    "description": "Terminal page, server without terminals: switches to the shell on this phone."
+  },
+  "terminalScreenRowRunning": "Running · {command}",
+  "@terminalScreenRowRunning": {
+    "description": "Terminal list row: the state word and the program it runs.",
+    "placeholders": {
+      "command": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
+  },
+  "terminalScreenRowEnded": "Ended · code {code} · {command}",
+  "@terminalScreenRowEnded": {
+    "description": "Terminal list row: an ended terminal with its exit code and program.",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "0"
+      },
+      "command": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
+  },
+  "terminalScreenRowEndedNoCode": "Ended · {command}",
+  "@terminalScreenRowEndedNoCode": {
+    "description": "Terminal list row: an ended terminal whose exit code is unknown.",
+    "placeholders": {
+      "command": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
+  },
+  "terminalScreenMenuLabel": "Actions for {name}",
+  "@terminalScreenMenuLabel": {
+    "description": "Terminal list row: the name of the row's menu for screen readers.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenOpen": "Open {name}",
+  "@terminalScreenOpen": {
+    "description": "Terminal row menu: opens the terminal.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenRename": "Rename {name}",
+  "@terminalScreenRename": {
+    "description": "Terminal row and page menu: renames the terminal.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenStop": "Stop {name}",
+  "@terminalScreenStop": {
+    "description": "Terminal row and page menu: stops a running terminal (asks first).",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenRemove": "Remove {name}",
+  "@terminalScreenRemove": {
+    "description": "Terminal row and page menu: removes an ended terminal (asks first).",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenLoading": "Loading terminals",
+  "@terminalScreenLoading": {
+    "description": "Terminal list: the wait while the server lists its terminals."
+  },
+  "terminalScreenPaused": "Paused while the app is in the background",
+  "@terminalScreenPaused": {
+    "description": "Terminal page status line: the connection is paused until the app is back."
+  },
+  "terminalScreenConnecting": "Connecting to the terminal",
+  "@terminalScreenConnecting": {
+    "description": "Terminal page status line and loading bar while it connects."
+  },
+  "terminalScreenCopy": "Copy output",
+  "@terminalScreenCopy": {
+    "description": "Terminal page top bar: copies the selection, or all output when nothing is selected."
+  },
+  "terminalScreenPaste": "Paste into {name}",
+  "@terminalScreenPaste": {
+    "description": "Terminal page menu: pastes the clipboard into the terminal.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenDetails": "Terminal details",
+  "@terminalScreenDetails": {
+    "description": "Terminal page menu: opens the command, folder and process id."
+  },
+  "terminalScreenDetailsTitle": "{name} details",
+  "@terminalScreenDetailsTitle": {
+    "description": "Terminal details sheet title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Terminal 1"
+      }
+    }
+  },
+  "terminalScreenDetailCommand": "Command",
+  "@terminalScreenDetailCommand": {
+    "description": "Terminal details: label of the command the terminal runs."
+  },
+  "terminalScreenDetailFolder": "Folder",
+  "@terminalScreenDetailFolder": {
+    "description": "Terminal details: label of the folder the terminal started in."
+  },
+  "terminalScreenDetailPid": "Process id",
+  "@terminalScreenDetailPid": {
+    "description": "Terminal details: label of the process id."
+  },
+  "terminalScreenDetailExit": "Exit code",
+  "@terminalScreenDetailExit": {
+    "description": "Terminal details: label of the exit code of an ended terminal."
+  },
+  "localTerminalStopNamedTitle": "Stop {name}?",
+  "@localTerminalStopNamedTitle": {
+    "description": "Phone terminal: the stop question naming the shell.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Shell 1"
+      }
+    }
+  },
+  "localTerminalPasteNamed": "Paste into {name}",
+  "@localTerminalPasteNamed": {
+    "description": "Phone terminal menu: pastes the clipboard into the shell.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Shell 1"
+      }
+    }
+  },
+  "localTerminalCopySelection": "Copy selection",
+  "@localTerminalCopySelection": {
+    "description": "Phone terminal top bar: copies the selected text."
+  },
+  "defaultShellOnlyOne": "{name} · the only shell this server offers",
+  "@defaultShellOnlyOne": {
+    "description": "Settings, Default shell row when the server offers one shell: nothing to choose.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
+  },
+  "defaultShellSaveFailed": "Couldn't change the shell. {error} Tap to try again.",
+  "@defaultShellSaveFailed": {
+    "description": "Settings, Default shell row after a failed save.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "The server is not connected."
+      }
+    }
+  },
+  "terminalScreenReadableMode": "Show as readable text",
+  "@terminalScreenReadableMode": {
+    "description": "Terminal page menu: switches to the screen-reader friendly transcript with a labelled command field."
+  },
+  "terminalScreenLiveMode": "Show as live terminal",
+  "@terminalScreenLiveMode": {
+    "description": "Terminal page menu: switches back from the readable text to the live terminal."
+  },
+  "localTerminalSetUpLinux": "Set up Linux on this phone",
+  "@localTerminalSetUpLinux": {
+    "description": "Phone terminal before Linux is installed: opens phone setup."
   }
 }

@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart' show Clipboard;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart' as xterm;
 
@@ -14,7 +15,6 @@ import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../kit/terminal_key_bar.dart';
-import '../widgets/confirm_sheet.dart';
 import 'phone_setup/phone_setup_routes.dart';
 
 /// Test seam for leaving to phone setup.
@@ -41,8 +41,6 @@ class LocalTerminalView extends ConsumerStatefulWidget {
   @override
   ConsumerState<LocalTerminalView> createState() => _LocalTerminalViewState();
 }
-
-enum _MenuAction { newShell, paste, stop, close }
 
 class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
   late final LocalTerminalSessions _sessions =
@@ -147,53 +145,103 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
     _focus.requestFocus();
   }
 
-  Future<void> _copy(LocalShell shell) async {
-    final range = _selection.selection;
-    if (range == null) return;
-    final text = shell.terminal.buffer.getText(range);
-    _selection.clearSelection();
-    if (text.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: text));
-  }
+  /// The selected text, for the bar's Copy (KitCopy, KIT-23).
+  String _selectedText(LocalShell shell) =>
+      KitTerminalView.selectedText(shell.terminal, _selection);
 
   Future<void> _stop(LocalShell shell) async {
     final l10n = _l10n;
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
-      title: l10n.localTerminalStopTitle,
-      message: l10n.localTerminalStopBody,
+      title: l10n.localTerminalStopNamedTitle(_shellName(shell)),
+      body: l10n.localTerminalStopBody,
       confirmLabel: l10n.localTerminalStop,
-      cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-      icon: AppIcons.stop,
-      destructive: true,
+      kind: KitConfirmKind.stop,
+      icon: AppIconography.stop,
       confirmKey: const ValueKey('local-terminal-stop-confirm'),
     );
     if (!confirmed) return;
     await _sessions.stop(shell);
   }
 
-  void _menu(Object value) {
-    final shell = _shell;
-    if (value is LocalShell) {
-      _show(value);
-      return;
-    }
-    switch (value) {
-      case _MenuAction.newShell:
-        _newShell();
-      case _MenuAction.paste when shell != null:
-        unawaited(_paste(shell));
-      case _MenuAction.stop when shell != null:
-        unawaited(_stop(shell));
-      case _MenuAction.close when shell != null:
-        unawaited(_sessions.remove(shell));
-      default:
-        break;
-    }
-  }
-
   String _shellName(LocalShell shell) =>
       _l10n.localTerminalShellName(shell.number);
+
+  /// The top bar's menu: every shell (the one showing checked), then New
+  /// shell and Paste, then stopping or closing the one showing.
+  List<KitMenuItem> _menu(LocalShell? shell) {
+    final l10n = _l10n;
+    return [
+      for (final each in _sessions.shells)
+        KitMenuItem(
+          key: ValueKey('local-terminal-shell-${each.number}'),
+          label: each.running || each.state == LocalShellState.starting
+              ? _shellName(each)
+              : l10n.localTerminalShellEnded(_shellName(each)),
+          icon: AppIconography.terminal,
+          checked: identical(each, shell),
+          group: 'shells',
+          onSelected: () => _show(each),
+        ),
+      KitMenuItem(
+        key: const ValueKey('local-terminal-new'),
+        label: l10n.localTerminalNewShell,
+        icon: AppIconography.add,
+        group: 'actions',
+        onSelected: _newShell,
+      ),
+      if (shell != null && shell.running) ...[
+        KitMenuItem(
+          key: const ValueKey('local-terminal-paste'),
+          label: l10n.localTerminalPasteNamed(_shellName(shell)),
+          icon: AppIconography.paste,
+          group: 'actions',
+          onSelected: () => unawaited(_paste(shell)),
+        ),
+        KitMenuItem(
+          key: const ValueKey('local-terminal-stop'),
+          label: l10n.localTerminalStopShell,
+          icon: AppIconography.stopCircle,
+          destructive: true,
+          onSelected: () => unawaited(_stop(shell)),
+        ),
+      ] else if (shell != null)
+        KitMenuItem(
+          key: const ValueKey('local-terminal-close'),
+          label: l10n.localTerminalCloseShell,
+          icon: AppIconography.close,
+          destructive: true,
+          onSelected: () => unawaited(_sessions.remove(shell)),
+        ),
+    ];
+  }
+
+  /// With AI Team on, how many programs the shells add against Android's
+  /// process budget (battery-heat vertical): one condition on the line.
+  KitStatus? _cost() {
+    final status = _status;
+    if (status == null || !status.serviceRunning(BuiltinTeam.serviceName)) {
+      return null;
+    }
+    final l10n = _l10n;
+    final processes = _sessions.processes;
+    return KitStatus(
+      kind: KitStatusKind.info,
+      id: 'local-terminal-cost',
+      icon: AppIconography.info,
+      message: processes == null
+          ? l10n.localTerminalCost(
+              LocalTerminalSessions.processesPerShell,
+              LocalTerminalSessions.androidProcessLimit,
+            )
+          : l10n.localTerminalCostNow(
+              LocalTerminalSessions.processesPerShell,
+              // The app itself is not one of the extra processes.
+              (processes - 1).clamp(0, 9999),
+              LocalTerminalSessions.androidProcessLimit,
+            ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,98 +253,44 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         (installed &&
             (shell == null || shell.state == LocalShellState.starting));
     // Landscape with the keyboard up leaves a strip: the source choice goes
-    // and the key bar folds into one row, so the shell keeps some lines.
-    final compact = _compact(context);
-    final header = compact ? null : widget.header;
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(l10n.libraryTerminalTitle),
+    // (and the key bar folds into one row), so the shell keeps some lines.
+    final header = _compact(context) ? null : widget.header;
+    final selected = shell != null && _selection.selection != null;
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.libraryTerminalTitle,
+        menuKey: const ValueKey('local-terminal-menu'),
         actions: [
-          if (shell != null && _selection.selection != null)
-            IconButton(
+          if (selected)
+            KitAction.copy(
               key: const ValueKey('local-terminal-copy'),
-              tooltip: l10n.localTerminalCopy,
-              onPressed: () => unawaited(_copy(shell)),
-              icon: const Icon(AppIcons.copy),
-            ),
-          if (installed)
-            PopupMenuButton<Object>(
-              key: const ValueKey('local-terminal-menu'),
-              tooltip: l10n.localTerminalMenu,
-              icon: const Icon(AppIconography.more),
-              onSelected: _menu,
-              itemBuilder: (context) => [
-                for (final each in _sessions.shells)
-                  CheckedPopupMenuItem<Object>(
-                    key: ValueKey('local-terminal-shell-${each.number}'),
-                    value: each,
-                    checked: identical(each, shell),
-                    child: Text(
-                      each.running || each.state == LocalShellState.starting
-                          ? _shellName(each)
-                          : l10n.localTerminalShellEnded(_shellName(each)),
-                    ),
-                  ),
-                if (_sessions.shells.isNotEmpty) const PopupMenuDivider(),
-                PopupMenuItem<Object>(
-                  key: const ValueKey('local-terminal-new'),
-                  value: _MenuAction.newShell,
-                  child: Text(l10n.localTerminalNewShell),
-                ),
-                if (shell != null && shell.running) ...[
-                  PopupMenuItem<Object>(
-                    key: const ValueKey('local-terminal-paste'),
-                    value: _MenuAction.paste,
-                    child: Text(l10n.localTerminalPaste),
-                  ),
-                  PopupMenuItem<Object>(
-                    key: const ValueKey('local-terminal-stop'),
-                    value: _MenuAction.stop,
-                    child: Text(
-                      l10n.localTerminalStopShell,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ] else if (shell != null)
-                  PopupMenuItem<Object>(
-                    key: const ValueKey('local-terminal-close'),
-                    value: _MenuAction.close,
-                    child: Text(l10n.localTerminalCloseShell),
-                  ),
-              ],
+              label: l10n.localTerminalCopySelection,
+              text: () => _selectedText(shell),
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(
-            (header == null ? 0 : _headerHeight) + 2,
-          ),
-          child: Column(
-            children: [
-              ?header,
-              KitLoadingBar(
-                loading: starting,
-                label: l10n.localTerminalStarting,
-              ),
-            ],
-          ),
-        ),
+        menu: installed ? _menu(shell) : const [],
       ),
+      header: [?header],
+      status: installed && shell != null ? _cost() : null,
+      loading: starting,
+      loadingLabel: l10n.localTerminalStarting,
       body: _body(context),
     );
   }
 
-  static const _headerHeight = 56.0;
-
   /// Less than this much height above the keyboard makes the screen compact.
   static const compactHeight = 420.0;
 
-  static bool _compact(BuildContext context) =>
-      MediaQuery.sizeOf(context).height -
-          MediaQuery.viewInsetsOf(context).bottom <
-      compactHeight;
+  static bool _compact(BuildContext context) {
+    // A page frame removes the keyboard from its body's MediaQuery, so the
+    // window's own inset counts too.
+    final window = View.of(context);
+    final keyboard = math.max(
+      MediaQuery.viewInsetsOf(context).bottom,
+      window.viewInsets.bottom / window.devicePixelRatio,
+    );
+    return MediaQuery.sizeOf(context).height - keyboard < compactHeight;
+  }
 
   Widget _body(BuildContext context) {
     final l10n = _l10n;
@@ -318,6 +312,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
     }
     if (status == null) return const SizedBox.shrink();
     if (!status.installed) {
+      // The gate explains itself and offers the flow that opens it (P7.4).
       return KitStateView(
         key: const ValueKey('local-terminal-not-set-up'),
         icon: AppIconography.terminal,
@@ -326,7 +321,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         body: l10n.localTerminalNotSetUpBody,
         primary: KitAction(
           key: const ValueKey('local-terminal-set-up'),
-          label: l10n.localTerminalSetUp,
+          label: l10n.localTerminalSetUpLinux,
           onPressed: () async {
             await (localTerminalOpenSetupOverride ?? openPhoneSetupStart)(
               context,
@@ -353,57 +348,25 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         details: shell.failure,
       );
     }
-    final teamOn = status.serviceRunning(BuiltinTeam.serviceName);
-    final processes = _sessions.processes;
     return ListenableBuilder(
       listenable: shell,
       builder: (context, _) {
         final exited = shell.state == LocalShellState.exited;
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (teamOn)
-              KitStatusLine(
-                key: const ValueKey('local-terminal-cost'),
-                icon: AppIconography.info,
-                tone: AppStatusTone.attention,
-                message: processes == null
-                    ? l10n.localTerminalCost(
-                        LocalTerminalSessions.processesPerShell,
-                        LocalTerminalSessions.androidProcessLimit,
-                      )
-                    : l10n.localTerminalCostNow(
-                        LocalTerminalSessions.processesPerShell,
-                        // The app itself is not one of the extra processes.
-                        (processes - 1).clamp(0, 9999),
-                        LocalTerminalSessions.androidProcessLimit,
-                      ),
-              ),
             Expanded(
-              child: ColoredBox(
-                color: xterm.TerminalThemes.defaultTheme.background,
-                child: Semantics(
-                  label: l10n.localTerminalSemantics,
-                  child: Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: xterm.TerminalView(
-                      shell.terminal,
-                      key: ValueKey('local-terminal-view-${shell.number}'),
-                      controller: _selection,
-                      focusNode: _focus,
-                      autofocus: true,
-                      autoResize: true,
-                      keyboardType: TextInputType.text,
-                      keyboardAppearance: Brightness.dark,
-                      deleteDetection: true,
-                      readOnly: !shell.running,
-                      padding: const EdgeInsets.all(6),
-                      textStyle: const xterm.TerminalStyle(
-                        fontFamily: AppTheme.monoFamily,
-                        fontSize: AppTheme.codeFontSize,
-                      ),
-                    ),
-                  ),
-                ),
+              child: KitTerminalView.live(
+                terminal: shell.terminal,
+                semanticsLabel: l10n.localTerminalSemantics,
+                viewKey: ValueKey('local-terminal-view-${shell.number}'),
+                controller: _selection,
+                focusNode: _focus,
+                readOnly: !shell.running,
+                // An ended shell shows its last screen and Restart instead
+                // of keys that would type into nothing.
+                keys: exited ? null : _keys,
+                keysKey: const ValueKey('local-terminal-keys'),
               ),
             ),
             if (exited)
@@ -421,23 +384,6 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
                     label: l10n.localTerminalRestart,
                     onPressed: () => _restart(shell),
                   ),
-                ),
-              )
-            else
-              SafeArea(
-                top: false,
-                child: TerminalKeyBar(
-                  key: const ValueKey('local-terminal-keys'),
-                  compact: _compact(context),
-                  controller: _keys,
-                  enabled: shell.running,
-                  onKey: (key, {required ctrl, required alt}) =>
-                      sendTerminalBarKey(
-                        shell.terminal,
-                        key,
-                        ctrl: ctrl,
-                        alt: alt,
-                      ),
                 ),
               ),
           ],

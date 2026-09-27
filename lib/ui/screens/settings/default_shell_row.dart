@@ -15,6 +15,7 @@ class _DefaultShellRowState extends State<DefaultShellRow>
     with WidgetsBindingObserver {
   TerminalShellSettings? _shellSettings;
   String? _shellError;
+  String? _saveError;
   bool _loadingShell = false;
   bool _savingShell = false;
   int _shellLoadGeneration = 0;
@@ -79,50 +80,27 @@ class _DefaultShellRowState extends State<DefaultShellRow>
       return;
     }
     final choices = _shellChoices(settings);
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+    final selected = await showKitChoiceSheet<String>(
+      context,
+      title: copy.e7SettingsUi35,
+      subtitle: copy.e7SettingsUi36,
+      selected: settings.selected,
+      choices: [
+        for (final choice in choices)
+          KitChoice(
+            key: ValueKey('server-shell-${choice.id}'),
+            value: choice.value,
+            title: choice.label,
+            supporting: choice.terminalOnly ? copy.e7SettingsUi37 : null,
           ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                leading: Icon(AppIconography.terminal),
-                title: Text(copy.e7SettingsUi35),
-                subtitle: Text(copy.e7SettingsUi36),
-              ),
-              for (final choice in choices)
-                ListTile(
-                  key: ValueKey('server-shell-${choice.id}'),
-                  leading: Icon(
-                    choice.value == settings.selected
-                        ? AppIconography.radioSelected
-                        : AppIconography.radioEmpty,
-                  ),
-                  title: Text(
-                    choice.label,
-                    textDirection: choice.value.isEmpty
-                        ? null
-                        : TextDirection.ltr,
-                  ),
-                  subtitle: choice.terminalOnly
-                      ? Text(copy.e7SettingsUi37)
-                      : null,
-                  onTap: () => Navigator.pop(context, choice.value),
-                ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
     if (selected == null || selected == settings.selected || !mounted) return;
 
-    setState(() => _savingShell = true);
+    setState(() {
+      _savingShell = true;
+      _saveError = null;
+    });
     final locationRevision = widget.controller.locationRevision;
     try {
       final repository = await widget.controller.prepareActionRepository();
@@ -139,13 +117,11 @@ class _DefaultShellRowState extends State<DefaultShellRow>
           ),
         );
       }
+      // The row now names the new shell: that is the confirmation.
       await _loadShellSettings();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(copy.e7SettingsUi38)));
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      // A failed save says so in the row itself, and a tap tries again.
+      if (mounted) setState(() => _saveError = productErrorText(error));
     } finally {
       if (mounted) setState(() => _savingShell = false);
     }
@@ -200,10 +176,35 @@ class _DefaultShellRowState extends State<DefaultShellRow>
     return settings.selected;
   }
 
+  /// The server offers one shell and nothing else is chosen: there is
+  /// nothing to pick, so the row says so instead of opening a sheet.
+  String? _onlyShell(TerminalShellSettings settings) {
+    if (settings.options.length != 1) return null;
+    final only = settings.options.single;
+    final selected = settings.selected;
+    if (selected.isNotEmpty && selected != only.name && selected != only.path) {
+      return null;
+    }
+    return only.name;
+  }
+
   @override
   Widget build(BuildContext context) {
     final copy = _settingsCopy(context);
     final busy = _loadingShell || _savingShell;
+    final settings = _shellSettings;
+    final only = settings == null || _shellError != null || _saveError != null
+        ? null
+        : _onlyShell(settings);
+    if (only != null) {
+      return KitRow(
+        key: const ValueKey('default-shell-settings-entry'),
+        leading: KitRow.icon(context, AppIconography.terminal),
+        title: copy.e7SettingsUi35,
+        supporting: TextSpan(text: copy.defaultShellOnlyOne(only)),
+        supportingMaxLines: 2,
+      );
+    }
     // Loading and saving read in the row's own words; no spinner (§4).
     return _CategoryRow(
       rowKey: 'default-shell-settings-entry',
@@ -211,9 +212,11 @@ class _DefaultShellRowState extends State<DefaultShellRow>
       title: copy.e7SettingsUi35,
       subtitle: _shellError != null
           ? copy.e7SettingsRetryError(_shellError!)
-          : _shellSettings == null
+          : _saveError != null
+          ? copy.defaultShellSaveFailed(_saveError!)
+          : settings == null
           ? copy.e7SettingsUi41
-          : _selectedShellLabel(_shellSettings!),
+          : _selectedShellLabel(settings),
       enabled: !busy,
       onTap: _shellError != null ? _loadShellSettings : _chooseShell,
     );
