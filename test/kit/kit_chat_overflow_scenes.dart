@@ -351,8 +351,10 @@ final kitChatOverflowScenes = <KitOverflowScene>[
         selected: 0,
         onSelected: (_) {},
         loading: loading,
-        laneBuilder: (_, i) =>
-            KitBoardLane(cards: i == 0 ? [_task(c)] : const []),
+        laneBuilder: (_, i) => KitBoardLane(
+          cards: i == 0 ? [_task(c)] : const [],
+          empty: KitText(c.t('No tasks to review', 'لا توجد مهام للمراجعة')),
+        ),
       ),
     ),
   for (final state in KitTaskState.values)
