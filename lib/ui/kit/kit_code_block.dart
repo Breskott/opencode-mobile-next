@@ -11,6 +11,7 @@ import 'kit_icon_button.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
 import 'kit_redact.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_reveal.dart';
@@ -21,8 +22,10 @@ enum KitCodeKind {
   code,
 
   /// A command the person runs elsewhere. A `$` prompt is drawn before each
-  /// line, outside the copied text. Never wraps (it scrolls sideways with
-  /// an edge fade), so a copied command is never broken by the display.
+  /// line, outside the copied text. By default it scrolls sideways with an
+  /// edge fade while it overflows; a host that passes `wrap: true` gets a
+  /// soft wrap whose continuation lines hang under the text, past the `$`
+  /// (R3). Either way the copied command is the source, never the display.
   command,
 
   /// Output of a tool or process. No syntax colour.
@@ -180,6 +183,13 @@ abstract final class KitCodeHighlight {
 /// selectable, redacted.
 ///
 /// States: default, capped, wrapped, scrolling, copied, empty.
+///
+/// A header appears only for words: a caption, a file name, counts, or a
+/// copy label on a block of several lines ("Copy commands", read as a
+/// labelled button). Without words there is no header band: Copy sits at
+/// the end of the first line, centred on it, with Wrap under it (R3). Wrap
+/// is offered only while a line is wider than the block, and shows its on
+/// state as an accent glyph.
 class KitCodeBlock extends StatefulWidget {
   const KitCodeBlock({
     super.key,
@@ -250,9 +260,10 @@ class KitCodeBlock extends StatefulWidget {
   final List<TextRange> marks;
   final Key? blockKey, copyKey, showAllKey;
 
-  /// The wrap a block uses when [wrap] is null: `command` never wraps; code
-  /// and output wrap on a compact window and scroll sideways from medium up
-  /// (today's reader default, `ReaderWrapButton`).
+  /// The wrap a block uses when [wrap] is null: `command` scrolls sideways
+  /// (a host opts into wrapping with `wrap: true`); code and output wrap on
+  /// a compact window and scroll sideways from medium up (today's reader
+  /// default, `ReaderWrapButton`).
   static bool defaultWrap(BuildContext context, KitCodeKind kind) {
     if (kind == KitCodeKind.command) return false;
     return KitLayout.windowOf(context) == KitWindow.compact;
@@ -346,8 +357,8 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
   /// left uncontrolled still reacts to the window changing (a rotation, a
   /// resize) instead of freezing at whatever the first build computed.
   bool _effectiveWrap(BuildContext context) {
-    if (widget.kind == KitCodeKind.command) return false;
     if (widget.wrap != null) return widget.wrap!;
+    if (widget.kind == KitCodeKind.command) return false;
     return _wrap ?? KitCodeBlock.defaultWrap(context, widget.kind);
   }
 
@@ -392,47 +403,84 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
       return _empty(context, tokens, roles, l10n);
     }
 
-    final header = _buildHeader(context, tokens, roles, l10n);
-    final Widget body = widget.fill
-        ? _buildFill(context, tokens, roles)
-        : _buildBounded(context, tokens, roles, l10n);
+    if (widget.fill) {
+      // `.fill` never has a header (its constructor fixes caption, fileName,
+      // added, removed and showWrapToggle to null/false): it hands the
+      // scrollable straight to its host's own bounded height, unwrapped, so
+      // a `ListView` here never sees the unbounded height a plain `Column`
+      // would relay to a non-flex child.
+      return _ltrBlock(_buildFill(context, tokens, roles));
+    }
 
-    final linesBlock = Directionality(
-      textDirection: TextDirection.ltr,
-      child: KeyedSubtree(
-        key: widget.blockKey ?? const ValueKey('kit-code-block'),
-        child: body,
-      ),
-    );
-
-    // `.fill` never has a header (its constructor fixes caption, fileName,
-    // added, removed and showWrapToggle to null/false): it hands the
-    // scrollable straight to its host's own bounded height, unwrapped, so a
-    // `ListView` here never sees the unbounded height a plain `Column`
-    // would relay to a non-flex child.
-    if (widget.fill) return linesBlock;
-
-    final column = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (header != null) ...[header, SizedBox(height: tokens.space2)],
-        linesBlock,
-      ],
-    );
-
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: tokens.detailsSurface,
-        shape: tokens.shapeOf(KitShape.code),
-      ),
-      // space4 (16), not space3 (12): codeRadius is 14, and padding under a
-      // corner's own radius leaves a line's first glyph inside the curve,
-      // where a screen reader's contrast check samples the ground behind
-      // the rounded corner instead of detailsSurface (found by gate G5).
-      child: Padding(padding: EdgeInsets.all(tokens.space4), child: column),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final plan = _plan(context, tokens, constraints.maxWidth);
+        final header = _buildHeader(context, tokens, roles, l10n, plan);
+        Widget body = _ltrBlock(
+          _buildBounded(context, tokens, roles, l10n, inlineCopy: plan.inline),
+        );
+        // Copy (and Wrap, while a line overflows) at the end of the first
+        // line (R3), stacked, instead of a header band with nothing to say.
+        // They sit outside the LTR box, so they keep the locale's end side
+        // like every other trailing control.
+        if (plan.inline) {
+          body = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: body),
+              SizedBox(width: tokens.space2),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.copyable) _copyIcon(l10n),
+                  if (plan.wrapToggle) _wrapToggle(context, l10n),
+                ],
+              ),
+            ],
+          );
+        }
+        final column = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (header != null) ...[header, SizedBox(height: tokens.space2)],
+            body,
+          ],
+        );
+        // space4 (16), not space3 (12): codeRadius is 14, and padding under
+        // a corner's own radius leaves a line's first glyph inside the
+        // curve, where a screen reader's contrast check samples the ground
+        // behind the rounded corner instead of detailsSurface (found by gate
+        // G5). With Copy on the first line the top, end and bottom insets
+        // shrink to space1: the 48 dp Copy target fills that edge and the
+        // line is centred on it, so the first glyph still sits well clear of
+        // the curve (R3: a one-line command is one line tall).
+        final padding = plan.inline
+            ? EdgeInsetsDirectional.fromSTEB(
+                tokens.space4,
+                tokens.space1,
+                tokens.space1,
+                tokens.space1,
+              )
+            : EdgeInsetsDirectional.all(tokens.space4);
+        return DecoratedBox(
+          decoration: ShapeDecoration(
+            color: tokens.detailsSurface,
+            shape: tokens.shapeOf(KitShape.code),
+          ),
+          child: Padding(padding: padding, child: column),
+        );
+      },
     );
   }
+
+  Widget _ltrBlock(Widget body) => Directionality(
+    textDirection: TextDirection.ltr,
+    child: KeyedSubtree(
+      key: widget.blockKey ?? const ValueKey('kit-code-block'),
+      child: body,
+    ),
+  );
 
   Widget _empty(
     BuildContext context,
@@ -458,6 +506,104 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
   }
 
   // ---------------------------------------------------------------------
+  // Layout plan (R3): where Copy goes and whether Wrap is offered
+
+  bool get _hasWords =>
+      widget.fileName != null ||
+      widget.caption != null ||
+      widget.added != null ||
+      widget.removed != null;
+
+  /// The lines the block shows right now (the head while capped).
+  List<String> _visibleLines() {
+    final lines = _splitLines(KitRedact.text(widget.text));
+    final maxLines = widget.maxLines;
+    final capped =
+        maxLines != null &&
+        lines.length > maxLines &&
+        (widget.onOpenFull != null || !_expanded);
+    return capped ? lines.sublist(0, maxLines) : lines;
+  }
+
+  /// Copy is a labelled button in a header when there is a header for it to
+  /// read in: the block already has words, or a caller's label ("Copy
+  /// commands") names several lines. A single line keeps Copy on the line
+  /// itself (the label is its tooltip and name).
+  bool get _labelledCopy =>
+      widget.copyable &&
+      widget.copyLabel != null &&
+      (_hasWords || _splitLines(widget.text).length > 1);
+
+  _CodePlan _plan(BuildContext context, KitTokens tokens, double maxWidth) {
+    // An unbounded width (a sideways host) has no line to end: the controls
+    // go back to the header, and nothing can overflow.
+    if (!maxWidth.isFinite) {
+      return const _CodePlan(inline: false, wrapToggle: false);
+    }
+    // No words for a header to hold: the controls trail the first line.
+    final trailing = !_hasWords && !_labelledCopy;
+    var overflows = false;
+    if (widget.showWrapToggle && widget.kind != KitCodeKind.command) {
+      final monoStyle = KitText.styleOf(context, KitTextRole.mono);
+      final lines = _visibleLines();
+      // The text's room: the block's width less its insets, the gutter and,
+      // when the controls trail the first line, their column and its gap.
+      var room = trailing
+          ? maxWidth -
+                tokens.space4 -
+                tokens.space1 -
+                tokens.minTarget -
+                tokens.space2
+          : maxWidth - tokens.space4 * 2;
+      if (_hasGutter) {
+        room -= _gutterWidth(context, monoStyle, lines.length) + tokens.space2;
+      }
+      overflows = _longestLineWidth(context, monoStyle, lines) > room + .5;
+    }
+    return _CodePlan(
+      inline: trailing && (widget.copyable || overflows),
+      wrapToggle: overflows,
+    );
+  }
+
+  /// The unwrapped width of the widest of [lines]: the longest by character
+  /// count, measured once in the block's own mono style and text scale.
+  double _longestLineWidth(
+    BuildContext context,
+    TextStyle style,
+    List<String> lines,
+  ) {
+    var longest = '';
+    for (final line in lines) {
+      if (line.length > longest.length) longest = line;
+    }
+    if (longest.isEmpty) return 0;
+    final painter = TextPainter(
+      text: TextSpan(text: longest, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling,
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
+  }
+
+  Widget _wrapToggle(BuildContext context, AppLocalizations l10n) =>
+      _WrapToggle(
+        key: const ValueKey('kit-code-wrap'),
+        on: _effectiveWrap(context),
+        label: l10n.kitWrapLines,
+        onPressed: () => _toggleWrap(context),
+      );
+
+  Widget _copyIcon(AppLocalizations l10n) => KitIconButton.copy(
+    key: widget.copyKey ?? const ValueKey('kit-code-copy'),
+    text: () => widget.copyText ?? widget.text,
+    tooltip: _copyLabel(l10n),
+  );
+
+  // ---------------------------------------------------------------------
   // Header
 
   Widget? _buildHeader(
@@ -465,11 +611,10 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     KitTokens tokens,
     ThemeRoles roles,
     AppLocalizations l10n,
+    _CodePlan plan,
   ) {
-    if (widget.fill) return null;
-    final hasWrapToggle =
-        widget.showWrapToggle && widget.kind != KitCodeKind.command;
-    final showCopy = widget.copyable;
+    final hasWrapToggle = plan.wrapToggle && !plan.inline;
+    final showCopy = widget.copyable && !plan.inline;
     final hasName = widget.fileName != null || widget.caption != null;
     final hasCounts = widget.added != null || widget.removed != null;
     if (!hasName && !hasCounts && !hasWrapToggle && !showCopy) return null;
@@ -515,20 +660,19 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     }
 
     final trailing = <Widget>[
-      if (hasWrapToggle)
-        KitIconButton(
-          key: const ValueKey('kit-code-wrap'),
-          icon: AppIconography.wrapText,
-          tooltip: l10n.kitWrapLines,
-          selected: _effectiveWrap(context),
-          onPressed: () => _toggleWrap(context),
-        ),
+      if (hasWrapToggle) _wrapToggle(context, l10n),
       if (showCopy)
-        KitIconButton.copy(
-          key: widget.copyKey ?? const ValueKey('kit-code-copy'),
-          text: () => widget.copyText ?? widget.text,
-          tooltip: _copyLabel(l10n),
-        ),
+        _labelledCopy
+            ? KitButton.fromAction(
+                KitAction.copy(
+                  key: widget.copyKey ?? const ValueKey('kit-code-copy'),
+                  label: widget.copyLabel!,
+                  text: () => widget.copyText ?? widget.text,
+                ),
+                role: KitButtonRole.tertiary,
+                expand: false,
+              )
+            : _copyIcon(l10n),
     ];
 
     return Row(
@@ -563,8 +707,9 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     BuildContext context,
     KitTokens tokens,
     ThemeRoles roles,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    bool inlineCopy = false,
+  }) {
     final safe = KitRedact.text(widget.text);
     final lines = _splitLines(safe);
     final total = lines.length;
@@ -633,10 +778,28 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
         ? linesColumn
         : _horizontalGutterFrame(context, tokens, roles, [linesColumn]);
 
-    final constrained = ConstrainedBox(
-      constraints: BoxConstraints(minHeight: tokens.minTarget),
-      child: SelectionArea(child: scrolled),
-    );
+    final Widget constrained;
+    if (!inlineCopy) {
+      constrained = ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.minTarget),
+        child: SelectionArea(child: scrolled),
+      );
+    } else {
+      // Copy on the first line (R3): the lines get the top and bottom inset
+      // that centres one line on the 48 dp Copy target, so a one-line
+      // command is exactly one target tall and a longer block keeps Copy
+      // beside its first line.
+      final scaler =
+          MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
+      final lineHeight =
+          scaler.scale(monoStyle.fontSize ?? 13) * (monoStyle.height ?? 1);
+      final room = math.max(0.0, tokens.minTarget - lineHeight);
+      final top = (room / 2).floorToDouble();
+      constrained = Padding(
+        padding: EdgeInsets.only(top: top, bottom: room - top),
+        child: SelectionArea(child: scrolled),
+      );
+    }
 
     final stillCapped = hasCap && (widget.onOpenFull != null || !_expanded);
     if (!stillCapped) return constrained;
@@ -969,6 +1132,55 @@ class _CodeScrollerState extends State<_CodeScroller> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Where a bounded block puts Copy and whether it offers Wrap (R3).
+@immutable
+class _CodePlan {
+  const _CodePlan({required this.inline, required this.wrapToggle});
+
+  /// Copy (and Wrap, when offered) sit at the end of the first line; there
+  /// is no header for them.
+  final bool inline;
+
+  /// A line is wider than the block, so the Wrap toggle is worth its place.
+  final bool wrapToggle;
+}
+
+/// The header's Wrap toggle (R3): an accent glyph while lines wrap, the
+/// plain glyph otherwise; never a filled circle. A toggle to assistive tech
+/// ("Wrap lines", toggled).
+class _WrapToggle extends StatelessWidget {
+  const _WrapToggle({
+    super.key,
+    required this.on,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool on;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final roles = KitTokens.of(context).roles;
+    return Semantics(
+      container: true,
+      toggled: on,
+      child: KitTappable(
+        onTap: onPressed,
+        label: label,
+        tooltip: label,
+        shape: KitShape.circle,
+        child: Icon(
+          AppIconography.wrapText,
+          size: 24,
+          color: on ? roles.accent : roles.text2,
         ),
       ),
     );
