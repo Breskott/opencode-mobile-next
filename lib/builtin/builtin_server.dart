@@ -135,6 +135,11 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
   Duration pollInterval = const Duration(seconds: 2),
   bool Function()? stillWanted,
 }) async {
+  const cancelled = BuiltinServerStartFailure.detail(
+    'The server start was not confirmed.',
+  );
+  bool wanted() => stillWanted?.call() ?? true;
+  if (!wanted()) return cancelled;
   if (profile.password.isEmpty) {
     return const BuiltinServerStartFailure.detail(
       'The saved server password is missing.',
@@ -151,6 +156,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
         output.isEmpty ? 'exit ${written.exitCode}' : output,
       );
     }
+    if (!wanted()) return cancelled;
     await linux.startServer(
       BuiltinLinux.serverScript(
         runtime: BuiltinLinux.runtimeFor(profile.flavor),
@@ -158,12 +164,13 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       port: BuiltinLinux.serverPort,
     );
     final deadline = DateTime.now().add(readyTimeout);
-    while (stillWanted?.call() ?? true) {
+    while (wanted()) {
       final probe = await serverProbe(
         baseUrl: BuiltinLinux.serverUrl,
         username: profile.username,
         password: profile.password,
       );
+      if (!wanted()) return cancelled;
       if (probe.ok) return null;
       final status = await linux.status();
       if (!status.serverRunning) {
@@ -174,7 +181,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       }
       await Future<void>.delayed(pollInterval);
     }
-    return null;
+    return cancelled;
   } on BuiltinLinuxException catch (error) {
     return BuiltinServerStartFailure.detail(error.message);
   }
@@ -237,7 +244,10 @@ class BuiltinServerStarter extends ChangeNotifier {
   /// running, at most once until [allowAutoStart]. A server that is already
   /// running (the app was only in the background) is left alone. Returns
   /// true when it started one that now answers.
-  Future<bool> autoStartIfStopped(ServerProfile? profile) async {
+  Future<bool> autoStartIfStopped(
+    ServerProfile? profile, {
+    bool Function()? mayStart,
+  }) async {
     if (_autoStartUsed || _starting || !looksLikeInAppServer(profile)) {
       return false;
     }
@@ -253,6 +263,7 @@ class BuiltinServerStarter extends ChangeNotifier {
       _notify();
       return false;
     }
+    if (mayStart != null && !mayStart()) return false;
     return await start(profile!) == null;
   }
 

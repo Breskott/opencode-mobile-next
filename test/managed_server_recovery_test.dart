@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/termux/managed_server_recovery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,6 +46,8 @@ void main() {
   late DateTime now;
   late String snapshot;
   final scripts = <String>[];
+  final restartActs = <String>[];
+  bool restartReady = false;
   Completer<Map<String, Object>>? pendingProbe;
 
   Map<String, Object> result(String output) => {
@@ -60,6 +63,9 @@ void main() {
       'phase=$phase\nrunner=proot\nport=4096\nversion=1.18.29\npid=12\noperation=$operation\nfailure_kind=$failure\n';
 
   setUp(() async {
+    AutomationPolicyController.resetShared();
+    restartActs.clear();
+    restartReady = false;
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     now = DateTime.utc(2026, 9, 7);
@@ -83,7 +89,12 @@ void main() {
         final operation = RegExp(
           r'''restart '4096' '([^']+)' ''',
         ).firstMatch(script)!.group(1)!;
-        snapshot = state('failed', operation: operation, failure: 'recovery');
+        snapshot = state(
+          restartReady ? 'ready' : 'failed',
+          operation: operation,
+          failure: restartReady ? '' : 'recovery',
+        );
+        if (restartReady) return result(snapshot);
         return {
           'exitCode': 1,
           'stdout': '',
@@ -100,7 +111,15 @@ void main() {
   });
 
   ManagedServerRecovery service([String id = 'local']) =>
-      ManagedServerRecovery.forProfile(prefs, id, now: () => now);
+      ManagedServerRecovery.forProfile(
+        prefs,
+        id,
+        now: () => now,
+        onRestart: ({required profileId, required eventId, required at}) async {
+          restartActs.add('$profileId:$eventId');
+          return true;
+        },
+      );
 
   testWidgets('opt out never probes; duplicate profiles share one owner', (
     tester,
@@ -110,6 +129,193 @@ void main() {
     await tester.pump(const Duration(minutes: 1));
     expect(scripts, isEmpty);
     expect(recovery.enabled, isFalse);
+  });
+
+  testWidgets('registration before enabling reaches the later UI owner', (
+    tester,
+  ) async {
+    ManagedServerRecovery.syncProfiles(
+      prefs,
+      ['local'],
+      onRestart: ({required profileId, required eventId, required at}) async {
+        restartActs.add('$profileId:$eventId');
+        return true;
+      },
+    );
+    // Nothing was enabled when the connection registered its observer.
+    expect(
+      prefs.getString(ManagedServerRecovery.preferenceKey('local')),
+      isNull,
+    );
+    final recovery = ManagedServerRecovery.forProfile(
+      prefs,
+      'local',
+      now: () => now,
+    );
+    await recovery.setEnabled(true);
+    snapshot = state('failed', failure: 'crash');
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    restartReady = true;
+    await recovery.checkNow();
+    await recovery.checkNow();
+    ManagedServerRecovery.disposeForPreferences(prefs);
+    expect(restartActs.single, startsWith('local:managed-restart:'));
+  });
+
+  for (final clearProfiles in [false, true]) {
+    testWidgets(
+      'recorder registration closes on ${clearProfiles ? 'profile removal' : 'scope disposal'}',
+      (tester) async {
+        ManagedServerRecovery.syncProfiles(
+          prefs,
+          ['local'],
+          onRestart:
+              ({required profileId, required eventId, required at}) async {
+                restartActs.add(eventId);
+                return true;
+              },
+        );
+        if (clearProfiles) {
+          ManagedServerRecovery.syncProfiles(prefs, []);
+        } else {
+          ManagedServerRecovery.disposeForPreferences(prefs);
+        }
+        final recovery = ManagedServerRecovery.forProfile(
+          prefs,
+          'local',
+          now: () => now,
+        );
+        await recovery.setEnabled(true);
+        snapshot = state('failed', failure: 'crash');
+        await recovery.checkNow();
+        now = now.add(const Duration(minutes: 1));
+        restartReady = true;
+        await recovery.checkNow();
+        await recovery.checkNow();
+        ManagedServerRecovery.disposeForPreferences(prefs);
+        expect(restartActs, isEmpty);
+      },
+    );
+  }
+
+  testWidgets('policy off prevents scheduled checks and recovery acts', (
+    tester,
+  ) async {
+    final recovery = service();
+    await recovery.setEnabled(true);
+    await AutomationPolicyController.forProfile(
+      prefs,
+      'local',
+    ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+    scripts.clear();
+    snapshot = state('failed', failure: 'crash');
+    now = now.add(const Duration(minutes: 1));
+    await recovery.checkNow();
+    await tester.pump(const Duration(minutes: 1));
+    expect(scripts, isEmpty);
+    expect(restartActs, isEmpty);
+  });
+
+  testWidgets('disabled health polling prevents recovery scheduling', (
+    tester,
+  ) async {
+    final recovery = service();
+    await recovery.setEnabled(true);
+    await AutomationPolicyController.forProfile(
+      prefs,
+      'local',
+    ).setBehavior(AutomationBehavior.pollRestartHealth, false);
+    scripts.clear();
+    await recovery.checkNow();
+    await tester.pump(const Duration(minutes: 1));
+    expect(scripts, isEmpty);
+    expect(restartActs, isEmpty);
+  });
+
+  testWidgets('native success needs a matching ready probe before one act', (
+    tester,
+  ) async {
+    final recovery = service();
+    await recovery.setEnabled(true);
+    snapshot = state('failed', failure: 'crash');
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    restartReady = true;
+    await recovery.checkNow();
+    expect(restartActs, isEmpty);
+    await recovery.checkNow();
+    expect(restartActs.single, startsWith('local:managed-restart:'));
+    await recovery.checkNow();
+    ManagedServerRecovery.disposeForPreferences(prefs);
+    await service().checkNow();
+    ManagedServerRecovery.disposeForPreferences(prefs);
+    expect(restartActs, hasLength(1));
+  });
+
+  testWidgets('a refused history save retries only the same confirmed act', (
+    tester,
+  ) async {
+    final recovery = service();
+    final observations = <({String id, DateTime at})>[];
+    ManagedServerRecovery.forProfile(
+      prefs,
+      'local',
+      onRestart: ({required profileId, required eventId, required at}) async {
+        observations.add((id: eventId, at: at));
+        return observations.length > 1;
+      },
+    );
+    await recovery.setEnabled(true);
+    snapshot = state('failed', failure: 'crash');
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    restartReady = true;
+    await recovery.checkNow();
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    await recovery.checkNow();
+    ManagedServerRecovery.disposeForPreferences(prefs);
+    expect(observations, hasLength(2));
+    expect(observations[1], observations[0]);
+    expect(
+      scripts.where((s) => s.contains('"\$MANAGER" restart')),
+      hasLength(1),
+    );
+  });
+
+  testWidgets('an unconfirmed restart never files an act', (tester) async {
+    final recovery = service();
+    await recovery.setEnabled(true);
+    snapshot = state('failed', failure: 'crash');
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    await recovery.checkNow();
+    await recovery.checkNow();
+    expect(recovery.attempts, 1);
+    ManagedServerRecovery.disposeForPreferences(prefs);
+    expect(restartActs, isEmpty);
+  });
+
+  testWidgets('policy revoked during probe prevents restart dispatch', (
+    tester,
+  ) async {
+    final recovery = service();
+    await recovery.setEnabled(true);
+    snapshot = state('failed', failure: 'crash');
+    await recovery.checkNow();
+    now = now.add(const Duration(minutes: 1));
+    pendingProbe = Completer();
+    final checking = recovery.checkNow();
+    await tester.pump();
+    await AutomationPolicyController.forProfile(
+      prefs,
+      'local',
+    ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+    pendingProbe!.complete(result(snapshot));
+    await checking;
+    expect(scripts.where((s) => s.contains('"\$MANAGER" restart')), isEmpty);
+    expect(restartActs, isEmpty);
   });
 
   testWidgets('three attempts are delayed and survive service recreation', (

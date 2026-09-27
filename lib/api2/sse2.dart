@@ -199,6 +199,7 @@ class Api2EventStream {
               ? Api2StreamStatus.disconnected
               : Api2StreamStatus.reconnecting,
         );
+        if (!_isCurrent(generation)) return;
         _retryTimer = Timer(Duration(milliseconds: ms), () {
           _retryTimer = null;
           if (_isCurrent(generation)) _connect();
@@ -208,6 +209,7 @@ class Api2EventStream {
   }
 
   Future<void> _pump(int generation) async {
+    if (!_isCurrent(generation)) return;
     Timer? backoffResetTimer;
     CancelToken? requestCancelToken;
     StreamSubscription<Uint8List>? subscription;

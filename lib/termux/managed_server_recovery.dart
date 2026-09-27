@@ -5,7 +5,15 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../state/automation_policy.dart';
 import 'bridge.dart';
+
+typedef ManagedRestartRecorder =
+    Future<bool> Function({
+      required String profileId,
+      required String eventId,
+      required DateTime at,
+    });
 
 enum ManagedRecoveryError {
   settingsUnreadable,
@@ -17,7 +25,14 @@ enum ManagedRecoveryError {
 /// One foreground recovery owner per managed Termux installation. The durable
 /// budget is never reset by reconnects, successful restarts or app recreation.
 class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
-  ManagedServerRecovery._(this.prefs, this.profileID, this._now) {
+  ManagedServerRecovery._(
+    this.prefs,
+    this.profileID,
+    this._now,
+    this._onRestart,
+  ) {
+    _policy = AutomationPolicyController.forProfile(prefs, profileID);
+    _policy.addListener(_schedule);
     _restore();
     WidgetsBinding.instance.addObserver(this);
     _foreground =
@@ -34,6 +49,10 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   ];
   static final _instances =
       Map<SharedPreferences, ManagedServerRecovery>.identity();
+  // Registration belongs to the connection scope, even before the person
+  // enables recovery and a UI first creates the per-installation owner.
+  static final _recorders =
+      Map<SharedPreferences, ManagedRestartRecorder>.identity();
   static String preferenceKey(String profileID) =>
       'oc.managedServerRecovery.$profileID';
 
@@ -41,20 +60,42 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     SharedPreferences prefs,
     String profileID, {
     DateTime Function()? now,
-  }) => _instances.putIfAbsent(
-    prefs,
-    () => ManagedServerRecovery._(prefs, profileID, now ?? DateTime.now),
-  );
+    ManagedRestartRecorder? onRestart,
+  }) {
+    if (onRestart != null) _recorders[prefs] = onRestart;
+    final recorder = onRestart ?? _recorders[prefs];
+    final instance = _instances.putIfAbsent(
+      prefs,
+      () => ManagedServerRecovery._(
+        prefs,
+        profileID,
+        now ?? DateTime.now,
+        recorder,
+      ),
+    );
+    if (recorder != null) instance._onRestart = recorder;
+    return instance;
+  }
 
   static void syncProfiles(
     SharedPreferences prefs,
-    Iterable<String> managedProfileIDs,
-  ) {
+    Iterable<String> managedProfileIDs, {
+    ManagedRestartRecorder? onRestart,
+  }) {
     final ids = managedProfileIDs.toSet();
+    if (ids.isEmpty) {
+      disposeForPreferences(prefs);
+      return;
+    }
+    if (onRestart != null) _recorders[prefs] = onRestart;
     final current = _instances[prefs];
-    if (current != null && ids.contains(current.profileID)) return;
-    disposeForPreferences(prefs);
-    if (ids.isEmpty || !TermuxBridge.supported) return;
+    if (current != null && ids.contains(current.profileID)) {
+      if (onRestart != null) current._onRestart = onRestart;
+      return;
+    }
+    // Changing owners must preserve the connection's recorder registration.
+    _instances.remove(prefs)?.dispose();
+    if (!TermuxBridge.supported) return;
     // Duplicate profiles share a single installation and a single retry budget.
     final owner = ids.where((id) {
       try {
@@ -65,10 +106,11 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         return false;
       }
     }).firstOrNull;
-    if (owner != null) forProfile(prefs, owner);
+    if (owner != null) forProfile(prefs, owner, onRestart: onRestart);
   }
 
   static void disposeForPreferences(SharedPreferences prefs) {
+    _recorders.remove(prefs);
     _instances.remove(prefs)?.dispose();
   }
 
@@ -111,6 +153,13 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   final SharedPreferences prefs;
   final String profileID;
   final DateTime Function() _now;
+  late final AutomationPolicyController _policy;
+  ManagedRestartRecorder? _onRestart;
+  String _unreportedOperation = '';
+  DateTime? _confirmedAt;
+  bool get _automationAllowed =>
+      _policy.value.allows(AutomationBehavior.restartPhoneServer) &&
+      _policy.value.allows(AutomationBehavior.pollRestartHealth);
   bool enabled = false;
   int attempts = 0;
   DateTime? nextAttemptAt;
@@ -153,6 +202,15 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       attempts = count;
       _operation = operation;
       _pendingOperation = pending;
+      final unreported = data['unreportedOperation'];
+      if (unreported is String &&
+          RegExp(r'^[a-zA-Z0-9_-]{0,64}$').hasMatch(unreported)) {
+        _unreportedOperation = unreported;
+      }
+      final confirmed = data['confirmedAtMs'];
+      if (confirmed is int && confirmed > 0) {
+        _confirmedAt = DateTime.fromMillisecondsSinceEpoch(confirmed);
+      }
       final next = data['nextAttemptAtMs'];
       if (next != null && (next is! int || next < 0)) return;
       nextAttemptAt = next is int
@@ -174,6 +232,8 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         'attempts': attempts,
         'operation': _operation,
         'pendingOperation': _pendingOperation,
+        'unreportedOperation': _unreportedOperation,
+        'confirmedAtMs': _confirmedAt?.millisecondsSinceEpoch,
         'nextAttemptAtMs': nextAttemptAt?.millisecondsSinceEpoch,
         'paused': _paused,
       }),
@@ -230,6 +290,8 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       _token = token;
       _operation = snapshot.operationID;
       _pendingOperation = '';
+      _unreportedOperation = '';
+      _confirmedAt = null;
       attempts = 0;
       nextAttemptAt = null;
       enabled = true;
@@ -284,10 +346,13 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     _timer?.cancel();
     if (_disposed ||
         !enabled ||
+        !_automationAllowed ||
         !_foreground ||
         _paused ||
         busy ||
-        (exhausted && _pendingOperation.isEmpty)) {
+        (exhausted &&
+            _pendingOperation.isEmpty &&
+            _unreportedOperation.isEmpty)) {
       return;
     }
     _timer = Timer(const Duration(seconds: 5), checkNow);
@@ -302,10 +367,22 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> checkNow() async {
-    if (_disposed || !enabled || !_foreground || _paused || busy) return;
+    if (_disposed ||
+        !enabled ||
+        !_automationAllowed ||
+        !_foreground ||
+        _paused ||
+        busy) {
+      return;
+    }
     busy = true;
     final epoch = _epoch;
-    bool current() => !_disposed && enabled && _foreground && epoch == _epoch;
+    bool current() =>
+        !_disposed &&
+        enabled &&
+        _automationAllowed &&
+        _foreground &&
+        epoch == _epoch;
     try {
       final snapshot = await TermuxBridge.status();
       if (!current()) return;
@@ -314,6 +391,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
           snapshot.operationID == _pendingOperation) {
         _operation = _pendingOperation;
         _pendingOperation = '';
+        if (snapshot.canRecover) _unreportedOperation = '';
         await _save();
         if (!current()) return;
       }
@@ -322,6 +400,24 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         error = ManagedRecoveryError.ownershipChanged;
         await _save();
         return;
+      }
+      if (_unreportedOperation.isNotEmpty &&
+          snapshot.isReady &&
+          snapshot.operationID == _unreportedOperation) {
+        _confirmedAt ??= _now();
+        await _save();
+        if (!current()) return;
+        final recorded = await _onRestart?.call(
+          profileId: profileID,
+          eventId: 'managed-restart:$_unreportedOperation',
+          at: _confirmedAt!,
+        );
+        if (!current()) return;
+        if (recorded == true) {
+          _unreportedOperation = '';
+          _confirmedAt = null;
+          await _save();
+        }
       }
       if (snapshot.isReady && nextAttemptAt != null) {
         nextAttemptAt = null;
@@ -341,8 +437,12 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       final savedAttempts = attempts;
       final savedNextAttemptAt = nextAttemptAt;
       final savedPendingOperation = _pendingOperation;
+      final savedUnreportedOperation = _unreportedOperation;
+      final savedConfirmedAt = _confirmedAt;
       attempts++;
       _pendingOperation = '${_token.substring(0, 16)}-$attempts';
+      _unreportedOperation = _pendingOperation;
+      _confirmedAt = null;
       nextAttemptAt = attempts < maxAttempts
           ? now.add(backoff[attempts])
           : null;
@@ -356,6 +456,8 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         attempts = savedAttempts;
         nextAttemptAt = savedNextAttemptAt;
         _pendingOperation = savedPendingOperation;
+        _unreportedOperation = savedUnreportedOperation;
+        _confirmedAt = savedConfirmedAt;
         _paused = true;
         error = ManagedRecoveryError.settingsUnreadable;
         try {
@@ -384,6 +486,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
                 observed.canRecover) {
               _operation = _pendingOperation;
               _pendingOperation = '';
+              _unreportedOperation = '';
               status = observed;
               await _save();
               return;
@@ -415,6 +518,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     _disposed = true;
     ++_epoch;
     _timer?.cancel();
+    _policy.removeListener(_schedule);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

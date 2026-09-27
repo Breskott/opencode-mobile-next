@@ -12,6 +12,8 @@ import 'package:opencode_mobile/domain/server_gateway.dart'
     show PromptDelivery, ServerGateway;
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart' show KitUndo;
@@ -543,6 +545,91 @@ void main() {
     await flush;
     expect(api.prompts, isEmpty);
     expect(controller.queuedPromptCount, 0);
+  });
+
+  test(
+    'policy gates queue dispatch and logs only confirmed delivery',
+    () async {
+      final api = _FakeApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      final policy = AutomationPolicyController.forProfile(
+        controller.store.prefs,
+        'profile-1',
+      );
+      await controller.queuePrompt(_entry('policy-queue'));
+      await policy.setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+      await controller.flushOfflineQueue();
+      expect(api.prompts, isEmpty);
+      expect(
+        controller.queuedPromptsFor('session-1').single.dispatched,
+        isFalse,
+      );
+      expect(controller.automaticActsHere, isEmpty);
+      await policy.setBehavior(AutomationBehavior.reconcileQueuedSends, true);
+      final delivered = Completer<void>();
+      api.beforePrompt = () => delivered.future;
+      final flush = controller.flushOfflineQueue();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.automaticActsHere, isEmpty);
+      delivered.complete();
+      await flush;
+      await Future<void>.delayed(Duration.zero);
+      expect(api.prompts, hasLength(1));
+      expect(
+        controller.automaticActsHere.single.kind,
+        AutomaticActKind.queuedSend,
+      );
+    },
+  );
+
+  test('policy disabled during queue transport wait sends nothing', () async {
+    final api = _FakeApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(_entry('policy-wait'));
+    controller.pendingTransport = Completer<ServerGateway?>();
+    final flush = controller.flushOfflineQueue();
+    await AutomationPolicyController.forProfile(
+      controller.store.prefs,
+      'profile-1',
+    ).setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+    controller.pendingTransport!.complete(api);
+    await flush;
+    expect(api.prompts, isEmpty);
+    expect(controller.queuedPromptsFor('session-1').single.dispatched, isFalse);
+    expect(controller.automaticActsHere, isEmpty);
+  });
+
+  test(
+    'explicit resend works with policy off and is not an automatic act',
+    () async {
+      final api = _FakeApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await controller.queuePrompt(_entry('manual', dispatchedAt: 1));
+      await controller.queuePrompt(_entry('automatic'));
+      await AutomationPolicyController.forProfile(
+        controller.store.prefs,
+        'profile-1',
+      ).setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+      expect(await controller.resendQueuedPrompt('manual'), isTrue);
+      await _settle(
+        () => api.prompts.isNotEmpty && controller.queuedPromptCount == 1,
+      );
+      expect(api.prompts, hasLength(1));
+      expect(controller.queuedPromptsFor('session-1').single.id, 'automatic');
+      expect(controller.automaticActsHere, isEmpty);
+    },
+  );
+
+  test('unconfirmed queue delivery has no automatic act', () async {
+    final api = _FakeApi()..promptPlan.add(ApiException('unavailable'));
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(_entry('policy-failure'));
+    await controller.flushOfflineQueue();
+    expect(controller.automaticActsHere, isEmpty);
   });
 
   test('flush sends queued prompts oldest first', () async {
