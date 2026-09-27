@@ -257,6 +257,8 @@ class TeamNow {
     this.workTitle,
     this.stall,
     this.gateTitle,
+    this.quietSince,
+    this.agentId,
   });
 
   final TeamNowKind kind;
@@ -268,17 +270,31 @@ class TeamNow {
   final DispatchStall? stall;
   final String? gateTitle;
 
+  /// A stalled task: the last sign of progress on its step, host time —
+  /// the newest of the step's cycle times, the item's own update and its
+  /// worker session's last activity. Null when nothing dates it.
+  final DateTime? quietSince;
+
+  /// A stalled task: the id of the agent on its step, when one is.
+  final String? agentId;
+
   @override
   String toString() => 'TeamNow($kind, $agentName, $workTitle, $since)';
 }
 
-/// Where [run] stands now, for its one "Now" line.
+/// A step that has shown no progress this long has stalled: no step
+/// moved, the item did not change and its worker's session did nothing.
+const teamNoProgressAfter = Duration(hours: 1);
+
+/// Where [run] stands now, for its one "Now" line. [now] (host clock)
+/// lets a step quiet for [teamNoProgressAfter] read as stalled.
 TeamNow teamNow({
   required OrchestrationRun run,
   required List<WorkItem> work,
   required DispatchCycle Function(String workId) cycleOf,
   required List<OrchestrationAgent> agents,
   List<OrchestrationGate> gates = const [],
+  DateTime? now,
 }) {
   switch (run.state) {
     case RunState.completed || RunState.failed || RunState.cancelled:
@@ -338,16 +354,38 @@ TeamNow teamNow({
   final name = _workerName(item, agents);
   final sessionRuns =
       agent != null && teamSessionState(agent) == AgentState.working;
+  // The last sign of progress on the step: the newest of its cycle times,
+  // the item's own update and its worker session's last activity.
+  DateTime? quiet;
+  for (final at in [
+    ...cycle.reachedAt.values,
+    item.updatedAt,
+    agent?.lastActivity,
+  ]) {
+    if (at != null && (quiet == null || at.isAfter(quiet))) quiet = at;
+  }
+  // A step in a worker's hands (or on its way) that has shown nothing for
+  // [teamNoProgressAfter] has stalled, whatever step the cycle reached:
+  // "starting · can take a few minutes" for 45 h is a stall (owner
+  // report, build 2055). Needs [now]; without it only the cycle decides.
+  final quietTooLong =
+      now != null &&
+      quiet != null &&
+      now.difference(quiet) >= teamNoProgressAfter;
   // "The host has not started an agent" is wrong once a worker's session
   // runs on the item (it is starting: minutes on a phone).
-  if (cycle.stalled &&
-      !(sessionRuns && cycle.stallReason == DispatchStall.hostNotStarted)) {
+  if ((cycle.stalled &&
+          !(sessionRuns &&
+              cycle.stallReason == DispatchStall.hostNotStarted)) ||
+      quietTooLong) {
     return TeamNow(
       kind: TeamNowKind.stalled,
-      since: cycle.since,
-      stall: cycle.stallReason,
+      since: cycle.since ?? quiet,
+      stall: cycle.stallReason ?? DispatchStall.workingLong,
       agentName: name,
       workTitle: item.title,
+      quietSince: quiet,
+      agentId: agent?.id,
     );
   }
   final reached = cycle.reachedAt;

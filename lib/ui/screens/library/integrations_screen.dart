@@ -594,11 +594,6 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           IntegrationsMode.mcp => l10n.integrationsMcpTitle,
           IntegrationsMode.all => l10n.e7LibraryMCPAndIntegrations,
         },
-        // On the Providers page the count moves up here instead of
-        // repeating the page's name as a section label.
-        subtitle: widget.mode == IntegrationsMode.providers
-            ? _providerSummary()
-            : null,
         actions: [
           if (_showMcp && _catalogAvailable)
             KitAction(
@@ -660,20 +655,6 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     );
   }
 
-  /// "2 of 14 connected", once the list has loaded.
-  String? _providerSummary() {
-    final loaded = _integrations;
-    if (loaded == null) return null;
-    final integrations = _withConfiguredProviders(loaded);
-    if (integrations.isEmpty) return null;
-    return _l10n.integrationsProvidersSummary(
-      integrations
-          .where((integration) => integration.connectionCount > 0)
-          .length,
-      integrations.length,
-    );
-  }
-
   /// A block on the list's rails with the gap below it.
   Widget _railed(Widget child) {
     final tokens = KitTokens.of(context);
@@ -726,6 +707,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final label = widget.mode == IntegrationsMode.all
         ? l10n.usageProviders
         : null;
+    final labelTerm = label == null
+        ? null
+        : l10n.integrationsProvidersExplanation;
     return [
       SizedBox(
         height: widget.mode == IntegrationsMode.all
@@ -779,7 +763,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
               _integrationError != null ||
               integrations == null ||
               integrations.isEmpty)) ...[
-        KitRowGroup(label: label, children: signIns),
+        KitRowGroup(label: label, labelTerm: labelTerm, children: signIns),
         SizedBox(height: KitTokens.of(context).space3),
       ],
       if (staleSource)
@@ -849,6 +833,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         else
           KitRowGroup(
             label: label,
+            labelTerm: labelTerm,
             children: [
               ...signIns,
               for (final presented in others)
@@ -1325,12 +1310,24 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           }));
     final pending = _pendingMcpOAuth;
     final scopeChanged = _serversSource != null && _serversSource != _mcpSource;
+    final all = widget.mode == IntegrationsMode.all;
+    // The explained "MCP servers" label keeps the section gap itself; a
+    // spacer before it would push the section apart by the label's target.
+    final labelLeads =
+        all &&
+        pending == null &&
+        _removalError == null &&
+        _serverError == null &&
+        !scopeChanged &&
+        servers != null &&
+        servers.isNotEmpty;
     return [
-      SizedBox(
-        height: widget.mode == IntegrationsMode.all
-            ? KitTokens.of(context).sectionGap
-            : KitTokens.of(context).space3,
-      ),
+      if (!labelLeads)
+        SizedBox(
+          height: all
+              ? KitTokens.of(context).sectionGap
+              : KitTokens.of(context).space3,
+        ),
       if (pending != null)
         _railed(
           _PendingMcpOAuthNotice(
@@ -1383,6 +1380,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           label: widget.mode == IntegrationsMode.all
               ? l10n.integrationsMcpServersLabel
               : null,
+          labelTerm: widget.mode == IntegrationsMode.all
+              ? l10n.e7GlossaryMcpExplanation
+              : null,
           children: [
             for (final server in servers)
               _McpServerRow(
@@ -1396,7 +1396,6 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                 authGated: _mcpAuthGated(server.status),
                 actionsAllowed: !scopeChanged,
                 canRemove: _canRemoveMcp,
-                removalSupported: _removalSupported,
                 onAct: () => _action(server),
                 onRemove: () => _removeMcp(server),
               ),
@@ -1408,8 +1407,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   List<Widget> _resourceSection(BuildContext context) {
     final l10n = _l10n;
     final resources = _resources;
+    // As for MCP servers: the explained label keeps its own section gap.
+    final labelLeads =
+        _resourceError == null && resources != null && resources.isNotEmpty;
     return [
-      SizedBox(height: KitTokens.of(context).sectionGap),
+      if (!labelLeads) SizedBox(height: KitTokens.of(context).sectionGap),
       if (_resourceError != null)
         _railed(
           KitStateView.error(
@@ -1438,6 +1440,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       else if (resources != null)
         KitRowGroup(
           label: l10n.e7LibraryResources,
+          labelTerm: l10n.integrationsResourcesExplanation,
           children: [
             for (final resource in resources)
               KitRow(

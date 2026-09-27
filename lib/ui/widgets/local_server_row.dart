@@ -22,8 +22,10 @@ class LocalServerRowMenuItem {
 /// §1): the Servers screen and the server switcher.
 ///
 /// The OpenCode server and the Claude Code daemon keep their own state
-/// classes; a person meets both the same way: a phone icon (a filled accent
-/// circle when it is the server in use), the name ("This phone"), one line
+/// classes; a person meets both the same way: the agent's own mark (a
+/// filled accent tile when it is the server in use), so OpenCode and Claude
+/// Code on the same phone are told apart at a glance, the name ("This
+/// phone"), one line
 /// that says what it runs and where it stands ("OpenCode 2 · Running"), and
 /// the menu. Tapping the row does the one likely thing: connect to a
 /// running server, start a stopped one, or open the details of the one in
@@ -59,7 +61,13 @@ class LocalServerRow extends StatelessWidget {
     this.onOpen,
     this.running = true,
     this.dividerAbove = false,
+    this.mark = AppIconography.phone,
   });
+
+  /// The agent's own mark: the phone for OpenCode (the phone's own
+  /// server), [AppIconography.agent] for Claude Code, so two agents on one
+  /// phone never share a glyph.
+  final IconData mark;
 
   /// In a list of rows: the panel's hairline above this one, inset to where
   /// the words start. The row draws it because it alone knows it shows.
@@ -160,8 +168,9 @@ class LocalServerRow extends StatelessWidget {
     final large = MediaQuery.textScalerOf(context).scale(14) > 21;
     final below = [
       if (failure != null)
-        // The failure in words, in text1 (LOOK-5: error tone is for acts
-        // that lose data, not for a failure state).
+        // The failure in words, in the failure tone LOOK-5 sets: text1
+        // with the error word, never the danger colour, which is kept for
+        // acts that lose data.
         KitText(
           failure,
           key: _key('failure'),
@@ -192,7 +201,7 @@ class LocalServerRow extends StatelessWidget {
           key: rowKey,
           leading: inProgress
               ? const KitStatusMark(state: KitMarkState.working)
-              : KitRowIcon(AppIconography.phone, current: connected),
+              : KitRowIcon(mark, current: connected),
           title: title,
           titleMaxLines: large ? 2 : 1,
           supporting: TextSpan(

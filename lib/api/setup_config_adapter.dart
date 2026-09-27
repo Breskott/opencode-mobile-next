@@ -9,10 +9,16 @@ import 'opencode_api.dart';
 /// Config is raw only at this adapter/controller boundary. UI callers must use
 /// the setup controller's redacted snapshot, never this transport directly.
 /// PATCH exists, but cannot promise deletion or restoration of layered config.
+/// The location is captured once; create a new setup owner after switching it.
 class OpenCode1SetupConfigGateway implements SetupConfigGateway {
-  OpenCode1SetupConfigGateway({required OpenCodeApi api}) : _api = api;
+  OpenCode1SetupConfigGateway({required OpenCodeApi api})
+    : _api = api,
+      _directory = api.directory,
+      _workspace = api.workspace;
 
   final OpenCodeApi _api;
+  final String? _directory;
+  final String? _workspace;
 
   @override
   SetupSupport get support => const SetupSupport(
@@ -24,8 +30,8 @@ class OpenCode1SetupConfigGateway implements SetupConfigGateway {
   );
 
   Map<String, Object?> get _query => {
-    if (_api.directory != null) 'directory': _api.directory,
-    if (_api.workspace != null) 'workspace': _api.workspace,
+    if (_directory != null) 'directory': _directory,
+    if (_workspace != null) 'workspace': _workspace,
   };
 
   Future<Object?> _get(String path) async {
@@ -64,6 +70,7 @@ class OpenCode1SetupConfigGateway implements SetupConfigGateway {
   @override
   Future<Map<String, Object?>> readConfig() async {
     final data = await _get('/config');
+    KitRedact.registerCredentialValues(data);
     if (data is! Map<String, dynamic>) {
       throw const SetupFailure(
         SetupFailureCode.invalid,

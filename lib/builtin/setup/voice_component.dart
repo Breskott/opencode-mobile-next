@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../state/download_size.dart';
+import '../../voice/automatic_pack.dart';
 import '../../voice/model_download.dart';
 import '../../voice/model_manager.dart';
 import '../../voice/model_manifest.dart';
@@ -41,29 +43,11 @@ class VoiceSetupComponent implements SetupAppComponent {
   VoiceModelManager? _installing;
   bool _cancelled = false;
 
-  /// The pack Settings › Voice would use on this phone: one already on the
-  /// phone (the chosen one first), else the chosen one (Balanced unless the
-  /// person picked another), else the best one this phone can run. Gated on
-  /// total RAM and the CPU, never on Android's per-app memory class; free
-  /// space is not a reason to leave it out (setup's pre-flight says how much
-  /// to free). Null when this phone can run none.
-  static VoiceModelPack? packFor(VoiceModelManager manager) {
-    if (!manager.deviceInfo.captureSupported) return null;
-    bool runs(VoiceModelPack pack) {
-      final support = manager.supportFor(pack);
-      return support.supported || support.kind == VoicePackUnsupported.storage;
-    }
-
-    final selected = manager.selectedPack;
-    if (manager.isInstalled(selected) && runs(selected)) return selected;
-    for (final pack in voiceModelPacks) {
-      if (manager.isInstalled(pack) && runs(pack)) return pack;
-    }
-    if (runs(selected)) return selected;
-    final candidates = voiceModelPacks.where(runs).toList()
-      ..sort((a, b) => b.minimumMemoryMb.compareTo(a.minimumMemoryMb));
-    return candidates.firstOrNull;
-  }
+  /// Uses the same total-RAM rule as first-mic setup, keeping a supported
+  /// installed selection. Unknown RAM leaves the automatic offer unavailable.
+  /// Free space is checked by setup's preflight so it can say how much to free.
+  static VoiceModelPack? packFor(VoiceModelManager manager) =>
+      automaticVoicePack(manager);
 
   Future<VoiceModelManager?> _managerOrNull() async {
     try {
@@ -79,10 +63,17 @@ class VoiceSetupComponent implements SetupAppComponent {
     if (manager == null) return null;
     final pack = packFor(manager);
     if (pack == null) return null;
-    final installed = manager.isInstalled(manager.selectedPack);
+    final installed =
+        manager.selectedPack.id == pack.id && manager.isInstalled(pack);
     final bytes = installed ? _installedBytes(manager) : pack.downloadBytes;
     _lastOfferBytes = pack.downloadBytes;
-    return SetupAppOffer(downloadBytes: bytes, installed: installed);
+    return SetupAppOffer(
+      downloadBytes: bytes,
+      installed: installed,
+      downloadSize: manager.isInstalled(pack)
+          ? const DownloadSize.exact(0)
+          : DownloadSize.voicePack(pack),
+    );
   }
 
   static int _installedBytes(VoiceModelManager manager) => [
@@ -94,7 +85,12 @@ class VoiceSetupComponent implements SetupAppComponent {
   @override
   Future<({bool ok, String? version})> check() async {
     final manager = await _managerOrNull();
-    final ok = manager != null && manager.isInstalled(manager.selectedPack);
+    final pack = manager == null ? null : packFor(manager);
+    final ok =
+        manager != null &&
+        pack != null &&
+        manager.selectedPack.id == pack.id &&
+        manager.isInstalled(pack);
     return (ok: ok, version: null);
   }
 

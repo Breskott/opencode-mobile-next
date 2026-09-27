@@ -1,26 +1,17 @@
-/// Retired by kit-KitWorkGraph: the Work tab's Graph view now lives at
-/// `package:opencode_mobile/ui/kit/kit_work_graph.dart` as `KitWorkGraph`.
-///
-/// What stays is what `run_screen.dart` (today's only caller) still uses:
-/// [WorkGraphNode], the one mapping from the app's work item to a
-/// `KitWorkGraphNode` (the kit reads no app model), and [WorkGraph], which
-/// forwards to `KitWorkGraph` with the `team-work-graph-*` keys. The retired
-/// layout, edge and painter are gone (kit-hygiene): geometry is
-/// `KitWorkGraphGeometry.layers`. This file goes with run_screen.dart
-/// (slice-P3.5).
+/// The one mapping from the app's work item to a `KitWorkGraphNode` (the
+/// kit reads no app model): Task details draws a task's steps through
+/// [WorkGraphNode.of] and `toKit`. The retired Graph view widget, layout,
+/// edge and painter are gone (kit-hygiene, after slice-P3.5 retired the run
+/// page): the graph is `KitWorkGraph`, its geometry
+/// `KitWorkGraphGeometry.layers`.
 library;
-
-import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../orchestration/models/work.dart';
-import '../../kit/kit_image.dart';
 import '../../kit/kit_task_mark.dart';
 import '../../kit/kit_work_graph.dart';
 import '../../widgets/team_vocabulary.dart';
 
-/// Retired by kit-KitWorkGraph: use [KitWorkGraphNode].
-///
 /// One node of the graph: an item, its state and what it needs.
 class WorkGraphNode {
   const WorkGraphNode({
@@ -79,58 +70,4 @@ class WorkGraphNode {
     stuck: teamWorkIsStuck(state),
     open: teamWorkIsOpen(state),
   );
-}
-
-/// Retired by kit-KitWorkGraph: use [KitWorkGraph]
-/// (`KitWorkGraph(layout: KitWorkGraphLayout.layers)`).
-///
-/// The graph view: pinch-zoom, drag-pan, Fit, node tap. Forwards to
-/// [KitWorkGraph] so today's only caller (`run_screen.dart:1316`) behaves
-/// as before, keeping the `team-work-graph-*` keys (TEST-5).
-class WorkGraph extends StatefulWidget {
-  const WorkGraph({
-    super.key,
-    required this.nodes,
-    required this.onNodeTap,
-    this.transformationController,
-  });
-
-  final List<WorkGraphNode> nodes;
-  final ValueChanged<String> onNodeTap;
-
-  /// Lets a test read the transform; the widget owns one otherwise.
-  final TransformationController? transformationController;
-
-  @override
-  State<WorkGraph> createState() => _WorkGraphState();
-}
-
-class _WorkGraphState extends State<WorkGraph> {
-  KitZoomController? _zoom;
-
-  KitZoomController _zoomFor(TransformationController? host) {
-    final existing = _zoom;
-    if (existing != null) return existing;
-    return _zoom = KitZoomController(transformation: host);
-  }
-
-  @override
-  void dispose() {
-    _zoom?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return KitWorkGraph(
-      nodes: [for (final node in widget.nodes) node.toKit(l10n)],
-      onOpen: widget.onNodeTap,
-      layout: KitWorkGraphLayout.layers,
-      zoomController: _zoomFor(widget.transformationController),
-      viewerKey: const ValueKey('team-work-graph-viewer'),
-      canvasKey: const ValueKey('team-work-graph-canvas'),
-      fitKey: const ValueKey('team-work-graph-fit'),
-    );
-  }
 }

@@ -18,7 +18,7 @@ import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.d
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -254,10 +254,15 @@ void main() {
           home = TeamAgentsScreen(controller: team, now: () => _clock);
         case _Shot.taskCost:
           team = await teamSceneController(TeamScene.loaded);
-          home = RunScreen(
-            controller: team,
-            runId: teamSceneRunId,
-            now: () => teamSceneClock,
+          // Task details (P3.5: the run page is retired).
+          home = Scaffold(
+            body: SingleChildScrollView(
+              child: TeamTaskDetails(
+                controller: team,
+                runId: teamSceneRunId,
+                now: () => teamSceneClock,
+              ),
+            ),
           );
       }
       addTearDown(team.dispose);
@@ -287,18 +292,12 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
       }
-      if (shot == _Shot.taskCost) {
-        await tester.tap(find.byKey(const ValueKey('team-run-summary')));
-        for (var i = 0; i < 10; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-      }
       expect(tester.takeException(), isNull);
-      // A task's page ages its question by the wall clock, so only its
-      // Details (where the cost line is) is pinned.
+      // Task details' elapsed time reads the wall clock, so only its body
+      // (where the cost line is) is pinned.
       await expectLater(
         shot == _Shot.taskCost
-            ? find.byKey(const ValueKey('team-run-summary-body'))
+            ? find.byKey(const ValueKey('team-task-details-body'))
             : find.byKey(boundary),
         matchesGoldenFile('goldens/${shot.name}.png'),
       );

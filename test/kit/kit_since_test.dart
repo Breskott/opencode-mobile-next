@@ -7,6 +7,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_since.dart';
@@ -241,17 +242,23 @@ void main() {
 
   // The numbers come from intl's number formatting for the locale
   // (COPY-30, B17), not from plain interpolation.
-  testWidgets('the labels format their numbers with intl for the locale', (
+  // Owner report (build 2055): a long wait never reads "1,234 min"; from
+  // an hour up the labels say hours (then days).
+  testWidgets('long waits read in hours, not thousands of minutes', (
     tester,
   ) async {
     final context = await pumpKitHost(tester);
     expect(
       KitSince.waitingLabel(context, const Duration(minutes: 1234)),
-      'Waiting 1,234 min',
+      'Waiting 20 h 34 min',
     );
     expect(
       KitSince.ageLabel(context, const Duration(minutes: 1234)),
-      '1,234 min',
+      '20 h 34 min',
+    );
+    expect(
+      KitSince.waitingLabel(context, const Duration(minutes: 59)),
+      'Waiting 59 min',
     );
   });
 
@@ -389,5 +396,19 @@ void main() {
       KitSince.slowLabel(ar),
       'لا يزال الانتظار مستمرًا بعد ${KitMotion.escalateAfter.inSeconds} ث',
     );
+  });
+
+  // Owner report (build 2055): a worker running for 45 h read "Running for
+  // 2,715 min". From an hour up a span reads in hours, then days.
+  test('durations read in hours and days, never thousands of minutes', () {
+    final l10n = AppLocalizationsEn();
+    String words(Duration d) => KitSince.durationWords(l10n, d);
+    expect(words(Duration.zero), 'less than a minute');
+    expect(words(const Duration(minutes: 45)), '45 min');
+    expect(words(const Duration(hours: 1)), '1 h');
+    expect(words(const Duration(hours: 3, minutes: 20)), '3 h 20 min');
+    expect(words(const Duration(days: 2)), '2 d');
+    expect(words(const Duration(minutes: 2715)), '1 d 21 h');
+    expect(words(const Duration(minutes: -5)), 'less than a minute');
   });
 }

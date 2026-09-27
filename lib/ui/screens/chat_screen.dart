@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show compute, listEquals;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,6 +34,7 @@ import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
+import '../../state/interaction_defaults.dart' show DefaultKind, DefaultReason;
 import '../../state/migration_runner.dart' show DraftMigrationBlocker;
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
@@ -52,8 +54,10 @@ import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
+import '../widgets/always_allow_invitation.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/safety_confirms.dart';
+import '../widgets/default_notices.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
@@ -84,13 +88,17 @@ import '../../state/team_planning.dart'
     show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
 import '../widgets/team_controls.dart' show teamControlReceipt;
 import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
+import '../widgets/team_now.dart' show teamUnstickAction;
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';
-import 'team/agent_output_screen.dart' show AgentOutputScreen;
+import 'team/agent_screen.dart' show AgentScreen;
 import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
-import 'team/run_screen.dart' show RunScreen;
+import 'team/task_details_sheet.dart' show showTeamTaskDetails;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
+import 'team/team_page.dart' show openTeamPage;
+import 'team/work_sheet.dart' show showWorkSheet;
+import '../widgets/team_moments.dart' show TeamMergedCelebration;
 import 'team/team_needs_you.dart'
     show TeamNeedsYouCard, teamGateWho, teamOpenGates;
 import 'team_conversation/team_conversation.dart' show TeamConversation;
@@ -139,6 +147,7 @@ part 'chat/empty_chat.dart';
 part 'chat/chat_states.dart';
 part 'chat/watching.dart';
 part 'chat/team_conversation_view.dart';
+part 'chat/team_watch_live.dart';
 
 const _maxAttachmentCount = 5;
 const _maxAttachmentBytes = 10 * 1024 * 1024;
@@ -389,6 +398,14 @@ class _ChatScreenState extends State<ChatScreen>
   // only reports facts and renders the slot. See chat/nudge_slot.dart.
   ConversationNudgeWatcher? _nudgeWatcher;
   bool _nudgeObserveQueued = false;
+
+  /// P6.6a: the model the app picked by itself, said once per server
+  /// where it is used (the composer); null once dismissed or not to say.
+  String? _modelDefaultSaid;
+  bool _modelDefaultClaimed = false;
+
+  /// setState for the library's extensions (a protected member).
+  void _setChatState(VoidCallback change) => setState(change);
   void _nudgesChanged() {
     if (mounted) setState(() {});
   }
@@ -3019,7 +3036,7 @@ class _ChatScreenState extends State<ChatScreen>
         return;
       }
       if (!voice.models.isReady) {
-        final ready = await showVoiceModelSetupSheet(context, voice.models);
+        final ready = await showVoiceAutomaticSetupSheet(context, voice);
         if (!mounted ||
             !ready ||
             !current() ||
@@ -3669,10 +3686,11 @@ class _ChatScreenState extends State<ChatScreen>
   /// share banner, where the link stays visible.
   Future<void> _copyShareLink(String url) async {
     try {
+      // The kit's redaction leaves a plain share address as it is and masks
+      // a credential a server might put in it (G12).
       await KitCopy.copy(
         context,
         url,
-        redact: false,
         announcement: _chatL10n(context).chatUiShareLinkCopied,
       );
     } catch (_) {
@@ -5765,47 +5783,63 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// The conversation as Markdown for Copy transcript (SEC-13, G12): the
+  /// person's own prompts stay as they typed them; everything else (the
+  /// title, replies, reasoning, tool output, attachments' names and error
+  /// text) is masked through [KitRedact] first, so a key a tool printed
+  /// never reaches the clipboard.
   String _transcriptMarkdown() {
+    final l10n = _chatL10n(context);
     final title = _conn.sessionsById[widget.sessionID]?.title;
-    final out = StringBuffer(
-      '# ${title?.isNotEmpty == true ? title : _chatL10n(context).chatUiOpenCodeSession}\n',
+    final out = StringBuffer();
+    void put(String text) => out.write(KitRedact.text(text));
+    put(
+      '# ${title?.isNotEmpty == true ? title : l10n.chatUiOpenCodeSession}\n',
     );
     if (_olderCursor != null) {
-      out.write('\n> ${_chatL10n(context).historyLoadedOnly}\n');
+      out.write('\n> ${l10n.historyLoadedOnly}\n');
     }
     for (final message in _visibleHistory) {
       if (message.info.id.startsWith('local-')) continue;
+      final own = message.info.role == 'user';
       out.write(
-        '\n## ${message.info.role == 'assistant' ? _chatL10n(context).chatUiAssistant : _chatL10n(context).chatUiUser}\n\n',
+        '\n## ${message.info.role == 'assistant' ? l10n.chatUiAssistant : l10n.chatUiUser}\n\n',
       );
       for (final part in message.parts) {
         if (part.type == 'text' && part.text.trim().isNotEmpty) {
-          out.write('${part.text.trim()}\n\n');
+          // The person's own words, verbatim; a reply is masked.
+          if (own && !part.synthetic) {
+            out.write('${part.text.trim()}\n\n');
+          } else {
+            put('${part.text.trim()}\n\n');
+          }
         } else if (part.type == 'reasoning' && part.text.trim().isNotEmpty) {
-          out.write(
-            '<details><summary>${_chatL10n(context).transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
+          put(
+            '<details><summary>${l10n.transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
           );
         } else if (part.type == 'file') {
-          out.write(
-            '- ${_chatL10n(context).chatUiAttachment}: ${part.filename ?? part.url ?? _chatL10n(context).chatUiFile}\n',
+          put(
+            '- ${l10n.chatUiAttachment}: ${part.filename ?? part.url ?? l10n.chatUiFile}\n',
           );
         } else if (part.type == 'tool') {
-          out.write(
-            '### ${_chatL10n(context).chatUiTool}: ${part.toolName ?? _chatL10n(context).chatUiTool}\n\n',
+          put(
+            '### ${l10n.chatUiTool}: ${part.toolName ?? l10n.chatUiTool}\n\n',
           );
           final output = part.toolState.output?.trim();
           if (output?.isNotEmpty == true) {
-            out.write('```text\n$output\n```\n\n');
+            put('```text\n$output\n```\n\n');
           }
         }
       }
       if (message.info.errorText case final error?) {
-        out.write('> ${_chatL10n(context).chatUiError}: $error\n');
+        put('> ${l10n.chatUiError}: $error\n');
       }
     }
     return out.toString().trimRight();
   }
 
+  /// Already masked where it is not the person's own ([_transcriptMarkdown]);
+  /// copied as built so their prompts stay verbatim (SEC-13).
   Future<void> _copyTranscript() => KitCopy.copy(
     context,
     _transcriptMarkdown(),
@@ -6134,6 +6168,8 @@ class _ChatScreenState extends State<ChatScreen>
     final prompt = await Navigator.of(context).push<String>(
       KitPageRoute<String>(
         builder: (_) => ReviewWorkspace(
+          // P6.6a: the view picked for the person is said once per server.
+          profileId: _conn.profile?.id,
           handoff: _handoff, // UX-103 review handoff
           cacheKey:
               '${_conn.profile?.id}|${_conn.directory}|${widget.sessionID}',
@@ -6658,12 +6694,28 @@ class _ChatScreenState extends State<ChatScreen>
     // ([_composerStatusStrip]), not in this slot.
     return KitReveal(
       child: permission != null
-          ? _PermissionAttentionCard(
-              key: ValueKey('permission-card-${permission.id}'),
-              permission: permission,
-              autoApprovalFailed:
-                  _conn.autoApprovalFailure(permission.id) != null,
-              onReview: () => unawaited(_showPermissionDialog(permission)),
+          ? Column(
+              key: ValueKey('permission-region-${permission.id}'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PermissionAttentionCard(
+                  key: ValueKey('permission-card-${permission.id}'),
+                  permission: permission,
+                  autoApprovalFailed:
+                      _conn.autoApprovalFailure(permission.id) != null,
+                  onReview: () => unawaited(_showPermissionDialog(permission)),
+                ),
+                // P6.7: the third identical ask offers "Always allow"
+                // once, directly under its card.
+                if (!_conn.isIsolated)
+                  AlwaysAllowInvitation(
+                    key: ValueKey('always-allow-${permission.id}'),
+                    controller: _conn,
+                    sessionID: permission.sessionID,
+                    requestID: permission.id,
+                  ),
+              ],
             )
           : question != null
           ? _QuestionAttentionCard(
@@ -6732,6 +6784,8 @@ class _ChatScreenState extends State<ChatScreen>
             label: l10n.demoReviewChanges,
             onPressed: _showDiff,
           ),
+        // Watching: the worker's own page (its state and controls).
+        if (widget.watch case final watch?) ?_watchDetailsAction(watch),
         // Watching: the conversation is the worker's; nothing in the menu
         // (share, fork, revert, rename, delete) is ours.
         if (!_conn.isIsolated && !_watching)
@@ -6751,10 +6805,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// The transcript: the newest turn at the bottom, clear of the floating
-  /// composer ([floating]: under [KitComposer.layer]), with the two jump
-  /// pills over it.
+  /// composer (under [KitComposer.layer]), with the two jump pills over it.
   Widget _transcript({
-    required bool floating,
     required int queuedAfterIndex,
     required List<List<Part>> displayParts,
     required Set<String> waitingLocalIDs,
@@ -6763,7 +6815,7 @@ class _ChatScreenState extends State<ChatScreen>
     final Widget list = Builder(
       builder: (context) {
         final tokens = KitTokens.of(context);
-        final clearance = floating ? KitBottomInset.of(context).bottom : 0.0;
+        final clearance = KitBottomInset.of(context).bottom;
         return Center(
           child: ConstrainedBox(
             // The conversation's cap (VL §5, LAY-5), its gutters inside.
@@ -6802,7 +6854,6 @@ class _ChatScreenState extends State<ChatScreen>
       },
     );
     final latest = KitJumpPillLayer(
-      clearBottomInset: floating,
       pill: KitJumpPill(
         pillKey: const ValueKey('jump-to-latest'),
         label: KitJumpPill.latestLabel(context),
@@ -7524,17 +7575,15 @@ class _ChatScreenState extends State<ChatScreen>
                   if (startEmpty) _requestStartFacts();
                   final showStarters = startEmpty && !_voiceConversation;
                   final watch = widget.watch;
-                  final floating = watch == null;
                   final Widget conversation =
                       _visibleHistory.isEmpty && _olderCursor == null
                       ? Builder(
-                          // Clear of the floating composer.
+                          // Clear of the floating composer (watching
+                          // floats one too: it writes to the worker).
                           builder: (context) => Padding(
-                            padding: floating
-                                ? EdgeInsetsDirectional.only(
-                                    bottom: KitBottomInset.of(context).bottom,
-                                  )
-                                : EdgeInsets.zero,
+                            padding: EdgeInsetsDirectional.only(
+                              bottom: KitBottomInset.of(context).bottom,
+                            ),
                             child:
                                 widget.emptyState ??
                                 (watch != null
@@ -7563,7 +7612,6 @@ class _ChatScreenState extends State<ChatScreen>
                             child: NotificationListener<ScrollNotification>(
                               onNotification: _onTranscriptScroll,
                               child: _transcript(
-                                floating: floating,
                                 queuedAfterIndex: queuedAfterIndex,
                                 displayParts: displayParts,
                                 waitingLocalIDs: waitingLocalIDs,
@@ -7572,17 +7620,11 @@ class _ChatScreenState extends State<ChatScreen>
                             ),
                           ),
                         );
-                  // Watching: the one action where the composer was;
-                  // nothing above it asks the person to act on the
-                  // worker's session.
+                  // Watching: the composer writes to the worker through
+                  // the team; nothing above it asks the person to act on
+                  // the worker's session.
                   if (watch != null) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(child: conversation),
-                        _WatchingComposer(watch: watch),
-                      ],
-                    );
+                    return _watchLayer(watch: watch, body: conversation);
                   }
                   // The floating layer (VL §6): the transcript scrolls under
                   // the glass composer, the only glass on the page.

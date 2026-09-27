@@ -317,11 +317,12 @@ Future<void> _optIn(WidgetTester tester, List<MethodCall> calls) async {
   await _settle(tester);
   expect(find.text('Use the system speech engine?'), findsOneWidget);
   expect(calls, isEmpty);
-  await tester.tap(find.text('Choose voice'));
+  await tester.tap(find.text('Read aloud'));
   await _settle(tester);
+  // The installed voice speaks the app's language: it is used, no choice
+  // is asked for (P10.4).
+  expect(find.text('Installed voice'), findsNothing);
   expect(calls.map((call) => call.method), ['voices']);
-  await tester.tap(find.text('Installed voice'));
-  await _settle(tester);
   expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
   // Opting in never speaks anything by itself.
   expect(calls.map((call) => call.method), ['voices']);

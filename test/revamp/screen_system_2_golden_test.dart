@@ -146,6 +146,8 @@ void main() {
           size: size,
           above: (child) => ShorebirdUpdateNotice(
             service: const _ReadyService(),
+            currentProfileId: () => 'golden-server',
+            allowsAutomaticUpdate: (_) => true,
             child: child,
           ),
         );

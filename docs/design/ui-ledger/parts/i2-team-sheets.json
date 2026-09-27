@@ -209,13 +209,13 @@
         {
           "id": "gate-sheet-run-logs",
           "type": "button",
-          "label": "View logs",
+          "label": "Watch the agent",
           "key": "team-gate-run-logs",
           "line": 782,
           "action": "navigate",
-          "target": "team-agent-output",
-          "targetWidget": "AgentOutputScreen",
-          "effect": "widget.onOpenLogs(agentId): showGateSheet pops the sheet and pushes AgentOutputScreen(controller, agentId).",
+          "target": "chat",
+          "targetWidget": "openTeamAgentConversationById",
+          "effect": "widget.onOpenLogs(agentId): showGateSheet pops the sheet and calls openTeamAgentConversationById(context, controller, agentId): the agent's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live).",
           "gates": [
             "gate.kind == GateKind.runFailed",
             "onOpenLogs != null && agentId != null && caps.agentOutput",
@@ -777,6 +777,10 @@
           "file": "lib/ui/screens/team/team_home_screen.dart",
           "line": 141,
           "via": "TeamConversation.start: the sheet, then the new task's conversation (P0.3)"
+        },
+        {
+          "page": "team-board",
+          "element": "team-board-add"
         }
       ],
       "gates": [],
@@ -857,6 +861,21 @@
             "teamPlannerAgent(agents) == null or teamPlannerIsOff(planner)"
           ],
           "destructive": false
+        },
+        {
+          "id": "start-run-sheet-backlog",
+          "type": "button",
+          "label": "Keep in backlog",
+          "key": "team-start-run-backlog",
+          "line": 250,
+          "action": "submit",
+          "target": null,
+          "effect": "_keepInBacklog(): controller.createWork(title, details, projectId) — the task is made and given to no one; the sheet closes with StartRunResult(backlog: true) and the board selects its Backlog. Offered when opened from the board and the host creates work.",
+          "gates": [
+            "offerBacklog",
+            "capabilities.controlCreateWork"
+          ],
+          "destructive": false
         }
       ]
     },
@@ -888,13 +907,13 @@
         {
           "id": "embedded-team-planning-card-output",
           "type": "button",
-          "label": "Planner output",
+          "label": "Watch the planner",
           "key": "team-planning-output",
           "line": 567,
           "action": "navigate",
-          "target": "team-agent-output",
-          "targetWidget": "AgentOutputScreen",
-          "effect": "_openPlannerOutput: Navigator.push(MaterialPageRoute(AgentOutputScreen(controller, agentId: request.plannerId))) (line 476).",
+          "target": "chat",
+          "targetWidget": "openTeamAgentConversationById",
+          "effect": "_openPlannerOutput: openTeamAgentConversationById(context, controller, request.plannerId): the planner's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live).",
           "gates": [],
           "destructive": false
         },

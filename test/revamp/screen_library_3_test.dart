@@ -383,25 +383,28 @@ void main() {
       expect(find.byKey(const ValueKey('coding-tool-tool1')), findsNothing);
     });
 
-    testWidgets('the detail sheet says what the tool takes before the JSON', (
-      tester,
-    ) async {
-      final c = await library3Server();
-      addTearDown(c.dispose);
-      await tools(tester, c);
-      await tester.tap(find.byKey(const ValueKey('coding-tool-bash')));
-      await tester.pumpAndSettle();
-      expect(find.text('Takes'), findsOneWidget);
-      expect(find.text('text · required · The command to run'), findsOneWidget);
-      expect(find.text('number · optional'), findsOneWidget);
-      expect(find.text('yes or no · optional'), findsOneWidget);
-      // The raw schema waits, folded, under its name.
-      expect(find.text('Parameter schema'), findsOneWidget);
-      expect(find.byKey(const ValueKey('tool-parameter-schema')), findsNothing);
-      await tester.tap(find.text('Parameter schema'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('tool-parameter-schema')), findsOne);
-    });
+    testWidgets(
+      'the detail sheet says what the tool takes; the schema is in its menu',
+      (tester) async {
+        final c = await library3Server();
+        addTearDown(c.dispose);
+        await tools(tester, c);
+        await tester.tap(find.byKey(const ValueKey('coding-tool-bash')));
+        await tester.pumpAndSettle();
+        expect(find.text('Takes'), findsOneWidget);
+        expect(
+          find.text('text · required · The command to run'),
+          findsOneWidget,
+        );
+        expect(find.text('number · optional'), findsOneWidget);
+        expect(find.text('yes or no · optional'), findsOneWidget);
+        // No JSON on the sheet: Copy parameter schema is in its menu.
+        expect(find.text('Parameter schema'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('tool-menu')));
+        await tester.pumpAndSettle();
+        expect(find.text('Copy parameter schema'), findsOneWidget);
+      },
+    );
 
     test('toolParameters reads a JSON schema, required first', () {
       final parameters = toolParameters({

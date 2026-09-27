@@ -13,6 +13,7 @@ import 'package:opencode_mobile/builtin/setup/setup_engine.dart';
 import 'package:opencode_mobile/builtin/setup/voice_component.dart';
 import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/download_size.dart';
 import 'package:opencode_mobile/voice/model_download.dart';
 import 'package:opencode_mobile/voice/model_manager.dart';
 import 'package:opencode_mobile/voice/model_manifest.dart';
@@ -49,14 +50,16 @@ void main() {
       return (VoiceSetupComponent(manager: () async => manager), manager);
     }
 
-    test('offers the pack voice settings would use: Balanced on a phone '
+    test('offers the pack first-mic setup would use: High accuracy on a phone '
         'with room, at its real size, not installed', () async {
       final (voice, _) = await component();
       final offer = await voice.offer();
       expect(offer, isNotNull);
       expect(offer!.installed, isFalse);
-      expect(offer.downloadBytes, voiceModelPack('base').downloadBytes);
-      expect(voice.lastOfferBytes, voiceModelPack('base').downloadBytes);
+      expect(offer.downloadBytes, voiceModelPack('small').downloadBytes);
+      expect(offer.downloadSize.kind, DownloadSizeKind.exact);
+      expect(offer.downloadSize.bytes, voiceModelPack('small').downloadBytes);
+      expect(voice.lastOfferBytes, voiceModelPack('small').downloadBytes);
       expect((await voice.check()).ok, isFalse);
     });
 
@@ -77,13 +80,15 @@ void main() {
       expect(await tooSmall.offer(), isNull);
     });
 
-    test('a phone without speech capture is not offered it; unknown RAM '
-        'is, as in voice settings', () async {
-      final (noCapture, _) = await component(captureSupported: false);
-      expect(await noCapture.offer(), isNull);
-      final (unknown, _) = await component(totalMemoryMb: null);
-      expect(await unknown.offer(), isNotNull);
-    });
+    test(
+      'capture and known physical RAM are required for an automatic offer',
+      () async {
+        final (noCapture, _) = await component(captureSupported: false);
+        expect(await noCapture.offer(), isNull);
+        final (unknown, _) = await component(totalMemoryMb: null);
+        expect(await unknown.offer(), isNull);
+      },
+    );
 
     test('low free space still offers it: setup\'s pre-flight says how '
         'much to free', () async {
@@ -91,14 +96,40 @@ void main() {
       expect(await voice.offer(), isNotNull);
     });
 
-    test('a pack chosen in voice settings is the one setup installs', () async {
+    test('an uninstalled preference cannot override the RAM choice', () async {
       final (voice, _) = await component(
+        preferences: const {'voice.selected_pack': 'tiny'},
+      );
+      final offer = await voice.offer();
+      expect(offer!.downloadBytes, voiceModelPack('small').downloadBytes);
+      expect(offer.downloadSize.kind, DownloadSizeKind.exact);
+      expect(offer.downloadSize.bytes, voiceModelPack('small').downloadBytes);
+    });
+
+    test('retains a supported installed selection', () async {
+      downloader.installed.add('tiny');
+      final (voice, manager) = await component(
+        preferences: const {'voice.selected_pack': 'tiny'},
+      );
+      expect(VoiceSetupComponent.packFor(manager)?.id, 'tiny');
+      expect((await voice.offer())!.installed, isTrue);
+      await voice.install(onProgress: (_) {});
+      expect(manager.selectedPack.id, 'tiny');
+      expect(downloader.starts, isEmpty);
+    });
+
+    test('an installed selection above RAM is not reported ready', () async {
+      downloader.installed.add('small');
+      final (voice, manager) = await component(
+        totalMemoryMb: 1536,
         preferences: const {'voice.selected_pack': 'small'},
       );
-      expect(
-        (await voice.offer())!.downloadBytes,
-        voiceModelPack('small').downloadBytes,
-      );
+      expect(VoiceSetupComponent.packFor(manager)?.id, 'base');
+      expect((await voice.offer())!.installed, isFalse);
+      expect((await voice.check()).ok, isFalse);
+      await voice.install(onProgress: (_) {});
+      expect(manager.selectedPack.id, 'base');
+      expect((await voice.check()).ok, isTrue);
     });
 
     test('install downloads and verifies through the voice manager, reports '
@@ -107,13 +138,13 @@ void main() {
       final progress = <SetupAppProgress>[];
       await voice.install(onProgress: progress.add);
 
-      expect(downloader.installed, {'base'});
+      expect(downloader.installed, {'small'});
       expect(downloader.replaceFlags, [false]);
       expect(progress.first.stage, SetupAppStage.downloading);
-      expect(progress.first.bytesTotal, voiceModelPack('base').downloadBytes);
+      expect(progress.first.bytesTotal, voiceModelPack('small').downloadBytes);
       expect(progress.map((p) => p.bytesDone ?? 0), contains(greaterThan(0)));
       expect(progress.map((p) => p.stage), contains(SetupAppStage.verifying));
-      expect(manager.selectedPack.id, 'base');
+      expect(manager.selectedPack.id, 'small');
       expect(manager.isReady, isTrue);
       expect((await voice.check()).ok, isTrue);
       expect((await voice.offer())!.installed, isTrue);
@@ -125,6 +156,9 @@ void main() {
         downloader.installed.add('base');
         final (voice, _) = await component();
         expect((await voice.check()).ok, isTrue);
+        final offer = await voice.offer();
+        expect(offer!.downloadSize.kind, DownloadSizeKind.exact);
+        expect(offer.downloadSize.bytes, 0);
         await voice.install(onProgress: (_) {});
         expect(downloader.starts, isEmpty);
       },
@@ -148,7 +182,7 @@ void main() {
         ),
       );
       expect(downloader.installed, isEmpty);
-      final kept = downloader.partial['base'];
+      final kept = downloader.partial['small'];
       expect(kept, greaterThan(0));
 
       // The app comes back (or Continue): the same pack, from where it was.

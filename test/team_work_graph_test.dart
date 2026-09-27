@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/models/work.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_image.dart' show KitZoomController;
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
@@ -69,6 +70,49 @@ KitWorkGraphGeometry _layout(
     for (final node in nodes)
       if (seen.add(node.id)) node.toKit(l10n),
   ], nodeSize: nodeSize);
+}
+
+/// The layered graph with the app's work items, as the retired Graph view
+/// drew it: `KitWorkGraph`'s layers form, zoomable, reporting the tapped id.
+class _Graph extends StatefulWidget {
+  const _Graph({
+    required this.nodes,
+    required this.onNodeTap,
+    this.transformationController,
+  });
+
+  final List<WorkGraphNode> nodes;
+  final ValueChanged<String> onNodeTap;
+  final TransformationController? transformationController;
+
+  @override
+  State<_Graph> createState() => _GraphState();
+}
+
+class _GraphState extends State<_Graph> {
+  late final KitZoomController _zoom = KitZoomController(
+    transformation: widget.transformationController,
+  );
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitWorkGraph(
+      nodes: [for (final node in widget.nodes) node.toKit(l10n)],
+      onOpen: widget.onNodeTap,
+      layout: KitWorkGraphLayout.layers,
+      zoomController: _zoom,
+      viewerKey: const ValueKey('team-work-graph-viewer'),
+      canvasKey: const ValueKey('team-work-graph-canvas'),
+      fitKey: const ValueKey('team-work-graph-fit'),
+    );
+  }
 }
 
 void main() {
@@ -195,7 +239,7 @@ void main() {
     });
   });
 
-  group('WorkGraph', () {
+  group('the Graph view', () {
     Widget app(Widget child, {double textScale = 1}) => MaterialApp(
       theme: AppTheme.dark(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -222,7 +266,7 @@ void main() {
       final tapped = <String>[];
       await tester.pumpWidget(
         app(
-          WorkGraph(
+          _Graph(
             nodes: _six,
             onNodeTap: tapped.add,
             transformationController: transform,
@@ -249,7 +293,7 @@ void main() {
       expect(fitted.getTranslation().y, closeTo((600 - 408) / 2, 1e-9));
 
       final layout = _layout(_six, nodeSize: const Size(156, 58));
-      final origin = tester.getTopLeft(find.byType(WorkGraph));
+      final origin = tester.getTopLeft(find.byType(_Graph));
       Offset onScreen(String id) =>
           origin +
           MatrixUtils.transformPoint(transform.value, layout.rects[id]!.center);
@@ -288,7 +332,7 @@ void main() {
       addTearDown(transform.dispose);
       await tester.pumpWidget(
         app(
-          WorkGraph(
+          _Graph(
             nodes: _six,
             onNodeTap: (_) {},
             transformationController: transform,
@@ -310,9 +354,7 @@ void main() {
     ) async {
       final handle = tester.ensureSemantics();
       final tapped = <String>[];
-      await tester.pumpWidget(
-        app(WorkGraph(nodes: _six, onNodeTap: tapped.add)),
-      );
+      await tester.pumpWidget(app(_Graph(nodes: _six, onNodeTap: tapped.add)));
       await tester.pumpAndSettle();
       final canvas = tester.getSemantics(
         find.byKey(const ValueKey('team-work-graph-canvas')),
@@ -346,7 +388,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
-        app(WorkGraph(nodes: _six, onNodeTap: (_) {}), textScale: 2.5),
+        app(_Graph(nodes: _six, onNodeTap: (_) {}), textScale: 2.5),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

@@ -1,6 +1,6 @@
 // Tools and capabilities (map pages `tools` and `tools-detail-sheet`): which
 // tools the chosen model can call, in one list ordered callable first, and
-// each tool's plain parameter summary with its raw schema under Details.
+// each tool's plain parameter summary with Copy parameter schema in its menu.
 // Built from kit parts only (screen-library-3, kit-v2 §9).
 import 'dart:async';
 import 'dart:convert';
@@ -346,6 +346,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
         sheetKey: const Key('tool-detail-scroll'),
         body: (sheetContext) {
           final tokens = KitTokens.of(sheetContext);
+          final schemaMenu = KitRowMenu(
+            key: const ValueKey('tool-menu'),
+            tooltip: l10n.toolsDetailMenu(tool.id),
+            menuLabel: l10n.toolsDetailMenu(tool.id),
+            items: [
+              KitMenuItem.copy(
+                key: const ValueKey('tool-copy-schema'),
+                label: l10n.e7LibraryCopyParameterSchema,
+                text: () => schema,
+              ),
+            ],
+          );
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -354,18 +366,26 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 KitText.selectable(tool.description.trim()),
                 SizedBox(height: tokens.space4),
               ],
-              // What it takes, in words, before any JSON (map: "Takes:
-              // command — text" rows first).
+              // What it takes, in words; the raw schema is one Copy away in
+              // the menu beside them (never a JSON block on the sheet).
               if (parameters.isEmpty)
-                KitText(
-                  l10n.toolsDetailTakesNothing,
-                  role: KitTextRole.secondary,
-                  tone: KitTextTone.secondary,
+                Row(
+                  children: [
+                    Expanded(
+                      child: KitText(
+                        l10n.toolsDetailTakesNothing,
+                        role: KitTextRole.secondary,
+                        tone: KitTextTone.secondary,
+                      ),
+                    ),
+                    schemaMenu,
+                  ],
                 )
               else
                 KitRowGroup(
                   key: const ValueKey('tool-parameters'),
                   label: l10n.toolsDetailTakes,
+                  labelTrailing: schemaMenu,
                   margin: EdgeInsets.zero,
                   leadingIcons: false,
                   children: [
@@ -386,18 +406,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       ),
                   ],
                 ),
-              SizedBox(height: tokens.space4),
-              // The raw schema, last and folded, with its copy (K2 §4.3).
-              KitDetailsFold(
-                label: l10n.e7LibraryParameterSchema,
-                child: KitCodeBlock(
-                  text: schema,
-                  language: 'json',
-                  maxLines: 40,
-                  copyLabel: l10n.e7LibraryCopyParameterSchema,
-                  blockKey: const Key('tool-parameter-schema'),
-                ),
-              ),
             ],
           );
         },

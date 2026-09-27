@@ -9,6 +9,7 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/report_problem_startup.dart';
 import '../platform/platform_capabilities.dart';
 import '../platform/thermal.dart';
+import '../state/automation_policy.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
 import 'setup/setup_engine.dart' show ChannelSetupEngine;
@@ -160,6 +161,7 @@ class GasCityThermalTeams implements ThermalTeamPort {
     // The person turned the team off meanwhile: nothing of ours to give
     // back, and it must not start again.
     if (!teamsHere().any((t) => t.url == team.url)) return true;
+    if (!_allowsRecovery(team.id)) return false;
     if (hold.serviceStopped) {
       await _builtin.ensureRunning(
         notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
@@ -170,21 +172,57 @@ class GasCityThermalTeams implements ThermalTeamPort {
     if (city == null) return false;
     final state = await _http('GET', _uri(team, city));
     if (state == null || !state.ok) return false;
+    if (!_allowsRecovery(team.id)) return false;
     if (_suspended(state.body)) {
       final resumed = await _http('PATCH', _uri(team, city), {
         'suspended': false,
       });
       if (resumed == null || !resumed.ok) return false;
     }
+    var allConfirmed = true;
     for (final id in hold.sessions) {
-      // A session that is gone was closed meanwhile; nothing to wake.
-      await _http(
+      if (!_allowsRecovery(team.id)) return false;
+      final sessionUri = _uri(
+        team,
+        city,
+        '/session/${Uri.encodeComponent(id)}',
+      );
+      final session = await _http('GET', sessionUri);
+      // Keep the full durable hold until all work is accounted for. On a
+      // retry (including after app restart), do not wake sessions that have
+      // already resumed. The session resource, not a failed wake endpoint,
+      // establishes that a session has been closed meanwhile.
+      if (session?.status == 404) continue;
+      if (session == null || !session.ok) {
+        allConfirmed = false;
+        continue;
+      }
+      final body = session.body;
+      if (body is Map && body['id'] == id && body['running'] == true) {
+        continue;
+      }
+      final answer = await _http(
         'POST',
         _uri(team, city, '/session/${Uri.encodeComponent(id)}/wake'),
       );
+      if (answer != null && answer.ok) continue;
+      if (answer?.status == 404) {
+        // The session can disappear between the read and the wake. A 404
+        // from /wake alone can also mean that mutation is unavailable.
+        final after = await _http('GET', sessionUri);
+        if (after?.status == 404) continue;
+      }
+      allConfirmed = false;
     }
-    return true;
+    return allConfirmed;
   }
+
+  bool _allowsRecovery(String profileId) =>
+      store.profiles.any((profile) => profile.id == profileId) &&
+      AutomationPolicyController.forProfile(
+        store.prefs,
+        profileId,
+      ).value.allows(AutomationBehavior.thermalRecovery);
 
   Future<bool> _answers(ThermalTeam team) async {
     final deadline = DateTime.now().add(restartTimeout);

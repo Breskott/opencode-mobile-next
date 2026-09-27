@@ -17,9 +17,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/team_board.dart';
 import '../app_theme.dart';
-import '../kit/kit_buttons.dart';
 import '../kit/kit_choice_list.dart';
-import '../kit/kit_field.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_sheet.dart';
@@ -221,95 +219,4 @@ Future<bool> confirmTeamBoardCancel(BuildContext context, String title) {
     sheetKey: const ValueKey('team-board-cancel-sheet'),
     confirmKey: const ValueKey('team-board-cancel-confirm'),
   );
-}
-
-// revamp: merge-into:start-run-sheet (slice-P3.5)
-/// "Add to backlog": the task's words; null when dismissed or empty. An
-/// empty submit says what is missing under the field instead of a dead
-/// button.
-Future<String?> showTeamBoardAddSheet(BuildContext context) {
-  final l10n = _copy(context);
-  final form = _AddForm();
-  void submit() {
-    final words = form.text.trim();
-    if (words.isEmpty) {
-      form.error?.value = l10n.teamBoardMoveSheetAddEmpty;
-      return;
-    }
-    Navigator.of(context).pop(words);
-  }
-
-  return showKitSheet<String>(
-    context,
-    sheetKey: const ValueKey('team-board-add-sheet'),
-    title: l10n.teamBoardAddTooltip,
-    subtitle: l10n.teamBoardAddNote,
-    icon: AppIconography.add,
-    primary: KitAction(
-      key: const ValueKey('team-board-add-submit'),
-      label: l10n.teamBoardAddButton,
-      icon: AppIconography.add,
-      onPressed: submit,
-    ),
-    body: (_) => _AddSheetBody(form: form, onSubmit: submit),
-  );
-}
-
-/// What the add sheet's body holds, read by its pinned action. The body's
-/// state owns the controller and the notifier, so they live exactly as
-/// long as the field does.
-class _AddForm {
-  String text = '';
-  ValueNotifier<String?>? error;
-}
-
-class _AddSheetBody extends StatefulWidget {
-  const _AddSheetBody({required this.form, required this.onSubmit});
-
-  final _AddForm form;
-  final VoidCallback onSubmit;
-
-  @override
-  State<_AddSheetBody> createState() => _AddSheetBodyState();
-}
-
-class _AddSheetBodyState extends State<_AddSheetBody> {
-  final _text = TextEditingController();
-  final _error = ValueNotifier<String?>(null);
-
-  @override
-  void initState() {
-    super.initState();
-    widget.form.error = _error;
-  }
-
-  @override
-  void dispose() {
-    if (widget.form.error == _error) widget.form.error = null;
-    _text.dispose();
-    _error.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    return ValueListenableBuilder<String?>(
-      valueListenable: _error,
-      builder: (context, message, _) => KitField(
-        label: l10n.teamBoardAddHint,
-        controller: _text,
-        maxLines: 4,
-        autofocus: true,
-        error: message,
-        textInputAction: TextInputAction.done,
-        onChanged: (value) {
-          widget.form.text = value;
-          if (_error.value != null) _error.value = null;
-        },
-        onSubmitted: (_) => widget.onSubmit(),
-        fieldKey: const ValueKey('team-board-add-field'),
-      ),
-    );
-  }
 }

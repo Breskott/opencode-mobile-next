@@ -14,16 +14,18 @@
 // 1600x1000, text 2.0 and Arabic RTL); the rail, which the spec shows at
 // 800x1280, is drawn at 1280x800 as a bare KitNavRail beside the content.
 //
-// The sidebar header stands in for KitShellControls (kit-KitTopBar has not
-// merged; KitNav types the header as a plain Widget on purpose).
+// The sidebar header is the real KitShellControls(layout: sidebar), as the
+// shell passes it (kit-polish 2026-09-27: the earlier fixed-height stand-in
+// cut its own words at text 2.0).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/ui/app_iconography.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 
 import 'kit_gallery.dart';
 
@@ -112,7 +114,16 @@ KitNav _nav({int inbox = 0, int selected = 0, bool wide = false}) => KitNav(
   destinations: _destinations(inbox: inbox),
   selected: selected,
   onSelected: (_) {},
-  sidebarHeader: const _Header(),
+  sidebarHeader: KitShellControls(
+    server: 'phone',
+    serverStatus: 'Connected',
+    serverTone: AppStatusTone.ok,
+    onServer: () {},
+    project: 'opencode',
+    onProject: () {},
+    onSearch: () {},
+    layout: KitShellControlsLayout.sidebar,
+  ),
   sidebarPrimary: KitAction(
     label: 'New conversation',
     onPressed: () {},
@@ -125,20 +136,6 @@ KitNav _nav({int inbox = 0, int selected = 0, bool wide = false}) => KitNav(
       ? _wideContent(const _List(count: 12, prefix: 'Row'))
       : const _List(count: 12, prefix: 'Row'),
 );
-
-/// Stands in for KitShellControls (file header).
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: KitTokens.of(context).minTarget,
-    child: const Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: KitText('opencode · phone', role: KitTextRole.headline),
-    ),
-  );
-}
 
 void main() {
   setUpAll(loadKitGalleryFonts);

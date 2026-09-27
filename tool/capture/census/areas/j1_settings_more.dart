@@ -44,10 +44,7 @@ Future<void> _pumpAbout(CensusKit kit) async {
       for (final key in documents) rootBundle.loadString(key),
     ]).timeout(const Duration(seconds: 20)),
   );
-  await kit.pumpApp(
-    const AboutScreen(),
-    controller: await kit.connected(),
-  );
+  await kit.pumpApp(const AboutScreen(), controller: await kit.connected());
   await kit.realWait();
   kit.expectVisible(find.byType(MarkdownText), 'the loaded document');
 }

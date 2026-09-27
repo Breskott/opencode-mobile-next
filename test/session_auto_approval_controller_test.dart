@@ -5,6 +5,8 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/session_auto_approval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,6 +62,14 @@ class _FakeApi extends OpenCodeApi {
   ) async => throw StateError('questions must never be answered automatically');
 }
 
+class _ApprovalStore extends ProfileStore {
+  _ApprovalStore({required super.prefs});
+  @override
+  List<ServerProfile> get profiles => [
+    ServerProfile(id: 'server-a', name: 'A', baseUrl: 'http://localhost'),
+  ];
+}
+
 class _Controller extends ConnectionController {
   _Controller(super.store);
   @override
@@ -67,11 +77,20 @@ class _Controller extends ConnectionController {
       ServerProfile(id: 'server-a', name: 'A', baseUrl: 'http://localhost');
 }
 
-Future<(_Controller, _FakeApi)> _boot({bool connected = true}) async {
+Future<(_Controller, _FakeApi)> _boot({
+  bool connected = true,
+  bool allow = true,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
+  if (allow) {
+    await AutomationPolicyController.forProfile(
+      prefs,
+      'server-a',
+    ).setSupervision(AutomationSupervision.balanced);
+  }
   final api = _FakeApi();
-  final controller = _Controller(ProfileStore(prefs: prefs))
+  final controller = _Controller(_ApprovalStore(prefs: prefs))
     ..api = api
     ..status = connected ? StreamStatus.connected : StreamStatus.reconnecting;
   addTearDown(controller.dispose);
@@ -180,10 +199,15 @@ void main() {
     expect(controller.unifiedAttentionCount, 0);
     expect(controller.liveStatus().pendingCount, 0);
 
+    expect(controller.automaticActsHere, isEmpty);
     api.hold!.complete();
     await _settle();
     await _settle();
 
+    expect(
+      controller.automaticActsHere.single.kind,
+      AutomaticActKind.permissionApproval,
+    );
     expect(api.legacyReplies, [
       (requestID: 'req-1', reply: 'once', session: null),
     ]);
@@ -196,6 +220,19 @@ void main() {
     expect(approved.single.patterns, ['git status']);
     expect(controller.autoApprovalFailure('req-1'), isNull);
   });
+
+  test(
+    'policy off leaves session auto-approved requests for a person',
+    () async {
+      final (controller, api) = await _boot(allow: false);
+      await controller.setSessionAutoApproval('parent', _auto);
+      controller.handleEventForTesting(_v1Ask('blocked', 'parent'));
+      await _settle();
+      expect(api.legacyReplies, isEmpty);
+      expect(controller.permissionsForSession('parent'), hasLength(1));
+      expect(controller.automaticActsHere, isEmpty);
+    },
+  );
 
   test('OpenCode 2 request replies on the v2 contract, never always', () async {
     final (controller, api) = await _boot();
@@ -322,7 +359,11 @@ void main() {
       expect(controller.permissionsForSession('parent').single.id, 'perm-1');
       expect(controller.awaitingPermissionCount, 1);
       expect(controller.unifiedAttentionCount, 1);
-      expect(controller.autoApprovalFailure('perm-1'), contains('refused'));
+      expect(
+        controller.autoApprovalFailure('perm-1'),
+        'Could not confirm automatic approval. Review the request.',
+      );
+      expect(controller.automaticActsHere, isEmpty);
       expect(controller.autoApprovedFor('parent'), isEmpty);
       expect(notified, greaterThan(0));
 
@@ -334,6 +375,23 @@ void main() {
       expect(controller.permissions, isEmpty);
     },
   );
+
+  test('an already resolved request is not logged as our approval', () async {
+    final (controller, api) = await _boot();
+    await controller.setSessionAutoApproval('parent', _auto);
+    api.fail = ApiException(
+      'gone',
+      statusCode: 404,
+      errorTag: 'PermissionNotFoundError',
+      requestID: 'gone',
+    );
+    controller.handleEventForTesting(_v1Ask('gone', 'parent'));
+    await _settle();
+    await _settle();
+    expect(controller.permissions, isEmpty);
+    expect(controller.autoApprovedFor('parent'), isEmpty);
+    expect(controller.automaticActsHere, isEmpty);
+  });
 
   test('questions are never answered automatically', () async {
     final (controller, api) = await _boot();

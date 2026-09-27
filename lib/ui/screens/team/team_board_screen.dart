@@ -317,23 +317,21 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
     _prune();
   }
 
+  /// The one "Give the team a task" sheet (P3.5; the board's own add
+  /// sheet is gone): Start now opens the task's conversation, Keep in
+  /// backlog makes it and shows the Backlog here. A refusal stays in the
+  /// sheet with what was typed.
   Future<void> _add() async {
-    final title = await showTeamBoardAddSheet(context);
-    if (title == null || !mounted) return;
-    setState(() {
-      _failure = null;
-      _busy++;
-    });
-    final result = await _edits.addToBacklog(
-      title,
+    setState(() => _failure = null);
+    await TeamConversation.start(
+      context,
+      widget.controller,
+      offerBacklog: true,
       projectId: _projectFilter ?? _singleProject,
+      onKeptInBacklog: (_) {
+        if (mounted) _select(TeamBoardColumn.backlog);
+      },
     );
-    if (!mounted) return;
-    setState(() {
-      _busy--;
-      if (!result.ok) _failure = (title, result.message);
-    });
-    if (result.ok) _select(TeamBoardColumn.backlog);
   }
 
   String? get _singleProject {
@@ -398,7 +396,7 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
               if (canAdd)
                 KitAction(
                   key: const ValueKey('team-board-add'),
-                  label: l10n.teamBoardAddTooltip,
+                  label: l10n.teamUiStartRunTitle,
                   icon: AppIconography.add,
                   onPressed: _add,
                 ),
@@ -517,7 +515,7 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
               primary: _edits.canCreate
                   ? KitAction(
                       key: const ValueKey('team-board-empty-add'),
-                      label: l10n.teamBoardAddButton,
+                      label: l10n.teamUiStartRunTitle,
                       icon: AppIconography.add,
                       onPressed: _add,
                     )

@@ -67,11 +67,82 @@ extension _ChatNudges on _ChatScreenState {
     _nudgeObserveQueued = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nudgeObserveQueued = false;
-      if (mounted) _nudgeWatcher?.observe(_nudgeFacts());
+      if (!mounted) return;
+      _nudgeWatcher?.observe(_nudgeFacts());
+      _claimModelDefault();
     });
   }
 
+  /// P6.6a: once the catalog is loaded and the composer is shown, the
+  /// model the app picked by itself (the server's default) is said once
+  /// per server, here where it is used. An explicit pick, an unresolved
+  /// catalog or a notice already given says nothing.
+  void _claimModelDefault() {
+    if (_modelDefaultClaimed || _conn.isIsolated || _watching) return;
+    final choice = modelDefaultOf(_conn);
+    if (choice.reason == DefaultReason.unresolved) return;
+    _modelDefaultClaimed = true;
+    unawaited(() async {
+      final said = await claimDefaultNotice(
+        kind: DefaultKind.model,
+        choice: choice,
+        profileId: _conn.profile?.id,
+        prefs: _conn.store.prefs,
+      );
+      if (said == null || !mounted) return;
+      _setChatState(() => _modelDefaultSaid = said);
+    }());
+  }
+
+  /// The model notice: "Using {model}, this server's default model.", with
+  /// "Choose another model" when there is another to choose.
+  Widget? _modelDefaultNotice(BuildContext context) {
+    final said = _modelDefaultSaid;
+    if (said == null) return null;
+    final strings = _chatL10n(context);
+    final canChange = modelDefaultOf(_conn).canChange;
+    void done() => _setChatState(() => _modelDefaultSaid = null);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: KitTokens.of(context).gutter,
+        end: KitTokens.of(context).space1,
+      ),
+      child: canChange
+          ? KitNotice.offer(
+              key: const ValueKey('chat-default-model-notice'),
+              message: strings.defaultModelNotice(KitBidi.auto(said)),
+              icon: AppIconography.idea,
+              action: KitAction(
+                key: const ValueKey('chat-default-model-change'),
+                label: strings.defaultModelChange,
+                onPressed: () {
+                  done();
+                  unawaited(
+                    showModelPicker(
+                      context,
+                      applyScope: _modelApplyScope,
+                      sessionID: widget.sessionID,
+                    ),
+                  );
+                },
+              ),
+              onDismiss: done,
+              dismissKey: const ValueKey('chat-default-model-dismiss'),
+              dismissLabel: strings.nudgeDismiss,
+            )
+          // The only model: nothing to choose, so only the close.
+          : KitNotice(
+              key: const ValueKey('chat-default-model-notice'),
+              icon: AppIconography.idea,
+              message: strings.defaultModelNotice(KitBidi.auto(said)),
+              onDismiss: done,
+            ),
+    );
+  }
+
   Widget _nudgeSlot(BuildContext context) {
+    // The model the app picked is said first, once; a tip waits for it.
+    if (_modelDefaultNotice(context) case final notice?) return notice;
     final active = _nudgeWatcher == null
         ? null
         : _nudges.activeFor(widget.sessionID);

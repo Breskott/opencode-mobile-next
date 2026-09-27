@@ -1,5 +1,5 @@
 {
- "generatedFrom": "11b8afcbabbbd053f28946378c06a952d3ddf614",
+ "generatedFrom": "42d3932d239882a00b3ea9da3b6a3da611058d5c",
  "pages": [
   {
    "id": "system",
@@ -715,42 +715,6 @@
    ],
    "elements": [
     {
-     "id": "root-connecting-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": "saved-server-retry",
-     "file": "lib/main.dart",
-     "line": 359,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onRetry -> _RootState: _started = false; _connectSaved() which calls conn.connect(profile) (main.dart:1418).",
-     "gates": [
-      "failed",
-      "!primaryIsRetry"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
-    },
-    {
-     "id": "root-connecting-change",
-     "type": "button",
-     "label": "Change server",
-     "key": "saved-server-change",
-     "file": "lib/main.dart",
-     "line": 369,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "onChangeServer -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false) (main.dart:1402).",
-     "gates": [
-      "failed",
-      "!primaryIsChange"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
-    },
-    {
      "id": "root-connecting-primary-password",
      "type": "button",
      "label": "Update password",
@@ -883,6 +847,40 @@
       "failed",
       "primaryIsRetry && onOpenTermuxSetup != null",
       "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "root-connecting-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "saved-server-retry",
+     "file": "lib/ui/widgets/saved_server_connection_card.dart",
+     "line": 359,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onRetry -> _RootState: _started = false; _connectSaved() which calls conn.connect(profile) (main.dart:1418).",
+     "gates": [
+      "failed",
+      "!primaryIsRetry"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "root-connecting-change",
+     "type": "button",
+     "label": "Change server",
+     "key": "saved-server-change",
+     "file": "lib/ui/widgets/saved_server_connection_card.dart",
+     "line": 369,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "onChangeServer -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false) (main.dart:1402).",
+     "gates": [
+      "failed",
+      "!primaryIsChange"
      ],
      "destructive": false
     }
@@ -6636,50 +6634,140 @@
    ]
   },
   {
-   "id": "chat-watching-message-sheet",
-   "title": "Message {agent}",
-   "kind": "sheet",
+   "id": "chat-watching-live",
+   "title": "<task the agent works on> | Live output",
+   "kind": "screen",
    "area": "chat",
-   "file": "lib/ui/screens/chat/team_conversation_view.dart",
-   "widget": "_TeamMessageSheet",
+   "file": "lib/ui/screens/chat/team_watch_live.dart",
+   "widget": "TeamWatchLiveScreen",
    "presentedBy": [
-    "_messageTeamAgent"
+    "openTeamAgentConversation",
+    "openTeamAgentConversationById"
    ],
-   "line": 1353,
-   "purpose": "The watched worker's message field: Send pops the text; teamAgentWatch's 'Message the worker' action opens it, then OrchestrationController.messageAgent sends it and a snackbar shows the receipt.",
+   "line": 29,
+   "purpose": "The chat's watching mode for an AI Team agent whose OpenCode session the connected server cannot read (a team on another computer, a worker still starting): the transcript is the team's live output drawn with the chat's parts (TeamAgentTranscript), with the same status line (chat-watching-banner: who and its state from its session, or connecting/starting/not running/ended), the same composer addressed to the agent through the team, and the agent's page as the top-bar action. Replaces team-agent-output (slice-P3.6).",
    "reachedFrom": [
     {
-     "page": "chat",
-     "element": "chat-watching-message"
+     "page": "team-agent",
+     "element": "team-agent-open-conversation"
+    },
+    {
+     "page": "team-agents",
+     "element": "team-agents-row"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-family-agent"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "embedded-team-cycle-strip-open-output"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-run-logs"
+    },
+    {
+     "page": "embedded-team-planning-card",
+     "element": "embedded-team-planning-card-output"
     }
    ],
    "gates": [
-    "ChatWatch.onMessage != null (AI Team watching mode only)"
+    "team.on",
+    "the agent's session was not found on the connected server (TeamAgentConversationMiss), or the agent is opened by id and not listed"
    ],
    "elements": [
     {
-     "id": "chat-watching-message-field",
-     "type": "text-field",
-     "label": "Tell the agent what to do next",
-     "key": "chat-watching-message-field",
-     "file": "lib/ui/screens/chat/team_conversation_view.dart",
-     "line": 1390,
-     "action": "submit",
+     "id": "chat-watching-live-wake",
+     "type": "button",
+     "label": "Start it | Why?",
+     "key": "chat-watching-live-wake",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 167,
+     "action": "mutate",
      "target": null,
-     "effect": "TeamComposerField onSend -> _send(): pops the trimmed text (Navigator.pop) when non-empty.",
-     "gates": [],
+     "targetWidget": null,
+     "effect": "Status-line action while the agent is not running: teamUnstickAction wakes it (controlAgent) or explains why (host details sheet, key chat-watching-live-why).",
+     "gates": [
+      "the agent is listed and not live, nothing received yet"
+     ],
      "destructive": false
     },
     {
-     "id": "chat-watching-message-send",
-     "type": "button",
-     "label": "Send",
-     "key": "chat-watching-message-send",
-     "file": "lib/ui/screens/chat/team_conversation_view.dart",
-     "line": 1394,
+     "id": "chat-watching-live-copy",
+     "type": "icon-button",
+     "label": "Copy output",
+     "key": "chat-watching-live-copy",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 222,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitAction.copy: copies the live output text (redacted by the kit).",
+     "gates": [
+      "the output is not empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-details",
+     "type": "icon-button",
+     "label": "About <name>",
+     "key": "chat-watching-details",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 228,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "watch.onDetails: pushes AgentScreen for the agent.",
+     "gates": [
+      "details: true and the agent is listed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-composer",
+     "type": "text-field",
+     "label": "Message <name>…",
+     "key": "chat-watching-message-field",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 263,
      "action": "submit",
      "target": null,
-     "effect": "Same as the field's onSend: _send() pops the trimmed text; _messageTeamAgent then calls team.messageAgent(agent.id, text.trim()) and shows a receipt snackbar (chat-watching-message-receipt).",
+     "targetWidget": null,
+     "effect": "The same watching composer as on chat (_WatchComposer): sends through the team's message control, receipt above it.",
+     "gates": [
+      "ChatWatch.onSend != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-jump",
+     "type": "button",
+     "label": "Jump to latest",
+     "key": "chat-watching-live-jump",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 278,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_setFollow(true): follows the newest output again and jumps to the end.",
+     "gates": [
+      "not following, output available and not ended"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-scroll",
+     "type": "gesture",
+     "label": "[drag the output away from the end]",
+     "key": "chat-watching-live-list",
+     "file": "lib/ui/screens/chat/team_watch_live.dart",
+     "line": 289,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "A drag that leaves more than 24 px above the end stops follow-latest; the Jump to latest pill resumes it.",
      "gates": [],
      "destructive": false
     }
@@ -7219,12 +7307,32 @@
      "element": "phone-setup-ready-create"
     },
     {
+     "page": "team-agents",
+     "element": "team-agents-row"
+    },
+    {
+     "page": "team-agent",
+     "element": "team-agent-open-conversation"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "embedded-team-cycle-strip-open-output"
+    },
+    {
      "page": "team-conversation",
      "element": "team-conversation-family-agent"
     },
     {
      "page": "team-conversation",
      "element": "team-conversation-agent-line"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-run-logs"
+    },
+    {
+     "page": "embedded-team-planning-card",
+     "element": "embedded-team-planning-card-output"
     },
     {
      "page": "commands",
@@ -7246,62 +7354,72 @@
    ],
    "elements": [
     {
-     "id": "chat-watching-message",
+     "id": "chat-watching-message-receipt-retry",
      "type": "button",
-     "label": "Message the worker | Message this agent",
-     "key": "chat-watching-message",
-     "file": "lib/ui/screens/chat/watching.dart",
-     "line": 158,
-     "action": "open-sheet",
-     "target": "chat-watching-message-sheet",
-     "targetWidget": "_messageTeamAgent",
-     "effect": "_WatchingComposerState._message() -> watch.onMessage(context); the AI Team's ChatWatch (teamAgentWatch, team_conversation_view.dart:1293) opens the message sheet, then on a non-empty answer calls OrchestrationController.messageAgent(agent.id, text).",
+     "label": "Try again",
+     "key": "chat-watching-message-receipt-retry",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1648,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "The receipt above the watching composer (newest message sent to this agent since the page opened): team.retryMutation(record.key).",
      "gates": [
-      "widget.watch != null && watch.messageLabel != null && watch.onMessage != null"
+      "the record may be retried (teamControlReceipt)"
      ],
      "destructive": false
     },
     {
-     "id": "chat-first-reply-notify-decline",
-     "type": "button",
-     "label": "Not now",
-     "key": "first-reply-notify-decline",
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 169,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
+     "id": "chat-watching-details",
+     "type": "icon-button",
+     "label": "About <name> | About the <role>",
+     "key": "chat-watching-details",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 131,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "Top-bar action while watching: ChatWatch.onDetails pushes AgentScreen(controller: team, agentId) — the agent's state, controls (nudge, pause, restart, stop) and technical details.",
      "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
+      "widget.watch != null",
+      "ChatWatch.onDetails != null: not when opened from the agent's own page (details: false)"
      ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+     "destructive": false
     },
     {
-     "id": "chat-first-reply-notify-accept",
-     "type": "button",
-     "label": "Notify me (card: Get told when it's done?)",
-     "key": "first-reply-notify-accept",
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 177,
-     "action": "toggle-setting",
+     "id": "chat-watching-composer",
+     "type": "text-field",
+     "label": "Message <name>… | Message the worker… | Message this agent…",
+     "key": "chat-watching-message-field",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 274,
+     "action": "submit",
      "target": null,
-     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
+     "targetWidget": null,
+     "effect": "_WatchComposer (KitComposer, composer key chat-watching-composer): the person's words for the watched AI Team agent. Send (chat-watching-message-send) -> ChatWatch.onSend (teamAgentWatch: OrchestrationController.messageAgent(agentId, text)); the field and its draft (oc.draft.team-message.<agentId>.<profileId>) clear only when the team took it. Never typed into the watched session. Note 'Goes to <name> through the AI Team'; read-only with 'This team can't be messaged from here.' without the message control.",
      "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
+      "widget.watch != null (watching mode)",
+      "typing only when ChatWatch.onSend != null (team.capabilities.controlMessage)"
      ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-message-send",
+     "type": "icon-button",
+     "label": "[Send]",
+     "key": "chat-watching-message-send",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 275,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Same as the composer's onSend: _WatchComposerState._send(); the message's receipt (chat-watching-message-receipt, Sent then Confirmed or the host's reason, with Try again) shows above the composer.",
+     "gates": [
+      "widget.watch != null",
+      "ChatWatch.onSend != null",
+      "non-empty text"
+     ],
+     "destructive": false
     },
     {
      "id": "chat-prompt-history-keys",
@@ -8751,6 +8869,46 @@
      ],
      "destructive": false,
      "hostWiring": true
+    },
+    {
+     "id": "chat-first-reply-notify-decline",
+     "type": "button",
+     "label": "Not now",
+     "key": "first-reply-notify-decline",
+     "file": "lib/ui/widgets/first_reply_notify_card.dart",
+     "line": 169,
+     "action": "dismiss",
+     "target": null,
+     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-first-reply-notify-accept",
+     "type": "button",
+     "label": "Notify me (card: Get told when it's done?)",
+     "key": "first-reply-notify-accept",
+     "file": "lib/ui/widgets/first_reply_notify_card.dart",
+     "line": 177,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false
     }
    ]
   },
@@ -25767,12 +25925,8 @@
     "TeamConversation.start"
    ],
    "line": 37,
-   "purpose": "The AI Team task as a conversation (docs/design/team-conversation-2026-09-26.md): the task's prompt, the lead's narrated reply, the family strip of workers/reviewers, folded steps, gate cards, the merge section, and a composer that messages the worker (or planner) through the team's own message control.",
+   "purpose": "The AI Team task as a conversation (docs/design/team-conversation-2026-09-26.md): the task's prompt, the lead's narrated reply (a step that is the task itself is 'it', never its words again), the agent strip under the header, tappable steps, gate cards, a 'No progress for …' notice with Nudge/Restart/Report when the task has stalled, the merge section, and a composer that messages the worker (or planner) through the team's own message control. Task details (menu) holds what the retired run page showed.",
    "reachedFrom": [
-    {
-     "page": "team-run-overview-tab",
-     "element": "team-run-overview-open-conversation"
-    },
     {
      "page": "team-board",
      "element": "team-board-card"
@@ -25827,10 +25981,8 @@
      "line": 290,
      "action": "other",
      "target": null,
-     "effect": "KitRowMenu opener: Task details always, Stop task while the task runs and the host takes cancelRun.",
-     "gates": [
-      "run != null"
-     ],
+     "effect": "KitRowMenu opener: Refresh always; Task details and Stop task (while the task runs and the host takes cancelRun) once the task is listed.",
+     "gates": [],
      "destructive": false
     },
     {
@@ -25840,10 +25992,10 @@
      "key": "team-conversation-details",
      "file": "lib/ui/screens/chat/team_conversation_view.dart",
      "line": 292,
-     "action": "navigate",
-     "target": "team-run",
-     "targetWidget": "RunScreen",
-     "effect": "Selecting 'Task details' -> _openDetails(run.id): pushes RunScreen(controller: team, runId: run.id).",
+     "action": "open-sheet",
+     "target": "team-task-details",
+     "targetWidget": "showTeamTaskDetails",
+     "effect": "Selecting 'Task details' -> _openDetails(run.id): showTeamTaskDetails(context, team, run.id) (P3.5: replaces the run page).",
      "gates": [
       "run != null"
      ],
@@ -25881,6 +26033,19 @@
      "gates": [],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_needs_you.dart"
+    },
+    {
+     "id": "team-conversation-menu-refresh",
+     "type": "menu-item",
+     "label": "Refresh",
+     "key": "team-conversation-refresh",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 420,
+     "action": "mutate",
+     "target": null,
+     "effect": "_refresh(): team.retry() when the team failed, else team.refresh() (a computer has no pull gesture; the run page's Refresh moved here).",
+     "gates": [],
+     "destructive": false
     },
     {
      "id": "team-conversation-lead-earlier",
@@ -25922,7 +26087,7 @@
      "action": "navigate",
      "target": "chat",
      "targetWidget": "ChatScreen",
-     "effect": "_TeamFamilyStrip chip onTap -> onOpen(agent) -> _openAgent(agent) -> openTeamAgentConversation: pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or AgentOutputScreen (team-agent-output) as Live output when the agent's own OpenCode session cannot be found on the connected server.",
+     "effect": "_TeamFamilyStrip chip onTap -> onOpen(agent) -> _openAgent(agent) -> openTeamAgentConversation: pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or TeamWatchLiveScreen (chat-watching-live), the same watching page drawn from the team's live output, when the agent's own OpenCode session cannot be found on the connected server.",
      "gates": [
       "run != null && agents.isNotEmpty"
      ],
@@ -25940,6 +26105,54 @@
      "targetWidget": "ChatScreen",
      "effect": "_TeamAgentLine InkWell.onTap -> onOpen -> _openAgent(agent): same as the family strip's chip, shown again inline with the reply's own steps.",
      "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-conversation-no-progress-nudge",
+     "type": "button",
+     "label": "Nudge <agent>",
+     "key": "team-conversation-no-progress-nudge",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1060,
+     "action": "mutate",
+     "target": null,
+     "effect": "_control(agent, nudge): team.controlAgent(agent.id, nudge); the receipt shows under the notice.",
+     "gates": [
+      "the task stalled with no progress for an hour or more",
+      "team.capabilities.controlAgent"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-conversation-no-progress-restart",
+     "type": "button",
+     "label": "Restart <agent>",
+     "key": "team-conversation-no-progress-restart",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1066,
+     "action": "mutate",
+     "target": null,
+     "effect": "_control(agent, restart): asks first (showKitConfirm 'Restart <agent>?', key team-conversation-restart-confirm), then team.controlAgent(agent.id, restart).",
+     "gates": [
+      "the task stalled with no progress for an hour or more",
+      "team.capabilities.controlAgent"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-conversation-no-progress-report",
+     "type": "button",
+     "label": "Report the problem",
+     "key": "team-conversation-no-progress-report",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1072,
+     "action": "navigate",
+     "target": "app-diagnostics",
+     "targetWidget": "openBugReport",
+     "effect": "openBugReport(context, error: KitReport('An AI Team task made no progress for <duration>', ids under details)).",
+     "gates": [
+      "the task stalled with no progress for an hour or more"
+     ],
      "destructive": false
     },
     {
@@ -25969,6 +26182,22 @@
      "effect": "Same as the field's onSend: _send(recipient) -> team.messageAgent(recipient.id, text).",
      "gates": [
       "canMessage && recipient != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-conversation-step",
+     "type": "list-tile",
+     "label": "<step title>",
+     "key": "team-conversation-step-<workId>",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1180,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "_TeamSteps KitToolRow.onOpen -> showWorkSheet(context, team, item.id): the step's Work sheet (owner, age, what it waits on, why). Not listed when the task's one step is the task itself.",
+     "gates": [
+      "work.isNotEmpty and not a sole step equal to the task"
      ],
      "destructive": false
     },
@@ -26042,98 +26271,6 @@
    "sheetKey": "team-conversation-stop-confirm"
   },
   {
-   "id": "team-agent-output",
-   "title": "Live output",
-   "kind": "screen",
-   "area": "team",
-   "file": "lib/ui/screens/team/agent_output_screen.dart",
-   "widget": "AgentOutputScreen",
-   "presentedBy": [],
-   "line": 23,
-   "purpose": "Live tail of an agent's terminal output with follow, copy and jump-to-latest.",
-   "reachedFrom": [
-    {
-     "page": "team-agent",
-     "element": "team-agent-open-output"
-    },
-    {
-     "page": "team-run-overview-tab",
-     "element": "team-run-overview-cycle-open-output"
-    },
-    {
-     "page": "embedded-team-cycle-strip",
-     "element": "embedded-team-cycle-strip-open-output"
-    },
-    {
-     "page": "gate-sheet",
-     "element": "gate-sheet-run-logs"
-    },
-    {
-     "page": "embedded-team-planning-card",
-     "element": "embedded-team-planning-card-output"
-    }
-   ],
-   "gates": [
-    "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-   ],
-   "elements": [
-    {
-     "id": "team-agent-output-copy",
-     "type": "icon-button",
-     "label": "Copy output",
-     "key": "team-agent-output-copy",
-     "file": "lib/ui/screens/team/agent_output_screen.dart",
-     "line": 145,
-     "action": "copy",
-     "target": null,
-     "effect": "Clipboard.setData(tail.text) + 'Copied' snackbar; disabled while the text is empty.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-agent-output-follow",
-     "type": "toggle",
-     "label": "Follow",
-     "key": "team-agent-output-follow",
-     "file": "lib/ui/screens/team/agent_output_screen.dart",
-     "line": 200,
-     "action": "other",
-     "target": null,
-     "effect": "_setFollow(value): view state; when on, jumps to the end after each frame. Disabled unless `!tail.ended && tail.available`.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-agent-output-scroll",
-     "type": "gesture",
-     "label": "[drag the output away from the end]",
-     "key": "team-agent-output-list",
-     "file": "lib/ui/screens/team/agent_output_screen.dart",
-     "line": 211,
-     "action": "other",
-     "target": null,
-     "effect": "_onScroll: a user drag more than 24px above maxScrollExtent sets _follow = false.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-agent-output-jump",
-     "type": "button",
-     "label": "Jump to latest",
-     "key": "team-agent-output-jump",
-     "file": "lib/ui/screens/team/agent_output_screen.dart",
-     "line": 250,
-     "action": "other",
-     "target": null,
-     "effect": "_setFollow(true): resumes following and jumps to the end.",
-     "gates": [
-      "!_follow && canFollow (`!tail.ended && tail.available`)"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "team-agent",
    "title": "<agent name> (Agent · session {id})",
    "kind": "screen",
@@ -26142,19 +26279,23 @@
    "widget": "AgentScreen",
    "presentedBy": [],
    "line": 54,
-   "purpose": "Agent detail: state header, identity, runtime, current work, activity step log, live output entry, capability-gated controls and technical details.",
+   "purpose": "Agent detail, a short status page (slice-P3.6): state from its session, what it works on, the newest step, capability-gated controls in the overflow and technical details. Its one pinned action, Open conversation, opens the worker's conversation in watching mode (chat), or the same watching page drawn from the team's live output (chat-watching-live) when the connected server cannot read the session; messaging the worker happens in that conversation's composer.",
    "reachedFrom": [
     {
-     "page": "team-run-agents-tab",
-     "element": "team-run-agents-row"
+     "page": "team-task-details",
+     "element": "team-task-details-agent"
     },
     {
      "page": "activity",
      "element": "activity-team-agent-blocked-row"
     },
     {
-     "page": "team-agents",
-     "element": "team-agents-row"
+     "page": "chat",
+     "element": "chat-watching-details"
+    },
+    {
+     "page": "chat-watching-live",
+     "element": "chat-watching-live-details"
     },
     {
      "page": "gate-sheet",
@@ -26210,18 +26351,18 @@
      "destructive": false
     },
     {
-     "id": "team-agent-control-message",
+     "id": "team-agent-open-conversation",
      "type": "button",
-     "label": "Message",
-     "key": "team-agent-control-message",
+     "label": "Open conversation",
+     "key": "team-agent-open-conversation",
      "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 766,
-     "action": "open-sheet",
-     "target": "team-agent-message-sheet",
-     "targetWidget": "_MessageSheet",
-     "effect": "_message(): opens _MessageSheet; on a non-empty result controller.messageAgent(agent.id, text). Disabled while _busy.",
+     "line": 454,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversation",
+     "effect": "_openConversation(agent): openTeamAgentConversation(context, agent, team, lookup: _lookup, details: false) pushes ChatScreen(sessionID, watch: teamAgentWatch(...)) in watching mode, or TeamWatchLiveScreen (chat-watching-live) with a note saying why when the agent's session is not on the connected server. details: false, so the watching page offers no way back to this page (Back returns here).",
      "gates": [
-      "controller.capabilities.controlMessage"
+      "the agent is listed and the team screen state is ready"
      ],
      "destructive": false
     },
@@ -26306,22 +26447,6 @@
      "destructive": true
     },
     {
-     "id": "team-agent-control-reassign",
-     "type": "button",
-     "label": "Reassign work…",
-     "key": "team-agent-control-reassign",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 810,
-     "action": "open-sheet",
-     "target": "team-agent-reassign-sheet",
-     "targetWidget": "_ReassignSheet",
-     "effect": "_reassign(): opens _ReassignSheet with the host's ready items; on a pick controller.assignWork(workId, agentId: agent.id).",
-     "gates": [
-      "controller.capabilities.controlAssign"
-     ],
-     "destructive": false
-    },
-    {
      "id": "team-agent-step-group",
      "type": "list-tile",
      "label": "Tools · <step summary>",
@@ -26333,22 +26458,6 @@
      "effect": "Expands/collapses one tool step group in Activity: setState(_expanded = !_expanded).",
      "gates": [
       "Activity has step groups parsed from the output tail's `[tool: …]` markers"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-agent-open-output",
-     "type": "list-tile",
-     "label": "Live output · <Live|Connecting|Ended|Unavailable>",
-     "key": "team-agent-open-output",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 1435,
-     "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "_openOutput() (line 144): Navigator.push(AgentOutputScreen(controller, agentId)).",
-     "gates": [
-      "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
      ],
      "destructive": false
     },
@@ -26570,99 +26679,6 @@
     }
    ],
    "sheetKey": "team-agent-restart-confirm"
-  },
-  {
-   "id": "team-agent-message-sheet",
-   "title": "Message {agent}",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/screens/team/agent_screen.dart",
-   "widget": "_MessageSheet",
-   "presentedBy": [
-    "_message"
-   ],
-   "line": 843,
-   "purpose": "Composer sheet for sending words to an agent (no attachments).",
-   "reachedFrom": [
-    {
-     "page": "team-agent",
-     "element": "team-agent-control-message"
-    }
-   ],
-   "gates": [
-    "controller.capabilities.controlMessage"
-   ],
-   "elements": [
-    {
-     "id": "team-agent-message-sheet-field",
-     "type": "text-field",
-     "label": "Tell the agent what to do next",
-     "key": "team-agent-message-field",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 239,
-     "action": "other",
-     "target": null,
-     "effect": "TeamComposerField TextField (autofocus, multi-line) bound to _text.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_controls.dart"
-    },
-    {
-     "id": "team-agent-message-sheet-send",
-     "type": "icon-button",
-     "label": "Send",
-     "key": "team-agent-message-send",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 261,
-     "action": "submit",
-     "target": null,
-     "effect": "_send() (agent_screen.dart:861): pops the sheet with the trimmed text; _ControlsState._message then calls controller.messageAgent(agent.id, text). Disabled while the text is empty.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_controls.dart"
-    }
-   ],
-   "sheetKey": "team-agent-message-sheet"
-  },
-  {
-   "id": "team-agent-reassign-sheet",
-   "title": "Reassign work to {agent}",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/screens/team/agent_screen.dart",
-   "widget": "_ReassignSheet",
-   "presentedBy": [
-    "_reassign"
-   ],
-   "line": 899,
-   "purpose": "Picker of the host's ready work items to assign to this agent.",
-   "reachedFrom": [
-    {
-     "page": "team-agent",
-     "element": "team-agent-control-reassign"
-    }
-   ],
-   "gates": [
-    "controller.capabilities.controlAssign"
-   ],
-   "elements": [
-    {
-     "id": "team-agent-reassign-sheet-item",
-     "type": "list-tile",
-     "label": "<work title> · Work · bead {id}",
-     "key": "team-agent-reassign-<item.id>",
-     "file": "lib/ui/screens/team/agent_screen.dart",
-     "line": 953,
-     "action": "mutate",
-     "target": null,
-     "effect": "Navigator.pop(item.id); _ControlsState._reassign then calls controller.assignWork(workId, agentId: agent.id).",
-     "gates": [
-      "ready.isNotEmpty (snapshot.work with state == WorkState.ready, excluding the agent's current item); else an empty line"
-     ],
-     "destructive": false
-    }
-   ],
-   "sheetKey": "team-agent-reassign-sheet"
   },
   {
    "id": "team-agent-details-sheet",
@@ -26942,14 +26958,14 @@
     {
      "id": "gate-sheet-run-logs",
      "type": "button",
-     "label": "View logs",
+     "label": "Watch the agent",
      "key": "team-gate-run-logs",
      "file": "lib/ui/screens/team/gate_sheet.dart",
      "line": 782,
      "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "widget.onOpenLogs(agentId): showGateSheet pops the sheet and pushes AgentOutputScreen(controller, agentId).",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversationById",
+     "effect": "widget.onOpenLogs(agentId): showGateSheet pops the sheet and calls openTeamAgentConversationById(context, controller, agentId): the agent's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live).",
      "gates": [
       "gate.kind == GateKind.runFailed",
       "onOpenLogs != null && agentId != null && caps.agentOutput",
@@ -27113,17 +27129,8 @@
    "purpose": "Merge block at the end of the run Overview: readiness lines, file counts, Review changes / Approve request / two-step Merge, and the receipts.",
    "reachedFrom": [
     {
-     "page": "team-run-overview-tab",
-     "element": "team-run-overview-merge-section"
-    },
-    {
      "page": "team-conversation",
      "element": "team-conversation-merge-section"
-    },
-    {
-     "page": "team-run",
-     "element": null,
-     "via": "embedded"
     }
    ],
    "gates": [
@@ -27134,9 +27141,7 @@
    "embeddedIn": [
     "RunScreen"
    ],
-   "hostPages": [
-    "team-run"
-   ],
+   "hostPages": [],
    "elements": [
     {
      "id": "embedded-team-merge-section-review",
@@ -27325,571 +27330,6 @@
    ]
   },
   {
-   "id": "team-run",
-   "title": "<run title> (Run · convoy | Run · formula)",
-   "kind": "screen",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "RunScreen",
-   "presentedBy": [],
-   "line": 86,
-   "purpose": "Run detail with Overview / Work / Agents / Timeline tabs, run technical details and the cancel/close control.",
-   "reachedFrom": [
-    {
-     "page": "team-conversation",
-     "element": "team-conversation-menu-details"
-    }
-   ],
-   "gates": [
-    "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-   ],
-   "elements": [
-    {
-     "id": "team-run-refresh",
-     "type": "icon-button",
-     "label": "Refresh",
-     "key": "team-run-refresh",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 294,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh(); disabled while _refreshing.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-run-details",
-     "type": "icon-button",
-     "label": "Details",
-     "key": "team-run-details",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 301,
-     "action": "open-sheet",
-     "target": "team-run-details-sheet",
-     "targetWidget": "_RunDetailsSheet",
-     "effect": "_openDetails(run): showModalBottomSheet(_RunDetailsSheet) (line 248).",
-     "gates": [
-      "run != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-more",
-     "type": "icon-button",
-     "label": "More actions",
-     "key": "team-run-more",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 310,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu (PopupMenuButton) holding the single cancel entry.",
-     "gates": [
-      "run != null && widget.controller.capabilities.controlCancelRun && _open(run) (state not completed/cancelled/failed)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-cancel",
-     "type": "menu-item",
-     "label": "Cancel run (formula) / Close batch (run.kind == RunKind.batch)",
-     "key": "team-run-cancel",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 316,
-     "action": "open-sheet",
-     "target": "team-run-cancel-confirm-sheet",
-     "targetWidget": "confirmTeamControl",
-     "effect": "onSelected -> _cancelRun(run): confirmTeamControl(...) two-step confirmation; on confirm controller.cancelRun(run.id).",
-     "gates": [
-      "run != null && widget.controller.capabilities.controlCancelRun && _open(run)"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "team-run-tabs",
-     "type": "tab",
-     "label": "Overview | Work | Agents | Timeline",
-     "key": "team-run-tabs (tabs: team-run-tab-<overview|work|agents|timeline>)",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 463,
-     "action": "other",
-     "target": null,
-     "effect": "TabBar on _tabs (TabController); swaps the TabBarView body.",
-     "gates": [
-      "run != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-missing-back",
-     "type": "button",
-     "label": "Back",
-     "key": null,
-     "file": "lib/ui/widgets/product_states.dart",
-     "line": 188,
-     "action": "dismiss",
-     "target": null,
-     "effect": "ProductEmptyState action (run_screen.dart:378): Navigator.of(context).maybePop().",
-     "gates": [
-      "run == null while the controller is ready (host no longer lists the run)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-error-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/widgets/product_states.dart",
-     "line": 240,
-     "action": "mutate",
-     "target": null,
-     "effect": "ProductErrorState.onRetry -> _refresh(): controller.retry() when phase == failed, else controller.refresh().",
-     "gates": [
-      "shown when `controller.phase == OrchestrationPhase.failed || (controller.phase == OrchestrationPhase.ready && !snapshot.hasData && controller.lastError != null)`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-error-report-bug",
-     "type": "button",
-     "label": "Report a bug",
-     "key": "product-error-report-bug",
-     "file": "lib/ui/widgets/product_states.dart",
-     "line": 248,
-     "action": "other",
-     "target": null,
-     "targetWidget": "openBugReport",
-     "effect": "ProductErrorState's shared affordance: openBugReport(context) (owned by product_states.dart / a-shell).",
-     "gates": [
-      "shown when `controller.phase == OrchestrationPhase.failed || (controller.phase == OrchestrationPhase.ready && !snapshot.hasData && controller.lastError != null)`"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-run-cancel-confirm-sheet",
-   "title": "Cancel this run? / Close this batch?",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_cancelRun",
-   "presentedBy": [
-    "confirmTeamControl",
-    "showConfirmSheet"
-   ],
-   "line": 215,
-   "purpose": "Two-step confirmation before cancelling a formula run or closing a batch.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-cancel"
-    }
-   ],
-   "gates": [
-    "controller.capabilities.controlCancelRun && _open(run)"
-   ],
-   "elements": [
-    {
-     "id": "team-run-cancel-confirm-sheet-confirm",
-     "type": "button",
-     "label": "Cancel run / Close batch",
-     "key": "team-run-cancel-confirm-action",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 68,
-     "action": "mutate",
-     "target": null,
-     "effect": "Pops true; _cancelRun then calls controller.cancelRun(run.id) (run_screen.dart:230).",
-     "gates": [],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
-    },
-    {
-     "id": "team-run-cancel-confirm-sheet-keep",
-     "type": "button",
-     "label": "Keep going",
-     "key": null,
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 85,
-     "action": "dismiss",
-     "target": null,
-     "effect": "Navigator.pop(context, false); nothing is sent.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
-    }
-   ],
-   "sheetKey": "team-run-cancel-confirm"
-  },
-  {
-   "id": "team-run-agents-tab",
-   "title": "Agents",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_AgentsTab",
-   "presentedBy": [],
-   "line": 524,
-   "purpose": "Fleet rows scoped to the agents working on this run's items.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-tabs"
-    }
-   ],
-   "gates": [
-    "TeamRunTab.agents",
-    "run != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-   ],
-   "elements": [
-    {
-     "id": "team-run-agents-row",
-     "type": "list-tile",
-     "label": "<agent name> · <role> · <provider / model> · <state word>",
-     "key": "team-run-agent-<agent.id>",
-     "file": "lib/ui/widgets/team_agent_row.dart",
-     "line": 113,
-     "action": "navigate",
-     "target": "team-agent",
-     "targetWidget": "AgentScreen",
-     "effect": "TeamAgentRow.onTap -> Navigator.push(MaterialPageRoute(AgentScreen(controller, agentId: agent.id, now: clock))) (run_screen.dart:566).",
-     "gates": [
-      "teamAgentsOnRun(snapshot, runId).isNotEmpty (else the empty state)"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-run-overview-tab",
-   "title": "Overview",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_Overview",
-   "presentedBy": [],
-   "line": 673,
-   "purpose": "Run overview: objective/state, cancel receipt, read-only policy, progress, blocked causes, the needs-you card, stages or the dispatch cycle strip, and the merge section.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-tabs"
-    }
-   ],
-   "gates": [
-    "TeamRunTab.overview (default tab)",
-    "run != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-   ],
-   "elements": [
-    {
-     "id": "team-run-overview-pull",
-     "type": "gesture",
-     "label": "[pull to refresh]",
-     "key": "team-run-pull",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 390,
-     "action": "mutate",
-     "target": null,
-     "effect": "RefreshIndicator.onRefresh -> _refresh() (controller.retry()/refresh()); only the Overview tab has it.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-cycle-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "team-cycle-action-refresh",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 713,
-     "action": "mutate",
-     "target": null,
-     "effect": "TeamCycleStrip._refresh -> controller.refresh(); disabled while busy. Primary for hostNotStarted and mergeWaiting-without-control, secondary for agentCannotStart.",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "`cycle.stalled && cycle.stallReason` in {hostNotStarted, agentCannotStart, mergeWaiting when !(canControl && refinery != null)}"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
-    },
-    {
-     "id": "team-run-overview-cycle-how",
-     "type": "button",
-     "label": "How the host dispatches",
-     "key": "team-cycle-action-how",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 719,
-     "action": "open-sheet",
-     "target": "team-cycle-how-sheet",
-     "targetWidget": "showTeamCycleHowSheet",
-     "effect": "onHow -> showTeamCycleHowSheet(context).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "cycle.stalled && stallReason in {DispatchStall.hostNotStarted, DispatchStall.agentCannotStart}"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
-    },
-    {
-     "id": "team-run-overview-cycle-open-output",
-     "type": "button",
-     "label": "Open agent output",
-     "key": "team-cycle-action-output",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 725,
-     "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "onOpenOutput(agent) -> _openOutput (line 237): Navigator.push(AgentOutputScreen(controller, agentId)); disabled when controller.cycleAgentFor(workId) == null.",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "cycle.stalled && stallReason in {DispatchStall.providerLimit, DispatchStall.workingLong}"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
-    },
-    {
-     "id": "team-run-overview-cycle-stop",
-     "type": "button",
-     "label": "Stop",
-     "key": "team-cycle-action-stop",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 744,
-     "action": "open-sheet",
-     "target": "team-cycle-stop-confirm-sheet",
-     "targetWidget": "confirmTeamControl",
-     "effect": "onStop(agent) -> _stop (line 247): confirmTeamControl(...); on confirm controller.controlAgent(agentId, AgentControlAction.stop).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "stallReason == DispatchStall.providerLimit && controller.capabilities.controlAgent && !_busy && agent != null"
-     ],
-     "destructive": true,
-     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
-    },
-    {
-     "id": "team-run-overview-cycle-nudge-refinery",
-     "type": "button",
-     "label": "Nudge refinery",
-     "key": "team-cycle-action-nudge",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 756,
-     "action": "mutate",
-     "target": null,
-     "effect": "onNudge(refinery) -> _nudge (line 263): controller.controlAgent(refineryId, AgentControlAction.nudge).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "stallReason == DispatchStall.mergeWaiting && controller.capabilities.controlAgent && !_busy && controller.cycleRefineryFor(workId) != null"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
-    },
-    {
-     "id": "team-run-overview-merge-section",
-     "type": "card",
-     "label": "[Merge section]",
-     "key": null,
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 822,
-     "action": "other",
-     "target": "embedded-team-merge-section",
-     "targetWidget": "TeamMergeSection",
-     "effect": "TeamMergeSection(controller, run) (merge_section.dart, owned by i2); renders empty until every work item is done or review-ready and the host has merge roles.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/screens/team/merge_section.dart"
-    },
-    {
-     "id": "team-run-overview-open-conversation",
-     "type": "list-tile",
-     "label": "Open conversation",
-     "key": "team-run-open-conversation",
-     "file": "lib/ui/screens/team_conversation/team_conversation.dart",
-     "line": 111,
-     "action": "navigate",
-     "target": "team-conversation",
-     "targetWidget": "TeamConversation.open",
-     "effect": "TeamTaskConversationRow (run_screen.dart:758) -> TeamConversation.open(context, team, runId: run.id): pushes the task's own conversation; the task's workers are one tap further, each in watching mode.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-receipt-retry",
-     "type": "button",
-     "label": "Retry",
-     "key": "team-receipt-retry (inside team-run-receipt)",
-     "file": "lib/ui/widgets/team_controls.dart",
-     "line": 129,
-     "action": "mutate",
-     "target": null,
-     "effect": "TeamReceiptChip (team_controls.dart) onRetry -> _retryCancel(record): controller.retryMutation(record.key).",
-     "gates": [
-      "`_cancelReceipt != null` (controller.latestMutation(kind: MutationKind.cancelRun, targetId: runId))",
-      "`retry != null && record.canRetry`"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-run-work-tab",
-   "title": "Work",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_WorkTab",
-   "presentedBy": [],
-   "line": 1328,
-   "purpose": "The run's work items as a state-grouped list or a dependency graph; an item opens the Work sheet.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-tabs"
-    }
-   ],
-   "gates": [
-    "TeamRunTab.work",
-    "run != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-   ],
-   "elements": [
-    {
-     "id": "team-run-work-view",
-     "type": "tab",
-     "label": "List | Graph",
-     "key": "team-run-work-view",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 1356,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "SegmentedButton.onSelectionChanged -> _chooseWorkView(view): setState + controller.rememberWorkView(runId, view.name) (persisted per run; default Graph when width >= 600, else List).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-run-work-graph-node",
-     "type": "gesture",
-     "label": "[work graph node]",
-     "key": "team-run-work-graph",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 1413,
-     "action": "open-sheet",
-     "target": "work-sheet",
-     "targetWidget": "showWorkSheet",
-     "effect": "WorkGraph.onNodeTap -> onOpen(id) -> showWorkSheet(...); the graph's own gestures are owned by work_graph.dart (i2).",
-     "gates": [
-      "view == TeamWorkView.graph && items.isNotEmpty"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/screens/team/work_graph.dart"
-    },
-    {
-     "id": "team-run-work-row",
-     "type": "list-tile",
-     "label": "<work item title> · Waits on {count} items · <age> · [owner initial]",
-     "key": "team-run-work-row-<item.id>",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 1591,
-     "action": "open-sheet",
-     "target": "work-sheet",
-     "targetWidget": "showWorkSheet",
-     "effect": "_WorkRow.onTap -> onOpen(item.id) -> _openWork (line 143): showWorkSheet(context, controller, workId, now).",
-     "gates": [
-      "view == TeamWorkView.list && items.isNotEmpty"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-run-timeline-tab",
-   "title": "Timeline",
-   "kind": "tab",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_Timeline",
-   "presentedBy": [],
-   "line": 1870,
-   "purpose": "The controller's events scoped to this run, newest first, with category chips and a jump pill while the list is held.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-tabs"
-    }
-   ],
-   "gates": [
-    "TeamRunTab.timeline",
-    "run != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-   ],
-   "elements": [
-    {
-     "id": "team-run-timeline-filter-chips",
-     "type": "chip",
-     "label": "All | Work | Agents | Decisions",
-     "key": "team-run-timeline-filter-<all|work|agents|decisions>",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 1924,
-     "action": "other",
-     "target": null,
-     "effect": "ChoiceChip.onSelected -> onFilter(f) -> setState(_filter = f); local filter.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-run-timeline-jump",
-     "type": "button",
-     "label": "{count} new · Jump to latest",
-     "key": "team-run-timeline-jump",
-     "file": "lib/ui/screens/team/run_screen.dart",
-     "line": 2055,
-     "action": "other",
-     "target": null,
-     "effect": "_jumpToLatest() (line 165): releases the held event list (_held = null) and animates the scroll to 0.",
-     "gates": [
-      "arrived > 0 (list scrolled past 24px and new events arrived)"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "team-run-details-sheet",
-   "title": "Technical details",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/screens/team/run_screen.dart",
-   "widget": "_RunDetailsSheet",
-   "presentedBy": [
-    "_openDetails"
-   ],
-   "line": 2094,
-   "purpose": "Run technical details: term pair, state/started/updated and every raw provider field with a copy button.",
-   "reachedFrom": [
-    {
-     "page": "team-run",
-     "element": "team-run-details"
-    }
-   ],
-   "gates": [
-    "run != null"
-   ],
-   "elements": [
-    {
-     "id": "team-run-details-sheet-copy-value",
-     "type": "icon-button",
-     "label": "Copy",
-     "key": null,
-     "file": "lib/ui/widgets/team_technical_details.dart",
-     "line": 229,
-     "action": "copy",
-     "target": null,
-     "effect": "TeamTechnicalValue: Clipboard.setData(value) then a 'Copied' snackbar; one per raw field (id, kind, raw state, raw title, formula, project, last error, tracked work, scalars).",
-     "gates": [
-      "value.isNotEmpty"
-     ],
-     "destructive": false
-    }
-   ],
-   "sheetKey": "team-run-details-sheet"
-  },
-  {
    "id": "start-run-sheet",
    "title": "Start a run",
    "kind": "sheet",
@@ -27903,8 +27343,16 @@
    "purpose": "Composes an objective (project, supervision level) and sends it to the planner (Mayor) agent; shows a planner-missing/off notice instead of the form when no planner can take it.",
    "reachedFrom": [
     {
+     "page": "team-board",
+     "element": "team-board-add"
+    },
+    {
      "page": "team-home",
      "element": "team-home-start-run"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-empty-add"
     }
    ],
    "gates": [],
@@ -27940,6 +27388,22 @@
      "gates": [
       "controller.snapshot.projects.isNotEmpty",
       "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "start-run-sheet-backlog",
+     "type": "button",
+     "label": "Keep in backlog",
+     "key": "team-start-run-backlog",
+     "file": "lib/ui/screens/team/start_run_sheet.dart",
+     "line": 250,
+     "action": "submit",
+     "target": null,
+     "effect": "_keepInBacklog(): controller.createWork(title, details, projectId) — the task is made and given to no one; the sheet closes with StartRunResult(backlog: true) and the board selects its Backlog. Offered when opened from the board and the host creates work.",
+     "gates": [
+      "offerBacklog",
+      "capabilities.controlCreateWork"
      ],
      "destructive": false
     },
@@ -28027,14 +27491,14 @@
     {
      "id": "embedded-team-planning-card-output",
      "type": "button",
-     "label": "Planner output",
+     "label": "Watch the planner",
      "key": "team-planning-output",
      "file": "lib/ui/screens/team/start_run_sheet.dart",
      "line": 567,
      "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "_openPlannerOutput: Navigator.push(MaterialPageRoute(AgentOutputScreen(controller, agentId: request.plannerId))) (line 476).",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversationById",
+     "effect": "_openPlannerOutput: openTeamAgentConversationById(context, controller, request.plannerId): the planner's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live).",
      "gates": [],
      "destructive": false
     },
@@ -28055,6 +27519,75 @@
    ]
   },
   {
+   "id": "team-task-details",
+   "title": "Task details",
+   "kind": "sheet",
+   "area": "team",
+   "file": "lib/ui/screens/team/task_details_sheet.dart",
+   "widget": "TeamTaskDetails",
+   "presentedBy": [
+    "showTeamTaskDetails"
+   ],
+   "line": 45,
+   "purpose": "Task details (P3.5, replaces team-run and its four tabs): the task's state word, steps done and elapsed time, the four-stage line, the steps as a dependency graph in rows (each opens its Work sheet), the agents on the task (each opens its page), the step counts, today's team usage and the host's policy, then one Technical details fold with the raw values and what the host reported (the event log).",
+   "reachedFrom": [
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-menu-details"
+    }
+   ],
+   "gates": [
+    "run != null"
+   ],
+   "elements": [
+    {
+     "id": "team-task-details-technical",
+     "type": "toggle",
+     "label": "Technical details",
+     "key": "team-task-details-technical",
+     "file": "lib/ui/kit/kit_details_fold.dart",
+     "line": 1,
+     "action": "other",
+     "target": null,
+     "effect": "KitDetailsFold: unfolds the raw values (each copyable, redacted) and what the host reported.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-task-details-step",
+     "type": "list-tile",
+     "label": "<step title>",
+     "key": "team-task-details-step-<workId>",
+     "file": "lib/ui/kit/kit_work_graph.dart",
+     "line": 660,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "KitWorkGraph(rows).onOpen -> showWorkSheet(context, controller, id).",
+     "gates": [
+      "the task tracks work"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-task-details-agent",
+     "type": "list-tile",
+     "label": "<agent name>",
+     "key": "team-task-details-agent-<agentId>",
+     "file": "lib/ui/widgets/team_agent_row.dart",
+     "line": 60,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "TeamAgentRow.onTap: pushes AgentScreen (nudge, restart, stop live there).",
+     "gates": [
+      "agents on the task"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "team-agents",
    "title": "Agents",
    "kind": "screen",
@@ -28063,7 +27596,7 @@
    "widget": "TeamAgentsScreen",
    "presentedBy": [],
    "line": 26,
-   "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens AgentScreen.",
+   "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens the agent's conversation in watching mode (slice-P3.6); the agent's own page is that conversation's top-bar action (About <name>).",
    "reachedFrom": [
     {
      "page": "team-home",
@@ -28142,9 +27675,9 @@
      "file": "lib/ui/widgets/team_agent_row.dart",
      "line": 113,
      "action": "navigate",
-     "target": "team-agent",
-     "targetWidget": "AgentScreen",
-     "effect": "TeamAgentRow.onTap -> row()'s onTap -> _openAgent(agent): widget.onOpenAgent ?? Navigator.push(AgentScreen(controller, agentId: agent.id, now: widget.now)) (team_agents_screen.dart:68-80, 151).",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversation",
+     "effect": "_openAgent(agent): widget.onOpenAgent when given, else openTeamAgentConversation(context, agent, team: controller): ChatScreen in watching mode, or TeamWatchLiveScreen (chat-watching-live) when the session cannot be read.",
      "gates": [],
      "destructive": false
     }
@@ -28251,14 +27784,14 @@
     {
      "id": "team-board-add",
      "type": "icon-button",
-     "label": "Add to backlog",
+     "label": "Give the team a task",
      "key": "team-board-add",
      "file": "lib/ui/screens/team/team_board_screen.dart",
      "line": 404,
      "action": "open-sheet",
-     "target": "team-board-add-sheet",
-     "targetWidget": "showTeamBoardAddSheet",
-     "effect": "_add(): showTeamBoardAddSheet(context); on a non-empty answer calls edits.addToBacklog(title, projectId) and selects the Backlog column.",
+     "target": "start-run-sheet",
+     "targetWidget": "TeamConversation.start",
+     "effect": "_add(): TeamConversation.start(offerBacklog: true, projectId: the board's project) opens the one 'Give the team a task' sheet (P3.5: the board's own add sheet is gone). Start now opens the task's conversation; Keep in backlog makes the task, given to no one, and selects the Backlog column.",
      "gates": [
       "canAdd (ready && edits.canCreate && board != null && !board.isEmpty)"
      ],
@@ -28282,14 +27815,14 @@
     {
      "id": "team-board-empty-add",
      "type": "button",
-     "label": "Add to backlog",
+     "label": "Give the team a task",
      "key": "team-board-empty-add",
      "file": "lib/ui/screens/team/team_board_screen.dart",
      "line": 533,
      "action": "open-sheet",
-     "target": "team-board-add-sheet",
-     "targetWidget": "showTeamBoardAddSheet",
-     "effect": "_add(): showTeamBoardAddSheet(context); same as team-board-add, offered once in the empty state instead of the app bar (design standard §6).",
+     "target": "start-run-sheet",
+     "targetWidget": "TeamConversation.start",
+     "effect": "_add(): TeamConversation.start(offerBacklog: true, projectId: the board's project) opens the one 'Give the team a task' sheet (P3.5: the board's own add sheet is gone). Start now opens the task's conversation; Keep in backlog makes the task, given to no one, and selects the Backlog column.",
      "gates": [
       "board != null && board.isEmpty && edits.canCreate"
      ],
@@ -28812,27 +28345,14 @@
    "presentedBy": [],
    "line": 351,
    "purpose": "Pan/zoom dependency graph of a run's work items in the run Work tab (graph view).",
-   "reachedFrom": [
-    {
-     "page": "team-run-work-tab",
-     "element": null,
-     "evidence": "lib/ui/screens/team/run_screen.dart:1413"
-    },
-    {
-     "page": "team-run",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
+   "reachedFrom": [],
    "gates": [
     "run Work tab with TeamWorkView.graph selected"
    ],
    "embeddedIn": [
     "RunScreen"
    ],
-   "hostPages": [
-    "team-run"
-   ],
+   "hostPages": [],
    "elements": [
     {
      "id": "embedded-work-graph-viewer",
@@ -28908,17 +28428,12 @@
      "element": "embedded-work-graph-node"
     },
     {
-     "page": "team-run",
-     "element": null,
-     "evidence": "lib/ui/screens/team/run_screen.dart:144"
+     "page": "team-task-details",
+     "element": "team-task-details-step"
     },
     {
-     "page": "team-run-work-tab",
-     "element": "team-run-work-row"
-    },
-    {
-     "page": "team-run-work-tab",
-     "element": "team-run-work-graph-node"
+     "page": "team-conversation",
+     "element": "team-conversation-step"
     },
     {
      "page": "work-sheet",
@@ -29153,7 +28668,7 @@
      "label": "<priority>",
      "key": "team-board-priority-<priority>",
      "file": "lib/ui/widgets/team_board_move_sheet.dart",
-     "line": 236,
+     "line": 194,
      "action": "mutate",
      "target": null,
      "effect": "KitRow onTap: pops the tapped priority (null when tapping the current one); the board's _move() then calls edits.run(TeamBoardMove.priority, card, priority: priority).",
@@ -29173,7 +28688,7 @@
     "confirmTeamBoardCancel",
     "showConfirmSheet"
    ],
-   "line": 248,
+   "line": 206,
    "purpose": "Confirms before cancelling a backlog/ready task (§2: destructive, confirmed).",
    "reachedFrom": [
     {
@@ -29215,58 +28730,6 @@
    "sheetKey": "team-board-cancel-confirm"
   },
   {
-   "id": "team-board-add-sheet",
-   "title": "Add to backlog",
-   "kind": "sheet",
-   "area": "team",
-   "file": "lib/ui/widgets/team_board_move_sheet.dart",
-   "widget": "_AddSheet",
-   "presentedBy": [
-    "showTeamBoardAddSheet"
-   ],
-   "line": 273,
-   "purpose": "\"Add to backlog\": one field, the task's own words.",
-   "reachedFrom": [
-    {
-     "page": "team-board",
-     "element": "team-board-add"
-    },
-    {
-     "page": "team-board",
-     "element": "team-board-empty-add"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "team-board-add-sheet-field",
-     "type": "text-field",
-     "label": "What should the team do?",
-     "key": "team-board-add-field",
-     "file": "lib/ui/widgets/team_board_move_sheet.dart",
-     "line": 319,
-     "action": "submit",
-     "target": null,
-     "effect": "TextField.onSubmitted -> _submit(): pops the trimmed text (Navigator.pop) when non-empty.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-board-add-sheet-submit",
-     "type": "button",
-     "label": "Add to backlog",
-     "key": "team-board-add-submit",
-     "file": "lib/ui/widgets/team_board_move_sheet.dart",
-     "line": 338,
-     "action": "submit",
-     "target": null,
-     "effect": "KitButton.onPressed -> _submit(): pops the trimmed text; disabled while the field is empty.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "team-cycle-how-sheet",
    "title": "How the host dispatches",
    "kind": "sheet",
@@ -29279,10 +28742,6 @@
    "line": 82,
    "purpose": "Three-line explanation of the host's polling/dispatch chain.",
    "reachedFrom": [
-    {
-     "page": "team-run-overview-tab",
-     "element": "team-run-overview-cycle-how"
-    },
     {
      "page": "embedded-team-cycle-strip",
      "element": "embedded-team-cycle-strip-how"
@@ -29371,14 +28830,14 @@
     {
      "id": "embedded-team-cycle-strip-open-output",
      "type": "button",
-     "label": "Open agent output",
+     "label": "Watch the agent",
      "key": "team-cycle-action-output",
      "file": "lib/ui/widgets/team_cycle_strip.dart",
      "line": 725,
      "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "_openOutput(agentId): Navigator.push(AgentOutputScreen); disabled when controller.cycleAgentFor(workId) == null.",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversationById",
+     "effect": "_openOutput(agentId): openTeamAgentConversationById(context, controller, agentId): the agent's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live); disabled when controller.cycleAgentFor(workId) == null.",
      "gates": [
       "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
       "stallReason in {providerLimit, workingLong}"
@@ -29435,10 +28894,6 @@
    "line": 249,
    "purpose": "Two-step confirmation before stopping the agent a provider-limit stall points at.",
    "reachedFrom": [
-    {
-     "page": "team-run-overview-tab",
-     "element": "team-run-overview-cycle-stop"
-    },
     {
      "page": "embedded-team-cycle-strip",
      "element": "embedded-team-cycle-strip-stop"
@@ -30553,11 +30008,6 @@
      "page": "team-agent",
      "element": null,
      "via": "embedded"
-    },
-    {
-     "page": "team-run",
-     "element": null,
-     "via": "embedded"
     }
    ],
    "gates": [],
@@ -30566,8 +30016,7 @@
     "RunScreen"
    ],
    "hostPages": [
-    "team-agent",
-    "team-run"
+    "team-agent"
    ],
    "elements": [
     {
@@ -30750,6 +30199,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-debug"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-no-progress-report"
     }
    ],
    "gates": [],
@@ -36456,11 +35909,6 @@
      "via": "embedded"
     },
     {
-     "page": "team-run",
-     "element": null,
-     "via": "embedded"
-    },
-    {
      "page": "terminal",
      "element": null,
      "via": "embedded"
@@ -36508,7 +35956,6 @@
     "skills",
     "team-agent",
     "team-home",
-    "team-run",
     "terminal",
     "tools",
     "voice-notices",
@@ -37156,8 +36603,8 @@
    },
    {
     "from": "chat",
-    "element": "chat-watching-message",
-    "to": "chat-watching-message-sheet"
+    "element": "chat-watching-details",
+    "to": "team-agent"
    },
    {
     "from": "chat",
@@ -37368,6 +36815,11 @@
     "from": "chat",
     "element": "chat-shortcut-background-work",
     "to": "embedded-model-shortcuts"
+   },
+   {
+    "from": "chat-watching-live",
+    "element": "chat-watching-live-details",
+    "to": "team-agent"
    },
    {
     "from": "chat-message-actions-sheet",
@@ -39010,74 +38462,29 @@
     "to": "gate-sheet"
    },
    {
-    "from": "team-run",
-    "element": "team-run-details",
-    "to": "team-run-details-sheet"
-   },
-   {
-    "from": "team-run",
-    "element": "team-run-cancel",
-    "to": "team-run-cancel-confirm-sheet"
-   },
-   {
-    "from": "team-run-overview-tab",
-    "element": "team-run-overview-cycle-how",
-    "to": "team-cycle-how-sheet"
-   },
-   {
-    "from": "team-run-overview-tab",
-    "element": "team-run-overview-cycle-open-output",
-    "to": "team-agent-output"
-   },
-   {
-    "from": "team-run-overview-tab",
-    "element": "team-run-overview-cycle-stop",
-    "to": "team-cycle-stop-confirm-sheet"
-   },
-   {
-    "from": "team-run-overview-tab",
-    "element": "team-run-overview-merge-section",
-    "to": "embedded-team-merge-section"
-   },
-   {
-    "from": "team-run-overview-tab",
-    "element": "team-run-overview-open-conversation",
-    "to": "team-conversation"
-   },
-   {
-    "from": "team-run-work-tab",
-    "element": "team-run-work-row",
+    "from": "team-task-details",
+    "element": "team-task-details-step",
     "to": "work-sheet"
    },
    {
-    "from": "team-run-work-tab",
-    "element": "team-run-work-graph-node",
-    "to": "work-sheet"
-   },
-   {
-    "from": "team-run-agents-tab",
-    "element": "team-run-agents-row",
+    "from": "team-task-details",
+    "element": "team-task-details-agent",
     "to": "team-agent"
    },
    {
     "from": "team-agents",
     "element": "team-agents-row",
-    "to": "team-agent"
+    "to": "chat"
+   },
+   {
+    "from": "team-agent",
+    "element": "team-agent-open-conversation",
+    "to": "chat"
    },
    {
     "from": "team-agent",
     "element": "team-agent-details",
     "to": "team-agent-details-sheet"
-   },
-   {
-    "from": "team-agent",
-    "element": "team-agent-open-output",
-    "to": "team-agent-output"
-   },
-   {
-    "from": "team-agent",
-    "element": "team-agent-control-message",
-    "to": "team-agent-message-sheet"
    },
    {
     "from": "team-agent",
@@ -39090,11 +38497,6 @@
     "to": "team-agent-restart-confirm-sheet"
    },
    {
-    "from": "team-agent",
-    "element": "team-agent-control-reassign",
-    "to": "team-agent-reassign-sheet"
-   },
-   {
     "from": "embedded-team-cycle-strip",
     "element": "embedded-team-cycle-strip-how",
     "to": "team-cycle-how-sheet"
@@ -39102,7 +38504,7 @@
    {
     "from": "embedded-team-cycle-strip",
     "element": "embedded-team-cycle-strip-open-output",
-    "to": "team-agent-output"
+    "to": "chat"
    },
    {
     "from": "embedded-team-cycle-strip",
@@ -39147,12 +38549,12 @@
    {
     "from": "team-board",
     "element": "team-board-add",
-    "to": "team-board-add-sheet"
+    "to": "start-run-sheet"
    },
    {
     "from": "team-board",
     "element": "team-board-empty-add",
-    "to": "team-board-add-sheet"
+    "to": "start-run-sheet"
    },
    {
     "from": "team-board",
@@ -39192,7 +38594,7 @@
    {
     "from": "team-conversation",
     "element": "team-conversation-menu-details",
-    "to": "team-run"
+    "to": "team-task-details"
    },
    {
     "from": "team-conversation",
@@ -39220,6 +38622,16 @@
     "to": "embedded-team-merge-section"
    },
    {
+    "from": "team-conversation",
+    "element": "team-conversation-step",
+    "to": "work-sheet"
+   },
+   {
+    "from": "team-conversation",
+    "element": "team-conversation-no-progress-report",
+    "to": "app-diagnostics"
+   },
+   {
     "from": "gate-sheet",
     "element": "gate-sheet-work-chip",
     "to": "work-sheet"
@@ -39242,7 +38654,7 @@
    {
     "from": "gate-sheet",
     "element": "gate-sheet-run-logs",
-    "to": "team-agent-output"
+    "to": "chat"
    },
    {
     "from": "gate-sheet",
@@ -39297,7 +38709,7 @@
    {
     "from": "embedded-team-planning-card",
     "element": "embedded-team-planning-card-output",
-    "to": "team-agent-output"
+    "to": "chat"
    },
    {
     "from": "team-phone-onboarding-offer",
@@ -39752,6 +39164,42 @@
     "secondary": true
    },
    {
+    "from": "team-agent",
+    "element": "team-agent-open-conversation",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
+    "from": "team-agents",
+    "element": "team-agents-row",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
+    "from": "team-conversation",
+    "element": "team-conversation-family-agent",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
+    "from": "embedded-team-cycle-strip",
+    "element": "embedded-team-cycle-strip-open-output",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
+    "from": "gate-sheet",
+    "element": "gate-sheet-run-logs",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
+    "from": "embedded-team-planning-card",
+    "element": "embedded-team-planning-card-output",
+    "to": "chat-watching-live",
+    "secondary": true
+   },
+   {
     "from": "command-launcher-sheet",
     "element": "command-launcher-sheet-command-row",
     "to": "prompt-editor",
@@ -39827,30 +39275,6 @@
     "from": "settings",
     "element": "settings-ai-team",
     "to": "team-home",
-    "secondary": true
-   },
-   {
-    "from": "team-run",
-    "element": "team-run-tabs",
-    "to": "team-run-overview-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-run",
-    "element": "team-run-tabs",
-    "to": "team-run-work-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-run",
-    "element": "team-run-tabs",
-    "to": "team-run-agents-tab",
-    "secondary": true
-   },
-   {
-    "from": "team-run",
-    "element": "team-run-tabs",
-    "to": "team-run-timeline-tab",
     "secondary": true
    },
    {
@@ -40125,12 +39549,6 @@
    },
    {
     "from": "team-home",
-    "element": null,
-    "to": "embedded-product-states",
-    "via": "embedded"
-   },
-   {
-    "from": "team-run",
     "element": null,
     "to": "embedded-product-states",
     "via": "embedded"
@@ -40642,28 +40060,6 @@
     "via": "embedded"
    },
    {
-    "from": "team-run",
-    "element": null,
-    "to": "embedded-team-merge-section",
-    "via": "embedded"
-   },
-   {
-    "from": "team-run",
-    "element": null,
-    "to": "work-sheet"
-   },
-   {
-    "from": "team-run-work-tab",
-    "element": null,
-    "to": "embedded-work-graph"
-   },
-   {
-    "from": "team-run",
-    "element": null,
-    "to": "embedded-work-graph",
-    "via": "embedded"
-   },
-   {
     "from": "team-home",
     "element": null,
     "to": "embedded-team-planning-card",
@@ -40718,12 +40114,6 @@
    },
    {
     "from": "team-agent",
-    "element": null,
-    "to": "embedded-team-technical-value",
-    "via": "embedded"
-   },
-   {
-    "from": "team-run",
     "element": null,
     "to": "embedded-team-technical-value",
     "via": "embedded"
@@ -40863,7 +40253,7 @@
   },
   {
    "file": "lib/ui/screens/chat/watching.dart",
-   "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its one action (chat-watching-message) and the sheet it opens (chat-watching-message-sheet) are recorded on the chat page. _openWatchedChild (watching.dart:80, a child session delegated to, watched the same way) is wired from chat_screen.dart:7408,7590 (b1/b2, not yet in the ledger).",
+   "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its composer (chat-watching-composer), send, receipt and the About <name> action are recorded on the chat page. _openWatchedChild (a child session delegated to, watched the same way) is wired from chat_screen.dart.",
    "part": "b1-chat-screen"
   },
   {

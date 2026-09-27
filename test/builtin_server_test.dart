@@ -99,6 +99,33 @@ void main() {
       );
     });
 
+    test('cancelled confirmation never reports successful startup', () async {
+      var wanted = true;
+      serverProbe = ({required baseUrl, username, password}) async {
+        wanted = false;
+        return const ServerProbeResult.success('1.18.29');
+      };
+      final failure = await startBuiltinServer(
+        linux: linux,
+        profile: _inApp(),
+        pollInterval: Duration.zero,
+        stillWanted: () => wanted,
+      );
+      expect(failure, isNotNull);
+      expect(linux.started, hasLength(1));
+    });
+
+    test('cancelled owner never starts the server', () async {
+      final failure = await startBuiltinServer(
+        linux: linux,
+        profile: _inApp(),
+        pollInterval: Duration.zero,
+        stillWanted: () => false,
+      );
+      expect(failure, isNotNull);
+      expect(linux.started, isEmpty);
+    });
+
     test('a server that exits is reported as such', () async {
       linux.serverDies = true;
       final failure = await startBuiltinServer(

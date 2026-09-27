@@ -1,0 +1,96 @@
+package io.github.eslamasabry.opencode_mobile
+
+import android.content.Context
+import org.json.JSONObject
+import java.io.File
+import java.lang.reflect.InvocationTargetException
+import java.nio.file.Files
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+
+/** Real production runner and filesystem, only Android services are stubbed. */
+private fun field(runner: SetupRunner, name: String) =
+    SetupRunner::class.java.getDeclaredField(name).apply { isAccessible = true }
+private fun write(runner: SetupRunner) {
+    try {
+        SetupRunner::class.java.getDeclaredMethod("writeNow").apply { isAccessible = true }.invoke(runner)
+    } catch (error: InvocationTargetException) {
+        throw error.targetException
+    }
+}
+private class PausedFile(path: String) : File(path) {
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1)
+    private val once = AtomicBoolean()
+    override fun getParentFile(): File? {
+        if (Thread.currentThread().name == "old-writer" && once.compareAndSet(false, true)) {
+            entered.countDown()
+            check(release.await(5, TimeUnit.SECONDS)) { "paused writer timed out" }
+        }
+        return super.getParentFile()
+    }
+}
+fun main(args: Array<String>) {
+    val dir = Files.createTempDirectory("setup-runner-").toFile()
+    try {
+        val runner = SetupRunner::class.java.getDeclaredConstructor(Context::class.java)
+            .apply { isAccessible = true }.newInstance(Context(dir))
+        val state = SetupJobState("job", "running", emptyList(), startedAt = 1)
+        field(runner, "job").set(runner, state)
+        when (args.single()) {
+            "ordered-terminal" -> {
+                val file = PausedFile(File(dir, "setup.json").path)
+                field(runner, "file").set(runner, file)
+                val failure = AtomicReference<Throwable?>()
+                val old = Thread({ try { write(runner) } catch (e: Throwable) { failure.set(e) } }, "old-writer")
+                val done = CountDownLatch(1)
+                val terminal = Thread({
+                    try {
+                        synchronized(field(runner, "lock").get(runner)) {
+                            state.state = "done"
+                            write(runner)
+                        }
+                    } catch (e: Throwable) { failure.set(e) }
+                    finally { done.countDown() }
+                }, "terminal-writer")
+                old.start()
+                check(file.entered.await(5, TimeUnit.SECONDS)) { "writer never reached storage" }
+                terminal.start()
+                val overtook = done.await(300, TimeUnit.MILLISECONDS)
+                file.release.countDown()
+                old.join(5000)
+                terminal.join(5000)
+                failure.get()?.let { throw it }
+                check(!overtook) { "terminal write overtook an older writer outside the persistence owner" }
+                check(JSONObject(file.readText()).getString("state") == "done") { "terminal state was overwritten" }
+            }
+            "typed-write-failure" -> {
+                val target = File(dir, "setup.json").apply { mkdir() }
+                File(target, "retained").writeText("previous data")
+                val error = runCatching { write(runner) }.exceptionOrNull()
+                check(error?.javaClass?.simpleName == "SetupPersistenceException") { "storage failure must be typed, not swallowed" }
+                check(error?.message == "setup_persistence") { "storage failure must not expose paths or exception text" }
+                check(File(target, "retained").readText() == "previous data")
+            }
+            "failed-start-status" -> {
+                val target = File(dir, "setup.json").apply { mkdir() }
+                File(target, "retained").writeText("previous data")
+                val failure = runCatching {
+                    runner.start("failed", listOf(SetupRunner.Spec(
+                        "start", null, false, true, 1.0, false, null, null, emptyMap(), emptyMap(),
+                    )), null, SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped"))
+                }.exceptionOrNull()
+                check(failure?.javaClass?.simpleName == "SetupPersistenceException")
+                check(!runner.running)
+                val status = JSONObject(runner.status()!!)
+                check(status.getString("state") == "failed")
+                check(status.getString("errorCode") == "setup_persistence")
+                check(status.isNull("error"))
+            }
+            else -> error("unknown scenario")
+        }
+        println("PASS ${args.single()}")
+    } finally { dir.deleteRecursively() }
+}

@@ -225,25 +225,44 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     return openTeamAgentConversation(context, agent, team: _team);
   }
 
-  /// The team's home, over this conversation. Its row for this same task
-  /// comes back here rather than stacking a second copy of the page;
-  /// another task opens its own conversation.
+  /// The team's page ([openTeamPage], the one AI Team page), over this
+  /// conversation. Its row for this same task comes back here rather than
+  /// stacking a second copy of the page; another task opens its own
+  /// conversation. A conversation whose team is not the connected server's
+  /// (none in the app today) opens that team's home directly.
   void _openTeamPage() {
     final here = ModalRoute.of(context);
+    void openRun(OrchestrationRun run) {
+      if (!mounted) return;
+      if (run.id == _runId && here != null) {
+        Navigator.of(context).popUntil((route) => route == here);
+        return;
+      }
+      unawaited(TeamConversation.open(context, _team, runId: run.id));
+    }
+
+    ConnectionController? connection;
+    try {
+      connection = ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(connProvider);
+    } catch (_) {
+      connection = null;
+    }
+    if (connection != null && identical(connection.orchestration, _team)) {
+      unawaited(
+        openTeamPage(context, connection, now: widget.now, onOpenRun: openRun),
+      );
+      return;
+    }
     unawaited(
       Navigator.of(context).push(
         KitPageRoute<void>(
           builder: (_) => TeamHomeScreen(
             controller: _team,
             now: widget.now,
-            onOpenRun: (run) {
-              if (!mounted) return;
-              if (run.id == _runId && here != null) {
-                Navigator.of(context).popUntil((route) => route == here);
-                return;
-              }
-              unawaited(TeamConversation.open(context, _team, runId: run.id));
-            },
+            onOpenRun: openRun,
           ),
         ),
       ),
@@ -280,14 +299,53 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     await _team.cancelRun(run.id);
   }
 
-  void _openDetails(String runId) => unawaited(
-    Navigator.of(context).push(
-      KitPageRoute<void>(
-        builder: (_) =>
-            RunScreen(controller: _team, runId: runId, now: widget.now),
-      ),
-    ),
-  );
+  /// Task details (P3.5): what the retired run page showed that the
+  /// conversation does not — the stages, the steps as a graph, the
+  /// agents' pages, the numbers and the technical fold.
+  void _openDetails(String runId) =>
+      unawaited(showTeamTaskDetails(context, _team, runId, now: widget.now));
+
+  bool _refreshing = false;
+
+  /// The page's Refresh (a computer has no pull gesture): fetches the team
+  /// again, or retries a team that did not answer.
+  Future<void> _refresh() async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
+    try {
+      if (_team.phase == OrchestrationPhase.failed) {
+        await _team.retry();
+      } else {
+        await _team.refresh();
+      }
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
+  /// Nudge or restart the stalled task's worker; restart asks first. The
+  /// receipt shows under the stall's notice.
+  Future<void> _control(
+    OrchestrationAgent agent,
+    AgentControlAction action,
+  ) async {
+    if (action == AgentControlAction.restart) {
+      final l10n = _chatL10n(context);
+      final ok = await showKitConfirm(
+        context,
+        title: l10n.teamUiControlRestartConfirmTitle(
+          _teamAgentTitle(l10n, agent),
+        ),
+        body: l10n.teamUiControlRestartConfirmBody,
+        confirmLabel: l10n.teamAgentScreenRestart(_teamAgentName(l10n, agent)),
+        icon: AppIconography.restart,
+        sheetKey: const ValueKey('team-conversation-restart-confirm'),
+        confirmKey: const ValueKey('team-conversation-restart-confirm-action'),
+      );
+      if (!ok || !mounted) return;
+    }
+    await _team.controlAgent(agent.id, action);
+  }
 
   /// Where the task's one turn stands, from the task's own state.
   KitTurnPhase _phase(
@@ -345,6 +403,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               cycleOf: cycleOf,
               agents: snapshot.agents,
               gates: gates,
+              now: _clock(),
             );
       final title = run?.title ?? widget.pending?.title ?? '';
       final recipient = _recipient(agents);
@@ -392,6 +451,13 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
             ),
           ],
           menu: [
+            KitMenuItem(
+              key: const ValueKey('team-conversation-refresh'),
+              label: l10n.teamUiRefresh,
+              icon: AppIconography.sync,
+              enabled: !_refreshing,
+              onSelected: () => unawaited(_refresh()),
+            ),
             if (run != null) ...[
               KitMenuItem(
                 key: const ValueKey('team-conversation-details'),
@@ -416,36 +482,49 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
           _TeamNowLine(
             team: _team,
             now: now,
+            taskTitle: title,
             pending: run == null && !gone ? widget.pending : null,
             clock: _clock,
             slowAfter: _pendingSlowAfter,
             onOpenTeam: _openTeamPage,
           ),
-          if (run != null && agents.isNotEmpty)
-            KitAgentStrip(
-              stripKey: const ValueKey('team-conversation-family'),
-              agents: [
-                KitAgent(
-                  id: 'lead',
-                  key: const ValueKey('team-conversation-family-lead'),
-                  name: l10n.teamChatLeadName,
-                  state: _teamLeadState(run, gates),
-                ),
-                for (final agent in agents)
+          // The strip is the header's last row, with room under it and the
+          // header's edge, so the transcript never reads as running under
+          // its chips (owner report, build 2055).
+          if (run != null && agents.isNotEmpty) ...[
+            Padding(
+              key: const ValueKey('team-conversation-family-band'),
+              padding: EdgeInsetsDirectional.only(
+                top: KitTokens.of(context).space1,
+                bottom: KitTokens.of(context).space2,
+              ),
+              child: KitAgentStrip(
+                stripKey: const ValueKey('team-conversation-family'),
+                agents: [
                   KitAgent(
-                    id: agent.id,
-                    key: ValueKey('team-conversation-family-${agent.id}'),
-                    name:
-                        teamAgentShortName(agent) ??
-                        teamAgentRoleWord(l10n, teamAgentRole(agent)),
-                    role: teamAgentShortName(agent) == null
-                        ? null
-                        : teamAgentRoleWord(l10n, teamAgentRole(agent)),
-                    state: _teamAgentState(agent),
-                    onOpen: () => unawaited(_openAgent(agent)),
+                    id: 'lead',
+                    key: const ValueKey('team-conversation-family-lead'),
+                    name: l10n.teamChatLeadName,
+                    state: _teamLeadState(run, gates),
                   ),
-              ],
+                  for (final agent in agents)
+                    KitAgent(
+                      id: agent.id,
+                      key: ValueKey('team-conversation-family-${agent.id}'),
+                      name:
+                          teamAgentShortName(agent) ??
+                          teamAgentRoleWord(l10n, teamAgentRole(agent)),
+                      role: teamAgentShortName(agent) == null
+                          ? null
+                          : teamAgentRoleWord(l10n, teamAgentRole(agent)),
+                      state: _teamAgentState(agent),
+                      onOpen: () => unawaited(_openAgent(agent)),
+                    ),
+                ],
+              ),
             ),
+            const KitDivider(),
+          ],
         ],
         body: gone
             ? KitStateView(
@@ -470,6 +549,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   lines: lines,
                   title: title,
                   pendingRecord: pendingRecord,
+                  now: now,
                 ),
                 composer: _composer(context, recipient),
               ),
@@ -487,9 +567,25 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     required List<TeamLeadLine> lines,
     required String title,
     required MutationRecord? pendingRecord,
+    required TeamNow? now,
   }) {
     final l10n = _chatL10n(context);
     final tokens = KitTokens.of(context);
+    final clock = _clock();
+    // The prompt says the task once; a step or a worker's line that is
+    // the task itself refers back to it instead of repeating its words.
+    final soleStep =
+        work.length == 1 && _sameTaskText(work.single.title, title);
+    final quiet = _noProgress(now, clock);
+    OrchestrationAgent? stalledAgent;
+    if (quiet != null) {
+      for (final agent in [...agents, ..._team.snapshot.agents]) {
+        if (agent.id == now?.agentId) {
+          stalledAgent = agent;
+          break;
+        }
+      }
+    }
     final prompt = [
       title,
       ?(run == null ? widget.pending?.details : _runDetails(run, work)),
@@ -499,6 +595,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       context,
       lines: lines,
       pending: run == null ? widget.pending : null,
+      taskTitle: title,
     );
     final sent = [
       for (final record in _team.mutations)
@@ -512,7 +609,6 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     final stop = run == null
         ? null
         : _team.latestMutation(kind: MutationKind.cancelRun, targetId: run.id);
-    final now = _clock();
     // The end padding is read under the composer layer, which adds its
     // height to the bottom inset.
     return Builder(
@@ -557,8 +653,16 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                       ),
                   ],
                 ),
-              if (work.isNotEmpty)
-                _TeamSteps(work: work, expansion: _expansion),
+              // One step that is the task itself is not listed again (its
+              // Work sheet is a row of Task details).
+              if (work.isNotEmpty && !soleStep)
+                _TeamSteps(
+                  work: work,
+                  expansion: _expansion,
+                  onOpen: (id) => unawaited(
+                    showWorkSheet(context, _team, id, now: widget.now),
+                  ),
+                ),
               for (final agent in agents)
                 KitToolRow.agent(
                   rowKey: ValueKey('team-conversation-agent-${agent.id}'),
@@ -566,16 +670,31 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   status: _teamAgentToolStatus(agent),
                   task: [
                     for (final item in work)
-                      if (item.id == agent.currentWorkId) item.title,
+                      if (item.id == agent.currentWorkId &&
+                          !_sameTaskText(item.title, title))
+                        item.title,
                   ].firstOrNull,
                   startedAt:
                       teamSessionState(agent) == AgentState.working &&
                           agent.sessionStartedAt != null &&
-                          !agent.sessionStartedAt!.isAfter(now)
+                          !agent.sessionStartedAt!.isAfter(clock)
                       ? agent.sessionStartedAt
                       : null,
                   openLabel: l10n.teamOpenConversation,
                   onOpen: () => unawaited(_openAgent(agent)),
+                ),
+              if (quiet != null)
+                _TeamNoProgress(
+                  team: _team,
+                  agent: stalledAgent,
+                  quiet: quiet,
+                  since: now!.quietSince!,
+                  runId: run?.id,
+                  agentName: stalledAgent == null
+                      ? now.agentName
+                      : _teamAgentName(l10n, stalledAgent),
+                  onControl: _control,
+                  today: clock,
                 ),
               for (final gate in gates)
                 TeamNeedsYouCard(
@@ -616,7 +735,13 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                 ),
               ],
             ),
-          if (run != null)
+          if (run != null) ...[
+            // Merged: the celebration, once per task (it is remembered).
+            TeamMergedCelebration(
+              profileId: _team.profileId,
+              runId: run.id,
+              merged: run.state == RunState.completed && run.merged,
+            ),
             Padding(
               padding: EdgeInsetsDirectional.only(top: tokens.space4),
               child: TeamMergeSection(
@@ -625,6 +750,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                 now: widget.now,
               ),
             ),
+          ],
         ],
       ),
     );
@@ -712,6 +838,7 @@ class _TeamLeadReply extends StatefulWidget {
     BuildContext context, {
     required List<TeamLeadLine> lines,
     required TeamPendingTask? pending,
+    String? taskTitle,
   }) {
     final l10n = _chatL10n(context);
     String at(DateTime? time) =>
@@ -719,7 +846,8 @@ class _TeamLeadReply extends StatefulWidget {
     return [
       if (pending case final task?)
         '${l10n.teamChatLeadSent}${at(task.sentAt)}',
-      for (final line in lines) '${teamLeadSentence(l10n, line)}${at(line.at)}',
+      for (final line in lines)
+        '${teamLeadSentence(l10n, line, taskTitle: taskTitle)}${at(line.at)}',
     ];
   }
 
@@ -779,10 +907,40 @@ class _TeamLeadReplyState extends State<_TeamLeadReply> {
   }
 }
 
-/// The lead's words for one line (see [TeamLeadEvent]).
-String teamLeadSentence(AppLocalizations l10n, TeamLeadLine line) {
+/// The lead's words for one line (see [TeamLeadEvent]). A step that is the
+/// task itself ([taskTitle], said once in the prompt) is "it", never its
+/// words again (owner rule: nothing shown twice).
+String teamLeadSentence(
+  AppLocalizations l10n,
+  TeamLeadLine line, {
+  String? taskTitle,
+}) {
   final title = line.workTitle ?? '';
   final name = line.agentName;
+  if (_sameTaskText(line.workTitle, taskTitle)) {
+    switch (line.event) {
+      case TeamLeadEvent.routed:
+        return l10n.teamChatLeadRoutedIt;
+      case TeamLeadEvent.workerStarting:
+        return l10n.teamChatLeadStartingIt;
+      case TeamLeadEvent.claimed:
+        return name == null
+            ? l10n.teamChatLeadClaimedWorkerIt
+            : l10n.teamChatLeadClaimedIt(name);
+      case TeamLeadEvent.pushed:
+        return l10n.teamChatLeadPushedIt;
+      case TeamLeadEvent.handedToReview:
+        return l10n.teamChatLeadReviewIt;
+      case TeamLeadEvent.merged:
+        return l10n.teamChatLeadMergedIt;
+      case TeamLeadEvent.stepFailed:
+        return l10n.teamChatLeadStepFailedIt;
+      case TeamLeadEvent.stepCancelled:
+        return l10n.teamChatLeadStepCancelledIt;
+      default:
+        break;
+    }
+  }
   return switch (line.event) {
     TeamLeadEvent.planned => l10n.teamChatLeadPlanned(line.count ?? 0),
     TeamLeadEvent.routed => l10n.teamChatLeadRouted(title),
@@ -812,6 +970,7 @@ class _TeamNowLine extends StatelessWidget {
   const _TeamNowLine({
     required this.team,
     required this.now,
+    required this.taskTitle,
     required this.pending,
     required this.clock,
     required this.slowAfter,
@@ -820,6 +979,9 @@ class _TeamNowLine extends StatelessWidget {
 
   final OrchestrationController team;
   final TeamNow? now;
+
+  /// The task's words (the prompt): a step that is the task is "it".
+  final String taskTitle;
   final TeamPendingTask? pending;
   final DateTime Function() clock;
   final Duration slowAfter;
@@ -849,8 +1011,9 @@ class _TeamNowLine extends StatelessWidget {
       return span.isNegative ? Duration.zero : span;
     }
 
+    // Hours and days past the first hour: never "2,715 min".
     String since(DateTime? at) =>
-        at == null ? '' : teamElapsedLabel(l10n, waited(at));
+        at == null ? '' : KitSince.durationWords(l10n, waited(at));
 
     KitStatusLine status(
       String message, {
@@ -917,6 +1080,13 @@ class _TeamNowLine extends StatelessWidget {
         tone: AppStatusTone.neutral,
         icon: AppIconography.question,
       ),
+      TeamNowKind.stalled when _noProgress(now, clock()) != null => status(
+        l10n.teamChatNowNoProgress(
+          KitSince.durationWords(l10n, _noProgress(now, clock())!),
+        ),
+        tone: AppStatusTone.neutral,
+        icon: AppIconography.waiting,
+      ),
       TeamNowKind.stalled => status(
         [
           if (now.stall case final stall?) teamCycleStallSentence(l10n, stall),
@@ -940,14 +1110,171 @@ class _TeamNowLine extends StatelessWidget {
               ),
       ),
       TeamNowKind.working => status(
-        l10n.teamChatNowWorking(
-          name ?? l10n.teamChatAWorker,
-          now.workTitle ?? '',
-          since(now.since),
-        ),
+        _sameTaskText(now.workTitle, taskTitle)
+            ? l10n.teamChatNowWorkingIt(
+                name ?? l10n.teamChatAWorker,
+                since(now.since),
+              )
+            : l10n.teamChatNowWorking(
+                name ?? l10n.teamChatAWorker,
+                now.workTitle ?? '',
+                since(now.since),
+              ),
       ),
       TeamNowKind.review => status(l10n.teamChatNowReview(since(now.since))),
     };
+  }
+}
+
+/// How long a stalled task has shown no progress, or null when it is not
+/// stalled or has been quiet less than [teamNoProgressAfter].
+Duration? _noProgress(TeamNow? now, DateTime clock) {
+  final quiet = now?.quietSince;
+  if (now == null || now.kind != TeamNowKind.stalled || quiet == null) {
+    return null;
+  }
+  final span = clock.difference(quiet);
+  return span < teamNoProgressAfter ? null : span;
+}
+
+/// Whether two texts name the same task: equal once trimmed, spaced and
+/// cased alike, or one the other cut short by the host (a long title ends
+/// in "…").
+bool _sameTaskText(String? a, String? b) {
+  String norm(String text) => text
+      .trim()
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .toLowerCase()
+      .replaceAll(RegExp(r'[….]+$'), '')
+      .trim();
+  if (a == null || b == null) return false;
+  final x = norm(a), y = norm(b);
+  if (x.isEmpty || y.isEmpty) return false;
+  if (x == y) return true;
+  final (short, long) = x.length < y.length ? (x, y) : (y, x);
+  return short.length >= 24 && long.startsWith(short);
+}
+
+/// "furiosa": the agent's short name, else its role word.
+String _teamAgentName(AppLocalizations l10n, OrchestrationAgent agent) =>
+    teamAgentShortName(agent) ?? teamAgentRoleWord(l10n, teamAgentRole(agent));
+
+/// Under a task with no progress for [quiet]: what happened, since when,
+/// and the ways forward — nudge or restart its worker (where the host
+/// takes agent controls; restart asks first), or report the problem. The
+/// control's receipt follows.
+class _TeamNoProgress extends StatelessWidget {
+  const _TeamNoProgress({
+    required this.team,
+    required this.agent,
+    required this.agentName,
+    required this.quiet,
+    required this.since,
+    required this.runId,
+    required this.onControl,
+    required this.today,
+  });
+
+  final OrchestrationController team;
+
+  /// The page's clock now, to tell a time today from another day's.
+  final DateTime today;
+  final OrchestrationAgent? agent;
+  final String? agentName;
+  final Duration quiet;
+  final DateTime since;
+  final String? runId;
+  final Future<void> Function(OrchestrationAgent, AgentControlAction) onControl;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    final agent = this.agent;
+    final name = agentName ?? l10n.teamChatAWorker;
+    final controls = agent != null && team.capabilities.controlAgent;
+    // A time from another day names the day too ("Sep 24, 02:55").
+    final local = since.toLocal();
+    final today = this.today.toLocal();
+    final time =
+        local.year == today.year &&
+            local.month == today.month &&
+            local.day == today.day
+        ? teamClockLabel(context, since)
+        : '${MaterialLocalizations.of(context).formatShortMonthDay(local)}, '
+              '${teamClockLabel(context, since)}';
+    final receipt = agent == null
+        ? null
+        : team.latestMutation(
+            kind: MutationKind.controlAgent,
+            targetId: agent.id,
+          );
+    final elapsed = KitSince.durationWords(l10n, quiet);
+    return Column(
+      key: const ValueKey('team-conversation-no-progress'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitNotice(
+          key: const ValueKey('team-conversation-no-progress-notice'),
+          icon: AppIconography.waiting,
+          message: controls
+              ? l10n.teamChatNoProgressBody(name, time)
+              : l10n.teamChatNoProgressBodyNoControls(name, time),
+          liveRegion: false,
+        ),
+        SizedBox(height: tokens.space2),
+        // Nudge is the light first step; restart (asked first) and the
+        // report sit beside it.
+        KitActionBlock(
+          key: const ValueKey('team-conversation-no-progress-actions'),
+          secondary: controls
+              ? KitAction(
+                  key: const ValueKey('team-conversation-no-progress-nudge'),
+                  label: l10n.teamAgentScreenNudge(name),
+                  onPressed: () =>
+                      unawaited(onControl(agent, AgentControlAction.nudge)),
+                )
+              : null,
+          tertiary: [
+            if (controls)
+              KitAction(
+                key: const ValueKey('team-conversation-no-progress-restart'),
+                label: l10n.teamAgentScreenRestart(name),
+                onPressed: () =>
+                    unawaited(onControl(agent, AgentControlAction.restart)),
+              ),
+            KitAction(
+              key: const ValueKey('team-conversation-no-progress-report'),
+              label: l10n.teamChatNoProgressReport,
+              onPressed: () => unawaited(
+                openBugReport(
+                  context,
+                  error: KitReport(
+                    title: l10n.teamChatNoProgressReportTitle(elapsed),
+                    source: 'team-conversation',
+                    details: [
+                      if (runId case final id?) 'task: $id',
+                      if (agent != null) 'agent: ${agent.id}',
+                      if (agent?.currentWorkId case final work?) 'step: $work',
+                      'quiet since: ${since.toUtc().toIso8601String()}',
+                    ].join('\n'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (receipt != null) ...[
+          SizedBox(height: tokens.space2),
+          _teamReceipt(
+            context,
+            receipt,
+            key: const ValueKey('team-conversation-no-progress-receipt'),
+            onRetry: () => team.retryMutation(receipt.key),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -1000,10 +1327,17 @@ String _teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
 /// {done} done" while the task runs. Up to three steps show open; more
 /// fold, and the person's choice is kept in the page's expansion store.
 class _TeamSteps extends StatefulWidget {
-  const _TeamSteps({required this.work, required this.expansion});
+  const _TeamSteps({
+    required this.work,
+    required this.expansion,
+    required this.onOpen,
+  });
 
   final List<WorkItem> work;
   final Map<String, bool> expansion;
+
+  /// Opens a step's Work sheet (who has it, since when, what it waits on).
+  final ValueChanged<String> onOpen;
 
   static const _openUpTo = 3;
   static const _storeKey = 'team-steps';
@@ -1052,6 +1386,7 @@ class _TeamStepsState extends State<_TeamSteps> {
             kind: KitToolKind.todo,
             title: item.title,
             status: _teamStepStatus(item.state),
+            onOpen: () => widget.onOpen(item.id),
           ),
       ],
     );
@@ -1149,16 +1484,21 @@ String teamAgentConversationMissNote(
   ).teamWatchFallbackNotFound,
 };
 
-/// Opens [agent]'s own OpenCode session on the chat page in watching mode:
-/// the session in its work folder, newest since the agent's session began
-/// ([findTeamAgentSession]). When there is none on the connected server
-/// (a team on a computer, a worker still starting) Live output opens
-/// instead with a line saying why.
+/// Opens [agent]'s conversation: its own OpenCode session on the chat page
+/// in watching mode (the session in its work folder, newest since the
+/// agent's session began, [findTeamAgentSession]). When there is none on
+/// the connected server (a team on a computer, a worker still starting),
+/// the same watching page opens drawn from the team's live output
+/// ([TeamWatchLiveScreen]), with a line saying why.
+///
+/// [details]: the page offers the worker's own page (its state and
+/// controls); false when it was opened from there, so Back returns to it.
 Future<void> openTeamAgentConversation(
   BuildContext context,
   OrchestrationAgent agent, {
   OrchestrationController? team,
   TeamAgentConversationLookup? lookup,
+  bool details = true,
 }) async {
   final navigator = Navigator.of(context);
   final found = lookup ?? await lookupTeamAgentConversation(context, agent);
@@ -1171,7 +1511,12 @@ Future<void> openTeamAgentConversation(
       KitPageRoute<void>(
         builder: (context) => ChatScreen(
           sessionID: id,
-          watch: teamAgentWatch(context, agent, team: controller),
+          watch: teamAgentWatch(
+            context,
+            agent,
+            team: controller,
+            details: details,
+          ),
         ),
       ),
     );
@@ -1180,9 +1525,10 @@ Future<void> openTeamAgentConversation(
   if (controller == null) return;
   await navigator.push(
     KitPageRoute<void>(
-      builder: (context) => AgentOutputScreen(
-        controller: controller,
+      builder: (context) => TeamWatchLiveScreen(
+        team: controller,
         agentId: agent.id,
+        details: details,
         note: teamAgentConversationMissNote(
           context,
           miss ?? TeamAgentConversationMiss.notFound,
@@ -1190,6 +1536,33 @@ Future<void> openTeamAgentConversation(
       ),
     ),
   );
+}
+
+/// Opens the conversation of the agent the team calls [agentId] (a gate's
+/// logs, the cycle strip, the planner's card): as
+/// [openTeamAgentConversation] while the team lists it, else straight to
+/// its live output.
+Future<void> openTeamAgentConversationById(
+  BuildContext context,
+  OrchestrationController team,
+  String agentId,
+) {
+  if (_teamAgentById(team, agentId) case final agent?) {
+    return openTeamAgentConversation(context, agent, team: team);
+  }
+  return Navigator.of(context).push(
+    KitPageRoute<void>(
+      builder: (_) => TeamWatchLiveScreen(team: team, agentId: agentId),
+    ),
+  );
+}
+
+/// The agent the team lists as [id], by its id or its session's.
+OrchestrationAgent? _teamAgentById(OrchestrationController team, String id) {
+  for (final agent in team.snapshot.agents) {
+    if (agent.id == id || agent.sessionId == id) return agent;
+  }
+  return null;
 }
 
 /// The controller a team screen above [context] was built with, when it
@@ -1212,183 +1585,130 @@ class TeamControllerScope extends InheritedWidget {
       !identical(team, oldWidget.team);
 }
 
-/// The watching-mode setup for [agent]: the banner in plain words and the
-/// one "Message the worker" action, which goes through the team's message
-/// control ([OrchestrationController.messageAgent]).
+/// The watching-mode setup for [agent]: the status line from its session,
+/// the composer addressed to it, whose words go through the team's message
+/// control ([OrchestrationController.messageAgent]) with their receipt,
+/// and the worker's own page as the top bar's action.
 ChatWatch teamAgentWatch(
   BuildContext context,
   OrchestrationAgent agent, {
   OrchestrationController? team,
+  bool details = true,
+}) => _teamWatch(
+  context,
+  agentId: agent.id,
+  agent: agent,
+  team: team,
+  details: details,
+);
+
+ChatWatch _teamWatch(
+  BuildContext context, {
+  required String agentId,
+  OrchestrationAgent? agent,
+  OrchestrationController? team,
+  bool details = true,
 }) {
   final l10n = _chatL10n(context);
-  final role = teamAgentRole(agent);
-  final roleWord = teamAgentRoleWord(l10n, role);
-  final name = teamAgentShortName(agent);
+  // The agent as the team lists it now: its session moves on.
+  OrchestrationAgent? current() =>
+      (team == null ? null : _teamAgentById(team, agentId)) ?? agent;
+  final first = current();
+  final name = first == null ? null : teamAgentShortName(first);
+  final role = first == null ? null : teamAgentRole(first);
   final canMessage = team != null && team.capabilities.controlMessage;
+  // Receipts of what was sent from this page, not an older message's.
+  final sentHere = <String>{};
+  // Says a message was just sent, before the team's own next word.
+  final sent = ValueNotifier<int>(0);
   return ChatWatch(
-    banner: name == null
-        ? l10n.teamWatchBannerRole(roleWord)
-        : l10n.teamWatchBanner(name, roleWord),
-    note: canMessage ? l10n.teamWatchNote : l10n.teamWatchNoteNoMessage,
-    messageLabel: role == TeamAgentRole.worker
-        ? l10n.teamWatchMessageWorker
-        : l10n.teamWatchMessageAgent,
-    onMessage: !canMessage
+    banner: () => _teamWatchBanner(l10n, current()),
+    hint: name != null
+        ? l10n.teamWatchComposerHint(name)
+        : role == TeamAgentRole.worker
+        ? l10n.teamWatchComposerHintWorker
+        : l10n.teamWatchComposerHintAgent,
+    readOnlyReason: l10n.teamChatComposerCannot,
+    onSend: !canMessage
         ? null
-        : (context) => _messageTeamAgent(context, team, agent),
+        : (text) async {
+            final record = await team.messageAgent(agentId, text);
+            sentHere.add(record.key);
+            sent.value++;
+            return record.status != MutationStatus.rejected;
+          },
+    draftId: agentId,
+    receipt: team == null
+        ? null
+        : (context) {
+            final record = _newestSent(team, sentHere);
+            if (record == null) return null;
+            return _teamReceipt(
+              context,
+              record,
+              key: const ValueKey('chat-watching-message-receipt'),
+              onRetry: () => team.retryMutation(record.key),
+            );
+          },
+    changes: team == null ? null : Listenable.merge([team, sent]),
+    detailsLabel: !details || team == null || first == null
+        ? null
+        : name != null
+        ? l10n.teamWatchAbout(name)
+        : l10n.teamWatchAboutRole(teamAgentRoleWord(l10n, role!)),
+    onDetails: !details || team == null || first == null
+        ? null
+        : (context) => unawaited(
+            pushKitPage<void>(
+              context,
+              (_) => AgentScreen(controller: team, agentId: agentId),
+            ),
+          ),
   );
 }
 
-Future<void> _messageTeamAgent(
-  BuildContext context,
-  OrchestrationController team,
-  OrchestrationAgent agent,
-) async {
-  final l10n = _chatL10n(context);
-  // Typed words survive a swipe or back (DATA-2): kept per agent and server
-  // profile until they are sent.
-  String? profileId;
-  try {
-    profileId = ProviderScope.containerOf(
-      context,
-      listen: false,
-    ).read(connProvider).profile?.id;
-  } catch (_) {
-    profileId = null;
+/// "Watching furiosa · Worker · Working": who, and its state as its
+/// session tells it ([teamSessionState], never the agents list alone).
+(String, AppStatusTone) _teamWatchBanner(
+  AppLocalizations l10n,
+  OrchestrationAgent? agent,
+) {
+  if (agent == null) {
+    return (l10n.teamUiAgentOutputLive, AppStatusTone.progress);
   }
-  final text = TextEditingController();
-  final draft = profileId == null || profileId.isEmpty
-      ? null
-      : KitDraft(
-          target: 'team-message.${agent.id}',
-          profileId: profileId,
-          controller: text,
-        );
-  try {
-    await showKitSheet<void>(
-      context,
-      title: l10n.teamUiControlMessageTitle(
-        teamAgentShortName(agent) ??
-            teamAgentRoleWord(l10n, teamAgentRole(agent)),
-      ),
-      sheetKey: const ValueKey('chat-watching-message-sheet'),
-      draft: draft,
-      body: (_) => _TeamMessageSheet(
-        team: team,
-        agent: agent,
-        controller: text,
-        draft: draft,
-      ),
-    );
-  } finally {
-    text.dispose();
-  }
+  final state = teamSessionState(agent);
+  final word = teamAgentStateWord(l10n, state);
+  final role = teamAgentRoleWord(l10n, teamAgentRole(agent));
+  final name = teamAgentShortName(agent);
+  final tone = switch (state) {
+    AgentState.working => AppStatusTone.progress,
+    AgentState.crashed => AppStatusTone.failure,
+    // What it waits on is the conversation's own (a request card); the
+    // line stays plain (LOOK-4).
+    AgentState.waiting ||
+    AgentState.blocked ||
+    AgentState.idle ||
+    AgentState.stopped ||
+    AgentState.unknown => AppStatusTone.neutral,
+  };
+  return (
+    name == null
+        ? l10n.teamWatchBannerRole(role, word)
+        : l10n.teamWatchBanner(name, role, word),
+    tone,
+  );
 }
 
-/// The message field for one agent: Send goes through the team's message
-/// control, and the sheet stays open with the message's receipt in words
-/// ("Message · Sent", then Confirmed or the host's reason) until the person
-/// closes it.
-class _TeamMessageSheet extends StatefulWidget {
-  const _TeamMessageSheet({
-    required this.team,
-    required this.agent,
-    required this.controller,
-    required this.draft,
-  });
-
-  final OrchestrationController team;
-  final OrchestrationAgent agent;
-
-  /// Owned by the caller, which disposes it after the sheet closes.
-  final TextEditingController controller;
-  final KitDraft? draft;
-
-  @override
-  State<_TeamMessageSheet> createState() => _TeamMessageSheetState();
-}
-
-class _TeamMessageSheetState extends State<_TeamMessageSheet> {
-  TextEditingController get _text => widget.controller;
-  String? _sentKey;
-  bool _sending = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _text.addListener(_changed);
-  }
-
-  @override
-  void dispose() {
-    _text.removeListener(_changed);
-    super.dispose();
-  }
-
-  void _changed() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _send() async {
-    final text = _text.text.trim();
-    if (text.isEmpty || _sending) return;
-    setState(() => _sending = true);
-    try {
-      final record = await widget.team.messageAgent(widget.agent.id, text);
-      if (!mounted) return;
-      _text.clear();
-      unawaited(widget.draft?.clear());
-      setState(() => _sentKey = record.key);
-    } finally {
-      if (mounted) setState(() => _sending = false);
+/// The newest of the team's records among [keys].
+MutationRecord? _newestSent(OrchestrationController team, Set<String> keys) {
+  MutationRecord? best;
+  for (final record in team.mutations) {
+    if (!keys.contains(record.key)) continue;
+    if (best == null || record.createdAt.isAfter(best.createdAt)) {
+      best = record;
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final tokens = KitTokens.of(context);
-    final canSend = !_sending && _text.text.trim().isNotEmpty;
-    return ListenableBuilder(
-      listenable: widget.team,
-      builder: (context, _) {
-        final sent = _sentKey == null
-            ? null
-            : widget.team.mutations
-                  .where((record) => record.key == _sentKey)
-                  .firstOrNull;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            KitField(
-              label: l10n.teamUiControlMessageHint,
-              controller: _text,
-              kind: KitFieldKind.multiline,
-              autofocus: true,
-              enabled: !_sending,
-              fieldKey: const ValueKey('chat-watching-message-field'),
-              actionKey: const ValueKey('chat-watching-message-send'),
-              action: KitAction(
-                label: l10n.teamUiControlMessageSend,
-                icon: AppIconography.send,
-                onPressed: canSend ? () => unawaited(_send()) : null,
-              ),
-            ),
-            if (sent != null) ...[
-              SizedBox(height: tokens.space3),
-              _teamReceipt(
-                context,
-                sent,
-                key: const ValueKey('chat-watching-message-receipt'),
-                onRetry: () => widget.team.retryMutation(sent.key),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
+  return best;
 }
 
 /// "Open conversation": the hook on the agent screen and the task

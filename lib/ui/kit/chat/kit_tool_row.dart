@@ -12,6 +12,7 @@
 // States (KIT-12): notRun, pending, running, waitingForYou, done, failed,
 // stopped, background; each folded or open where it has a note or body.
 // Agent form: running (ticking), done, failed, waitingForYou, not tappable.
+// A step may instead open elsewhere (onOpen): a forward chevron, no fold.
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -93,10 +94,15 @@ class KitToolRow extends StatefulWidget {
     this.expanded,
     this.onExpansionChanged,
     this.rowKey,
-  }) : task = null,
+    this.onOpen,
+    this.openLabel,
+  }) : assert(
+         onOpen == null || note == null,
+         'KitToolRow: a step either opens elsewhere (onOpen) or folds its '
+         'note, not both',
+       ),
+       task = null,
        startedAt = null,
-       onOpen = null,
-       openLabel = null,
        _agent = false;
 
   /// A sub-agent the turn started, or an AI Team worker or reviewer. One
@@ -170,9 +176,12 @@ class KitToolRow extends StatefulWidget {
   final DateTime? startedAt;
 
   /// `.agent`: opens its conversation. Null: not tappable (no session).
+  /// A step: opens its details elsewhere (an AI Team step's Work sheet);
+  /// such a step has no note or body to fold.
   final VoidCallback? onOpen;
 
-  /// `.agent`: the semantics hint; null reads "Open its conversation".
+  /// The semantics hint of [onOpen]; null reads "Open its conversation"
+  /// (`.agent`) or "Open its details" (a step).
   final String? openLabel;
 
   /// On the line's tap target or text (today's `Key('embedded-tool-row')`,
@@ -396,11 +405,13 @@ class _KitToolRowState extends State<KitToolRow>
 
     final glyph = _Glyph(_glyphFor(row.kind));
 
-    final chevron = _opens
+    final Widget? chevron = _opens
         ? SizedBox.square(
             dimension: tokens.smallIconSize,
             child: KitSpin.chevron(expanded: open),
           )
+        : row.onOpen != null
+        ? const _ForwardChevron()
         : null;
 
     final line = ConstrainedBox(
@@ -469,6 +480,18 @@ class _KitToolRowState extends State<KitToolRow>
           onTap: _toggle,
           label: label,
           tooltip: path != null && path.isNotEmpty ? path : null,
+          shape: KitShape.tile,
+          surface: KitSurfaceLevel.ground,
+          child: line,
+        ),
+      );
+    } else if (row.onOpen case final onOpen?) {
+      header = Semantics(
+        hint: row.openLabel ?? l10n.kitToolOpenDetails,
+        child: KitTappable(
+          tappableKey: row.rowKey,
+          onTap: onOpen,
+          label: label,
           shape: KitShape.tile,
           surface: KitSurfaceLevel.ground,
           child: line,
@@ -595,7 +618,7 @@ class _KitToolRowState extends State<KitToolRow>
       since: startedAt,
       ticks: KitSinceTicks.minutes,
       builder: (context, since) =>
-          content(l10n.kitToolForMinutes(since.elapsed.inMinutes)),
+          content(l10n.kitToolFor(KitSince.durationWords(l10n, since.elapsed))),
     );
   }
 }

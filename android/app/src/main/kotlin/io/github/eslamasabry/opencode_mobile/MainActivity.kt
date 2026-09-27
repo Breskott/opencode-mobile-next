@@ -44,11 +44,14 @@ class MainActivity : FlutterActivity() {
     private var linkDartReady = false
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
+    private var networkMonitor: NetworkMonitor? = null
     private val voiceDownloadNotifications by lazy { VoiceDownloadNotifications(this) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         TailscaleHandoff(this, flutterEngine.dartExecutor.binaryMessenger)
+        networkMonitor?.dispose()
+        networkMonitor = NetworkMonitor(this, flutterEngine.dartExecutor.binaryMessenger)
         localPdf?.dispose()
         localPdf = LocalPdfBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         readAloud?.dispose()
@@ -330,6 +333,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        networkMonitor?.dispose()
+        networkMonitor = null
         localPdf?.dispose()
         localPdf = null
         readAloud?.dispose()
@@ -346,15 +351,19 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        BuiltinLinux.get(applicationContext).setActivityResumed(true)
         readAloud?.resume()
     }
 
     override fun onPause() {
+        BuiltinLinux.get(applicationContext).setActivityResumed(false)
         readAloud?.pause()
         super.onPause()
     }
 
     override fun onDestroy() {
+        networkMonitor?.dispose()
+        networkMonitor = null
         voiceDownloadNotifications.dispose()
         localPdf?.dispose()
         localPdf = null
@@ -377,7 +386,11 @@ class MainActivity : FlutterActivity() {
                     main.post { result.success(value) }
                 } catch (error: Throwable) {
                     main.post {
-                        result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                        if (error is SetupPersistenceException) {
+                            result.error(SetupPersistenceException.CODE, null, null)
+                        } else {
+                            result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                        }
                     }
                 }
             }.start()
@@ -389,6 +402,8 @@ class MainActivity : FlutterActivity() {
                     "phase" to linux.phase,
                     "message" to linux.message,
                     "serverRunning" to linux.serverRunning,
+                    "serverRestartWanted" to linux.serverRestartWanted,
+                    "serverRecoveryGeneration" to linux.serverRecoveryGeneration,
                     "serverPort" to linux.port,
                     "services" to linux.runningServices(),
                     "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
@@ -423,9 +438,39 @@ class MainActivity : FlutterActivity() {
                     null
                 }
             }
-            "stopServer" -> inBackground {
-                linux.stopServer()
-                null
+            "restartServer" -> {
+                val script = call.argument<String>("script")
+                val port = call.argument<Int>("port")
+                val generation = call.argument<Number>("expectedGeneration")?.toLong()
+                if (script == null || port == null || generation == null) {
+                    result.error("recovery_unavailable", "The phone server could not restart.", null)
+                    return
+                }
+                inBackground {
+                    linux.restartServer(script, port, generation)
+                    null
+                }
+            }
+            "cancelServerRecovery" -> {
+                linux.cancelServerRecovery()
+                result.success(null)
+            }
+            "confirmServerRecovery" -> {
+                val generation = call.argument<Number>("expectedGeneration")?.toLong()
+                try {
+                    check(generation != null)
+                    linux.confirmServerRecovery(generation)
+                    result.success(null)
+                } catch (_: Exception) {
+                    result.error("recovery_unavailable", "The phone server could not restart.", null)
+                }
+            }
+            "stopServer" -> {
+                linux.requestServerStop()
+                inBackground {
+                    linux.stopServer()
+                    null
+                }
             }
             "serverLog" -> {
                 val tail = call.argument<Int>("tailBytes") ?: 16_384
@@ -453,6 +498,7 @@ class MainActivity : FlutterActivity() {
                     result.error("builtin_linux", "Which service?", null)
                     return
                 }
+                if (name == BuiltinLinux.SERVER) linux.requestServerStop()
                 inBackground {
                     linux.stopService(name)
                     null

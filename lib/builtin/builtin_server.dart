@@ -134,7 +134,13 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
   Duration readyTimeout = const Duration(seconds: 90),
   Duration pollInterval = const Duration(seconds: 2),
   bool Function()? stillWanted,
+  int? recoveryGeneration,
 }) async {
+  const cancelled = BuiltinServerStartFailure.detail(
+    'The server start was not confirmed.',
+  );
+  bool wanted() => stillWanted?.call() ?? true;
+  if (!wanted()) return cancelled;
   if (profile.password.isEmpty) {
     return const BuiltinServerStartFailure.detail(
       'The saved server password is missing.',
@@ -146,25 +152,40 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       timeout: const Duration(seconds: 60),
     );
     if (!written.ok) {
-      final output = written.output.trim();
-      return BuiltinServerStartFailure.detail(
-        output.isEmpty ? 'exit ${written.exitCode}' : output,
+      return const BuiltinServerStartFailure.detail(
+        'The server password could not be saved.',
       );
     }
-    await linux.startServer(
-      BuiltinLinux.serverScript(
-        runtime: BuiltinLinux.runtimeFor(profile.flavor),
-      ),
-      port: BuiltinLinux.serverPort,
+    if (!wanted()) return cancelled;
+    final script = BuiltinLinux.serverScript(
+      runtime: BuiltinLinux.runtimeFor(profile.flavor),
     );
+    if (recoveryGeneration == null) {
+      await linux.startServer(script, port: BuiltinLinux.serverPort);
+    } else {
+      await linux.restartServer(
+        script,
+        port: BuiltinLinux.serverPort,
+        expectedGeneration: recoveryGeneration,
+      );
+    }
     final deadline = DateTime.now().add(readyTimeout);
-    while (stillWanted?.call() ?? true) {
+    while (wanted()) {
       final probe = await serverProbe(
         baseUrl: BuiltinLinux.serverUrl,
         username: profile.username,
         password: profile.password,
       );
-      if (probe.ok) return null;
+      if (!wanted()) return cancelled;
+      if (probe.ok) {
+        if (recoveryGeneration != null) {
+          await linux.confirmServerRecovery(
+            expectedGeneration: recoveryGeneration,
+          );
+          if (!wanted()) return cancelled;
+        }
+        return null;
+      }
       final status = await linux.status();
       if (!status.serverRunning) {
         return const BuiltinServerStartFailure.exited();
@@ -174,9 +195,11 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       }
       await Future<void>.delayed(pollInterval);
     }
-    return null;
-  } on BuiltinLinuxException catch (error) {
-    return BuiltinServerStartFailure.detail(error.message);
+    return cancelled;
+  } catch (_) {
+    return const BuiltinServerStartFailure.detail(
+      'The phone server could not start.',
+    );
   }
 }
 
@@ -194,6 +217,10 @@ class BuiltinServerStarter extends ChangeNotifier {
   final Duration readyTimeout;
   final Duration pollInterval;
 
+  /// App binding persists the selected phone owner before an explicit start.
+  /// Failure prevents dispatch rather than risking a different profile's policy.
+  Future<void> Function(ServerProfile profile)? beforeManualStart;
+
   bool _starting = false;
   BuiltinServerStartFailure? _failure;
   String? _failedProfileID;
@@ -208,6 +235,12 @@ class BuiltinServerStarter extends ChangeNotifier {
   /// screen waiting on a stopped server knows to connect again.
   int get readyCount => _readyCount;
   int _readyCount = 0;
+
+  /// Identifies a confirmed explicit start so recovery can reset its budget.
+  String? get manuallyStartedProfileId => _manuallyStartedProfileId;
+  String? _manuallyStartedProfileId;
+  int get manualReadyCount => _manualReadyCount;
+  int _manualReadyCount = 0;
 
   /// The last start's failure for [profile], or null.
   BuiltinServerStartFailure? failureFor(ServerProfile? profile) =>
@@ -226,6 +259,26 @@ class BuiltinServerStarter extends ChangeNotifier {
   /// on start is not restarted in a loop.
   void allowAutoStart() => _autoStartUsed = false;
 
+  /// Shares the controller's native installation observation with connection
+  /// cards even when the subsequent authenticated start fails.
+  void observeInstalled(bool installed) {
+    if (_installed == installed) return;
+    _installed = installed;
+    _notify();
+  }
+
+  /// A later authenticated probe completed the same automatic start after its
+  /// initial timeout. Clear only that profile's failure and publish readiness
+  /// once, so consumers reconnect without retaining a stale failure card.
+  void confirmRecovered(ServerProfile profile) {
+    if (_starting || _failedProfileID != profile.id || _failure == null) return;
+    _failure = null;
+    _failedProfileID = null;
+    _installed = true;
+    _readyCount++;
+    _notify();
+  }
+
   void clearFailure() {
     if (_failure == null) return;
     _failure = null;
@@ -237,7 +290,10 @@ class BuiltinServerStarter extends ChangeNotifier {
   /// running, at most once until [allowAutoStart]. A server that is already
   /// running (the app was only in the background) is left alone. Returns
   /// true when it started one that now answers.
-  Future<bool> autoStartIfStopped(ServerProfile? profile) async {
+  Future<bool> autoStartIfStopped(
+    ServerProfile? profile, {
+    bool Function()? mayStart,
+  }) async {
     if (_autoStartUsed || _starting || !looksLikeInAppServer(profile)) {
       return false;
     }
@@ -253,30 +309,55 @@ class BuiltinServerStarter extends ChangeNotifier {
       _notify();
       return false;
     }
-    return await start(profile!) == null;
+    if (mayStart != null && !mayStart()) return false;
+    return await start(profile!, automatic: true, stillWanted: mayStart) ==
+        null;
   }
 
   /// Starts (or restarts) the server for [profile] and waits for it.
-  Future<BuiltinServerStartFailure?> start(ServerProfile profile) async {
-    if (_starting) return const BuiltinServerStartFailure.detail('busy');
+  Future<BuiltinServerStartFailure?> start(
+    ServerProfile profile, {
+    bool automatic = false,
+    bool Function()? stillWanted,
+    int? recoveryGeneration,
+  }) async {
+    if (_starting) {
+      return const BuiltinServerStartFailure.detail(
+        'The phone server is already starting.',
+      );
+    }
     _starting = true;
     _failure = null;
     _failedProfileID = null;
     _notify();
-    final failure = await startBuiltinServer(
-      linux: linux,
-      profile: profile,
-      readyTimeout: readyTimeout,
-      pollInterval: pollInterval,
-      stillWanted: () => !_disposed,
-    );
+    BuiltinServerStartFailure? failure;
+    try {
+      if (!automatic) await beforeManualStart?.call(profile);
+      failure = await startBuiltinServer(
+        linux: linux,
+        profile: profile,
+        readyTimeout: readyTimeout,
+        pollInterval: pollInterval,
+        stillWanted: () => !_disposed && (stillWanted?.call() ?? true),
+        recoveryGeneration: recoveryGeneration,
+      );
+    } catch (_) {
+      failure = const BuiltinServerStartFailure.detail(
+        'The phone server could not start.',
+      );
+    }
     _starting = false;
     if (failure == null) {
       _installed = true;
       _readyCount++;
+      if (!automatic) {
+        _manualReadyCount++;
+        _manuallyStartedProfileId = profile.id;
+      }
       // A team the person turned on comes back with OpenCode: Android
       // stops both when it reclaims the app.
-      if (BuiltinTeam.isBuiltinConfig(profile.orchestration)) {
+      if ((!automatic || recoveryGeneration == null) &&
+          BuiltinTeam.isBuiltinConfig(profile.orchestration)) {
         unawaited(
           BuiltinTeam(linux: linux).ensureRunning(
             notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,

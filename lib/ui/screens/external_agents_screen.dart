@@ -514,8 +514,9 @@ class _AddAgentScreenState extends State<_AddAgentScreen> {
   ];
 }
 
-/// What the agent says about itself, as rows: its description, what it
-/// offers, and that none of it is verified.
+/// What the agent says about itself, as rows: its description and what it
+/// offers; on Add agent, that none of it is verified. The agent's page shows
+/// only its skills, and nothing when it lists none.
 class _AgentAbout extends StatelessWidget {
   final ExternalAgentCard card;
 
@@ -528,42 +529,41 @@ class _AgentAbout extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = _l(context);
     final tokens = KitTokens.of(context);
+    // The agent's page: nothing to say when it lists no skills.
+    if (!identity && card.skills.isEmpty) return const SizedBox.shrink();
+    final group = KitRowGroup(
+      margin: EdgeInsets.zero,
+      label: identity ? l.externalAgentsAboutLabel : l.a2aSkills,
+      children: [
+        if (identity)
+          KitRow(
+            leading: const KitRowIcon(AppIconography.network),
+            title: card.name,
+            supporting: TextSpan(
+              text: card.description.trim().isEmpty
+                  ? _host(card.cardUrl)
+                  : card.description,
+            ),
+            supportingMaxLines: 4,
+          ),
+        for (final skill in card.skills)
+          KitRow(
+            leading: const KitRowIcon(AppIconography.sparkle),
+            title: skill.name,
+            titleMaxLines: 2,
+            supporting: skill.description.trim().isEmpty
+                ? null
+                : TextSpan(text: skill.description),
+            supportingMaxLines: 3,
+          ),
+      ],
+    );
+    // Said once, where the decision to trust it is made (Add agent).
+    if (!identity) return group;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        KitRowGroup(
-          margin: EdgeInsets.zero,
-          label: identity ? l.externalAgentsAboutLabel : l.a2aSkills,
-          children: [
-            if (identity)
-              KitRow(
-                leading: const KitRowIcon(AppIconography.network),
-                title: card.name,
-                supporting: TextSpan(
-                  text: card.description.trim().isEmpty
-                      ? _host(card.cardUrl)
-                      : card.description,
-                ),
-                supportingMaxLines: 4,
-              ),
-            if (card.skills.isEmpty)
-              KitRow(
-                leading: const KitRowIcon(AppIconography.sparkle),
-                title: l.externalAgentsNoSkills,
-              )
-            else
-              for (final skill in card.skills)
-                KitRow(
-                  leading: const KitRowIcon(AppIconography.sparkle),
-                  title: skill.name,
-                  titleMaxLines: 2,
-                  supporting: skill.description.trim().isEmpty
-                      ? null
-                      : TextSpan(text: skill.description),
-                  supportingMaxLines: 3,
-                ),
-          ],
-        ),
+        group,
         SizedBox(height: tokens.space2),
         KitText(
           l.externalAgentsUnverified,
@@ -772,7 +772,11 @@ class _ExternalAgentDetailScreenState extends State<ExternalAgentDetailScreen> {
         ),
       ),
       body: ListView(
-        padding: KitScreen.padding(context),
+        // The section gap under the bar's subtitle (the host), so the
+        // description reads as its own paragraph.
+        padding: KitScreen.padding(
+          context,
+        ).copyWith(top: KitTokens.of(context).space5),
         children: [
           if (card.description.trim().isNotEmpty) ...[
             KitText(
@@ -813,15 +817,11 @@ class _ExternalAgentDetailScreenState extends State<ExternalAgentDetailScreen> {
                   ),
               ],
             ),
-            SizedBox(height: KitTokens.of(context).space2),
-            KitText(
-              l.a2aReopenDetail,
-              role: KitTextRole.caption,
-              tone: KitTextTone.secondary,
-            ),
           ],
-          _gap(context),
-          _AgentAbout(card: card, identity: false),
+          if (card.skills.isNotEmpty) ...[
+            _gap(context),
+            _AgentAbout(card: card, identity: false),
+          ],
           _gap(context),
           _AgentDetails(card: card),
         ],
@@ -997,9 +997,10 @@ class _ExternalTaskScreenState extends State<ExternalTaskScreen>
       context,
       kind: KitConfirmKind.stop,
       icon: AppIconography.stop,
-      title: l.externalAgentsStopTitle,
+      title: l.externalAgentsStopTaskTitle(_recordTitle(l, _controller.record)),
       body: l.a2aCancelDetail,
-      confirmLabel: l.a2aRequestCancel,
+      confirmLabel: l.externalAgentsStopTaskConfirm(widget.profile.card.name),
+      cancelLabel: l.externalAgentsStopTaskKeep,
       confirmKey: const ValueKey('external-task-stop-confirm'),
     );
     _dialog = false;

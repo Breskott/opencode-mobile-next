@@ -173,19 +173,6 @@ void main() {
       );
     });
 
-    testWidgets('board add sheet, empty submit ($theme)', (tester) async {
-      await _shot(
-        tester,
-        'team_board_add_sheet',
-        light: light,
-        open: showTeamBoardAddSheet,
-        then: (tester) async {
-          await tester.tap(find.byKey(const ValueKey('team-board-add-submit')));
-          await tester.pumpAndSettle();
-        },
-      );
-    });
-
     testWidgets('board cancel question ($theme)', (tester) async {
       await _shot(
         tester,

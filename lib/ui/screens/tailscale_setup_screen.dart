@@ -6,13 +6,13 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/tailscale.dart';
 import '../../state/tailscale_address.dart';
 import '../app_iconography.dart';
-import '../kit/kit_action_stack.dart';
 import '../kit/kit_buttons.dart';
-import '../kit/kit_checklist.dart';
 import '../kit/kit_details_fold.dart';
 import '../kit/kit_field.dart';
 import '../kit/kit_notice.dart';
+import '../kit/kit_row.dart';
 import '../kit/kit_screen.dart';
+import '../kit/kit_section_label.dart';
 import '../kit/kit_status_mark.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
@@ -27,11 +27,13 @@ const _androidGuideUrl = 'https://tailscale.com/docs/install/android';
 /// User-controlled app handoff, then an address review. Returning a URL does
 /// not probe, save, authenticate or assert that Tailscale is connected.
 ///
-/// Two numbered sections: the phone's side as a [KitChecklist] (the app,
+/// Two numbered sections: the phone's side as one panel of steps (the app,
 /// then the VPN the person turns on in Tailscale, which this app cannot
-/// see), and the server address with the one pinned Continue, disabled with
-/// its reason until an address is typed. The long guidance folds under
-/// Details. Coming back from Tailscale checks the app again by itself.
+/// see, and Check Tailscale again), and the server address with the one
+/// pinned Continue, disabled with its reason until an address is typed. The
+/// address field carries the one caveat line; the rest of the guidance
+/// folds under "Tailscale setup and recovery". Coming back from Tailscale
+/// checks the app again by itself.
 class TailscaleSetupScreen extends StatefulWidget {
   const TailscaleSetupScreen({
     super.key,
@@ -101,10 +103,11 @@ class _TailscaleSetupScreenState extends State<TailscaleSetupScreen> {
         children: [
           SizedBox(height: tokens.space2),
           KitText(strings.tailscaleIntro, tone: KitTextTone.secondary),
-          SizedBox(height: tokens.sectionGap),
           TailscalePhoneSteps(bridge: widget.bridge),
-          SizedBox(height: tokens.sectionGap),
-          _SectionLabel(strings.tailscaleAddressStep),
+          KitSectionLabel(
+            strings.tailscaleAddressStep,
+            margin: EdgeInsets.zero,
+          ),
           KitField(
             label: strings.tailscaleAddressLabel,
             controller: _address,
@@ -115,12 +118,6 @@ class _TailscaleSetupScreenState extends State<TailscaleSetupScreen> {
             maxLength: 2048,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _continue(),
-          ),
-          SizedBox(height: tokens.space3),
-          KitText(
-            strings.tailscaleReviewDetail,
-            role: KitTextRole.secondary,
-            tone: KitTextTone.secondary,
           ),
           SizedBox(height: tokens.sectionGap),
           const TailscaleHelpFold(),
@@ -201,108 +198,147 @@ class _TailscalePhoneStepsState extends State<TailscalePhoneSteps>
     super.dispose();
   }
 
+  /// A step the person does, in the order the page gives them: the neutral
+  /// to-do mark and "To do" lead its line, never "Needs you" (a setup step
+  /// waits for the person to get to it, it does not interrupt them).
+  Widget _step({
+    required Key key,
+    required String title,
+    required KitMarkState state,
+    required String supporting,
+    KitAction? action,
+  }) => KitRow(
+    key: key,
+    leading: KitStatusMark(state: state),
+    title: title,
+    titleMaxLines: 2,
+    supporting: TextSpan(
+      text: state == KitMarkState.waiting
+          ? l10nOf(context).tailscaleSetupToDo(supporting)
+          : supporting,
+    ),
+    supportingMaxLines: 4,
+    // The step's one button sits under its words, never beside them.
+    below: action == null
+        ? null
+        : Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitButton.fromAction(
+              action,
+              role: KitButtonRole.secondary,
+              expand: false,
+            ),
+          ),
+  );
+
   /// Step 1: whether the official app is on this phone. Missing offers the
-  /// Play Store page through the external-link review; a failed check
-  /// offers Check app again on its row.
-  KitStep _appStep(AppLocalizations strings) {
+  /// Play Store page through the external-link review.
+  Widget _appStep(AppLocalizations strings) {
     final title = strings.tailscaleSetupAppTitle;
+    const key = ValueKey('tailscale-step-app');
     if (_checking || _state == null) {
-      return KitStep(
+      return _step(
+        key: key,
         title: title,
         state: KitMarkState.working,
         supporting: strings.tailscaleChecking,
       );
     }
     return switch (_state!) {
-      TailscaleAppState.installed => KitStep(
+      TailscaleAppState.installed => _step(
+        key: key,
         title: title,
         state: KitMarkState.done,
         supporting: strings.tailscaleInstalled,
       ),
-      TailscaleAppState.missing => KitStep(
+      TailscaleAppState.missing => _step(
+        key: key,
         title: title,
         state: KitMarkState.waiting,
         supporting: strings.tailscaleMissing,
-        personAction: KitAction(
+        action: KitAction(
           label: strings.tailscaleSetupGetApp,
           icon: AppIconography.download,
           onPressed: () => openExternalLink(context, _playStoreUrl),
         ),
       ),
-      TailscaleAppState.unsupported => KitStep(
+      TailscaleAppState.unsupported => _step(
+        key: key,
         title: title,
         state: KitMarkState.waiting,
         supporting: strings.tailscaleUnsupported,
       ),
-      TailscaleAppState.unavailable => KitStep(
+      TailscaleAppState.unavailable => _step(
+        key: key,
         title: title,
         state: KitMarkState.failed,
         supporting: strings.tailscaleUnknown,
-        retry: KitAction(label: strings.tailscaleCheckAgain, onPressed: _check),
       ),
     };
   }
 
   /// Step 2: the person signs in and turns the VPN on in Tailscale. This
   /// app cannot see that, so the step is never drawn done.
-  KitStep _vpnStep(AppLocalizations strings) {
+  Widget _vpnStep(AppLocalizations strings) {
     final title = strings.tailscaleSetupVpnTitle;
+    const key = ValueKey('tailscale-step-vpn');
     final open = KitAction(
       label: strings.tailscaleOpen,
       icon: AppIconography.externalLink,
       working: _opening,
       onPressed: _open,
     );
+    final canOpen = _state == TailscaleAppState.installed && !_checking;
     if (_openFailed) {
-      return KitStep(
+      return _step(
+        key: key,
         title: title,
         state: KitMarkState.failed,
         supporting: strings.tailscaleSetupOpenFailed,
-        retry: _state == TailscaleAppState.installed ? open : null,
+        action: canOpen ? open : null,
       );
     }
-    return KitStep(
+    return _step(
+      key: key,
       title: title,
       state: KitMarkState.waiting,
       supporting: strings.tailscaleSetupVpnSupporting,
-      personAction: _state == TailscaleAppState.installed && !_checking
-          ? open
-          : null,
+      action: canOpen ? open : null,
     );
   }
 
+  AppLocalizations l10nOf(BuildContext context) =>
+      lookupAppLocalizations(Localizations.localeOf(context));
+
   @override
   Widget build(BuildContext context) {
-    final strings = lookupAppLocalizations(Localizations.localeOf(context));
+    final strings = l10nOf(context);
     final tokens = KitTokens.of(context);
-    // Check app again sits under the steps unless the failed row already
-    // offers it, or the device cannot run the Android app at all.
-    final recheck =
-        _state != TailscaleAppState.unavailable &&
-        _state != TailscaleAppState.unsupported;
+    // Check Tailscale again is the panel's last row, unless the device
+    // cannot run the Android app at all.
+    final recheck = _state != TailscaleAppState.unsupported;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SectionLabel(strings.tailscaleAppStep),
-        KitChecklist(steps: [_appStep(strings), _vpnStep(strings)]),
-        if (recheck)
-          Padding(
-            // Under the steps' words, past the mark column.
-            padding: EdgeInsetsDirectional.only(
-              start: KitTokens.markSlotSize + tokens.space3,
-            ),
-            child: KitActionStack(
-              tertiary: [
-                // Stays enabled while a check runs: a new check
-                // supersedes the old one (_generation).
-                KitAction(
-                  label: strings.tailscaleCheckAgain,
-                  onPressed: _check,
-                ),
-              ],
-            ),
-          ),
+        KitRowGroup(
+          key: const ValueKey('tailscale-steps'),
+          label: strings.tailscaleAppStep,
+          margin: EdgeInsets.zero,
+          children: [
+            _appStep(strings),
+            _vpnStep(strings),
+            if (recheck)
+              KitRow(
+                key: const ValueKey('tailscale-check-again'),
+                leading: KitRow.icon(context, AppIconography.retry),
+                title: strings.tailscaleCheckAgain,
+                // Stays enabled while a check runs: a new check supersedes
+                // the old one (_generation).
+                onTap: () => unawaited(_check()),
+              ),
+          ],
+        ),
         // Under the steps, where the person is when they come back from
         // Tailscale, not scrolled away above them.
         if (_returned) ...[
@@ -337,6 +373,10 @@ class TailscaleHelpFold extends StatelessWidget {
           SizedBox(height: tokens.space3),
           KitText(strings.tailscaleAddressDetail),
           SizedBox(height: tokens.space3),
+          KitText(strings.tailscaleSetupNoDeviceList),
+          SizedBox(height: tokens.space3),
+          KitText(strings.tailscaleReviewDetail),
+          SizedBox(height: tokens.space3),
           KitText(strings.tailscaleServeHelp),
           KitButton.tertiary(
             label: strings.tailscaleServeDocs,
@@ -351,31 +391,6 @@ class TailscaleHelpFold extends StatelessWidget {
             onPressed: () => openExternalLink(context, _androidGuideUrl),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// A numbered section's name above its content, in the section-label role
-/// (KitRowGroup's label, without a panel: the steps and the field sit on
-/// the ground so their buttons keep the full width).
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    return Padding(
-      padding: EdgeInsetsDirectional.only(bottom: tokens.labelGap),
-      child: Semantics(
-        header: true,
-        child: KitText(
-          text,
-          role: KitTextRole.label,
-          tone: KitTextTone.secondary,
-        ),
       ),
     );
   }

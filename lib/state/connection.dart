@@ -44,6 +44,7 @@ import '../termux/bridge.dart';
 // A plain value type (no widgets): the person's effect choices.
 import 'effects.dart' show KitEffects;
 import '../builtin/builtin_linux.dart';
+import '../builtin/builtin_server_recovery.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
@@ -51,6 +52,7 @@ import 'orchestration.dart';
 import 'orchestration_store.dart';
 import 'elsewhere_attention.dart';
 import 'profiles.dart';
+import 'termux_host_setup.dart' show ManagedRuntimeFlavor;
 import 'pending_auth.dart';
 import 'session_drafts.dart';
 import 'draft_attachments.dart';
@@ -409,9 +411,23 @@ class ConnectionController extends ChangeNotifier {
           .where(
             (p) =>
                 TermuxBridge.supported &&
+                isProfileReadable(p.id) &&
                 TermuxBridge.managesServerUrl(p.baseUrl),
           )
           .map((p) => p.id),
+      runtimes: {
+        for (final p in store.profiles)
+          if (isProfileReadable(p.id) &&
+              TermuxBridge.managesServerUrl(p.baseUrl))
+            p.id: ManagedRuntimeFlavor.runtimeOf(p),
+      },
+      onRestart: ({required profileId, required eventId, required at}) =>
+          recordServerAct(
+            profileId: profileId,
+            kind: AutomaticActKind.restart,
+            eventId: eventId,
+            at: at,
+          ),
     );
   }
 
@@ -1138,6 +1154,7 @@ class ConnectionController extends ChangeNotifier {
   /// nobody, so connecting does not rebuild the shell twice.
   void _profilesSaved() {
     if (_disposed) return;
+    _syncProfileServices();
     final next = _profilesSignature();
     if (next == _profilesShown) return;
     _profilesShown = next;
@@ -2516,8 +2533,45 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
-  void _startEvents(int generation, ServerGateway currentApi) {
+  /// Shared persisted policy used by settings and automatic executors.
+  AutomationPolicy get automationPolicy {
+    final owner = _connectedProfile ?? profile;
+    return owner == null
+        ? AutomationPolicy.disabled()
+        : AutomationPolicyController.forProfile(store.prefs, owner.id).value;
+  }
+
+  AutomationPolicyController? _streamPolicy;
+  VoidCallback? _streamPolicyChanged;
+  StreamStatus _globalStreamStatus = StreamStatus.disconnected;
+
+  void _stopDisallowedReconnect() {
+    if (automationPolicy.allows(AutomationBehavior.reconnect)) return;
+    if (_globalStreamStatus == StreamStatus.reconnecting ||
+        _globalStreamStatus == StreamStatus.disconnected) {
+      final global = _globalEvents;
+      _globalEvents = null;
+      unawaited(global?.dispose());
+    }
+    if (status != StreamStatus.reconnecting &&
+        status != StreamStatus.disconnected) {
+      return;
+    }
+    // Retire both channels and their timers, while retaining rendered data.
+    // An explicit Reconnect can still create a fresh transport.
+    _retireTransport();
+    status = StreamStatus.disconnected;
+    notifyListeners();
+  }
+
+  void _startEvents(
+    int generation,
+    ServerGateway currentApi, {
+    bool automaticRecovery = false,
+  }) {
     late final LiveEventChannel stream;
+    var wasConnected = false;
+    var recovering = automaticRecovery;
     void handleEvent(EventEnvelope event) {
       if (!_isCurrentStream(generation, currentApi, stream)) return;
       _onEvent(event);
@@ -2527,6 +2581,11 @@ class ConnectionController extends ChangeNotifier {
       if (!_isCurrentStream(generation, currentApi, stream)) return;
       final previousStatus = status;
       status = s;
+      if (s == StreamStatus.reconnecting || s == StreamStatus.disconnected) {
+        recovering = recovering || wasConnected;
+        _stopDisallowedReconnect();
+        if (!_isCurrentStream(generation, currentApi, stream)) return;
+      }
       if (s == StreamStatus.connected) {
         PerfTrace.mark('events.connected');
         PerfTrace.markOnce('app.first_connected');
@@ -2546,7 +2605,7 @@ class ConnectionController extends ChangeNotifier {
         // The stream lost the server and found it again by itself: an
         // automatic act, filed for While you were away (P6.2). A first
         // connect or a person's Reconnect starts a new stream instead.
-        if (previousStatus == StreamStatus.reconnecting) {
+        if (recovering) {
           final scope = _automaticActScope();
           if (scope != null) {
             final at = DateTime.now();
@@ -2564,6 +2623,8 @@ class ConnectionController extends ChangeNotifier {
             );
           }
         }
+        wasConnected = true;
+        recovering = false;
       } else {
         _cancelPermissionHydration();
       }
@@ -2593,8 +2654,19 @@ class ConnectionController extends ChangeNotifier {
             onError: handleError,
           );
     _events = stream;
+    final owner = _connectedProfile ?? profile;
+    if (owner != null) {
+      _streamPolicy = AutomationPolicyController.forProfile(
+        store.prefs,
+        owner.id,
+      );
+      _streamPolicyChanged = _stopDisallowedReconnect;
+      _streamPolicy!.addListener(_streamPolicyChanged!);
+    }
     stream.start();
-    _startGlobalEvents(generation, currentApi);
+    if (_isCurrentStream(generation, currentApi, stream)) {
+      _startGlobalEvents(generation, currentApi);
+    }
   }
 
   void _startGlobalEvents(int generation, ServerGateway currentApi) {
@@ -2617,6 +2689,17 @@ class ConnectionController extends ChangeNotifier {
       }
     }
 
+    void handleStatus(StreamStatus value) {
+      if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
+      _globalStreamStatus = value;
+      if ((value == StreamStatus.reconnecting ||
+              value == StreamStatus.disconnected) &&
+          !automationPolicy.allows(AutomationBehavior.reconnect)) {
+        _globalEvents = null;
+        unawaited(stream.dispose());
+      }
+    }
+
     if (currentApi is OpenCodeApi) {
       final factory = _globalEventStreamFactory;
       if (factory == null) return;
@@ -2626,17 +2709,18 @@ class ConnectionController extends ChangeNotifier {
         // The location-scoped stream owns visible connection state. A global
         // update-notification retry must never make a healthy chat look
         // offline.
-        onStatus: (_) {},
+        onStatus: handleStatus,
         onError: (_) {},
       );
     } else {
       stream = currentApi.openGlobalEventChannel(
         onEvent: handleEvent,
-        onStatus: (_) {},
+        onStatus: handleStatus,
         onError: (_) {},
       );
     }
     _globalEvents = stream;
+    _globalStreamStatus = StreamStatus.connecting;
     stream.start();
   }
 
@@ -2780,7 +2864,7 @@ class ConnectionController extends ChangeNotifier {
     checkKnownWork();
     try {
       for (final id in managedIDs()) {
-        await ManagedServerRecovery.disableForProfile(store.prefs, id);
+        await ManagedServerRecovery.suspendForProfile(store.prefs, id);
       }
     } catch (_) {
       throw StateError(
@@ -3463,6 +3547,7 @@ class ConnectionController extends ChangeNotifier {
     final currentApi = api;
     if (_disposed || currentApi == null || !isConnected) return;
     if (_autoApprovalProfile.isEmpty) return;
+    if (!automationPolicy.allowsAutoApproval) return;
     if (!autoApprovalFor(permission.sessionID).automatic) return;
     _autoApprovingPermissionIDs.add(permission.id);
     unawaited(_autoApprove(currentApi, permission));
@@ -3475,20 +3560,23 @@ class ConnectionController extends ChangeNotifier {
     final identity = permissionIdentity(permission);
     final scope = _automaticActScope();
     var failure = '';
+    var confirmed = false;
     try {
       await _sendPermissionReply(
         currentApi,
         permission.id,
         'once',
         expectedRequest: identity,
+        onConfirmed: () => confirmed = true,
       );
-    } catch (error) {
-      failure = error.toString();
+    } catch (_) {
+      failure = 'Could not confirm automatic approval. Review the request.';
     }
     if (_disposed) return;
     _autoApprovingPermissionIDs.remove(permission.id);
     final stillPending = isRequestPending(identity);
-    if (!stillPending &&
+    if (confirmed &&
+        !stillPending &&
         failure.isEmpty &&
         _resolvedPermissionIDs.contains(permission.id)) {
       final record = _autoApprovedBySession.putIfAbsent(
@@ -3839,6 +3927,7 @@ class ConnectionController extends ChangeNotifier {
     String? message,
     PendingRequestIdentity? expectedRequest,
     bool prepareTransport = false,
+    void Function()? onConfirmed,
   }) async {
     if (expectedRequest != null &&
         (!expectedRequest._permission || expectedRequest._id != requestID)) {
@@ -3862,6 +3951,7 @@ class ConnectionController extends ChangeNotifier {
         request,
         response,
         message: message,
+        onConfirmed: onConfirmed,
       );
     });
   }
@@ -3871,6 +3961,7 @@ class ConnectionController extends ChangeNotifier {
     PendingRequestIdentity request,
     String response, {
     String? message,
+    void Function()? onConfirmed,
   }) async {
     final requestID = request._id;
     final permission = permissions[requestID]!;
@@ -3894,9 +3985,9 @@ class ConnectionController extends ChangeNotifier {
           message: message,
         );
       }
-      if (!_isCurrent(generation, currentApi) || !isRequestPending(request)) {
-        return;
-      }
+      if (!_isCurrent(generation, currentApi)) return;
+      onConfirmed?.call();
+      if (!isRequestPending(request)) return;
       _resolvePermission(requestID);
     } catch (error) {
       if (!_isCurrent(generation, currentApi) || !isRequestPending(request)) {
@@ -5448,6 +5539,9 @@ class ConnectionController extends ChangeNotifier {
       }
       return Future.value();
     }
+    if (!automationPolicy.allows(AutomationBehavior.reconnect)) {
+      return Future.value();
+    }
     _lifecycleSuspended = false;
     _lifecycleWasBackgrounded = false;
     _dismissAllCodingAlerts(clearActive: true);
@@ -5459,6 +5553,7 @@ class ConnectionController extends ChangeNotifier {
         directory: directory,
         workspace: workspace,
         onTransportReady: transportReady,
+        automaticRecovery: true,
       ),
     );
   }
@@ -5708,6 +5803,7 @@ class ConnectionController extends ChangeNotifier {
     }
     _offlineQueue = kept;
     _queuedPromptsAcceptedUnrecorded.remove(id);
+    _explicitQueueResends.remove(id);
     notifyListeners();
     return true;
   });
@@ -5732,6 +5828,7 @@ class ConnectionController extends ChangeNotifier {
         throw const OfflineQueueWriteException();
       }
       _offlineQueue = next;
+      _explicitQueueResends.add(id);
       if (!_disposed) notifyListeners();
       return true;
     });
@@ -6012,10 +6109,10 @@ class ConnectionController extends ChangeNotifier {
     _deletingReadProfiles.add(profileId);
     _profileMonitor?.removeProfile(profileId);
     _quotaMonitor?.removeProfile(profileId);
-    final recoveryDisabled = ManagedServerRecovery.disableForProfile(
-      store.prefs,
-      profileId,
-    ).then<Object?>((_) => null, onError: (Object error) => error);
+    final recoveryDisabled = Future.wait<void>([
+      BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
+      ManagedServerRecovery.disableForProfile(store.prefs, profileId),
+    ]).then<Object?>((_) => null, onError: (Object error) => error);
     _pendingAuth.block(profileId);
     _integrationCommandAttempts.removeWhere(
       (key, _) => _authKeyProfile(key) == profileId,
@@ -6051,6 +6148,7 @@ class ConnectionController extends ChangeNotifier {
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
           _profileDeletions.remove(profileId);
+          _syncProfileServices();
         });
     _profileDeletions[profileId] = operation;
     _profileDeletionChanges = operation.then<void>(
@@ -6115,6 +6213,13 @@ class ConnectionController extends ChangeNotifier {
       if (_orchestration?.profileId == profileId) await _orchestration!.stop();
       await _orchestrationStore.drain(profileId);
     } catch (_) {}
+    // One native runtime is shared by local profiles. Forget its deleted
+    // owner without falling back to another profile's runtime or policy.
+    if (store.prefs.getString('oc.builtinServerOwner') == profileId) {
+      if (!await store.prefs.setString('oc.builtinServerOwner', '')) {
+        throw StateError('The phone server setting could not be cleared.');
+      }
+    }
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
     final failures = <String>[];
 
@@ -6283,6 +6388,7 @@ class ConnectionController extends ChangeNotifier {
       // caller disconnects, and a republish would put their titles straight
       // back onto the home screen.
       _deletingReadProfiles.remove(profileId);
+      _syncProfileServices();
       if (!_disposed) notifyListeners();
       _widgetSnapshotSuspended = false;
     }
@@ -6292,6 +6398,9 @@ class ConnectionController extends ChangeNotifier {
   /// flush starts another pass when it finishes. An explicit resend that
   /// lands mid-flush must not wait for the next reconnect.
   bool _flushOfflineQueueAgain = false;
+  // Explicit resend authorizes only this entry, never its neighbours. It
+  // remains in memory until dispatch and is not an automatic-act receipt.
+  final Set<String> _explicitQueueResends = {};
 
   /// Sends queued prompts for the active profile, oldest first, through the
   /// wake-reconciled transport. A connectivity failure stops the flush (the
@@ -6306,7 +6415,12 @@ class ConnectionController extends ChangeNotifier {
   /// only the user's explicit resend clears it — see
   /// [QueuedPrompt.dispatchedAt].
   Future<void> flushOfflineQueue() async {
-    if (_disposed || !capabilities.offlinePromptQueue) return;
+    if (_disposed ||
+        !capabilities.offlinePromptQueue ||
+        (!automationPolicy.allows(AutomationBehavior.reconcileQueuedSends) &&
+            _explicitQueueResends.isEmpty)) {
+      return;
+    }
     if (_flushingOfflineQueue) {
       _flushOfflineQueueAgain = true;
       return;
@@ -6316,7 +6430,10 @@ class ConnectionController extends ChangeNotifier {
     final origin = (profileID, profile?.baseUrl, directory, workspace);
     final actScope = _automaticActScope();
     bool eligible(QueuedPrompt entry) =>
-        entry.profileID == profileID && !entry.dispatched;
+        entry.profileID == profileID &&
+        !entry.dispatched &&
+        (_explicitQueueResends.contains(entry.id) ||
+            automationPolicy.allows(AutomationBehavior.reconcileQueuedSends));
     if (!_queue.any(eligible)) return;
     _flushingOfflineQueue = true;
     var sent = 0;
@@ -6324,9 +6441,18 @@ class ConnectionController extends ChangeNotifier {
     try {
       for (final entry in List.of(_queue)) {
         if (!eligible(entry)) continue;
+        final explicitlyRequested = _explicitQueueResends.contains(entry.id);
+        bool allowed() =>
+            !_disposed &&
+            origin == (profile?.id, profile?.baseUrl, directory, workspace) &&
+            (explicitlyRequested ||
+                automationPolicy.allows(
+                  AutomationBehavior.reconcileQueuedSends,
+                ));
+        if (!allowed()) break;
         final currentApi = await prepareActionTransport();
         await _queueChanges;
-        if (_disposed ||
+        if (!allowed() ||
             currentApi == null ||
             !identical(currentApi, api) ||
             status != StreamStatus.connected ||
@@ -6378,6 +6504,7 @@ class ConnectionController extends ChangeNotifier {
           // gets to run. Runs after model/agent prep so those preflight
           // failures stay ordinary retryable errors.
           Future<void> dispatch() async {
+            if (!allowed()) return;
             final marked = await _replaceQueuedPrompt(entry.id, (queued) {
               // Selection/preflight can still be cancelled. Close removal
               // only once this serialized dispatch write actually begins,
@@ -6393,6 +6520,14 @@ class ConnectionController extends ChangeNotifier {
               markerRefused = true;
               return;
             }
+            if (!allowed()) {
+              // Nothing left the device: restore the draft after a policy
+              // change during the durable marker write. A refused rollback
+              // retains the conservative marker, never sends the message.
+              await _replaceQueuedPrompt(entry.id, (_) => entry);
+              return;
+            }
+            _explicitQueueResends.remove(entry.id);
             dispatched = true;
             await currentApi.promptAsync(
               entry.sessionID,
@@ -6413,7 +6548,10 @@ class ConnectionController extends ChangeNotifier {
           if (currentApi is SessionSelectionGateway) {
             await _mutateSessionSelection(entry.sessionID, (gateway) async {
               await _queueChanges;
-              if (!_queue.any((queued) => queued.id == entry.id)) return false;
+              if (!allowed() ||
+                  !_queue.any((queued) => queued.id == entry.id)) {
+                return false;
+              }
               // Persisted offline entries carry intentional choices. Online
               // prompt delivery alone never rewrites shared session state.
               final model = entry.model;
@@ -6428,7 +6566,10 @@ class ConnectionController extends ChangeNotifier {
                 throw const ProductException('The connection changed.');
               }
               await _queueChanges;
-              if (!_queue.any((queued) => queued.id == entry.id)) return true;
+              if (!allowed() ||
+                  !_queue.any((queued) => queued.id == entry.id)) {
+                return true;
+              }
               if (entry.agent?.isNotEmpty == true) {
                 await gateway.setSessionAgent(entry.sessionID, entry.agent!);
               }
@@ -6436,7 +6577,10 @@ class ConnectionController extends ChangeNotifier {
                 throw const ProductException('The connection changed.');
               }
               await _queueChanges;
-              if (!_queue.any((queued) => queued.id == entry.id)) return true;
+              if (!allowed() ||
+                  !_queue.any((queued) => queued.id == entry.id)) {
+                return true;
+              }
               await dispatch();
               return true;
             }, requireConfirmation: false);
@@ -6501,7 +6645,7 @@ class ConnectionController extends ChangeNotifier {
           sent += 1;
           // Sent by itself once the server was back: filed for While you
           // were away under the conversation it went to (P6.2).
-          if (actScope != null) {
+          if (!explicitlyRequested && actScope != null) {
             final at = DateTime.now();
             unawaited(
               recordAutomaticAct(
@@ -7665,12 +7809,16 @@ class ConnectionController extends ChangeNotifier {
     } catch (_) {
       if (!_isCurrent(generation, currentApi)) return;
       final profile = _connectedProfile;
-      if (profile == null) return;
+      if (profile == null ||
+          !automationPolicy.allows(AutomationBehavior.reconnect)) {
+        return;
+      }
       await _resumeLifecycleTransport(
         profile,
         directory: directory,
         workspace: workspace,
         onTransportReady: onTransportReady,
+        automaticRecovery: true,
       );
       return;
     }
@@ -7699,6 +7847,7 @@ class ConnectionController extends ChangeNotifier {
     String? directory,
     String? workspace,
     void Function()? onTransportReady,
+    bool automaticRecovery = false,
   }) => PerfTrace.span(
     'lifecycle.resume',
     () => _resumeLifecycleTransportUntraced(
@@ -7706,6 +7855,7 @@ class ConnectionController extends ChangeNotifier {
       directory: directory,
       workspace: workspace,
       onTransportReady: onTransportReady,
+      automaticRecovery: automaticRecovery,
     ),
   );
 
@@ -7714,7 +7864,12 @@ class ConnectionController extends ChangeNotifier {
     String? directory,
     String? workspace,
     void Function()? onTransportReady,
+    bool automaticRecovery = false,
   }) async {
+    if (automaticRecovery &&
+        !automationPolicy.allows(AutomationBehavior.reconnect)) {
+      return;
+    }
     final generation = _beginGeneration();
     _retireTransport();
     _connectedProfile = profile;
@@ -7748,7 +7903,15 @@ class ConnectionController extends ChangeNotifier {
       );
       return;
     }
-    _startEvents(generation, currentApi);
+    if (automaticRecovery &&
+        !automationPolicy.allows(AutomationBehavior.reconnect)) {
+      _retireTransport();
+      _lifecycleSuspended = true;
+      status = StreamStatus.disconnected;
+      notifyListeners();
+      return;
+    }
+    _startEvents(generation, currentApi, automaticRecovery: automaticRecovery);
     onTransportReady?.call();
     _markDataRefreshReady(generation, currentApi);
     await _reloadRetainedLocationData();
@@ -9441,6 +9604,10 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
+    final policyListener = _streamPolicyChanged;
+    if (policyListener != null) _streamPolicy?.removeListener(policyListener);
+    _streamPolicy = null;
+    _streamPolicyChanged = null;
     _transportReady = false;
     _cancelPermissionHydration();
     final oldEvents = _events;

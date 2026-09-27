@@ -1,4 +1,6 @@
-// TEAM-111: the Agents fleet, the Agent detail and the live output page.
+// TEAM-111: the Agents fleet, the Agent detail and the live output page
+// (slice-P3.6: the worker's watching conversation drawn from the team's
+// live output, [TeamWatchLiveScreen]).
 //
 // Fleet rows carry the six status words with their glyphs, sort per 02-ux
 // §5.1 and show "current work · ctx N% · age"; a run's Agents tab shows
@@ -26,12 +28,10 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamAgentTranscript;
+    show TeamAgentTranscript, TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart' show ToolCard;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -356,7 +356,7 @@ void main() {
     await size(tester, viewport);
     await tester.pumpWidget(
       app(
-        AgentOutputScreen(controller: controller, agentId: agentId),
+        TeamWatchLiveScreen(team: controller, agentId: agentId),
         locale: locale,
         direction: direction,
         scale: scale,
@@ -377,7 +377,7 @@ void main() {
       .state<ScrollableState>(
         find
             .descendant(
-              of: key('team-agent-output-list'),
+              of: key('chat-watching-live-list'),
               matching: find.byType(Scrollable),
             )
             .first,
@@ -497,60 +497,55 @@ void main() {
         );
       }
 
-      // The row opens the Agent detail by default.
+      // The row opens the agent's conversation (watching); with no
+      // OpenCode server to read it from, the team's live output of it.
       await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(key('chat-watching-live'), findsOneWidget);
+      expect(key('chat-watching-live-note'), findsOneWidget);
+      expect(key('team-agent'), findsNothing);
+      // Its own page (state, controls, details) is the top bar's action.
+      await tester.tap(key('chat-watching-details'));
       await tester.pumpAndSettle();
       expect(key('team-agent'), findsOneWidget);
       expect(key('team-agent-title'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run’s Agents tab shows only the agents on that run', (
-      tester,
-    ) async {
+    // P3.5: the run page's Agents tab is retired; the task's conversation
+    // names the agents on it (its strip and worker lines).
+    Widget conversation(OrchestrationController controller) =>
+        TeamConversationScreen(
+          team: controller,
+          runId: 'oc-xru',
+          now: () => clock,
+        );
+
+    testWidgets('the task names only the agents on it', (tester) async {
       final (controller, _) = await boot(configure: runShape);
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-placeholder'), findsNothing);
-      expect(key('team-run-agents-list'), findsOneWidget);
-      expect(key('team-run-agent-fox'), findsOneWidget);
-      expect(key('team-run-agent-wolf'), findsOneWidget);
-      // Bear works w9, which is not on this run; owl has no work.
-      expect(key('team-run-agent-bear'), findsNothing);
-      expect(key('team-run-agent-owl'), findsNothing);
-      // Wolf waits on input and sorts first.
-      expect(
-        top(tester, key('team-run-agent-wolf')),
-        lessThan(top(tester, key('team-run-agent-fox'))),
-      );
-      await tester.tap(key('team-run-agent-fox'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation-family'), findsOneWidget);
+      expect(key('team-conversation-family-fox'), findsOneWidget);
+      expect(key('team-conversation-family-wolf'), findsOneWidget);
+      // Bear works w9, which is not on this task; owl has no work.
+      expect(key('team-conversation-family-bear'), findsNothing);
+      expect(key('team-conversation-family-owl'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run without agents shows the empty state', (tester) async {
+    testWidgets('a task without agents shows no agent strip', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => runShape(g, agents: const []),
       );
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-empty'), findsOneWidget);
-      expect(find.text('No agents on this run'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation'), findsOneWidget);
+      expect(key('team-conversation-family'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
@@ -616,13 +611,16 @@ void main() {
       expect(key('team-agent-step-group-header'), findsNothing);
       expect(find.text('Ran 5 commands'), findsNothing);
       expect(find.textContaining('Branch setup: metadata says'), findsNothing);
-      // No OpenCode server to look in here: the primary is Live output,
-      // with the reason beside it.
+      // The one pinned action is its conversation; with no OpenCode server
+      // to look in here, the reason (the team's live output) is beside it.
       expect(
-        tester.widget<KitButton>(key('team-agent-open-output')).role,
+        tester.widget<KitButton>(key('team-agent-open-conversation')).role,
         KitButtonRole.primary,
       );
-      expect(key('team-agent-open-conversation'), findsNothing);
+      expect(key('team-agent-open-output'), findsNothing);
+      expect(key('team-agent-menu-output'), findsNothing);
+      // Messaging moved to the conversation's composer.
+      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-conversation-miss'), findsOneWidget);
       // This read-only host allows no controls, and the page says where
       // they are.
@@ -732,7 +730,7 @@ void main() {
         // are the reply's prose blocks, each run of calls one of the chat's
         // folded tool lines ("Ran 5 commands"), no frame, and no raw
         // `[tool: …]` markers or one monospace dump of the transcript.
-        final transcript = key('team-agent-output-text');
+        final transcript = key('chat-watching-live-text');
         expect(tester.widget(transcript), isA<TeamAgentTranscript>());
         Finder inside(Finder matching) =>
             find.descendant(of: transcript, matching: matching);
@@ -786,19 +784,31 @@ void main() {
       expect(tail.ended, isTrue);
       expect(tail.text, isNotEmpty, reason: 'the cached text stays');
 
-      await tester.tap(key('team-agent-open-output'));
+      await tester.tap(key('team-agent-open-conversation'));
       await tester.pumpAndSettle();
-      expect(key('team-agent-output-page'), findsOneWidget);
-      // Why this page and not its conversation.
-      expect(key('team-agent-output-note'), findsOneWidget);
+      expect(key('chat-watching-live'), findsOneWidget);
+      // Why the live output and not its conversation.
+      expect(key('chat-watching-live-note'), findsOneWidget);
       expect(
         find.text('Session ended · output no longer on the host'),
         findsOneWidget,
       );
-      expect(key('team-agent-output-text'), findsOneWidget);
+      expect(key('chat-watching-live-text'), findsOneWidget);
+      // The title is the task it works on.
+      expect(
+        find.descendant(
+          of: key('chat-watching-live-title'),
+          matching: find.text('Sync engine'),
+        ),
+        findsOneWidget,
+      );
+      // Opened from its own page: Back returns there, no way round again.
+      expect(key('chat-watching-details'), findsNothing);
       // Nothing more can arrive: no Follow switch, and no jump pill.
-      expect(key('team-agent-output-follow'), findsNothing);
-      expect(key('team-agent-output-jump').hitTestable(), findsNothing);
+      expect(key('chat-watching-live-jump').hitTestable(), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(key('team-agent'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -817,10 +827,20 @@ void main() {
       );
       // Nothing done yet and no activity: no status line for it.
       expect(key('team-agent-activity-line'), findsNothing);
-      await tester.tap(key('team-agent-open-output'));
+      await tester.tap(key('team-agent-open-conversation'));
       await tester.pumpAndSettle();
       expect(
         find.text('Live output is not available for this agent'),
+        findsOneWidget,
+      );
+      // Nothing said yet: the watching page's own empty state, and no
+      // task to name, so the title says what the page is.
+      expect(key('chat-watching-empty'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('chat-watching-live-title'),
+          matching: find.text('Live output'),
+        ),
         findsOneWidget,
       );
       await tester.pageBack();
@@ -899,17 +919,23 @@ void main() {
         // Follow switch.
         viewport: const Size(360, 420),
       );
-      final text = key('team-agent-output-text');
+      final text = key('chat-watching-live-text');
       expect(text, findsOneWidget);
       // The chat's reply, in the reader's direction (its commands stay LTR
       // mono inside the chat's tool rows), never a raw mono dump.
       expect(tester.widget(text), isA<TeamAgentTranscript>());
       expect(Directionality.of(tester.element(text)), TextDirection.rtl);
       expect(find.textContaining('[tool:'), findsNothing);
-      expect(find.text('مباشر'), findsOneWidget);
+      // The status line names who is watched once words arrived.
+      expect(
+        find.descendant(
+          of: key('chat-watching-banner'),
+          matching: find.textContaining('fox'),
+        ),
+        findsOneWidget,
+      );
       // Built from kit parts: no Follow switch (following is the default,
       // a drag up stops it and the pill resumes it).
-      expect(key('team-agent-output-follow'), findsNothing);
       expect(find.byType(SwitchListTile), findsNothing);
 
       var position = outputPosition(tester);
@@ -935,10 +961,10 @@ void main() {
         },
       );
       await pumpOutput(tester, controller, 'fox');
-      final jump = key('team-agent-output-jump').hitTestable();
+      final jump = key('chat-watching-live-jump').hitTestable();
       expect(jump, findsNothing);
 
-      await tester.drag(key('team-agent-output-list'), const Offset(0, 400));
+      await tester.drag(key('chat-watching-live-list'), const Offset(0, 400));
       await tester.pumpAndSettle();
       var position = outputPosition(tester);
       expect(position.pixels, lessThan(position.maxScrollExtent - 24));
@@ -1037,7 +1063,7 @@ void main() {
         expect(tester.getSize(key('team-agent')).width, 320);
         expect(key('team-agent-recycling'), findsOneWidget);
         // The primary sits pinned under the list.
-        expect(key('team-agent-open-output'), findsOneWidget);
+        expect(key('team-agent-open-conversation'), findsOneWidget);
         for (final part in [
           'header',
           'activity-line',
@@ -1068,24 +1094,26 @@ void main() {
           scale: 2.5,
           viewport: const Size(320, 740),
         );
-        expect(tester.getSize(key('team-agent-output-page')).width, 320);
-        expect(key('team-agent-output-status'), findsOneWidget);
-        // No Follow switch: following is the default, the pill resumes it.
-        expect(key('team-agent-output-follow'), findsNothing);
-        expect(key('team-agent-output-text'), findsOneWidget);
-        var position = outputPosition(tester);
-        expect(position.pixels, position.maxScrollExtent);
-        await tester.drag(key('team-agent-output-list'), const Offset(0, 300));
-        await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump').hitTestable(), findsOneWidget);
-        final pill = tester.getRect(key('team-agent-output-jump'));
-        expect(pill.left, greaterThanOrEqualTo(0));
-        expect(pill.right, lessThanOrEqualTo(320));
+        expect(tester.getSize(key('chat-watching-live')).width, 320);
+        expect(key('chat-watching-banner'), findsOneWidget);
+        // The composer stays in the window at this size (it scrolls within
+        // its room): its field is in reach, nothing overflows.
+        expect(key('chat-watching-composer'), findsOneWidget);
+        final field = tester.getRect(key('chat-watching-message-field'));
+        expect(field.bottom, lessThanOrEqualTo(740));
+        // The transcript is in the list, which the large text leaves
+        // little room; no Follow switch.
+        expect(
+          find.byKey(
+            const ValueKey('chat-watching-live-text'),
+            skipOffstage: false,
+          ),
+          findsOneWidget,
+        );
+        expect(key('chat-watching-live-follow'), findsNothing);
         gateway.inner.endOutput('bl-5qc');
         await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump').hitTestable(), findsNothing);
-        position = outputPosition(tester);
-        expect(position.viewportDimension, greaterThan(0));
+        expect(key('chat-watching-live-jump').hitTestable(), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }

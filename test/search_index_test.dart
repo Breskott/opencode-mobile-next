@@ -59,19 +59,16 @@ const _excluded = <String, String>{
   'profile-editor': 'a form inside Saved servers; owned by phase 3b',
   'pairing-scanner': 'a step of adding a server',
   'team-agent': 'one agent of one AI Team run',
-  'team-agent-output': 'one agent of one AI Team run',
+  'chat-watching-live':
+      'one AI Team agent whose conversation the server cannot read; '
+      'opened from that agent',
   'team-agents': "needs the AI Team; opened from the home's agents row",
   'team-board':
       "needs the AI Team; opened from the home's board icon or "
       "'View board' row",
   'team-conversation':
       'one AI Team task\'s conversation; opened from the '
-      "run's Overview, the board or the Work tab",
-  'team-run': 'one AI Team run',
-  'team-run-agents-tab': 'a tab of one AI Team run',
-  'team-run-overview-tab': 'a tab of one AI Team run',
-  'team-run-work-tab': 'a tab of one AI Team run',
-  'team-run-timeline-tab': 'a tab of one AI Team run',
+      'team page, the board or the Work tab',
   'phone-setup-progress':
       'a step of phone setup; opened from On this phone '
       'or a setup notification',

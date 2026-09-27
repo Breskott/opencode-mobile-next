@@ -310,7 +310,8 @@ _ChatStatus _sharedStatus(
     action: KitAction(
       key: const ValueKey('chat-status-copy-share-link'),
       label: l10n.chatUiCopyShareLink,
-      onPressed: () => unawaited(KitCopy.copy(context, url, redact: false)),
+      // Redacted like any server text: a plain share address is unchanged.
+      onPressed: () => unawaited(KitCopy.copy(context, url)),
     ),
     more: [
       KitAction(

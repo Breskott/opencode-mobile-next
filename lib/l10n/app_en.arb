@@ -767,9 +767,9 @@
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
-  "readAloudContinue": "Choose voice",
+  "readAloudContinue": "Read aloud",
   "@readAloudContinue": {
-    "description": "Accept speech disclosure and request installed voice metadata"
+    "description": "Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)"
   },
   "readAloudUnsupported": "Read-aloud is not available on this platform.",
   "@readAloudUnsupported": {
@@ -1804,7 +1804,7 @@
   "markdownScrollCode": "Scroll lines",
   "markdownReaderTitle": "Code reader",
   "tailscaleTitle": "Connect with Tailscale",
-  "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.",
+  "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network.",
   "tailscaleAppStep": "1. Open your private network",
   "tailscaleChecking": "Checking for the Tailscale app…",
   "tailscaleInstalled": "Tailscale is installed. VPN connection is unverified.",
@@ -1814,7 +1814,7 @@
   "tailscaleVpnHandoff": "In Tailscale, sign in to the network that can reach your server, approve Android’s VPN prompt if asked, and turn the connection on. OpenCode cannot see or change that VPN state.",
   "tailscaleReturned": "Welcome back. App presence was checked again; use Test connection on the next screen to check your server.",
   "tailscaleOpen": "Open Tailscale",
-  "tailscaleCheckAgain": "Check app again",
+  "tailscaleCheckAgain": "Check Tailscale again",
   "tailscaleAddressStep": "2. Review your server address",
   "tailscaleAddressLabel": "Private HTTPS server address",
   "tailscaleAddressDetail": "Use the full HTTPS origin printed by Tailscale Serve, such as https://computer.tailnet-name.ts.net. Keep any HTTPS port it prints. A short device name or a raw HTTP port may not provide a valid certificate.",
@@ -1839,11 +1839,9 @@
   "a2aBearer": "Agent bearer credential",
   "a2aSkills": "Advertised skills",
   "a2aTaskPrompt": "Task text",
-  "a2aReopenDetail": "Reopening checks the existing task. It never sends your task again.",
   "a2aDeliveryUnconfirmed": "Delivery unconfirmed",
   "a2aDraft": "Not sent",
   "a2aCancelDetail": "Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.",
-  "a2aRequestCancel": "Ask to stop",
   "a2aYourReply": "Your reply",
   "a2aAgentOutput": "Agent output",
   "a2aBlockedLink": "Unsupported link",
@@ -3255,14 +3253,6 @@
   "@e7SettingsUi53": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi54": "Server updates are managed externally",
-  "@e7SettingsUi54": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi55": "Copy the official upgrade and model-refresh commands to run on the server host.",
-  "@e7SettingsUi55": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi56": "Not connected",
   "@e7SettingsUi56": {
     "description": "Settings and appearance user interface."
@@ -3291,7 +3281,7 @@
   "@e7SettingsUi65": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi66": "Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands",
+  "e7SettingsUi66": "Keep OpenCode running after you close the terminal.",
   "@e7SettingsUi66": {
     "description": "Settings and appearance user interface."
   },
@@ -6297,10 +6287,6 @@
   "@e7LibraryCopyParameterSchema": {
     "description": "Library and project tools UI: Copy parameter schema"
   },
-  "e7LibraryParameterSchema": "Parameter schema",
-  "@e7LibraryParameterSchema": {
-    "description": "Library and project tools UI: Parameter schema"
-  },
   "e7LibraryNoProjectSelected": "No project selected",
   "@e7LibraryNoProjectSelected": {
     "description": "Library and project tools UI: No project selected"
@@ -7315,10 +7301,6 @@
   "@e7SetupConnectionClosed": {
     "description": "Setup journey: connection closed."
   },
-  "e7SetupNotConnected": "Not connected",
-  "@e7SetupNotConnected": {
-    "description": "Setup journey: not connected."
-  },
   "e7SetupTokenBanner": "Connection token re-entry required for the active server. Edit the server and save its token before connecting.",
   "@e7SetupTokenBanner": {
     "description": "Setup journey: token banner."
@@ -7571,10 +7553,6 @@
   "@e7SetupVerifyTermuxFailed": {
     "description": "Setup journey: verify termux failed."
   },
-  "e7SetupThisServer": "This server",
-  "@e7SetupThisServer": {
-    "description": "Setup journey: this server."
-  },
   "e7SetupUbuntuOnly": "Ubuntu is installed. OpenCode is not installed yet.",
   "@e7SetupUbuntuOnly": {
     "description": "Setup journey: ubuntu only."
@@ -7625,15 +7603,6 @@
     "placeholders": {
       "number": {
         "type": "int"
-      }
-    }
-  },
-  "e7SetupServerVersion": "Server version {version}",
-  "@e7SetupServerVersion": {
-    "description": "Setup journey: server version.",
-    "placeholders": {
-      "version": {
-        "type": "String"
       }
     }
   },
@@ -9891,10 +9860,6 @@
       }
     }
   },
-  "teamUiRunDetails": "Details",
-  "@teamUiRunDetails": {
-    "description": "Run detail app bar action opening Technical details"
-  },
   "teamUiRunElapsedDays": "{count} d",
   "@teamUiRunElapsedDays": {
     "description": "Run detail elapsed time in days",
@@ -9962,10 +9927,6 @@
   "@teamUiRunLabelStarted": {
     "description": "Run Technical details label"
   },
-  "teamUiRunLabelState": "State",
-  "@teamUiRunLabelState": {
-    "description": "Run Technical details label"
-  },
   "teamUiRunLabelTrackedWork": "Tracked work",
   "@teamUiRunLabelTrackedWork": {
     "description": "Run Technical details label for the ids of the work items in the run"
@@ -9982,24 +9943,8 @@
   "@teamUiRunMissingTitle": {
     "description": "Run detail state when the run id is not in the host’s list"
   },
-  "teamUiRunNeedsYou": "Needs you",
-  "@teamUiRunNeedsYou": {
-    "description": "Run detail inline card label when no agent is named"
-  },
   "teamUiRunTabAgents": "Agents",
   "@teamUiRunTabAgents": {
-    "description": "Run detail tab"
-  },
-  "teamUiRunTabOverview": "Overview",
-  "@teamUiRunTabOverview": {
-    "description": "Run detail tab"
-  },
-  "teamUiRunTabTimeline": "Timeline",
-  "@teamUiRunTabTimeline": {
-    "description": "Run detail tab"
-  },
-  "teamUiRunTabWork": "Steps",
-  "@teamUiRunTabWork": {
     "description": "Run detail tab"
   },
   "teamUiRunTermBatch": "Task · convoy",
@@ -10032,38 +9977,6 @@
       }
     }
   },
-  "teamUiRunTimelineEmpty": "Nothing has happened yet",
-  "@teamUiRunTimelineEmpty": {
-    "description": "Run timeline empty state title"
-  },
-  "teamUiRunTimelineEmptyFiltered": "No events of this kind yet",
-  "@teamUiRunTimelineEmptyFiltered": {
-    "description": "Run timeline empty state title when a filter hides every row"
-  },
-  "teamUiRunTimelineEmptyFilteredHint": "Try another filter.",
-  "@teamUiRunTimelineEmptyFilteredHint": {
-    "description": "Run timeline empty state hint when a filter hides every row"
-  },
-  "teamUiRunTimelineEmptyHint": "Events appear here as the team works on this task.",
-  "@teamUiRunTimelineEmptyHint": {
-    "description": "Run timeline empty state hint"
-  },
-  "teamUiRunTimelineFilterAgents": "Agents",
-  "@teamUiRunTimelineFilterAgents": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterAll": "All",
-  "@teamUiRunTimelineFilterAll": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterDecisions": "Decisions",
-  "@teamUiRunTimelineFilterDecisions": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterWork": "Work",
-  "@teamUiRunTimelineFilterWork": {
-    "description": "Run timeline filter chip"
-  },
   "teamUiRunTimelineGateOpened": "Needs you: {title}",
   "@teamUiRunTimelineGateOpened": {
     "description": "Run timeline row for a gate that opened",
@@ -10079,15 +9992,6 @@
     "placeholders": {
       "title": {
         "type": "String"
-      }
-    }
-  },
-  "teamUiRunTimelineJump": "{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}",
-  "@teamUiRunTimelineJump": {
-    "description": "Run timeline pill shown when events arrived while scrolled away",
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },
@@ -10201,10 +10105,6 @@
   "@teamUiAgentOutputCopy": {
     "description": "Live output app bar button tooltip"
   },
-  "teamUiAgentOutputEmpty": "Nothing yet",
-  "@teamUiAgentOutputEmpty": {
-    "description": "Live output body when the session has produced no text"
-  },
   "teamUiAgentOutputEnded": "Session ended · output no longer on the host",
   "@teamUiAgentOutputEnded": {
     "description": "Live output status line once the host stopped serving the session; cached text stays below"
@@ -10229,14 +10129,6 @@
   "@teamUiAgentRecyclingSoon": {
     "description": "Agent header line when context use reached the recycle threshold"
   },
-  "teamUiAgentRunEmpty": "No agents on this run",
-  "@teamUiAgentRunEmpty": {
-    "description": "Run Agents tab empty state title"
-  },
-  "teamUiAgentRunEmptyHint": "Agents appear here while they work on this run's items.",
-  "@teamUiAgentRunEmptyHint": {
-    "description": "Run Agents tab empty state hint"
-  },
   "teamUiAgentSessionAge": "Session {age}",
   "@teamUiAgentSessionAge": {
     "description": "Agent header: how long the session has existed; age is a short span like \"3 h 14 min\"",
@@ -10258,35 +10150,6 @@
   "teamUiAgentValueUnknown": "Not reported",
   "@teamUiAgentValueUnknown": {
     "description": "Agent detail row value when the host did not report it"
-  },
-  "teamUiWorkEmpty": "No work items yet",
-  "@teamUiWorkEmpty": {
-    "description": "Work tab empty state title"
-  },
-  "teamUiWorkEmptyHint": "Work appears here once the run has items.",
-  "@teamUiWorkEmptyHint": {
-    "description": "Work tab empty state hint"
-  },
-  "teamUiWorkGraphSemantics": "{count, plural, =1{Dependency graph of 1 work item} other{Dependency graph of {count} work items}}",
-  "@teamUiWorkGraphSemantics": {
-    "description": "Screen reader label of the Work graph",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiWorkGroupHeader": "{state} · {count}",
-  "@teamUiWorkGroupHeader": {
-    "description": "Work list group header: the state word and how many items are in it",
-    "placeholders": {
-      "state": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "teamUiWorkLabelAssignee": "Assignee",
   "@teamUiWorkLabelAssignee": {
@@ -10339,15 +10202,6 @@
   "teamUiWorkOwnerNone": "Unassigned",
   "@teamUiWorkOwnerNone": {
     "description": "Work owner when nobody is on the item"
-  },
-  "teamUiWorkOwnerSemantics": "Owner: {name}",
-  "@teamUiWorkOwnerSemantics": {
-    "description": "Screen reader label of the owner glyph on a work row",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
   },
   "teamUiWorkSheetBlocking": "Blocks",
   "@teamUiWorkSheetBlocking": {
@@ -10479,23 +10333,6 @@
   "teamUiWorkStateWorking": "Working",
   "@teamUiWorkStateWorking": {
     "description": "Work state word (BRD §14)"
-  },
-  "teamUiWorkViewGraph": "Graph",
-  "@teamUiWorkViewGraph": {
-    "description": "Work tab view toggle"
-  },
-  "teamUiWorkViewList": "List",
-  "@teamUiWorkViewList": {
-    "description": "Work tab view toggle"
-  },
-  "teamUiWorkWaitsOn": "{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}",
-  "@teamUiWorkWaitsOn": {
-    "description": "Work row detail: how many open items this one still needs",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "teamUiUsageCostEstimated": "{cost} est.",
   "@teamUiUsageCostEstimated": {
@@ -10743,9 +10580,9 @@
       }
     }
   },
-  "teamUiGateAnswerRunLogs": "View logs",
+  "teamUiGateAnswerRunLogs": "Watch the agent",
   "@teamUiGateAnswerRunLogs": {
-    "description": "Failed-run sheet action opening the agent output page"
+    "description": "Failed-run sheet action opening the agent's conversation (watching), or its live output when the conversation cannot be read"
   },
   "teamUiGateAnswerRunCancel": "Stop work",
   "@teamUiGateAnswerRunCancel": {
@@ -10816,23 +10653,6 @@
   "@teamUiControlCreateWork": {
     "description": "Receipt name of a direct task (TEAM-306): the work item created from the phone and handed to the project's agent pool"
   },
-  "teamUiControlMessageTitle": "Message {agent}",
-  "@teamUiControlMessageTitle": {
-    "description": "Title of the message sheet; {agent} is the agent name",
-    "placeholders": {
-      "agent": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiControlMessageHint": "Tell the agent what to do next",
-  "@teamUiControlMessageHint": {
-    "description": "Hint in the message composer"
-  },
-  "teamUiControlMessageSend": "Send",
-  "@teamUiControlMessageSend": {
-    "description": "Send button of the message composer"
-  },
   "teamUiControlStopConfirmTitle": "Stop {agent}?",
   "@teamUiControlStopConfirmTitle": {
     "description": "Title of the two-step Stop confirmation; {agent} is the agent name",
@@ -10898,26 +10718,6 @@
   "teamUiControlCancelRun": "Stop run",
   "@teamUiControlCancelRun": {
     "description": "Overflow item and control name: cancel a formula run (two-step)"
-  },
-  "teamUiControlCloseBatch": "Close batch",
-  "@teamUiControlCloseBatch": {
-    "description": "Overflow item and control name: close a batch (Gas City convoy), two-step"
-  },
-  "teamUiControlCancelRunConfirmTitle": "Stop this run?",
-  "@teamUiControlCancelRunConfirmTitle": {
-    "description": "Title of the two-step Cancel run confirmation"
-  },
-  "teamUiControlCancelRunConfirmBody": "Running steps stop; finished work stays. The phone cannot undo this.",
-  "@teamUiControlCancelRunConfirmBody": {
-    "description": "Body of the Cancel run confirmation"
-  },
-  "teamUiControlCloseBatchConfirmTitle": "Close this batch?",
-  "@teamUiControlCloseBatchConfirmTitle": {
-    "description": "Title of the two-step Close batch confirmation"
-  },
-  "teamUiControlCloseBatchConfirmBody": "The batch closes on the host. Its open work items stay open for another batch.",
-  "@teamUiControlCloseBatchConfirmBody": {
-    "description": "Body of the Close batch confirmation"
   },
   "teamUiStartRunFab": "Give the team a task",
   "@teamUiStartRunFab": {
@@ -11074,9 +10874,9 @@
       }
     }
   },
-  "teamUiStartRunPlannerOutput": "Planner output",
+  "teamUiStartRunPlannerOutput": "Watch the planner",
   "@teamUiStartRunPlannerOutput": {
-    "description": "Button on the pending card opening the planner's live output page"
+    "description": "Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read"
   },
   "teamUiStartRunDismiss": "Dismiss",
   "@teamUiStartRunDismiss": {
@@ -11445,9 +11245,9 @@
   "@teamUiCycleActionHow": {
     "description": "Dispatch cycle action and sheet title: opens three lines explaining the host's polling chain"
   },
-  "teamUiCycleActionOpenOutput": "Open agent output",
+  "teamUiCycleActionOpenOutput": "Watch the agent",
   "@teamUiCycleActionOpenOutput": {
-    "description": "Dispatch cycle action: opens the agent output screen for the agent on the item"
+    "description": "Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read"
   },
   "teamUiCycleActionNudgeRefinery": "Nudge refinery",
   "@teamUiCycleActionNudgeRefinery": {
@@ -11754,10 +11554,6 @@
   "@termuxProcsAutoRefresh": {
     "description": "Line under the headline"
   },
-  "termuxProcsStop": "Stop",
-  "@termuxProcsStop": {
-    "description": "Button that stops one process"
-  },
   "termuxProcsStopSemantics": "Stop {name}",
   "@termuxProcsStopSemantics": {
     "description": "Accessibility label of a row's Stop button",
@@ -11779,10 +11575,6 @@
   "termuxProcsStopOneBody": "It gets a polite stop, then a forced one after 5 seconds.",
   "@termuxProcsStopOneBody": {
     "description": "Two-step confirmation body for one process"
-  },
-  "termuxProcsKeep": "Keep",
-  "@termuxProcsKeep": {
-    "description": "Two-step confirmation cancel button"
   },
   "termuxProcsProtected": "Protected · control it from This phone",
   "@termuxProcsProtected": {
@@ -12173,10 +11965,6 @@
   "teamUiPhoneRemoveTitle": "Delete AI Team from this phone?",
   "@teamUiPhoneRemoveTitle": {
     "description": "On this phone: remove confirmation title"
-  },
-  "teamUiPhoneRemoved": "AI Team was deleted from this phone.",
-  "@teamUiPhoneRemoved": {
-    "description": "On this phone: removed confirmation"
   },
   "teamUiPhoneActionFailed": "That did not work: {reason}",
   "@teamUiPhoneActionFailed": {
@@ -14774,10 +14562,6 @@
       }
     }
   },
-  "workRunawaySee": "See what's running",
-  "@workRunawaySee": {
-    "description": "Status line action opening the Running now screen"
-  },
   "connectStartingPhone": "Starting OpenCode on this phone…",
   "@connectStartingPhone": {
     "description": "Connecting screen title while the phone's own server starts"
@@ -15026,37 +14810,9 @@
   "@teamUiRunStepsHeading": {
     "description": "Section heading of the steps on an AI Team task Overview"
   },
-  "teamUiRunStepsAll": "{count, plural, other{See all {count} steps}}",
-  "@teamUiRunStepsAll": {
-    "description": "Row under the first steps on the Overview that opens the Steps tab",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiRunDetailsCounts": "{done} done · {working} working · {blocked} held up",
-  "@teamUiRunDetailsCounts": {
-    "description": "The step counts under the Details row of an AI Team task",
-    "placeholders": {
-      "done": {
-        "type": "int"
-      },
-      "working": {
-        "type": "int"
-      },
-      "blocked": {
-        "type": "int"
-      }
-    }
-  },
   "teamUiRunDetailsUsage": "Usage",
   "@teamUiRunDetailsUsage": {
     "description": "Label of the cost and tokens under the Details row of an AI Team task"
-  },
-  "teamUiRunDetailsStepsLabel": "Steps",
-  "@teamUiRunDetailsStepsLabel": {
-    "description": "Label of the step counts under the Details row of an AI Team task"
   },
   "serverRowConnected": "Connected",
   "@serverRowConnected": {
@@ -15771,42 +15527,37 @@
   "@chatWatchEmptyBody": {
     "description": "Chat, watching an AI Team worker: body of the empty state"
   },
-  "teamWatchBanner": "Watching {name} · {role} · AI Team",
+  "teamWatchBanner": "Watching {name} · {role} · {state}",
   "@teamWatchBanner": {
-    "description": "Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team",
+    "description": "Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)",
     "placeholders": {
       "name": {
-        "type": "String"
+        "type": "String",
+        "example": "furiosa"
       },
       "role": {
-        "type": "String"
+        "type": "String",
+        "example": "Worker"
+      },
+      "state": {
+        "type": "String",
+        "example": "Working"
       }
     }
   },
-  "teamWatchBannerRole": "Watching the {role} · AI Team",
+  "teamWatchBannerRole": "Watching the {role} · {state}",
   "@teamWatchBannerRole": {
-    "description": "Chat status line in watching mode when the agent has no name of its own: its role in plain words",
+    "description": "Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it",
     "placeholders": {
       "role": {
-        "type": "String"
+        "type": "String",
+        "example": "Worker"
+      },
+      "state": {
+        "type": "String",
+        "example": "Working"
       }
     }
-  },
-  "teamWatchNote": "You're watching. Your message goes to it through the AI Team, never into this conversation.",
-  "@teamWatchNote": {
-    "description": "Where the chat composer was, in watching mode: why there is no text field"
-  },
-  "teamWatchNoteNoMessage": "You're watching. This team can't be messaged from here.",
-  "@teamWatchNoteNoMessage": {
-    "description": "Where the chat composer was, in watching mode, when the team takes no messages from the phone"
-  },
-  "teamWatchMessageWorker": "Message the worker",
-  "@teamWatchMessageWorker": {
-    "description": "Watching mode: the one action in place of the composer, for a worker"
-  },
-  "teamWatchMessageAgent": "Message this agent",
-  "@teamWatchMessageAgent": {
-    "description": "Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)"
   },
   "teamWatchFallbackUnreadable": "Its conversation can't be read from the server this app is connected to, so this is the team's live output.",
   "@teamWatchFallbackUnreadable": {
@@ -16130,10 +15881,6 @@
   "@teamChatComposerCannot": {
     "description": "Team conversation, where the composer is: the team takes no messages from the phone"
   },
-  "teamOpenTaskConversationHint": "The task and its workers, in the chat",
-  "@teamOpenTaskConversationHint": {
-    "description": "AI Team task page, supporting line of Open conversation: opens the task as a conversation"
-  },
   "teamBoardTitle": "Board",
   "@teamBoardTitle": {
     "description": "AI Team board: top bar title"
@@ -16446,22 +16193,6 @@
   "teamBoardPriorityTitle": "Priority",
   "@teamBoardPriorityTitle": {
     "description": "Board: the priority sheet's title"
-  },
-  "teamBoardAddTooltip": "Add to backlog",
-  "@teamBoardAddTooltip": {
-    "description": "Board: top bar action that adds a task to the backlog"
-  },
-  "teamBoardAddHint": "What should the team do?",
-  "@teamBoardAddHint": {
-    "description": "Board: add-to-backlog field hint"
-  },
-  "teamBoardAddButton": "Add to backlog",
-  "@teamBoardAddButton": {
-    "description": "Board: add-to-backlog primary button"
-  },
-  "teamBoardAddNote": "It waits in the Backlog until you start it.",
-  "@teamBoardAddNote": {
-    "description": "Board: add-to-backlog sheet, what happens next"
   },
   "teamBoardAddFailed": "Couldn't add it. The team's host said no.",
   "@teamBoardAddFailed": {
@@ -18548,16 +18279,6 @@
       }
     }
   },
-  "kitToolForMinutes": "for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}",
-  "@kitToolForMinutes": {
-    "description": "KitToolRow agent form: how long a running sub-agent or worker has run, after its state word (\"Running for 3 min\")",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
-  },
   "kitToolOpenConversation": "Open its conversation",
   "@kitToolOpenConversation": {
     "description": "KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation"
@@ -19926,11 +19647,11 @@
   "@serversRemoveServerKeeps": {
     "description": "Servers › Remove server sheet: what is kept."
   },
-  "guideStepTwoScan": "Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.",
+  "guideStepTwoScan": "Tap Add server, then Scan code and point the camera at the QR, or Paste code.",
   "@guideStepTwoScan": {
     "description": "Setup guide step 2 when this device can scan; names the real Servers buttons"
   },
-  "guideStepTwoPaste": "Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.",
+  "guideStepTwoPaste": "Copy the printed code, then tap Add server and Paste code.",
   "@guideStepTwoPaste": {
     "description": "Setup guide step 2 without a camera; names the real Servers buttons"
   },
@@ -20015,9 +19736,14 @@
   "@serverSettingsUpgradeKeepsData": {
     "description": "Server update question: what is kept"
   },
-  "serverSettingsCopyUpdateCommands": "Copy update commands",
+  "serverSettingsCopyUpdateCommands": "Copy update commands for {server}",
   "@serverSettingsCopyUpdateCommands": {
-    "description": "Server settings: copy button for the upgrade commands run on the host"
+    "description": "Server settings: the row that copies the upgrade and model-refresh commands to run on the server's computer (updates managed outside the app).",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
   },
   "serverSettingsAddressLabel": "Address",
   "@serverSettingsAddressLabel": {
@@ -20039,7 +19765,7 @@
   "@tailscaleSetupOpenFailed": {
     "description": "Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened"
   },
-  "tailscaleSetupAddressHelper": "OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.",
+  "tailscaleSetupAddressHelper": "Paste the HTTPS address Tailscale Serve printed.",
   "@tailscaleSetupAddressHelper": {
     "description": "Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices"
   },
@@ -20865,17 +20591,9 @@
       }
     }
   },
-  "teamControlsFieldUnavailable": "The team can't take words from this phone right now.",
-  "@teamControlsFieldUnavailable": {
-    "description": "Why an agent's message field is turned off (shared-team-1)."
-  },
   "teamNowWakeRefusedNoReason": "The host didn't say why.",
   "@teamNowWakeRefusedNoReason": {
     "description": "Shown when the team host refused to wake an agent without a reason (shared-team-1)."
-  },
-  "teamBoardMoveSheetAddEmpty": "Say what the team should do first.",
-  "@teamBoardMoveSheetAddEmpty": {
-    "description": "Error under the Add to backlog field when it is empty (shared-team-1)."
   },
   "teamCycleStripNoAgentYet": "No agent has taken this step yet.",
   "@teamCycleStripNoAgentYet": {
@@ -21035,10 +20753,6 @@
       }
     }
   },
-  "teamAgentScreenMessageLabel": "Your message",
-  "@teamAgentScreenMessageLabel": {
-    "description": "Message-an-agent sheet: the field's label."
-  },
   "gateSheetDestructiveBody": "The host marks this action as destructive. Approving it can't be undone from the phone.",
   "@gateSheetDestructiveBody": {
     "description": "Gate sheet: notice on a destructive confirmation."
@@ -21122,10 +20836,6 @@
   "teamAgentScreenLabelId": "Agent id",
   "@teamAgentScreenLabelId": {
     "description": "Agent page technical details: the label of the agent's id."
-  },
-  "teamAgentScreenMessageFirst": "Type a message first",
-  "@teamAgentScreenMessageFirst": {
-    "description": "Message-an-agent sheet: why Send is off while the field is empty."
   },
   "gateSheetSendNeedsText": "Type an answer first",
   "@gateSheetSendNeedsText": {
@@ -21372,18 +21082,6 @@
   "@integrationsMcpServersLabel": {
     "description": "Integrations page: section label above the MCP server rows; the term is explained in place."
   },
-  "integrationsProvidersSummary": "{connected} of {total} connected",
-  "@integrationsProvidersSummary": {
-    "description": "Integrations page: count at the end of the Providers section label.",
-    "placeholders": {
-      "connected": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "integrationsModelCount": "{count, plural, one{1 model} other{{count} models}}",
   "@integrationsModelCount": {
     "description": "Integrations page: provider row supporting line, how many models the provider serves.",
@@ -21569,10 +21267,6 @@
         "type": "String"
       }
     }
-  },
-  "integrationsMcpRemoveUnavailable": "This server can't remove MCP servers from the app. Edit its configuration on the computer.",
-  "@integrationsMcpRemoveUnavailable": {
-    "description": "Integrations page: why Remove is unavailable on this server."
   },
   "integrationsMcpRemoveTitle": "Remove {name} until restart?",
   "@integrationsMcpRemoveTitle": {
@@ -23308,10 +23002,6 @@
   "@externalAgentsAboutLabel": {
     "description": "screen-library-2: Add agent and the agent's page: label above the agent's own description and skills."
   },
-  "externalAgentsNoSkills": "It lists no skills",
-  "@externalAgentsNoSkills": {
-    "description": "screen-library-2: Add agent: row when the agent lists no skills."
-  },
   "externalAgentsUnverified": "The agent describes itself. This app hasn't verified who runs it, what it can do or what it costs.",
   "@externalAgentsUnverified": {
     "description": "screen-library-2: Add agent: note under the agent's description."
@@ -23461,10 +23151,6 @@
   "externalAgentsStopUnavailable": "Check with the agent first; pull down to refresh",
   "@externalAgentsStopUnavailable": {
     "description": "screen-library-2: Task page: why stopping cannot be asked now."
-  },
-  "externalAgentsStopTitle": "Stop this task?",
-  "@externalAgentsStopTitle": {
-    "description": "screen-library-2: Stop question title."
   },
   "externalAgentsForgetMenu": "Forget this task on this phone",
   "@externalAgentsForgetMenu": {
@@ -23980,7 +23666,7 @@
       }
     }
   },
-  "teamChatRefusedTitle": "The team didn't take this task",
+  "teamChatRefusedTitle": "Task not taken",
   "@teamChatRefusedTitle": {
     "description": "Team conversation: title of the notice shown when the team refused a task that was just given to it."
   },
@@ -23988,7 +23674,7 @@
   "@teamChatRefusedRetry": {
     "description": "Team conversation: button on the refused-task notice that sends the same task to the team again."
   },
-  "teamChatGoneTitle": "This task is no longer on the team",
+  "teamChatGoneTitle": "Task no longer listed",
   "@teamChatGoneTitle": {
     "description": "Team conversation: page state when the task this page shows is no longer listed by the team."
   },
@@ -24560,7 +24246,7 @@
   "@chatRequestNoConnection": {
     "description": "Chat request card: why Allow once and Reject are unavailable (no connection)."
   },
-  "chatRequestAlwaysTitle": "Always allow requests like this",
+  "chatRequestAlwaysTitle": "Always allow these requests",
   "@chatRequestAlwaysTitle": {
     "description": "Permission request sheet: the risky switch that saves an always-allow rule."
   },
@@ -26194,15 +25880,6 @@
   "@productErrorDetailsLabel": {
     "description": "Label of the folded technical text under an error alert."
   },
-  "productErrorRejectedBecause": "The server didn't accept it: {reason}",
-  "@productErrorRejectedBecause": {
-    "description": "Error words: the server refused a request (400/422) and gave a short reason for people.",
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "productErrorServer": "The server had a problem (error {code}). Try again in a moment.",
   "@productErrorServer": {
     "description": "Error words: the server answered a 5xx status such as 502 or 503.",
@@ -26979,6 +26656,336 @@
       },
       "available": {
         "type": "int"
+      }
+    }
+  },
+  "terminalScreenEmptyTitle": "No terminals yet",
+  "@terminalScreenEmptyTitle": {
+    "description": "Terminal list empty state title: this server has no terminals open."
+  },
+  "terminalScreenEmptyBody": "Start one in {project}.",
+  "@terminalScreenEmptyBody": {
+    "description": "Terminal list empty state body, naming the project folder a new terminal opens in.",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "oc_app"
+      }
+    }
+  },
+  "terminalScreenEmptyBodyNoProject": "Start one in this project.",
+  "@terminalScreenEmptyBodyNoProject": {
+    "description": "Terminal list empty state body when the project folder has no name to show."
+  },
+  "integrationsProvidersExplanation": "The model providers this server can use. Connect one to start chatting.",
+  "@integrationsProvidersExplanation": {
+    "description": "Explanation shown when the person taps the Providers section label on the integrations page."
+  },
+  "integrationsResourcesExplanation": "Files and data that connected MCP servers give the agent.",
+  "@integrationsResourcesExplanation": {
+    "description": "Explanation shown when the person taps the Resources section label on the integrations page."
+  },
+  "externalAgentsStopTaskTitle": "Stop “{task}”?",
+  "@externalAgentsStopTaskTitle": {
+    "description": "Question before asking an external agent to stop a task, naming the task.",
+    "placeholders": {
+      "task": {
+        "type": "String",
+        "example": "Summarise the report"
+      }
+    }
+  },
+  "externalAgentsStopTaskConfirm": "Ask {agent} to stop",
+  "@externalAgentsStopTaskConfirm": {
+    "description": "Confirm button: ask the named external agent to stop the task.",
+    "placeholders": {
+      "agent": {
+        "type": "String",
+        "example": "Color agent"
+      }
+    }
+  },
+  "externalAgentsStopTaskKeep": "Keep running",
+  "@externalAgentsStopTaskKeep": {
+    "description": "Dismiss button on the stop question: leave the external agent's task running."
+  },
+  "toolsDetailMenu": "{tool} actions",
+  "@toolsDetailMenu": {
+    "description": "Name of the menu on a tool's detail sheet (holds Copy parameter schema).",
+    "placeholders": {
+      "tool": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
+  },
+  "kitDurationHours": "{hours} h",
+  "@kitDurationHours": {
+    "description": "Kit durations: a whole number of hours (\"3 h\"); used from an hour up, so a long wait never reads \"2,715 min\"",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationHoursMinutes": "{hours} h {minutes} min",
+  "@kitDurationHoursMinutes": {
+    "description": "Kit durations: hours and minutes (\"1 h 20 min\")",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationDays": "{days} d",
+  "@kitDurationDays": {
+    "description": "Kit durations: whole days (\"2 d\")",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationDaysHours": "{days} d {hours} h",
+  "@kitDurationDaysHours": {
+    "description": "Kit durations: days and hours (\"1 d 21 h\")",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "kitToolFor": "for {duration}",
+  "@kitToolFor": {
+    "description": "KitToolRow agent form: how long a running sub-agent or worker has run, after its state word (\"Running for 3 min\", \"Running for 1 d 21 h\"); duration is a kit duration",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "kitSinceWaitingForLong": "Waiting {duration}",
+  "@kitSinceWaitingForLong": {
+    "description": "KitSince: a slow wait of an hour or more (\"Waiting 2 h 5 min\"); duration is a kit duration",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadRoutedIt": "Sent it to the workers",
+  "@teamChatLeadRoutedIt": {
+    "description": "Team conversation, the lead's line: the task (said once in the person's prompt above) was sent to the workers; \"it\" refers back to the prompt so the task's text is not repeated"
+  },
+  "teamChatLeadStartingIt": "Started a worker on it",
+  "@teamChatLeadStartingIt": {
+    "description": "Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)"
+  },
+  "teamChatLeadClaimedIt": "{name} took it",
+  "@teamChatLeadClaimedIt": {
+    "description": "Team conversation, the lead's line: the named worker took the task named in the prompt above",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimedWorkerIt": "A worker took it",
+  "@teamChatLeadClaimedWorkerIt": {
+    "description": "Team conversation, the lead's line: an unnamed worker took the task named in the prompt above"
+  },
+  "teamChatLeadPushedIt": "Its changes are on a branch",
+  "@teamChatLeadPushedIt": {
+    "description": "Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch"
+  },
+  "teamChatLeadReviewIt": "Handed it to review",
+  "@teamChatLeadReviewIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above went to review"
+  },
+  "teamChatLeadMergedIt": "Merged it",
+  "@teamChatLeadMergedIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above was merged"
+  },
+  "teamChatLeadStepFailedIt": "It failed",
+  "@teamChatLeadStepFailedIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above failed"
+  },
+  "teamChatLeadStepCancelledIt": "It was cancelled",
+  "@teamChatLeadStepCancelledIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above was cancelled"
+  },
+  "teamChatNowWorkingIt": "{name} is working on it · {elapsed}",
+  "@teamChatNowWorkingIt": {
+    "description": "Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowNoProgress": "No progress for {elapsed}",
+  "@teamChatNowNoProgress": {
+    "description": "Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as \"1 d 21 h\"",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressBody": "{name} hasn't moved this task since {time}. Nudge it to carry on, restart it, or report the problem.",
+  "@teamChatNoProgressBody": {
+    "description": "Team conversation: under a stalled task, what happened and the ways forward; time is a clock time or date",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This server can't nudge or restart it from here; report the problem or check the team's computer.",
+  "@teamChatNoProgressBodyNoControls": {
+    "description": "Team conversation: under a stalled task on a host without agent controls, what happened and the way forward",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressReport": "Report the problem",
+  "@teamChatNoProgressReport": {
+    "description": "Team conversation, a stalled task: opens Report a problem with the stall attached"
+  },
+  "teamChatNoProgressReportTitle": "Task made no progress",
+  "@teamChatNoProgressReportTitle": {
+    "description": "Report a problem: the attached problem's title for a stalled team task",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamTaskDetailsReported": "What the server reported",
+  "@teamTaskDetailsReported": {
+    "description": "Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)"
+  },
+  "kitToolOpenDetails": "Open its details",
+  "@kitToolOpenDetails": {
+    "description": "KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)"
+  },
+  "teamStartRunKeepInBacklog": "Keep in backlog",
+  "@teamStartRunKeepInBacklog": {
+    "description": "Give the team a task (from the board): makes the task and leaves it in the Backlog, given to no one, instead of starting it now"
+  },
+  "workRunawayStopped": "Stopped {helper}",
+  "@workRunawayStopped": {
+    "description": "Announced once after the Work status line's Stop ended the leftover process",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawayStopFailed": "Couldn't stop {helper}. Try again, or stop it from Termux.",
+  "@workRunawayStopFailed": {
+    "description": "Work status line when stopping the leftover process did not end it",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      }
+    }
+  },
+  "serverSettingsUpdateCommandsDetail": "Run them in a terminal on the server's computer; this app can't update it.",
+  "@serverSettingsUpdateCommandsDetail": {
+    "description": "Server settings: the line under 'Copy update commands for {server}' before it is tapped."
+  },
+  "serverSettingsUpdateCommandsCopied": "Copied. Run them in a terminal on the server's computer.",
+  "@serverSettingsUpdateCommandsCopied": {
+    "description": "Server settings: the line under 'Copy update commands for {server}' after the row copied them."
+  },
+  "hostServiceTitle": "Linux service for {server}",
+  "@hostServiceTitle": {
+    "description": "Run as a Linux service page: its title, naming the server (four words at most, glossary G28).",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "hostServiceIntro": "These commands run on {server}'s computer; copy each into a terminal there.",
+  "@hostServiceIntro": {
+    "description": "Run as a Linux service page: the one line under the top bar.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "tailscaleSetupToDo": "To do · {detail}",
+  "@tailscaleSetupToDo": {
+    "description": "Tailscale steps: a step the person still has to do; the neutral to-do word leads its line.",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "tailscaleSetupNoDeviceList": "OpenCode can’t list the devices on your tailnet.",
+  "@tailscaleSetupNoDeviceList": {
+    "description": "Tailscale setup and recovery fold: why the address is typed, not picked."
+  },
+  "productErrorStagedRevert": "Review the staged revert before sending this queued prompt.",
+  "@productErrorStagedRevert": {
+    "description": "Safe app-authored explanation when a queued prompt needs staged revert review."
+  },
+  "teamWatchComposerHint": "Message {name}…",
+  "@teamWatchComposerHint": {
+    "description": "Composer hint while watching an AI Team agent's conversation: the words go to the agent through the AI Team. name is the agent's own name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "furiosa"
+      }
+    }
+  },
+  "teamWatchComposerHintWorker": "Message the worker…",
+  "@teamWatchComposerHintWorker": {
+    "description": "Composer hint while watching an AI Team worker that has no name of its own."
+  },
+  "teamWatchComposerHintAgent": "Message this agent…",
+  "@teamWatchComposerHintAgent": {
+    "description": "Composer hint while watching an AI Team agent (not a worker) that has no name of its own."
+  },
+  "teamWatchAbout": "About {name}",
+  "@teamWatchAbout": {
+    "description": "Top bar action while watching an AI Team agent's conversation: opens the agent's own page (its state, controls and technical details). name is the agent's own name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "furiosa"
+      }
+    }
+  },
+  "teamWatchAboutRole": "About the {role}",
+  "@teamWatchAboutRole": {
+    "description": "Top bar action while watching an AI Team agent with no name of its own: opens its own page. role is its role in plain words (Worker).",
+    "placeholders": {
+      "role": {
+        "type": "String",
+        "example": "Worker"
       }
     }
   }

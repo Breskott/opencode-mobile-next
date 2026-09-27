@@ -9,6 +9,7 @@ import '../domain/server_gateway.dart';
 import 'models.dart';
 import 'sse.dart';
 import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
 
 export 'models.dart' show ApiException;
 
@@ -75,6 +76,7 @@ class OpenCodeApi
   ); // sync endpoints can run long
 
   OpenCodeApi({required this.baseUrl, this.username, this.password}) {
+    KitRedact.registerKnownSecret(password ?? '');
     final options = BaseOptions(
       baseUrl: baseUrl.endsWith('/')
           ? baseUrl.substring(0, baseUrl.length - 1)
@@ -1265,6 +1267,7 @@ class OpenCodeApi
   Future<ProvidersResponse> providers() async {
     try {
       final r = await _dio.get('/provider', queryParameters: _query());
+      KitRedact.registerCredentialValues(r.data);
       return ProvidersResponse.fromJson(
         Map<String, dynamic>.from(r.data as Map),
       );
@@ -1278,6 +1281,7 @@ class OpenCodeApi
   @override
   Future<ProvidersResponse> configuredProviders() async {
     final r = await _dio.get('/config/providers', queryParameters: _query());
+    KitRedact.registerCredentialValues(r.data);
     return ProvidersResponse.fromJson(Map<String, dynamic>.from(r.data as Map));
   }
 

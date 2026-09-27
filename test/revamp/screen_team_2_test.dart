@@ -218,8 +218,9 @@ void main() {
             child: KitButton.primary(
               key: const ValueKey('open'),
               label: 'Open',
-              onPressed: () async =>
-                  results.add(await showStartRunSheet(context, controller)),
+              onPressed: () async => results.add(
+                (await showStartRunSheet(context, controller))?.record,
+              ),
             ),
           ),
         ),

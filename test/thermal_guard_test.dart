@@ -13,6 +13,7 @@ import 'package:opencode_mobile/builtin/thermal_guard_teams.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/platform/thermal.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
 import 'package:opencode_mobile/ui/widgets/thermal_notice.dart';
@@ -332,6 +333,44 @@ void main() {
       guard.dispose();
     });
 
+    test('recovery off still protects the phone, but never resumes or '
+        'reports a resume until enabled and confirmed', () async {
+      final automation = AutomationPolicyController.forProfile(prefs, 'phone');
+      await automation.setBehavior(AutomationBehavior.thermalRecovery, false);
+      final acts = <ThermalNoticeKind>[];
+      final guard = ThermalGuard(
+        bridge: bridge,
+        port: port,
+        prefs: prefs,
+        clock: () => now,
+        inBackground: () => false,
+        onAct: (kind, team, since, at) => acts.add(kind),
+      );
+      addTearDown(guard.dispose);
+      await guard.observe(_severe);
+      await guard.observe(_critical);
+      now = _t0.add(const Duration(minutes: 1));
+      await guard.observe(_none);
+      now = _t0.add(const Duration(minutes: 3));
+      await guard.observe(_none);
+      expect(port.calls, ['pause phone', 'stop phone']);
+      expect(acts, [ThermalNoticeKind.paused, ThermalNoticeKind.stopped]);
+      expect(guard.hold, ThermalHold.stopped);
+      expect(prefs.containsKey('oc.thermalPause.phone'), isTrue);
+
+      await automation.setBehavior(AutomationBehavior.thermalRecovery, true);
+      port.reachable = false;
+      now = _t0.add(const Duration(minutes: 5));
+      await guard.observe(_none);
+      expect(acts, [ThermalNoticeKind.paused, ThermalNoticeKind.stopped]);
+      port.reachable = true;
+      now = _t0.add(const Duration(minutes: 7));
+      await guard.observe(_none);
+      expect(acts.last, ThermalNoticeKind.resumed);
+      expect(guard.hold, ThermalHold.none);
+      expect(prefs.containsKey('oc.thermalPause.phone'), isFalse);
+    });
+
     test('no notification while the app is on screen', () async {
       background = false;
       final guard = guard0();
@@ -483,9 +522,171 @@ void main() {
       expect(requests, [
         'GET /v0/city/phone',
         'PATCH /v0/city/phone {suspended: false}',
+        'GET /v0/city/phone/session/gc-1',
         'POST /v0/city/phone/session/gc-1/wake',
       ]);
     });
+
+    for (final failedStatus in [500, null, 404]) {
+      test('unconfirmed wake $failedStatus retains recovery across restart '
+          'and retries only sleeping sessions', () async {
+        var now = _t0;
+        var citySuspended = false;
+        var retry = false;
+        final active = <String>{'gc-1', 'gc-2'};
+        final wakeRequests = <String>[];
+        final acts = <ThermalNoticeKind>[];
+        final bridge = _FakeBridge();
+        final teams = GasCityThermalTeams(
+          store: storeWith([phone]),
+          http: (method, uri, [body]) async {
+            if (uri.path == '/v0/city/phone') {
+              if (method == 'PATCH') {
+                citySuspended = body!['suspended'] == true;
+              }
+              return ThermalHttpAnswer(200, {'suspended': citySuspended});
+            }
+            if (uri.path == '/v0/city/phone/sessions') {
+              return ThermalHttpAnswer(200, {
+                'items': [
+                  for (final id in active) {'id': id, 'running': true},
+                ],
+              });
+            }
+            final id = uri.pathSegments[4];
+            if (method == 'GET') {
+              return ThermalHttpAnswer(200, {
+                'id': id,
+                'running': active.contains(id),
+                'state': active.contains(id) ? 'active' : 'suspended',
+              });
+            }
+            if (uri.path.endsWith('/suspend')) {
+              active.remove(id);
+              return const ThermalHttpAnswer(200);
+            }
+            wakeRequests.add(id);
+            if (id == 'gc-2' && !retry) {
+              return failedStatus == null
+                  ? null
+                  : ThermalHttpAnswer(failedStatus);
+            }
+            active.add(id);
+            return const ThermalHttpAnswer(200);
+          },
+        );
+        ThermalGuard makeGuard() => ThermalGuard(
+          bridge: bridge,
+          port: teams,
+          prefs: prefs,
+          clock: () => now,
+          inBackground: () => true,
+          strings: () => lookupAppLocalizations(const Locale('en')),
+          onAct: (kind, _, _, _) => acts.add(kind),
+        );
+        final first = makeGuard();
+        var firstDisposed = false;
+        addTearDown(() {
+          if (!firstDisposed) first.dispose();
+        });
+        await first.observe(_severe);
+        await first.observe(_moderate);
+        now = _t0.add(const Duration(minutes: 2));
+        await first.observe(_moderate);
+
+        expect(wakeRequests, ['gc-1', 'gc-2']);
+        expect(first.hold, ThermalHold.paused);
+        expect(first.notice?.kind, ThermalNoticeKind.paused);
+        expect(acts, [ThermalNoticeKind.paused]);
+        expect(bridge.notified, hasLength(1));
+        final persisted = jsonDecode(prefs.getString('oc.thermalPause.phone')!);
+        expect(persisted['sessions'], contains('gc-2'));
+
+        // A new guard must be able to finish the failed wake using only
+        // durable recovery state, without repeating an already active wake.
+        first.dispose();
+        firstDisposed = true;
+        retry = true;
+        bridge.now = _moderate;
+        final second = makeGuard();
+        addTearDown(second.dispose);
+        await second.start();
+        now = _t0.add(const Duration(minutes: 4));
+        await second.observe(_moderate);
+        expect(wakeRequests, ['gc-1', 'gc-2', 'gc-2']);
+        expect(second.hold, ThermalHold.none);
+        expect(second.notice?.kind, ThermalNoticeKind.resumed);
+        expect(prefs.containsKey('oc.thermalPause.phone'), isFalse);
+        expect(acts, [ThermalNoticeKind.paused, ThermalNoticeKind.resumed]);
+        expect(bridge.notified, hasLength(2));
+      });
+    }
+
+    test('confirmed missing session needs no wake', () async {
+      final requests = <String>[];
+      final teams = GasCityThermalTeams(
+        store: storeWith([phone]),
+        http: (method, uri, [body]) async {
+          requests.add('$method ${uri.path}');
+          if (uri.path == '/v0/city/phone') {
+            return const ThermalHttpAnswer(200, {'suspended': false});
+          }
+          if (method == 'GET') return const ThermalHttpAnswer(404);
+          return const ThermalHttpAnswer(500);
+        },
+      );
+      expect(
+        await teams.resume(
+          ThermalTeamHold(team: _phoneTeam, since: _t0, sessions: ['gone']),
+        ),
+        isTrue,
+      );
+      expect(requests, [
+        'GET /v0/city/phone',
+        'GET /v0/city/phone/session/gone',
+      ]);
+    });
+
+    test(
+      'a failed wake needs a separate confirmation that session is gone',
+      () async {
+        var sessionReads = 0;
+        final requests = <String>[];
+        final teams = GasCityThermalTeams(
+          store: storeWith([phone]),
+          http: (method, uri, [body]) async {
+            requests.add('$method ${uri.path}');
+            if (uri.path == '/v0/city/phone') {
+              return const ThermalHttpAnswer(200, {'suspended': false});
+            }
+            if (method == 'GET' && ++sessionReads == 1) {
+              return const ThermalHttpAnswer(200, {
+                'id': 'closed-during-wake',
+                'running': false,
+                'state': 'suspended',
+              });
+            }
+            return const ThermalHttpAnswer(404);
+          },
+        );
+        expect(
+          await teams.resume(
+            ThermalTeamHold(
+              team: _phoneTeam,
+              since: _t0,
+              sessions: ['closed-during-wake'],
+            ),
+          ),
+          isTrue,
+        );
+        expect(requests, [
+          'GET /v0/city/phone',
+          'GET /v0/city/phone/session/closed-during-wake',
+          'POST /v0/city/phone/session/closed-during-wake/wake',
+          'GET /v0/city/phone/session/closed-during-wake',
+        ]);
+      },
+    );
 
     test('a city the person suspended is left alone', () async {
       final requests = <String>[];
@@ -499,6 +700,72 @@ void main() {
       expect(await teams.runningHere(), isEmpty);
       expect(await teams.pause(_phoneTeam, now: _t0), isNull);
       expect(requests.where((r) => !r.startsWith('GET')), isEmpty);
+    });
+
+    test('recovery policy prevents automatic supervisor work', () async {
+      await AutomationPolicyController.forProfile(
+        prefs,
+        'phone',
+      ).setBehavior(AutomationBehavior.thermalRecovery, false);
+      final requests = <String>[];
+      final teams = GasCityThermalTeams(
+        store: storeWith([phone]),
+        http: (method, uri, [body]) async {
+          requests.add(method);
+          return const ThermalHttpAnswer(200, {'suspended': true});
+        },
+      );
+      expect(
+        await teams.resume(ThermalTeamHold(team: _phoneTeam, since: _t0)),
+        isFalse,
+      );
+      expect(requests, isEmpty);
+    });
+
+    test(
+      'disabling recovery while reading health prevents the resume',
+      () async {
+        final automation = AutomationPolicyController.forProfile(
+          prefs,
+          'phone',
+        );
+        final requests = <String>[];
+        final teams = GasCityThermalTeams(
+          store: storeWith([phone]),
+          http: (method, uri, [body]) async {
+            requests.add(method);
+            await automation.setBehavior(
+              AutomationBehavior.thermalRecovery,
+              false,
+            );
+            return const ThermalHttpAnswer(200, {'suspended': true});
+          },
+        );
+        expect(
+          await teams.resume(ThermalTeamHold(team: _phoneTeam, since: _t0)),
+          isFalse,
+        );
+        expect(requests, ['GET']);
+      },
+    );
+
+    test('an unconfirmed session wake is not a confirmed recovery', () async {
+      final teams = GasCityThermalTeams(
+        store: storeWith([phone]),
+        http: (method, uri, [body]) async => method == 'POST'
+            ? null
+            : const ThermalHttpAnswer(200, {'suspended': false}),
+      );
+      expect(
+        await teams.resume(
+          ThermalTeamHold(
+            team: _phoneTeam,
+            since: _t0,
+            sessions: const ['gc-1'],
+          ),
+        ),
+        isFalse,
+      );
     });
 
     test(

@@ -1569,7 +1569,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.';
 
   @override
-  String get readAloudContinue => 'Choose voice';
+  String get readAloudContinue => 'Read aloud';
 
   @override
   String get readAloudUnsupported =>
@@ -3002,7 +3002,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleIntro =>
-      'Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.';
+      'Reach OpenCode on another computer through your own Tailscale network.';
 
   @override
   String get tailscaleAppStep => '1. Open your private network';
@@ -3038,7 +3038,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tailscaleOpen => 'Open Tailscale';
 
   @override
-  String get tailscaleCheckAgain => 'Check app again';
+  String get tailscaleCheckAgain => 'Check Tailscale again';
 
   @override
   String get tailscaleAddressStep => '2. Review your server address';
@@ -3121,10 +3121,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get a2aTaskPrompt => 'Task text';
 
   @override
-  String get a2aReopenDetail =>
-      'Reopening checks the existing task. It never sends your task again.';
-
-  @override
   String get a2aDeliveryUnconfirmed => 'Delivery unconfirmed';
 
   @override
@@ -3133,9 +3129,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get a2aCancelDetail =>
       'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.';
-
-  @override
-  String get a2aRequestCancel => 'Ask to stop';
 
   @override
   String get a2aYourReply => 'Your reply';
@@ -4598,13 +4591,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi53 => 'an unknown version';
 
   @override
-  String get e7SettingsUi54 => 'Server updates are managed externally';
-
-  @override
-  String get e7SettingsUi55 =>
-      'Copy the official upgrade and model-refresh commands to run on the server host.';
-
-  @override
   String get e7SettingsUi56 => 'Not connected';
 
   @override
@@ -4627,7 +4613,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsUi66 =>
-      'Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands';
+      'Keep OpenCode running after you close the terminal.';
 
   @override
   String get e7SettingsUi67 => 'Server updates';
@@ -6900,9 +6886,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryCopyParameterSchema => 'Copy parameter schema';
 
   @override
-  String get e7LibraryParameterSchema => 'Parameter schema';
-
-  @override
   String get e7LibraryNoProjectSelected => 'No project selected';
 
   @override
@@ -7686,9 +7669,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupConnectionClosed => 'Connection closed';
 
   @override
-  String get e7SetupNotConnected => 'Not connected';
-
-  @override
   String get e7SetupTokenBanner =>
       'Connection token re-entry required for the active server. Edit the server and save its token before connecting.';
 
@@ -7898,9 +7878,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupVerifyTermuxFailed => 'Termux bridge verification failed.';
 
   @override
-  String get e7SetupThisServer => 'This server';
-
-  @override
   String get e7SetupUbuntuOnly =>
       'Ubuntu is installed. OpenCode is not installed yet.';
 
@@ -7940,11 +7917,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String e7SetupTerminalNumber(int number) {
     return 'Terminal $number';
-  }
-
-  @override
-  String e7SetupServerVersion(String version) {
-    return 'Server version $version';
   }
 
   @override
@@ -9633,9 +9605,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunDetails => 'Details';
-
-  @override
   String teamUiRunElapsedDays(int count) {
     return '$count d';
   }
@@ -9677,9 +9646,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunLabelStarted => 'Started';
 
   @override
-  String get teamUiRunLabelState => 'State';
-
-  @override
   String get teamUiRunLabelTrackedWork => 'Tracked work';
 
   @override
@@ -9693,19 +9659,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunMissingTitle => 'This task is no longer on the host';
 
   @override
-  String get teamUiRunNeedsYou => 'Needs you';
-
-  @override
   String get teamUiRunTabAgents => 'Agents';
-
-  @override
-  String get teamUiRunTabOverview => 'Overview';
-
-  @override
-  String get teamUiRunTabTimeline => 'Timeline';
-
-  @override
-  String get teamUiRunTabWork => 'Steps';
 
   @override
   String get teamUiRunTermBatch => 'Task · convoy';
@@ -9727,31 +9681,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunTimelineEmpty => 'Nothing has happened yet';
-
-  @override
-  String get teamUiRunTimelineEmptyFiltered => 'No events of this kind yet';
-
-  @override
-  String get teamUiRunTimelineEmptyFilteredHint => 'Try another filter.';
-
-  @override
-  String get teamUiRunTimelineEmptyHint =>
-      'Events appear here as the team works on this task.';
-
-  @override
-  String get teamUiRunTimelineFilterAgents => 'Agents';
-
-  @override
-  String get teamUiRunTimelineFilterAll => 'All';
-
-  @override
-  String get teamUiRunTimelineFilterDecisions => 'Decisions';
-
-  @override
-  String get teamUiRunTimelineFilterWork => 'Work';
-
-  @override
   String teamUiRunTimelineGateOpened(String title) {
     return 'Needs you: $title';
   }
@@ -9759,17 +9688,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String teamUiRunTimelineGateResolved(String title) {
     return 'Answered: $title';
-  }
-
-  @override
-  String teamUiRunTimelineJump(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count new · Jump to latest',
-      one: '1 new · Jump to latest',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -9846,9 +9764,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentOutputCopy => 'Copy output';
 
   @override
-  String get teamUiAgentOutputEmpty => 'Nothing yet';
-
-  @override
   String get teamUiAgentOutputEnded =>
       'Session ended · output no longer on the host';
 
@@ -9869,13 +9784,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentRecyclingSoon => 'Recycling soon · context nearly full';
 
   @override
-  String get teamUiAgentRunEmpty => 'No agents on this run';
-
-  @override
-  String get teamUiAgentRunEmptyHint =>
-      'Agents appear here while they work on this run\'s items.';
-
-  @override
   String teamUiAgentSessionAge(String age) {
     return 'Session $age';
   }
@@ -9887,28 +9795,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiAgentValueUnknown => 'Not reported';
-
-  @override
-  String get teamUiWorkEmpty => 'No work items yet';
-
-  @override
-  String get teamUiWorkEmptyHint => 'Work appears here once the run has items.';
-
-  @override
-  String teamUiWorkGraphSemantics(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Dependency graph of $count work items',
-      one: 'Dependency graph of 1 work item',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiWorkGroupHeader(String state, int count) {
-    return '$state · $count';
-  }
 
   @override
   String get teamUiWorkLabelAssignee => 'Assignee';
@@ -9948,11 +9834,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiWorkOwnerNone => 'Unassigned';
-
-  @override
-  String teamUiWorkOwnerSemantics(String name) {
-    return 'Owner: $name';
-  }
 
   @override
   String get teamUiWorkSheetBlocking => 'Blocks';
@@ -10046,23 +9927,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiWorkStateWorking => 'Working';
-
-  @override
-  String get teamUiWorkViewGraph => 'Graph';
-
-  @override
-  String get teamUiWorkViewList => 'List';
-
-  @override
-  String teamUiWorkWaitsOn(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Waits on $count steps',
-      one: 'Waits on 1 step',
-    );
-    return '$_temp0';
-  }
 
   @override
   String teamUiUsageCostEstimated(String cost) {
@@ -10262,7 +10126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiGateAnswerRunLogs => 'View logs';
+  String get teamUiGateAnswerRunLogs => 'Watch the agent';
 
   @override
   String get teamUiGateAnswerRunCancel => 'Stop work';
@@ -10320,17 +10184,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiControlCreateWork => 'Task sent to an agent';
 
   @override
-  String teamUiControlMessageTitle(String agent) {
-    return 'Message $agent';
-  }
-
-  @override
-  String get teamUiControlMessageHint => 'Tell the agent what to do next';
-
-  @override
-  String get teamUiControlMessageSend => 'Send';
-
-  @override
   String teamUiControlStopConfirmTitle(String agent) {
     return 'Stop $agent?';
   }
@@ -10373,23 +10226,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiControlCancelRun => 'Stop run';
-
-  @override
-  String get teamUiControlCloseBatch => 'Close batch';
-
-  @override
-  String get teamUiControlCancelRunConfirmTitle => 'Stop this run?';
-
-  @override
-  String get teamUiControlCancelRunConfirmBody =>
-      'Running steps stop; finished work stays. The phone cannot undo this.';
-
-  @override
-  String get teamUiControlCloseBatchConfirmTitle => 'Close this batch?';
-
-  @override
-  String get teamUiControlCloseBatchConfirmBody =>
-      'The batch closes on the host. Its open work items stay open for another batch.';
 
   @override
   String get teamUiStartRunFab => 'Give the team a task';
@@ -10515,7 +10351,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlannerOutput => 'Planner output';
+  String get teamUiStartRunPlannerOutput => 'Watch the planner';
 
   @override
   String get teamUiStartRunDismiss => 'Dismiss';
@@ -10751,7 +10587,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiCycleActionHow => 'How the host dispatches';
 
   @override
-  String get teamUiCycleActionOpenOutput => 'Open agent output';
+  String get teamUiCycleActionOpenOutput => 'Watch the agent';
 
   @override
   String get teamUiCycleActionNudgeRefinery => 'Nudge refinery';
@@ -10966,9 +10802,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termuxProcsAutoRefresh => 'Refreshes every 10 seconds while open';
 
   @override
-  String get termuxProcsStop => 'Stop';
-
-  @override
   String termuxProcsStopSemantics(String name) {
     return 'Stop $name';
   }
@@ -10981,9 +10814,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get termuxProcsStopOneBody =>
       'It gets a polite stop, then a forced one after 5 seconds.';
-
-  @override
-  String get termuxProcsKeep => 'Keep';
 
   @override
   String get termuxProcsProtected => 'Protected · control it from This phone';
@@ -11244,9 +11074,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneRemoveTitle => 'Delete AI Team from this phone?';
-
-  @override
-  String get teamUiPhoneRemoved => 'AI Team was deleted from this phone.';
 
   @override
   String teamUiPhoneActionFailed(String reason) {
@@ -13496,9 +13323,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get workRunawaySee => 'See what\'s running';
-
-  @override
   String get connectStartingPhone => 'Starting OpenCode on this phone…';
 
   @override
@@ -13660,25 +13484,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunStepsHeading => 'Steps';
 
   @override
-  String teamUiRunStepsAll(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'See all $count steps',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiRunDetailsCounts(int done, int working, int blocked) {
-    return '$done done · $working working · $blocked held up';
-  }
-
-  @override
   String get teamUiRunDetailsUsage => 'Usage';
-
-  @override
-  String get teamUiRunDetailsStepsLabel => 'Steps';
 
   @override
   String get serverRowConnected => 'Connected';
@@ -14188,28 +13994,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This conversation fills in as the agent works.';
 
   @override
-  String teamWatchBanner(String name, String role) {
-    return 'Watching $name · $role · AI Team';
+  String teamWatchBanner(String name, String role, String state) {
+    return 'Watching $name · $role · $state';
   }
 
   @override
-  String teamWatchBannerRole(String role) {
-    return 'Watching the $role · AI Team';
+  String teamWatchBannerRole(String role, String state) {
+    return 'Watching the $role · $state';
   }
-
-  @override
-  String get teamWatchNote =>
-      'You\'re watching. Your message goes to it through the AI Team, never into this conversation.';
-
-  @override
-  String get teamWatchNoteNoMessage =>
-      'You\'re watching. This team can\'t be messaged from here.';
-
-  @override
-  String get teamWatchMessageWorker => 'Message the worker';
-
-  @override
-  String get teamWatchMessageAgent => 'Message this agent';
 
   @override
   String get teamWatchFallbackUnreadable =>
@@ -14414,10 +14206,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamChatComposerCannot =>
       'This team can\'t be messaged from here.';
-
-  @override
-  String get teamOpenTaskConversationHint =>
-      'The task and its workers, in the chat';
 
   @override
   String get teamBoardTitle => 'Board';
@@ -14641,18 +14429,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamBoardPriorityTitle => 'Priority';
-
-  @override
-  String get teamBoardAddTooltip => 'Add to backlog';
-
-  @override
-  String get teamBoardAddHint => 'What should the team do?';
-
-  @override
-  String get teamBoardAddButton => 'Add to backlog';
-
-  @override
-  String get teamBoardAddNote => 'It waits in the Backlog until you start it.';
 
   @override
   String get teamBoardAddFailed =>
@@ -16308,22 +16084,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String kitToolForMinutes(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$countString min',
-      one: '1 min',
-      zero: 'under a minute',
-    );
-    return 'for $_temp0';
-  }
-
-  @override
   String get kitToolOpenConversation => 'Open its conversation';
 
   @override
@@ -17384,11 +17144,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideStepTwoScan =>
-      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+      'Tap Add server, then Scan code and point the camera at the QR, or Paste code.';
 
   @override
   String get guideStepTwoPaste =>
-      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+      'Copy the printed code, then tap Add server and Paste code.';
 
   @override
   String get guidePhonePathTitle => 'Use this phone instead';
@@ -17444,7 +17204,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
 
   @override
-  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+  String serverSettingsCopyUpdateCommands(String server) {
+    return 'Copy update commands for $server';
+  }
 
   @override
   String get serverSettingsAddressLabel => 'Address';
@@ -17465,7 +17227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleSetupAddressHelper =>
-      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+      'Paste the HTTPS address Tailscale Serve printed.';
 
   @override
   String get tailscaleSetupGetApp => 'Get Tailscale';
@@ -18084,14 +17846,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamControlsFieldUnavailable =>
-      'The team can\'t take words from this phone right now.';
-
-  @override
   String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
-
-  @override
-  String get teamBoardMoveSheetAddEmpty => 'Say what the team should do first.';
 
   @override
   String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
@@ -18192,9 +17947,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamAgentScreenMessageLabel => 'Your message';
-
-  @override
   String get gateSheetDestructiveBody =>
       'The host marks this action as destructive. Approving it can\'t be undone from the phone.';
 
@@ -18247,9 +17999,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamAgentScreenLabelId => 'Agent id';
-
-  @override
-  String get teamAgentScreenMessageFirst => 'Type a message first';
 
   @override
   String get gateSheetSendNeedsText => 'Type an answer first';
@@ -18449,11 +18198,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsMcpServersLabel => 'MCP servers';
 
   @override
-  String integrationsProvidersSummary(int connected, int total) {
-    return '$connected of $total connected';
-  }
-
-  @override
   String integrationsModelCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -18582,10 +18326,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String integrationsMcpRemoveUntilRestart(String name) {
     return 'Remove $name until restart';
   }
-
-  @override
-  String get integrationsMcpRemoveUnavailable =>
-      'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.';
 
   @override
   String integrationsMcpRemoveTitle(String name) {
@@ -19847,9 +19587,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get externalAgentsAboutLabel => 'What it says about itself';
 
   @override
-  String get externalAgentsNoSkills => 'It lists no skills';
-
-  @override
   String get externalAgentsUnverified =>
       'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.';
 
@@ -19951,9 +19688,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get externalAgentsStopUnavailable =>
       'Check with the agent first; pull down to refresh';
-
-  @override
-  String get externalAgentsStopTitle => 'Stop this task?';
 
   @override
   String get externalAgentsForgetMenu => 'Forget this task on this phone';
@@ -20311,13 +20045,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamChatRefusedTitle => 'The team didn\'t take this task';
+  String get teamChatRefusedTitle => 'Task not taken';
 
   @override
   String get teamChatRefusedRetry => 'Send the task again';
 
   @override
-  String get teamChatGoneTitle => 'This task is no longer on the team';
+  String get teamChatGoneTitle => 'Task no longer listed';
 
   @override
   String get teamChatGoneBody =>
@@ -20715,7 +20449,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not connected to the server, so this can’t be answered here.';
 
   @override
-  String get chatRequestAlwaysTitle => 'Always allow requests like this';
+  String get chatRequestAlwaysTitle => 'Always allow these requests';
 
   @override
   String chatRequestAlwaysScope(String patterns, String context) {
@@ -21972,11 +21706,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productErrorDetailsLabel => 'Error details';
 
   @override
-  String productErrorRejectedBecause(String reason) {
-    return 'The server didn\'t accept it: $reason';
-  }
-
-  @override
   String productErrorServer(int code) {
     return 'The server had a problem (error $code). Try again in a moment.';
   }
@@ -22555,5 +22284,200 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String voiceAutoSetupDetailMemoryValue(int required, int available) {
     return 'Needs $required MB; this phone has $available MB';
+  }
+
+  @override
+  String get terminalScreenEmptyTitle => 'No terminals yet';
+
+  @override
+  String terminalScreenEmptyBody(String project) {
+    return 'Start one in $project.';
+  }
+
+  @override
+  String get terminalScreenEmptyBodyNoProject => 'Start one in this project.';
+
+  @override
+  String get integrationsProvidersExplanation =>
+      'The model providers this server can use. Connect one to start chatting.';
+
+  @override
+  String get integrationsResourcesExplanation =>
+      'Files and data that connected MCP servers give the agent.';
+
+  @override
+  String externalAgentsStopTaskTitle(String task) {
+    return 'Stop “$task”?';
+  }
+
+  @override
+  String externalAgentsStopTaskConfirm(String agent) {
+    return 'Ask $agent to stop';
+  }
+
+  @override
+  String get externalAgentsStopTaskKeep => 'Keep running';
+
+  @override
+  String toolsDetailMenu(String tool) {
+    return '$tool actions';
+  }
+
+  @override
+  String kitDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String kitDurationHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String kitDurationDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String kitDurationDaysHours(int days, int hours) {
+    return '$days d $hours h';
+  }
+
+  @override
+  String kitToolFor(String duration) {
+    return 'for $duration';
+  }
+
+  @override
+  String kitSinceWaitingForLong(String duration) {
+    return 'Waiting $duration';
+  }
+
+  @override
+  String get teamChatLeadRoutedIt => 'Sent it to the workers';
+
+  @override
+  String get teamChatLeadStartingIt => 'Started a worker on it';
+
+  @override
+  String teamChatLeadClaimedIt(String name) {
+    return '$name took it';
+  }
+
+  @override
+  String get teamChatLeadClaimedWorkerIt => 'A worker took it';
+
+  @override
+  String get teamChatLeadPushedIt => 'Its changes are on a branch';
+
+  @override
+  String get teamChatLeadReviewIt => 'Handed it to review';
+
+  @override
+  String get teamChatLeadMergedIt => 'Merged it';
+
+  @override
+  String get teamChatLeadStepFailedIt => 'It failed';
+
+  @override
+  String get teamChatLeadStepCancelledIt => 'It was cancelled';
+
+  @override
+  String teamChatNowWorkingIt(String name, String elapsed) {
+    return '$name is working on it · $elapsed';
+  }
+
+  @override
+  String teamChatNowNoProgress(String elapsed) {
+    return 'No progress for $elapsed';
+  }
+
+  @override
+  String teamChatNoProgressBody(String name, String time) {
+    return '$name hasn\'t moved this task since $time. Nudge it to carry on, restart it, or report the problem.';
+  }
+
+  @override
+  String teamChatNoProgressBodyNoControls(String name, String time) {
+    return '$name hasn\'t moved this task since $time. This server can\'t nudge or restart it from here; report the problem or check the team\'s computer.';
+  }
+
+  @override
+  String get teamChatNoProgressReport => 'Report the problem';
+
+  @override
+  String teamChatNoProgressReportTitle(String elapsed) {
+    return 'Task made no progress';
+  }
+
+  @override
+  String get teamTaskDetailsReported => 'What the server reported';
+
+  @override
+  String get kitToolOpenDetails => 'Open its details';
+
+  @override
+  String get teamStartRunKeepInBacklog => 'Keep in backlog';
+
+  @override
+  String workRunawayStopped(String helper) {
+    return 'Stopped $helper';
+  }
+
+  @override
+  String workRunawayStopFailed(String helper) {
+    return 'Couldn\'t stop $helper. Try again, or stop it from Termux.';
+  }
+
+  @override
+  String get serverSettingsUpdateCommandsDetail =>
+      'Run them in a terminal on the server\'s computer; this app can\'t update it.';
+
+  @override
+  String get serverSettingsUpdateCommandsCopied =>
+      'Copied. Run them in a terminal on the server\'s computer.';
+
+  @override
+  String hostServiceTitle(String server) {
+    return 'Linux service for $server';
+  }
+
+  @override
+  String hostServiceIntro(String server) {
+    return 'These commands run on $server\'s computer; copy each into a terminal there.';
+  }
+
+  @override
+  String tailscaleSetupToDo(String detail) {
+    return 'To do · $detail';
+  }
+
+  @override
+  String get tailscaleSetupNoDeviceList =>
+      'OpenCode can’t list the devices on your tailnet.';
+
+  @override
+  String get productErrorStagedRevert =>
+      'Review the staged revert before sending this queued prompt.';
+
+  @override
+  String teamWatchComposerHint(String name) {
+    return 'Message $name…';
+  }
+
+  @override
+  String get teamWatchComposerHintWorker => 'Message the worker…';
+
+  @override
+  String get teamWatchComposerHintAgent => 'Message this agent…';
+
+  @override
+  String teamWatchAbout(String name) {
+    return 'About $name';
+  }
+
+  @override
+  String teamWatchAboutRole(String role) {
+    return 'About the $role';
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../ui/kit/kit_redact.dart';
 
 import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
@@ -17,6 +18,8 @@ import '../platform/platform_capabilities.dart';
 // A plain value type (no widgets): the person's effect choices.
 import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
+import 'interaction_defaults.dart';
+import 'setup_audit_store.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
 export '../domain/loopback_host.dart' show isLoopbackHost;
@@ -754,12 +757,14 @@ class ProfileStore {
       try {
         if (p.usesAgentSocket) {
           p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
+          KitRedact.registerKnownSecret(p.codexToken);
           p.requiresCodexTokenReentry =
               p.agentSocketSecretRequired && p.codexToken.isEmpty;
           p.password = '';
           p.requiresPasswordReentry = false;
         } else {
           p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
+          KitRedact.registerKnownSecret(p.password);
           p.requiresPasswordReentry = false;
           p.codexToken = '';
           p.requiresCodexTokenReentry = false;
@@ -797,6 +802,9 @@ class ProfileStore {
   }
 
   Future<void> upsert(ServerProfile profile) async {
+    // Register before persistence: a failing keyring may echo its input.
+    KitRedact.registerKnownSecret(profile.password);
+    KitRedact.registerKnownSecret(profile.codexToken);
     final previousRaw = prefs.getString(_profilesKey);
     final next = List<ServerProfile>.of(_cache);
     final i = _cache.indexWhere((p) => p.id == profile.id);
@@ -899,6 +907,15 @@ class ProfileStore {
   /// server had been removed. The caller decides what to do about a
   /// non-empty result; this method only refuses to lie about it.
   Future<Set<String>> removeScopedPreferences(String profileId) async {
+    if (profileId.isEmpty) return const {};
+    // This method already runs inside the controller's deletion transaction.
+    // Drain before key discovery so a late platform write cannot resurrect data.
+    final defaultsDrain = InteractionDefaultsStore.closeProfile(
+      prefs,
+      profileId,
+    );
+    final auditDrain = SetupAuditStore.closeProfile(prefs, profileId);
+    await Future.wait([defaultsDrain, auditDrain]);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
       try {

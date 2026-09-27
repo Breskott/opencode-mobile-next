@@ -23,8 +23,9 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1238,13 +1239,14 @@ void main() {
       expect(key('team-cycle-action-stop'), findsOneWidget);
       expect(controller.cycleAgentFor('oc-loy'), 'gastown.furiosa');
 
-      // Open agent output → the AgentOutputScreen for that agent.
+      // Watch the agent → that agent's conversation (here its live
+      // output: no connected server lists its session).
       await tester.tap(key('team-cycle-action-output'));
       await tester.pumpAndSettle();
-      expect(find.byType(AgentOutputScreen), findsOneWidget);
+      expect(find.byType(TeamWatchLiveScreen), findsOneWidget);
       expect(
         tester
-            .widget<AgentOutputScreen>(find.byType(AgentOutputScreen))
+            .widget<TeamWatchLiveScreen>(find.byType(TeamWatchLiveScreen))
             .agentId,
         'gastown.furiosa',
       );
@@ -1321,7 +1323,7 @@ void main() {
       expect(key('team-cycle-action-stop'), findsNothing);
     });
 
-    testWidgets('workingLong: sentence and Open agent output', (tester) async {
+    testWidgets('workingLong: sentence and Watch the agent', (tester) async {
       final t0 = clock.subtract(const Duration(minutes: 40));
       final (controller, _) = await boot(
         configure: (g) => g.workOverride = [
@@ -1489,8 +1491,8 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('placement', () {
-    testWidgets('the run Overview shows the four stages and why it waits, '
-        'with no time it cannot know (TEAM-117)', (tester) async {
+    testWidgets('Task details shows the four stages (P3.5: the run page '
+        'is retired)', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -1498,41 +1500,78 @@ void main() {
       final (controller, _) = await boot();
       await tester.pumpWidget(
         app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
+          Scaffold(
+            body: SingleChildScrollView(
+              child: TeamTaskDetails(
+                controller: controller,
+                runId: 'oc-xru',
+                now: () => clock,
+              ),
+            ),
+          ),
           scroll: false,
         ),
       );
       await tester.pump();
       // The eight-step strip became four plain stages.
       expect(key('team-run-cycle'), findsNothing);
-      expect(key('team-run-stage-line'), findsOneWidget);
+      expect(key('team-task-details-stage'), findsOneWidget);
       for (final stage in ['Waiting', 'Working', 'Reviewing', 'Done']) {
         expect(
           find.descendant(
-            of: key('team-run-stage-line'),
+            of: key('team-task-details-stage'),
             matching: find.text(stage),
           ),
           findsOneWidget,
           reason: stage,
         );
       }
+    });
+
+    testWidgets('the conversation says why it waits, with no time it cannot '
+        'know (TEAM-117)', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (controller, _) = await boot();
+      await tester.pumpWidget(
+        app(
+          TeamConversationScreen(
+            team: controller,
+            runId: 'oc-xru',
+            now: () => clock,
+          ),
+          scroll: false,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // TEAM-117: routed a day ago with no agent is a stall, said in
       // words; the routing time is unknown, so no time is invented.
-      expect(key('team-run-stall'), findsOneWidget);
+      final now = key('team-conversation-now-text');
+      expect(now, findsOneWidget);
       expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
+        find.descendant(
+          of: now,
+          matching: find.textContaining(
+            'The host has not started an agent',
+            findRichText: true,
+          ),
+        ),
+        findsWidgets,
       );
       expect(
         find.descendant(
-          of: key('team-run-stall'),
+          of: now,
           matching: find.textContaining(
             MaterialLocalizations.of(
-              tester.element(find.byType(RunScreen)),
+              tester.element(find.byType(TeamConversationScreen)),
             ).formatTimeOfDay(
               TimeOfDay.fromDateTime(clock.toLocal()),
               alwaysUse24HourFormat: true,
             ),
+            findRichText: true,
           ),
         ),
         findsNothing,

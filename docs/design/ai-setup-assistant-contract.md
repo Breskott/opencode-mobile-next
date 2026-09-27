@@ -1,144 +1,213 @@
-# AI setup assistant: frontend contract (2026-09-27)
+# AI setup assistant: backend and UI contract (2026-09-28)
 
-Status: **backend inspection, proposal review, local guided planning and optional
-registry browsing implemented; production mutations and server AI sessions blocked**.
-This is not a completed AI configuration feature. No UI is wired in this slice.
+Status: **inspection, review, guided planning, audit ownership and a conditional
+transaction coordinator implemented; production Apply/Undo/MCP mutations and
+actual AI sessions remain unavailable**. No UI entry point is wired. Tests with
+an atomic fake verify the coordinator; they do not establish a deployed server
+transaction capability.
 
-The single entry page has two paths: **Set up by hand** and **Ask the setup
-assistant**. Both lead to the same review model. In this revision the second
-path must explain that server AI is unavailable and offer **Guided setup (on
-this device)**. That mode uses structured choices, ignores free-form questions,
-and does not call a model. Do not market it as an AI agent.
+Rechecked the exact OpenCode 1 **1.18.32** and OpenCode 2 **2.0.10** source tags,
+including SV3's companion configuration APIs. OC2 now has a shell-only global
+PATCH and per-session permission rules, correcting the older beta-based claims.
+It still lacks the source-bound conditional mutation/restore needed here, and
+its AI session loads ambient context. See [pinned evidence and exact missing
+contracts](../qa/codex-ai-setup-2026-09-28/pinned-runtime-recheck.md).
 
-## Capability contract
+The single entry page has **Set up by hand** and **Ask the setup assistant**.
+The latter currently explains the server-AI gap and offers **Guided setup (on
+this device)**. This structured planner ignores free-form questions and calls
+no model. Do not present it as a running AI agent or an enabled Apply workflow.
 
-Gate on `ServerCapabilities` plus the selected `SetupConfigGateway.support`,
-never a UI flavor switch. New flags default false, including for Codex and
-Claude Code via Paseo. An integration/composition owner creates the concrete
-adapter; UI imports domain/state only. Flags describe availability, not current
-connectivity. No server or provider credentials are required by UI adapters.
+## Capability and refusal contract
 
-| Capability | OC1 | OC2 captured beta/current adapter | Codex | Claude Code via Paseo |
-|---|---|---|---|---|
-| `setupConfigRead` | true; effective config | true; ordered sources | false | false |
-| `setupMcpInventory` | true | true | false | false |
-| `setupConfigWrite` | false | false | false | false |
-| `setupAssistantSession` | false | false | false | false |
-| Local structured planner | available | available as OC1-format candidate only | available as OC1-format candidate only | available as OC1-format candidate only |
-| Public registry | optional, independent of server, off by default | same | same | same |
+UI imports domain/state only, never protocol adapters, and gates on support
+and the current proposal rather than flavor. The composition owner supplies
+the existing authenticated adapter. No new credential or shell path is used.
 
-`SetupSupport` fields are `readConfig`, `writeConfig`, `mcpInventory`,
-`assistant`, `reason`. `writeConfig` requires verified reversible writes, not
-merely PATCH support. All shipped adapters return false. The planner's OC1
-candidates are **not portable wire payloads** for OC2/Codex/Claude Code.
+| Support | OC1 1.18.32 | OC2 2.0.10 | Codex / Claude Code via Paseo |
+| --- | --- | --- | --- |
+| Config inspection | Effective merged config | Ordered sources; do not invent an effective merge | No verified setup adapter |
+| MCP inventory | Available | Available; stable route/envelope covered by fake transport tests | Unavailable in this setup facet |
+| Config Apply/Undo | Unavailable: no conditional source snapshot/restore | Unavailable: shell-only global patch, no conditional source snapshot/restore | Unavailable |
+| Reviewed MCP config add/remove | Unavailable | Unavailable; experimental runtime controls are not durable config transactions | Unavailable |
+| Actual assistant session | Unavailable pending restricted-session verification | Deny rules exist, but sanitized-only context/typed setup session is not verified | Unavailable |
+| Structured local planner / opt-in registry | Existing guided planner and registry remain usable independently; their candidates use OC1 vocabulary | Same; no automatic conversion into V2 payloads | Same; no guessed adapter |
 
-Required gap copy (localize these strings when building UI):
+`SetupSupport` retains `readConfig`, `writeConfig`, `mcpInventory`, `assistant`
+and safe `reason`. A write flag alone is insufficient: the controller requires
+`SetupTransactionalConfigGateway`. Legacy `SetupConfigGateway.patchConfig`
+is never used by the reviewed Apply/Undo executor. Both shipped adapters keep
+writes and assistant sessions false; SV3's acknowledged one-field PATCH and
+runtime disconnect helpers must not be injected as a transaction gateway.
 
-- OC1 Apply/Undo: “This server cannot safely restore configuration changes.
-  Apply and Undo are unavailable.”
-- OC2 Apply/Undo: “This server has no verified reversible configuration endpoint.
-  Apply and Undo are unavailable.”
-- OC2 effective diff: “This server returns layered sources. Effective-config
-  diffs are unavailable.” The controller refuses to invent a before value.
-- Codex/Paseo: “This server does not expose setup configuration APIs.” Keep the
-  inspection and mutation actions unavailable; do not construct an OC adapter.
-- Server assistant: “A proposal-only AI session is not verified on this server.
-  Use Guided setup (on this device) or Set up by hand.”
-- Credentials: “Use the existing sign-in or secret entry flow for credentials.”
-- Runtime MCP operations: “Runtime MCP controls do not provide reversible
-  configuration changes. Use the existing MCP management page.”
-- Package install: “Package installation needs a reviewed command on your
-  server. Set it up by hand.” This is guidance, not an install action.
+Copy intents, to localize in `app_en.arb` when building the kit screens:
 
-## UI-facing controller and values
+- OC1: the server can read setup but cannot restore the exact source safely;
+  Apply and Undo are unavailable.
+- OC2: the shell-only global update cannot apply these proposals or protect
+  them against other edits. Its runtime MCP controls cannot restore prior state.
+- Layered read: source inspection is available, effective-config diffs are not.
+- Actual AI: a setup session restricted to approved sanitized context is not
+  verified. Offer guided choices or manual setup; do not claim OC2 lacks all
+  per-session permission controls.
+- Credentials: use existing sign-in or secret-entry flows, never a proposal,
+  model question, arbitrary header/environment field or audit value.
+- Local MCP/package commands: their executable bodies need a separate complete
+  review contract. A masked command is not a fully reviewed command.
+- Codex/Paseo: no verified setup configuration adapter; keep these actions off.
+
+## UI-facing controller and scope ownership
 
 Import `lib/state/setup_controller.dart` and `lib/domain/setup_assistant.dart`.
+Construct `SetupController(gateway: ..., prefs: ..., profileId: ...,
+locationId: ..., isCurrent: ...)` outside the UI. `isCurrent` must compare the
+captured profile, location generation and gateway identity, including an
+away-and-back selection change. Its default exists for isolated callers/tests;
+it does not replace application ownership checks. Subscribe to `changes`, then
+read `snapshot` immediately (the broadcast stream does not replay).
 
-`SetupController({required SetupConfigGateway gateway, required SharedPreferences
-prefs, required String profileId, required String locationId})` is bound to one
-profile and one selected location. Subscribe to `changes` and immediately read
-`snapshot` (broadcast streams do not replay). Read `support` for capability copy.
-The composition owner must recreate and await disposal when changing profile,
-server or location; borrowed transport location must remain unchanged throughout
-an operation. Dispose before the existing profile deletion sweep.
+The profile must already exist in `ProfileStore`. Recreate and await disposal
+when changing profile/server/location. Both shipped adapters now capture their
+location at construction; subsequent changes to the borrowed client's selected
+directory/workspace do not retarget setup reads. They borrow credentials and
+transport lifetime, and never close the shared client.
 
-| Public API | Behavior |
-|---|---|
-| `SetupSnapshot get snapshot` | Current safe immutable state |
-| `Stream<SetupSnapshot> get changes` | Subsequent state updates |
-| `SetupSupport get support` | Adapter capabilities and gap reason |
-| `void setOnline(bool online)` | Disable writes/refresh while offline; never queues writes |
-| `Future<void> refresh()` | Fetch config and installed MCP status; invalidates the displayed proposal |
-| `List<String> validate(List<SetupEdit> edits)` | Local bounds, path, basic shape and credential checks; **not** full server schema or execution validation |
-| `Future<SetupProposal> propose(List<SetupEdit> edits)` | Requires a successful effective-config read; records proposal metadata and produces redacted diffs; no mutation |
-| `Future<void> apply(String proposalId, {required bool confirmed})` | Exact current proposal and explicit confirmation; current production adapters return unsupported without a write |
-| `Future<void> undo({required bool confirmed})` | Current controller's last verified change only; production adapters return unsupported |
-| `List<Map<String,Object?>> get audit` | Bounded metadata records with `id`, `action`, UTC `at`; no values/prompts/configs |
-| `String get auditKey` | `oc.setupAudit.<profileId>`; integration/testing only |
-| `Future<void> dispose()` | Stop use, drain active operation, clear in-memory config/Undo/snapshot and close stream |
+| API | Behavior |
+| --- | --- |
+| `snapshot`, `changes`, `support` | Immutable redacted presentation and capability/reason data |
+| `setOnline(bool)` | No queued mutations or automatic retry; offline never becomes a later false ready state |
+| `refresh()` | Config/source and MCP inspection; invalidates displayed proposal; no mutation |
+| `validate(edits)` | Bounded input/credential/path/shape validation, not server-schema or execution proof |
+| `propose(edits)` | Copy edits, produce redacted review and metadata audit; writes nothing to the host |
+| `apply(proposalId, confirmed: true)` | Exact current proposal and explicit review confirmation, conditional transaction only |
+| `undo(confirmed: true)` | Last verified memory-only transaction, conditional exact restore through host handle |
+| `audit`, `auditKey` | Bounded metadata-only history; `oc.setupAudit.<profileId>` |
+| `dispose()` | Stop admission, drain in-flight work, clear raw snapshots/handles and close stream |
 
-`profileId`, `locationId`, `gateway`, and `prefs` are construction bindings,
-not UI actions. Do not call the raw gateway from widgets.
+Never derive confirmation from a changed toggle. Show server/location, source
+scope, concrete changes, availability reason and activation uncertainty before
+calling Apply. A registry selection is a proposal, not installation/connection.
+Leaving the page after a mutation starts does not cancel a remote mutation.
 
-`SetupSnapshot` contains `phase`, `config`, `servers`, `proposal`, `reason`,
-`canUndo`. `config` is redacted recursively with KitRedact and structural masking
-of environment, headers, credential/options, prompt/system/command/template
-bodies. OC2 returns `{'sources': [...]}` preserving source order; show source
-inspection, not a guessed merged config. No raw config is persisted.
+`SetupSnapshot` contains `phase`, redacted immutable `config`, normalized
+`servers`, `proposal`, safe `reason`, and `canUndo`. `SetupMcpStatus` remains
+name plus known status (connected/pending/disabled/failed/needs_auth/
+needs_client_registration/unknown). Runtime status never proves durable install.
 
-`SetupPhase` is `idle`, `loading`, `ready`, `empty`, `offline`, `unsupported`,
-`needsSignIn`, or `error`. `empty` means config and inventory both empty, not a
-failed fetch. Offline may retain previously fetched safe data. On reconnection,
-call `refresh()` explicitly; do not replay lost OC2 events or retry writes.
-401/403 yields “Sign in to this server to inspect setup.” `error` carries fixed
-safe copy. Never render raw transport exceptions or response bodies.
+| Phase | UI meaning |
+| --- | --- |
+| `idle`, `loading` | Nothing fetched yet / inspection in progress |
+| `ready`, `empty` | Read succeeded; empty means config and inventory are empty |
+| `applying`, `undoing` | One confirmed operation pending; suppress duplicate admission |
+| `verifying` | A receipt was received; independent snapshot verification is still pending |
+| `uncertain` | Host outcome cannot be verified; no blind retry or automatic rollback; inspect/refetch |
+| `offline`, `unsupported`, `needsSignIn`, `error` | Fixed safe reason, retained safe data where appropriate, no invented success |
 
-`SetupMcpStatus` has `name` and normalized `status`: `connected`, `pending`,
-`disabled`, `failed`, `needs_auth`, `needs_client_registration`, or `unknown`
-where supported. A status does not prove durable installation. Show
-“Needs sign-in” for `needs_auth`, “Client registration needed” for
-`needs_client_registration`, and “Status unavailable” for `unknown`.
+`SetupFailureCode` remains `offline`, `unsupported`, `needsSignIn`, `invalid`,
+`conflict`, `storage`, `transport`, `busy`, `uncertain`. `message` is authored
+copy; `toString()` exposes only the code. UI maps codes to localized words and
+shows only explicitly redacted technical context under Details. No raw exception,
+configuration, URI, provider credential or restore handle belongs in the body,
+notification, report or clipboard.
 
-`SetupFailure` is typed by `SetupFailureCode`: `offline`, `unsupported`,
-`needsSignIn`, `invalid`, `conflict`, `storage`, `transport`, `busy`, `uncertain`.
-Its `message` is application-owned safe copy; `toString()` gives only a code.
-`busy` also covers use after disposal. Avoid concurrent controller calls.
+## Review data and exact transaction boundary
 
-## Review, Apply, Undo and confirmations
+`SetupEdit(path: List<String>, value: ..., remove: bool)` is input only.
+`SetupProposal` has `id`, immutable `changes`, `canApply`, optional `reason` and
+`effect`. Show `SetupDiff`, never raw edits/snapshots. Proposal IDs are random
+opaque per-attempt IDs, not counters reused across controller instances.
+`SetupDiff.beforePresent` and `afterPresent` distinguish an absent setting from
+a present JSON null; render removal as removal, never as the string "null".
+Do not infer presence from the redacted `before`/`after` values alone.
 
-`SetupEdit({required List<String> path, Object? value, bool remove=false})` is an
-input object; do not render it directly. Segment paths avoid JSON-pointer
-escaping ambiguity. Edits are copied before use. Proposals allow 1–32 distinct,
-non-overlapping paths and bounded non-secret JSON. Models/default agents require
-nonempty strings; simple permission rules require allow/ask/deny; new MCP
-objects must specify local/remote and start disabled. Credential-bearing fields
-must go through existing secret entry/sign-in, never assistant chat.
+Inputs remain bounded to 1–32 non-overlapping paths and non-secret JSON. Model
+and default-agent choices must be nonempty; simple permissions use allow/ask/deny.
+MCP additions start disabled. Provider/auth fields, general agent/command bodies
+and arbitrary runtime MCP operations remain outside the executable subset.
+Local MCP commands remain unavailable for Apply while their review is masked.
+An atomic fake exercises disabled remote MCP definition add/remove and ordinary
+config edits; that is coordinator coverage, not runtime installation support.
 
-`SetupProposal` has `id`, immutable `changes`, `canApply`, optional `reason`,
-and `effect`. Each `SetupDiff` has immutable `path`, redacted `before`, redacted
-`after`, `remove`. Null before means absent only for effective config; OC2
-layered-source diff creation is refused. Masked command bodies cannot be treated
-as fully reviewed executable commands. No production write is enabled here.
+`setupRedact` structurally masks provider options, headers/environment, credentials
+and executable/prompt bodies in addition to KitRedact. Redacted values must never
+be sent back as replacement configuration. OC2's `sources` view remains
+inspection-only: a guessed merge is not a source snapshot.
 
-Display the selected server/location, proposed changes, scope, capability reason
-and activation uncertainty. `effect` says “Runtime activation is not verified.
-Recheck server status after a change.” A registry toggle selects a **proposal**;
-it must not change the installed/connected visual state. Confirm Apply only
-when `canApply` is true; pass the current proposal ID. Cancel closes review and
-sends no mutation. Do not pass `confirmed:true` merely because a toggle changed.
+The optional **implemented domain facet** is a requirement on any future host
+adapter, not a new HTTP endpoint the app calls today:
 
-The coordinator's reusable mutation path is tested against an in-memory fake
-only: fresh whole-config comparison, pending audit before write, single patch,
-read-back verification, then verified audit and memory-only inverse. It supports
-only replacing existing non-null non-map values; addition/removal/object edits
-remain proposal-only. Changed config prevents Apply/Undo; ambiguous outcomes
-become `uncertain` and invalidate retry/Undo until refresh. Audit failure before
-write prevents mutation; audit failure after write reports uncertainty. **The
-read/compare/write sequence is not an atomic compare-and-swap. Do not enable a
-production adapter until the server provides concurrency/reversibility guarantees
-and those are implemented in the gateway contract.** Undo does not survive an
-app restart, and restoring an effective value is not restoring source-file
-provenance. There is no claim of persistent Undo or atomic rollback.
+```dart
+abstract interface class SetupTransactionalConfigGateway
+    implements SetupConfigGateway {
+  Future<SetupConfigRevision> readSnapshot();
+  Future<SetupConfigCommit> commit({
+    required SetupConfigRevision expected,
+    required List<SetupEdit> edits,
+    required String operationId,
+  });
+  Future<SetupConfigCommit> restore({
+    required SetupConfigCommit commit,
+    required String operationId,
+  });
+}
+```
+
+`SetupConfigRevision` holds immutable raw `targetId`, `revision`, and exact
+source `config`. `SetupConfigCommit` holds `before`, `after`, and an opaque
+`undoHandle`. These are controller/adapter-only, memory-only values; widgets
+must never import them for display or persist them. Raw snapshot credential
+fields are registered with KitRedact at trusted ingress before capture.
+
+A conforming adapter must have a real source identity/revision and **atomic**
+server-side expected-revision check. It commits all reviewed edits together,
+preserves unrelated values, and returns the actual before/after source snapshots.
+A conflict means no mutation. It must not implement this interface with
+GET/PATCH/GET, a phone mutex, file access via an AI agent or reconstructed MCP
+inventory. Sources include presence/absence and provenance; restoring an
+effective old value is insufficient. New disabled definitions must not launch
+processes, contact MCP endpoints or start OAuth. The host must retain all restore
+material, including any credentials, behind the opaque handle.
+
+The coordinator audits pending **before** dispatch; verifies the receipt's
+before snapshot against its fresh read, target identity, new revision and exact
+expected after contents; independently rereads; and only then records verified
+and makes Undo eligible. Accepted/response-received is not verified. A revision
+change conflicts even when values happen to compare equal.
+
+Undo passes the original receipt/handle to the adapter, which must transmit the
+opaque handle and after precondition, never resubmit credential-bearing snapshots.
+It restores exactly the original source (including absent keys and nulls), then
+the coordinator independently verifies the new receipt and readback. A changed
+target/revision prevents restoration. Undo is one level and does not survive
+restart. Runtime activation, OAuth, process state, external MCP effects and
+package installation are not included or promised by this configuration contract.
+
+Unknown transport outcome, bad receipt, mismatched readback or post-write audit
+failure invalidates local retry/Undo eligibility. There is no automatic rollback.
+Once sent, reconciliation remains bound to the original host even if the page
+closes, but a stale/offline owner must not publish ready for the new selection.
+A host must provide idempotent operation lookup before durable process-restart
+retry can be added; this unit does not provide that capability.
+
+## Audit ownership and deletion
+
+`SetupAuditStore.forProfile(prefs, profileId)` supplies a shared serialized owner.
+Its `records` are immutable, `isAvailable` checks profile/history admission, and
+`append(id, action, operation: ...)` accepts only metadata. Actions are proposed,
+pending, accepted, verified, rejected and uncertain; operation is review/apply/
+undo when recorded. Historical id/action/UTC-at rows remain readable. No raw
+location, server address, config, diff, prompt, snapshot or undo handle is stored.
+History is capped at 100; corrupt/untrusted history refuses overwrite instead
+of silently resetting it. A refused preference write reloads durable state.
+
+`ProfileStore.removeScopedPreferences` now stops audit and default-owner admission
+synchronously, drains pending writes, then discovers and removes scoped keys.
+Absent/deleted profiles reject new writers; a new controller cannot reopen a
+closed owner during the sweep. Compose/dispose the controller on selection and
+delete as above. A deletion that reaches the sweep and then fails leaves this
+owner closed until restart; do not reopen it inside a deletion transaction.
+Local deletion does not cancel an already-sent server operation. No shared blob,
+raw snapshot persistence or credential migration is introduced.
 
 ## Guided assistant API
 
@@ -164,7 +233,7 @@ is available. On unsupported servers show the guidance and capability gap.
 | `permission` | `tool`, `effect` | Simple OC1 permission candidate |
 | `connectRemoteMcp` | `name`, `url` | Disabled OC1 remote MCP candidate |
 | `addLocalMcp` | `name`, `command` string list | Disabled OC1 local MCP candidate; no execution |
-| `removeMcp` | `name` | Removal candidate; never applicable in this revision |
+| `removeMcp` | `name` | Removal candidate; production unavailable; disabled definitions are covered only through the transaction fake |
 | `configureProvider` | none | Unsupported; use secure sign-in |
 | `configureAgent` / `configureCommand` | none | Unsupported; server tools required |
 
@@ -229,24 +298,21 @@ variable requirements are dropped and disable automatic candidate conversion.
 All parts belong to the kit; localize presentation copy in English/Arabic and
 keep config identifiers/paths/URLs LTR. No UI implementation is included here.
 
-## Missing-server-feature list and research
+## Remaining host features and current evidence
 
-- OC1: PATCH exists but no verified source-level snapshot restoration, deletion
-  semantics or atomic revision precondition; no full reversible config workflow.
-- OC2 pinned beta: no config-write endpoint; config reads are layered entries;
-  runtime MCP mutations do not persist or provide reversible credential state.
-- OC1 assistant: session permission/system/tool/structured-output fields exist,
-  but a live deny-all-plus-StructuredOutput enforcement test is missing.
-- OC2 assistant: pinned session contract lacks per-session deny/system/structured
-  output controls needed for a safe proposal-only agent.
-- Codex and Claude Code/Paseo: no verified setup config inspection/transaction
-  adapters. Session/chat support is not setup capability.
-- Provider secrets, OAuth lifecycle restoration, general agent/command editing,
-  package execution and setting-specific restart/reload verification are not
-  implemented. Existing sign-in and runtime MCP surfaces remain separate.
+- OC1 exact source snapshots, revision preconditions, deletion semantics and
+  conditional restore remain missing. SV3 narrow PATCH success is not Undo.
+- OC2 stable supports only shell-setting global PATCH; it does not support the
+  setup proposal fields or conditional exact restoration. Runtime MCP overrides
+  do not supply durable config deletion, full readback or restore receipts.
+- OC2 per-session deny rules are real. Restricted ambient context and the
+  dedicated setup-session/output contract remain unverified; actual AI is off.
+  OC1 likewise needs exact-runtime restricted-session verification.
+- Codex/Paseo configuration, general executable/agent editing, OAuth lifecycle
+  restore and package execution remain unsupported. Existing credential flows
+  and MCP management actions stay separate.
 
-Read [server research](../qa/codex-ai-setup-2026-09-27/server-research.md),
-[registry research](../qa/codex-ai-setup-2026-09-27/registry-notes.md) and
-[QA evidence](../qa/codex-ai-setup-2026-09-27/README.md). Official sources and
-version-drift qualifications are linked there. No writes to a live server were
-performed during this slice.
+See [2026-09-28 pinned-runtime recheck](../qa/codex-ai-setup-2026-09-28/pinned-runtime-recheck.md)
+and [implementation/check results](../qa/codex-ai-setup-2026-09-28/README.md).
+The [2026-09-27 record](../qa/codex-ai-setup-2026-09-27/README.md) remains historical;
+its old beta claims are superseded where this recheck identifies changes.

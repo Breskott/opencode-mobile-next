@@ -13,12 +13,15 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart'
+    show TeamConversationScreen;
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamWatchLiveScreen;
 
 import '../census_core.dart';
 import '../support/i1_team_core_world.dart';
@@ -44,11 +47,26 @@ Future<(OrchestrationController, CensusTeamGateway)> _team(
 Future<void> _home(CensusKit kit, OrchestrationController team) =>
     kit.pumpApp(TeamHomeScreen(controller: team, now: teamNow));
 
-Future<void> _run(
+/// The task's conversation (the host for its sheets).
+Future<void> _conversation(
   CensusKit kit,
   OrchestrationController team, {
   String runId = teamRunId,
-}) => kit.pumpApp(RunScreen(controller: team, runId: runId, now: teamNow));
+}) =>
+    kit.pumpApp(TeamConversationScreen(team: team, runId: runId, now: teamNow));
+
+/// Task details over the task's conversation.
+Future<void> _details(
+  CensusKit kit,
+  OrchestrationController team, {
+  String runId = teamRunId,
+}) async {
+  await _conversation(kit, team, runId: runId);
+  await kit.present(
+    (context) => showTeamTaskDetails(context, team, runId, now: teamNow),
+    settleFor: const Duration(seconds: 2),
+  );
+}
 
 Future<void> _agent(
   CensusKit kit,
@@ -113,7 +131,7 @@ void _manyDone(CensusTeamGateway g) {
   ];
 }
 
-/// Timeline events for the "Offline-first sessions" run.
+/// Events for the "Offline-first sessions" task (what the host reported).
 void _emitTimeline(CensusTeamGateway g) {
   var seq = 9000;
   Map<String, Object?> raw(
@@ -249,10 +267,6 @@ Future<void> _openWork(
   );
 }
 
-Future<void> _openMore(CensusKit kit) async {
-  await kit.tapKey('team-run-more');
-}
-
 final i1TeamCoreArea = CensusArea(
   'i1-team-core',
   shots: [
@@ -369,135 +383,39 @@ final i1TeamCoreArea = CensusArea(
           'four open questions, one answered but unconfirmed (receipt chip).',
     ),
 
-    // -- Run -----------------------------------------------------------------
-    CensusShot('team-run', state: 'batch', (kit) async {
+    // -- Task details (P3.5: the run page and its tabs are retired; a task
+    // is its conversation) ------------------------------------------------
+    CensusShot('team-task-details', state: 'batch', (kit) async {
       final (team, _) = await _team(kit);
-      await _run(kit, team);
-      kit.expectVisible(find.byKey(const ValueKey('team-run-tabs')));
-      kit.expectText('Offline-first sessions');
+      await _details(kit, team);
+      kit.expectVisible(find.byKey(const ValueKey('team-task-details')));
     }),
-    CensusShot('team-run', state: 'formula', (kit) async {
+    CensusShot('team-task-details', state: 'formula', (kit) async {
       final (team, _) = await _team(kit);
-      await _run(kit, team, runId: teamFormulaRunId);
-      kit.expectVisible(find.byKey(const ValueKey('team-run-tabs')));
+      await _details(kit, team, runId: teamFormulaRunId);
+      kit.expectVisible(find.byKey(const ValueKey('team-task-details')));
     }),
-    CensusShot('team-run', state: 'missing', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team, runId: 'oc-gone');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-missing')));
-    }),
-    CensusShot('team-run', state: 'error', (kit) async {
-      final (team, _) = await _team(
-        kit,
-        probe: (_) async => const ProbeUnreachable(
-          error: 'Connection refused (http://pop-os:7000)',
-        ),
-      );
-      await _run(kit, team);
-      kit.expectVisible(find.byKey(const ValueKey('team-run')));
-    }),
-    CensusShot(
-      'team-run-overview-tab',
-      state: 'stop-unconfirmed',
-      (kit) async {
-        final (team, gateway) = await _team(kit);
-        gateway.controlStatus = MutationReceiptStatus.pending;
-        await team.cancelRun(teamFormulaRunId);
-        await _run(kit, team, runId: teamFormulaRunId);
-        kit.expectVisible(find.byKey(const ValueKey('team-run-receipt')));
-      },
-      note:
-          'Stop run was sent; the host did not confirm (receipt chip). '
-          'The Overview with a question is team-run--batch.',
-    ),
-    CensusShot('team-run-overview-tab', state: 'stalled', (kit) async {
-      final (team, _) = await _team(
-        kit,
-        configure: (g) => g
-          ..gateList = []
-          ..workList = [
-            for (final w in g.workList)
-              if (w.runId != teamRunId || w.state == WorkState.completed) w,
-            _routedStep(),
-          ],
-      );
-      await _run(kit, team);
-      kit.expectVisible(find.byKey(const ValueKey('team-run-overview')));
-    }, note: 'A step routed four minutes ago that no agent picked up.'),
-    CensusShot('team-run-overview-tab', state: 'merged', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team, runId: teamMergedRunId);
-      kit.expectVisible(find.byKey(const ValueKey('team-run-overview')));
-    }, note: 'A merged task, first open: its celebration.'),
-    CensusShot('team-run-overview-tab', state: 'details-open', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team, runId: teamFormulaRunId);
-      await kit.tapKey('team-run-summary');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-summary-body')));
-    }, note: 'The formula run with its Details row open.'),
-    CensusShot('team-run-work-tab', state: 'list', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await kit.tapKey('team-run-tab-work');
-      await kit.tapKey('team-run-work-view-list');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-work-list')));
-    }),
-    CensusShot('team-run-work-tab', state: 'graph', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await kit.tapKey('team-run-tab-work');
-      await kit.tapKey('team-run-work-view-graph');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-work-graph')));
-    }),
-    CensusShot('team-run-agents-tab', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await kit.tapKey('team-run-tab-agents');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-agents')));
-    }),
-    CensusShot('team-run-timeline-tab', state: 'all', (kit) async {
+    CensusShot('team-task-details', state: 'reported', (kit) async {
       final (team, gateway) = await _team(kit);
-      await _run(kit, team);
+      await _conversation(kit, team);
       _emitTimeline(gateway);
       await kit.settle(const Duration(seconds: 1));
-      await kit.tapKey('team-run-tab-timeline');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-timeline')));
-    }),
-    CensusShot('team-run-timeline-tab', state: 'work', (kit) async {
-      final (team, gateway) = await _team(kit);
-      await _run(kit, team);
-      _emitTimeline(gateway);
-      await kit.settle(const Duration(seconds: 1));
-      await kit.tapKey('team-run-tab-timeline');
-      await kit.tapKey('team-run-timeline-filter-work');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-timeline')));
-    }, note: 'Filtered to Work events.'),
-    CensusShot('team-run-timeline-tab', state: 'empty', (kit) async {
+      await kit.present(
+        (context) =>
+            showTeamTaskDetails(context, team, teamRunId, now: teamNow),
+        settleFor: const Duration(seconds: 2),
+      );
+      await kit.tapKey('team-task-details-technical');
+      kit.expectVisible(
+        find.byKey(const ValueKey('team-task-details-reported')),
+      );
+    }, note: 'Technical details open: what the host reported (the Timeline).'),
+    CensusShot('team-task-details', state: 'missing', (kit) async {
       final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await kit.tapKey('team-run-tab-timeline');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-timeline-empty')));
-    }),
-    CensusShot('team-run-details-sheet', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await _openMore(kit);
-      await kit.tapKey('team-run-details');
-      kit.expectText('Technical details');
-    }),
-    CensusShot('team-run-cancel-confirm-sheet', state: 'batch', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team);
-      await _openMore(kit);
-      await kit.tapKey('team-run-cancel');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-cancel-confirm')));
-    }),
-    CensusShot('team-run-cancel-confirm-sheet', state: 'formula', (kit) async {
-      final (team, _) = await _team(kit);
-      await _run(kit, team, runId: teamFormulaRunId);
-      await _openMore(kit);
-      await kit.tapKey('team-run-cancel');
-      kit.expectVisible(find.byKey(const ValueKey('team-run-cancel-confirm')));
+      await _details(kit, team, runId: 'oc-gone');
+      kit.expectVisible(
+        find.byKey(const ValueKey('team-task-details-missing')),
+      );
     }),
 
     // -- Agents ----------------------------------------------------------------
@@ -551,16 +469,6 @@ final i1TeamCoreArea = CensusArea(
       await kit.tapKey('team-agent-details');
       kit.expectVisible(find.byKey(const ValueKey('team-agent-details-sheet')));
     }),
-    CensusShot('team-agent-message-sheet', (kit) async {
-      final (team, _) = await _team(kit);
-      await _agent(kit, team);
-      await kit.tapKey('team-agent-control-message');
-      await kit.enterText(
-        find.byKey(const ValueKey('team-agent-message-field')),
-        'Use SQLite for the drafts and keep the schema in one file.',
-      );
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-message-sheet')));
-    }),
     CensusShot('team-agent-reassign-sheet', (kit) async {
       final (team, _) = await _team(kit);
       await _agent(kit, team);
@@ -583,27 +491,29 @@ final i1TeamCoreArea = CensusArea(
         find.byKey(const ValueKey('team-agent-restart-confirm')),
       );
     }),
-    CensusShot('team-agent-output', state: 'live', (kit) async {
+    // team-agent-output merged into the chat's watching mode (slice-P3.6):
+    // the same watching page drawn from the team's live output.
+    CensusShot('chat-watching-live', state: 'live', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'fox'));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-text')));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live-text')));
     }, note: 'The recorded polecat transcript, following the end.'),
-    CensusShot('team-agent-output', state: 'ended', (kit) async {
+    CensusShot('chat-watching-live', state: 'ended', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'wolf'));
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'wolf'));
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
     }, note: 'A session the host no longer serves (404).'),
-    CensusShot('team-agent-output', state: 'scrolled-up', (kit) async {
+    CensusShot('chat-watching-live', state: 'scrolled-up', (kit) async {
       final (team, _) = await _team(kit);
-      await kit.pumpApp(AgentOutputScreen(controller: team, agentId: 'fox'));
+      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
       await kit.tester.drag(
-        find.byKey(const ValueKey('team-agent-output-list')),
+        find.byKey(const ValueKey('chat-watching-live-list')),
         const Offset(0, 600),
       );
       await kit.settle();
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-output-page')));
-    }, note: 'Dragged away from the end: Follow off, Jump to latest.'),
+      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+    }, note: 'Dragged away from the end: Jump to latest.'),
 
     // -- Dispatch cycle --------------------------------------------------------
     CensusShot('embedded-team-cycle-strip', state: 'host-not-started', (
@@ -613,37 +523,37 @@ final i1TeamCoreArea = CensusArea(
         kit,
         configure: (g) => g.workList = [...g.workList, _routedStep()],
       );
-      await _run(kit, team);
+      await _conversation(kit, team);
       await _openWork(kit, team, 'w-banner');
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
-    }, note: 'Host: the Work sheet over the run.'),
+    }, note: 'Host: the Work sheet over the task\'s conversation.'),
     CensusShot('embedded-team-cycle-strip', state: 'provider-limit', (
       kit,
     ) async {
       final (team, _) = await _team(kit, configure: _providerLimit);
-      await _run(kit, team);
+      await _conversation(kit, team);
       await _openWork(kit, team, 'w-limit');
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
-    }, note: 'Host: the Work sheet over the run.'),
+    }, note: 'Host: the Work sheet over the task\'s conversation.'),
     CensusShot('embedded-team-cycle-strip', state: 'working', (kit) async {
       final (team, _) = await _team(kit);
-      await _run(kit, team);
+      await _conversation(kit, team);
       await _openWork(kit, team, 'w-sync');
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-strip')));
-    }, note: 'Host: the Work sheet over the run.'),
+    }, note: 'Host: the Work sheet over the task\'s conversation.'),
     CensusShot('team-cycle-how-sheet', (kit) async {
       final (team, _) = await _team(
         kit,
         configure: (g) => g.workList = [...g.workList, _routedStep()],
       );
-      await _run(kit, team);
+      await _conversation(kit, team);
       await _openWork(kit, team, 'w-banner');
       await kit.tapKey('team-cycle-action-how');
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-how-sheet')));
     }),
     CensusShot('team-cycle-stop-confirm-sheet', (kit) async {
       final (team, _) = await _team(kit, configure: _providerLimit);
-      await _run(kit, team);
+      await _conversation(kit, team);
       await _openWork(kit, team, 'w-limit');
       await kit.tapKey('team-cycle-action-stop');
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-stop-confirm')));

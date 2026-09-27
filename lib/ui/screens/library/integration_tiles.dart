@@ -11,9 +11,11 @@ AppLocalizations _libraryCopy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The state word leads the supporting line (STATE-9). A state that needs
-/// the person reads in the needs-you tone, a failure in the danger tone,
-/// both at label weight; an ordinary state keeps the line's muted tone, so
-/// the list scans by colour.
+/// the person reads at label weight in the primary tone beside the row's
+/// KitNeedsYou mark, which alone draws the needs-you colour (LOOK-4,
+/// LOOK-24); a failure reads in the danger tone at label weight; an
+/// ordinary state keeps the line's muted tone, so the list scans by weight
+/// and colour.
 TextSpan _stateWord(
   BuildContext context,
   String word, {
@@ -63,9 +65,8 @@ class _McpServerRow extends StatelessWidget {
   final bool actionsAllowed;
 
   /// Remove is offered: the server supports runtime removal and the list
-  /// is current. [removalSupported] false explains the gate in the menu.
+  /// is current. Otherwise the menu leaves it out (no dead item).
   final bool canRemove;
-  final bool removalSupported;
   final VoidCallback onAct;
   final VoidCallback onRemove;
 
@@ -77,7 +78,6 @@ class _McpServerRow extends StatelessWidget {
     required this.authGated,
     required this.actionsAllowed,
     required this.canRemove,
-    required this.removalSupported,
     required this.onAct,
     required this.onRemove,
   });
@@ -152,7 +152,7 @@ class _McpServerRow extends StatelessWidget {
             tone: authorizing
                 ? KitTextTone.secondary
                 : _needsYou
-                ? KitTextTone.attention
+                ? KitTextTone.primary
                 : _failed
                 ? KitTextTone.danger
                 : KitTextTone.secondary,
@@ -185,16 +185,7 @@ class _McpServerRow extends StatelessWidget {
                   disabledReason: actionsAllowed ? null : l10n.mcpScopeChanged,
                   onSelected: onAct,
                 ),
-              if (!removalSupported)
-                KitMenuItem(
-                  key: ValueKey('mcp-remove-${server.name}'),
-                  label: l10n.integrationsMcpRemoveUntilRestart(server.name),
-                  icon: AppIconography.delete,
-                  enabled: false,
-                  disabledReason: l10n.integrationsMcpRemoveUnavailable,
-                  onSelected: () {},
-                )
-              else if (canRemove && !authorizing)
+              if (canRemove && !authorizing)
                 KitMenuItem(
                   key: ValueKey('mcp-remove-${server.name}'),
                   label: l10n.integrationsMcpRemoveUntilRestart(server.name),
@@ -454,7 +445,7 @@ class _SignInRow extends StatelessWidget {
       title: name,
       supporting: TextSpan(
         children: [
-          _stateWord(context, word, last: true, tone: KitTextTone.attention),
+          _stateWord(context, word, last: true, tone: KitTextTone.primary),
         ],
       ),
       trailing: busy

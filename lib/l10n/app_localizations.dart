@@ -2690,10 +2690,10 @@ abstract class AppLocalizations {
   /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.'**
   String get readAloudConsentDetail;
 
-  /// Accept speech disclosure and request installed voice metadata
+  /// Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)
   ///
   /// In en, this message translates to:
-  /// **'Choose voice'**
+  /// **'Read aloud'**
   String get readAloudContinue;
 
   /// Unsupported platform, without native calls
@@ -5056,7 +5056,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleIntro.
   ///
   /// In en, this message translates to:
-  /// **'Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.'**
+  /// **'Reach OpenCode on another computer through your own Tailscale network.'**
   String get tailscaleIntro;
 
   /// No description provided for @tailscaleAppStep.
@@ -5116,7 +5116,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleCheckAgain.
   ///
   /// In en, this message translates to:
-  /// **'Check app again'**
+  /// **'Check Tailscale again'**
   String get tailscaleCheckAgain;
 
   /// No description provided for @tailscaleAddressStep.
@@ -5263,12 +5263,6 @@ abstract class AppLocalizations {
   /// **'Task text'**
   String get a2aTaskPrompt;
 
-  /// No description provided for @a2aReopenDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Reopening checks the existing task. It never sends your task again.'**
-  String get a2aReopenDetail;
-
   /// No description provided for @a2aDeliveryUnconfirmed.
   ///
   /// In en, this message translates to:
@@ -5286,12 +5280,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.'**
   String get a2aCancelDetail;
-
-  /// No description provided for @a2aRequestCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask to stop'**
-  String get a2aRequestCancel;
 
   /// No description provided for @a2aYourReply.
   ///
@@ -7762,18 +7750,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Server updates are managed externally'**
-  String get e7SettingsUi54;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy the official upgrade and model-refresh commands to run on the server host.'**
-  String get e7SettingsUi55;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Not connected'**
   String get e7SettingsUi56;
 
@@ -7816,7 +7792,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands'**
+  /// **'Keep OpenCode running after you close the terminal.'**
   String get e7SettingsUi66;
 
   /// Settings and appearance user interface.
@@ -11390,12 +11366,6 @@ abstract class AppLocalizations {
   /// **'Copy parameter schema'**
   String get e7LibraryCopyParameterSchema;
 
-  /// Library and project tools UI: Parameter schema
-  ///
-  /// In en, this message translates to:
-  /// **'Parameter schema'**
-  String get e7LibraryParameterSchema;
-
   /// Library and project tools UI: No project selected
   ///
   /// In en, this message translates to:
@@ -12745,12 +12715,6 @@ abstract class AppLocalizations {
   /// **'Connection closed'**
   String get e7SetupConnectionClosed;
 
-  /// Setup journey: not connected.
-  ///
-  /// In en, this message translates to:
-  /// **'Not connected'**
-  String get e7SetupNotConnected;
-
   /// Setup journey: token banner.
   ///
   /// In en, this message translates to:
@@ -13129,12 +13093,6 @@ abstract class AppLocalizations {
   /// **'Termux bridge verification failed.'**
   String get e7SetupVerifyTermuxFailed;
 
-  /// Setup journey: this server.
-  ///
-  /// In en, this message translates to:
-  /// **'This server'**
-  String get e7SetupThisServer;
-
   /// Setup journey: ubuntu only.
   ///
   /// In en, this message translates to:
@@ -13206,12 +13164,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal {number}'**
   String e7SetupTerminalNumber(int number);
-
-  /// Setup journey: server version.
-  ///
-  /// In en, this message translates to:
-  /// **'Server version {version}'**
-  String e7SetupServerVersion(String version);
 
   /// Setup journey: copy command label.
   ///
@@ -15924,12 +15876,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{waiting on one other step} other{waiting on {count} other steps}}'**
   String teamUiRunBlockedByDeps(int count);
 
-  /// Run detail app bar action opening Technical details
-  ///
-  /// In en, this message translates to:
-  /// **'Details'**
-  String get teamUiRunDetails;
-
   /// Run detail elapsed time in days
   ///
   /// In en, this message translates to:
@@ -15996,12 +15942,6 @@ abstract class AppLocalizations {
   /// **'Started'**
   String get teamUiRunLabelStarted;
 
-  /// Run Technical details label
-  ///
-  /// In en, this message translates to:
-  /// **'State'**
-  String get teamUiRunLabelState;
-
   /// Run Technical details label for the ids of the work items in the run
   ///
   /// In en, this message translates to:
@@ -16026,35 +15966,11 @@ abstract class AppLocalizations {
   /// **'This task is no longer on the host'**
   String get teamUiRunMissingTitle;
 
-  /// Run detail inline card label when no agent is named
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get teamUiRunNeedsYou;
-
   /// Run detail tab
   ///
   /// In en, this message translates to:
   /// **'Agents'**
   String get teamUiRunTabAgents;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Overview'**
-  String get teamUiRunTabOverview;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Timeline'**
-  String get teamUiRunTabTimeline;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Steps'**
-  String get teamUiRunTabWork;
 
   /// Run detail app bar term for a batch run; convoy is the Gas City term
   ///
@@ -16086,54 +16002,6 @@ abstract class AppLocalizations {
   /// **'{name} started'**
   String teamUiRunTimelineAgentWoke(String name);
 
-  /// Run timeline empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing has happened yet'**
-  String get teamUiRunTimelineEmpty;
-
-  /// Run timeline empty state title when a filter hides every row
-  ///
-  /// In en, this message translates to:
-  /// **'No events of this kind yet'**
-  String get teamUiRunTimelineEmptyFiltered;
-
-  /// Run timeline empty state hint when a filter hides every row
-  ///
-  /// In en, this message translates to:
-  /// **'Try another filter.'**
-  String get teamUiRunTimelineEmptyFilteredHint;
-
-  /// Run timeline empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Events appear here as the team works on this task.'**
-  String get teamUiRunTimelineEmptyHint;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Agents'**
-  String get teamUiRunTimelineFilterAgents;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get teamUiRunTimelineFilterAll;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Decisions'**
-  String get teamUiRunTimelineFilterDecisions;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Work'**
-  String get teamUiRunTimelineFilterWork;
-
   /// Run timeline row for a gate that opened
   ///
   /// In en, this message translates to:
@@ -16145,12 +16013,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answered: {title}'**
   String teamUiRunTimelineGateResolved(String title);
-
-  /// Run timeline pill shown when events arrived while scrolled away
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
-  String teamUiRunTimelineJump(int count);
 
   /// Run timeline row for a run state change; state is the run state word
   ///
@@ -16272,12 +16134,6 @@ abstract class AppLocalizations {
   /// **'Copy output'**
   String get teamUiAgentOutputCopy;
 
-  /// Live output body when the session has produced no text
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing yet'**
-  String get teamUiAgentOutputEmpty;
-
   /// Live output status line once the host stopped serving the session; cached text stays below
   ///
   /// In en, this message translates to:
@@ -16314,18 +16170,6 @@ abstract class AppLocalizations {
   /// **'Recycling soon · context nearly full'**
   String get teamUiAgentRecyclingSoon;
 
-  /// Run Agents tab empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'No agents on this run'**
-  String get teamUiAgentRunEmpty;
-
-  /// Run Agents tab empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Agents appear here while they work on this run\'s items.'**
-  String get teamUiAgentRunEmptyHint;
-
   /// Agent header: how long the session has existed; age is a short span like "3 h 14 min"
   ///
   /// In en, this message translates to:
@@ -16343,30 +16187,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not reported'**
   String get teamUiAgentValueUnknown;
-
-  /// Work tab empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'No work items yet'**
-  String get teamUiWorkEmpty;
-
-  /// Work tab empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Work appears here once the run has items.'**
-  String get teamUiWorkEmptyHint;
-
-  /// Screen reader label of the Work graph
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Dependency graph of 1 work item} other{Dependency graph of {count} work items}}'**
-  String teamUiWorkGraphSemantics(int count);
-
-  /// Work list group header: the state word and how many items are in it
-  ///
-  /// In en, this message translates to:
-  /// **'{state} · {count}'**
-  String teamUiWorkGroupHeader(String state, int count);
 
   /// Work technical details label
   ///
@@ -16445,12 +16265,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unassigned'**
   String get teamUiWorkOwnerNone;
-
-  /// Screen reader label of the owner glyph on a work row
-  ///
-  /// In en, this message translates to:
-  /// **'Owner: {name}'**
-  String teamUiWorkOwnerSemantics(String name);
 
   /// Work sheet heading over the items that wait on this one
   ///
@@ -16631,24 +16445,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Working'**
   String get teamUiWorkStateWorking;
-
-  /// Work tab view toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Graph'**
-  String get teamUiWorkViewGraph;
-
-  /// Work tab view toggle
-  ///
-  /// In en, this message translates to:
-  /// **'List'**
-  String get teamUiWorkViewList;
-
-  /// Work row detail: how many open items this one still needs
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}'**
-  String teamUiWorkWaitsOn(int count);
 
   /// A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)
   ///
@@ -16992,10 +16788,10 @@ abstract class AppLocalizations {
   /// **'Send {work} to {agent} again'**
   String teamUiGateAnswerRunRetry(String work, String agent);
 
-  /// Failed-run sheet action opening the agent output page
+  /// Failed-run sheet action opening the agent's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'View logs'**
+  /// **'Watch the agent'**
   String get teamUiGateAnswerRunLogs;
 
   /// Failed-run sheet action cancelling the run; two-step in the error tone
@@ -17094,24 +16890,6 @@ abstract class AppLocalizations {
   /// **'Task sent to an agent'**
   String get teamUiControlCreateWork;
 
-  /// Title of the message sheet; {agent} is the agent name
-  ///
-  /// In en, this message translates to:
-  /// **'Message {agent}'**
-  String teamUiControlMessageTitle(String agent);
-
-  /// Hint in the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Tell the agent what to do next'**
-  String get teamUiControlMessageHint;
-
-  /// Send button of the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get teamUiControlMessageSend;
-
   /// Title of the two-step Stop confirmation; {agent} is the agent name
   ///
   /// In en, this message translates to:
@@ -17183,36 +16961,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop run'**
   String get teamUiControlCancelRun;
-
-  /// Overflow item and control name: close a batch (Gas City convoy), two-step
-  ///
-  /// In en, this message translates to:
-  /// **'Close batch'**
-  String get teamUiControlCloseBatch;
-
-  /// Title of the two-step Cancel run confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Stop this run?'**
-  String get teamUiControlCancelRunConfirmTitle;
-
-  /// Body of the Cancel run confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Running steps stop; finished work stays. The phone cannot undo this.'**
-  String get teamUiControlCancelRunConfirmBody;
-
-  /// Title of the two-step Close batch confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Close this batch?'**
-  String get teamUiControlCloseBatchConfirmTitle;
-
-  /// Body of the Close batch confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'The batch closes on the host. Its open work items stay open for another batch.'**
-  String get teamUiControlCloseBatchConfirmBody;
 
   /// Label of the floating action button on the AI Team home (02-ux §3, §7)
   ///
@@ -17424,10 +17172,10 @@ abstract class AppLocalizations {
   /// **'The host refused the objective: {reason}'**
   String teamUiStartRunRefused(String reason);
 
-  /// Button on the pending card opening the planner's live output page
+  /// Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Planner output'**
+  /// **'Watch the planner'**
   String get teamUiStartRunPlannerOutput;
 
   /// Button on the pending card hiding it for good
@@ -17789,10 +17537,10 @@ abstract class AppLocalizations {
   /// **'How the host dispatches'**
   String get teamUiCycleActionHow;
 
-  /// Dispatch cycle action: opens the agent output screen for the agent on the item
+  /// Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Open agent output'**
+  /// **'Watch the agent'**
   String get teamUiCycleActionOpenOutput;
 
   /// Dispatch cycle action: nudges the rig's merge agent (Gas City refinery); refinery is the Gas City term
@@ -18131,12 +17879,6 @@ abstract class AppLocalizations {
   /// **'Refreshes every 10 seconds while open'**
   String get termuxProcsAutoRefresh;
 
-  /// Button that stops one process
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get termuxProcsStop;
-
   /// Accessibility label of a row's Stop button
   ///
   /// In en, this message translates to:
@@ -18154,12 +17896,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It gets a polite stop, then a forced one after 5 seconds.'**
   String get termuxProcsStopOneBody;
-
-  /// Two-step confirmation cancel button
-  ///
-  /// In en, this message translates to:
-  /// **'Keep'**
-  String get termuxProcsKeep;
 
   /// Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled
   ///
@@ -18538,12 +18274,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete AI Team from this phone?'**
   String get teamUiPhoneRemoveTitle;
-
-  /// On this phone: removed confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team was deleted from this phone.'**
-  String get teamUiPhoneRemoved;
 
   /// On this phone: a verb failed
   ///
@@ -22157,12 +21887,6 @@ abstract class AppLocalizations {
   /// **'OpenCode has been busy in {project} for {duration} with nothing to do'**
   String workRunawayInProject(String project, String duration);
 
-  /// Status line action opening the Running now screen
-  ///
-  /// In en, this message translates to:
-  /// **'See what\'s running'**
-  String get workRunawaySee;
-
   /// Connecting screen title while the phone's own server starts
   ///
   /// In en, this message translates to:
@@ -22385,29 +22109,11 @@ abstract class AppLocalizations {
   /// **'Steps'**
   String get teamUiRunStepsHeading;
 
-  /// Row under the first steps on the Overview that opens the Steps tab
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, other{See all {count} steps}}'**
-  String teamUiRunStepsAll(int count);
-
-  /// The step counts under the Details row of an AI Team task
-  ///
-  /// In en, this message translates to:
-  /// **'{done} done · {working} working · {blocked} held up'**
-  String teamUiRunDetailsCounts(int done, int working, int blocked);
-
   /// Label of the cost and tokens under the Details row of an AI Team task
   ///
   /// In en, this message translates to:
   /// **'Usage'**
   String get teamUiRunDetailsUsage;
-
-  /// Label of the step counts under the Details row of an AI Team task
-  ///
-  /// In en, this message translates to:
-  /// **'Steps'**
-  String get teamUiRunDetailsStepsLabel;
 
   /// Leads the supporting line of the server row the app is connected to (the current-server mark)
   ///
@@ -23267,41 +22973,17 @@ abstract class AppLocalizations {
   /// **'This conversation fills in as the agent works.'**
   String get chatWatchEmptyBody;
 
-  /// Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team
+  /// Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)
   ///
   /// In en, this message translates to:
-  /// **'Watching {name} · {role} · AI Team'**
-  String teamWatchBanner(String name, String role);
+  /// **'Watching {name} · {role} · {state}'**
+  String teamWatchBanner(String name, String role, String state);
 
-  /// Chat status line in watching mode when the agent has no name of its own: its role in plain words
+  /// Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it
   ///
   /// In en, this message translates to:
-  /// **'Watching the {role} · AI Team'**
-  String teamWatchBannerRole(String role);
-
-  /// Where the chat composer was, in watching mode: why there is no text field
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re watching. Your message goes to it through the AI Team, never into this conversation.'**
-  String get teamWatchNote;
-
-  /// Where the chat composer was, in watching mode, when the team takes no messages from the phone
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re watching. This team can\'t be messaged from here.'**
-  String get teamWatchNoteNoMessage;
-
-  /// Watching mode: the one action in place of the composer, for a worker
-  ///
-  /// In en, this message translates to:
-  /// **'Message the worker'**
-  String get teamWatchMessageWorker;
-
-  /// Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)
-  ///
-  /// In en, this message translates to:
-  /// **'Message this agent'**
-  String get teamWatchMessageAgent;
+  /// **'Watching the {role} · {state}'**
+  String teamWatchBannerRole(String role, String state);
 
   /// Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder
   ///
@@ -23584,12 +23266,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This team can\'t be messaged from here.'**
   String get teamChatComposerCannot;
-
-  /// AI Team task page, supporting line of Open conversation: opens the task as a conversation
-  ///
-  /// In en, this message translates to:
-  /// **'The task and its workers, in the chat'**
-  String get teamOpenTaskConversationHint;
 
   /// AI Team board: top bar title
   ///
@@ -23968,30 +23644,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Priority'**
   String get teamBoardPriorityTitle;
-
-  /// Board: top bar action that adds a task to the backlog
-  ///
-  /// In en, this message translates to:
-  /// **'Add to backlog'**
-  String get teamBoardAddTooltip;
-
-  /// Board: add-to-backlog field hint
-  ///
-  /// In en, this message translates to:
-  /// **'What should the team do?'**
-  String get teamBoardAddHint;
-
-  /// Board: add-to-backlog primary button
-  ///
-  /// In en, this message translates to:
-  /// **'Add to backlog'**
-  String get teamBoardAddButton;
-
-  /// Board: add-to-backlog sheet, what happens next
-  ///
-  /// In en, this message translates to:
-  /// **'It waits in the Backlog until you start it.'**
-  String get teamBoardAddNote;
 
   /// Board: add-to-backlog refused
   ///
@@ -26075,12 +25727,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String kitToolTookMinutes(int count);
 
-  /// KitToolRow agent form: how long a running sub-agent or worker has run, after its state word ("Running for 3 min")
-  ///
-  /// In en, this message translates to:
-  /// **'for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}'**
-  String kitToolForMinutes(int count);
-
   /// KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation
   ///
   /// In en, this message translates to:
@@ -27776,13 +27422,13 @@ abstract class AppLocalizations {
   /// Setup guide step 2 when this device can scan; names the real Servers buttons
   ///
   /// In en, this message translates to:
-  /// **'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.'**
+  /// **'Tap Add server, then Scan code and point the camera at the QR, or Paste code.'**
   String get guideStepTwoScan;
 
   /// Setup guide step 2 without a camera; names the real Servers buttons
   ///
   /// In en, this message translates to:
-  /// **'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.'**
+  /// **'Copy the printed code, then tap Add server and Paste code.'**
   String get guideStepTwoPaste;
 
   /// Setup guide row that opens phone setup, for people without a computer
@@ -27867,11 +27513,11 @@ abstract class AppLocalizations {
   /// **'Server data stays in place'**
   String get serverSettingsUpgradeKeepsData;
 
-  /// Server settings: copy button for the upgrade commands run on the host
+  /// Server settings: the row that copies the upgrade and model-refresh commands to run on the server's computer (updates managed outside the app).
   ///
   /// In en, this message translates to:
-  /// **'Copy update commands'**
-  String get serverSettingsCopyUpdateCommands;
+  /// **'Copy update commands for {server}'**
+  String serverSettingsCopyUpdateCommands(String server);
 
   /// Server settings Details: the server address label
   ///
@@ -27906,7 +27552,7 @@ abstract class AppLocalizations {
   /// Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices
   ///
   /// In en, this message translates to:
-  /// **'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.'**
+  /// **'Paste the HTTPS address Tailscale Serve printed.'**
   String get tailscaleSetupAddressHelper;
 
   /// Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)
@@ -28941,23 +28587,11 @@ abstract class AppLocalizations {
   /// **'Couldn\'t run /{command}'**
   String runCommandFailedTitle(String command);
 
-  /// Why an agent's message field is turned off (shared-team-1).
-  ///
-  /// In en, this message translates to:
-  /// **'The team can\'t take words from this phone right now.'**
-  String get teamControlsFieldUnavailable;
-
   /// Shown when the team host refused to wake an agent without a reason (shared-team-1).
   ///
   /// In en, this message translates to:
   /// **'The host didn\'t say why.'**
   String get teamNowWakeRefusedNoReason;
-
-  /// Error under the Add to backlog field when it is empty (shared-team-1).
-  ///
-  /// In en, this message translates to:
-  /// **'Say what the team should do first.'**
-  String get teamBoardMoveSheetAddEmpty;
 
   /// Why Open agent output is unavailable on the dispatch strip (shared-team-1).
   ///
@@ -29097,12 +28731,6 @@ abstract class AppLocalizations {
   /// **'This phone can\'t pause, stop or message {agent} on this host yet. Run the team\'s host front on the computer to control it from here.'**
   String teamAgentScreenControlsElsewhere(String agent);
 
-  /// Message-an-agent sheet: the field's label.
-  ///
-  /// In en, this message translates to:
-  /// **'Your message'**
-  String get teamAgentScreenMessageLabel;
-
   /// Gate sheet: notice on a destructive confirmation.
   ///
   /// In en, this message translates to:
@@ -29186,12 +28814,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agent id'**
   String get teamAgentScreenLabelId;
-
-  /// Message-an-agent sheet: why Send is off while the field is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'Type a message first'**
-  String get teamAgentScreenMessageFirst;
 
   /// Gate sheet free-text question: why Send is off while the field is empty.
   ///
@@ -29481,12 +29103,6 @@ abstract class AppLocalizations {
   /// **'MCP servers'**
   String get integrationsMcpServersLabel;
 
-  /// Integrations page: count at the end of the Providers section label.
-  ///
-  /// In en, this message translates to:
-  /// **'{connected} of {total} connected'**
-  String integrationsProvidersSummary(int connected, int total);
-
   /// Integrations page: provider row supporting line, how many models the provider serves.
   ///
   /// In en, this message translates to:
@@ -29660,12 +29276,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove {name} until restart'**
   String integrationsMcpRemoveUntilRestart(String name);
-
-  /// Integrations page: why Remove is unavailable on this server.
-  ///
-  /// In en, this message translates to:
-  /// **'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.'**
-  String get integrationsMcpRemoveUnavailable;
 
   /// Integrations page: remove-MCP confirmation title.
   ///
@@ -31581,12 +31191,6 @@ abstract class AppLocalizations {
   /// **'What it says about itself'**
   String get externalAgentsAboutLabel;
 
-  /// screen-library-2: Add agent: row when the agent lists no skills.
-  ///
-  /// In en, this message translates to:
-  /// **'It lists no skills'**
-  String get externalAgentsNoSkills;
-
   /// screen-library-2: Add agent: note under the agent's description.
   ///
   /// In en, this message translates to:
@@ -31748,12 +31352,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check with the agent first; pull down to refresh'**
   String get externalAgentsStopUnavailable;
-
-  /// screen-library-2: Stop question title.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop this task?'**
-  String get externalAgentsStopTitle;
 
   /// screen-library-2: Task page: menu item that removes the saved task from the phone.
   ///
@@ -32340,7 +31938,7 @@ abstract class AppLocalizations {
   /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
   ///
   /// In en, this message translates to:
-  /// **'The team didn\'t take this task'**
+  /// **'Task not taken'**
   String get teamChatRefusedTitle;
 
   /// Team conversation: button on the refused-task notice that sends the same task to the team again.
@@ -32352,7 +31950,7 @@ abstract class AppLocalizations {
   /// Team conversation: page state when the task this page shows is no longer listed by the team.
   ///
   /// In en, this message translates to:
-  /// **'This task is no longer on the team'**
+  /// **'Task no longer listed'**
   String get teamChatGoneTitle;
 
   /// Team conversation: body under the removed-task title.
@@ -32952,7 +32550,7 @@ abstract class AppLocalizations {
   /// Permission request sheet: the risky switch that saves an always-allow rule.
   ///
   /// In en, this message translates to:
-  /// **'Always allow requests like this'**
+  /// **'Always allow these requests'**
   String get chatRequestAlwaysTitle;
 
   /// Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.
@@ -34755,12 +34353,6 @@ abstract class AppLocalizations {
   /// **'Error details'**
   String get productErrorDetailsLabel;
 
-  /// Error words: the server refused a request (400/422) and gave a short reason for people.
-  ///
-  /// In en, this message translates to:
-  /// **'The server didn\'t accept it: {reason}'**
-  String productErrorRejectedBecause(String reason);
-
   /// Error words: the server answered a 5xx status such as 502 or 503.
   ///
   /// In en, this message translates to:
@@ -35666,6 +35258,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs {required} MB; this phone has {available} MB'**
   String voiceAutoSetupDetailMemoryValue(int required, int available);
+
+  /// Terminal list empty state title: this server has no terminals open.
+  ///
+  /// In en, this message translates to:
+  /// **'No terminals yet'**
+  String get terminalScreenEmptyTitle;
+
+  /// Terminal list empty state body, naming the project folder a new terminal opens in.
+  ///
+  /// In en, this message translates to:
+  /// **'Start one in {project}.'**
+  String terminalScreenEmptyBody(String project);
+
+  /// Terminal list empty state body when the project folder has no name to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Start one in this project.'**
+  String get terminalScreenEmptyBodyNoProject;
+
+  /// Explanation shown when the person taps the Providers section label on the integrations page.
+  ///
+  /// In en, this message translates to:
+  /// **'The model providers this server can use. Connect one to start chatting.'**
+  String get integrationsProvidersExplanation;
+
+  /// Explanation shown when the person taps the Resources section label on the integrations page.
+  ///
+  /// In en, this message translates to:
+  /// **'Files and data that connected MCP servers give the agent.'**
+  String get integrationsResourcesExplanation;
+
+  /// Question before asking an external agent to stop a task, naming the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{task}”?'**
+  String externalAgentsStopTaskTitle(String task);
+
+  /// Confirm button: ask the named external agent to stop the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agent} to stop'**
+  String externalAgentsStopTaskConfirm(String agent);
+
+  /// Dismiss button on the stop question: leave the external agent's task running.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get externalAgentsStopTaskKeep;
+
+  /// Name of the menu on a tool's detail sheet (holds Copy parameter schema).
+  ///
+  /// In en, this message translates to:
+  /// **'{tool} actions'**
+  String toolsDetailMenu(String tool);
+
+  /// Kit durations: a whole number of hours ("3 h"); used from an hour up, so a long wait never reads "2,715 min"
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String kitDurationHours(int hours);
+
+  /// Kit durations: hours and minutes ("1 h 20 min")
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String kitDurationHoursMinutes(int hours, int minutes);
+
+  /// Kit durations: whole days ("2 d")
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d'**
+  String kitDurationDays(int days);
+
+  /// Kit durations: days and hours ("1 d 21 h")
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d {hours} h'**
+  String kitDurationDaysHours(int days, int hours);
+
+  /// KitToolRow agent form: how long a running sub-agent or worker has run, after its state word ("Running for 3 min", "Running for 1 d 21 h"); duration is a kit duration
+  ///
+  /// In en, this message translates to:
+  /// **'for {duration}'**
+  String kitToolFor(String duration);
+
+  /// KitSince: a slow wait of an hour or more ("Waiting 2 h 5 min"); duration is a kit duration
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting {duration}'**
+  String kitSinceWaitingForLong(String duration);
+
+  /// Team conversation, the lead's line: the task (said once in the person's prompt above) was sent to the workers; "it" refers back to the prompt so the task's text is not repeated
+  ///
+  /// In en, this message translates to:
+  /// **'Sent it to the workers'**
+  String get teamChatLeadRoutedIt;
+
+  /// Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)
+  ///
+  /// In en, this message translates to:
+  /// **'Started a worker on it'**
+  String get teamChatLeadStartingIt;
+
+  /// Team conversation, the lead's line: the named worker took the task named in the prompt above
+  ///
+  /// In en, this message translates to:
+  /// **'{name} took it'**
+  String teamChatLeadClaimedIt(String name);
+
+  /// Team conversation, the lead's line: an unnamed worker took the task named in the prompt above
+  ///
+  /// In en, this message translates to:
+  /// **'A worker took it'**
+  String get teamChatLeadClaimedWorkerIt;
+
+  /// Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch
+  ///
+  /// In en, this message translates to:
+  /// **'Its changes are on a branch'**
+  String get teamChatLeadPushedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above went to review
+  ///
+  /// In en, this message translates to:
+  /// **'Handed it to review'**
+  String get teamChatLeadReviewIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above was merged
+  ///
+  /// In en, this message translates to:
+  /// **'Merged it'**
+  String get teamChatLeadMergedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above failed
+  ///
+  /// In en, this message translates to:
+  /// **'It failed'**
+  String get teamChatLeadStepFailedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above was cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'It was cancelled'**
+  String get teamChatLeadStepCancelledIt;
+
+  /// Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is working on it · {elapsed}'**
+  String teamChatNowWorkingIt(String name, String elapsed);
+
+  /// Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as "1 d 21 h"
+  ///
+  /// In en, this message translates to:
+  /// **'No progress for {elapsed}'**
+  String teamChatNowNoProgress(String elapsed);
+
+  /// Team conversation: under a stalled task, what happened and the ways forward; time is a clock time or date
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t moved this task since {time}. Nudge it to carry on, restart it, or report the problem.'**
+  String teamChatNoProgressBody(String name, String time);
+
+  /// Team conversation: under a stalled task on a host without agent controls, what happened and the way forward
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t moved this task since {time}. This server can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
+  String teamChatNoProgressBodyNoControls(String name, String time);
+
+  /// Team conversation, a stalled task: opens Report a problem with the stall attached
+  ///
+  /// In en, this message translates to:
+  /// **'Report the problem'**
+  String get teamChatNoProgressReport;
+
+  /// Report a problem: the attached problem's title for a stalled team task
+  ///
+  /// In en, this message translates to:
+  /// **'Task made no progress'**
+  String teamChatNoProgressReportTitle(String elapsed);
+
+  /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
+  ///
+  /// In en, this message translates to:
+  /// **'What the server reported'**
+  String get teamTaskDetailsReported;
+
+  /// KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)
+  ///
+  /// In en, this message translates to:
+  /// **'Open its details'**
+  String get kitToolOpenDetails;
+
+  /// Give the team a task (from the board): makes the task and leaves it in the Backlog, given to no one, instead of starting it now
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in backlog'**
+  String get teamStartRunKeepInBacklog;
+
+  /// Announced once after the Work status line's Stop ended the leftover process
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped {helper}'**
+  String workRunawayStopped(String helper);
+
+  /// Work status line when stopping the leftover process did not end it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop {helper}. Try again, or stop it from Termux.'**
+  String workRunawayStopFailed(String helper);
+
+  /// Server settings: the line under 'Copy update commands for {server}' before it is tapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Run them in a terminal on the server\'s computer; this app can\'t update it.'**
+  String get serverSettingsUpdateCommandsDetail;
+
+  /// Server settings: the line under 'Copy update commands for {server}' after the row copied them.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied. Run them in a terminal on the server\'s computer.'**
+  String get serverSettingsUpdateCommandsCopied;
+
+  /// Run as a Linux service page: its title, naming the server (four words at most, glossary G28).
+  ///
+  /// In en, this message translates to:
+  /// **'Linux service for {server}'**
+  String hostServiceTitle(String server);
+
+  /// Run as a Linux service page: the one line under the top bar.
+  ///
+  /// In en, this message translates to:
+  /// **'These commands run on {server}\'s computer; copy each into a terminal there.'**
+  String hostServiceIntro(String server);
+
+  /// Tailscale steps: a step the person still has to do; the neutral to-do word leads its line.
+  ///
+  /// In en, this message translates to:
+  /// **'To do · {detail}'**
+  String tailscaleSetupToDo(String detail);
+
+  /// Tailscale setup and recovery fold: why the address is typed, not picked.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode can’t list the devices on your tailnet.'**
+  String get tailscaleSetupNoDeviceList;
+
+  /// Safe app-authored explanation when a queued prompt needs staged revert review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the staged revert before sending this queued prompt.'**
+  String get productErrorStagedRevert;
+
+  /// Composer hint while watching an AI Team agent's conversation: the words go to the agent through the AI Team. name is the agent's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'Message {name}…'**
+  String teamWatchComposerHint(String name);
+
+  /// Composer hint while watching an AI Team worker that has no name of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the worker…'**
+  String get teamWatchComposerHintWorker;
+
+  /// Composer hint while watching an AI Team agent (not a worker) that has no name of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Message this agent…'**
+  String get teamWatchComposerHintAgent;
+
+  /// Top bar action while watching an AI Team agent's conversation: opens the agent's own page (its state, controls and technical details). name is the agent's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'About {name}'**
+  String teamWatchAbout(String name);
+
+  /// Top bar action while watching an AI Team agent with no name of its own: opens its own page. role is its role in plain words (Worker).
+  ///
+  /// In en, this message translates to:
+  /// **'About the {role}'**
+  String teamWatchAboutRole(String role);
 }
 
 class _AppLocalizationsDelegate

@@ -9,7 +9,7 @@ import 'package:opencode_mobile/state/setup_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
-class _Gateway implements SetupConfigGateway {
+class _Gateway implements SetupTransactionalConfigGateway {
   _Gateway({this.writable = true});
   final bool writable;
   Map<String, Object?> config = {
@@ -17,6 +17,8 @@ class _Gateway implements SetupConfigGateway {
     'default_agent': 'build',
   };
   int writes = 0;
+  int revision = 0;
+  final Map<String, SetupConfigRevision> originals = {};
   bool throwOnPatch = false;
   Completer<void>? readGate;
   @override
@@ -40,6 +42,73 @@ class _Gateway implements SetupConfigGateway {
   }
 
   @override
+  Future<SetupConfigRevision> readSnapshot() async => SetupConfigRevision(
+    targetId: 'fake-source',
+    revision: '$revision',
+    config: await readConfig(),
+  );
+  @override
+  Future<SetupConfigCommit> commit({
+    required SetupConfigRevision expected,
+    required List<SetupEdit> edits,
+    required String operationId,
+  }) async {
+    if (expected.revision != '$revision') {
+      throw const SetupFailure(
+        SetupFailureCode.conflict,
+        'Configuration changed.',
+      );
+    }
+    writes++;
+    if (throwOnPatch) throw StateError('untrusted server body');
+    final before = await readSnapshot();
+    for (final edit in edits) {
+      var at = config;
+      for (final part in edit.path.take(edit.path.length - 1)) {
+        at =
+            at[part] as Map<String, Object?>? ??
+            (at[part] = <String, Object?>{});
+      }
+      if (edit.remove) {
+        at.remove(edit.path.last);
+      } else {
+        at[edit.path.last] = edit.value;
+      }
+    }
+    revision++;
+    originals[operationId] = before;
+    return SetupConfigCommit(
+      before: before,
+      after: await readSnapshot(),
+      undoHandle: operationId,
+    );
+  }
+
+  @override
+  Future<SetupConfigCommit> restore({
+    required SetupConfigCommit commit,
+    required String operationId,
+  }) async {
+    if (commit.after.revision != '$revision') {
+      throw const SetupFailure(
+        SetupFailureCode.conflict,
+        'Configuration changed.',
+      );
+    }
+    final before = await readSnapshot();
+    config =
+        (jsonDecode(jsonEncode(originals[commit.undoHandle]!.config)) as Map)
+            .cast<String, Object?>();
+    revision++;
+    writes++;
+    return SetupConfigCommit(
+      before: before,
+      after: await readSnapshot(),
+      undoHandle: operationId,
+    );
+  }
+
+  @override
   Future<List<SetupMcpStatus>> listMcpServers() async => [
     const SetupMcpStatus(name: 'example', status: 'needs_auth'),
     const SetupMcpStatus(name: 'other', status: 'arbitrary response body'),
@@ -58,7 +127,12 @@ void main() {
   late _Gateway gateway;
   late SetupController controller;
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {'id': 'one'},
+        {'id': 'two'},
+      ]),
+    });
     prefs = await SharedPreferences.getInstance();
     gateway = _Gateway();
     controller = SetupController(
@@ -86,7 +160,7 @@ void main() {
       expect(output.contains('fake-other-value'), isFalse);
       expect(controller.snapshot.servers.last.status, 'unknown');
       expect(controller.snapshot.servers.first.status, 'needs_auth');
-      expect(prefs.getKeys(), isEmpty);
+      expect(prefs.getKeys(), {'oc.profiles'});
     },
   );
   test(
@@ -223,7 +297,7 @@ void main() {
     );
   });
   test(
-    'new keys and removals are proposals only without reversible deletion',
+    'transaction facet makes disabled MCP additions and removals reviewable',
     () async {
       await controller.refresh();
       var proposal = await controller.propose([
@@ -236,7 +310,7 @@ void main() {
           },
         ),
       ]);
-      expect(proposal.canApply, isFalse);
+      expect(proposal.canApply, isTrue);
       proposal = await controller.propose([
         const SetupEdit(path: ['model'], remove: true),
       ]);
@@ -369,7 +443,11 @@ void main() {
   test('audit storage refusal prevents mutation', () async {
     await controller.refresh();
     final proposal = await controller.propose([modelEdit]);
-    SharedPreferencesStorePlatform.instance = _RefusingAuditStore({});
+    SharedPreferencesStorePlatform.instance = _RefusingAuditStore({
+      'flutter.oc.profiles': jsonEncode([
+        {'id': 'one'},
+      ]),
+    });
     await expectLater(
       controller.apply(proposal.id, confirmed: true),
       throwsA(

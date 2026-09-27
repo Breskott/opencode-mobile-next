@@ -51,6 +51,53 @@ abstract final class KitRedact {
     _knownSecrets.sort((a, b) => b.length.compareTo(a.length));
   }
 
+  /// Registers secret fields in a trusted credential/configuration response.
+  /// Call at ingress, before model decoding or diagnostic capture. This never
+  /// retains the response, and must not be used on arbitrary user content.
+  static void registerCredentialValues(Object? value) {
+    if (value is List) {
+      for (final item in value) {
+        registerCredentialValues(item);
+      }
+    } else if (value is Map) {
+      for (final entry in value.entries) {
+        final name = entry.key.toString().toLowerCase().replaceAll(
+          RegExp(r'[-_]'),
+          '',
+        );
+        final field = entry.value;
+        if (field is String &&
+            const {
+              'key',
+              'apikey',
+              'password',
+              'passwd',
+              'secret',
+              'clientsecret',
+              'token',
+              'accesstoken',
+              'refreshtoken',
+              'access',
+              'refresh',
+              'authorization',
+              'proxyauthorization',
+              'xapikey',
+              'cookie',
+              'setcookie',
+            }.contains(name)) {
+          registerKnownSecret(field);
+          if (name == 'authorization' || name == 'proxyauthorization') {
+            final separator = field.indexOf(' ');
+            if (separator >= 0) {
+              registerKnownSecret(field.substring(separator + 1));
+            }
+          }
+        }
+        if (field is Map || field is List) registerCredentialValues(field);
+      }
+    }
+  }
+
   /// Drops process-local registrations. Tests must clear these in setup and
   /// teardown; the app must re-register still-loaded secrets after clearing.
   static void clearKnownSecrets() => _knownSecrets.clear();

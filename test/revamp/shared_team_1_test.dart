@@ -130,35 +130,6 @@ void main() {
     });
   });
 
-  group('TeamComposerField forwards to KitField', () {
-    testWidgets('send works only once there are words', (tester) async {
-      final text = TextEditingController();
-      addTearDown(text.dispose);
-      var sent = 0;
-      await tester.pumpWidget(
-        _app(
-          TeamComposerField(
-            controller: text,
-            hint: 'Message the agent',
-            sendLabel: 'Send message',
-            onSend: () => sent++,
-            autofocus: false,
-            fieldKey: const ValueKey('field'),
-            sendKey: const ValueKey('send'),
-          ),
-        ),
-      );
-      // The hint is the visible label above the field (KIT-20).
-      expect(find.text('Message the agent'), findsWidgets);
-      await tester.tap(_key('send'), warnIfMissed: false);
-      expect(sent, 0);
-      await tester.enterText(_key('field'), 'Look at the checkout test');
-      await tester.pump();
-      await tester.tap(_key('send'));
-      expect(sent, 1);
-    });
-  });
-
   group('confirmTeamControl', () {
     testWidgets('true only on the confirming button', (tester) async {
       final results = await _open<bool>(
@@ -232,21 +203,6 @@ void main() {
       await tester.tap(_key('team-board-priority-normal'));
       await tester.pumpAndSettle();
       expect(results, [null]);
-    });
-
-    testWidgets('add: an empty submit says what is missing', (tester) async {
-      final results = await _open<String>(tester, showTeamBoardAddSheet);
-      expect(_key('team-board-add-sheet'), findsOneWidget);
-      await tester.tap(_key('team-board-add-submit'));
-      await tester.pumpAndSettle();
-      expect(find.text(_en.teamBoardMoveSheetAddEmpty), findsOneWidget);
-      expect(results, isEmpty);
-      await tester.enterText(_key('team-board-add-field'), '  Add dark mode ');
-      await tester.pump();
-      expect(find.text(_en.teamBoardMoveSheetAddEmpty), findsNothing);
-      await tester.tap(_key('team-board-add-submit'));
-      await tester.pumpAndSettle();
-      expect(results, ['Add dark mode']);
     });
 
     testWidgets('cancel asks, with Keep it as the way back', (tester) async {

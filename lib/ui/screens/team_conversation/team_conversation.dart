@@ -11,10 +11,8 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart' show TeamPlanningRequest;
-import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../chat_screen.dart';
 import '../team/start_run_sheet.dart' show showStartRunSheet;
@@ -28,8 +26,10 @@ export '../chat_screen.dart'
         TeamControllerScope,
         TeamOpenConversationRow,
         TeamPendingTask,
+        TeamWatchLiveScreen,
         lookupTeamAgentConversation,
         openTeamAgentConversation,
+        openTeamAgentConversationById,
         teamAgentConversationMissNote,
         teamAgentWatch;
 
@@ -58,11 +58,29 @@ abstract final class TeamConversation {
   /// Nothing opens when the person backs out or the host refused the task;
   /// the sheet's record comes back so a caller can say a refusal the sheet
   /// did not (a work item made but refused by its worker pool).
+  ///
+  /// [offerBacklog] (the board) adds Keep in backlog to the sheet: the
+  /// task is made and waits, given to no one, so no conversation opens and
+  /// [onKeptInBacklog] hears of it. [projectId] is the project chosen at
+  /// first.
   static Future<MutationRecord?> start(
     BuildContext context,
-    OrchestrationController team,
-  ) async {
-    final record = await showStartRunSheet(context, team);
+    OrchestrationController team, {
+    bool offerBacklog = false,
+    String? projectId,
+    ValueChanged<MutationRecord>? onKeptInBacklog,
+  }) async {
+    final result = await showStartRunSheet(
+      context,
+      team,
+      offerBacklog: offerBacklog,
+      projectId: projectId,
+    );
+    final record = result?.record;
+    if (result != null && result.backlog) {
+      onKeptInBacklog?.call(result.record);
+      return record;
+    }
     if (record == null ||
         record.status == MutationStatus.rejected ||
         !context.mounted) {
@@ -96,31 +114,5 @@ abstract final class TeamConversation {
       ),
     );
     return record;
-  }
-}
-
-/// "Open conversation" on a task's Overview: the task as a conversation
-/// (its workers are one tap further, each in watching mode).
-class TeamTaskConversationRow extends StatelessWidget {
-  const TeamTaskConversationRow({
-    super.key,
-    required this.team,
-    required this.runId,
-  });
-
-  final OrchestrationController team;
-  final String runId;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return KitRow(
-      key: const ValueKey('team-run-open-conversation'),
-      leading: KitRow.icon(context, AppIconography.chat),
-      title: l10n.teamOpenConversation,
-      supporting: TextSpan(text: l10n.teamOpenTaskConversationHint),
-      trailing: const KitChevron(),
-      onTap: () => TeamConversation.open(context, team, runId: runId),
-    );
   }
 }

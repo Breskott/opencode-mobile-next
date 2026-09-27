@@ -52,6 +52,7 @@ class KitScreen extends StatelessWidget {
     this.jump,                        // a KitJumpPill floating over body, above bottom
     this.width = KitScreenWidth.full,
     this.bottomKey,                   // default ValueKey('kit-screen-bottom'), as v1
+    this.page = false,                // a page with no bar: the frame without a KitTopBar (slice-R14)
   }) : detail = null,
        emptyDetail = null,
        side = null,
@@ -222,14 +223,14 @@ class KitStatusContribution extends StatefulWidget {
 
 ### Behaviour (frozen)
 
-1. **Frame.** With `topBar`, KitScreen is a page: `ground` background, the bar in the top safe area, the body resizing above the keyboard. Without `topBar`, it is a body inside a host (a tab, a pane) and builds no frame. A `KitScreen(topBar:)` inside another KitScreen's body asserts (one bar per window area, KIT-36), except inside a twoPane/threePane `detail` or `side`, which are panes.
+1. **Frame.** With `topBar`, KitScreen is a page: `ground` background, the bar in the top safe area, the body resizing above the keyboard. Without `topBar`, it is a body inside a host (a tab, a pane) and builds no frame. `page: true` builds the same frame with no bar: the PC shell's content pane, where the sidebar beside it already names the destination (slice-R14), so the pane starts with its own header instead of repeating the sidebar's highlighted name. A `KitScreen(topBar:)` inside another KitScreen's body asserts (one bar per window area, KIT-36), except inside a twoPane/threePane `detail` or `side`, which are panes.
 2. **Order, top to bottom:** top bar → status slot → search → `header` rows → the one loading bar (`KitLoadingBar`, STATE-4) → body (with `jump` floating over it) → `bottom`.
 3. **One status line per window (KIT-35, STATE-14, Appendix A #83).** A KitScreen owns a `KitStatusLineSlot` only when no slot is above it (the shell's screen; a pushed page); it then shows the highest of the app-wide conditions, its own `status` and its descendants' contributions. A KitScreen with a slot above it (a tab body, a pane) forwards its `status` through `KitStatusContribution` and draws none.
 4. **Bottom block and keyboard.** `bottom` sits `space2` above max(published inset from ancestors, the keyboard): with `viewInsets.bottom` 300 its bottom edge is 308 dp above the window bottom. KitScreen then publishes `KitBottomInset.add(extraBottom: <measured bottom block height>)` to its body, so `KitUndo` and `jump` float above the primary.
 5. **Width.** On medium and wider, `KitScreenWidth.reading`/`list` centre the body, search, header and bottom at 720/960; `full` keeps today's full width. On compact every width is full with the 16 dp gutter from `padding(context)`.
 6. **Panes.** twoPane from expanded (not short): list pane 296 on the start side, a 1 physical px `hairline` between panes, the detail pane centred at ≤ 700; `detail == null` shows `emptyDetail`. threePane on large adds `side` (340) at the end. Inside a `KitNav` whose sidebar hosts this destination's pane (`KitNav.hostsPane`), the list pane is left out and the detail fills the content. Detail and side panes are wrapped in a pane scope so a `KitTopBar(exit: auto)` inside them shows no Back.
 7. **Search on the rails.** The pinned `search` sits on the 16 dp gutter (`KitTokens.gutter`) on both sides, like the rows below it (KitSearchField.md "Where it sits").
-8. **Snack bars (transition).** A page (`topBar` set) with no `Scaffold` above it hosts a transparent one, so screens that still call `ScaffoldMessenger.showSnackBar` until they move to `KitUndo` show their snack bar. It floats above the `KitBottomInset` clearance (dock, pinned primary, gesture inset, keyboard); the page's own `MediaQuery` is unchanged.
+8. **Snack bars (transition).** A page (`topBar` set, or `page: true`) with no `Scaffold` above it hosts a transparent one, so screens that still call `ScaffoldMessenger.showSnackBar` until they move to `KitUndo` show their snack bar. It floats above the `KitBottomInset` clearance (dock, pinned primary, gesture inset, keyboard); the page's own `MediaQuery` is unchanged.
 9. **One of each (debug only, G37).** After each frame in debug builds, KitScreen walks its subtree (skipping offstage and `TickerMode`-disabled parts, and nested panes, which check themselves) and asserts: at most one visible primary `KitButton`; at most one drawn `KitStatusLine`; at most one `KitRefresh`; at most one `KitDetailsFold`, and it is the last content. (LAY-12, K2 §2.7.)
 
 ## States

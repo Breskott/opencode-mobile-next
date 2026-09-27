@@ -36,13 +36,11 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart' show KitReceipt;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamConversationScreen;
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -811,7 +809,7 @@ void main() {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
       // Design standard §2: at most two tertiary actions show (the agent's
-      // page, View logs); Cancel work is a rare destructive path and sits
+      // page, Watch the agent); Cancel work is a rare destructive path and sits
       // under More, still two-step. No Close repeats the sheet's X.
       expect(find.byKey(const ValueKey('team-gate-close')), findsNothing);
       final cancel = find.byKey(const ValueKey('team-gate-run-cancel'));
@@ -831,17 +829,17 @@ void main() {
       await team.stop();
     });
 
-    testWidgets('View logs and Restart or reassign open the agent screens', (
-      tester,
-    ) async {
+    testWidgets('Watch the agent and Restart or reassign open the agent\'s '
+        'conversation and page', (tester) async {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
-      // View logs is the second tertiary (design standard §2: two shown).
+      // Watch the agent is the second tertiary (design standard §2: two
+      // shown); here its conversation is the live output.
       await tester.tap(find.byKey(const ValueKey('team-gate-run-logs')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
-      final logs = tester.widget<AgentOutputScreen>(
-        find.byType(AgentOutputScreen),
+      final logs = tester.widget<TeamWatchLiveScreen>(
+        find.byType(TeamWatchLiveScreen),
       );
       expect(logs.agentId, 'a-wolf');
       await tester.pageBack();
@@ -1581,7 +1579,7 @@ void main() {
             .runId,
         'oc-done',
       );
-      expect(find.byType(RunScreen), findsNothing);
+      expect(find.byKey(const ValueKey('team-run')), findsNothing);
       expect(gateway.calls, isEmpty);
       expect(tester.takeException(), isNull);
     });

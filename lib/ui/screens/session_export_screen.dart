@@ -16,6 +16,7 @@ import '../kit/kit_progress.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_screen.dart';
+import '../kit/kit_section_label.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
@@ -254,8 +255,10 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
           children: [
             SizedBox(height: tokens.space2),
             KitText(l10n.exportDescription, tone: KitTextTone.secondary),
-            SizedBox(height: tokens.sectionGap),
-            _SectionLabel(l10n.sessionExportFormatLabel),
+            KitSectionLabel(
+              l10n.sessionExportFormatLabel,
+              margin: EdgeInsets.zero,
+            ),
             KitChoiceList<bool>.single(
               semanticsLabel: l10n.sessionExportFormatLabel,
               actsOnTap: false,
@@ -312,34 +315,6 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
               ],
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A section's name above its panel (visual language §5: sentence case,
-/// never uppercase).
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    return Padding(
-      padding: EdgeInsetsDirectional.only(
-        start: tokens.space1,
-        end: tokens.space1,
-        bottom: tokens.labelGap,
-      ),
-      child: Semantics(
-        header: true,
-        child: KitText(
-          text,
-          role: KitTextRole.label,
-          tone: KitTextTone.secondary,
         ),
       ),
     );

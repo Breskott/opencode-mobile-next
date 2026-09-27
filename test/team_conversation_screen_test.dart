@@ -14,7 +14,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 
 import 'support/team_chat_fixture.dart';
 
@@ -234,9 +233,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatScreen), findsOneWidget);
-    expect(find.text('Watching furiosa · Worker · AI Team'), findsOneWidget);
+    // Who, and its state from its session (P3.6).
+    expect(find.text('Watching furiosa · Worker · Working'), findsOneWidget);
     expect(find.text('Claimed ma-1.'), findsOneWidget);
-    expect(find.text('Message the worker'), findsOneWidget);
+    // Messaging it is this conversation's composer.
+    expect(_key('chat-watching-message-field'), findsOneWidget);
+    expect(find.text('Message furiosa…'), findsWidgets);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(_key('team-conversation'), findsOneWidget);
@@ -356,28 +358,6 @@ void main() {
       _words(tester, _key('team-conversation-agent-my-app/gastown.furiosa')),
       contains('furiosa · Worker'),
     );
-  });
-
-  testWidgets('the task Overview opens the task as a conversation', (
-    tester,
-  ) async {
-    phoneViewport(tester);
-    final (team, _) = await bootTeam(work: [_routed, _queued]);
-    final connection = await teamConnection(
-      api: TeamChatApi(const {}),
-      repository: TeamChatRepository(const []),
-    );
-    await tester.pumpWidget(
-      teamChatApp(
-        connection,
-        RunScreen(controller: team, runId: 'ma-convoy-1', now: () => teamClock),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open conversation'));
-    await tester.pumpAndSettle();
-    expect(find.byType(TeamConversationScreen), findsOneWidget);
-    expect(_key('team-conversation-lead'), findsOneWidget);
   });
 
   // The chat's rule (the turn model in chat/message_view.dart): lines share
@@ -559,7 +539,7 @@ void main() {
     ) async {
       await pump(tester, runs: const [], work: const []);
       expect(_key('team-conversation-gone'), findsOneWidget);
-      expect(find.text('This task is no longer on the team'), findsOneWidget);
+      expect(find.text('Task no longer listed'), findsOneWidget);
       expect(_key('team-conversation-gone-team-page'), findsOneWidget);
       // No composer for a task that is gone.
       expect(_key('team-conversation-field'), findsNothing);
@@ -595,7 +575,7 @@ void main() {
         ),
       );
       expect(_key('team-conversation-refused'), findsOneWidget);
-      expect(find.text("The team didn't take this task"), findsOneWidget);
+      expect(find.text('Task not taken'), findsOneWidget);
       expect(
         find.textContaining('The planner is off', findRichText: true),
         findsWidgets,

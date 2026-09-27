@@ -137,3 +137,38 @@ changed except the setup commands' placeholder text.
 - The branch was rebased on d0a8abcc (after R4, R13, kit-gates and P5.2).
   The kit.dart doc table and kit/kit_overflow_scenes.dart, which R4 also
   changed, merged cleanly. gen-l10n was rerun on the rebased tree.
+
+## Merge with the integration tip (2026-09-28)
+
+`feat/phone-setup-v2` (dbac9c48: P3.5, P3.6, the Codex audit F1, kit-polish,
+R13–R15, P10.4) was merged in, and the conflicts were resolved:
+- `team/run_screen.dart` stays deleted (P3.5).
+- `product_states.dart` keeps the audit's domain-owned error mapping
+  (`ProductFailure`) and loses every widget. `SectionLabel`'s last caller,
+  folder_browser.dart, now uses
+  `KitSectionLabel(margin: EdgeInsets.zero, gapBefore: 0)`, so the file holds
+  error words and the failed-act alert only.
+- `team/work_graph.dart` keeps only `WorkGraphNode` (Task details maps its
+  steps through it). The `WorkGraph` widget had no app caller left and is
+  deleted. `test/team_work_graph_test.dart` draws `KitWorkGraph` (layers)
+  through a local helper, and `test/team_work_tab_test.dart` keeps both
+  sides: P3.5's Task details and this unit's geometry helper.
+- More wrappers had no callers on the new tip and are deleted:
+  `EntranceReveal` (entrance.dart), `TechnicalDirection`
+  (technical_direction.dart), `SessionLinkQr`, `ProviderMonogram`,
+  `BrandTile`, `TeamComposerField`, `workOwnerInitial`. Their tests now use
+  `KitEntrance` and `KitLtr`; the wrapper-only tests were dropped.
+- ARB sweep redone: 3 more keys deleted (teamControlsFieldUnavailable,
+  productErrorRejectedBecause, teamUiPhoneRemoved). 5 unused keys are kept
+  for open slices (P0.7, shared-chat-2).
+
+Still in use after the merge: `diff_view.dart` (P3.7a); `TerminalView`,
+`MarkdownText`, `stripPathLineSuffix`, `markdownProseForSpeech`,
+`questionPrefersSheet` (chat library); `TeamBoardCardView`
+(team_board_screen, no owner); `PermissionSheet` (only tests use it: 5 test
+files and the census; left for the chat library owner).
+
+Gates on the merge: kit_ratchet, kit_manifest (G4), redaction, ui_glossary,
+no_raw_error_text and kit_draft_manifest pass, and `flutter analyze` is
+clean. Four failures remain, the same on the tip: design_standard
+"412x915 goldens" and three workspace_hierarchy tests.

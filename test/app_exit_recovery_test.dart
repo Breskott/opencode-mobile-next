@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +14,9 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/platform/keep_alive_advice.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/widgets/app_exit_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,15 +57,26 @@ class _Store extends ProfileStore {
 class _FakeLinux extends BuiltinLinux {
   final events = <String>[];
   bool serverRunning = false;
+  bool failStart = false;
   final services = <String>{};
+  Completer<void>? statusGate;
+  Completer<void>? statusEntered;
 
   @override
-  Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
-    installed: true,
-    phase: BuiltinLinuxPhase.ready,
-    serverRunning: serverRunning,
-    services: [if (serverRunning) 'server', ...services],
-  );
+  Future<BuiltinLinuxStatus> status() async {
+    final gate = statusGate;
+    if (gate != null) {
+      statusGate = null;
+      statusEntered?.complete();
+      await gate.future;
+    }
+    return BuiltinLinuxStatus(
+      installed: true,
+      phase: BuiltinLinuxPhase.ready,
+      serverRunning: serverRunning,
+      services: [if (serverRunning) 'server', ...services],
+    );
+  }
 
   @override
   Future<BuiltinLinuxRunResult> run(
@@ -72,6 +87,7 @@ class _FakeLinux extends BuiltinLinux {
   @override
   Future<void> startServer(String script, {int port = 4097}) async {
     events.add('start server');
+    if (failStart) throw const BuiltinLinuxException('Synthetic start failure');
     serverRunning = true;
   }
 
@@ -202,8 +218,11 @@ void main() {
     late BuiltinServerStarter starter;
     late ServerProfile phone;
     late ServerProfile laptop;
+    final restartActs = <String>[];
 
     setUp(() async {
+      AutomationPolicyController.resetShared();
+      restartActs.clear();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       linux = _FakeLinux();
@@ -245,11 +264,42 @@ void main() {
         active: active ?? laptop,
         starter: starter,
         diagnostics: diagnostics,
+        onRestart: ({required profileId, required eventId, required at}) async {
+          restartActs.add('$profileId:$eventId');
+          return true;
+        },
       );
       // The team starts after the server answers, without being awaited.
       await Future<void>.delayed(const Duration(milliseconds: 20));
       return recovery;
     }
+
+    test(
+      'delegates to the shared healing owner without duplicate starts or acts',
+      () async {
+        final delegated = <String>[];
+        final recovery = AppExitRecovery(
+          bridge: _FakeBridge(_report(_ownerRecord, ['server'])),
+        );
+        await recovery.runOnce(
+          store: _Store(prefs: prefs, all: [laptop, phone]),
+          active: phone,
+          starter: starter,
+          recover: (profile) async {
+            delegated.add(profile.id);
+          },
+          onRestart:
+              ({required profileId, required eventId, required at}) async {
+                restartActs.add(eventId);
+                return true;
+              },
+        );
+        expect(delegated, [phone.id]);
+        expect(linux.events, isEmpty);
+        expect(restartActs, isEmpty);
+        recovery.dispose();
+      },
+    );
 
     test('after a force stop with the team running: one notice, and the '
         "phone's OpenCode and the team start again", () async {
@@ -271,6 +321,68 @@ void main() {
       expect(diagnostics.entries.single.message, contains('forceStop'));
       recovery.dismiss();
       expect(recovery.notice, isNull);
+    });
+
+    test(
+      'disabled restart policy keeps recovery idle and files no act',
+      () async {
+        await AutomationPolicyController.forProfile(
+          prefs,
+          phone.id,
+        ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+        final recovery = await run(_report(_ownerRecord, ['server']));
+        expect(recovery.notice!.recoveryAllowed, isFalse);
+        expect(linux.events, isEmpty);
+        expect(restartActs, isEmpty);
+      },
+    );
+
+    test('revoking policy during status probe prevents restart', () async {
+      final gate = Completer<void>();
+      linux.statusGate = gate;
+      linux.statusEntered = Completer<void>();
+      final running = run(_report(_ownerRecord, ['server']));
+      await linux.statusEntered!.future;
+      await AutomationPolicyController.forProfile(
+        prefs,
+        phone.id,
+      ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+      gate.complete();
+      await running;
+      expect(linux.events, isEmpty);
+      expect(restartActs, isEmpty);
+    });
+
+    test('failed recovery files no restart act', () async {
+      linux.failStart = true;
+      await run(_report(_ownerRecord, ['server']));
+      expect(linux.events, ['start server']);
+      expect(restartActs, isEmpty);
+    });
+
+    test('an already running server is not a confirmed restart', () async {
+      linux.serverRunning = true;
+      final recovery = await run(_report(_ownerRecord, ['server']));
+      expect(recovery.notice!.recoveryAllowed, isTrue);
+      expect(linux.events, isEmpty);
+      expect(restartActs, isEmpty);
+    });
+
+    test('confirmed recovery files the exit episode only once', () async {
+      final recovery = await run(_report(_ownerRecord, ['server']));
+      expect(restartActs, [
+        'phone:app-exit:${DateTime(2026, 9, 26, 0, 6, 33).microsecondsSinceEpoch}',
+      ]);
+      await recovery.runOnce(
+        store: _Store(prefs: prefs, all: [laptop, phone]),
+        active: laptop,
+        starter: starter,
+        onRestart: ({required profileId, required eventId, required at}) async {
+          restartActs.add(eventId);
+          return true;
+        },
+      );
+      expect(restartActs, hasLength(1));
     });
 
     test('nothing was running: no notice and nothing started', () async {
@@ -566,7 +678,10 @@ void main() {
     ) async {
       final opened = await mountScreen(tester, manufacturer: 'nubia');
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.keepRunningIntro('nubia')), findsOneWidget);
+      expect(
+        find.text(l10n.keepRunningIntro(KitBidi.auto('nubia'))),
+        findsOneWidget,
+      );
       expect(find.text(l10n.keepRunningSwipeWarning), findsOneWidget);
       expect(find.text(l10n.keepRunningLockNubia), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('keep-running-autostart')));
@@ -636,7 +751,9 @@ void main() {
       await tester.pumpAndSettle();
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
-        find.text(l10n.keepRunningIntro(l10n.keepRunningThisPhone)),
+        find.text(
+          l10n.keepRunningIntro(KitBidi.auto(l10n.keepRunningThisPhone)),
+        ),
         findsOneWidget,
       );
       expect(find.text(l10n.keepRunningBatteryTitle), findsOneWidget);

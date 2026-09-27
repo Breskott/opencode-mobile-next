@@ -19,8 +19,8 @@ import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.d
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
@@ -346,9 +346,12 @@ enum TeamShot {
   homeNotAnswering(TeamScene.connecting, 'team_home_not_answering'),
   // The team host starting: the agents wake up (motion slice D).
   homeStarting(TeamScene.starting, 'team_home_starting'),
+  // A task is its conversation (P3.5: the run page is retired). The file
+  // names are kept: the design-standard map ties them to the screens.
   runOverview(TeamScene.loaded, 'team_run_overview'),
+  // The conversation's Task details sheet: stages, steps, agents, numbers.
   runWork(TeamScene.loaded, 'team_run_work'),
-  // A merged task's Overview, the first time: its celebration (slice D).
+  // A merged task's conversation, the first time: its celebration (slice D).
   runMerged(TeamScene.loaded, 'team_run_merged'),
   startRun(TeamScene.loaded, 'team_start_run'),
   agentOutput(TeamScene.loaded, 'team_agent_output'),
@@ -386,18 +389,20 @@ Future<OrchestrationController> pumpTeamShot(
   );
   DateTime now() => teamSceneClock;
   final Widget home = switch (shot) {
-    TeamShot.runOverview || TeamShot.runWork => RunScreen(
-      controller: controller,
+    TeamShot.runOverview || TeamShot.runWork => TeamConversationScreen(
+      team: controller,
       runId: teamSceneRunId,
       now: now,
     ),
-    TeamShot.runMerged => RunScreen(
-      controller: controller,
+    TeamShot.runMerged => TeamConversationScreen(
+      team: controller,
       runId: teamSceneMergedRunId,
       now: now,
     ),
-    TeamShot.agentOutput => AgentOutputScreen(
-      controller: controller,
+    // A worker is its conversation (P3.6): the watching page drawn from
+    // the live output.
+    TeamShot.agentOutput => TeamWatchLiveScreen(
+      team: controller,
       agentId: 'fox',
     ),
     TeamShot.agents => TeamAgentsScreen(controller: controller, now: now),
@@ -423,7 +428,9 @@ Future<OrchestrationController> pumpTeamShot(
       // Past the 8 s rule (design standard §4).
       await tester.pump(const Duration(seconds: 9));
     case TeamShot.runWork:
-      await tester.tap(find.byKey(const ValueKey('team-run-tab-work')));
+      await tester.tap(find.byKey(const ValueKey('team-conversation-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('team-conversation-details')));
     case TeamShot.startRun:
       await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
     case TeamShot.homeLoaded ||
