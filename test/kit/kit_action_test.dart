@@ -745,6 +745,35 @@ void main() {
     });
   });
 
+  group('tertiary colours (R5)', () {
+    Color? wordsColour(WidgetTester tester, String label) =>
+        DefaultTextStyle.of(tester.element(find.text(label))).style.color;
+
+    testWidgets('an enabled tertiary is accent, never the disabled text3', (
+      tester,
+    ) async {
+      final roles = ThemeRoles.resolve(AppTheme.dark());
+      await _pumpAt(
+        tester,
+        Column(
+          children: [
+            KitButton.tertiary(label: 'Edit name', onPressed: () {}),
+            const KitButton.tertiary(label: 'Rename', onPressed: null),
+            KitButton.tertiary(
+              label: 'Delete',
+              destructive: true,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      );
+      expect(wordsColour(tester, 'Edit name'), roles.accent);
+      expect(wordsColour(tester, 'Rename'), roles.text3);
+      expect(wordsColour(tester, 'Edit name'), isNot(roles.text3));
+      expect(wordsColour(tester, 'Delete'), roles.danger);
+    });
+  });
+
   group('KitAction.copy keys and redaction', () {
     testWidgets('the caller\'s key is on exactly one widget and taps copy', (
       tester,
@@ -779,6 +808,39 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       expect(find.byKey(key), findsOneWidget);
+    });
+
+    testWidgets('redact: false copies verbatim, in a block and in More '
+        '(SEC-13)', (tester) async {
+      final calls = _mockClipboard();
+      const raw = 'key sk-ant-api03-AbCdEfGhIjKlMnOpQrSt done';
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: KitAction.copy(
+            label: 'Copy message',
+            text: () => raw,
+            redact: false,
+          ),
+          tertiary: [
+            KitAction(label: 'One', onPressed: () {}),
+            KitAction(label: 'Two', onPressed: () {}),
+            KitAction.copy(label: 'Copy reply', text: () => raw, redact: false),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Copy message'));
+      await tester.pump();
+      expect(_clipboardText(calls), raw);
+      await tester.pump(KitMotion.copiedHold);
+      await tester.pumpAndSettle();
+
+      calls.clear();
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Copy reply'));
+      await tester.pumpAndSettle();
+      expect(_clipboardText(calls), raw);
     });
 
     testWidgets('a provider key is redacted before it reaches the clipboard '

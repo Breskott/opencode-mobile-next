@@ -547,6 +547,44 @@ void main() {
     expect(result?.label, 'Copy key');
   });
 
+  testWidgets('5. KitMenuItem.copy(redact: false) copies verbatim (SEC-13)', (
+    tester,
+  ) async {
+    final platform = <MethodCall>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      platform.add(call);
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    const raw = 'export KEY=sk-ant-api03-AbCdEfGhIjKlMnOp';
+    final context = await pumpKitHost(tester);
+    unawaited(
+      showKitMenu(
+        context,
+        items: [
+          KitMenuItem.copy(
+            label: 'Copy message',
+            text: () => raw,
+            redact: false,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy message'));
+    await tester.pumpAndSettle();
+
+    final setData = platform.singleWhere(
+      (c) => c.method == 'Clipboard.setData',
+    );
+    expect((setData.arguments as Map)['text'], raw);
+  });
+
   testWidgets('5. KitMenuItem.copy still copies when the invoker unmounted '
       'while the menu was open', (tester) async {
     final platform = <MethodCall>[];

@@ -16,6 +16,7 @@ values, so they are instance members.
 |---|---|---|
 | `hairlineWidth(context)` | 1 physical px (`1 / dpr`) | KitDivider, KitField, KitRow, KitSheet, KitStatusLine, KitChecklist, KitCodeBlock, KitDiffView, KitMenu, KitMarkdown, KitMessage, KitQueuedMessage, KitSurface, KitMotionParts, most wave-1 parts |
 | `focusRingWidth(context)` | 2 physical px (`2 / dpr`; at least 1 logical when dpr ≤ 1) | KitAction, KitChip, KitTappable, KitField, KitIconButton, KitMenu, KitRow, KitComposer, KitNav, KitTurn, KitTerm, KitSegmented, KitSheet |
+| `spinnerStroke` | 2 (logical) | KitAction (`KitButton`), KitIconButton, KitStatusMark |
 | `chipHeight` | 32 | KitChip |
 | `choiceRowMinHeight` | 56 | KitChoiceList, KitRowParts |
 | `composerActionSize` | 40 | KitComposer |
@@ -42,6 +43,7 @@ values, so they are instance members.
 | `meterBarMin` / `meterBarMax` | 12 / 20 | KitLevelMeter |
 | `badgeHeight` / `badgeMinWidth` | 18 / 18 | KitNeedsYou |
 | `badgeTextScaleMax` | 1.3 | KitNeedsYou |
+| `badgeOffset` | 6 (`badgeHeight / 3`) | KitNeedsYou |
 | `qrInk` / `qrPaper` | `graphiteLight.text1` / `graphiteLight.surface1` | KitQr |
 | `qrMaxSize` | 240 | KitQr |
 | `qrQuietModules` | 4 (int) | KitQr |

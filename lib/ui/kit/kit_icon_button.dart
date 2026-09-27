@@ -40,17 +40,23 @@ class KitIconButton extends StatefulWidget {
        ),
        assert(size == 20 || size == 22 || size == 24, 'LOOK-33 sizes only'),
        tooltip = tooltip ?? label,
-       copyText = null;
+       copyText = null,
+       redact = true;
 
   /// Copies what [text] returns, read at tap time, through `KitCopy.copy`.
   /// The glyph turns into a check for `KitMotion.copiedHold`, and "Copied"
   /// is announced once per tap. It never shows a SnackBar.
+  ///
+  /// [redact] (default true) masks secrets on the way to the clipboard
+  /// ([KitCopy.copy]); the person's own content (a message, a code block)
+  /// passes false to copy verbatim (SEC-13).
   const KitIconButton.copy({
     super.key,
     required String Function() text,
     this.tooltip, // null: l10n.kitCopy ("Copy"); prefer a noun: "Copy command"
     this.size = 24,
     this.shortcut,
+    this.redact = true,
   }) : copyText = text,
        icon = AppIconography.copy,
        onPressed = null,
@@ -101,6 +107,10 @@ class KitIconButton extends StatefulWidget {
   /// Set only by [KitIconButton.copy].
   final String Function()? copyText;
 
+  /// Whether [KitIconButton.copy] masks secrets before copying (default
+  /// true). Always true on a plain button, which copies nothing.
+  final bool redact;
+
   @override
   State<KitIconButton> createState() => _KitIconButtonState();
 }
@@ -128,7 +138,7 @@ class _KitIconButtonState extends State<KitIconButton> {
   }
 
   Future<void> _copy(String value) async {
-    await KitCopy.copy(context, value);
+    await KitCopy.copy(context, value, redact: widget.redact);
     if (!mounted) return;
     setState(() => _copied = true);
     _copiedTimer?.cancel();
@@ -170,7 +180,7 @@ class _KitIconButtonState extends State<KitIconButton> {
               key: const ValueKey('kit-icon-button-working'),
               dimension: widget.size,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: KitTokens.spinnerStroke,
                 color: roles.accent,
               ),
             );
@@ -307,6 +317,9 @@ class _KitIconButtonState extends State<KitIconButton> {
       child: Tooltip(
         richMessage: TextSpan(children: spans),
         excludeFromSemantics: true,
+        // A long label at 2.0 text wraps inside the screen gutter instead
+        // of running edge to edge (the framework's default margin is 0).
+        margin: EdgeInsets.symmetric(horizontal: tokens.gutter),
         decoration: BoxDecoration(
           color: tokens.panelSurface,
           borderRadius: BorderRadius.circular(KitTokens.popoverRadius),

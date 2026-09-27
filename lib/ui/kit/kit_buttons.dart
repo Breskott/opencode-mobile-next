@@ -32,18 +32,21 @@ class KitAction {
     this.working = false,
     this.disabledReason,
     this.shortcut,
-  }) : copyText = null;
+  }) : copyText = null,
+       redact = true;
 
   /// A text action that copies (KIT-23): "Copy details", "Copy all". Runs
   /// [KitCopy.copy] with [text]'s value at tap time; the button shows a
   /// check and "Copied" for [KitMotion.copiedHold], announced once; never a
-  /// SnackBar.
+  /// SnackBar. [redact] (default true) masks secrets on the way to the
+  /// clipboard; the person's own content passes false (SEC-13).
   const KitAction.copy({
     required this.label,
     required String Function() text,
     this.icon = AppIconography.copy,
     this.key,
     this.shortcut,
+    this.redact = true,
   }) : copyText = text,
        onPressed = null,
        destructive = false,
@@ -82,6 +85,9 @@ class KitAction {
   /// Set only by [KitAction.copy].
   final String Function()? copyText;
 
+  /// Whether [KitAction.copy] masks secrets before copying (default true).
+  final bool redact;
+
   /// True when it can be pressed: an [onPressed] or a copy.
   bool get enabled => onPressed != null || copyText != null;
 }
@@ -90,7 +96,8 @@ enum KitButtonRole { primary, secondary, tertiary }
 
 /// The only buttons a migrated screen uses (visual language §5): primary
 /// (accent filled, `onAccent` words), secondary (`surface3`) and tertiary
-/// (words in `text2`), all at least 48 dp tall, 50 dp at full width, with
+/// (words in `accent`; `danger` when destructive, `text3` when disabled, so
+/// an enabled inline action never looks disabled), all at least 48 dp tall, 50 dp at full width, with
 /// 14 dp corners. A destructive primary is the one `dangerFill` button,
 /// used only inside a confirmation.
 ///
@@ -124,7 +131,8 @@ class KitButton extends StatelessWidget {
     this.shortcut,
   }) : copyText = null,
        disabledReason = null,
-       copied = false;
+       copied = false,
+       redact = true;
 
   const KitButton.primary({
     super.key,
@@ -139,7 +147,8 @@ class KitButton extends StatelessWidget {
   }) : role = KitButtonRole.primary,
        copyText = null,
        disabledReason = null,
-       copied = false;
+       copied = false,
+       redact = true;
 
   const KitButton.secondary({
     super.key,
@@ -154,7 +163,8 @@ class KitButton extends StatelessWidget {
   }) : role = KitButtonRole.secondary,
        copyText = null,
        disabledReason = null,
-       copied = false;
+       copied = false,
+       redact = true;
 
   const KitButton.tertiary({
     super.key,
@@ -169,7 +179,8 @@ class KitButton extends StatelessWidget {
        expand = false,
        copyText = null,
        disabledReason = null,
-       copied = false;
+       copied = false,
+       redact = true;
 
   /// Used only by [fromAction] to carry what a plain [KitAction] cannot
   /// name as a public constructor parameter without widening the four
@@ -189,6 +200,7 @@ class KitButton extends StatelessWidget {
     this.copyText,
     this.disabledReason,
     this.copied = false,
+    this.redact = true,
   });
 
   factory KitButton.fromAction(
@@ -207,6 +219,7 @@ class KitButton extends StatelessWidget {
     shortcut: action.shortcut,
     copyText: action.copyText,
     disabledReason: action.disabledReason,
+    redact: action.redact,
   );
 
   /// A tertiary button's side padding; blocks pull the row back by it so
@@ -230,6 +243,9 @@ class KitButton extends StatelessWidget {
   /// Set only through [fromAction] from [KitAction.disabledReason].
   final String? disabledReason;
 
+  /// Set only through [fromAction] from [KitAction.redact].
+  final bool redact;
+
   /// Set only by [_KitCopyButton]: keys the check icon `kit-action-copied`
   /// instead of `kit-button-icon` while a copy button shows it.
   final bool copied;
@@ -246,6 +262,7 @@ class KitButton extends StatelessWidget {
         expand: expand,
         maxLines: maxLines,
         copyText: copyText,
+        redact: redact,
       );
     }
 
@@ -395,7 +412,9 @@ class KitButton extends StatelessWidget {
           minimumSize: minimum,
           shape: shape,
           padding: EdgeInsets.symmetric(horizontal: tokens.space2),
-          foregroundColor: destructive ? roles.danger : roles.text2,
+          // Enabled words are the accent, so an inline action never reads
+          // as disabled beside muted text; disabled stays text3 (R5).
+          foregroundColor: destructive ? roles.danger : roles.accent,
           disabledForegroundColor: roles.text3,
         ).copyWith(side: ring);
         result = leading == null
@@ -493,9 +512,9 @@ class _Spinner extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox.square(
     dimension: KitTokens.of(context).smallIconSize,
     child: CircularProgressIndicator(
-      // No stroke token exists yet (KitProgress owns spinners); the kit's
-      // other small spinner, KitStatusMark, draws the same 2 dp stroke.
-      strokeWidth: 2,
+      // The kit's one small-spinner stroke, shared with KitStatusMark and
+      // KitIconButton.
+      strokeWidth: KitTokens.spinnerStroke,
       value: KitMotion.reduced(context) ? .75 : null,
       color: IconTheme.of(context).color,
       // No track on a button: the arc alone, so the still arc reads as
@@ -517,11 +536,13 @@ class _KitCopyButton extends StatefulWidget {
     this.shortcut,
     this.expand = true,
     this.maxLines = 2,
+    this.redact = true,
   });
 
   final KitButtonRole role;
   final String label;
   final String Function() copyText;
+  final bool redact;
   final IconData? icon;
   final String? shortcut;
   final bool expand;
@@ -542,7 +563,7 @@ class _KitCopyButtonState extends State<_KitCopyButton> {
   }
 
   Future<void> _handleTap() async {
-    await KitCopy.copy(context, widget.copyText());
+    await KitCopy.copy(context, widget.copyText(), redact: widget.redact);
     if (!mounted) return;
     setState(() => _copied = true);
     _revert?.cancel();
@@ -801,7 +822,7 @@ Widget? _buildMore(
       final action = overflow[index];
       final copyText = action.copyText;
       if (copyText != null) {
-        KitCopy.copy(context, copyText());
+        KitCopy.copy(context, copyText(), redact: action.redact);
       } else {
         action.onPressed?.call();
       }

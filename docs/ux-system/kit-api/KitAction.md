@@ -71,12 +71,15 @@ class KitAction {
   /// A text action that copies (KIT-23): "Copy details", "Copy all".
   /// Runs KitCopy.copy(context, text()) at tap time; the button shows a
   /// check and "Copied" for KitMotion.copiedHold; announced once; no SnackBar.
+  /// redact (default true) masks secrets; the person's own content passes
+  /// false to copy verbatim (SEC-13, R5).
   KitAction.copy({
     required this.label,
     required String Function() text,
     this.icon = AppIconography.copy,
     this.key,
     this.shortcut,
+    this.redact = true,
   }) : copyText = text,
        onPressed = null,
        destructive = false,
@@ -182,7 +185,7 @@ class KitInset extends StatelessWidget {
 
 | State | Look / behaviour |
 |---|---|
-| default | VL buttons: primary is `accent` with `onAccent`; secondary is `surface3` with `text1`; tertiary is `text2` words |
+| default | VL buttons: primary is `accent` with `onAccent`; secondary is `surface3` with `text1`; tertiary is `accent` words (`danger` when destructive), so an enabled inline action never reads as disabled (R5, 2026-09-27) |
 | disabled with reason | the button in `surface3`/`text3` (primary and secondary) or `text3` (tertiary), never partial opacity; the reason line in `text2` under it; semantics `enabled: false`, hint = reason |
 | disabled without reason | renders as today (KIT-43); strict mode asserts (see Open questions) |
 | working | the spinner in the icon slot, as today (primary and secondary only; tertiary has no spinner) |
@@ -249,7 +252,7 @@ class KitInset extends StatelessWidget {
   - A destructive tertiary is never adjacent to a frequent action (the stack).
   - A destructive primary exists only inside a confirmation.
 - **Disabled:** a disabled action always says why, as visible text (STATE-8), or it is left out. A disabled action never shows a spinner, and a button never shows lasting status (STATE-7). "Starting the server…" is a `KitStateView` or `KitProgress`.
-- **Copy:** `KitAction.copy` goes through `KitCopy`, which redacts (G12) and is never given a secret (SEC-3).
+- **Copy:** `KitAction.copy` goes through `KitCopy`, which redacts (G12) and is never given a secret (SEC-3). Only `redact: false`, for the person's own content, copies verbatim (SEC-13); in "More" the item keeps the action's `redact`.
 
 ## Depends on
 
