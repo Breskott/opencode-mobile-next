@@ -565,6 +565,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final other = _otherRuntime;
     final switchLocked = !inApp && !_host.canSwitchRuntime;
     final halfSwitched = _host.switchTarget != null;
+    // Update only when the installed server is not already the pinned one.
+    final installed = _host.version?.trim().replaceFirst(RegExp('^v'), '');
+    final upToDate = installed == _host.runtime.pinnedVersion;
     final recoveryProfile = inApp
         ? null
         : _connection.store.profiles
@@ -575,7 +578,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     return KitRowGroup(
       key: const ValueKey('this-phone-list'),
       children: [
-        if (hasEngine && !halfSwitched)
+        if (hasEngine && !halfSwitched && !upToDate)
           KitRow(
             key: const ValueKey('this-phone-update'),
             leading: icon(AppIconography.systemDownload),

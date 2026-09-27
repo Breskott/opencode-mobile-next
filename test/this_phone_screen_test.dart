@@ -30,7 +30,6 @@ const _shared = [
   'this-phone-detail',
   'this-phone-connect',
   'this-phone-stop',
-  'this-phone-update',
   'this-phone-switch',
   'this-phone-add-tools',
   'this-phone-installed',
@@ -75,11 +74,14 @@ void main() {
     await _settle(tester);
   }
 
-  Future<TermuxChannelFixture> termux(WidgetTester tester) async {
+  Future<TermuxChannelFixture> termux(
+    WidgetTester tester, {
+    String version = '1.18.29',
+  }) async {
     final channel = TermuxChannelFixture()
       ..inventoryOutput =
-          'ubuntu=installed\nversion=1.18.29\nruntime=opencode1\n'
-      ..statusOutput = termuxSnapshot(phase: 'ready', version: '1.18.29');
+          'ubuntu=installed\nversion=$version\nruntime=opencode1\n'
+      ..statusOutput = termuxSnapshot(phase: 'ready', version: version);
     channel.install();
     await pumpPhone(
       tester,
@@ -251,7 +253,7 @@ void main() {
   testWidgets('Termux: Update asks, then runs in phone setup\'s progress', (
     tester,
   ) async {
-    final channel = await termux(tester);
+    final channel = await termux(tester, version: '1.18.20');
     // From here the manager reports the update running.
     channel.statusOutput = null;
     await tester.tap(find.byKey(const ValueKey('this-phone-update')));
@@ -260,6 +262,16 @@ void main() {
     await _settle(tester, frames: 4);
     expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
     expect(find.text(_l10n.phoneSetupTermuxUpdatingTitle), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
+    await unmountPhone(tester);
+  });
+
+  testWidgets('Update is not offered when the pinned version is installed', (
+    tester,
+  ) async {
+    await termux(tester);
+    expect(find.byKey(const ValueKey('this-phone-update')), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 2));
     await unmountPhone(tester);
