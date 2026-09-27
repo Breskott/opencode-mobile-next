@@ -167,6 +167,7 @@ graph LR
   chat_watching_message_sheet(["chat-watching-message-sheet"])
   command_launcher_sheet(["command-launcher-sheet"])
   commands["commands"]:::ext
+  confirm_sheet["confirm-sheet"]:::ext
   console_organization_sheet["console-organization-sheet"]:::ext
   context_capsule["context-capsule"]
   continue_on_computer_sheet(["continue-on-computer-sheet"])
@@ -219,7 +220,6 @@ graph LR
   prompt_editor["prompt-editor"]
   prompt_editor_discard_sheet(["prompt-editor-discard-sheet"])
   prompt_history_sheet(["prompt-history-sheet"])
-  prompt_stash_delete_sheet(["prompt-stash-delete-sheet"])
   prompt_stash_sheet(["prompt-stash-sheet"])
   prompt_tools_sheet(["prompt-tools-sheet"])
   question_sheet["question-sheet"]:::ext
@@ -351,7 +351,7 @@ graph LR
   prompt_tools_sheet --> prompt_stash_sheet
   prompt_editor --> prompt_editor_discard_sheet
   prompt_editor --> file_preview_sheet
-  prompt_stash_sheet --> prompt_stash_delete_sheet
+  prompt_stash_sheet --> confirm_sheet
   chat_read_aloud_consent_sheet --> chat_read_aloud_voice_sheet
   embedded_prompt_error_banner --> model_picker_sheet
   embedded_subagent_context_banner --> chat
@@ -1435,6 +1435,7 @@ graph LR
   activity["activity"]:::ext
   chat["chat"]:::ext
   commands["commands"]:::ext
+  confirm_sheet(["confirm-sheet"])
   embedded_context_menu_region(["embedded-context-menu-region"])
   embedded_info_label(["embedded-info-label"])
   embedded_message_view["embedded-message-view"]:::ext
@@ -1448,6 +1449,7 @@ graph LR
   mcp_setup["mcp-setup"]:::ext
   project_health["project-health"]:::ext
   projects["projects"]:::ext
+  prompt_stash_sheet["prompt-stash-sheet"]:::ext
   references["references"]:::ext
   review_workspace["review-workspace"]:::ext
   saved_permissions["saved-permissions"]:::ext
@@ -1465,6 +1467,7 @@ graph LR
   voice_notices["voice-notices"]:::ext
   workspace["workspace"]:::ext
   worktrees["worktrees"]:::ext
+  prompt_stash_sheet --> confirm_sheet
   worktrees --> info_label_sheet
   integrations --> info_label_sheet
   mcp_setup --> info_label_sheet
@@ -1562,8 +1565,7 @@ graph LR
 | `prompt-editor` | screen | 2 / 3 | `embedded-composer` / embedded-composer-open-editor<br>`command-launcher-sheet` / command-launcher-sheet-command-row<br>`chat` / chat-composer-open-editor<br>`command-launcher-sheet` / chat-command-editor | prompt-editor-close -> `prompt-editor-discard-sheet`<br>prompt-editor-attachment-preview -> `file-preview-sheet` |
 | `prompt-editor-discard-sheet` | sheet | 3 / 4 | `prompt-editor` / prompt-editor-close<br>`system` / system-system-back-while-the-prompt-editor-is-dirty-popscope-prompt-to-prompt-editor-discard-sheet | _none_ |
 | `prompt-history-sheet` | sheet | 2 / 3 | `prompt-tools-sheet` / prompt-tools-sheet-history<br>`chat` / chat-composer-reuse-prompt | _none_ |
-| `prompt-stash-sheet` | sheet | 2 / 3 | `prompt-tools-sheet` / prompt-tools-sheet-saved<br>`chat` / chat-composer-open-stash | prompt-stash-sheet-delete -> `prompt-stash-delete-sheet`<br>-> `chat-stash-attachments-unavailable-sheet`<br>-> `chat-stash-restore-confirm-sheet` |
-| `prompt-stash-delete-sheet` | sheet | 3 / 4 | `prompt-stash-sheet` / prompt-stash-sheet-delete | _none_ |
+| `prompt-stash-sheet` | sheet | 2 / 3 | `prompt-tools-sheet` / prompt-tools-sheet-saved<br>`chat` / chat-composer-open-stash | prompt-stash-sheet-delete -> `confirm-sheet`<br>-> `chat-stash-attachments-unavailable-sheet`<br>-> `chat-stash-restore-confirm-sheet` |
 | `chat-read-aloud-consent-sheet` | sheet | 2 / 3 | `chat` | chat-read-aloud-consent-sheet-confirm -> `chat-read-aloud-voice-sheet` |
 | `chat-read-aloud-voice-sheet` | sheet | 2 / 3 | `chat-read-aloud-consent-sheet` / chat-read-aloud-consent-sheet-confirm<br>`chat` | _none_ |
 | `todos-sheet` | sheet | 3 / 4 | `session-menu-sheet` / session-menu-sheet-todos | -> `diff-view` |
@@ -1910,7 +1912,7 @@ graph LR
 | Page | Kind | Depth | Inbound (page / element) | Outbound (element -> page) |
 |---|---|---|---|---|
 | `embedded-context-menu-region` | overlay | 0 / 2 | `embedded-message-view` / (embedded)<br>`embedded-prompt-error-banner` / (embedded)<br>`files` / (embedded)<br>`global-sessions` / (embedded)<br>`managed-workspaces` / (embedded)<br>`terminal` / (embedded)<br>`workspace` / (embedded)<br>`worktrees` / (embedded) | _none_ |
-| `confirm-sheet` | sheet | unreachable | _none_ | _none_ |
+| `confirm-sheet` | sheet | 3 / 4 | `prompt-stash-sheet` / prompt-stash-sheet-delete | _none_ |
 | `external-link-dialog` | dialog | 2 / 2 | `desktop-release-notice` / desktop-release-notice-view<br>`external-agents`<br>`web-sources`<br>`integrations`<br>`embedded-markdown-text` / embedded-markdown-text-link<br>`form-sheet` / form-sheet-external-card<br>`tailscale-setup` / tailscale-setup-install<br>`tailscale-setup` / tailscale-setup-serve-docs<br>`tailscale-setup` / tailscale-setup-android-docs<br>`agent-account` / agent-account-open-sign-in<br>`external-task` / external-task-review-link<br>`development-services` / development-services-visit | _none_ |
 | `embedded-info-label` | overlay | 1 / 2 | `embedded-prompt-error-banner` / (embedded)<br>`integrations` / (embedded)<br>`worktrees` / (embedded) | embedded-info-label-term -> `info-label-sheet` |
 | `info-label-sheet` | sheet | 2 / 3 | `embedded-info-label` / embedded-info-label-term<br>`worktrees` / worktrees-glossary-label<br>`integrations` / integrations-mcp-glossary<br>`mcp-setup` / mcp-setup-glossary | _none_ |

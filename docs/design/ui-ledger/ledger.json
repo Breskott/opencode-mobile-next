@@ -1,5 +1,5 @@
 {
- "generatedFrom": "481b53d97c4f0f46e6c3fa43a1ad976a06ad0c8a",
+ "generatedFrom": "72030f0babea231451acab0a8a3f7ef0a0a632a6",
  "pages": [
   {
    "id": "system",
@@ -4553,75 +4553,6 @@
    ],
    "elements": [
     {
-     "id": "embedded-composer-inline-command-row",
-     "type": "list-tile",
-     "label": "/<command slash>  <description>",
-     "key": "inline-command-<slash>",
-     "file": "lib/ui/screens/chat/command_launcher.dart",
-     "line": 606,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Inline slash suggestion (shown while the draft is exactly \"/<query>\"); calls onSelectCommand -> ChatScreen._selectChatCommand (chat_screen.dart:5074): a server command replaces the draft with \"/<name> \" and refocuses; a mobile command clears the slash draft and runs _runMobileCommand(action), which may navigate (see notes).",
-     "gates": [
-      "allowInlineCommands (host: !_conn.isIsolated && !_voiceConversation && bodyConstraints.maxHeight >= 300)",
-      "_slashQuery != null (draft matches ^/(\\S*)$)",
-      "command.enabled && command.matchesQuery(query)",
-      "at most 1 row when compact, else 5"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-inline-command-show-all",
-     "type": "button",
-     "label": "Show all commands",
-     "key": null,
-     "file": "lib/ui/screens/chat/command_launcher.dart",
-     "line": 649,
-     "action": "open-sheet",
-     "target": "command-launcher-sheet",
-     "targetWidget": "_CommandLauncherSheet",
-     "effect": "Calls onOpenCommands -> ChatScreen._openCommandLauncher() which opens the composer tools sheet on the Commands tab.",
-     "gates": [
-      "!compact && matches.length > limit (5)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-inline-agent-row",
-     "type": "list-tile",
-     "label": "@<agent id>  <description|Delegate>",
-     "key": "inline-agent-<agent id>",
-     "file": "lib/ui/screens/chat/command_launcher.dart",
-     "line": 699,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Inline @-mention suggestion; calls onSelectAgent -> ChatScreen._insertAgentMention(agent) (chat_screen.dart:2695) which inserts the @agent mention into the draft.",
-     "gates": [
-      "allowInlineCommands",
-      "_agentQuery != null (_activeAgentQuery(controller.value))",
-      "host passes agents only when _supportsPromptAgentMentions"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-composer-inline-agent-show-all",
-     "type": "button",
-     "label": "Show all subagents",
-     "key": null,
-     "file": "lib/ui/screens/chat/command_launcher.dart",
-     "line": 751,
-     "action": "open-sheet",
-     "target": "command-launcher-sheet",
-     "targetWidget": "_CommandLauncherSheet",
-     "effect": "Calls onOpenAgents -> ChatScreen._openCommandLauncher(initialTab: _ComposerToolTab.agents).",
-     "gates": [
-      "!compact && matches.length > limit (5)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "embedded-composer-restore-history-draft",
      "type": "button",
      "label": "Restore original draft",
@@ -4654,6 +4585,62 @@
       "disabled when shelfBusy || conversationMode"
      ],
      "destructive": false
+    },
+    {
+     "id": "embedded-composer-inline-command-row",
+     "type": "list-tile",
+     "label": "/<command slash>  <description>",
+     "key": "inline-command-<slash>",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 606,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Inline slash suggestion (shown while the draft is exactly \"/<query>\"); calls onSelectCommand -> ChatScreen._selectChatCommand (chat_screen.dart:5074): a server command replaces the draft with \"/<name> \" and refocuses; a mobile command clears the slash draft and runs _runMobileCommand(action), which may navigate (see notes).",
+     "gates": [
+      "allowInlineCommands (host: !_conn.isIsolated && !_voiceConversation && bodyConstraints.maxHeight >= 300)",
+      "_slashQuery != null (draft matches ^/(\\S*)$)",
+      "command.enabled && command.matchesQuery(query)",
+      "at most 1 row when compact, else 5"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/chat/command_launcher.dart"
+    },
+    {
+     "id": "embedded-composer-inline-command-show-all",
+     "type": "button",
+     "label": "Show all commands",
+     "key": null,
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 649,
+     "action": "open-sheet",
+     "target": "command-launcher-sheet",
+     "targetWidget": "_CommandLauncherSheet",
+     "effect": "Calls onOpenCommands -> ChatScreen._openCommandLauncher() which opens the composer tools sheet on the Commands tab.",
+     "gates": [
+      "!compact && matches.length > limit (5)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/chat/command_launcher.dart"
+    },
+    {
+     "id": "embedded-composer-inline-agent-row",
+     "type": "list-tile",
+     "label": "@<agent id>  <description|Delegate>",
+     "key": "inline-agent-<agent id>",
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 699,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Inline @-mention suggestion; calls onSelectAgent -> ChatScreen._insertAgentMention(agent) (chat_screen.dart:2695) which inserts the @agent mention into the draft.",
+     "gates": [
+      "allowInlineCommands",
+      "_agentQuery != null (_activeAgentQuery(controller.value))",
+      "host passes agents only when _supportsPromptAgentMentions"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/chat/command_launcher.dart"
     },
     {
      "id": "embedded-composer-field",
@@ -4689,6 +4676,23 @@
       "plain Enter / numpadEnter only when desktopInteractions"
      ],
      "destructive": false
+    },
+    {
+     "id": "embedded-composer-inline-agent-show-all",
+     "type": "button",
+     "label": "Show all subagents",
+     "key": null,
+     "file": "lib/ui/screens/chat/composer.dart",
+     "line": 751,
+     "action": "open-sheet",
+     "target": "command-launcher-sheet",
+     "targetWidget": "_CommandLauncherSheet",
+     "effect": "Calls onOpenAgents -> ChatScreen._openCommandLauncher(initialTab: _ComposerToolTab.agents).",
+     "gates": [
+      "!compact && matches.length > limit (5)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/chat/command_launcher.dart"
     },
     {
      "id": "embedded-composer-tools-button-long-press",
@@ -4934,9 +4938,9 @@
    "kind": "sheet",
    "area": "chat",
    "file": "lib/ui/screens/chat/composer.dart",
-   "widget": "_PromptToolsSheet",
+   "widget": "_PromptToolsList",
    "presentedBy": [
-    "_ChatComposer._openTool"
+    "_ChatComposer._openTools (showKitSheet)"
    ],
    "line": 814,
    "purpose": "One sheet behind the composer \"+\" button listing commands, attach, photo, voice, advanced and prompt-shelf tools; each tile pops with a _PromptTool that _ChatComposer._openTool dispatches to a ChatScreen callback.",
@@ -4953,7 +4957,7 @@
     {
      "id": "prompt-tools-sheet-commands",
      "type": "list-tile",
-     "label": "Commands",
+     "label": "Commands and agents",
      "key": "composer-tool-commands",
      "file": "lib/ui/screens/chat/composer.dart",
      "line": 864,
@@ -5035,7 +5039,7 @@
     {
      "id": "prompt-tools-sheet-advanced",
      "type": "list-tile",
-     "label": "Advanced",
+     "label": "More tools",
      "key": "composer-tools-advanced",
      "file": "lib/ui/screens/chat/composer.dart",
      "line": 930,
@@ -5049,7 +5053,7 @@
     {
      "id": "prompt-tools-sheet-context-capsule",
      "type": "list-tile",
-     "label": "Context capsule",
+     "label": "Notes for this conversation",
      "key": null,
      "file": "lib/ui/screens/chat/composer.dart",
      "line": 939,
@@ -5150,7 +5154,7 @@
     {
      "id": "prompt-tools-sheet-stash",
      "type": "list-tile",
-     "label": "Stash current prompt",
+     "label": "Save prompt for later",
      "key": "composer-tool-stash",
      "file": "lib/ui/screens/chat/composer.dart",
      "line": 1004,
@@ -6404,7 +6408,7 @@
     {
      "id": "prompt-editor-done",
      "type": "button",
-     "label": "Done",
+     "label": "Use in draft",
      "key": "prompt-editor-done",
      "file": "lib/ui/screens/chat/prompt_editor.dart",
      "line": 134,
@@ -6418,7 +6422,7 @@
     {
      "id": "prompt-editor-attachment-remove",
      "type": "icon-button",
-     "label": "Remove attachment {name} / Remove reference @{name}",
+     "label": "Remove {name}",
      "key": null,
      "file": "lib/ui/screens/chat/prompt_editor.dart",
      "line": 160,
@@ -6570,7 +6574,7 @@
     "_openPromptStash"
    ],
    "line": 3,
-   "purpose": "Lists prompts stashed on the prompt shelf for this profile with search, restore and delete.",
+   "purpose": "Saved prompts on this device for this server, newest first: a row tap restores into the draft; Delete in the row menu happens at once with Undo (chat-3).",
    "reachedFrom": [
     {
      "page": "prompt-tools-sheet",
@@ -6635,24 +6639,10 @@
      "destructive": false
     },
     {
-     "id": "prompt-stash-sheet-prompt-expand",
-     "type": "list-tile",
-     "label": "<prompt text | Attachments and references>",
-     "key": null,
-     "file": "lib/ui/screens/chat/prompt_stash.dart",
-     "line": 247,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile: expands the full selectable prompt text.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "prompt-stash-sheet-restore",
      "type": "button",
-     "label": "Restore",
-     "key": "restore-stash-<prompt id>",
+     "label": "Restore to draft (row tap or row menu)",
+     "key": "restore-stash-<id>",
      "file": "lib/ui/screens/chat/prompt_stash.dart",
      "line": 303,
      "action": "dismiss",
@@ -6667,68 +6657,18 @@
     {
      "id": "prompt-stash-sheet-delete",
      "type": "button",
-     "label": "Delete",
-     "key": "delete-stash-<prompt id>",
+     "label": "Delete saved prompt",
+     "key": "delete-stash-<id>",
      "file": "lib/ui/screens/chat/prompt_stash.dart",
      "line": 322,
-     "action": "open-sheet",
-     "target": "prompt-stash-delete-sheet",
+     "action": "mutate",
+     "target": "confirm-sheet",
      "targetWidget": "showConfirmSheet",
-     "effect": "_delete(prompt): opens the delete confirm sheet.",
+     "effect": "Row menu item: the row leaves at once and \"Saved prompt deleted · Undo\" shows; removePromptStash runs when the Undo window closes.",
      "gates": [
       "disabled when _unsafe"
      ],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "prompt-stash-delete-sheet",
-   "title": "Delete saved prompt?",
-   "kind": "sheet",
-   "area": "chat",
-   "file": "lib/ui/screens/chat/prompt_stash.dart",
-   "widget": "_delete",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 99,
-   "purpose": "Confirmation before removing a stashed prompt.",
-   "reachedFrom": [
-    {
-     "page": "prompt-stash-sheet",
-     "element": "prompt-stash-sheet-delete"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "prompt-stash-delete-sheet-confirm",
-     "type": "button",
-     "label": "Delete",
-     "key": null,
-     "file": "lib/ui/screens/chat/prompt_stash.dart",
-     "line": 104,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "On confirm _delete calls controller.removePromptStash(prompt.id, locationRevision: widget.location).",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "prompt-stash-delete-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/chat/prompt_stash.dart",
-     "line": 105,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Closes the sheet; nothing is removed.",
-     "gates": [],
-     "destructive": false
     }
    ]
   },
@@ -39089,7 +39029,12 @@
    ],
    "line": 23,
    "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
-   "reachedFrom": [],
+   "reachedFrom": [
+    {
+     "page": "prompt-stash-sheet",
+     "element": "prompt-stash-sheet-delete"
+    }
+   ],
    "gates": [
     "routes?.isPending != false"
    ],
@@ -40729,7 +40674,7 @@
    {
     "from": "prompt-stash-sheet",
     "element": "prompt-stash-sheet-delete",
-    "to": "prompt-stash-delete-sheet"
+    "to": "confirm-sheet"
    },
    {
     "from": "chat-read-aloud-consent-sheet",
