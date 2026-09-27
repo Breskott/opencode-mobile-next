@@ -21,7 +21,6 @@ import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
 import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
-import 'package:opencode_mobile/ui/theme_roles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
