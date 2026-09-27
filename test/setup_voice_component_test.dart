@@ -13,6 +13,7 @@ import 'package:opencode_mobile/builtin/setup/setup_engine.dart';
 import 'package:opencode_mobile/builtin/setup/voice_component.dart';
 import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/download_size.dart';
 import 'package:opencode_mobile/voice/model_download.dart';
 import 'package:opencode_mobile/voice/model_manager.dart';
 import 'package:opencode_mobile/voice/model_manifest.dart';
@@ -56,6 +57,8 @@ void main() {
       expect(offer, isNotNull);
       expect(offer!.installed, isFalse);
       expect(offer.downloadBytes, voiceModelPack('base').downloadBytes);
+      expect(offer.downloadSize.kind, DownloadSizeKind.exact);
+      expect(offer.downloadSize.bytes, voiceModelPack('base').downloadBytes);
       expect(voice.lastOfferBytes, voiceModelPack('base').downloadBytes);
       expect((await voice.check()).ok, isFalse);
     });
@@ -95,10 +98,10 @@ void main() {
       final (voice, _) = await component(
         preferences: const {'voice.selected_pack': 'small'},
       );
-      expect(
-        (await voice.offer())!.downloadBytes,
-        voiceModelPack('small').downloadBytes,
-      );
+      final offer = await voice.offer();
+      expect(offer!.downloadBytes, voiceModelPack('small').downloadBytes);
+      expect(offer.downloadSize.kind, DownloadSizeKind.exact);
+      expect(offer.downloadSize.bytes, voiceModelPack('small').downloadBytes);
     });
 
     test('install downloads and verifies through the voice manager, reports '
@@ -125,6 +128,9 @@ void main() {
         downloader.installed.add('base');
         final (voice, _) = await component();
         expect((await voice.check()).ok, isTrue);
+        final offer = await voice.offer();
+        expect(offer!.downloadSize.kind, DownloadSizeKind.exact);
+        expect(offer.downloadSize.bytes, 0);
         await voice.install(onProgress: (_) {});
         expect(downloader.starts, isEmpty);
       },

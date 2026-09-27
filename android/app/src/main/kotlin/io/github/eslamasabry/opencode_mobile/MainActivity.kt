@@ -44,11 +44,14 @@ class MainActivity : FlutterActivity() {
     private var linkDartReady = false
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
+    private var networkMonitor: NetworkMonitor? = null
     private val voiceDownloadNotifications by lazy { VoiceDownloadNotifications(this) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         TailscaleHandoff(this, flutterEngine.dartExecutor.binaryMessenger)
+        networkMonitor?.dispose()
+        networkMonitor = NetworkMonitor(this, flutterEngine.dartExecutor.binaryMessenger)
         localPdf?.dispose()
         localPdf = LocalPdfBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         readAloud?.dispose()
@@ -330,6 +333,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        networkMonitor?.dispose()
+        networkMonitor = null
         localPdf?.dispose()
         localPdf = null
         readAloud?.dispose()
@@ -355,6 +360,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        networkMonitor?.dispose()
+        networkMonitor = null
         voiceDownloadNotifications.dispose()
         localPdf?.dispose()
         localPdf = null

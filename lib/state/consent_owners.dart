@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'in_flow_consent.dart';
+import 'mobile_download_consent.dart';
 import 'repeated_permission_consent.dart';
 
 /// The one owner per saved server of its in-flow consents (P6.7): the
@@ -27,6 +28,38 @@ abstract final class ConsentOwners {
   static final _invited = Expando<Map<String, Set<String>>>(
     'always-allow-invited',
   );
+
+  static final _mobile = Expando<Map<String, Future<MobileDownloadConsent>>>(
+    'mobile-download-consent',
+  );
+  static final _mobileLoaded = Expando<Map<String, MobileDownloadConsent>>(
+    'mobile-download-consent-loaded',
+  );
+
+  static Future<MobileDownloadConsent> mobileDownloads(
+    SharedPreferences prefs,
+    String profileId,
+  ) {
+    final futures = _mobile[prefs] ??= {};
+    return futures.putIfAbsent(profileId, () async {
+      try {
+        final consent = await MobileDownloadConsent.load(
+          prefs,
+          profileId: profileId,
+        );
+        (_mobileLoaded[prefs] ??= {})[profileId] = consent;
+        return consent;
+      } catch (_) {
+        futures.remove(profileId);
+        rethrow;
+      }
+    });
+  }
+
+  static MobileDownloadConsent? mobileDownloadsLoaded(
+    SharedPreferences prefs,
+    String profileId,
+  ) => _mobileLoaded[prefs]?[profileId];
 
   /// [profileId]'s in-flow consents. Throws a content-free [StateError]
   /// when its storage cannot be read; the next call tries again.
@@ -78,6 +111,17 @@ abstract final class ConsentOwners {
     String profileId,
   ) async {
     _invited[prefs]?.remove(profileId);
+    _mobileLoaded[prefs]?.remove(profileId);
+    final mobile = _mobile[prefs]?.remove(profileId);
+    if (mobile != null) {
+      try {
+        await (await mobile).close();
+      } catch (_) {
+        // A failed load created no writable owner.
+      } finally {
+        _mobileLoaded[prefs]?.remove(profileId);
+      }
+    }
     _loaded[prefs]?.remove(profileId);
     final inFlow = _inFlow[prefs]?.remove(profileId);
     final repeated = _repeated[prefs]?.remove(profileId);

@@ -119,7 +119,7 @@ timelines.
 ### mobile_scanner, and the Android libraries it pulls in
 
 - Component: `mobile_scanner` Flutter package
-- Version: 7.4.0
+- Version: 7.4.2
 - Project: https://github.com/juliansteenbakker/mobile_scanner
 - Copyright: 2022 Julian Steenbakker
 - License: BSD 3-Clause; see `LICENSES/BSD-3-Clause.txt`
@@ -301,7 +301,7 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `material_color_utilities` | 0.13.0 | Apache-2.0 | — | runtime |
 | `meta` | 1.19.0 | BSD-3-Clause | Copyright 2016, the Dart project authors | runtime |
 | `mime` | 2.0.0 | BSD-3-Clause | Copyright 2015, the Dart project authors | runtime |
-| `mobile_scanner` | 7.4.0 | BSD-3-Clause | Copyright (c) 2022, Julian Steenbakker | runtime |
+| `mobile_scanner` | 7.4.2 | BSD-3-Clause | Copyright (c) 2022, Julian Steenbakker | runtime |
 | `objective_c` | 9.6.0 | BSD-3-Clause | Copyright 2024, the Dart project authors | runtime |
 | `package_config` | 2.2.0 | BSD-3-Clause | Copyright 2019, the Dart project authors | runtime |
 | `package_info_plus` | 10.2.1 | BSD-3-Clause | Copyright 2017 The Chromium Authors. All rights reserved | runtime |
