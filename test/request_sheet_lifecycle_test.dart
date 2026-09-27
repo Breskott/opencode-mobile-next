@@ -111,7 +111,7 @@ _open(WidgetTester tester, {bool question = false}) async {
       ),
     ),
   );
-  await tester.tap(find.byType(ListTile));
+  await tester.tap(find.text(question ? 'Choose target' : 'Edit a file').first);
   await tester.pumpAndSettle();
   return (
     controller: controller,
@@ -172,7 +172,9 @@ void main() {
     tester,
   ) async {
     final h = await _open(tester, question: true);
-    await tester.tap(find.widgetWithText(TextButton, 'Dismiss'));
+    await tester.ensureVisible(find.byKey(const ValueKey('question-dismiss')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('question-dismiss')));
     await tester.pumpAndSettle();
     expect(find.text('Dismiss this request?'), findsOneWidget);
     _resolved(h.controller, question: true);
@@ -233,7 +235,9 @@ void main() {
       );
       await tester.pump();
       h.repository.fail = true;
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pumpAndSettle();
       expect(find.textContaining('Temporarily unavailable'), findsOneWidget);
       expect(
@@ -241,7 +245,9 @@ void main() {
         'Canary',
       );
       h.repository.fail = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pumpAndSettle();
       expect(h.repository.answers, [
         ['Canary'],
@@ -258,7 +264,9 @@ void main() {
       h.repository.pending = pending;
       await tester.tap(find.text('Staging'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pump();
       h.navigator.currentState!.push(
         MaterialPageRoute<void>(

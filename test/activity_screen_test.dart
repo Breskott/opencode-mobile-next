@@ -167,11 +167,11 @@ void main() {
       find.byKey(const ValueKey('activity-recent-ses_idle')),
       findsNothing,
     );
-    // The running root shows its cached subagent count.
+    // The running root shows its cached subagent count, in words.
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('activity-running-ses_run')),
-        matching: find.text('1'),
+        matching: find.textContaining('1 subagent', findRichText: true),
       ),
       findsOneWidget,
     );
@@ -342,15 +342,22 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Saved servers')).dy),
     );
     expect(find.text('Nothing running'), findsNothing);
+    // The folded section explains itself; opening it lists what finished.
     expect(
-      find.text('On demand · cached metadata, not AI summaries'),
-      findsNothing,
+      find.textContaining(
+        'On demand · cached metadata, not AI summaries',
+        findRichText: true,
+      ),
+      findsOneWidget,
     );
-    await tester.ensureVisible(find.text('Completion digests'));
-    await tester.tap(find.text('Completion digests'));
+    expect(find.byKey(const ValueKey('activity-digests-empty')), findsNothing);
+    await tester.ensureVisible(find.text('Finished while you were away'));
+    await tester.tap(find.text('Finished while you were away'));
+    // Bounded pumps: the Running row's live mark never settles.
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(
-      find.text('On demand · cached metadata, not AI summaries'),
+      find.byKey(const ValueKey('activity-digests-empty')),
       findsOneWidget,
     );
   });

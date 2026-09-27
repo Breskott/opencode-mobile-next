@@ -24732,5 +24732,112 @@
   "kitCapNotNow": "Not now",
   "@kitCapNotNow": {
     "description": "KitCapabilityExplainer: folds a turn-on offer into one quiet row"
+  },
+  "desktopDropHint": "Drop to attach",
+  "@desktopDropHint": {
+    "description": "Desktop file drop: the words on the composer while files are dragged over it"
+  },
+  "searchClaudeCodeGateTitle": "Not on this device",
+  "@searchClaudeCodeGateTitle": {
+    "description": "Search: title of the alert that explains why Claude Code on this phone cannot open here (at most four words)"
+  },
+  "searchClaudeCodeGateDevice": "Claude Code runs on a phone only through Termux, which this device doesn't have. Run it on a computer with Paseo and add that computer as a server.",
+  "@searchClaudeCodeGateDevice": {
+    "description": "Search: why Claude Code on this phone is unavailable on a phone without the Termux bridge, and where it is available"
+  },
+  "searchClaudeCodeGateDesktop": "Claude Code on this phone is for Android phones with Termux. On a computer, run Claude Code with Paseo and add it as a server.",
+  "@searchClaudeCodeGateDesktop": {
+    "description": "Search on a desktop: why Claude Code on this phone is not here, and where Claude Code is available instead"
+  },
+  "searchClaudeCodeGateServers": "Open servers",
+  "@searchClaudeCodeGateServers": {
+    "description": "Search: the action of the Claude Code explanation; opens the servers list where a Paseo server is added"
+  },
+  "activityFinishedAway": "Finished while you were away",
+  "@activityFinishedAway": {
+    "description": "Inbox: the section of conversations that finished while the person was away (completion digests)"
+  },
+  "activityDigestHidden": "Digest hidden",
+  "@activityDigestHidden": {
+    "description": "Inbox: the undo message after hiding one finished conversation's digest"
+  },
+  "activityOpenFailedTitle": "Couldn't open conversation",
+  "@activityOpenFailedTitle": {
+    "description": "Inbox: alert title when a conversation could not be opened"
+  },
+  "activityLoading": "Loading the Inbox",
+  "@activityLoading": {
+    "description": "Inbox: screen reader label of the loading bar"
+  },
+  "activityPickRequest": "Pick a request",
+  "@activityPickRequest": {
+    "description": "Inbox on a wide window: the empty detail pane while requests wait"
+  },
+  "activityPickRequestDetail": "Choose one from the list to answer it here.",
+  "@activityPickRequestDetail": {
+    "description": "Inbox on a wide window: the empty detail pane's line under Pick a request"
+  },
+  "activityAllowOnceFailed": "Not sent: {reason}",
+  "@activityAllowOnceFailed": {
+    "description": "Inbox: a permission row's line when Allow once did not go through; reason is the error in words",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySendOffline": "Reconnect to the server to answer.",
+  "@activitySendOffline": {
+    "description": "Inbox and question sheet: why answering is not possible while the connection is down"
+  },
+  "activityLastSeenRunning": "Last seen running",
+  "@activityLastSeenRunning": {
+    "description": "Inbox: the state word of a running conversation while the connection is down (not live)"
+  },
+  "activityIfIgnored": "The agent waits; nothing is lost.",
+  "@activityIfIgnored": {
+    "description": "Inbox answer card: what happens if nobody answers the request"
+  },
+  "activityPermissionAnnouncement": "Permission needed: {title}",
+  "@activityPermissionAnnouncement": {
+    "description": "Inbox answer card: what a screen reader says when a permission is shown",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "activityFormAnnouncement": "Input requested: {title}",
+  "@activityFormAnnouncement": {
+    "description": "Inbox answer card: what a screen reader says when a form request is shown",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAnswerEveryQuestion": "Answer every question first.",
+  "@activityAnswerEveryQuestion": {
+    "description": "Question sheet: why Send answers cannot send yet"
+  },
+  "activitySending": "Sending…",
+  "@activitySending": {
+    "description": "Question sheet: why the choices and the own answer are locked while the answer is sent"
+  },
+  "activityQuestionProgress": "Question {index} of {total}",
+  "@activityQuestionProgress": {
+    "description": "Question sheet: where a prompt sits in a question with several prompts",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "activityOwnAnswer": "Or write your own answer",
+  "@activityOwnAnswer": {
+    "description": "Question sheet: the label of the free answer field under the choices"
   }
 }

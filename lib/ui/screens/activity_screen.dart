@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../api/models.dart';
@@ -9,45 +11,53 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration.dart';
-import '../app_theme.dart';
-import '../desktop/desktop_interaction.dart';
-import '../permission_presentation.dart';
+import '../app_iconography.dart';
 import '../kit/kit.dart';
+import '../kit/kit_scrollbar.dart';
 import '../kit/scenes/states_scenes.dart';
-import '../widgets/product_states.dart';
+import '../permission_presentation.dart';
 import '../widgets/completion_digest.dart';
-import '../widgets/question_options.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
 import '../widgets/request_routes.dart';
+import '../widgets/session_title.dart';
 import '../widgets/team_receipt.dart';
 import '../widgets/team_vocabulary.dart';
 import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
-import 'settings_screen.dart';
 import 'profile_monitor_screen.dart';
 import 'run_result_screen.dart';
+import 'settings_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
-import '../widgets/session_title.dart';
 
-/// Activity: the single cross-session control centre (audit §3, §8).
+/// Inbox: the single cross-session control centre (audit §3, §8; target IA
+/// "Dock tab 2").
 ///
 /// It replaces the former Mission Control and Pending requests screens, which
 /// showed the same pending count behind two mental models. One destination,
-/// one badge, two sections — a pure inbox:
+/// one badge, three sections:
 ///
 /// 1. **Needs attention** — permissions, questions, and v2 forms, each row
 ///    opening the *exact* resolver (the same permission sheet and form flow
-///    chat uses), never merely a link to the related chat. When the
-///    connected server runs the AI Team plugin, its gates join the same
-///    list in the BRD §47 order — decision requested, run failed, then the
-///    app's own permissions, then review ready, gate beads and blocked
-///    agents — each opening the read-only Gate sheet (02-ux §6).
-/// 2. **Running** — sessions busy right now, with their subagent counts.
+///    chat uses), never merely a link to the related chat. A permission can
+///    also be allowed once from its row. When the connected server runs the
+///    AI Team plugin, its gates join the same list in the BRD §47 order —
+///    decision requested, run failed, then the app's own permissions, then
+///    review ready, gate beads and blocked agents — each opening the
+///    read-only Gate sheet (02-ux §6).
+/// 2. **Running** — sessions busy right now, with their subagent counts;
+///    while the connection is down they read "Last seen running" instead of
+///    a live mark.
+/// 3. **Finished while you were away** — completion digests, on demand.
+///
+/// From an expanded window the Inbox is two panes (KitScreen.twoPane): the
+/// list on the start side, and the picked request answered in the detail
+/// pane instead of a sheet.
 ///
 /// Every row is server truth the controller already holds; nothing here is
-/// estimated. Session history and cross-project discovery live in Workspace
-/// and the all-sessions finder, not here: an empty inbox reads as success.
+/// estimated. Session history and cross-project discovery live in Work and
+/// the all-sessions finder, not here: an empty inbox reads as success.
 class ActivityScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -61,8 +71,8 @@ class ActivityScreen extends StatefulWidget {
   final String? initialTeamGateId;
 
   /// True when Activity is hosted as a primary navigation destination, which
-  /// already supplies the app bar. Pushed routes (deep links, notifications)
-  /// keep their own Scaffold.
+  /// already supplies the top bar. Pushed routes (deep links, notifications)
+  /// build their own page frame.
   final bool embedded;
 
   /// The clock behind the AI Team rows' ages; tests pin it.
@@ -81,6 +91,11 @@ class ActivityScreen extends StatefulWidget {
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
+/// The request picked for the detail pane (expanded windows only).
+enum _PickKind { permission, question, form }
+
+typedef _Pick = ({_PickKind kind, String id});
+
 class _ActivityScreenState extends State<ActivityScreen> {
   /// The embedded tab is built by the shell's IndexedStack at launch and
   /// stays alive; it takes its truth from the controller's own hydration and
@@ -98,6 +113,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   bool _showDigests = false;
   final Set<(String, int)> _expandedDigests = {};
   final Set<(String, int)> _dismissedDigests = {};
+  _Pick? _picked;
 
   Object get _currentDigestScope => (
     widget.controller,
@@ -114,6 +130,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _showDigests = false;
     _expandedDigests.clear();
     _dismissedDigests.clear();
+    _picked = null;
   }
 
   @override
@@ -141,7 +158,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
     for (final question in controller.questions.values) {
       if (question.sessionID == sessionID) {
-        showQuestionSheet(context, controller, question);
+        showQuestionSheet(
+          context,
+          controller,
+          question,
+          onOpenConversation: () => _openChat(question.sessionID),
+        );
         return;
       }
     }
@@ -158,8 +180,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _openChat(sessionID);
   }
 
+  /// Hides one digest at once and offers Undo (DATA-11: a local act the
+  /// app can restore).
+  void _dismissDigest(String sessionID, int idle) {
+    final key = (sessionID, idle);
+    setState(() {
+      _dismissedDigests.add(key);
+      _expandedDigests.remove(key);
+    });
+    showKitUndo(
+      context,
+      message: _l10n(context).activityDigestHidden,
+      undoKey: const ValueKey('activity-digest-undo'),
+      onUndo: () {
+        if (mounted) setState(() => _dismissedDigests.remove(key));
+      },
+    );
+  }
+
   Widget _completionDigests() {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10n(context);
     final controller = widget.controller;
     final scope = _currentDigestScope;
     final sessions =
@@ -183,92 +223,88 @@ class _ActivityScreenState extends State<ActivityScreen> {
         controller.questionsError == null &&
         (!controller.capabilities.forms ||
             (!controller.formsLoading && controller.formsError == null));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return KitRowGroup(
+      key: const ValueKey('activity-digests'),
       children: [
-        ListTile(
-          leading: const Icon(AppIconography.checklist),
-          title: Text(l10n.digestTitle),
-          subtitle: _showDigests ? Text(l10n.digestSubtitle) : null,
-          trailing: Icon(
-            _showDigests
-                ? AppIconography.chevronUp
-                : AppIconography.chevronDown,
-          ),
-          onTap: () => setState(() => _showDigests = !_showDigests),
-        ),
-        if (_showDigests && sessions.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(l10n.digestEmpty),
-          ),
-        if (_showDigests)
-          for (final session in sessions) ...[
-            ListTile(
-              title: Text(
-                presentedSessionTitle(
+        KitExpandRow(
+          headerKey: const ValueKey('activity-digests-header'),
+          leading: const KitRowIcon(AppIconography.checklist),
+          title: l10n.activityFinishedAway,
+          supporting: TextSpan(text: l10n.digestSubtitle),
+          supportingMaxLines: 2,
+          expanded: _showDigests,
+          onExpansionChanged: (open) => setState(() => _showDigests = open),
+          children: [
+            if (sessions.isEmpty)
+              KitRow(
+                key: const ValueKey('activity-digests-empty'),
+                title: l10n.digestEmpty,
+                titleMaxLines: 2,
+              ),
+            for (final session in sessions)
+              KitExpandRow(
+                key: ValueKey('activity-digest-${session.id}'),
+                title: presentedSessionTitle(
                   session,
-                  fallback: _l10n(context).globalSessionsUntitled,
-                  l10n: _l10n(context),
+                  fallback: l10n.globalSessionsUntitled,
+                  l10n: l10n,
                 ),
-              ),
-              subtitle: Text(l10n.digestIdle),
-              trailing: Icon(
-                _expandedDigests.contains((session.id, session.time!.idle!))
-                    ? AppIconography.chevronUp
-                    : AppIconography.chevronDown,
-              ),
-              onTap: () => setState(() {
-                final key = (session.id, session.time!.idle!);
-                if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
-              }),
-            ),
-            if (_expandedDigests.contains((session.id, session.time!.idle!)))
-              CompletionDigestCard(
-                key: ValueKey((scope, session.id, session.time!.idle)),
-                digest: CompletionDigest(
-                  sessionID: session.id,
-                  idleAt: session.time!.idle!,
-                  changedFiles:
-                      session.summary == null || session.summary!.files < 0
-                      ? null
-                      : session.summary!.files,
-                  pendingDecisions: !pendingKnown
-                      ? null
-                      : controller.awaitingPermissions
-                                .where((p) => p.sessionID == session.id)
-                                .length +
-                            controller.questions.values
-                                .where((q) => q.sessionID == session.id)
-                                .length +
-                            (controller.capabilities.forms
-                                ? controller.forms.values
-                                      .where((f) => f.sessionID == session.id)
-                                      .length
-                                : 0),
-                ),
-                onOpenConversation: () {
-                  if (scope == _currentDigestScope) _openChat(session.id);
-                },
-                onReview: () => _reviewDigest(session.id, scope),
-                onRunResults: () {
-                  if (scope != _currentDigestScope) return;
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => RunResultScreen(
-                        controller: controller,
-                        sessionID: session.id,
-                      ),
-                    ),
-                  );
-                },
-                onDismiss: () => setState(() {
+                supporting: TextSpan(text: l10n.digestIdle),
+                expanded: _expandedDigests.contains((
+                  session.id,
+                  session.time!.idle!,
+                )),
+                onExpansionChanged: (_) => setState(() {
                   final key = (session.id, session.time!.idle!);
-                  _dismissedDigests.add(key);
-                  _expandedDigests.remove(key);
+                  if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
                 }),
+                children: [
+                  CompletionDigestCard(
+                    key: ValueKey((scope, session.id, session.time!.idle)),
+                    digest: CompletionDigest(
+                      sessionID: session.id,
+                      idleAt: session.time!.idle!,
+                      changedFiles:
+                          session.summary == null || session.summary!.files < 0
+                          ? null
+                          : session.summary!.files,
+                      pendingDecisions: !pendingKnown
+                          ? null
+                          : controller.awaitingPermissions
+                                    .where((p) => p.sessionID == session.id)
+                                    .length +
+                                controller.questions.values
+                                    .where((q) => q.sessionID == session.id)
+                                    .length +
+                                (controller.capabilities.forms
+                                    ? controller.forms.values
+                                          .where(
+                                            (f) => f.sessionID == session.id,
+                                          )
+                                          .length
+                                    : 0),
+                    ),
+                    onOpenConversation: () {
+                      if (scope == _currentDigestScope) _openChat(session.id);
+                    },
+                    onReview: () => _reviewDigest(session.id, scope),
+                    onRunResults: () {
+                      if (scope != _currentDigestScope) return;
+                      pushKitPage<void>(
+                        context,
+                        (_) => RunResultScreen(
+                          controller: controller,
+                          sessionID: session.id,
+                        ),
+                      );
+                    },
+                    onDismiss: () =>
+                        _dismissDigest(session.id, session.time!.idle!),
+                  ),
+                ],
               ),
           ],
+        ),
       ],
     );
   }
@@ -327,11 +363,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   void _openBackgroundSettings(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            NotificationsSettingsScreen(controller: widget.controller),
-      ),
+    pushKitPage<void>(
+      context,
+      (_) => NotificationsSettingsScreen(controller: widget.controller),
     );
   }
 
@@ -358,7 +392,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final current = widget.controller.questions[target!.id];
       if (current == null || current.sessionID != sessionID) return;
       _initialQuestionHandled = true;
-      showQuestionSheet(context, widget.controller, current);
+      showQuestionSheet(
+        context,
+        widget.controller,
+        current,
+        onOpenConversation: () => _openChat(current.sessionID),
+      );
     });
   }
 
@@ -420,9 +459,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final controller = widget.controller;
     final location = controller.locationRevision;
     final profile = controller.profile?.id;
-    final missing = lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).sessionsDetailsUnavailable;
+    final l10n = _l10n(context);
     try {
       if (!controller.sessionsById.containsKey(sessionID)) {
         await controller.ensureSession(sessionID);
@@ -435,7 +472,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final session = controller.sessionsById[sessionID];
       if (session == null) {
         throw ProductException(
-          controller.sessionDetailsErrors[sessionID] ?? missing,
+          controller.sessionDetailsErrors[sessionID] ??
+              l10n.sessionsDetailsUnavailable,
         );
       }
       if (session.directory != null &&
@@ -450,9 +488,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
         Navigator.of(context).pushNamed('/chat/$sessionID');
       }
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      if (mounted) {
+        await showKitAlert(
+          context,
+          title: l10n.activityOpenFailedTitle,
+          body: productErrorText(error, l10n: l10n),
+          alertKey: const ValueKey('activity-open-failed'),
+        );
+      }
     }
   }
+
+  /// A request row's tap: the detail pane where it shows (expanded), the
+  /// request's own sheet elsewhere.
+  VoidCallback _opener(_Pick pick, VoidCallback openSheet) => () {
+    if (KitScreen.showsDetail(context)) {
+      setState(() => _picked = pick);
+    } else {
+      openSheet();
+    }
+  };
 
   /// The AI Team rows in the §47 order, oldest first within a rank so the
   /// thing blocked longest leads (UX plan 5.7): every gate of the snapshot
@@ -513,9 +568,51 @@ class _ActivityScreenState extends State<ActivityScreen> {
     return parts.isEmpty ? directory : parts.last;
   }
 
+  /// The picked request's view for the detail pane, or null when nothing is
+  /// picked or the pick was answered meanwhile (here or on another device).
+  Widget? _detail() {
+    final pick = _picked;
+    if (pick == null) return null;
+    final controller = widget.controller;
+    switch (pick.kind) {
+      case _PickKind.permission:
+        for (final permission in controller.awaitingPermissions) {
+          if (permission.id == pick.id) {
+            return _PermissionDetail(
+              key: ValueKey('activity-detail-permission-${permission.id}'),
+              permission: permission,
+              controller: controller,
+              onOpenConversation: () => _openChat(permission.sessionID),
+            );
+          }
+        }
+      case _PickKind.question:
+        final question = controller.questions[pick.id];
+        if (question != null) {
+          return _QuestionDetail(
+            key: ValueKey('activity-detail-question-${question.id}'),
+            question: question,
+            controller: controller,
+            onOpenConversation: () => _openChat(question.sessionID),
+          );
+        }
+      case _PickKind.form:
+        final form = controller.forms[pick.id];
+        if (form != null && controller.capabilities.forms) {
+          return _FormDetail(
+            key: ValueKey('activity-detail-form-${form.id}'),
+            form: form,
+            controller: controller,
+          );
+        }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     _clearDigestScope();
+    final l10n = _l10n(context);
     final controller = widget.controller;
     // Permissions, questions and forms carry no timestamp; the controller
     // keeps them in arrival order, which is oldest first.
@@ -582,193 +679,385 @@ class _ActivityScreenState extends State<ActivityScreen> {
           return snapshot.isCurrent &&
               snapshot.dueCheckIns(monitor.rulesFor(profile.id)).isNotEmpty;
         });
+    // Running work is live only while the connection is: without it the
+    // last known rows stay, marked as last seen, never a turning spinner.
+    final live = controller.isConnected;
+    final picked = _picked;
 
-    final body = KitRefresh(
-      onRefresh: _refresh,
-      child: loading && empty
-          ? const LoadingList()
-          : error != null && empty
-          ? ProductErrorState(message: error, onRetry: _refresh)
-          : empty
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                if (!hasCheckIns) ...[
-                  _ActivityStatus(
-                    known:
-                        controller.isConnected &&
-                        controller.unknownAttentionProfileCount == 0,
-                    onRefresh: _refresh,
-                  ),
-                ],
-                ProfileMonitorInbox(controller: controller, compact: true),
-                // An empty inbox is only reassuring if it would fill while
-                // the app is closed; when it would not, say what to turn on.
-                if (platformCapabilities.supportsBackgroundService &&
-                    !controller.keepLiveInBackground)
+    bool isPicked(_PickKind kind, String id) =>
+        picked != null && picked.kind == kind && picked.id == id;
+
+    final attentionRows = <Widget>[
+      for (final row in team)
+        if (row.rank < teamActivityPermissionRank) row.widget,
+      for (final permission in permissions)
+        ActivityPermissionTile(
+          key: ValueKey('activity-permission-${permission.id}'),
+          permission: permission,
+          controller: controller,
+          selected: isPicked(_PickKind.permission, permission.id),
+          onOpen: _opener((
+            kind: _PickKind.permission,
+            id: permission.id,
+          ), () => _openPermissionSheet(context, controller, permission)),
+        ),
+      for (final question in questions)
+        ActivityQuestionTile(
+          key: ValueKey('activity-question-${question.id}'),
+          question: question,
+          controller: controller,
+          selected: isPicked(_PickKind.question, question.id),
+          onOpen: _opener(
+            (kind: _PickKind.question, id: question.id),
+            () => showQuestionSheet(
+              context,
+              controller,
+              question,
+              onOpenConversation: () => _openChat(question.sessionID),
+            ),
+          ),
+        ),
+      for (final form in sessionForms)
+        ActivityFormTile(
+          key: ValueKey('activity-form-${form.id}'),
+          form: form,
+          controller: controller,
+          selected: isPicked(_PickKind.form, form.id),
+          onOpen: _opener((
+            kind: _PickKind.form,
+            id: form.id,
+          ), () => presentConnectionForm(context, controller, form)),
+        ),
+      for (final row in team)
+        if (row.rank > teamActivityPermissionRank) row.widget,
+    ];
+
+    final Widget list;
+    if (loading && empty) {
+      list = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [KitSkeletonRows()],
+      );
+    } else if (error != null && empty) {
+      list = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: KitScreen.padding(context),
+        children: [
+          KitStateView.error(
+            key: const ValueKey('activity-error'),
+            size: KitStateSize.inline,
+            title: l10n.e7WorkspaceRefreshFailed,
+            body: error,
+            retry: KitAction(
+              label: l10n.isolatedTaskRetryOpen,
+              onPressed: _refresh,
+            ),
+          ),
+        ],
+      );
+    } else if (empty) {
+      list = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsetsDirectional.only(
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          if (!hasCheckIns)
+            _ActivityStatus(
+              known:
+                  controller.isConnected &&
+                  controller.unknownAttentionProfileCount == 0,
+              onRefresh: _refresh,
+            ),
+          ProfileMonitorInbox(controller: controller, compact: true),
+          // An empty inbox is only reassuring if it would fill while the
+          // app is closed; when it would not, offer to turn that on.
+          if (platformCapabilities.supportsBackgroundService &&
+              !controller.keepLiveInBackground)
+            _Section(
+              child: KitRowGroup(
+                children: [
                   _BackgroundUpdatesHint(
                     onOpen: () => _openBackgroundSettings(context),
                   ),
-                _completionDigests(),
-              ],
-            )
-          : DesktopScrollbarArea(
-              builder: (scrollController) => ListView(
-                controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.only(
-                  bottom: 24 + MediaQuery.paddingOf(context).bottom,
-                ),
-                children: [
-                  if (loading) const LinearProgressIndicator(minHeight: 2),
-                  if (error != null)
-                    ProductInlineEmpty(
-                      icon: Icons.sync_problem_rounded,
-                      title: _l10n(context).e7WorkspaceRefreshFailed,
-                      message: error,
-                      actionLabel: _l10n(context).isolatedTaskRetryOpen,
-                      onAction: _refresh,
-                    ),
-                  // What waits on the person: a request that arrives while
-                  // the Inbox is open unfolds in, one answered (here or on
-                  // another device) folds away where it was (design
-                  // standard §10). The list's first paint shows them at
-                  // once.
-                  KitAnimatedRows(
-                    key: const ValueKey('activity-attention-rows'),
-                    children: [
-                      if (attentionCount > 0)
-                        KeyedSubtree(
-                          key: const ValueKey('activity-attention-label'),
-                          child: SectionLabel(
-                            _l10n(context).setupSwitchAttention,
-                          ),
-                        ),
-                      for (final row in team)
-                        if (row.rank < teamActivityPermissionRank) row.widget,
-                      for (final permission in permissions)
-                        ActivityPermissionTile(
-                          key: ValueKey('activity-permission-${permission.id}'),
-                          permission: permission,
-                          controller: controller,
-                        ),
-                      for (final question in questions)
-                        ActivityQuestionTile(
-                          key: ValueKey('activity-question-${question.id}'),
-                          question: question,
-                          controller: controller,
-                        ),
-                      for (final form in sessionForms)
-                        ActivityFormTile(
-                          key: ValueKey('activity-form-${form.id}'),
-                          form: form,
-                          controller: controller,
-                        ),
-                      for (final row in team)
-                        if (row.rank > teamActivityPermissionRank) row.widget,
-                    ],
-                  ),
-                  if (globalForms.isNotEmpty) ...[
-                    SectionLabel(_l10n(context).e7WorkspaceServerRequests),
-                    for (final form in globalForms)
-                      ActivityFormTile(form: form, controller: controller),
-                  ],
-                  ProfileMonitorInbox(controller: controller, compact: true),
-                  // Conversations start and finish while the person looks:
-                  // their rows come and go gently too.
-                  KitAnimatedRows(
-                    key: const ValueKey('activity-running-rows'),
-                    children: [
-                      if (running.isNotEmpty)
-                        KeyedSubtree(
-                          key: const ValueKey('activity-running-label'),
-                          child: SectionLabel(_l10n(context).workRunning),
-                        ),
-                      for (final session in running)
-                        _SessionRow(
-                          key: ValueKey('activity-running-${session.id}'),
-                          session: session,
-                          running: true,
-                          subagents: _subagentCount(session.id),
-                          detail:
-                              controller.sessionDetailsErrors[session.id] ??
-                              _place(session),
-                          onTap: () => _openChat(session.id),
-                        ),
-                    ],
-                  ),
-                  _completionDigests(),
                 ],
               ),
             ),
-    );
-
-    if (widget.embedded) return body;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_l10n(context).shellTabInbox),
-        actions: [
-          IconButton(
-            tooltip: _l10n(context).globalSessionsRefresh,
-            onPressed: _refreshing ? null : _refresh,
-            icon: _refreshing
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(AppIconography.retry),
-          ),
+          _Section(child: _completionDigests()),
         ],
+      );
+    } else {
+      list = KitScrollArea(
+        builder: (scrollController) => ListView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsDirectional.only(
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: [
+            if (error != null)
+              _Section(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: KitTokens.of(context).gutter,
+                  ),
+                  child: KitNotice.error(
+                    key: const ValueKey('activity-refresh-failed'),
+                    title: l10n.e7WorkspaceRefreshFailed,
+                    message: error,
+                    retry: KitAction(
+                      label: l10n.isolatedTaskRetryOpen,
+                      onPressed: _refresh,
+                    ),
+                  ),
+                ),
+              ),
+            // What waits on the person: a request that arrives while the
+            // Inbox is open unfolds in, one answered (here or on another
+            // device) folds away where it was (design standard §10). The
+            // list's first paint shows them at once.
+            if (attentionRows.isNotEmpty)
+              _Section(
+                child: KitRowGroup(
+                  key: const ValueKey('activity-attention'),
+                  label: l10n.setupSwitchAttention,
+                  children: [
+                    _DividedRows(
+                      key: const ValueKey('activity-attention-rows'),
+                      rows: attentionRows,
+                    ),
+                  ],
+                ),
+              ),
+            if (globalForms.isNotEmpty)
+              _Section(
+                child: KitRowGroup(
+                  label: l10n.e7WorkspaceServerRequests,
+                  children: [
+                    _DividedRows(
+                      key: const ValueKey('activity-global-forms'),
+                      rows: [
+                        for (final form in globalForms)
+                          ActivityFormTile(
+                            key: ValueKey('activity-global-form-${form.id}'),
+                            form: form,
+                            controller: controller,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ProfileMonitorInbox(controller: controller, compact: true),
+            // Conversations start and finish while the person looks: their
+            // rows come and go gently too.
+            if (running.isNotEmpty)
+              _Section(
+                child: KitRowGroup(
+                  key: const ValueKey('activity-running'),
+                  label: l10n.workRunning,
+                  children: [
+                    _DividedRows(
+                      key: const ValueKey('activity-running-rows'),
+                      rows: [
+                        for (final session in running)
+                          _SessionRow(
+                            key: ValueKey('activity-running-${session.id}'),
+                            session: session,
+                            live: live,
+                            subagents: _subagentCount(session.id),
+                            detail:
+                                controller.sessionDetailsErrors[session.id] ??
+                                _place(session),
+                            onTap: () => _openChat(session.id),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            _Section(child: _completionDigests()),
+          ],
+        ),
+      );
+    }
+
+    final body = KitRefresh(onRefresh: _refresh, child: list);
+    final topBar = widget.embedded
+        ? null
+        : KitTopBar(
+            title: l10n.shellTabInbox,
+            actions: [
+              KitAction(
+                key: const ValueKey('activity-refresh'),
+                label: l10n.globalSessionsRefresh,
+                icon: AppIconography.retry,
+                working: _refreshing,
+                onPressed: _refreshing ? null : _refresh,
+              ),
+            ],
+          );
+    return KitScreen.twoPane(
+      topBar: topBar,
+      loading: loading && !empty,
+      loadingLabel: l10n.activityLoading,
+      listPaneKey: const ValueKey('activity-list-pane'),
+      detailPaneKey: const ValueKey('activity-detail-pane'),
+      list: body,
+      detail: _detail(),
+      emptyDetail: KitStateView(
+        key: const ValueKey('activity-detail-empty'),
+        icon: AppIconography.inbox,
+        title: attentionCount > 0
+            ? l10n.activityPickRequest
+            : l10n.activityClearHere,
+        body: attentionCount > 0 ? l10n.activityPickRequestDetail : null,
       ),
-      body: body,
     );
   }
 }
 
+/// Opens the permission sheet with the conversation named, the one resolver
+/// every door shares.
+void _openPermissionSheet(
+  BuildContext context,
+  ConnectionController controller,
+  PermissionRequest permission,
+) => unawaited(
+  showPermissionSheet(
+    context,
+    permission: permission,
+    controller: controller,
+    contextLabel: _l10n(context).e7WorkspaceRequestFor(
+      _sessionTitle(context, controller, permission.sessionID),
+    ),
+  ),
+);
+
+/// A section of the list: the VL gap above each group (LAY-7).
+class _Section extends StatelessWidget {
+  const _Section({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsetsDirectional.only(top: KitTokens.of(context).sectionGap),
+    child: child,
+  );
+}
+
+/// Keyed rows that come and go gently ([KitAnimatedRows]) with the panel's
+/// hairline between them, inset to where the words start.
+class _DividedRows extends StatelessWidget {
+  const _DividedRows({super.key, required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) => KitAnimatedRows(
+    children: [
+      for (var i = 0; i < rows.length; i++)
+        KeyedSubtree(
+          key: ValueKey(('activity-row', rows[i].key)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (i > 0) const KitDivider(inset: KitDividerInset.text),
+              rows[i],
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
 /// One permission component, three entry points: this row opens the same
-/// sheet the chat auto-presents, so resolving here is resolving there.
-class ActivityPermissionTile extends StatelessWidget {
+/// sheet the chat auto-presents, so resolving here is resolving there. Its
+/// trailing action allows it once without the sheet (the common case), and
+/// says so if the answer did not go through.
+class ActivityPermissionTile extends StatefulWidget {
   final PermissionRequest permission;
   final ConnectionController controller;
+
+  /// What a tap does; null opens the permission sheet.
+  final VoidCallback? onOpen;
+
+  /// The row shown in the detail pane (expanded windows).
+  final bool selected;
 
   const ActivityPermissionTile({
     super.key,
     required this.permission,
     required this.controller,
+    this.onOpen,
+    this.selected = false,
   });
 
   @override
+  State<ActivityPermissionTile> createState() => _ActivityPermissionTileState();
+}
+
+class _ActivityPermissionTileState extends State<ActivityPermissionTile> {
+  bool _sending = false;
+  String? _error;
+
+  Future<void> _allowOnce() async {
+    if (_sending) return;
+    final controller = widget.controller;
+    final request = controller.permissionIdentity(widget.permission);
+    if (!controller.isRequestPending(request)) return;
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
+    try {
+      await controller.answerPermission(
+        widget.permission.id,
+        'once',
+        expectedRequest: request,
+      );
+    } catch (error) {
+      if (mounted) setState(() => _error = productErrorText(error));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = _l10n(context);
+    final permission = widget.permission;
+    final controller = widget.controller;
     final title = permission.permission.isEmpty
-        ? _l10n(context).e7WorkspacePermissionRequired
+        ? l10n.e7WorkspacePermissionRequired
         : permissionRequestTitle(permission.permission);
-    return ListTile(
-      minTileHeight: 66,
-      leading: Icon(AppIconography.shield, color: theme.colorScheme.tertiary),
-      title: Text(title),
-      subtitle: Text(
-        permission.patterns.isNotEmpty
-            ? permission.patterns.first
-            : _sessionTitle(context, controller, permission.sessionID),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: permission.patterns.isNotEmpty
-            ? const TextStyle(
-                fontFamily: AppTheme.monoFamily,
-                fontSize: AppTheme.codeFontSize,
-              )
-            : null,
+    final error = _error;
+    final connected = _canAnswer(controller);
+    return KitRow(
+      leading: const KitRowIcon(AppIconography.shield),
+      title: title,
+      selected: widget.selected,
+      supporting: error != null
+          ? TextSpan(text: l10n.activityAllowOnceFailed(error))
+          : TextSpan(
+              text: permission.patterns.isNotEmpty
+                  ? permission.patterns.first
+                  : _sessionTitle(context, controller, permission.sessionID),
+            ),
+      supportingMaxLines: error != null ? 2 : 1,
+      trailing: KitIconButton(
+        key: ValueKey('activity-permission-allow-${permission.id}'),
+        icon: AppIconography.check,
+        tooltip: l10n.chatUiAllowOnce,
+        working: _sending,
+        disabledReason: connected ? null : l10n.activitySendOffline,
+        onPressed: connected ? _allowOnce : null,
       ),
-      trailing: const Icon(AppIconography.chevronRight),
-      onTap: () => showPermissionSheet(
-        context,
-        permission: permission,
-        controller: controller,
-        contextLabel: _l10n(context).e7WorkspaceRequestFor(
-          _sessionTitle(context, controller, permission.sessionID),
-        ),
-      ),
+      onTap:
+          widget.onOpen ??
+          () => _openPermissionSheet(context, controller, permission),
     );
   }
 }
@@ -777,34 +1066,37 @@ class ActivityQuestionTile extends StatelessWidget {
   final PendingQuestion question;
   final ConnectionController controller;
 
+  /// What a tap does; null opens the question sheet.
+  final VoidCallback? onOpen;
+
+  /// The row shown in the detail pane (expanded windows).
+  final bool selected;
+
   const ActivityQuestionTile({
     super.key,
     required this.question,
     required this.controller,
+    this.onOpen,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      minTileHeight: 66,
-      leading: Icon(
-        AppIconography.supportQuestion,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      title: Text(
-        question.prompts.isEmpty
-            ? _l10n(context).e7WorkspaceAssistantQuestion
-            : question.prompts.first.title,
-      ),
-      subtitle: Text(
-        question.prompts.isEmpty
+    final l10n = _l10n(context);
+    return KitRow(
+      leading: const KitRowIcon(AppIconography.question),
+      title: question.prompts.isEmpty
+          ? l10n.e7WorkspaceAssistantQuestion
+          : question.prompts.first.title,
+      supporting: TextSpan(
+        text: question.prompts.isEmpty
             ? _sessionTitle(context, controller, question.sessionID)
             : question.prompts.first.question,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(AppIconography.chevronRight),
-      onTap: () => showQuestionSheet(context, controller, question),
+      supportingMaxLines: 2,
+      selected: selected,
+      trailing: const KitChevron(),
+      onTap: onOpen ?? () => showQuestionSheet(context, controller, question),
     );
   }
 }
@@ -813,35 +1105,40 @@ class ActivityFormTile extends StatelessWidget {
   final Api2FormInfo form;
   final ConnectionController controller;
 
+  /// What a tap does; null opens the form.
+  final VoidCallback? onOpen;
+
+  /// The row shown in the detail pane (expanded windows).
+  final bool selected;
+
   const ActivityFormTile({
     super.key,
     required this.form,
     required this.controller,
+    this.onOpen,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10n(context);
     final count = form.fields.length;
-    return ListTile(
+    return KitRow(
       key: ValueKey('form-request-tile-${form.id}'),
-      minTileHeight: 66,
-      leading: Icon(
-        AppIconography.checklist,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      title: Text(form.title ?? _l10n(context).e7WorkspaceInputRequested),
-      subtitle: Text(
-        form.sessionID == 'global'
-            ? _l10n(context).e7WorkspaceMcpAsked
-            : _l10n(context).e7WorkspaceQuestionCount(
+      leading: const KitRowIcon(AppIconography.editNote),
+      title: form.title ?? l10n.e7WorkspaceInputRequested,
+      supporting: TextSpan(
+        text: form.sessionID == 'global'
+            ? l10n.e7WorkspaceMcpAsked
+            : l10n.e7WorkspaceQuestionCount(
                 count,
                 _sessionTitle(context, controller, form.sessionID),
               ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(AppIconography.chevronRight),
-      onTap: () => presentConnectionForm(context, controller, form),
+      supportingMaxLines: 2,
+      selected: selected,
+      trailing: const KitChevron(),
+      onTap: onOpen ?? () => presentConnectionForm(context, controller, form),
     );
   }
 }
@@ -878,8 +1175,7 @@ class ActivityGateTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
-    final theme = Theme.of(context);
-    final (icon, tone) = teamGateGlyph(gate.kind);
+    final (icon, _) = teamGateGlyph(gate.kind);
     final age = gate.createdAt == null
         ? null
         : relativeTimeLabel(
@@ -895,13 +1191,13 @@ class ActivityGateTile extends StatelessWidget {
     ].join(' · ');
     final record = teamGateMutation(team, gate);
     void open() => showGateSheet(context, team, gate.id, now: () => now);
-    return ListTile(
-      minTileHeight: 66,
-      leading: Icon(icon, color: AppTheme.statusColor(theme, tone)),
-      title: Text(gate.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+    return KitRow(
+      leading: KitRowIcon(icon),
+      title: gate.title,
+      supporting: TextSpan(text: subtitle),
+      supportingMaxLines: 2,
       trailing: record == null || record.status == MutationStatus.confirmed
-          ? const Icon(AppIconography.chevronRight)
+          ? const KitChevron()
           : TeamReceiptChip(
               key: ValueKey('activity-team-gate-${gate.id}-receipt'),
               record: record,
@@ -931,8 +1227,7 @@ class ActivityAgentBlockedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n(context);
-    final theme = Theme.of(context);
-    final (icon, tone) = teamAgentGlyph(agent.state);
+    final (icon, _) = teamAgentGlyph(agent.state);
     String? work;
     for (final item in team.snapshot.work) {
       if (item.id == agent.currentWorkId) {
@@ -953,48 +1248,59 @@ class ActivityAgentBlockedTile extends StatelessWidget {
       ?serverName,
       ?age,
     ].join(' · ');
-    return ListTile(
-      minTileHeight: 66,
-      leading: Icon(icon, color: AppTheme.statusColor(theme, tone)),
-      title: Text(agent.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: const Icon(AppIconography.chevronRight),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) =>
-              AgentScreen(controller: team, agentId: agent.id, now: () => now),
-        ),
+    return KitRow(
+      leading: KitRowIcon(icon),
+      title: agent.name,
+      supporting: TextSpan(text: subtitle),
+      supportingMaxLines: 2,
+      trailing: const KitChevron(),
+      onTap: () => pushKitPage<void>(
+        context,
+        (_) => AgentScreen(controller: team, agentId: agent.id, now: () => now),
       ),
     );
   }
 }
 
-/// The exact answer surface, shared by Activity rows and notification taps.
+/// The exact answer surface, shared by Inbox rows, the conversation and
+/// notification taps: the kit sheet with each prompt's choices, an own
+/// answer where the prompt takes one, Send with its reason while it cannot
+/// send, and Dismiss (confirmed first: nobody can restore a dismissed
+/// question, DATA-11). [onOpenConversation], when given, adds "Open
+/// conversation" for context before answering.
 Future<void> showQuestionSheet(
   BuildContext context,
   ConnectionController controller,
-  PendingQuestion question,
-) async {
+  PendingQuestion question, {
+  VoidCallback? onOpenConversation,
+}) async {
   final request = controller.questionIdentity(question);
   if (!controller.isRequestPending(request)) return;
   final routes = RequestRoutes(
     changes: controller,
     isPending: () => controller.isRequestPending(request),
   );
+  final l10n = _l10n(context);
   try {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        routes.own(ModalRoute.of(context));
-        return _QuestionSheet(
-          question: question,
-          controller: controller,
-          request: request,
-          routes: routes,
-        );
-      },
+    await showKitSheet<void>(
+      context,
+      title: l10n.e7WorkspaceNeedsInput,
+      subtitle: _sessionTitle(context, controller, question.sessionID),
+      icon: AppIconography.question,
+      routes: routes,
+      sheetKey: const ValueKey('question-sheet'),
+      body: (sheetContext) => _QuestionForm(
+        question: question,
+        controller: controller,
+        request: request,
+        routes: routes,
+        onOpenConversation: onOpenConversation == null
+            ? null
+            : () {
+                Navigator.of(sheetContext).pop();
+                onOpenConversation();
+              },
+      ),
     );
   } finally {
     routes.close();
@@ -1003,7 +1309,10 @@ Future<void> showQuestionSheet(
 
 class _SessionRow extends StatelessWidget {
   final Session session;
-  final bool running;
+
+  /// The connection is up: the row is live. Otherwise it is the last known
+  /// state, said in words, with a still mark.
+  final bool live;
   final int subagents;
   final String detail;
   final VoidCallback onTap;
@@ -1011,7 +1320,7 @@ class _SessionRow extends StatelessWidget {
   const _SessionRow({
     super.key,
     required this.session,
-    required this.running,
+    required this.live,
     required this.subagents,
     required this.detail,
     required this.onTap,
@@ -1019,67 +1328,266 @@ class _SessionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = _l10n(context);
     final title = presentedSessionTitle(
       session,
-      fallback: _l10n(context).globalSessionsUntitled,
-      l10n: _l10n(context),
+      fallback: l10n.globalSessionsUntitled,
+      l10n: l10n,
     );
-    return ListTile(
-      leading: running
-          ? SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: theme.colorScheme.primary,
-              ),
-            )
-          : Icon(
-              AppIconography.chat,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: detail.isEmpty
-          ? null
-          : Text(detail, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (subagents > 0)
-            Tooltip(
-              message: _l10n(context).e7WorkspaceSubagentCount(subagents),
-              child: Badge(
-                label: Text('$subagents'),
-                child: const Icon(AppIconography.branch, size: 19),
-              ),
-            ),
-          const SizedBox(width: 4),
-          const Icon(AppIconography.chevronRight),
-        ],
+    final state = live ? l10n.workRunning : l10n.activityLastSeenRunning;
+    final line = [
+      state,
+      if (detail.isNotEmpty) detail,
+      if (subagents > 0) l10n.e7WorkspaceSubagentCount(subagents),
+    ].join(' · ');
+    return KitRow(
+      leading: KitStatusMark(
+        state: live ? KitMarkState.working : KitMarkState.waiting,
+        label: state,
       ),
+      title: title,
+      supporting: TextSpan(text: line),
+      supportingKey: ValueKey('activity-running-${session.id}-line'),
+      trailing: const KitChevron(),
       onTap: onTap,
     );
   }
 }
 
-class _QuestionSheet extends StatefulWidget {
+/// A permission picked into the detail pane: the one answer card, with
+/// Allow once and Reject in place and Details opening the full sheet
+/// (the reject message, the diff, the persistent grant).
+class _PermissionDetail extends StatefulWidget {
+  const _PermissionDetail({
+    super.key,
+    required this.permission,
+    required this.controller,
+    required this.onOpenConversation,
+  });
+
+  final PermissionRequest permission;
+  final ConnectionController controller;
+  final VoidCallback onOpenConversation;
+
+  @override
+  State<_PermissionDetail> createState() => _PermissionDetailState();
+}
+
+class _PermissionDetailState extends State<_PermissionDetail> {
+  DateTime? _since;
+  String? _answer;
+  String? _refused;
+
+  Future<void> _reply(String reply, String words) async {
+    if (_since != null) return;
+    final controller = widget.controller;
+    final request = controller.permissionIdentity(widget.permission);
+    if (!controller.isRequestPending(request)) return;
+    setState(() {
+      _since = DateTime.now();
+      _answer = words;
+      _refused = null;
+    });
+    try {
+      await controller.answerPermission(
+        widget.permission.id,
+        reply,
+        expectedRequest: request,
+      );
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _since = null;
+          _refused = productErrorText(error);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final permission = widget.permission;
+    final controller = widget.controller;
+    final title = permission.permission.isEmpty
+        ? l10n.e7WorkspacePermissionRequired
+        : permissionRequestTitle(permission.permission);
+    final since = _since;
+    final refused = _refused;
+    final connected = _canAnswer(controller);
+    return ListView(
+      padding: KitScreen.padding(context),
+      children: [
+        SizedBox(height: KitTokens.of(context).space4),
+        KitRequestCard.ask(
+          kind: KitRequestKind.permission,
+          title: title,
+          who: _sessionTitle(context, controller, permission.sessionID),
+          reason: KitNeedsYouReason.decision,
+          ifIgnored: l10n.activityIfIgnored,
+          announcement: l10n.activityPermissionAnnouncement(title),
+          summary: permission.patterns.isEmpty
+              ? null
+              : permission.patterns.join('\n'),
+          phase: since == null
+              ? KitRequestPhase.waiting
+              : KitRequestPhase.sending,
+          answer: _answer,
+          receipt: since != null
+              ? KitReceipt(state: KitReceiptState.sending, since: since)
+              : refused != null
+              ? KitReceipt(state: KitReceiptState.refused, reason: refused)
+              : null,
+          answers: KitRequestDecide(
+            allowKey: const ValueKey('activity-detail-allow'),
+            rejectKey: const ValueKey('activity-detail-reject'),
+            disabledReason: connected ? null : l10n.activitySendOffline,
+            onAllow: connected
+                ? () => _reply('once', l10n.chatUiAllowOnce)
+                : null,
+            onReject: connected
+                ? () => _reply('reject', l10n.chatUiReject)
+                : null,
+          ),
+          onDetails: () =>
+              _openPermissionSheet(context, controller, permission),
+          tertiary: [
+            KitAction(
+              key: const ValueKey('activity-detail-open-conversation'),
+              label: l10n.digestOpenConversation,
+              onPressed: widget.onOpenConversation,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A form picked into the detail pane: the answer card; Answer opens the
+/// form flow, the one resolver for OpenCode 2 forms.
+class _FormDetail extends StatelessWidget {
+  const _FormDetail({super.key, required this.form, required this.controller});
+
+  final Api2FormInfo form;
+  final ConnectionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final title = form.title ?? l10n.e7WorkspaceInputRequested;
+    return ListView(
+      padding: KitScreen.padding(context),
+      children: [
+        SizedBox(height: KitTokens.of(context).space4),
+        KitRequestCard.ask(
+          kind: KitRequestKind.form,
+          title: title,
+          who: form.sessionID == 'global'
+              ? l10n.e7WorkspaceMcpAsked
+              : _sessionTitle(context, controller, form.sessionID),
+          reason: KitNeedsYouReason.decision,
+          ifIgnored: l10n.activityIfIgnored,
+          announcement: l10n.activityFormAnnouncement(title),
+          detail: l10n.e7WorkspaceQuestionCount(
+            form.fields.length,
+            _sessionTitle(context, controller, form.sessionID),
+          ),
+          answers: const KitRequestInSheet(
+            key: ValueKey('activity-detail-form-answer'),
+          ),
+          onDetails: () => presentConnectionForm(context, controller, form),
+        ),
+      ],
+    );
+  }
+}
+
+/// A question picked into the detail pane: the same form the sheet holds,
+/// under the sheet's header words.
+class _QuestionDetail extends StatefulWidget {
+  const _QuestionDetail({
+    super.key,
+    required this.question,
+    required this.controller,
+    required this.onOpenConversation,
+  });
+
+  final PendingQuestion question;
+  final ConnectionController controller;
+  final VoidCallback onOpenConversation;
+
+  @override
+  State<_QuestionDetail> createState() => _QuestionDetailState();
+}
+
+class _QuestionDetailState extends State<_QuestionDetail> {
+  late final PendingRequestIdentity _request = widget.controller
+      .questionIdentity(widget.question);
+
+  /// Owns no route: the pane closes by the question leaving the list.
+  late final RequestRoutes _routes = RequestRoutes(
+    changes: widget.controller,
+    isPending: () => widget.controller.isRequestPending(_request),
+  );
+
+  @override
+  void dispose() {
+    _routes.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
+    return ListView(
+      padding: KitScreen.padding(context),
+      children: [
+        SizedBox(height: tokens.space4),
+        KitText(l10n.e7WorkspaceNeedsInput, role: KitTextRole.title),
+        SizedBox(height: tokens.space1),
+        KitText(
+          _sessionTitle(context, widget.controller, widget.question.sessionID),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        SizedBox(height: tokens.space5),
+        _QuestionForm(
+          question: widget.question,
+          controller: widget.controller,
+          request: _request,
+          routes: _routes,
+          onOpenConversation: widget.onOpenConversation,
+        ),
+      ],
+    );
+  }
+}
+
+/// Every prompt of one question: its choices (one or several), its own
+/// answer where it takes one, and the actions. Send says why it cannot send
+/// yet (STATE-8); a failed send stays here with the reason and Try again.
+class _QuestionForm extends StatefulWidget {
   final PendingQuestion question;
   final ConnectionController controller;
   final PendingRequestIdentity request;
   final RequestRoutes routes;
+  final VoidCallback? onOpenConversation;
 
-  const _QuestionSheet({
+  const _QuestionForm({
     required this.question,
     required this.controller,
     required this.request,
     required this.routes,
+    this.onOpenConversation,
   });
 
   @override
-  State<_QuestionSheet> createState() => _QuestionSheetState();
+  State<_QuestionForm> createState() => _QuestionFormState();
 }
 
-class _QuestionSheetState extends State<_QuestionSheet> {
+class _QuestionFormState extends State<_QuestionForm> {
   late final List<Set<String>> _answers = List.generate(
     widget.question.prompts.length,
     (_) => <String>{},
@@ -1091,6 +1599,16 @@ class _QuestionSheetState extends State<_QuestionSheet> {
   bool _busy = false;
   bool _confirming = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_changed);
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
 
   bool get _complete {
     for (var i = 0; i < widget.question.prompts.length; i++) {
@@ -1140,20 +1658,14 @@ class _QuestionSheetState extends State<_QuestionSheet> {
   }
 
   /// The same selection rules the inline chat card applies: a single-select
-  /// tap replaces the choice and clears custom text; a multi-select tap
-  /// toggles the choice and keeps custom text.
-  void _toggle(int index, QuestionPrompt prompt, QuestionChoice choice) {
+  /// choice replaces the choice and clears custom text; a multi-select
+  /// change keeps custom text.
+  void _choose(int index, String label) {
     setState(() {
-      if (prompt.multiple) {
-        if (!_answers[index].remove(choice.label)) {
-          _answers[index].add(choice.label);
-        }
-      } else {
-        _custom[index].clear();
-        _answers[index]
-          ..clear()
-          ..add(choice.label);
-      }
+      _custom[index].clear();
+      _answers[index]
+        ..clear()
+        ..add(label);
     });
   }
 
@@ -1197,141 +1709,140 @@ class _QuestionSheetState extends State<_QuestionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final media = MediaQuery.of(context);
-    final availableHeight = (media.size.height - media.viewInsets.bottom - 8)
-        .clamp(96.0, media.size.height * .9);
-    return Padding(
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: SizedBox(
-            height: availableHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ListView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    children: [
-                      Text(
-                        _l10n(context).e7WorkspaceNeedsInput,
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _sessionTitle(
-                          context,
-                          widget.controller,
-                          widget.question.sessionID,
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      for (
-                        var index = 0;
-                        index < widget.question.prompts.length;
-                        index++
-                      )
-                        Builder(
-                          builder: (context) {
-                            final prompt = widget.question.prompts[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 22),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    prompt.title,
-                                    style: theme.textTheme.labelLarge,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(prompt.question),
-                                  const SizedBox(height: 10),
-                                  for (final choice in prompt.choices)
-                                    QuestionOptionRow(
-                                      choice: choice,
-                                      multiple: prompt.multiple,
-                                      selected: _answers[index].contains(
-                                        choice.label,
-                                      ),
-                                      enabled: !_busy,
-                                      onTap: () =>
-                                          _toggle(index, prompt, choice),
-                                    ),
-                                  if (prompt.custom)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: QuestionCustomAnswerField(
-                                        controller: _custom[index],
-                                        enabled: !_busy,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            if (!prompt.multiple &&
-                                                value.trim().isNotEmpty) {
-                                              _answers[index].clear();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    TextButton(
-                      onPressed: _busy ? null : _reject,
-                      child: Text(_l10n(context).workspaceDismissNotice),
-                    ),
-                    FilledButton(
-                      onPressed: _complete && !_busy ? _submit : null,
-                      child: _busy && !_confirming
-                          ? const SizedBox.square(
-                              dimension: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_l10n(context).e7WorkspaceSendAnswers),
-                    ),
-                  ],
-                ),
-              ],
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
+    final prompts = widget.question.prompts;
+    final connected = _canAnswer(widget.controller);
+    final sendReason = !connected
+        ? l10n.activitySendOffline
+        : !_complete
+        ? l10n.activityAnswerEveryQuestion
+        : null;
+    final error = _error;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < prompts.length; index++) ...[
+          if (index > 0) SizedBox(height: tokens.sectionGap),
+          if (prompts.length > 1)
+            KitText(
+              l10n.activityQuestionProgress(index + 1, prompts.length),
+              role: KitTextRole.caption,
+              tone: KitTextTone.secondary,
+            ),
+          KitText(prompts[index].title, role: KitTextRole.headline),
+          SizedBox(height: tokens.space1),
+          KitText(prompts[index].question),
+          if (prompts[index].choices.isNotEmpty) ...[
+            SizedBox(height: tokens.space3),
+            _choices(index, prompts[index]),
+          ],
+          if (prompts[index].custom) ...[
+            SizedBox(height: tokens.space3),
+            KitField(
+              key: ValueKey('question-own-answer-$index'),
+              label: l10n.activityOwnAnswer,
+              controller: _custom[index],
+              enabled: !_busy,
+              disabledReason: _busy ? l10n.activitySending : null,
+              textInputAction: TextInputAction.done,
+              onChanged: (value) => setState(() {
+                if (!prompts[index].multiple && value.trim().isNotEmpty) {
+                  _answers[index].clear();
+                }
+              }),
+            ),
+          ],
+        ],
+        if (error != null) ...[
+          SizedBox(height: tokens.space4),
+          KitNotice.error(
+            key: const ValueKey('question-send-failed'),
+            message: error,
+            retry: KitAction(
+              label: l10n.isolatedTaskRetryOpen,
+              onPressed: _complete && !_busy ? _submit : null,
             ),
           ),
+        ],
+        SizedBox(height: tokens.space5),
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('question-send'),
+            label: l10n.e7WorkspaceSendAnswers,
+            working: _busy && !_confirming,
+            disabledReason: sendReason,
+            onPressed: sendReason == null && !_busy ? _submit : null,
+          ),
+          tertiary: [
+            if (widget.onOpenConversation case final open?)
+              KitAction(
+                key: const ValueKey('question-open-conversation'),
+                label: l10n.digestOpenConversation,
+                onPressed: _busy ? null : open,
+              ),
+            KitAction(
+              key: const ValueKey('question-dismiss'),
+              label: l10n.workspaceDismissNotice,
+              destructive: true,
+              onPressed: _busy ? null : _reject,
+            ),
+          ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _choices(int index, QuestionPrompt prompt) {
+    final choices = [
+      for (final choice in prompt.choices)
+        KitChoice<String>(
+          value: choice.label,
+          title: choice.label,
+          supporting: choice.description.isEmpty ? null : choice.description,
+          enabled: !_busy,
+          disabledReason: _busy ? _l10n(context).activitySending : null,
+        ),
+    ];
+    if (prompt.multiple) {
+      return KitChoiceList<String>.multi(
+        key: ValueKey('question-choices-$index'),
+        choices: choices,
+        selected: _answers[index],
+        semanticsLabel: prompt.title,
+        onChanged: (values) => setState(
+          () => _answers[index]
+            ..clear()
+            ..addAll(values),
+        ),
+      );
+    }
+    return KitChoiceList<String>.single(
+      key: ValueKey('question-choices-$index'),
+      choices: choices,
+      selected: _answers[index].isEmpty ? null : _answers[index].first,
+      actsOnTap: false,
+      semanticsLabel: prompt.title,
+      onSelected: (value) => _choose(index, value),
     );
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_changed);
     for (final controller in _custom) {
       controller.dispose();
     }
     super.dispose();
   }
 }
+
+/// Whether an answer can leave the phone: a server gateway is there (it
+/// stays through a stream reconnect). Without one, answering is disabled
+/// with its reason rather than failing after the tap.
+bool _canAnswer(ConnectionController controller) =>
+    controller.repository != null;
 
 String _sessionTitle(
   BuildContext context,
@@ -1346,6 +1857,8 @@ String _sessionTitle(
   );
 }
 
+/// Offers to keep the Inbox filling while the app is closed (map
+/// `whenMissing: perm.notifications → offers-enable`).
 class _BackgroundUpdatesHint extends StatelessWidget {
   final VoidCallback onOpen;
 
@@ -1353,16 +1866,15 @@ class _BackgroundUpdatesHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return ListTile(
+    final l10n = _l10n(context);
+    return KitRow(
       key: const ValueKey('activity-background-settings'),
-      leading: const Icon(AppIconography.activity),
-      title: Text(l10n.activityBackgroundUpdates),
-      subtitle: Text(
-        l10n.activityBackgroundOffDetail,
-        key: const ValueKey('activity-background-hint'),
-      ),
-      trailing: const Icon(AppIconography.chevronRight),
+      leading: const KitRowIcon(AppIconography.activity),
+      title: l10n.activityBackgroundUpdates,
+      supporting: TextSpan(text: l10n.activityBackgroundOffDetail),
+      supportingKey: const ValueKey('activity-background-hint'),
+      supportingMaxLines: 2,
+      trailing: const KitChevron(),
       onTap: onOpen,
     );
   }
@@ -1376,52 +1888,33 @@ class _ActivityStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Padding(
+    final l10n = _l10n(context);
+    return KitStateView(
       key: ValueKey(known ? 'activity-all-clear' : 'activity-status-unknown'),
-      padding: const EdgeInsets.fromLTRB(16, 32, 16, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // All caught up: the last sheet settles into the tray. Not
-          // known yet: the unplugged drawing every load failure uses.
-          KitIllustration(
-            key: const ValueKey('activity-status-illustration'),
-            scene: known
-                ? const StatesTrayScene()
-                : const StatesUnpluggedScene(),
-            width: 140,
+      size: KitStateSize.inline,
+      icon: known ? AppIconography.inbox : AppIconography.networkOff,
+      // All caught up: the last sheet settles into the tray. Not known yet:
+      // the unplugged drawing every load failure uses.
+      illustration: known
+          ? const StatesTrayScene()
+          : const StatesUnpluggedScene(),
+      title: known ? l10n.activityClearHere : l10n.activityStatusIncomplete,
+      // The all-clear says what would fill this list, so an empty Inbox
+      // reads as "watching" rather than "nothing here" (UX plan 5.8, item
+      // 3). The unknown state keeps its own copy: teaching there would
+      // claim a calm the app has not verified.
+      body: known
+          ? l10n.emptyTeachInboxMessage
+          : l10n.activityUnknownStatusDetail,
+      tertiary: [
+        if (!known)
+          KitAction(
+            key: const ValueKey('activity-check-again'),
+            label: l10n.activityCheckAgain,
+            icon: AppIconography.retry,
+            onPressed: onRefresh,
           ),
-          const SizedBox(height: 20),
-          Text(
-            known ? l10n.activityClearHere : l10n.activityStatusIncomplete,
-            style: theme.textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            // The all-clear says what would fill this list, so an empty
-            // Inbox reads as "watching" rather than "nothing here" (UX plan
-            // 5.8, item 3). The unknown state keeps its own copy: teaching
-            // there would claim a calm the app has not verified.
-            known
-                ? l10n.emptyTeachInboxMessage
-                : l10n.activityUnknownStatusDetail,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (!known)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: TextButton.icon(
-                onPressed: onRefresh,
-                icon: const Icon(AppIconography.retry),
-                label: Text(l10n.activityCheckAgain),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }
