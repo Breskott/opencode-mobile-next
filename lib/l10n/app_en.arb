@@ -25900,5 +25900,25 @@
   "kitDateUnavailable": "That day can’t be chosen",
   "@kitDateUnavailable": {
     "description": "Date picker: the reason under the typed-date field when the date is in range but the caller does not allow that day"
+  },
+  "filesLoadingFolder": "Opening folder…",
+  "@filesLoadingFolder": {
+    "description": "Files: shown while a folder listing loads for the first time."
+  },
+  "filesSearching": "Searching…",
+  "@filesSearching": {
+    "description": "Files: shown while a file or symbol search runs."
+  },
+  "filesShowHidden": "Show hidden files",
+  "@filesShowHidden": {
+    "description": "Files: filter that also lists files and folders whose names start with a dot."
+  },
+  "filesOnlyHidden": "This folder has only hidden files and folders.",
+  "@filesOnlyHidden": {
+    "description": "Files: empty-folder body when every entry is hidden."
+  },
+  "filesCopyName": "Copy name",
+  "@filesCopyName": {
+    "description": "Files: row menu item that copies the file or folder name."
   }
 }

@@ -1,28 +1,51 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
+import '../../domain/delimited_text.dart';
+import '../../domain/static_svg.dart';
+import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
+import '../../platform/local_pdf.dart';
 import '../../state/connection.dart';
 import '../../state/review_handoff.dart';
-import '../desktop/context_menu.dart';
-import '../desktop/desktop_interaction.dart';
-import '../widgets/file_preview.dart';
-import '../widgets/reader_preferences.dart';
-import '../../feedback/bug_report.dart';
-import '../kit/kit.dart' show KitAction, KitStateView, KitRefresh;
-import '../kit/scenes/states_scenes.dart';
-import '../widgets/product_states.dart';
-import 'review_workspace.dart';
 import '../app_theme.dart';
+import '../kit/kit_bidi.dart';
+import '../kit/kit_breadcrumb.dart';
+import '../kit/kit_buttons.dart' show KitAction;
+import '../kit/kit_copy.dart';
+import '../kit/kit_divider.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_menu.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_page_route.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart' show KitChevron;
+import '../kit/kit_screen.dart';
+import '../kit/kit_scrollbar.dart' show KitScrollArea;
+import '../kit/kit_search_field.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_status_line.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
+import '../kit/kit_undo.dart';
+import '../kit/kit_viewer.dart';
+import '../kit/motion/kit_refresh.dart';
+import '../kit/scenes/states_scenes.dart';
+import '../widgets/file_preview.dart' show FilePreviewData;
+import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/reader_preferences.dart';
+import 'review_workspace.dart';
 
 /// Project file browser backed by `/file`, with name search (`/find/file`)
-/// and content viewer.
+/// and the kit's one viewer (map pages files, files-row-actions-sheet,
+/// files-file-viewer-sheet, files-changes-sheet).
 enum _FileSurface { files, symbols }
 
 typedef ProjectFileAttachment =
@@ -38,20 +61,19 @@ Future<String?> pushWorkingTreeReview(
   String? initialFile,
 }) {
   final copy = readerL10n(context);
-  return Navigator.of(context).push<String>(
-    MaterialPageRoute<String>(
-      builder: (_) => ReviewWorkspace(
-        initialScope: ReviewDiffScope.workingTree,
-        initialFile: initialFile,
-        handoff: handoff,
-        loadWorkingTreeDiffs: () async {
-          final repository = await controller.prepareActionRepository();
-          if (repository == null) {
-            throw ProductException(copy.readerUiReconnecting);
-          }
-          return repository.listVcsDiffs(VcsDiffMode.workingTree);
-        },
-      ),
+  return pushKitPage<String>(
+    context,
+    (_) => ReviewWorkspace(
+      initialScope: ReviewDiffScope.workingTree,
+      initialFile: initialFile,
+      handoff: handoff,
+      loadWorkingTreeDiffs: () async {
+        final repository = await controller.prepareActionRepository();
+        if (repository == null) {
+          throw ProductException(copy.readerUiReconnecting);
+        }
+        return repository.listVcsDiffs(VcsDiffMode.workingTree);
+      },
     ),
   );
 }
@@ -59,22 +81,29 @@ Future<String?> pushWorkingTreeReview(
 /// Legacy return path, used only when there is no handoff session: the
 /// review workspace pops with formatted text that goes to the host chat if
 /// one supplied a callback, and to the clipboard otherwise.
-Future<void> deliverReviewPrompt(
+///
+/// The clipboard path confirms itself through [KitCopy] (announced once, no
+/// snackbar). The chat path returns the confirmation for the caller to show
+/// in place (a [KitNotice]); null when there is nothing to say.
+Future<String?> deliverReviewPrompt(
   BuildContext context,
   String? prompt, [
   ProjectReviewPrompt? callback,
 ]) async {
-  if (prompt == null || prompt.trim().isEmpty) return;
+  if (prompt == null || prompt.trim().isEmpty) return null;
   final reviewPrompt = prompt.trim();
-  final messenger = ScaffoldMessenger.of(context);
   final copy = readerL10n(context);
   if (callback != null) {
     callback(reviewPrompt);
-    messenger.showSnackBar(SnackBar(content: Text(copy.readerUiCommentAdded)));
-    return;
+    return copy.readerUiCommentAdded;
   }
-  await Clipboard.setData(ClipboardData(text: reviewPrompt));
-  messenger.showSnackBar(SnackBar(content: Text(copy.readerUiCommentCopied)));
+  await KitCopy.copy(
+    context,
+    reviewPrompt,
+    announcement: copy.readerUiCommentCopied,
+    redact: false,
+  );
+  return null;
 }
 
 /// Lets a containing navigation shell offer Back to its active Files tab.
@@ -99,6 +128,11 @@ class FilesScreen extends StatefulWidget {
   final ValueListenable<int>? focusSearchSignal;
   final FilesBackController? backController;
 
+  /// The host's top bar, given the open folder's name (null at the project
+  /// root), so the folder is the title (map files: "current folder as the
+  /// title"). Null: the host draws its own bar, or none.
+  final KitTopBar Function(String? folder)? topBar;
+
   const FilesScreen({
     super.key,
     required this.controller,
@@ -107,10 +141,34 @@ class FilesScreen extends StatefulWidget {
     this.handoff,
     this.focusSearchSignal,
     this.backController,
+    this.topBar,
   });
 
   @override
   State<FilesScreen> createState() => _FilesScreenState();
+}
+
+/// A message about something the person just did here, shown in place
+/// above the list (the kit shell has no Scaffold for a snackbar).
+class _FilesNotice {
+  const _FilesNotice(this.message, {this.error = false});
+
+  final String message;
+  final bool error;
+}
+
+/// One opened file: its path, the line to show, the source the viewer
+/// reads (made once, so a rebuild does not reload it) and the content once
+/// it arrived (Save and Attach reuse it).
+class _ViewerSession {
+  _ViewerSession(this.path, this.initialLine);
+
+  final String path;
+  final int? initialLine;
+  FileContent? content;
+  late final KitViewerSource source;
+
+  String get name => path.split('/').last;
 }
 
 class _FilesScreenState extends State<FilesScreen> {
@@ -121,24 +179,32 @@ class _FilesScreenState extends State<FilesScreen> {
   String _path = '';
   String? _error;
   bool _loading = false;
-  bool _fileStatusesLoading = false;
+  DateTime? _loadStartedAt;
   String? _fileStatusesError;
-  String? _selectedPath;
-  int? _selectedLine;
   String? _searchOriginPath;
+  bool _showHidden = false;
+  _FilesNotice? _notice;
 
-  /// Width of the tree pane in the wide two-pane layout. Draggable on
-  /// desktop; the default is the width the split has always shipped with.
-  double _treeWidth = 340;
+  /// The file open in the detail pane (expanded windows only).
+  _ViewerSession? _viewer;
+  bool _viewerOpen = false;
+  bool _attaching = false;
+  bool _downloading = false;
+
+  /// Set while the screen clears the field itself, so the field's own
+  /// "cleared" callback does not start a second load.
+  bool _suppressSearch = false;
+
   final _search = TextEditingController();
   final _searchFocus = FocusNode(debugLabel: 'files-search');
-  Timer? _searchDebounce;
   ServerOperationsGateway? _repository;
   int _locationRevision = -1;
   int _controllerLocationRevision = -1;
   int _dataRefreshRevision = -1;
   int _requestGeneration = 0;
   int _fileStatusesGeneration = 0;
+
+  static const _maxViewerChars = 200000;
 
   bool _matchesFileScope({
     required String? profileID,
@@ -192,6 +258,15 @@ class _FilesScreenState extends State<FilesScreen> {
     if (mounted) setState(() {});
   }
 
+  void _clearSearchText() {
+    _suppressSearch = true;
+    try {
+      _search.clear();
+    } finally {
+      _suppressSearch = false;
+    }
+  }
+
   void _captureLocation() {
     _repository = widget.controller.repository;
     _locationRevision = _revisionOf(_repository);
@@ -217,7 +292,6 @@ class _FilesScreenState extends State<FilesScreen> {
     _controllerLocationRevision = widget.controller.locationRevision;
     _dataRefreshRevision = widget.controller.dataRefreshRevision;
     _requestGeneration++;
-    _searchDebounce?.cancel();
     _fileStatusesGeneration++;
     if (widget.controller.lifecycleSuspended) {
       setState(() {
@@ -248,18 +322,17 @@ class _FilesScreenState extends State<FilesScreen> {
       }
       return;
     }
-    _search.clear();
+    _clearSearchText();
     _searchOriginPath = null;
     setState(() {
       _entries = null;
       _path = '';
-      _selectedPath = null;
-      _selectedLine = null;
+      _viewer = null;
+      _notice = null;
       _symbols = null;
       _error = null;
       _fileStatuses = const {};
       _fileStatusesError = null;
-      _fileStatusesLoading = false;
     });
     if (_surface == _FileSurface.files) {
       _load('');
@@ -279,9 +352,8 @@ class _FilesScreenState extends State<FilesScreen> {
       path.split('/').where((component) => component.isNotEmpty).join('/');
 
   void _navigateTo(String path) {
-    _searchDebounce?.cancel();
     _searchOriginPath = null;
-    _search.clear();
+    _clearSearchText();
     _load(path);
   }
 
@@ -312,11 +384,9 @@ class _FilesScreenState extends State<FilesScreen> {
 
   void _selectSurface(_FileSurface surface) {
     if (_surface == surface) return;
-    _searchDebounce?.cancel();
-    _searchDebounce = null;
     _requestGeneration++;
     final origin = _searchOriginPath ?? _path;
-    _search.clear();
+    _clearSearchText();
     _searchOriginPath = null;
     setState(() {
       _surface = surface;
@@ -327,10 +397,19 @@ class _FilesScreenState extends State<FilesScreen> {
     if (surface == _FileSurface.files) unawaited(_load(origin));
   }
 
+  /// The field's settled query (KitSearchField waits for typing to settle,
+  /// and reports a clear at once).
+  void _onSearchChanged(String query) {
+    if (_suppressSearch) return;
+    if (_surface == _FileSurface.symbols) {
+      unawaited(_searchSymbols(query));
+    } else {
+      unawaited(_searchFiles(query));
+    }
+  }
+
   void _clearSearch() {
-    _searchDebounce?.cancel();
-    _searchDebounce = null;
-    _search.clear();
+    _clearSearchText();
     if (_surface == _FileSurface.symbols) {
       _requestGeneration++;
       setState(() {
@@ -345,12 +424,18 @@ class _FilesScreenState extends State<FilesScreen> {
     _load(origin);
   }
 
+  void _startLoading() {
+    _loading = true;
+    _loadStartedAt = DateTime.now();
+    _error = null;
+  }
+
   Future<void> _load(String path) async {
     path = _relativePath(path);
     final generation = ++_requestGeneration;
     setState(() {
-      _loading = true;
-      _error = null;
+      _startLoading();
+      _notice = null;
       // Keep the destination through errors so Retry opens the same folder.
       if (_path != path) _entries = null;
       _path = path;
@@ -390,8 +475,6 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _searchFiles(String q) async {
-    _searchDebounce?.cancel();
-    _searchDebounce = null;
     if (q.trim().isEmpty) {
       final origin = _searchOriginPath ?? _path;
       _searchOriginPath = null;
@@ -400,10 +483,7 @@ class _FilesScreenState extends State<FilesScreen> {
     }
     _searchOriginPath ??= _path;
     final generation = ++_requestGeneration;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(_startLoading);
     try {
       final api = await widget.controller.prepareActionTransport();
       if (!mounted || generation != _requestGeneration) return;
@@ -433,49 +513,11 @@ class _FilesScreenState extends State<FilesScreen> {
     }
   }
 
-  Future<void> _retryFileStatuses() async {
-    final profileID = widget.controller.profile?.id;
-    final locationRevision = widget.controller.locationRevision;
-    final repository = await widget.controller.prepareActionRepository();
-    if (!mounted ||
-        !_matchesFileScope(
-          profileID: profileID,
-          locationRevision: locationRevision,
-          repository: repository,
-        )) {
-      return;
-    }
-    if (repository == null) {
-      setState(() {
-        _fileStatusesError = readerL10n(context).readerUiReconnectingRetry;
-      });
-      return;
-    }
-    await _loadFileStatuses(repository);
-  }
-
   Future<void> _refreshFiles() => _searchFiles(_search.text);
 
-  void _scheduleFileSearch(String query) {
-    _searchDebounce?.cancel();
-    _requestGeneration++;
-    if (query.trim().isEmpty) {
-      unawaited(_searchFiles(query));
-      return;
-    }
-    setState(() {
-      _entries = null;
-      _loading = true;
-      _error = null;
-    });
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      _searchDebounce = null;
-      if (mounted && _surface == _FileSurface.files && _search.text == query) {
-        unawaited(_searchFiles(query));
-      }
-    });
-  }
-
+  /// Change marks load with every listing, so a failure is a condition on
+  /// the status line, not a second Try again beside the list's own (map
+  /// files: "two retries on failure").
   Future<void> _loadFileStatuses(ServerOperationsGateway repository) async {
     final generation = ++_fileStatusesGeneration;
     final profileID = widget.controller.profile?.id;
@@ -487,10 +529,6 @@ class _FilesScreenState extends State<FilesScreen> {
     )) {
       return;
     }
-    setState(() {
-      _fileStatusesLoading = true;
-      _fileStatusesError = null;
-    });
     try {
       final statuses = await repository.listFileStatuses();
       if (generation != _fileStatusesGeneration ||
@@ -502,6 +540,7 @@ class _FilesScreenState extends State<FilesScreen> {
         return;
       }
       setState(() {
+        _fileStatusesError = null;
         _fileStatuses = {
           for (final status in statuses)
             _relativePath(status.path): VersionControlFile(
@@ -526,23 +565,13 @@ class _FilesScreenState extends State<FilesScreen> {
             ? readerL10n(context).readerUiIndicatorsUnavailable
             : readerL10n(context).readerUiIndicatorsFailed;
       });
-    } finally {
-      if (generation == _fileStatusesGeneration &&
-          _matchesFileScope(
-            profileID: profileID,
-            locationRevision: locationRevision,
-            repository: repository,
-          )) {
-        setState(() => _fileStatusesLoading = false);
-      }
     }
   }
 
   Future<void> _searchSymbols(String query) async {
-    _searchDebounce?.cancel();
-    _searchDebounce = null;
     final value = query.trim();
     if (value.isEmpty) {
+      _requestGeneration++;
       setState(() {
         _symbols = null;
         _loading = false;
@@ -551,10 +580,7 @@ class _FilesScreenState extends State<FilesScreen> {
       return;
     }
     final generation = ++_requestGeneration;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(_startLoading);
     try {
       await widget.controller.prepareActionTransport();
       if (!mounted || generation != _requestGeneration) return;
@@ -575,58 +601,340 @@ class _FilesScreenState extends State<FilesScreen> {
     }
   }
 
-  void _scheduleSymbolSearch(String query) {
-    _searchDebounce?.cancel();
-    _searchDebounce = null;
-    final value = query.trim();
-    _requestGeneration++;
-    if (value.isEmpty) {
-      setState(() {
-        _symbols = null;
-        _loading = false;
-        _error = null;
-      });
+  // --- The viewer -------------------------------------------------------------
+
+  /// Opens a file in the kit's one viewer: beside the list where the window
+  /// shows two panes, otherwise as the viewer's own sheet or page.
+  void _openFile(FileNode node, {int? initialLine}) {
+    final session = _newSession(_relativePath(node.path), initialLine);
+    if (KitScreen.showsDetail(context)) {
+      setState(() => _viewer = session);
       return;
     }
-    setState(() {
-      _symbols = null;
-      _loading = true;
-      _error = null;
-    });
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      _searchDebounce = null;
-      if (!mounted ||
-          _surface != _FileSurface.symbols ||
-          _search.text.trim() != value) {
-        return;
-      }
-      _searchSymbols(value);
-    });
+    unawaited(_showViewer(session));
   }
 
-  void _openFile(FileNode node, {int? initialLine}) {
-    final path = _relativePath(node.path);
-    if (MediaQuery.sizeOf(context).width >= 900) {
-      setState(() {
-        _selectedPath = path;
-        _selectedLine = initialLine;
-      });
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _FileViewer(
-        controller: widget.controller,
-        path: path,
-        initialLine: initialLine,
-        onAttachFile: widget.onAttachFile,
-        onAddReference: widget.handoff == null
+  _ViewerSession _newSession(String path, int? initialLine) {
+    final session = _ViewerSession(path, initialLine);
+    session.source = KitViewerSource.load(() => _loadViewerContent(session));
+    return session;
+  }
+
+  Future<void> _showViewer(_ViewerSession session) async {
+    final preferences = ReaderPreferencesScope.maybeOf(context);
+    _viewerOpen = true;
+    try {
+      await showKitViewer(
+        context,
+        name: session.name,
+        path: _viewerPath(session),
+        source: session.source,
+        primary: _viewerPrimary(session),
+        more: _viewerMore(session, embedded: false),
+        wrap: preferences?.value.wrapCode,
+        onWrapChanged: preferences == null
             ? null
-            : () => _stageProjectFile(path, initialLine),
+            : (wrap) =>
+                  unawaited(saveReaderPreferences(context, wrapCode: wrap)),
+        viewerKey: const ValueKey('files-viewer'),
+      );
+    } finally {
+      _viewerOpen = false;
+    }
+  }
+
+  String _viewerPath(_ViewerSession session) => session.initialLine == null
+      ? session.path
+      : readerL10n(
+          context,
+        ).readerUiPathLine(session.path, session.initialLine!);
+
+  /// The one labelled action: Add to prompt when Files came from a
+  /// conversation, otherwise Attach when the host can take a file.
+  KitAction? _viewerPrimary(_ViewerSession session) {
+    final l10n = readerL10n(context);
+    if (widget.handoff != null) {
+      return KitAction(
+        key: const Key('project-file-add-reference'),
+        label: l10n.fileReference,
+        icon: AppIconography.link,
+        onPressed: () => _stageProjectFile(session.path, session.initialLine),
+      );
+    }
+    if (widget.onAttachFile != null) {
+      return KitAction(
+        key: const Key('project-file-attach'),
+        label: l10n.fileAttach,
+        icon: AppIconography.attach,
+        working: _attaching,
+        onPressed: () => unawaited(_attachFromViewer(session)),
+      );
+    }
+    return null;
+  }
+
+  List<KitMenuItem> _viewerMore(
+    _ViewerSession session, {
+    required bool embedded,
+  }) {
+    final l10n = readerL10n(context);
+    final change = _fileStatuses[session.path];
+    return [
+      if (widget.handoff != null && widget.onAttachFile != null)
+        KitMenuItem(
+          key: const Key('project-file-attach'),
+          // Named apart from "Add to prompt": this one uploads the file's
+          // contents with the message.
+          label: l10n.fileAttach,
+          icon: AppIconography.attach,
+          enabled: !_attaching,
+          onSelected: () => unawaited(_attachFromViewer(session)),
+        ),
+      KitMenuItem(
+        key: const Key('project-file-download'),
+        label: l10n.fileSave,
+        icon: AppIconography.download,
+        enabled: !_downloading,
+        onSelected: () => unawaited(_download(session)),
       ),
+      if (embedded)
+        KitMenuItem(
+          key: const Key('project-file-reload'),
+          label: l10n.fileReload,
+          icon: AppIconography.retry,
+          onSelected: () => setState(
+            () => _viewer = _newSession(session.path, session.initialLine),
+          ),
+        ),
+      if (change != null)
+        KitMenuItem(
+          key: const Key('project-file-review'),
+          label: l10n.readerUiOpenReview,
+          icon: AppIconography.review,
+          onSelected: () => unawaited(
+            _reviewFileChange(
+              FileNode(name: session.name, path: session.path, isDir: false),
+            ),
+          ),
+        ),
+      KitMenuItem.copy(
+        key: const Key('project-file-copy-path'),
+        label: l10n.readerUiCopyPath,
+        text: () => session.path,
+      ),
+    ];
+  }
+
+  /// Reads [path] from the server for the scope Files is in now. Null when
+  /// the server or project changed while it was read: nothing from the old
+  /// scope may land in the new one.
+  Future<FileContent?> _fetchScoped(String path) async {
+    final copy = readerL10n(context);
+    final profileID = widget.controller.profile?.id;
+    final locationRevision = widget.controller.locationRevision;
+    final initialApi = widget.controller.api;
+    final api = await widget.controller.prepareActionTransport();
+    if (api == null) throw ProductException(copy.readerUiDisconnected);
+    if ((initialApi != null && !identical(api, initialApi)) ||
+        !_matchesFileScope(
+          profileID: profileID,
+          locationRevision: locationRevision,
+          api: api,
+        )) {
+      return null;
+    }
+    final content = await api.fileContent(path);
+    if (!_matchesFileScope(
+      profileID: profileID,
+      locationRevision: locationRevision,
+      api: api,
+    )) {
+      return null;
+    }
+    return content;
+  }
+
+  Future<KitViewerContent> _loadViewerContent(_ViewerSession session) async {
+    final copy = readerL10n(context);
+    final content = await _fetchScoped(session.path);
+    if (content == null) throw ProductException(copy.filesViewerScopeChanged);
+    session.content = content;
+    return _viewerContent(session.name, content, session.initialLine);
+  }
+
+  Future<void> _attachFromViewer(_ViewerSession session) async {
+    final action = widget.onAttachFile;
+    if (action == null || _attaching) return;
+    final content = session.content;
+    if (content == null) return _attachFile(session.path);
+    setState(() => _attaching = true);
+    try {
+      await action(session.path, _exportData(session.path, content));
+      if (!mounted) return;
+      // Attached: back to the tree, which says where the file went.
+      if (_viewerOpen) await Navigator.of(context).maybePop();
+      if (!mounted) return;
+      setState(
+        () => _notice = _FilesNotice(
+          readerL10n(context).readerUiAttachedReturn(session.name),
+        ),
+      );
+    } catch (error) {
+      if (mounted) _fail(error);
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  Future<void> _download(_ViewerSession session) async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      final content = session.content ?? await _fetchScoped(session.path);
+      if (content == null || !mounted) return;
+      final data = _exportData(session.path, content);
+      final bytes = data.exportBytes;
+      if (bytes == null) return;
+      final savedPath = await FilePicker.saveFile(
+        dialogTitle: readerL10n(context).readerUiSaveNamed(data.name),
+        fileName: data.name,
+        bytes: bytes,
+      );
+      if (!mounted || savedPath == null) return;
+      setState(
+        () => _notice = _FilesNotice(
+          readerL10n(context).readerUiSavedDevice(data.name),
+        ),
+      );
+    } catch (error) {
+      if (mounted) _fail(error);
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  void _fail(Object error) => setState(
+    () => _notice = _FilesNotice(productErrorText(error), error: true),
+  );
+
+  static FilePreviewData _exportData(String path, FileContent content) =>
+      FilePreviewData(
+        name: path.split('/').last,
+        mimeType: content.mimeType,
+        bytes: content.isBinary ? content.bytes() : null,
+        text: content.isBinary ? null : content.content,
+      );
+
+  /// What the viewer shows for one file: the data only; drawing is the
+  /// kit's (KitViewer). Parsing stays in lib/domain and lib/platform.
+  static Future<KitViewerContent> _viewerContent(
+    String name,
+    FileContent content,
+    int? initialLine,
+  ) async {
+    final data = _exportData(name, content);
+    final bytes = data.bytes;
+    if (data.isRasterImage && bytes != null && bytes.isNotEmpty) {
+      return KitViewerContent.image(bytes, semanticsLabel: name);
+    }
+    final text = data.text;
+    if (text != null) {
+      var shown = text;
+      var truncated = false;
+      if (shown.length > _maxViewerChars) {
+        var end = _maxViewerChars;
+        final unit = shown.codeUnitAt(end - 1);
+        if (unit >= 0xD800 && unit <= 0xDBFF) end--;
+        shown = shown.substring(0, end);
+        truncated = true;
+      }
+      final ext = _extension(name);
+      final separator = data.separator;
+      if (separator != null && initialLine == null) {
+        final table = DelimitedText.parse(text, separator);
+        if (table.failure == null) {
+          return KitViewerContent.delimited(
+            table.rows,
+            original: text,
+            truncated: table.hasMore,
+          );
+        }
+      }
+      if (data.mimeType == 'image/svg+xml' && initialLine == null) {
+        final svg = StaticSvg.parse(text);
+        if (svg != null) {
+          return KitViewerContent.svg(svg.source, original: text);
+        }
+      }
+      if ((ext == 'md' || ext == 'markdown') && initialLine == null) {
+        return KitViewerContent.markdown(shown, truncated: truncated);
+      }
+      if (initialLine != null || _isCode(ext)) {
+        return KitViewerContent.code(
+          shown,
+          language: ext.isEmpty ? null : ext,
+          truncated: truncated,
+          initialLine: initialLine,
+        );
+      }
+      return KitViewerContent.text(shown, truncated: truncated);
+    }
+    if (data.mimeType == 'application/pdf' &&
+        bytes != null &&
+        bytes.isNotEmpty) {
+      try {
+        return await _pdfContent(bytes);
+      } catch (_) {
+        // No renderer here (or the file is refused): say what it is.
+      }
+    }
+    return KitViewerContent.binary(
+      mimeType: data.mimeType,
+      byteLength: data.byteLength,
     );
   }
+
+  /// Renders the first page to learn the page count, then each page only
+  /// while the viewer shows it (LocalPdf, one bounded request per page).
+  static Future<KitViewerContent> _pdfContent(Uint8List bytes) async {
+    final first = await LocalPdf.render(bytes, 0, LocalPdf.requestID());
+    final requests = <int, String>{};
+    KitPdfPage page(Uint8List png) {
+      final header = ByteData.sublistView(png);
+      return KitPdfPage(
+        bytes: png,
+        width: header.getUint32(16),
+        height: header.getUint32(20),
+      );
+    }
+
+    return KitViewerContent.pdf(
+      pageCount: first.pageCount.clamp(1, LocalPdf.maxPages),
+      renderPage: (index, _) async {
+        if (index == 0) return page(first.png);
+        final id = LocalPdf.requestID();
+        requests[index] = id;
+        try {
+          return page((await LocalPdf.render(bytes, index, id)).png);
+        } finally {
+          requests.remove(index);
+        }
+      },
+      cancelPage: (index) {
+        final id = requests.remove(index);
+        if (id != null) unawaited(LocalPdf.cancel(id));
+      },
+    );
+  }
+
+  static String _extension(String name) {
+    final dot = name.lastIndexOf('.');
+    return dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+  }
+
+  static bool _isCode(String ext) =>
+      _fileTypeIcon('x.$ext') == AppIconography.code ||
+      _fileTypeIcon('x.$ext') == AppIconography.dataObject;
 
   /// A plain project file staged as a reference: the agent is pointed at the
   /// path (and the line the user was reading), nothing is uploaded.
@@ -666,12 +974,24 @@ class _FilesScreenState extends State<FilesScreen> {
     final changes = _fileStatuses.values.toList()
       ..sort((a, b) => a.path.compareTo(b.path));
     if (changes.isEmpty) return;
-    final choice = await showModalBottomSheet<_ChangeChoice>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) =>
-          _ChangesSheet(changes: changes, canStage: widget.handoff != null),
+    final l10n = readerL10n(context);
+    final added = changes.fold<int>(0, (sum, file) => sum + file.additions);
+    final removed = changes.fold<int>(0, (sum, file) => sum + file.deletions);
+    final navigator = Navigator.of(context);
+    final choice = await showKitSheet<_ChangeChoice>(
+      context,
+      title: l10n.readerUiChanges,
+      subtitle: l10n.readerUiChangeSummary(changes.length, added, removed),
+      icon: AppIconography.review,
+      sheetKey: const ValueKey('files-changes-sheet'),
+      primary: KitAction(
+        key: const ValueKey('review-all-changes'),
+        label: l10n.readerUiReviewAll,
+        onPressed: () =>
+            navigator.pop(const _ChangeChoice(_ChangeAction.reviewAll)),
+      ),
+      body: (_) =>
+          _ChangesList(changes: changes, canStage: widget.handoff != null),
     );
     if (!mounted || choice == null) return;
     switch (choice.action) {
@@ -701,30 +1021,35 @@ class _FilesScreenState extends State<FilesScreen> {
     }
   }
 
-  /// Non-modal confirmation shared by every Files add-to-prompt affordance.
+  /// Shared by every Files add-to-prompt affordance: a staged reference is
+  /// done with Undo; a duplicate or a full tray is said in place.
   void _stageReference(ReviewReference reference) {
     final handoff = widget.handoff;
     if (handoff == null) return;
     final outcome = handoff.stage(reference);
     if (!mounted) return;
-    final message = switch (outcome) {
-      ReviewStageOutcome.staged => readerL10n(
-        context,
-      ).readerUiReferenceAdded(reference.label),
-      ReviewStageOutcome.duplicate => readerL10n(
-        context,
-      ).readerUiReferenceDuplicate(reference.label),
-      ReviewStageOutcome.full => readerL10n(
-        context,
-      ).readerUiReferenceFull(ReviewHandoffStore.maxPerSession),
-    };
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        key: const Key('files-staged-notice'),
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    final l10n = readerL10n(context);
+    switch (outcome) {
+      case ReviewStageOutcome.staged:
+        showKitUndo(
+          context,
+          key: const Key('files-staged-notice'),
+          message: l10n.readerUiReferenceAdded(reference.label),
+          onUndo: () => handoff.store.remove(handoff.sessionID, reference.id),
+        );
+      case ReviewStageOutcome.duplicate:
+        setState(
+          () => _notice = _FilesNotice(
+            l10n.readerUiReferenceDuplicate(reference.label),
+          ),
+        );
+      case ReviewStageOutcome.full:
+        setState(
+          () => _notice = _FilesNotice(
+            l10n.readerUiReferenceFull(ReviewHandoffStore.maxPerSession),
+          ),
+        );
+    }
   }
 
   Future<void> _reviewChanges() async {
@@ -733,9 +1058,7 @@ class _FilesScreenState extends State<FilesScreen> {
       widget.controller,
       handoff: widget.handoff,
     );
-    if (mounted) {
-      await deliverReviewPrompt(context, prompt, widget.onReviewPrompt);
-    }
+    if (mounted) await _deliver(prompt);
   }
 
   Future<void> _reviewFileChange(FileNode node) async {
@@ -745,10 +1068,45 @@ class _FilesScreenState extends State<FilesScreen> {
       handoff: widget.handoff,
       initialFile: node.path,
     );
-    if (mounted) {
-      await deliverReviewPrompt(context, prompt, widget.onReviewPrompt);
+    if (mounted) await _deliver(prompt);
+  }
+
+  Future<void> _deliver(String? prompt) async {
+    final said = await deliverReviewPrompt(
+      context,
+      prompt,
+      widget.onReviewPrompt,
+    );
+    if (said != null && mounted) {
+      setState(() => _notice = _FilesNotice(said));
     }
   }
+
+  /// Attaches a file straight from the tree. The viewer's Attach does the
+  /// same thing once it has the content; this fetches the content first so
+  /// the menu does not need the viewer open.
+  Future<void> _attachFile(String path) async {
+    final action = widget.onAttachFile;
+    if (action == null || _attaching) return;
+    setState(() => _attaching = true);
+    try {
+      final content = await _fetchScoped(path);
+      if (content == null) return;
+      await action(path, _exportData(path, content));
+      if (!mounted) return;
+      setState(
+        () => _notice = _FilesNotice(
+          readerL10n(context).readerUiAttached(path.split('/').last),
+        ),
+      );
+    } catch (error) {
+      if (mounted) _fail(error);
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  // --- Layout -----------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -763,552 +1121,382 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  Widget _body(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n =
-        Localizations.of<AppLocalizations>(context, AppLocalizations) ??
-        lookupAppLocalizations(Localizations.localeOf(context));
-    final readerPreferences = ReaderPreferencesScope.maybeOf(context);
-    final crumbs = _path.split('/').where((c) => c.isNotEmpty).toList();
+  List<String> get _crumbs =>
+      _path.split('/').where((c) => c.isNotEmpty).toList();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            key: const ValueKey('files-search-field'),
-            controller: _search,
-            focusNode: _searchFocus,
-            decoration: InputDecoration(
-              isDense: true,
-              prefixIcon: widget.controller.capabilities.workspaceSymbols
-                  ? PopupMenuButton<_FileSurface>(
-                      key: const ValueKey('file-surface-selector'),
-                      tooltip: _surface == _FileSurface.symbols
-                          ? l10n.readerUiSearchSymbols
-                          : l10n.readerUiSearchFiles,
-                      initialValue: _surface,
-                      onSelected: _selectSurface,
-                      itemBuilder: (context) => [
-                        for (final surface in _FileSurface.values)
-                          CheckedPopupMenuItem(
-                            value: surface,
-                            checked: _surface == surface,
-                            child: Text(
-                              surface == _FileSurface.files
-                                  ? l10n.readerUiFiles
-                                  : l10n.readerUiSymbols,
-                            ),
-                          ),
-                      ],
-                      icon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _surface == _FileSurface.symbols
-                                ? Icons.code_rounded
-                                : AppIconography.search,
-                            size: 20,
-                          ),
-                          const Icon(Icons.arrow_drop_down, size: 16),
-                        ],
-                      ),
-                    )
-                  : const Icon(AppIconography.search, size: 20),
-              hintText: _surface == _FileSurface.symbols
-                  ? readerL10n(context).readerUiSearchSymbols
-                  : readerL10n(context).readerUiSearchFiles,
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_search.text.isNotEmpty)
-                    IconButton(
-                      tooltip: _surface == _FileSurface.symbols
-                          ? readerL10n(context).readerUiClearSymbolSearch
-                          : readerL10n(context).readerUiClearFileSearch,
-                      icon: Icon(
-                        AppIconography.close,
-                        size: 18,
-                        semanticLabel: _surface == _FileSurface.symbols
-                            ? readerL10n(context).readerUiClearSymbolSearch
-                            : readerL10n(context).readerUiClearFileSearch,
-                      ),
-                      onPressed: _clearSearch,
-                    ),
-                  if (_surface == _FileSurface.files &&
-                      readerPreferences != null)
-                    PopupMenuButton<bool>(
-                      tooltip: l10n.readerUiFileOrder,
-                      initialValue: readerPreferences.value.sourceFirst,
-                      onSelected: (sourceFirst) => saveReaderPreferences(
-                        context,
-                        sourceFirst: sourceFirst,
-                      ),
-                      itemBuilder: (context) => [
-                        CheckedPopupMenuItem(
-                          value: false,
-                          checked: !readerPreferences.value.sourceFirst,
-                          child: Text(l10n.readerUiServerOrder),
-                        ),
-                        CheckedPopupMenuItem(
-                          value: true,
-                          checked: readerPreferences.value.sourceFirst,
-                          child: Text(l10n.readerUiSourceFirst),
-                        ),
-                        PopupMenuItem<bool>(
-                          enabled: false,
-                          child: Text(l10n.readerUiOrderHint),
-                        ),
-                      ],
-                      icon: Icon(
-                        Icons.sort_rounded,
-                        color: readerPreferences.value.sourceFirst
-                            ? theme.colorScheme.primary
-                            : null,
-                      ),
-                    ),
-                ],
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+  Widget _body(BuildContext context) {
+    final l10n = readerL10n(context);
+    final crumbs = _crumbs;
+    final viewer = _viewer;
+    final screen = KitScreen.twoPane(
+      listPaneKey: const ValueKey('files-list-pane'),
+      detailPaneKey: const ValueKey('files-detail-pane'),
+      search: _searchField(l10n),
+      status: _fileStatusesError == null
+          ? null
+          : KitStatus(
+              kind: KitStatusKind.info,
+              id: 'files-change-marks',
+              icon: AppIconography.info,
+              message: _fileStatusesError!,
             ),
-            onSubmitted: _surface == _FileSurface.symbols
-                ? _searchSymbols
-                : _searchFiles,
-            onChanged: _surface == _FileSurface.symbols
-                ? _scheduleSymbolSearch
-                : _scheduleFileSearch,
-            textInputAction: TextInputAction.search,
+      loading: _loading,
+      loadingLabel: _surface == _FileSurface.symbols
+          ? l10n.filesSearching
+          : l10n.filesLoadingFolder,
+      list: _listPane(context, l10n, crumbs),
+      detail: viewer == null ? null : _embeddedViewer(viewer),
+      emptyDetail: KitStateView(
+        key: const ValueKey('files-detail-empty'),
+        icon: AppIconography.fileText,
+        title: l10n.readerUiSelectFile,
+      ),
+    );
+    final topBar = widget.topBar?.call(crumbs.isEmpty ? null : crumbs.last);
+    if (topBar == null) return screen;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        topBar,
+        Expanded(child: screen),
+      ],
+    );
+  }
+
+  Widget _embeddedViewer(_ViewerSession session) {
+    final preferences = ReaderPreferencesScope.maybeOf(context);
+    return KitViewer(
+      key: ValueKey('files-viewer-${session.path}:${session.initialLine}'),
+      name: session.name,
+      path: _viewerPath(session),
+      source: session.source,
+      primary: _viewerPrimary(session),
+      more: _viewerMore(session, embedded: true),
+      wrap: preferences?.value.wrapCode,
+      onWrapChanged: preferences == null
+          ? null
+          : (wrap) => unawaited(saveReaderPreferences(context, wrapCode: wrap)),
+      viewerKey: const ValueKey('files-viewer'),
+    );
+  }
+
+  KitSearchField _searchField(AppLocalizations l10n) {
+    final preferences = ReaderPreferencesScope.maybeOf(context);
+    final sourceFirst = preferences?.value.sourceFirst ?? false;
+    final symbols = _surface == _FileSurface.symbols;
+    final String? activeFilter;
+    final VoidCallback? clearFilter;
+    if (symbols) {
+      activeFilter = l10n.readerUiSymbols;
+      clearFilter = () => _selectSurface(_FileSurface.files);
+    } else if (sourceFirst) {
+      activeFilter = l10n.readerUiSourceFirst;
+      clearFilter = () =>
+          unawaited(saveReaderPreferences(context, sourceFirst: false));
+    } else if (_showHidden) {
+      activeFilter = l10n.filesShowHidden;
+      clearFilter = () => setState(() => _showHidden = false);
+    } else {
+      activeFilter = null;
+      clearFilter = null;
+    }
+    return KitSearchField(
+      fieldKey: const ValueKey('files-search-field'),
+      filterKey: const ValueKey('file-surface-selector'),
+      controller: _search,
+      focusNode: _searchFocus,
+      label: symbols ? l10n.readerUiSearchSymbols : l10n.readerUiSearchFiles,
+      onChanged: _onSearchChanged,
+      onSubmitted: _onSearchChanged,
+      activeFilter: activeFilter,
+      onClearFilter: clearFilter,
+      filters: [
+        if (widget.controller.capabilities.workspaceSymbols) ...[
+          KitMenuItem(
+            key: const ValueKey('file-surface-files'),
+            label: l10n.readerUiFiles,
+            group: 'surface',
+            checked: !symbols,
+            onSelected: () => _selectSurface(_FileSurface.files),
           ),
-        ),
-        if (_surface == _FileSurface.files && _path.isNotEmpty)
-          SizedBox(
-            width: double.infinity,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  ActionChip(
-                    label: Text(l10n.filesProjectRoot),
-                    onPressed: () => _navigateTo(''),
-                  ),
-                  for (var i = 1; i <= crumbs.length; i++)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 6),
-                      child: i == crumbs.length
-                          ? Semantics(
-                              selected: true,
-                              child: Chip(
-                                label: Text(
-                                  crumbs[i - 1],
-                                  semanticsLabel: l10n.filesCurrentFolder(
-                                    crumbs[i - 1],
-                                  ),
-                                ),
-                              ),
-                            )
-                          : ActionChip(
-                              label: Text(
-                                crumbs[i - 1],
-                                semanticsLabel: l10n.filesOpenFolder(
-                                  crumbs[i - 1],
-                                ),
-                              ),
-                              onPressed: () =>
-                                  _navigateTo(crumbs.take(i).join('/')),
-                            ),
-                    ),
-                ],
+          KitMenuItem(
+            key: const ValueKey('file-surface-symbols'),
+            label: l10n.readerUiSymbols,
+            group: 'surface',
+            checked: symbols,
+            onSelected: () => _selectSurface(_FileSurface.symbols),
+          ),
+        ],
+        if (!symbols && preferences != null) ...[
+          KitMenuItem(
+            key: const ValueKey('files-order-server'),
+            label: l10n.readerUiServerOrder,
+            group: 'order',
+            checked: !sourceFirst,
+            onSelected: () =>
+                unawaited(saveReaderPreferences(context, sourceFirst: false)),
+          ),
+          KitMenuItem(
+            key: const ValueKey('files-order-source-first'),
+            label: l10n.readerUiSourceFirst,
+            group: 'order',
+            checked: sourceFirst,
+            onSelected: () =>
+                unawaited(saveReaderPreferences(context, sourceFirst: true)),
+          ),
+        ],
+        if (!symbols)
+          KitMenuItem(
+            key: const ValueKey('files-show-hidden'),
+            label: l10n.filesShowHidden,
+            icon: AppIconography.hidden,
+            checked: _showHidden,
+            onSelected: () => setState(() => _showHidden = !_showHidden),
+          ),
+      ],
+    );
+  }
+
+  Widget _listPane(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<String> crumbs,
+  ) {
+    final tokens = KitTokens.of(context);
+    final files = _surface == _FileSurface.files;
+    final notice = _notice;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (files && crumbs.isNotEmpty && _search.text.isEmpty)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              end: tokens.gutter,
+              top: tokens.space2,
+            ),
+            child: KitBreadcrumb(
+              breadcrumbKey: const ValueKey('files-breadcrumb'),
+              rootLabel: l10n.filesProjectRoot,
+              segments: crumbs,
+              onSelected: (index) => _navigateTo(
+                index < 0 ? '' : crumbs.take(index + 1).join('/'),
               ),
             ),
           ),
         // UX-102: after a run the question is "what changed?", so the
-        // changed set stays one tap away in a quiet row above the tree.
-        if (_surface == _FileSurface.files && _fileStatuses.isNotEmpty)
-          _ChangesCard(
-            changes: _fileStatuses.values,
-            onOpen: () => unawaited(_openChanges()),
+        // changed set stays one tap away above the tree.
+        if (files && _fileStatuses.isNotEmpty)
+          Padding(
+            padding: EdgeInsetsDirectional.only(top: tokens.space2),
+            child: KitRowGroup(
+              children: [
+                KitRow(
+                  key: const ValueKey('files-changes-card'),
+                  leading: KitRow.icon(context, AppIconography.review),
+                  title: l10n.readerUiChangedCount(_fileStatuses.length),
+                  trailing: const KitChevron(),
+                  onTap: () => unawaited(_openChanges()),
+                ),
+              ],
+            ),
           ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final files = _fileList(theme);
-              if (constraints.maxWidth < 900) return files;
-              final maxTree = constraints.maxWidth - 320;
-              final treeWidth = _treeWidth.clamp(
-                240.0,
-                maxTree < 240 ? 240.0 : maxTree,
-              );
-              return Row(
-                children: [
-                  SizedBox(width: treeWidth, child: files),
-                  _SplitHandle(
-                    // Accumulate on the stored width, not the one this build
-                    // captured: several drag updates can land before the
-                    // next frame, and each must add to the last.
-                    onDrag: (delta) => setState(
-                      () => _treeWidth = (_treeWidth + delta).clamp(
-                        240.0,
-                        maxTree < 240 ? 240.0 : maxTree,
-                      ),
-                    ),
+        if (notice != null)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              end: tokens.gutter,
+              top: tokens.space2,
+            ),
+            child: notice.error
+                ? KitNotice.error(
+                    key: const ValueKey('files-notice'),
+                    message: notice.message,
+                  )
+                : KitNotice(
+                    key: const ValueKey('files-notice'),
+                    message: notice.message,
+                    tone: AppStatusTone.ok,
+                    onDismiss: () => setState(() => _notice = null),
                   ),
-                  Expanded(
-                    child: _selectedPath == null
-                        ? Center(
-                            child: Text(
-                              readerL10n(context).readerUiSelectFile,
-                              style: TextStyle(color: AppTheme.mutedOf(theme)),
-                            ),
-                          )
-                        : _FileViewer(
-                            key: ValueKey('$_selectedPath:$_selectedLine'),
-                            controller: widget.controller,
-                            path: _selectedPath!,
-                            initialLine: _selectedLine,
-                            embedded: true,
-                            onAttachFile: widget.onAttachFile,
-                            onAddReference: widget.handoff == null
-                                ? null
-                                : () => _stageProjectFile(
-                                    _selectedPath!,
-                                    _selectedLine,
-                                  ),
-                          ),
-                  ),
-                ],
-              );
-            },
           ),
-        ),
+        Expanded(child: files ? _fileList(l10n) : _symbolList(l10n)),
       ],
     );
   }
 
-  Widget _fileList(ThemeData theme) {
-    if (_surface == _FileSurface.symbols) return _symbolList(theme);
-    final content = _fileListContent(theme);
-    if (_fileStatusesError == null) return content;
-    return Column(
-      children: [
-        _FileStatusNotice(
-          message: _fileStatusesError!,
-          loading: _fileStatusesLoading,
-          onRetry: _fileStatusesLoading ? null : _retryFileStatuses,
-        ),
-        Expanded(child: content),
-      ],
-    );
-  }
+  /// A first load with nothing to show yet; after 8 s it says it is still
+  /// waiting and offers Try again (STATE-5).
+  Widget _waiting(String title, Future<void> Function() retry) => KitStateView(
+    key: const ValueKey('files-loading'),
+    icon: AppIconography.waiting,
+    title: title,
+    since: _loadStartedAt,
+    onSlow: [
+      KitAction(
+        key: const ValueKey('files-slow-retry'),
+        label: readerL10n(context).commonRetry,
+        onPressed: () => unawaited(retry()),
+      ),
+    ],
+  );
 
-  Widget _fileListContent(ThemeData theme) {
-    final entries = _displayEntries();
+  Widget _fileList(AppLocalizations l10n) {
     if (_loading && _entries == null) {
-      return const LoadingList(rows: 8);
+      return _waiting(l10n.filesLoadingFolder, _refreshFiles);
     }
     if (_error != null) {
       return KitRefresh(
         onRefresh: _refreshFiles,
-        child: _loadFailed(
-          readerL10n(context).filesLoadFailedTitle,
-          _error!,
-          _refreshFiles,
-        ),
+        child: _loadFailed(l10n.filesLoadFailedTitle, _error!, _refreshFiles),
       );
     }
+    final hidden = <FileNode>[];
+    final entries = _displayEntries(hidden);
     if (_entries != null && entries.isEmpty) {
       final searching = _search.text.isNotEmpty;
+      final onlyHidden = !searching && hidden.isNotEmpty;
       return KitRefresh(
         onRefresh: _refreshFiles,
         // An empty folder is the open folder; a filter that matched nothing
         // is the magnifier (one drawing per kind of state).
         child: KitStateView(
           key: ValueKey(searching ? 'files-no-match' : 'files-empty-folder'),
-          icon: Icons.folder_off_outlined,
+          icon: AppIconography.folderOpen,
           illustration: searching
               ? const StatesSearchScene()
               : const StatesFolderScene(),
-          title: searching
-              ? readerL10n(context).readerUiNoFiles
-              : readerL10n(context).readerUiEmptyFolder,
+          title: searching ? l10n.readerUiNoFiles : l10n.readerUiEmptyFolder,
           body: searching
-              ? readerL10n(context).readerUiTryFileName
-              : readerL10n(context).readerUiPullRefresh,
+              ? l10n.readerUiTryFileName
+              : onlyHidden
+              ? l10n.filesOnlyHidden
+              : l10n.readerUiPullRefresh,
+          primary: onlyHidden
+              ? KitAction(
+                  key: const ValueKey('files-show-hidden-action'),
+                  label: l10n.filesShowHidden,
+                  onPressed: () => setState(() => _showHidden = true),
+                )
+              : searching
+              ? null
+              : KitAction(
+                  key: const ValueKey('files-refresh'),
+                  label: l10n.fileReload,
+                  onPressed: () => unawaited(_refreshFiles()),
+                ),
         ),
       );
     }
     return KitRefresh(
       onRefresh: _refreshFiles,
-      child: DesktopScrollbarArea(
-        builder: (scrollController) => ListView.builder(
+      child: KitScrollArea(
+        builder: (scrollController) => ListView.separated(
           controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.paddingOf(context).bottom + 12,
+          padding: EdgeInsetsDirectional.only(
+            top: KitTokens.of(context).space2,
+            bottom: KitScreen.endPadding(context),
           ),
           itemCount: entries.length,
-          itemBuilder: (context, i) {
-            final node = entries[i];
-            final change = node.isDir ? null : _fileStatuses[node.path];
-            final descendantChanges = node.isDir
-                ? _fileStatuses.keys
-                      .where((path) => path.startsWith('${node.path}/'))
-                      .length
-                : 0;
-            final detail = _fileDetail(node, change, descendantChanges);
-            return ContextMenuRegion(
-              actions: () => _fileRowActions(node, change),
-              child: ListTile(
-                key: ValueKey('project-file-${node.path}'),
-                minTileHeight: 56,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                minLeadingWidth: 24,
-                horizontalTitleGap: 12,
-                selected: node.path == _selectedPath,
-                leading: Icon(
-                  node.isDir
-                      ? AppIconography.files
-                      : change?.status == 'deleted'
-                      ? AppIconography.removeCircle
-                      : _fileTypeIcon(node.name),
-                  size: 20,
-                  color: change?.status == 'deleted'
-                      ? theme.colorScheme.error
-                      : AppTheme.mutedOf(theme),
-                ),
-                title: Text(
-                  node.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: detail == null
-                    ? null
-                    : Text(
-                        detail,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                onTap: change?.status == 'deleted'
-                    ? () => unawaited(_reviewFileChange(node))
-                    : () {
-                        if (node.isDir) {
-                          _navigateTo(node.path);
-                        } else {
-                          _openFile(node);
-                        }
-                      },
-                // The visible door to the row's actions. Long press and right
-                // click stay as accelerators, but Attach, Add reference, Open
-                // review and Copy path must not be reachable only by a
-                // gesture nobody is told about (UX plan 5.8, item 2).
-                trailing: IconButton(
-                  key: ValueKey('project-file-actions-${node.path}'),
-                  tooltip: readerL10n(
-                    context,
-                  ).gestureEquivFileRowActions(node.name),
-                  color: AppTheme.mutedOf(theme),
-                  onPressed: () => unawaited(_showFileRowActions(node, change)),
-                  icon: const Icon(AppIconography.more, size: 20),
-                ),
-                // Touch accelerator for the same sheet the trailing button
-                // opens.
-                onLongPress: () => unawaited(_showFileRowActions(node, change)),
-              ),
-            );
-          },
+          separatorBuilder: (_, _) =>
+              const KitDivider(inset: KitDividerInset.text),
+          itemBuilder: (context, i) => _fileRow(context, l10n, entries[i]),
         ),
       ),
     );
   }
 
-  /// The row's actions as a bottom sheet — the same list the desktop context
-  /// menu shows, so a long press and a right click never disagree.
-  Future<void> _showFileRowActions(
-    FileNode node,
-    VersionControlFile? change,
-  ) async {
-    final actions = _fileRowActions(node, change);
-    if (actions.isEmpty) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  key: const ValueKey('file-row-actions-sheet'),
-                  dense: true,
-                  leading: Icon(
-                    node.isDir
-                        ? AppIconography.files
-                        : _fileTypeIcon(node.name),
-                  ),
-                  title: Text(
-                    node.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    _relativePath(node.path),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Divider(height: 1),
-                for (final action in actions)
-                  ListTile(
-                    key: action.menuKey,
-                    leading: Icon(
-                      action.icon,
-                      color: action.destructive
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(
-                      action.label,
-                      style: action.destructive
-                          ? TextStyle(color: theme.colorScheme.error)
-                          : null,
-                    ),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      action.onSelected();
-                    },
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+  Widget _fileRow(BuildContext context, AppLocalizations l10n, FileNode node) {
+    final change = node.isDir ? null : _fileStatuses[node.path];
+    final deleted = change?.status == 'deleted';
+    final descendantChanges = node.isDir
+        ? _fileStatuses.keys
+              .where((path) => path.startsWith('${node.path}/'))
+              .length
+        : 0;
+    final detail = _fileDetail(node, change, descendantChanges);
+    return KitRow(
+      key: ValueKey('project-file-${node.path}'),
+      leading: KitRow.icon(
+        context,
+        node.isDir
+            ? AppIconography.files
+            : deleted
+            ? AppIconography.removeCircle
+            : _fileTypeIcon(node.name),
+      ),
+      title: node.name,
+      titleMaxLines: 2,
+      supporting: detail == null ? null : TextSpan(text: detail),
+      supportingMaxLines: 2,
+      selected: node.path == _viewer?.path,
+      trailing: node.isDir ? const KitChevron() : null,
+      // Long-press, right-click and the keyboard open the row's menu; its
+      // items are also the row's semantic actions (KIT-28).
+      menu: _fileRowMenu(l10n, node, change),
+      menuLabel: l10n.gestureEquivFileRowActions(node.name),
+      onTap: deleted
+          ? () => unawaited(_reviewFileChange(node))
+          : () {
+              if (node.isDir) {
+                _navigateTo(node.path);
+              } else {
+                _openFile(node);
+              }
+            },
     );
   }
 
-  /// The desktop right-click menu for a file row. Every entry is something
-  /// the row already offers by tap or by the viewer it opens — the menu just
-  /// removes the round trip.
-  List<ContextMenuAction> _fileRowActions(
+  /// The row's rarer actions: the same list on a long press, a right click
+  /// and the context-menu key. Opening is the row's tap, so it is not here.
+  List<KitMenuItem> _fileRowMenu(
+    AppLocalizations l10n,
     FileNode node,
     VersionControlFile? change,
   ) {
     final deleted = change?.status == 'deleted';
     final path = _relativePath(node.path);
     return [
-      if (node.isDir && !deleted)
-        ContextMenuAction(
-          menuKey: const ValueKey('file-menu-open'),
-          label: readerL10n(context).readerUiOpenFolder,
-          icon: AppIconography.folderOpen,
-          onSelected: () => _navigateTo(node.path),
-        )
-      else if (!deleted) ...[
-        ContextMenuAction(
-          menuKey: const ValueKey('file-menu-open'),
-          label: readerL10n(context).readerUiOpen,
-          icon: AppIconography.externalLink,
-          onSelected: () => _openFile(node),
+      if (!node.isDir && !deleted && widget.onAttachFile != null)
+        KitMenuItem(
+          key: const ValueKey('file-menu-attach'),
+          label: l10n.readerUiAttachPrompt,
+          icon: AppIconography.attach,
+          onSelected: () => unawaited(_attachFile(path)),
         ),
-        if (widget.onAttachFile != null)
-          ContextMenuAction(
-            menuKey: const ValueKey('file-menu-attach'),
-            label: readerL10n(context).readerUiAttachPrompt,
-            icon: AppIconography.attach,
-            onSelected: () => unawaited(_attachFile(path)),
-          ),
-        if (widget.handoff != null)
-          ContextMenuAction(
-            menuKey: const ValueKey('file-menu-reference'),
-            label: readerL10n(context).readerUiAddReference,
-            icon: Icons.add_link_rounded,
-            onSelected: () => _stageProjectFile(path, null),
-          ),
-      ],
+      if (!node.isDir && !deleted && widget.handoff != null)
+        KitMenuItem(
+          key: const ValueKey('file-menu-reference'),
+          label: l10n.readerUiAddReference,
+          icon: AppIconography.link,
+          onSelected: () => _stageProjectFile(path, null),
+        ),
       if (change != null)
-        ContextMenuAction(
-          menuKey: const ValueKey('file-menu-review'),
-          label: readerL10n(context).readerUiOpenReview,
+        KitMenuItem(
+          key: const ValueKey('file-menu-review'),
+          label: l10n.readerUiOpenReview,
           icon: AppIconography.review,
           onSelected: () => unawaited(_reviewFileChange(node)),
         ),
-      ContextMenuAction(
-        menuKey: const ValueKey('file-menu-copy-path'),
-        label: readerL10n(context).readerUiCopyPath,
-        icon: AppIcons.copy,
-        onSelected: () => unawaited(_copyPath(path)),
+      KitMenuItem.copy(
+        key: const ValueKey('file-menu-copy-path'),
+        label: l10n.readerUiCopyPath,
+        text: () => path,
+      ),
+      KitMenuItem.copy(
+        key: const ValueKey('file-menu-copy-name'),
+        label: l10n.filesCopyName,
+        icon: AppIconography.textShort,
+        text: () => node.name,
       ),
     ];
-  }
-
-  /// Attaches a file straight from the tree. The viewer's Attach button does
-  /// the same thing once it has the content; this fetches the content first
-  /// so the menu does not need the viewer open.
-  Future<void> _attachFile(String path) async {
-    final copy = readerL10n(context);
-    final action = widget.onAttachFile;
-    if (action == null) return;
-    final profileID = widget.controller.profile?.id;
-    final locationRevision = widget.controller.locationRevision;
-    final initialApi = widget.controller.api;
-    try {
-      final api = await widget.controller.prepareActionTransport();
-      if (api == null) {
-        throw ProductException(copy.readerUiDisconnected);
-      }
-      if ((initialApi != null && !identical(api, initialApi)) ||
-          !_matchesFileScope(
-            profileID: profileID,
-            locationRevision: locationRevision,
-            api: api,
-          )) {
-        return;
-      }
-      final content = await api.fileContent(path);
-      if (!_matchesFileScope(
-        profileID: profileID,
-        locationRevision: locationRevision,
-        api: api,
-      )) {
-        return;
-      }
-      await action(
-        path,
-        FilePreviewData(
-          name: path.split('/').last,
-          mimeType: content.mimeType,
-          bytes: content.isBinary ? content.bytes() : null,
-          text: content.isBinary ? null : content.content,
-        ),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(copy.readerUiAttached(path.split('/').last))),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      showProductError(context, error);
-    }
-  }
-
-  Future<void> _copyPath(String path) async {
-    await Clipboard.setData(ClipboardData(text: path));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(readerL10n(context).readerUiCopiedPath(path))),
-    );
   }
 
   /// Type-aware glyphs so a directory scans by kind, matching the developer
   /// file browsers cited in docs/design-inspiration.md.
   static IconData _fileTypeIcon(String name) {
-    final dot = name.lastIndexOf('.');
-    final ext = dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
-    return switch (ext) {
+    return switch (_extension(name)) {
       'dart' ||
       'js' ||
       'ts' ||
@@ -1350,7 +1538,10 @@ class _FilesScreenState extends State<FilesScreen> {
     };
   }
 
-  List<FileNode> _displayEntries() {
+  /// The listing as shown: deleted files added back where they were, dot
+  /// entries left out unless Show hidden files is on (collected into
+  /// [hidden] so an all-hidden folder can say so), and the reader's order.
+  List<FileNode> _displayEntries(List<FileNode> hidden) {
     final entries = [...?_entries];
     final paths = entries.map((node) => node.path).toSet();
     final searchMode = _searchOriginPath != null;
@@ -1384,9 +1575,13 @@ class _FilesScreenState extends State<FilesScreen> {
         );
       }
     }
+    if (!_showHidden && !searchMode) {
+      hidden.addAll(entries.where((entry) => entry.name.startsWith('.')));
+      entries.removeWhere((entry) => entry.name.startsWith('.'));
+    }
     if (ReaderPreferencesScope.maybeOf(context)?.value.sourceFirst == true) {
       // Stable partition: the server's order remains intact within each group.
-      // Generated and hidden entries remain visible, including deleted files.
+      // Generated entries remain visible, including deleted files.
       return [
         ...entries.where((entry) => !_isGeneratedEntry(entry)),
         ...entries.where(_isGeneratedEntry),
@@ -1419,6 +1614,8 @@ class _FilesScreenState extends State<FilesScreen> {
         name.endsWith('.map');
   }
 
+  /// The row's second line: where a search result lives, and its change
+  /// mark in words (or how many files changed inside a folder).
   String? _fileDetail(
     FileNode node,
     VersionControlFile? change,
@@ -1426,7 +1623,7 @@ class _FilesScreenState extends State<FilesScreen> {
   ) {
     final details = <String>[];
     if (_search.text.isNotEmpty && node.path != node.name) {
-      details.add(node.path);
+      details.add(KitBidi.ltr(node.path));
     }
     if (change != null) {
       details.add(_fileStatusLabel(context, change.status));
@@ -1465,69 +1662,64 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  Widget _symbolList(ThemeData theme) {
+  Widget _symbolList(AppLocalizations l10n) {
+    Future<void> retry() => _searchSymbols(_search.text);
     if (_loading && _symbols == null) {
-      return const LoadingList(rows: 6);
+      return _waiting(l10n.filesSearching, retry);
     }
     if (_error != null) {
       return KitRefresh(
-        onRefresh: () => _searchSymbols(_search.text),
-        child: _loadFailed(
-          readerL10n(context).filesSymbolsFailedTitle,
-          _error!,
-          () => _searchSymbols(_search.text),
-        ),
+        onRefresh: retry,
+        child: _loadFailed(l10n.filesSymbolsFailedTitle, _error!, retry),
       );
     }
     if (_search.text.trim().isEmpty) {
-      return ProductEmptyState(
+      return KitStateView(
+        key: const ValueKey('files-symbols-hint'),
         icon: AppIconography.dataObject,
-        title: readerL10n(context).readerUiWorkspaceSymbols,
-        message: readerL10n(context).readerUiSymbolsHint,
+        title: l10n.readerUiWorkspaceSymbols,
+        body: l10n.readerUiSymbolsHint,
       );
     }
     if (_symbols?.isEmpty == true) {
       return KitRefresh(
-        onRefresh: () => _searchSymbols(_search.text),
+        onRefresh: retry,
         child: KitStateView(
           key: const ValueKey('files-no-symbols'),
-          icon: Icons.search_off_rounded,
+          icon: AppIconography.search,
           illustration: const StatesSearchScene(),
-          title: readerL10n(context).readerUiNoSymbols,
-          body: readerL10n(context).readerUiSymbolsUnavailable,
+          title: l10n.readerUiNoSymbols,
+          body: l10n.readerUiSymbolsUnavailable,
         ),
       );
     }
+    final symbols = _symbols ?? const <WorkspaceSymbol>[];
     return KitRefresh(
-      onRefresh: () => _searchSymbols(_search.text),
-      child: DesktopScrollbarArea(
-        builder: (scrollController) => ListView.builder(
+      onRefresh: retry,
+      child: KitScrollArea(
+        builder: (scrollController) => ListView.separated(
           controller: scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.paddingOf(context).bottom + 12,
+          padding: EdgeInsetsDirectional.only(
+            top: KitTokens.of(context).space2,
+            bottom: KitScreen.endPadding(context),
           ),
-          itemCount: _symbols?.length ?? 0,
+          itemCount: symbols.length,
+          separatorBuilder: (_, _) =>
+              const KitDivider(inset: KitDividerInset.text),
           itemBuilder: (context, index) {
-            final symbol = _symbols![index];
-            return ListTile(
+            final symbol = symbols[index];
+            return KitRow(
               key: ValueKey('workspace-symbol-${symbol.path}-${symbol.line}'),
-              minTileHeight: 58,
-              leading: Icon(
-                _symbolIcon(symbol.kind),
-                color: theme.colorScheme.primary,
+              leading: KitRow.icon(context, _symbolIcon(symbol.kind)),
+              title: symbol.name,
+              supporting: TextSpan(
+                text:
+                    '${_symbolKind(symbol.kind)} · '
+                    '${KitBidi.ltr('${symbol.path}:${symbol.line}:${symbol.column}')}',
               ),
-              title: Text(
-                symbol.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                '${_symbolKind(symbol.kind)} · ${symbol.path}:${symbol.line}:${symbol.column}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(AppIconography.chevronRight),
+              supportingMaxLines: 2,
+              trailing: const KitChevron(),
               onTap: () => _openSymbol(symbol),
             );
           },
@@ -1570,7 +1762,6 @@ class _FilesScreenState extends State<FilesScreen> {
   @override
   void dispose() {
     widget.backController?._handler = null;
-    _searchDebounce?.cancel();
     widget.controller.removeListener(_controllerChanged);
     widget.focusSearchSignal?.removeListener(_focusSearch);
     _search.removeListener(_searchChanged);
@@ -1590,34 +1781,6 @@ String _fileStatusLabel(BuildContext context, String status) =>
 
 enum _ChangeAction { reviewAll, review, stage }
 
-/// The divider between the tree and the preview.
-///
-/// On Android it stays the hairline [VerticalDivider] it has always been. On
-/// desktop it becomes a real splitter: a wider grab strip, the resize-column
-/// pointer, and a horizontal drag that resizes the tree pane.
-class _SplitHandle extends StatelessWidget {
-  const _SplitHandle({required this.onDrag});
-
-  final ValueChanged<double> onDrag;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!desktopInteractions) return const VerticalDivider(width: 1);
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeColumn,
-      child: GestureDetector(
-        key: const ValueKey('files-split-handle'),
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
-        child: const SizedBox(
-          width: 7,
-          child: Center(child: VerticalDivider(width: 1)),
-        ),
-      ),
-    );
-  }
-}
-
 class _ChangeChoice {
   const _ChangeChoice(this.action, [this.path = '']);
 
@@ -1625,56 +1788,13 @@ class _ChangeChoice {
   final String path;
 }
 
-/// A quiet review entry. Counts and totals remain one tap from the tree.
-class _ChangesCard extends StatelessWidget {
-  const _ChangesCard({required this.changes, required this.onOpen});
-
-  final Iterable<VersionControlFile> changes;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final files = changes.length;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Material(
-        key: const ValueKey('files-changes-card'),
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onOpen,
-          borderRadius: BorderRadius.circular(8),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      readerL10n(context).readerUiChangedCount(files),
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(AppIconography.chevronRight, size: 20),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The changed set, grouped by version-control status. Tapping a row opens
-/// Review at that file; the add action stages the file as a prompt
-/// reference instead of opening anything.
-class _ChangesSheet extends StatelessWidget {
-  const _ChangesSheet({required this.changes, required this.canStage});
+// revamp: merge-into:review-workspace (slice-P3.7a)
+/// The changed set, grouped by version-control status, in the kit's sheet
+/// (Review all is its primary). Tapping a row opens Review at that file; the
+/// add action stages the file as a prompt reference instead of opening
+/// anything.
+class _ChangesList extends StatelessWidget {
+  const _ChangesList({required this.changes, required this.canStage});
 
   final List<VersionControlFile> changes;
   final bool canStage;
@@ -1683,7 +1803,8 @@ class _ChangesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
+    final l10n = readerL10n(context);
     final groups = <String, List<VersionControlFile>>{};
     for (final change in changes) {
       groups.putIfAbsent(change.status, () => []).add(change);
@@ -1696,584 +1817,49 @@ class _ChangesSheet extends StatelessWidget {
           right < 0 ? _order.length : right,
         );
       });
-    final added = changes.fold<int>(0, (sum, file) => sum + file.additions);
-    final removed = changes.fold<int>(0, (sum, file) => sum + file.deletions);
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * .85,
-      ),
-      child: Column(
-        key: const ValueKey('files-changes-sheet'),
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 12, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  readerL10n(context).readerUiChanges,
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  readerL10n(
-                    context,
-                  ).readerUiChangeSummary(changes.length, added, removed),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final status in statuses) ...[
+          SizedBox(height: tokens.space3),
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            leadingIcons: false,
+            label:
+                '${_fileStatusLabel(context, status)} · ${groups[status]!.length}',
+            children: [
+              for (final change in groups[status]!)
+                KitRow(
+                  key: ValueKey('changed-file-${change.path}'),
+                  title: change.path.split('/').last,
+                  supporting: TextSpan(
+                    text:
+                        '${KitBidi.ltr(change.path)} · '
+                        '${KitBidi.ltr('+${change.additions} −${change.deletions}')}',
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonalIcon(
-                    key: const ValueKey('review-all-changes'),
-                    onPressed: () => Navigator.pop(
-                      context,
-                      const _ChangeChoice(_ChangeAction.reviewAll),
-                    ),
-                    icon: const Icon(AppIconography.feedback, size: 18),
-                    label: Text(readerL10n(context).readerUiReviewAll),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(bottom: 12),
-              children: [
-                for (final status in statuses) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
-                    child: Text(
-                      '${_fileStatusLabel(context, status)} · ${groups[status]!.length}',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  for (final change in groups[status]!)
-                    ListTile(
-                      key: ValueKey('changed-file-${change.path}'),
-                      dense: true,
-                      title: Text(
-                        change.path.split('/').last,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${change.path} · +${change.additions} −${change.deletions}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: AppTheme.captionFontSize,
-                        ),
-                      ),
-                      trailing: canStage
-                          ? IconButton(
-                              key: ValueKey('stage-change-${change.path}'),
-                              tooltip: readerL10n(
-                                context,
-                              ).readerUiAddPath(change.path),
-                              icon: const Icon(
-                                Icons.add_comment_outlined,
-                                size: 20,
-                              ),
-                              onPressed: () => Navigator.pop(
-                                context,
-                                _ChangeChoice(_ChangeAction.stage, change.path),
-                              ),
-                            )
-                          : null,
-                      onTap: () => Navigator.pop(
-                        context,
-                        _ChangeChoice(_ChangeAction.review, change.path),
-                      ),
-                    ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FileStatusNotice extends StatelessWidget {
-  final String message;
-  final bool loading;
-  final Future<void> Function()? onRetry;
-
-  const _FileStatusNotice({
-    required this.message,
-    required this.loading,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) => Material(
-    key: const ValueKey('file-status-notice'),
-    color: Theme.of(context).colorScheme.surfaceContainerLow,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
-      child: Row(
-        children: [
-          Icon(
-            AppIconography.info,
-            size: 18,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            child: loading
-                ? const SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(readerL10n(context).isolatedTaskRetryOpen),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _FileViewer extends StatefulWidget {
-  final ConnectionController controller;
-  final String path;
-  final int? initialLine;
-  final bool embedded;
-  final ProjectFileAttachment? onAttachFile;
-
-  /// UX-103: stages the file as a prompt reference — a path the agent will
-  /// read itself, not an upload.
-  final VoidCallback? onAddReference;
-  const _FileViewer({
-    super.key,
-    required this.controller,
-    required this.path,
-    this.initialLine,
-    this.embedded = false,
-    this.onAttachFile,
-    this.onAddReference,
-  });
-
-  @override
-  State<_FileViewer> createState() => __FileViewerState();
-}
-
-class __FileViewerState extends State<_FileViewer> {
-  FileContent? _content;
-  FileContent? _previewContent;
-  FilePreviewData? _cachedPreview;
-  String? _error;
-  int _generation = 0;
-  String? _profileID;
-  int _locationRevision = -1;
-  ServerGateway? _api;
-  late final String _path;
-  bool _scopeInvalid = false;
-  bool _attaching = false;
-  bool _downloading = false;
-
-  static const maxChars = 200000;
-
-  @override
-  void initState() {
-    super.initState();
-    _path = widget.path;
-    _captureScope();
-    widget.controller.addListener(_controllerChanged);
-    _fetch();
-  }
-
-  @override
-  void didUpdateWidget(covariant _FileViewer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (identical(oldWidget.controller, widget.controller) &&
-        oldWidget.path == widget.path) {
-      return;
-    }
-    oldWidget.controller.removeListener(_controllerChanged);
-    widget.controller.addListener(_controllerChanged);
-    _generation++;
-    _scopeInvalid = true;
-    _captureScope();
-    if (!mounted) return;
-    setState(() {
-      _content = null;
-      _previewContent = null;
-      _cachedPreview = null;
-      _error = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).filesViewerPathChanged;
-    });
-  }
-
-  void _captureScope() {
-    _profileID = widget.controller.profile?.id;
-    _locationRevision = widget.controller.locationRevision;
-    _api = widget.controller.api;
-  }
-
-  void _controllerChanged() {
-    final profileID = widget.controller.profile?.id;
-    final locationRevision = widget.controller.locationRevision;
-    final api = widget.controller.api;
-    if (profileID == _profileID &&
-        locationRevision == _locationRevision &&
-        identical(api, _api)) {
-      return;
-    }
-    _generation++;
-    _profileID = profileID;
-    _locationRevision = locationRevision;
-    _api = api;
-    _scopeInvalid = true;
-    if (!mounted) return;
-    setState(() {
-      _content = null;
-      _previewContent = null;
-      _cachedPreview = null;
-      _error = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).filesViewerScopeChanged;
-    });
-  }
-
-  bool _matchesRequest(
-    int generation,
-    String? profileID,
-    int locationRevision,
-    ServerGateway api,
-  ) =>
-      mounted &&
-      generation == _generation &&
-      widget.controller.profile?.id == profileID &&
-      widget.controller.locationRevision == locationRevision &&
-      identical(widget.controller.api, api);
-
-  Future<void> _fetch() async {
-    if (_scopeInvalid) return;
-    final generation = ++_generation;
-    final profileID = widget.controller.profile?.id;
-    final locationRevision = widget.controller.locationRevision;
-    final initialApi = _api;
-    ServerGateway? requestApi;
-    // Keep the current content on screen during a reload; the skeleton is
-    // for the first load only.
-    setState(() => _error = null);
-    try {
-      final api = await widget.controller.prepareActionTransport();
-      if (!mounted || generation != _generation) return;
-      if (api == null) {
-        throw ProductException(readerL10n(context).readerUiDisconnected);
-      }
-      requestApi = api;
-      if ((initialApi != null && !identical(api, initialApi)) ||
-          !_matchesRequest(generation, profileID, locationRevision, api)) {
-        if (mounted && generation == _generation) {
-          setState(() {
-            _scopeInvalid = true;
-            _content = null;
-            _previewContent = null;
-            _cachedPreview = null;
-            _error = lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).filesViewerScopeChanged;
-          });
-        }
-        return;
-      }
-      final c = await api.fileContent(_path);
-      if (_matchesRequest(generation, profileID, locationRevision, api)) {
-        setState(() => _content = c);
-      }
-    } catch (e) {
-      if (!mounted || generation != _generation) return;
-      if (requestApi != null && !identical(widget.controller.api, requestApi)) {
-        return;
-      }
-      if (widget.controller.profile?.id != profileID ||
-          widget.controller.locationRevision != locationRevision) {
-        return;
-      }
-      if (_content != null) {
-        // A failed reload keeps the stale content visible.
-        showProductError(context, e);
-      } else {
-        setState(() => _error = productErrorText(e));
-      }
-    }
-  }
-
-  String get _displayText {
-    var text = _content?.content ?? '';
-    if (text.length > maxChars) {
-      var end = maxChars;
-      final unit = text.codeUnitAt(end - 1);
-      if (unit >= 0xD800 && unit <= 0xDBFF) end--;
-      text = text.substring(0, end);
-    }
-    return text;
-  }
-
-  FilePreviewData get _previewData {
-    final content = _content!;
-    if (identical(_previewContent, content) && _cachedPreview != null) {
-      return _cachedPreview!;
-    }
-    _previewContent = content;
-    return _cachedPreview = FilePreviewData(
-      name: _path.split('/').last,
-      mimeType: content.mimeType,
-      bytes: content.isBinary ? content.bytes() : null,
-      text: content.isBinary ? null : _displayText,
-      originalText: content.isBinary ? null : content.content,
-      truncated: !content.isBinary && content.content.length > maxChars,
-    );
-  }
-
-  FilePreviewData get _exportData {
-    final content = _content!;
-    return FilePreviewData(
-      name: _path.split('/').last,
-      mimeType: content.mimeType,
-      bytes: content.isBinary ? content.bytes() : null,
-      text: content.isBinary ? null : content.content,
-    );
-  }
-
-  Future<void> _attach() async {
-    final action = widget.onAttachFile;
-    if (action == null || _content == null || _attaching) return;
-    setState(() => _attaching = true);
-    try {
-      await action(_path, _exportData);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            readerL10n(context).readerUiAttachedReturn(_path.split('/').last),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      showProductError(context, error);
-    } finally {
-      if (mounted) setState(() => _attaching = false);
-    }
-  }
-
-  Future<void> _download() async {
-    if (_content == null || _downloading) return;
-    final data = _exportData;
-    final bytes = data.exportBytes;
-    if (bytes == null) return;
-    setState(() => _downloading = true);
-    try {
-      final savedPath = await FilePicker.saveFile(
-        dialogTitle: readerL10n(context).readerUiSaveNamed(data.name),
-        fileName: data.name,
-        bytes: bytes,
-      );
-      if (!mounted || savedPath == null) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(readerL10n(context).readerUiSavedDevice(data.name)),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      showProductError(context, error);
-    } finally {
-      if (mounted) setState(() => _downloading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return SafeArea(
-      child: SizedBox(
-        height: widget.embedded
-            ? double.infinity
-            : MediaQuery.of(context).size.height * .85,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 4, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _path.split('/').last,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        Text(
-                          widget.initialLine == null
-                              ? _path
-                              : readerL10n(
-                                  context,
-                                ).readerUiPathLine(_path, widget.initialLine!),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.mutedOf(theme),
+                  trailing: canStage
+                      ? KitIconButton(
+                          key: ValueKey('stage-change-${change.path}'),
+                          icon: AppIconography.link,
+                          size: 20,
+                          tooltip: l10n.readerUiAddPath(change.path),
+                          onPressed: () => KitSheet.close(
+                            context,
+                            _ChangeChoice(_ChangeAction.stage, change.path),
                           ),
-                        ),
-                      ],
-                    ),
+                        )
+                      : const KitChevron(),
+                  onTap: () => KitSheet.close(
+                    context,
+                    _ChangeChoice(_ChangeAction.review, change.path),
                   ),
-                  if (!widget.embedded)
-                    CloseButton(onPressed: () => Navigator.pop(context)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Wrap(
-                spacing: 4,
-                children: [
-                  if (widget.initialLine != null)
-                    const ReaderWrapButton(fallbackWrap: false),
-                  TextButton.icon(
-                    label: Text(l10n.fileCopy),
-                    icon: const Icon(AppIcons.copy, size: 18),
-                    onPressed: _content == null || _content!.isBinary
-                        ? null
-                        : () async {
-                            await Clipboard.setData(
-                              ClipboardData(text: _content!.content),
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    readerL10n(context).readerUiCopied,
-                                  ),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            }
-                          },
-                  ),
-                  if (widget.onAddReference != null)
-                    TextButton.icon(
-                      key: const Key('project-file-add-reference'),
-                      label: Text(l10n.fileReference),
-                      onPressed: widget.onAddReference,
-                      icon: const Icon(Icons.add_comment_outlined, size: 19),
-                    ),
-                  if (widget.onAttachFile != null)
-                    TextButton.icon(
-                      key: const Key('project-file-attach'),
-                      // Named apart from "Add to prompt": this one uploads
-                      // the file's contents with the message.
-                      label: Text(l10n.fileAttach),
-                      onPressed: _content == null || _attaching
-                          ? null
-                          : _attach,
-                      icon: _attaching
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(AppIconography.attach, size: 19),
-                    ),
-                  TextButton.icon(
-                    key: const Key('project-file-download'),
-                    label: Text(l10n.fileSave),
-                    onPressed: _content == null || _downloading
-                        ? null
-                        : _download,
-                    icon: _downloading
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(AppIconography.download, size: 19),
-                  ),
-                  TextButton.icon(
-                    label: Text(l10n.fileReload),
-                    icon: const Icon(AppIconography.retry, size: 18),
-                    onPressed: _scopeInvalid ? null : _fetch,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            Expanded(
-              child: _content == null && _error == null
-                  ? const LoadingList(rows: 6)
-                  : _error != null
-                  ? _scopeInvalid
-                        ? _FileViewerScopeError(message: _error!)
-                        : ProductErrorState(message: _error!, onRetry: _fetch)
-                  : FilePreviewBody(
-                      data: _previewData,
-                      initialLine: widget.initialLine,
-                    ),
-            ),
-          ],
-        ),
-      ),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_controllerChanged);
-    super.dispose();
-  }
-}
-
-class _FileViewerScopeError extends StatelessWidget {
-  const _FileViewerScopeError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.sync_problem_rounded,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 10),
-          Text(message, textAlign: TextAlign.center),
-        ],
-      ),
-    ),
-  );
 }
 
 AppLocalizations readerL10n(BuildContext context) =>
