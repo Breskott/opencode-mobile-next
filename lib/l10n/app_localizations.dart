@@ -7693,42 +7693,6 @@ abstract class AppLocalizations {
   /// **'Only part of this file is shown. Copy and Save keep the original content.'**
   String get filePreviewPartialSource;
 
-  /// No description provided for @filePreviewPdfIsolated.
-  ///
-  /// In en, this message translates to:
-  /// **'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.'**
-  String get filePreviewPdfIsolated;
-
-  /// No description provided for @filePreviewCopyOriginal.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy original file'**
-  String get filePreviewCopyOriginal;
-
-  /// No description provided for @filePreviewOpenInFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Open in Files'**
-  String get filePreviewOpenInFiles;
-
-  /// No description provided for @filePreviewViewMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Show file as'**
-  String get filePreviewViewMode;
-
-  /// No description provided for @filePreviewAttachFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t attach file'**
-  String get filePreviewAttachFailed;
-
-  /// No description provided for @filePreviewSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t save file'**
-  String get filePreviewSaveFailed;
-
   /// No description provided for @fileLineOutsidePreview.
   ///
   /// In en, this message translates to:
@@ -35690,6 +35654,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your server’s address first.'**
   String get tailscaleSetupContinueReason;
+
+  /// Language sheet: supporting line under the Arabic choice, saying how much of the app is translated. percent is a whole number from the real coverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Partly translated ({percent} %)'**
+  String languagePickerPartlyTranslated(int percent);
+
+  /// Appearance and theme preview sheets: spoken label of the preview picture. name is a theme name (Graphite) or a light/dark choice (Dark).
+  ///
+  /// In en, this message translates to:
+  /// **'Preview of {name}'**
+  String appearancePickerPreviewLabel(String name);
+
+  /// Theme preview sheet: spoken name of the Light / Dark control that switches only the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview in'**
+  String get appearancePickerPreviewIn;
+
+  /// Appearance and theme preview sheets: status line shown instead of Apply when the previewed choice is already the one in use.
+  ///
+  /// In en, this message translates to:
+  /// **'In use now'**
+  String get appearancePickerInUse;
+
+  /// Undo bar after applying a theme from its preview sheet. name is the theme's name (Graphite).
+  ///
+  /// In en, this message translates to:
+  /// **'Theme set to {name}'**
+  String appearancePickerThemeApplied(String name);
+
+  /// AI team discovery offer: shown when saving the found team on this server failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not turn the AI team on. Nothing changed. Try again.'**
+  String get teamDiscoveryCardTurnOnFailed;
+
+  /// AI team discovery offer: why Not now cannot be pressed while Turn on is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning the AI team on…'**
+  String get teamDiscoveryCardTurningOn;
+
+  /// Server switcher sheet title (the sheet the server name in the app bar opens).
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get serverSwitcherTitle;
+
+  /// Server switcher: name of the menu a tap on the current server's row opens (holds Disconnect).
+  ///
+  /// In en, this message translates to:
+  /// **'Server actions'**
+  String get serverSwitcherCurrentMenu;
+
+  /// Claude Code on this phone row: state word when Start or Restart has run for more than 8 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Still starting · this can take a minute'**
+  String get localAgentEntryStillStarting;
+
+  /// Claude Code on this phone row: state word when the last start failed; the reason is shown under the row and a tap starts it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t start'**
+  String get localAgentEntryDidNotStart;
+
+  /// Claude Code on this phone row: state word while Node.js, Paseo and Claude Code are being removed from the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing'**
+  String get localAgentEntryRemoving;
+
+  /// Claude Code on this phone row: the state word followed by a note that Claude Code is not signed in; the row's menu offers Sign in to Claude.
+  ///
+  /// In en, this message translates to:
+  /// **'{state} · Not signed in to Claude'**
+  String localAgentEntrySignedOut(String state);
+
+  /// Form sheet: closes the form and keeps the answers typed so far for when it is reopened
+  ///
+  /// In en, this message translates to:
+  /// **'Finish later'**
+  String get formRendererFinishLater;
+
+  /// Form sheet: why Dismiss cannot be pressed while the answers are being sent
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your answers…'**
+  String get formRendererSending;
+
+  /// Form sheet: value of a choice row before anything is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose'**
+  String get formRendererChoose;
+
+  /// Form sheet: value of a date row before a date is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a date'**
+  String get formRendererChooseDate;
+
+  /// Form sheet: value of a date-and-time row before one is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a date and time'**
+  String get formRendererChooseDateTime;
+
+  /// Form sheet: a chosen date and time, e.g. 'Sep 27, 2026 at 3:30 PM'
+  ///
+  /// In en, this message translates to:
+  /// **'{date} at {time}'**
+  String formRendererDateAndTime(String date, String time);
+
+  /// Form sheet date picker: confirms the picked date
+  ///
+  /// In en, this message translates to:
+  /// **'Use date'**
+  String get formRendererUseDate;
+
+  /// Form sheet time picker: confirms the picked time
+  ///
+  /// In en, this message translates to:
+  /// **'Use time'**
+  String get formRendererUseTime;
+
+  /// No description provided for @filePreviewPdfIsolated.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.'**
+  String get filePreviewPdfIsolated;
+
+  /// No description provided for @filePreviewCopyOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy original file'**
+  String get filePreviewCopyOriginal;
+
+  /// No description provided for @filePreviewOpenInFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Files'**
+  String get filePreviewOpenInFiles;
+
+  /// No description provided for @filePreviewViewMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Show file as'**
+  String get filePreviewViewMode;
+
+  /// No description provided for @filePreviewAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t attach file'**
+  String get filePreviewAttachFailed;
+
+  /// No description provided for @filePreviewSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save file'**
+  String get filePreviewSaveFailed;
 }
 
 class _AppLocalizationsDelegate

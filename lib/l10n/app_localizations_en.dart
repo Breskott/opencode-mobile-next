@@ -4593,25 +4593,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only part of this file is shown. Copy and Save keep the original content.';
 
   @override
-  String get filePreviewPdfIsolated =>
-      'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.';
-
-  @override
-  String get filePreviewCopyOriginal => 'Copy original file';
-
-  @override
-  String get filePreviewOpenInFiles => 'Open in Files';
-
-  @override
-  String get filePreviewViewMode => 'Show file as';
-
-  @override
-  String get filePreviewAttachFailed => 'Couldn\'t attach file';
-
-  @override
-  String get filePreviewSaveFailed => 'Couldn\'t save file';
-
-  @override
   String fileLineOutsidePreview(int line) {
     return 'Line $line is outside this preview. Save the original to read that location.';
   }
@@ -22503,4 +22484,98 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tailscaleSetupContinueReason =>
       'Enter your server’s address first.';
+
+  @override
+  String languagePickerPartlyTranslated(int percent) {
+    return 'Partly translated ($percent %)';
+  }
+
+  @override
+  String appearancePickerPreviewLabel(String name) {
+    return 'Preview of $name';
+  }
+
+  @override
+  String get appearancePickerPreviewIn => 'Preview in';
+
+  @override
+  String get appearancePickerInUse => 'In use now';
+
+  @override
+  String appearancePickerThemeApplied(String name) {
+    return 'Theme set to $name';
+  }
+
+  @override
+  String get teamDiscoveryCardTurnOnFailed =>
+      'Could not turn the AI team on. Nothing changed. Try again.';
+
+  @override
+  String get teamDiscoveryCardTurningOn => 'Turning the AI team on…';
+
+  @override
+  String get serverSwitcherTitle => 'Servers';
+
+  @override
+  String get serverSwitcherCurrentMenu => 'Server actions';
+
+  @override
+  String get localAgentEntryStillStarting =>
+      'Still starting · this can take a minute';
+
+  @override
+  String get localAgentEntryDidNotStart => 'Didn\'t start';
+
+  @override
+  String get localAgentEntryRemoving => 'Removing';
+
+  @override
+  String localAgentEntrySignedOut(String state) {
+    return '$state · Not signed in to Claude';
+  }
+
+  @override
+  String get formRendererFinishLater => 'Finish later';
+
+  @override
+  String get formRendererSending => 'Sending your answers…';
+
+  @override
+  String get formRendererChoose => 'Choose';
+
+  @override
+  String get formRendererChooseDate => 'Choose a date';
+
+  @override
+  String get formRendererChooseDateTime => 'Choose a date and time';
+
+  @override
+  String formRendererDateAndTime(String date, String time) {
+    return '$date at $time';
+  }
+
+  @override
+  String get formRendererUseDate => 'Use date';
+
+  @override
+  String get formRendererUseTime => 'Use time';
+
+  @override
+  String get filePreviewPdfIsolated =>
+      'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.';
+
+  @override
+  String get filePreviewCopyOriginal => 'Copy original file';
+
+  @override
+  String get filePreviewOpenInFiles => 'Open in Files';
+
+  @override
+  String get filePreviewViewMode => 'Show file as';
+
+  @override
+  String get filePreviewAttachFailed => 'Couldn\'t attach file';
+
+  @override
+  String get filePreviewSaveFailed => 'Couldn\'t save file';
 }
