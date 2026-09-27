@@ -22597,4 +22597,25 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get serverSwitcherTitle => 'Servers';
+
+  @override
+  String get serverSwitcherCurrentMenu => 'Server actions';
+
+  @override
+  String get localAgentEntryStillStarting =>
+      'Still starting · this can take a minute';
+
+  @override
+  String get localAgentEntryDidNotStart => 'Didn\'t start';
+
+  @override
+  String get localAgentEntryRemoving => 'Removing';
+
+  @override
+  String localAgentEntrySignedOut(String state) {
+    return '$state · Not signed in to Claude';
+  }
 }

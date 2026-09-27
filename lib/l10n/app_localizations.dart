@@ -35404,6 +35404,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// Server switcher sheet title (the sheet the server name in the app bar opens).
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get serverSwitcherTitle;
+
+  /// Server switcher: name of the menu a tap on the current server's row opens (holds Disconnect).
+  ///
+  /// In en, this message translates to:
+  /// **'Server actions'**
+  String get serverSwitcherCurrentMenu;
+
+  /// Claude Code on this phone row: state word when Start or Restart has run for more than 8 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Still starting · this can take a minute'**
+  String get localAgentEntryStillStarting;
+
+  /// Claude Code on this phone row: state word when the last start failed; the reason is shown under the row and a tap starts it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t start'**
+  String get localAgentEntryDidNotStart;
+
+  /// Claude Code on this phone row: state word while Node.js, Paseo and Claude Code are being removed from the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing'**
+  String get localAgentEntryRemoving;
+
+  /// Claude Code on this phone row: the state word followed by a note that Claude Code is not signed in; the row's menu offers Sign in to Claude.
+  ///
+  /// In en, this message translates to:
+  /// **'{state} · Not signed in to Claude'**
+  String localAgentEntrySignedOut(String state);
 }
 
 class _AppLocalizationsDelegate

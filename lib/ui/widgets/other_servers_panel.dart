@@ -5,7 +5,6 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
 import '../../state/profiles.dart';
-import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../screens/profile_monitor_screen.dart' show openMonitoredRequest;
 
@@ -18,6 +17,14 @@ import '../screens/profile_monitor_screen.dart' show openMonitoredRequest;
 /// other server with something going on, what it is ("Needs you", "2
 /// working"), and takes you there in one tap: straight to the request when it
 /// is waiting on you.
+///
+/// Kit only (shared-servers-1): one [KitRowGroup] of [KitRow]s. A server
+/// that needs the person leads with the one needs-you mark and word
+/// ([KitNeedsYou], LOOK-24); a working one with the working mark and its
+/// count in words (STATE-9), never by colour alone.
+///
+/// States: hidden (isolated, or nothing going on elsewhere); needs you;
+/// working; opening (the row rests while the connection changes).
 class OtherServersPanel extends StatelessWidget {
   const OtherServersPanel({super.key, required this.controller});
 
@@ -39,6 +46,7 @@ class OtherServersPanel extends StatelessWidget {
                       (snapshot.requests.isNotEmpty ||
                           (snapshot.runningCount ?? 0) > 0))
                 _OtherServerRow(
+                  key: ValueKey('other-server-${profile.id}'),
                   controller: controller,
                   profile: profile,
                   snapshot: snapshot,
@@ -46,10 +54,16 @@ class OtherServersPanel extends StatelessWidget {
         ];
         if (rows.isEmpty) return const SizedBox.shrink();
         final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-        return Column(
+        final tokens = KitTokens.of(context);
+        return KitRowGroup(
           key: const ValueKey('other-servers-panel'),
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [SectionLabel(l10n.otherServersTitle), ...rows],
+          label: l10n.otherServersTitle,
+          margin: EdgeInsetsDirectional.only(
+            start: tokens.gutter,
+            top: tokens.sectionGap,
+            end: tokens.gutter,
+          ),
+          children: rows,
         );
       },
     );
@@ -58,6 +72,7 @@ class OtherServersPanel extends StatelessWidget {
 
 class _OtherServerRow extends StatefulWidget {
   const _OtherServerRow({
+    super.key,
     required this.controller,
     required this.profile,
     required this.snapshot,
@@ -105,37 +120,54 @@ class _OtherServerRowState extends State<_OtherServerRow> {
     }
   }
 
+  /// The needs-you word without its trailing separator, for a line with
+  /// nothing after it.
+  static TextSpan _needsYouAlone(BuildContext context, int count) {
+    final span = KitNeedsYou.span(context, count: count);
+    return TextSpan(
+      text: span.text?.replaceFirst(RegExp(r'\s*·\s*$'), ''),
+      style: span.style,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final waiting = widget.snapshot.requests.length;
     final running = widget.snapshot.runningCount ?? 0;
-    final status = [
-      if (waiting > 0) l10n.otherServerNeedsYou,
-      if (running > 0) l10n.otherServerWorking(running),
-    ].join(' · ');
-    // The same state colours as Other projects: needs you, else running.
-    final color = waiting > 0
-        ? AppTheme.statusColor(theme, AppStatusTone.attention)
-        : theme.colorScheme.primary;
+    final working = running > 0
+        ? TextSpan(
+            text: l10n.otherServerWorking(running),
+            style: KitText.styleOf(
+              context,
+              KitTextRole.label,
+              tone: KitTextTone.primary,
+            ),
+          )
+        : null;
+    // Needs you outranks working: the first is stuck on the person.
+    final InlineSpan supporting = waiting > 0
+        ? TextSpan(
+            children: [
+              if (working == null)
+                _needsYouAlone(context, waiting)
+              else ...[
+                KitNeedsYou.span(context, count: waiting),
+                working,
+              ],
+            ],
+          )
+        : working!;
     // Opening shows on the screen's loading bar (the connection changes);
     // the row only stops taking taps meanwhile.
     return KitRow(
-      key: ValueKey('other-server-${widget.profile.id}'),
-      leading: SizedBox.square(
-        dimension: 32,
-        child: Icon(AppIconography.statusDot, size: 12, color: color),
-      ),
+      leading: waiting > 0
+          ? KitNeedsYou.mark()
+          : const KitTaskMark(state: KitTaskState.working),
       title: widget.profile.name,
-      supporting: TextSpan(
-        text: status,
-        style: TextStyle(color: color, fontWeight: FontWeight.w600),
-      ),
-      trailing: const SizedBox.square(
-        dimension: 48,
-        child: Icon(AppIconography.chevronRight, size: 20),
-      ),
+      supporting: supporting,
+      supportingKey: ValueKey('other-server-${widget.profile.id}-status'),
+      trailing: const KitChevron(),
       onTap: _opening ? null : _open,
     );
   }
