@@ -33688,6 +33688,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// Projects, on a server that cannot switch projects (Codex, Paseo): the state title
+  ///
+  /// In en, this message translates to:
+  /// **'This server works in one folder'**
+  String get projectsOneFolderTitle;
+
+  /// Development services: the undo bar after Start; its action is Stop
+  ///
+  /// In en, this message translates to:
+  /// **'{name} started'**
+  String servicesStarted(String name);
+
+  /// Development services: the undo bar after removing a saved service
+  ///
+  /// In en, this message translates to:
+  /// **'{name} removed'**
+  String servicesRemoved(String name);
+
+  /// Development services: the question before stopping a running command
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}?'**
+  String servicesStopTitle(String name);
+
+  /// Development services: the question before restarting a running command
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {name}?'**
+  String servicesRestartTitle(String name);
+
+  /// Development services: the question before clearing an unconfirmed run record
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the last run of {name}?'**
+  String servicesForgetTitle(String name);
+
+  /// Development services: the question before removing a service whose command may still be running
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String servicesRemoveTitle(String name);
+
+  /// Development services: what happens to a running command when its saved service is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Its command keeps running on the server, and this app can no longer stop it. Stop it first to end it.'**
+  String get servicesRemoveRunningHint;
+
+  /// Development services: the empty state title; the body explains saving does not start anything
+  ///
+  /// In en, this message translates to:
+  /// **'No dev commands yet'**
+  String get servicesEmptyTitle;
+
+  /// Development services: notice while the server connection is down
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering. Commands cannot be started or checked until it reconnects.'**
+  String get servicesOffline;
+
+  /// Development services logs sheet: the log could not be fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the log.'**
+  String get servicesLogFailed;
+
+  /// Development services: the label of the project path in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get servicesProjectFolder;
+
+  /// Development services: the label of the workspace id in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get servicesWorkspace;
+
+  /// Development services editor: the name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get servicesNameRequired;
+
+  /// Development services editor: another saved service in this project has the same name
+  ///
+  /// In en, this message translates to:
+  /// **'A service with this name already exists.'**
+  String get servicesDuplicateName;
+
+  /// Development services editor: the command field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a command, such as npm run dev.'**
+  String get servicesCommandRequired;
+
+  /// Development services editor: the preview address is not a safe link
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an http or https address without a user name or password.'**
+  String get servicesUrlInvalid;
+
+  /// New task in a fresh worktree: the label of the project path in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get isolatedTaskProjectFolder;
+
+  /// New task in a fresh worktree: progress stage 1 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Creating the worktree'**
+  String get isolatedTaskStageCreate;
+
+  /// New task in a fresh worktree: progress stage 2 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Running the project setup'**
+  String get isolatedTaskStagePrepare;
+
+  /// New task in a fresh worktree: progress stage 3 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Opening a conversation'**
+  String get isolatedTaskStageOpen;
+
+  /// New task in a fresh worktree: how long creating and setting up a worktree usually takes
+  ///
+  /// In en, this message translates to:
+  /// **'Usually 1–3 minutes'**
+  String get isolatedTaskUsually;
 }
 
 class _AppLocalizationsDelegate

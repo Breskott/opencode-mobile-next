@@ -24001,5 +24001,123 @@
         "type": "int"
       }
     }
+  },
+  "projectsOneFolderTitle": "This server works in one folder",
+  "@projectsOneFolderTitle": {
+    "description": "Projects, on a server that cannot switch projects (Codex, Paseo): the state title"
+  },
+  "servicesStarted": "{name} started",
+  "@servicesStarted": {
+    "description": "Development services: the undo bar after Start; its action is Stop",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesRemoved": "{name} removed",
+  "@servicesRemoved": {
+    "description": "Development services: the undo bar after removing a saved service",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesStopTitle": "Stop {name}?",
+  "@servicesStopTitle": {
+    "description": "Development services: the question before stopping a running command",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesRestartTitle": "Restart {name}?",
+  "@servicesRestartTitle": {
+    "description": "Development services: the question before restarting a running command",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesForgetTitle": "Forget the last run of {name}?",
+  "@servicesForgetTitle": {
+    "description": "Development services: the question before clearing an unconfirmed run record",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesRemoveTitle": "Remove {name}?",
+  "@servicesRemoveTitle": {
+    "description": "Development services: the question before removing a service whose command may still be running",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "servicesRemoveRunningHint": "Its command keeps running on the server, and this app can no longer stop it. Stop it first to end it.",
+  "@servicesRemoveRunningHint": {
+    "description": "Development services: what happens to a running command when its saved service is removed"
+  },
+  "servicesEmptyTitle": "No dev commands yet",
+  "@servicesEmptyTitle": {
+    "description": "Development services: the empty state title; the body explains saving does not start anything"
+  },
+  "servicesOffline": "The server is not answering. Commands cannot be started or checked until it reconnects.",
+  "@servicesOffline": {
+    "description": "Development services: notice while the server connection is down"
+  },
+  "servicesLogFailed": "Could not read the log.",
+  "@servicesLogFailed": {
+    "description": "Development services logs sheet: the log could not be fetched"
+  },
+  "servicesProjectFolder": "Project folder",
+  "@servicesProjectFolder": {
+    "description": "Development services: the label of the project path in Details"
+  },
+  "servicesWorkspace": "Workspace",
+  "@servicesWorkspace": {
+    "description": "Development services: the label of the workspace id in Details"
+  },
+  "servicesNameRequired": "Enter a name.",
+  "@servicesNameRequired": {
+    "description": "Development services editor: the name field is empty"
+  },
+  "servicesDuplicateName": "A service with this name already exists.",
+  "@servicesDuplicateName": {
+    "description": "Development services editor: another saved service in this project has the same name"
+  },
+  "servicesCommandRequired": "Enter a command, such as npm run dev.",
+  "@servicesCommandRequired": {
+    "description": "Development services editor: the command field is empty"
+  },
+  "servicesUrlInvalid": "Enter an http or https address without a user name or password.",
+  "@servicesUrlInvalid": {
+    "description": "Development services editor: the preview address is not a safe link"
+  },
+  "isolatedTaskProjectFolder": "Project folder",
+  "@isolatedTaskProjectFolder": {
+    "description": "New task in a fresh worktree: the label of the project path in Details"
+  },
+  "isolatedTaskStageCreate": "Creating the worktree",
+  "@isolatedTaskStageCreate": {
+    "description": "New task in a fresh worktree: progress stage 1 of 3"
+  },
+  "isolatedTaskStagePrepare": "Running the project setup",
+  "@isolatedTaskStagePrepare": {
+    "description": "New task in a fresh worktree: progress stage 2 of 3"
+  },
+  "isolatedTaskStageOpen": "Opening a conversation",
+  "@isolatedTaskStageOpen": {
+    "description": "New task in a fresh worktree: progress stage 3 of 3"
+  },
+  "isolatedTaskUsually": "Usually 1–3 minutes",
+  "@isolatedTaskUsually": {
+    "description": "New task in a fresh worktree: how long creating and setting up a worktree usually takes"
   }
 }

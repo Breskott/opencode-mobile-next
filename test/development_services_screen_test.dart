@@ -1,17 +1,15 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/development_service_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/development_services_screen.dart';
 import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../tool/capture/fixtures.dart'
-    show captureApp, capturePng, loadCaptureFonts, writePng;
 import 'support/development_service_fakes.dart';
 
 Future<ServicesConnection> connectionFor(ServiceRepository repository) async {
@@ -37,6 +35,27 @@ Future<void> seed(ServicesConnection connection) => DevelopmentServiceStore(
   canWrite: () => true,
 ).save(sampleService);
 
+Widget app(Widget home) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
+
+Finder rich(String text) => find.textContaining(text, findRichText: true);
+
+final _row = find.byKey(const ValueKey('development-service-vite'));
+
+Future<void> openMenu(WidgetTester tester) async {
+  await tester.longPress(_row);
+  await tester.pumpAndSettle();
+}
+
+Future<void> done(WidgetTester tester) async {
+  KitUndo.commitPending();
+  await tester.pumpWidget(const SizedBox());
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
@@ -61,14 +80,20 @@ void main() {
     final connection = await connectionFor(gateway);
     addTearDown(connection.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: DevelopmentServicesScreen(controller: connection)),
+      app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
+    expect(find.text('No dev commands yet'), findsOneWidget);
     await tester.tap(find.text('Register service'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(0), 'Preview');
-    await tester.enterText(find.byType(TextField).at(1), 'npm run dev');
-    await tester.ensureVisible(find.text('Save service'));
+    await tester.enterText(
+      find.byKey(const ValueKey('development-services-name')),
+      'Preview',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('development-services-command')),
+      'npm run dev',
+    );
     await tester.tap(find.text('Save service'));
     await tester.pumpAndSettle();
     expect(find.text('Preview'), findsOneWidget);
@@ -77,49 +102,242 @@ void main() {
       connection.store.prefs.getString('oc.developmentServices.laptop'),
       contains('npm run dev'),
     );
-    await tester.pumpWidget(const SizedBox());
+    expect(
+      connection.store.prefs.getKeys().where((k) => k.startsWith('oc.draft.')),
+      isEmpty,
+      reason: 'a saved service clears its drafts',
+    );
+    await done(tester);
+  });
+
+  testWidgets('the editor says what is missing and refuses a duplicate name', (
+    tester,
+  ) async {
+    final connection = await connectionFor(ServiceRepository());
+    addTearDown(connection.dispose);
+    await seed(connection);
+    await tester.pumpWidget(
+      app(DevelopmentServicesScreen(controller: connection)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Register service'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save service'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a name.'), findsOneWidget);
+    expect(find.text('Enter a command, such as npm run dev.'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('development-services-name')),
+      'shopfront PREVIEW',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('development-services-command')),
+      'npm start',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('development-services-url')),
+      'ftp://nope',
+    );
+    await tester.tap(find.text('Save service'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('A service with this name already exists.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Enter an http or https address without a user name or password.',
+      ),
+      findsOneWidget,
+    );
+    await done(tester);
   });
 
   testWidgets(
-    'start requires confirmation, logs are plain text, stop affects owned ID',
+    'draft carry: typed input survives swipe, reopen and a restart; the '
+    'profile sweep removes it',
+    (tester) async {
+      final connection = await connectionFor(ServiceRepository());
+      addTearDown(connection.dispose);
+      await tester.pumpWidget(
+        app(DevelopmentServicesScreen(controller: connection)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Register service'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('development-services-name')),
+        'Storybook',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('development-services-command')),
+        'npm run storybook',
+      );
+      await tester.pumpAndSettle();
+      // A swipe or back closes the sheet without asking: nothing is lost.
+      Navigator.of(
+        tester.element(find.byKey(const ValueKey('development-services-name'))),
+      ).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('npm run storybook'), findsNothing);
+
+      await tester.tap(find.text('Register service'));
+      await tester.pumpAndSettle();
+      expect(find.text('Storybook'), findsOneWidget);
+      expect(find.text('npm run storybook'), findsOneWidget);
+      Navigator.of(
+        tester.element(find.byKey(const ValueKey('development-services-name'))),
+      ).pop();
+      await tester.pumpAndSettle();
+
+      // The screen (or the process) goes away and comes back.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(
+        app(DevelopmentServicesScreen(controller: connection)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Register service'));
+      await tester.pumpAndSettle();
+      expect(find.text('npm run storybook'), findsOneWidget);
+
+      final drafts = connection.store.prefs
+          .getKeys()
+          .where((k) => k.startsWith('oc.draft.developmentService.'))
+          .toSet();
+      expect(drafts, hasLength(2));
+      expect(
+        connection.store.profileScopedPreferenceKeys('laptop'),
+        containsAll(drafts),
+      );
+      await connection.store.removeScopedPreferences('laptop');
+      expect(
+        connection.store.prefs.getKeys().where(
+          (k) => k.startsWith('oc.draft.'),
+        ),
+        isEmpty,
+      );
+      await done(tester);
+    },
+  );
+
+  testWidgets(
+    'Start runs at once with Stop as its undo; Stop asks and affects the '
+    'owned ID; the log follows the run',
     (tester) async {
       final gateway = ServiceRepository();
       final connection = await connectionFor(gateway);
       addTearDown(connection.dispose);
       await seed(connection);
       await tester.pumpWidget(
-        MaterialApp(home: DevelopmentServicesScreen(controller: connection)),
+        app(DevelopmentServicesScreen(controller: connection)),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Start'));
-      await tester.tap(find.text('Start'));
-      await tester.pumpAndSettle();
-      expect(gateway.starts, 0);
-      await tester.tap(find.widgetWithText(FilledButton, 'Start').last);
+      expect(rich('Not started'), findsOneWidget);
+      expect(rich('npm run dev'), findsOneWidget);
+      await tester.tap(find.byTooltip('Start'));
       await tester.pumpAndSettle();
       expect(gateway.starts, 1);
-      expect(find.text('Running command'), findsOneWidget);
-      await tester.ensureVisible(find.text('Logs'));
+      expect(rich('Running command'), findsOneWidget);
+      expect(find.text('Shopfront preview started'), findsOneWidget);
+      KitUndo.commitPending();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Logs'));
+
+      // Tapping a running row opens its log.
+      await tester.tap(_row);
       await tester.pumpAndSettle();
-      expect(find.textContaining('VITE ready'), findsOneWidget);
-      Navigator.of(tester.element(find.textContaining('VITE ready'))).pop();
+      expect(rich('VITE ready'), findsOneWidget);
+      expect(find.text('Shopfront preview · Logs'), findsOneWidget);
+      await tester.tap(find.text('Stop').last);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Stop'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Stop'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Stop'));
+      expect(find.text('Stop Shopfront preview?'), findsOneWidget);
+      expect(gateway.stops, isEmpty);
+      await tester.tap(
+        find.byKey(const ValueKey('development-services-confirm')),
+      );
       await tester.pumpAndSettle();
       expect(gateway.stops, ['sh_1']);
-      expect(find.text('Stopped'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
+      expect(rich('Stopped'), findsOneWidget);
+      await done(tester);
     },
   );
 
+  testWidgets('Undo after Start stops the command it started', (tester) async {
+    final gateway = ServiceRepository();
+    final connection = await connectionFor(gateway);
+    addTearDown(connection.dispose);
+    await seed(connection);
+    await tester.pumpWidget(
+      app(DevelopmentServicesScreen(controller: connection)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Start'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('development-services-undo-start')),
+    );
+    await tester.pumpAndSettle();
+    expect(gateway.stops, ['sh_1']);
+    await done(tester);
+  });
+
+  testWidgets('Remove of a saved service offers Undo, which brings it back', (
+    tester,
+  ) async {
+    final connection = await connectionFor(ServiceRepository());
+    addTearDown(connection.dispose);
+    await seed(connection);
+    await tester.pumpWidget(
+      app(DevelopmentServicesScreen(controller: connection)),
+    );
+    await tester.pumpAndSettle();
+    await openMenu(tester);
+    await tester.tap(find.text('Remove configuration'));
+    await tester.pumpAndSettle();
+    expect(find.text('Shopfront preview removed'), findsOneWidget);
+    expect(_row, findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('development-services-undo-remove')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Shopfront preview'), findsOneWidget);
+    expect(
+      connection.store.prefs.getString('oc.developmentServices.laptop'),
+      contains('npm run dev'),
+    );
+    await done(tester);
+  });
+
+  testWidgets('Remove of a running service asks and says it keeps running', (
+    tester,
+  ) async {
+    final gateway = ServiceRepository();
+    final connection = await connectionFor(gateway);
+    addTearDown(connection.dispose);
+    await seed(connection);
+    await tester.pumpWidget(
+      app(DevelopmentServicesScreen(controller: connection)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Start'));
+    await tester.pumpAndSettle();
+    KitUndo.commitPending();
+    await tester.pumpAndSettle();
+    await openMenu(tester);
+    await tester.tap(find.text('Remove configuration'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove Shopfront preview?'), findsOneWidget);
+    expect(find.textContaining('keeps running on the server'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('development-services-confirm')),
+    );
+    await tester.pumpAndSettle();
+    expect(_row, findsNothing);
+    expect(gateway.stops, isEmpty, reason: 'remove never stops the command');
+    await done(tester);
+  });
+
   testWidgets(
-    'unsupported profile retains save/copy/Visit without fake controls',
+    'unsupported profile explains, keeps save/copy/Visit, no fake controls',
     (tester) async {
       final gateway = ServiceRepository();
       final connection = await connectionFor(gateway)
@@ -127,12 +345,17 @@ void main() {
       addTearDown(connection.dispose);
       await seed(connection);
       await tester.pumpWidget(
-        MaterialApp(home: DevelopmentServicesScreen(controller: connection)),
+        app(DevelopmentServicesScreen(controller: connection)),
       );
       await tester.pumpAndSettle();
+      expect(
+        find.textContaining('cannot start and track development commands'),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('Start'), findsNothing);
+      await openMenu(tester);
       expect(find.text('Start'), findsNothing);
-      await tester.ensureVisible(find.text('Visit'));
-      await tester.pumpAndSettle();
+      expect(find.text('Copy command'), findsOneWidget);
       await tester.tap(find.text('Visit'));
       await tester.pumpAndSettle();
       expect(find.text('Open insecure HTTP link?'), findsOneWidget);
@@ -140,7 +363,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(gateway.starts, 0);
-      await tester.pumpWidget(const SizedBox());
+      await done(tester);
     },
   );
 
@@ -152,16 +375,16 @@ void main() {
     addTearDown(connection.dispose);
     await seed(connection);
     await tester.pumpWidget(
-      MaterialApp(home: DevelopmentServicesScreen(controller: connection)),
+      app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
     connection.directory = '/another';
     connection.notifyListeners();
     await tester.pumpAndSettle();
     expect(find.textContaining('Reopen Development services'), findsOneWidget);
-    expect(find.text('Start'), findsNothing);
+    expect(find.byTooltip('Start'), findsNothing);
     expect(find.text('Shopfront preview'), findsNothing);
-    await tester.pumpWidget(const SizedBox());
+    await done(tester);
   });
 
   testWidgets('Manage project opens the development services destination', (
@@ -170,15 +393,13 @@ void main() {
     final connection = await connectionFor(ServiceRepository());
     addTearDown(connection.dispose);
     await tester.pumpWidget(
-      MaterialApp(
-        home: ManageProjectScreen(controller: connection, project: null),
-      ),
+      app(ManageProjectScreen(controller: connection, project: null)),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Development services'));
     await tester.pumpAndSettle();
     expect(find.byType(DevelopmentServicesScreen), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
+    await done(tester);
   });
 
   testWidgets('location revision invalidates even when the path is unchanged', (
@@ -188,136 +409,74 @@ void main() {
     addTearDown(connection.dispose);
     await seed(connection);
     await tester.pumpWidget(
-      MaterialApp(home: DevelopmentServicesScreen(controller: connection)),
+      app(DevelopmentServicesScreen(controller: connection)),
     );
     await tester.pumpAndSettle();
     connection.locationRevision++;
     connection.notifyListeners();
     await tester.pumpAndSettle();
     expect(find.textContaining('Reopen Development services'), findsOneWidget);
-    expect(find.text('Start'), findsNothing);
-    await tester.pumpWidget(const SizedBox());
+    expect(find.byTooltip('Start'), findsNothing);
+    await done(tester);
   });
 
-  for (final variant in ['light', 'dark', 'large']) {
-    testWidgets('service layout and capture $variant', (tester) async {
+  testWidgets('an unreadable run says so and offers Forget in the menu', (
+    tester,
+  ) async {
+    final gateway = ServiceRepository();
+    final connection = await connectionFor(gateway);
+    addTearDown(connection.dispose);
+    await seed(connection);
+    await tester.pumpWidget(
+      app(DevelopmentServicesScreen(controller: connection)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Start'));
+    await tester.pumpAndSettle();
+    KitUndo.commitPending();
+    gateway.failReads = true;
+    connection.connectionRevision++;
+    connection.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(rich('Status unknown'), findsOneWidget);
+    expect(find.byTooltip('Stop'), findsNothing);
+    await openMenu(tester);
+    expect(find.text('Forget last run'), findsOneWidget);
+    await done(tester);
+  });
+
+  for (final (label, size, scale) in [
+    ('phone', const Size(412, 915), 1.0),
+    ('narrow large text', const Size(320, 844), 2.0),
+    ('wide', const Size(1280, 800), 1.0),
+  ]) {
+    testWidgets('service list lays out without overflow: $label', (
+      tester,
+    ) async {
       final gateway = ServiceRepository();
       final connection = await connectionFor(gateway);
       addTearDown(connection.dispose);
       await seed(connection);
-      tester.view.physicalSize = Size(variant == 'large' ? 320 : 390, 844);
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
-      tester.platformDispatcher.textScaleFactorTestValue = variant == 'large'
-          ? 2
-          : 1;
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final output = Platform.environment['OC_SERVICE_CAPTURE_DIR'];
-      if (output != null) await loadCaptureFonts();
-      final boundary = GlobalKey();
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
-        captureApp(
-          boundaryKey: boundary,
-          controller: connection,
-          light: variant != 'dark',
-          home: DevelopmentServicesScreen(controller: connection),
-        ),
+        app(DevelopmentServicesScreen(controller: connection)),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      if (output != null) {
-        await writePng(
-          '$output/$variant-top.png',
-          await capturePng(tester, boundary, pixelRatio: 2),
-        );
-      }
-      await tester.scrollUntilVisible(
-        find.text('Remove configuration'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.tap(find.byTooltip('Start'));
+      await tester.pumpAndSettle();
+      KitUndo.commitPending();
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      if (output != null) {
-        await writePng(
-          '$output/$variant-controls.png',
-          await capturePng(tester, boundary, pixelRatio: 2),
-        );
-      }
-      await tester.ensureVisible(find.text('Start'));
+      await tester.tap(_row);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Start'));
-      await tester.pumpAndSettle();
-      expect(gateway.starts, 0);
-      final confirmStart = find.widgetWithText(FilledButton, 'Start').last;
-      await tester.ensureVisible(confirmStart);
-      await tester.pumpAndSettle();
-      expect(confirmStart.hitTestable(), findsOneWidget);
-      await tester.tap(confirmStart.hitTestable());
-      await tester.pumpAndSettle();
-      expect(gateway.starts, 1);
-      expect(find.text('Running command'), findsOneWidget);
-      await tester.ensureVisible(find.text('Stop'));
-      await tester.pumpAndSettle();
+      expect(rich('VITE ready'), findsOneWidget);
       expect(tester.takeException(), isNull);
-      if (output != null) {
-        await writePng(
-          '$output/$variant-running.png',
-          await capturePng(tester, boundary, pixelRatio: 2),
-        );
-      }
-      await tester.ensureVisible(find.text('Logs'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Logs'));
-      await tester.pumpAndSettle();
-      final logSheet = find.ancestor(
-        of: find.text('${sampleService.name} · Logs'),
-        matching: find.byType(ListView),
-      );
-      expect(logSheet, findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.textContaining('VITE ready'),
-        120,
-        scrollable: find
-            .descendant(of: logSheet, matching: find.byType(Scrollable))
-            .first,
-      );
-      await tester.pumpAndSettle();
-      expect(find.textContaining('VITE ready'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      if (output != null) {
-        await writePng(
-          '$output/$variant-logs.png',
-          await capturePng(tester, boundary, pixelRatio: 2),
-        );
-      }
-      Navigator.of(tester.element(find.textContaining('VITE ready'))).pop();
-      await tester.pumpAndSettle();
-      gateway.failReads = true;
-      await tester.tap(find.byTooltip('Refresh status'));
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Status unknown'),
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Stop'), findsNothing);
-      expect(tester.takeException(), isNull);
-      if (output != null) {
-        await writePng(
-          '$output/$variant-unknown.png',
-          await capturePng(tester, boundary, pixelRatio: 2),
-        );
-      }
-      gateway.failReads = false;
-      connection.connectionRevision++;
-      connection.notifyListeners();
-      await tester.pumpAndSettle();
-      expect(find.text('Running command'), findsOneWidget);
-      expect(gateway.starts, 1);
-      await tester.pumpWidget(const SizedBox());
+      await done(tester);
     });
   }
 }

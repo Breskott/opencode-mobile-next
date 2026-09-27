@@ -7,11 +7,25 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/isolated_task_launch.dart';
 import '../app_theme.dart';
-import '../widgets/product_states.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_technical_value.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../widgets/product_states.dart' show productErrorText;
 
 /// Explicit "new task in a fresh worktree" flow. Resolves with the blank
 /// session once it exists in the worktree's scope, or null when the user
 /// closed the sheet first. Nothing is ever sent to the session from here.
+///
+/// The frame is not dismissible by a swipe: leaving while the conversation
+/// is being opened would drop a session the server may still create. Back,
+/// Esc and a tap outside still close it as "stop waiting" in every other
+/// state (the body handles them), and the body always offers Close.
 Future<Session?> showIsolatedTaskSheet(
   BuildContext context, {
   required ConnectionController controller,
@@ -19,15 +33,14 @@ Future<Session?> showIsolatedTaskSheet(
   Duration readinessTimeout = const Duration(seconds: 45),
 }) {
   final openingScope = controller.isolatedTaskScope;
-  return showModalBottomSheet<Session>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: false,
-    isDismissible: false,
-    enableDrag: false,
-    constraints: const BoxConstraints(maxWidth: 720),
-    builder: (_) => IsolatedTaskSheet(
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return showKitSheet<Session>(
+    context,
+    title: l10n.isolatedTaskTitle,
+    subtitle: project.name,
+    icon: AppIconography.branch,
+    dismissible: false,
+    body: (_) => IsolatedTaskSheet(
       controller: controller,
       project: project,
       openingScope: openingScope,
@@ -62,6 +75,9 @@ class _IsolatedTaskSheetState extends State<IsolatedTaskSheet> {
   late final ConnectionController _controller;
   late final Object _openingScope;
   bool _invalid = false;
+  Object? _startError;
+  IsolatedTaskPhase? _phase;
+  DateTime? _phaseSince;
 
   @override
   void initState() {
@@ -115,17 +131,27 @@ class _IsolatedTaskSheetState extends State<IsolatedTaskSheet> {
         readinessTimeout: widget.readinessTimeout,
       );
     } catch (error) {
-      showProductError(context, error);
+      setState(() => _startError = error);
       return;
     }
     launch.addListener(_onLaunchChanged);
-    setState(() => _launch = launch);
+    setState(() {
+      _startError = null;
+      _launch = launch;
+      _phase = launch.phase;
+      _phaseSince = DateTime.now();
+    });
   }
 
   void _onLaunchChanged() {
     if (!mounted || _invalid) return;
     final launch = _launch!;
-    setState(() {});
+    setState(() {
+      if (launch.phase != _phase) {
+        _phase = launch.phase;
+        _phaseSince = DateTime.now();
+      }
+    });
     if (launch.phase == IsolatedTaskPhase.ready && !_autoOpened) {
       // Ready is the one state that opens without another tap: the user
       // already asked for the session when they pressed Start.
@@ -145,310 +171,279 @@ class _IsolatedTaskSheetState extends State<IsolatedTaskSheet> {
     Navigator.of(context).pop();
   }
 
+  bool get _busy {
+    final launch = _launch;
+    return launch != null && launch.phase == IsolatedTaskPhase.opening;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
     final launch = _launch;
     // Only the open step is uninterruptible: leaving mid-open would drop a
     // session the server may still create. Every other state closes as a
-    // plain stop-waiting, which never deletes anything.
-    final busy = launch != null && launch.phase == IsolatedTaskPhase.opening;
+    // plain stop-waiting, which never deletes anything. The frame blocks
+    // every pop; this scope turns back, Esc and a tap outside into Close.
     return PopScope(
-      canPop: !busy,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) return;
-        final launch = _launch;
-        if (launch != null && launch.canCancel) launch.cancel();
-        _popped = true;
+        if (didPop) {
+          final launch = _launch;
+          if (launch != null && launch.canCancel) launch.cancel();
+          _popped = true;
+          return;
+        }
+        if (!_busy) _close();
       },
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: SingleChildScrollView(
-          key: const Key('isolated-task-sheet'),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.isolatedTaskTitle,
-                      style: theme.textTheme.titleLarge,
-                    ),
-                  ),
-                  IconButton(
-                    key: const Key('isolated-task-close'),
-                    tooltip: l10n.isolatedTaskClose,
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    onPressed: busy ? null : _close,
-                    icon: const Icon(AppIconography.close),
-                  ),
-                ],
+      child: Column(
+        key: const Key('isolated-task-sheet'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_invalid)
+            KitStateView(
+              icon: AppIconography.info,
+              title: l10n.isolatedTaskScopeChanged,
+              size: KitStateSize.inline,
+              secondary: KitAction(
+                key: const Key('isolated-task-dismiss'),
+                label: l10n.isolatedTaskClose,
+                onPressed: _close,
               ),
-              const SizedBox(height: 4),
-              Text(widget.project.name, style: theme.textTheme.titleSmall),
-              Text(
-                widget.project.directory,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontFamily: AppTheme.monoFamily,
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (_invalid)
-                Text(l10n.isolatedTaskScopeChanged)
-              else if (launch == null)
-                ..._form(l10n, theme)
-              else
-                _status(l10n, theme),
-            ],
-          ),
-        ),
+            )
+          else if (launch == null)
+            ..._form(context, l10n)
+          else
+            _status(context, l10n, launch),
+        ],
       ),
     );
   }
 
-  List<Widget> _form(AppLocalizations l10n, ThemeData theme) => [
-    Text(
-      l10n.isolatedTaskIntro(widget.project.name),
-      style: theme.textTheme.bodyMedium,
-    ),
-    const SizedBox(height: 16),
-    TextField(
-      key: const Key('isolated-task-name'),
-      controller: _name,
-      autofocus: false,
-      textInputAction: TextInputAction.done,
-      onSubmitted: (_) => _start(),
-      decoration: InputDecoration(
-        labelText: l10n.isolatedTaskNameLabel,
-        helperText: l10n.isolatedTaskNameHelper,
+  List<Widget> _form(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    final startError = _startError;
+    return [
+      KitText(l10n.isolatedTaskIntro(widget.project.name)),
+      SizedBox(height: tokens.space4),
+      KitField(
+        label: l10n.isolatedTaskNameLabel,
+        helper: l10n.isolatedTaskNameHelper,
+        controller: _name,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _start(),
+        fieldKey: const Key('isolated-task-name'),
       ),
-    ),
-    const SizedBox(height: 16),
-    FilledButton.icon(
-      key: const Key('isolated-task-start'),
-      onPressed: _start,
-      icon: const Icon(AppIconography.branch),
-      label: Text(l10n.isolatedTaskStart),
-    ),
-  ];
+      if (startError != null) ...[
+        SizedBox(height: tokens.space3),
+        KitNotice.error(
+          key: const Key('isolated-task-start-error'),
+          message: productErrorText(startError),
+          error: startError,
+        ),
+      ],
+      SizedBox(height: tokens.space4),
+      KitActionBlock(
+        primary: KitAction(
+          key: const Key('isolated-task-start'),
+          label: l10n.isolatedTaskStart,
+          icon: AppIconography.branch,
+          onPressed: _start,
+        ),
+        tertiary: [
+          KitAction(
+            key: const Key('isolated-task-close'),
+            label: l10n.isolatedTaskClose,
+            onPressed: _close,
+          ),
+        ],
+      ),
+      SizedBox(height: tokens.space4),
+      KitDetailsFold(
+        values: [
+          KitTechnicalValue(
+            l10n.isolatedTaskProjectFolder,
+            widget.project.directory,
+          ),
+        ],
+      ),
+    ];
+  }
 
-  Widget _status(AppLocalizations l10n, ThemeData theme) {
-    final launch = _launch!;
+  /// The staged wait: create (1 of 3), setup (2 of 3), open (3 of 3).
+  KitProgress? _progress(AppLocalizations l10n, IsolatedTaskLaunch launch) {
+    return switch (launch.phase) {
+      IsolatedTaskPhase.idle ||
+      IsolatedTaskPhase.creating => KitProgress.staged(
+        step: 1,
+        of: 3,
+        label: l10n.isolatedTaskStageCreate,
+        caption: l10n.isolatedTaskUsually,
+      ),
+      IsolatedTaskPhase.preparing => KitProgress.staged(
+        step: 2,
+        of: 3,
+        label: l10n.isolatedTaskStagePrepare,
+        caption: l10n.isolatedTaskUsually,
+      ),
+      IsolatedTaskPhase.ready when launch.openError == null =>
+        KitProgress.staged(step: 3, of: 3, label: l10n.isolatedTaskStageOpen),
+      IsolatedTaskPhase.opening => KitProgress.staged(
+        step: 3,
+        of: 3,
+        label: l10n.isolatedTaskStageOpen,
+      ),
+      _ => null,
+    };
+  }
+
+  Widget _status(
+    BuildContext context,
+    AppLocalizations l10n,
+    IsolatedTaskLaunch launch,
+  ) {
+    final tokens = KitTokens.of(context);
     final name = launch.worktree?.name ?? launch.requestedName ?? '';
     final branch = launch.worktree?.branch;
-    final (
-      String headline,
-      String? detail,
-      bool progress,
-    ) = switch (launch.phase) {
+    final failed = launch.phase == IsolatedTaskPhase.failed;
+    final (String headline, String? detail) = switch (launch.phase) {
       IsolatedTaskPhase.idle || IsolatedTaskPhase.creating => (
         l10n.isolatedTaskCreating,
         l10n.isolatedTaskCreatingHint,
-        true,
       ),
-      IsolatedTaskPhase.preparing => (
-        l10n.isolatedTaskPreparing(name),
-        null,
-        true,
-      ),
+      IsolatedTaskPhase.preparing => (l10n.isolatedTaskPreparing(name), null),
       // After a failed open the worktree is still ready but nothing is in
-      // flight: no spinner, and the headline stops promising an open.
+      // flight: no progress, and the headline stops promising an open.
       IsolatedTaskPhase.ready when launch.openError != null => (
         l10n.isolatedTaskReadyIdle(name),
         null,
-        false,
       ),
-      IsolatedTaskPhase.ready => (l10n.isolatedTaskReady(name), null, true),
+      IsolatedTaskPhase.ready => (l10n.isolatedTaskReady(name), null),
       IsolatedTaskPhase.unconfirmed => (
         l10n.isolatedTaskUnconfirmed(name),
         l10n.isolatedTaskUnconfirmedHint,
-        false,
       ),
       IsolatedTaskPhase.failed => (
         launch.worktree == null
             ? l10n.isolatedTaskCreateFailed
             : l10n.isolatedTaskFailed,
-        launch.message ??
-            (launch.failure == null ? null : productErrorText(launch.failure!)),
-        false,
+        [
+          launch.message ??
+              (launch.failure == null
+                  ? null
+                  : productErrorText(launch.failure!)),
+          if (launch.worktree != null) l10n.isolatedTaskFailedKept(name),
+        ].whereType<String>().join('\n\n'),
       ),
-      IsolatedTaskPhase.opening => (l10n.isolatedTaskOpening(name), null, true),
-      IsolatedTaskPhase.opened => (l10n.isolatedTaskOpened(name), null, false),
+      IsolatedTaskPhase.opening => (l10n.isolatedTaskOpening(name), null),
+      IsolatedTaskPhase.opened => (l10n.isolatedTaskOpened(name), null),
       IsolatedTaskPhase.cancelled => (
         l10n.isolatedTaskCancelled,
         launch.worktree == null
             ? l10n.isolatedTaskCancelledUnknown
             : l10n.isolatedTaskCancelledKept(name),
-        false,
       ),
     };
-    final kept =
-        launch.phase == IsolatedTaskPhase.failed && launch.worktree != null;
+    final icon = switch (launch.phase) {
+      IsolatedTaskPhase.failed => AppIconography.error,
+      IsolatedTaskPhase.unconfirmed => AppIconography.question,
+      IsolatedTaskPhase.opened => AppIconography.checkCircle,
+      IsolatedTaskPhase.cancelled => AppIconography.info,
+      _ => AppIconography.branch,
+    };
+    final progress = _progress(l10n, launch);
+    final (primary, secondary, tertiary) = _actions(l10n, launch);
     final openError = launch.openError;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          liveRegion: true,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2, right: 12),
-                child: progress
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        switch (launch.phase) {
-                          IsolatedTaskPhase.failed => AppIconography.error,
-                          IsolatedTaskPhase.unconfirmed =>
-                            AppIconography.question,
-                          IsolatedTaskPhase.opened =>
-                            AppIconography.checkCircle,
-                          _ => AppIconography.info,
-                        },
-                        size: 20,
-                        color: launch.phase == IsolatedTaskPhase.failed
-                            ? theme.colorScheme.error
-                            : AppTheme.mutedOf(theme),
-                      ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      headline,
-                      key: const Key('isolated-task-status'),
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    if (detail != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        detail,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: launch.phase == IsolatedTaskPhase.failed
-                              ? theme.colorScheme.error
-                              : AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                    ],
-                    if (kept) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.isolatedTaskFailedKept(name),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                    ],
-                    if (branch != null && branch.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.isolatedTaskBranch(branch),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                    ],
-                    if (openError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        productErrorText(openError),
-                        key: const Key('isolated-task-open-error'),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.end,
-          spacing: 8,
-          runSpacing: 8,
-          children: _actions(l10n, launch),
-        ),
-      ],
+    return KitStateView(
+      icon: icon,
+      tone: failed
+          ? AppStatusTone.failure
+          : progress != null
+          ? AppStatusTone.progress
+          : AppStatusTone.neutral,
+      title: headline,
+      titleKey: const Key('isolated-task-status'),
+      body: detail == null || detail.isEmpty ? null : detail,
+      progress: progress,
+      since: progress != null ? _phaseSince : null,
+      size: KitStateSize.inline,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      content: branch == null && openError == null
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (branch != null && branch.isNotEmpty)
+                  KitText(
+                    l10n.isolatedTaskBranch(branch),
+                    role: KitTextRole.secondary,
+                  ),
+                if (openError != null) ...[
+                  SizedBox(height: tokens.space2),
+                  KitNotice.error(
+                    key: const Key('isolated-task-open-error'),
+                    message: productErrorText(openError),
+                    error: openError,
+                  ),
+                ],
+              ],
+            ),
     );
   }
 
-  List<Widget> _actions(AppLocalizations l10n, IsolatedTaskLaunch launch) {
+  (KitAction?, KitAction?, List<KitAction>) _actions(
+    AppLocalizations l10n,
+    IsolatedTaskLaunch launch,
+  ) {
+    final stop = KitAction(
+      key: const Key('isolated-task-stop'),
+      label: l10n.isolatedTaskStopWaiting,
+      onPressed: _close,
+    );
+    final close = KitAction(
+      key: const Key('isolated-task-dismiss'),
+      label: l10n.isolatedTaskClose,
+      onPressed: _close,
+    );
     switch (launch.phase) {
       case IsolatedTaskPhase.idle:
       case IsolatedTaskPhase.creating:
       case IsolatedTaskPhase.preparing:
-        return [
-          OutlinedButton(
-            key: const Key('isolated-task-stop'),
-            onPressed: _close,
-            child: Text(l10n.isolatedTaskStopWaiting),
-          ),
-        ];
+        return (null, stop, const []);
       case IsolatedTaskPhase.unconfirmed:
-        return [
-          TextButton(
-            key: const Key('isolated-task-stop'),
-            onPressed: _close,
-            child: Text(l10n.isolatedTaskStopWaiting),
-          ),
-          OutlinedButton(
-            key: const Key('isolated-task-keep-waiting'),
-            onPressed: launch.keepWaiting,
-            child: Text(l10n.isolatedTaskKeepWaiting),
-          ),
-          FilledButton(
+        return (
+          KitAction(
             key: const Key('isolated-task-open-anyway'),
+            label: l10n.isolatedTaskOpenAnyway,
             onPressed: () => unawaited(launch.open(acceptUnconfirmed: true)),
-            child: Text(l10n.isolatedTaskOpenAnyway),
           ),
-        ];
+          KitAction(
+            key: const Key('isolated-task-keep-waiting'),
+            label: l10n.isolatedTaskKeepWaiting,
+            onPressed: launch.keepWaiting,
+          ),
+          [stop],
+        );
       case IsolatedTaskPhase.ready:
-        return [
-          if (launch.openError != null)
-            FilledButton(
-              key: const Key('isolated-task-retry-open'),
-              onPressed: () => unawaited(launch.open()),
-              child: Text(l10n.isolatedTaskRetryOpen),
-            ),
-          if (launch.openError != null)
-            TextButton(
-              key: const Key('isolated-task-dismiss'),
-              onPressed: _close,
-              child: Text(l10n.isolatedTaskClose),
-            ),
-        ];
+        if (launch.openError == null) return (null, null, const []);
+        return (
+          KitAction(
+            key: const Key('isolated-task-retry-open'),
+            label: l10n.isolatedTaskRetryOpen,
+            onPressed: () => unawaited(launch.open()),
+          ),
+          null,
+          [close],
+        );
       case IsolatedTaskPhase.opening:
       case IsolatedTaskPhase.opened:
-        return const [];
+        return (null, null, const []);
       case IsolatedTaskPhase.failed:
       case IsolatedTaskPhase.cancelled:
-        return [
-          FilledButton(
-            key: const Key('isolated-task-dismiss'),
-            onPressed: _close,
-            child: Text(l10n.isolatedTaskClose),
-          ),
-        ];
+        return (null, close, const []);
     }
   }
 }

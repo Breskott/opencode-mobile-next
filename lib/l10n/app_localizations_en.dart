@@ -21214,4 +21214,86 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get projectsOneFolderTitle => 'This server works in one folder';
+
+  @override
+  String servicesStarted(String name) {
+    return '$name started';
+  }
+
+  @override
+  String servicesRemoved(String name) {
+    return '$name removed';
+  }
+
+  @override
+  String servicesStopTitle(String name) {
+    return 'Stop $name?';
+  }
+
+  @override
+  String servicesRestartTitle(String name) {
+    return 'Restart $name?';
+  }
+
+  @override
+  String servicesForgetTitle(String name) {
+    return 'Forget the last run of $name?';
+  }
+
+  @override
+  String servicesRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get servicesRemoveRunningHint =>
+      'Its command keeps running on the server, and this app can no longer stop it. Stop it first to end it.';
+
+  @override
+  String get servicesEmptyTitle => 'No dev commands yet';
+
+  @override
+  String get servicesOffline =>
+      'The server is not answering. Commands cannot be started or checked until it reconnects.';
+
+  @override
+  String get servicesLogFailed => 'Could not read the log.';
+
+  @override
+  String get servicesProjectFolder => 'Project folder';
+
+  @override
+  String get servicesWorkspace => 'Workspace';
+
+  @override
+  String get servicesNameRequired => 'Enter a name.';
+
+  @override
+  String get servicesDuplicateName =>
+      'A service with this name already exists.';
+
+  @override
+  String get servicesCommandRequired => 'Enter a command, such as npm run dev.';
+
+  @override
+  String get servicesUrlInvalid =>
+      'Enter an http or https address without a user name or password.';
+
+  @override
+  String get isolatedTaskProjectFolder => 'Project folder';
+
+  @override
+  String get isolatedTaskStageCreate => 'Creating the worktree';
+
+  @override
+  String get isolatedTaskStagePrepare => 'Running the project setup';
+
+  @override
+  String get isolatedTaskStageOpen => 'Opening a conversation';
+
+  @override
+  String get isolatedTaskUsually => 'Usually 1–3 minutes';
 }

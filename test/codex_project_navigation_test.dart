@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/codex/gateway.dart'
     show codexServerCapabilities;
 import 'package:opencode_mobile/state/connection.dart';
@@ -106,12 +107,16 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: ProjectsScreen(controller: controller, selectedProjectID: null),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Project context'), findsOneWidget);
+      // The same title, and it says the server works in one folder.
+      expect(find.text('Projects'), findsOneWidget);
+      expect(find.text('This server works in one folder'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('projects-configured-folder')),
         findsOneWidget,
