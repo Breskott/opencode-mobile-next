@@ -25997,4 +25997,20 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String kitDiffFilePosition(int index, int count) {
+    return '$index of $count';
+  }
+
+  @override
+  String kitDiffFilePositionSpoken(int index, int count) {
+    return 'file $index of $count';
+  }
+
+  @override
+  String get kitDiffViewed => 'Viewed';
+
+  @override
+  String get kitDiffSelectHunk => 'Select these lines';
 }

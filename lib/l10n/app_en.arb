@@ -30521,5 +30521,37 @@
         "type": "int"
       }
     }
+  },
+  "kitDiffFilePosition": "{index} of {count}",
+  "@kitDiffFilePosition": {
+    "description": "KitDiffView: the phone file switcher's position after the file name, e.g. 'checkout_page.dart · 1 of 3'",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffFilePositionSpoken": "file {index} of {count}",
+  "@kitDiffFilePositionSpoken": {
+    "description": "KitDiffView: the file switcher's position as read by a screen reader, after the path and counts",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffViewed": "Viewed",
+  "@kitDiffViewed": {
+    "description": "KitDiffView: screen-reader name of the tick on a file already viewed in the wide file list"
+  },
+  "kitDiffSelectHunk": "Select these lines",
+  "@kitDiffSelectHunk": {
+    "description": "KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk"
   }
 }
