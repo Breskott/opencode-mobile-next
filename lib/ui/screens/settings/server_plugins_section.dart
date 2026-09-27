@@ -12,13 +12,48 @@ import '../../../state/connection.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 
+/// What the "On the server" section offers the Plugins page's top bar:
+/// "Refresh plugins" and, in its menu, "Clear personal command links". The
+/// section fills it in; the page listens and builds its top bar from it, so
+/// the section's actions live on the page they act on, not on a label.
+class ServerPluginsActions extends ChangeNotifier {
+  VoidCallback? _refresh;
+  VoidCallback? _clearLinks;
+
+  /// Reloads the server's plugins; null while it cannot run.
+  VoidCallback? get refresh => _refresh;
+
+  /// Asks, then clears the personal command links; null when there are
+  /// none to keep for this server.
+  VoidCallback? get clearLinks => _clearLinks;
+
+  void _set(VoidCallback? refresh, VoidCallback? clearLinks) {
+    if ((refresh == null) == (_refresh == null) &&
+        (clearLinks == null) == (_clearLinks == null)) {
+      _refresh = refresh;
+      _clearLinks = clearLinks;
+      return;
+    }
+    _refresh = refresh;
+    _clearLinks = clearLinks;
+    notifyListeners();
+  }
+}
+
 /// The "On the server" section of the one Plugins screen
 /// (settings/plugins_screen.dart): the server's plugin inventory and the
-/// personal command links. It is a section, not a page, so Plugins has one
-/// home; the host only builds it when the server has a plugin inventory.
+/// personal command links, carded in one row group like "In this app". It
+/// is a section, not a page, so Plugins has one home; the host only builds
+/// it when the server has a plugin inventory. Its refresh and "Clear
+/// personal command links" go to the page's top bar through [actions].
 class ServerPluginsSection extends StatefulWidget {
-  const ServerPluginsSection({super.key, required this.controller});
+  const ServerPluginsSection({
+    super.key,
+    required this.controller,
+    this.actions,
+  });
   final ConnectionController controller;
+  final ServerPluginsActions? actions;
   @override
   State<ServerPluginsSection> createState() => _ServerPluginsSectionState();
 }
@@ -187,7 +222,32 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   void dispose() {
     _request++;
     _detach(_controller);
+    // The page may be going too: drop the callbacks without notifying.
+    widget.actions
+      ?.._refresh = null
+      .._clearLinks = null;
     super.dispose();
+  }
+
+  /// Publishes what the top bar can offer after this frame (never during a
+  /// build).
+  void _publishActions() {
+    final actions = widget.actions;
+    if (actions == null) return;
+    final live = _connected && _supported;
+    final refresh = live && !_loading
+        ? () {
+            if (mounted) unawaited(_load());
+          }
+        : null;
+    final clear = live && _mappingStore != null && !_editingMapping
+        ? () {
+            if (mounted) unawaited(_clearMappings());
+          }
+        : null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) actions._set(refresh, clear);
+    });
   }
 
   @override
@@ -209,70 +269,34 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
     final builtInFailed = builtIn
         .where((plugin) => plugin.status == PluginStatus.failed)
         .length;
-    final canClear = _mappingStore != null;
+    _publishActions();
+    final tokens = KitTokens.of(context);
+    Widget group(List<Widget> children) => KitRowGroup(
+      key: const ValueKey('plugins-section-server-group'),
+      label: l10n.pluginsSectionOnServer,
+      children: children,
+    );
     return Column(
       key: const ValueKey('plugins-section-server'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // The section's own actions sit on its label (§6): refresh, and
-        // the rare "Clear personal links" in its menu, confirmed.
-        SectionLabel(
-          l10n.pluginsSectionOnServer,
-          padding: const EdgeInsets.fromLTRB(16, 16, 4, 0),
-          trailing: _connected && _supported
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: l10n.pluginsRefresh,
-                      onPressed: _loading ? null : _load,
-                      icon: Icon(
-                        AppIconography.retry,
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                    if (canClear)
-                      KitRowMenu(
-                        key: const ValueKey('plugins-section-menu'),
-                        tooltip: l10n.pluginsSectionMore,
-                        enabled: !_editingMapping,
-                        items: [
-                          KitMenuItem(
-                            key: const ValueKey('plugins-clear-links'),
-                            label: l10n.pluginMappingClearAll,
-                            destructive: true,
-                            onSelected: () => unawaited(_clearMappings()),
-                          ),
-                        ],
-                      ),
-                  ],
-                )
-              : null,
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-          child: Text(
-            l10n.pluginsDescriptionShort,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-        ),
         KitLoadingBar(
           loading: _connected && _supported && (_loading || _mappingLoading),
           label: l10n.pluginsLoading,
         ),
         if (!_supported)
-          _message(l10n.pluginsUnsupported)
+          group([_message(l10n.pluginsUnsupported)])
         else if (!_connected)
-          _message(l10n.pluginsDisconnected)
+          group([_message(l10n.pluginsDisconnected)])
         else ...[
           if (_failed)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.gutter,
+                end: tokens.gutter,
+                bottom: tokens.space3,
+              ),
               child: KitNotice(
                 tone: AppStatusTone.failure,
                 message: l10n.pluginsLoadFailed,
@@ -285,48 +309,47 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
               ),
             ),
           if (_plugins == null && _loading && !_failed)
-            const KitSkeletonRows(count: 3),
-          if (_plugins?.isEmpty == true && !_loading && !_failed)
-            _message(l10n.pluginsEmpty),
-          // What the person added is listed openly; the server's own
-          // plugins fold into one row, open when one of them failed.
-          for (final plugin in added) _row(plugin, l10n),
-          if (builtIn.isNotEmpty)
-            KitExpandRow(
-              key: ValueKey('plugins-builtin-${builtInFailed > 0}'),
-              headerKey: const ValueKey('plugins-builtin-group'),
-              initiallyExpanded: builtInFailed > 0,
-              leading: KitRow.icon(context, AppIconography.extensions),
-              title: l10n.pluginsBuiltinGroup,
-              supporting: TextSpan(
-                children: [
-                  TextSpan(text: l10n.pluginsBuiltinActive(builtInActive)),
-                  if (builtInFailed > 0)
-                    TextSpan(
-                      text: ' · ${l10n.pluginsBuiltinFailed(builtInFailed)}',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                ],
-              ),
-              children: [for (final plugin in builtIn) _row(plugin, l10n)],
-            ),
+            const KitSkeletonRows(count: 3)
+          else if (_plugins?.isEmpty == true && !_loading && !_failed)
+            group([_message(l10n.pluginsEmpty)])
+          else if (plugins.isNotEmpty)
+            // What the person added is listed openly; the server's own
+            // plugins fold into one row, open when one of them failed.
+            group([
+              for (final plugin in added) _row(plugin, l10n),
+              if (builtIn.isNotEmpty)
+                KitExpandRow(
+                  key: ValueKey('plugins-builtin-${builtInFailed > 0}'),
+                  headerKey: const ValueKey('plugins-builtin-group'),
+                  initiallyExpanded: builtInFailed > 0,
+                  leading: KitRow.icon(context, AppIconography.extensions),
+                  title: l10n.pluginsBuiltinGroup,
+                  supporting: TextSpan(
+                    children: [
+                      TextSpan(text: l10n.pluginsBuiltinActive(builtInActive)),
+                      if (builtInFailed > 0)
+                        TextSpan(
+                          text:
+                              ' · ${l10n.pluginsBuiltinFailed(builtInFailed)}',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                    ],
+                  ),
+                  children: [for (final plugin in builtIn) _row(plugin, l10n)],
+                ),
+            ]),
         ],
       ],
     );
   }
 
-  Widget _message(String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Text(
-        text,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: AppTheme.mutedOf(theme),
-        ),
-      ),
-    );
-  }
+  /// A state of the section as its one row: unsupported, disconnected or
+  /// empty, in words.
+  Widget _message(String text) => KitRow(
+    key: const ValueKey('plugins-section-message'),
+    title: text,
+    titleMaxLines: 3,
+  );
 
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));

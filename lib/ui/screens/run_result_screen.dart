@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../api/models.dart';
 import '../../domain/run_result.dart';
 import '../../domain/server_gateway.dart';
+import '../../domain/session_title_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
@@ -275,7 +276,14 @@ class _RunResultScreenState extends State<RunResultScreen> {
         ),
     ];
     return KitScreen(
-      topBar: KitTopBar(title: l10n.runResultsTitle),
+      // The page is named for the conversation it reviews ("Fix the
+      // checkout total"); "Run results" only when the title is unknown.
+      topBar: KitTopBar(
+        title: switch (displaySessionTitleText(session?.title)) {
+          final title when title.isNotEmpty => title,
+          _ => l10n.runResultsTitle,
+        },
+      ),
       loading: _loading && _loaded,
       loadingLabel: l10n.reviewRunResultsLoadingTitle,
       bottom: canReview

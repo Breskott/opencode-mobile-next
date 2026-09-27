@@ -143,9 +143,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('GPT-5.6 Sol'), findsOneWidget);
-    expect(find.text('2 usable'), findsOneWidget);
-    expect(find.text('3 registered'), findsOneWidget);
-    expect(find.text('Background subagents unavailable'), findsOneWidget);
+    // No counts line; the missing subagents are the model row's own words,
+    // and the row itself opens the picker (no second "Change" button).
+    expect(find.text('2 usable'), findsNothing);
+    expect(find.text('3 registered'), findsNothing);
+    expect(
+      find.textContaining('no background subagents', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('tools-change-model')), findsNothing);
     expect(find.byType(Card), findsNothing);
     expect(repository.providerID, 'openai');
     expect(repository.modelID, 'gpt-5.6-sol');

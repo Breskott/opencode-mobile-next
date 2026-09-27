@@ -218,7 +218,7 @@ void main() {
       expect(find.textContaining('opencode.'), findsNothing);
       // No "Link commands" or "Built in" line in the rows.
       expect(find.text('Link commands'), findsNothing);
-      expect(find.text('Clear personal links'), findsNothing);
+      expect(find.text('Clear personal command links'), findsNothing);
 
       await tester.tap(find.text('Input repair'));
       await tester.pumpAndSettle();
@@ -255,7 +255,7 @@ void main() {
     });
 
     testWidgets(
-      'actions are in menus: Link commands and Clear personal links',
+      'actions are in menus: Link commands and Clear personal command links',
       (tester) async {
         final done = await mount(tester, PhoneServerScene.plugins);
         await tester.tap(
@@ -268,7 +268,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('plugins-section-menu')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Clear personal links'));
+        await tester.tap(find.text('Clear personal command links'));
         await tester.pumpAndSettle();
         // Destructive: it asks first.
         expect(find.text('Clear all personal command links?'), findsOneWidget);

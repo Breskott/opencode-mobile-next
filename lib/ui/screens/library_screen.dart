@@ -14,7 +14,6 @@ import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../widgets/external_link.dart';
 import '../widgets/connect_methods.dart';
-import '../widgets/info_label.dart';
 import '../widgets/provider_logo.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';

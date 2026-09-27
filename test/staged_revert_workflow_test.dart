@@ -14,6 +14,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/staged_revert_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -354,8 +355,10 @@ void main() {
     },
   );
 
-  testWidgets('the page quotes the prompt, lists the files and offers two '
-      'outcomes that each say what happens', (tester) async {
+  testWidgets('the page quotes the prompt, lists the files and pins its '
+      'one decision: Put everything back, or delete the hidden messages', (
+    tester,
+  ) async {
     final f = await setup(staged: stage('msg_1'));
     await tester.pumpWidget(
       app(StagedRevertScreen(controller: f.controller, sessionID: 'a')),
@@ -366,14 +369,23 @@ void main() {
     // The raw message id is gone (owner verdict: drop the id).
     expect(find.text('msg_1'), findsNothing);
     expect(find.text('main.dart'), findsOneWidget);
-    expect(find.text('Put everything back'), findsOneWidget);
+    // No "Choose what happens" row group: the two outcomes are buttons in
+    // the page's bottom block, the destructive one named for what it
+    // deletes.
+    expect(find.text('Choose what happens'), findsNothing);
+    expect(find.text('Keep the undo'), findsNothing);
     expect(
-      find.text('Bring back the hidden messages and the files as they were.'),
+      find.descendant(
+        of: find.byType(KitActionBlock),
+        matching: find.text('Put everything back'),
+      ),
       findsOneWidget,
     );
-    expect(find.text('Keep the undo'), findsOneWidget);
     expect(
-      find.text("Delete the hidden messages for good. This can't be undone."),
+      find.descendant(
+        of: find.byType(KitActionBlock),
+        matching: find.text('Delete the hidden messages'),
+      ),
       findsOneWidget,
     );
   });
@@ -388,9 +400,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('commit-staged-revert')));
     await tester.pumpAndSettle();
-    expect(find.text('Keep the undo for good?'), findsOneWidget);
-    expect(find.text('The hidden messages are deleted'), findsOneWidget);
+    expect(find.text('Delete the hidden messages for good?'), findsOneWidget);
+    expect(find.text("This can't be undone."), findsOneWidget);
+    expect(
+      find.text('The hidden prompt and every message after it are deleted'),
+      findsOneWidget,
+    );
     expect(find.text('Files stay as they are now'), findsOneWidget);
+    expect(find.text('Delete hidden messages'), findsOneWidget);
     expect(f.ops.writes, isEmpty);
     await tester.tap(find.byKey(const ValueKey('confirm-staged-revert')));
     await tester.pumpAndSettle();
@@ -476,10 +493,7 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('clear-staged-revert')),
-      200,
-    );
+    // The decision is pinned at the bottom, so it is reachable unscrolled.
     await tester.tap(find.byKey(const ValueKey('clear-staged-revert')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('confirm-staged-revert')), findsOneWidget);

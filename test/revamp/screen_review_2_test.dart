@@ -10,6 +10,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/screens/run_result_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -161,6 +162,49 @@ void main() {
     expect(find.byKey(const Key('run-result-review-changes')), findsOneWidget);
     expect(find.text('Review changed files'), findsOneWidget);
     expect(find.byKey(const Key('run-result-running')), findsNothing);
+  });
+
+  testWidgets('the top bar names the conversation and a failed command is '
+      'titled by its command, state word first', (tester) async {
+    final run = finishedRun();
+    run.add(
+      runMessage(
+        'a-last',
+        role: 'assistant',
+        created: 50,
+        completed: 51,
+        finish: 'stop',
+        parts: [
+          runTool(
+            'c-fail',
+            'bash',
+            {'command': 'flutter test test/cart_test.dart'},
+            metadata: {'exit': 1},
+          ),
+        ],
+      ),
+    );
+    final controller = await runController(RunGateway(run));
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      hostApp(RunResultScreen(controller: controller, sessionID: 'ses_1')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(KitTopBar),
+        matching: find.text('Fix the checkout total'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Run results'), findsNothing);
+    // One facts line under the outcome instead of an id and two time lines.
+    expect(find.text('3 steps · under a minute · gpt-5'), findsOneWidget);
+    expect(find.textContaining('Run …'), findsNothing);
+    expect(find.textContaining('Started'), findsNothing);
+    expect(find.text('flutter test test/cart_test.dart'), findsOneWidget);
+    expect(find.text('Failed · exit 1'), findsOneWidget);
+    expect(find.text('Passed · exit 0'), findsOneWidget);
   });
 
   testWidgets('a run with no file changes pins nothing', (tester) async {

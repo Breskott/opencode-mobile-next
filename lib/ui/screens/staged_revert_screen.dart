@@ -187,10 +187,11 @@ Future<bool?> showStageRevertSheet(
 enum _Outcome { kept, restored }
 
 /// Review the undo (map staged-revert): the prompt it starts from, the
-/// files the server lists for it (each opens its diff), and the two equal
-/// outcomes, each with its consequence in one line: "Put everything back"
-/// and "Keep the undo". Each asks first (staged-revert-confirm-sheet) and
-/// runs inside the question, so a failure keeps the question open.
+/// files the server lists for it (each opens its diff), and the decision
+/// pinned at the bottom: "Put everything back" (the primary) and the
+/// destructive "Delete the hidden messages". Each asks first
+/// (staged-revert-confirm-sheet) and runs inside the question, so a failure
+/// keeps the question open.
 ///
 /// The file list is the server's staged preview, never a new working-tree
 /// diff. A remote replacement requires an explicit review before enabling
@@ -300,6 +301,7 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
         title: l10n.reviewRevertKeepConfirmTitle,
         body: l10n.reviewRevertKeepConfirmBody,
         confirmLabel: l10n.reviewRevertKeepConfirmAction,
+        icon: AppIconography.delete,
         kind: KitConfirmKind.destructive,
         consequenceItems: [
           KitConsequence(
@@ -461,7 +463,6 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
             : _prompt!.isEmpty
             ? l10n.revertAttachmentPrompt
             : _prompt!;
-        final reason = busy ? l10n.revertBusy : null;
         final gap = SizedBox(height: tokens.sectionGap);
         Widget onRails(Widget child) => Padding(
           padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
@@ -524,38 +525,14 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
                   for (final file in files) _fileRow(context, l10n, file),
               ],
             ),
-            gap,
-            KitRowGroup(
-              label: l10n.reviewRevertChooseLabel,
-              children: [
-                KitRow(
-                  key: const ValueKey('clear-staged-revert'),
-                  leading: const KitRowIcon(AppIconography.restore),
-                  title: l10n.reviewRevertRestoreTitle,
-                  supporting: TextSpan(text: l10n.reviewRevertRestoreLine),
-                  supportingMaxLines: 2,
-                  trailing: const KitChevron(),
-                  enabled: !busy,
-                  disabledReason: reason,
-                  onTap: busy ? null : () => unawaited(_apply(commit: false)),
-                ),
-                KitRow(
-                  key: const ValueKey('commit-staged-revert'),
-                  leading: const KitRowIcon(AppIconography.delete),
-                  title: l10n.reviewRevertKeepTitle,
-                  supporting: TextSpan(text: l10n.reviewRevertKeepLine),
-                  supportingMaxLines: 2,
-                  trailing: const KitChevron(),
-                  destructive: true,
-                  enabled: !busy,
-                  disabledReason: reason,
-                  onTap: busy ? null : () => unawaited(_apply(commit: true)),
-                ),
-              ],
-            ),
           ],
         );
       }
+      // The page's one decision, pinned at the bottom: putting everything
+      // back is the primary; deleting the hidden messages is the
+      // destructive tertiary, named for what it deletes.
+      final decide = outcome == null && current && revert != null;
+      final reason = busy ? l10n.revertBusy : null;
       return KitScreen(
         topBar: KitTopBar(title: l10n.reviewRevertScreenTitle),
         // A page to read and decide on: a readable width on a wide window.
@@ -563,6 +540,31 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
         loading: busy && outcome == null,
         loadingLabel: l10n.revertBusy,
         body: body,
+        bottom: decide
+            ? KitActionBlock(
+                primary: KitAction(
+                  key: const ValueKey('clear-staged-revert'),
+                  label: l10n.reviewRevertRestoreTitle,
+                  icon: AppIconography.restore,
+                  disabledReason: reason,
+                  onPressed: busy
+                      ? null
+                      : () => unawaited(_apply(commit: false)),
+                ),
+                tertiary: [
+                  KitAction(
+                    key: const ValueKey('commit-staged-revert'),
+                    label: l10n.reviewRevertKeepTitle,
+                    icon: AppIconography.delete,
+                    destructive: true,
+                    disabledReason: reason,
+                    onPressed: busy
+                        ? null
+                        : () => unawaited(_apply(commit: true)),
+                  ),
+                ],
+              )
+            : null,
       );
     },
   );

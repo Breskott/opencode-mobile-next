@@ -11,6 +11,8 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
+import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,11 +33,15 @@ class _Api extends OpenCodeApi {
 }
 
 class _Repository implements ProductRepository {
+  _Repository([this.statuses = const []]);
+
+  final List<VersionControlFile> statuses;
+
   @override
   void setLocation({String? directory, String? workspace}) {}
 
   @override
-  Future<List<VersionControlFile>> listFileStatuses() async => const [];
+  Future<List<VersionControlFile>> listFileStatuses() async => statuses;
 
   @override
   Future<List<WorkspaceProject>> listProjects() async => const [];
@@ -44,12 +50,15 @@ class _Repository implements ProductRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Future<ConnectionController> _controller({String? directory}) async {
+Future<ConnectionController> _controller({
+  String? directory,
+  List<VersionControlFile> statuses = const [],
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   return ConnectionController(ProfileStore(prefs: prefs))
     ..api = _Api()
-    ..repository = _Repository()
+    ..repository = _Repository(statuses)
     ..directory = directory
     ..status = StreamStatus.connected;
 }
@@ -81,6 +90,10 @@ void main() {
     expect(find.text('No project selected'), findsOneWidget);
     final choose = find.byKey(const ValueKey('project-hub-choose-project'));
     expect(choose, findsOneWidget);
+    // The tools act on a project: none is listed until one is open.
+    for (final tool in ['changes', 'files', 'terminal', 'health']) {
+      expect(find.byKey(ValueKey('project-hub-$tool')), findsNothing);
+    }
 
     await tester.tap(choose);
     await tester.pump();
@@ -103,6 +116,9 @@ void main() {
       find.byKey(const ValueKey('project-hub-files')),
     );
     expect(changes.dy, lessThan(files.dy));
+    // Title-only rows: no static descriptions under the tool names.
+    expect(find.text('Browse and preview project files'), findsNothing);
+    expect(find.text('Open persistent project terminals'), findsNothing);
   });
 
   testWidgets('Files opens in the tab under one bar titled by the folder', (
@@ -128,5 +144,76 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('project-hub-files-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('project-hub-changes')), findsOneWidget);
+  });
+
+  testWidgets('the changes sheet is one list by path, never grouped by '
+      'status; each row leads with its state word', (tester) async {
+    final controller = await _controller(
+      directory: '/srv/shopfront',
+      statuses: const [
+        VersionControlFile(
+          path: 'test/checkout_test.dart',
+          status: 'added',
+          additions: 24,
+          deletions: 0,
+        ),
+        VersionControlFile(
+          path: 'lib/cart/cart_bloc.dart',
+          status: 'modified',
+          additions: 1,
+          deletions: 1,
+        ),
+        VersionControlFile(
+          path: 'main.dart',
+          status: 'modified',
+          additions: 6,
+          deletions: 2,
+        ),
+      ],
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: FilesScreen(controller: controller)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('files-changes-card')));
+    await tester.pumpAndSettle();
+
+    // No per-status group labels with counts.
+    expect(find.textContaining('Modified · 2'), findsNothing);
+    expect(find.textContaining('Added · 1'), findsNothing);
+    // One list ordered by path.
+    final rows = [
+      'lib/cart/cart_bloc.dart',
+      'main.dart',
+      'test/checkout_test.dart',
+    ].map((path) => find.byKey(ValueKey('changed-file-$path'))).toList();
+    for (final row in rows) {
+      expect(row, findsOneWidget);
+    }
+    expect(
+      tester.getTopLeft(rows[0]).dy,
+      lessThan(tester.getTopLeft(rows[1]).dy),
+    );
+    expect(
+      tester.getTopLeft(rows[1]).dy,
+      lessThan(tester.getTopLeft(rows[2]).dy),
+    );
+    // The state word first, then the folder, then the counts.
+    expect(
+      find.text(
+        'Modified · ${KitBidi.ltr('lib/cart')} · ${KitBidi.ltr('+1 −1')}',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Added · ${KitBidi.ltr('test')} · ${KitBidi.ltr('+24 −0')}'),
+      findsOneWidget,
+    );
+    expect(find.text('Modified · ${KitBidi.ltr('+6 −2')}'), findsOneWidget);
   });
 }

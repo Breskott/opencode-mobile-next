@@ -181,10 +181,13 @@ class _ToolsScreenState extends State<ToolsScreen> {
     ),
   );
 
-  /// The model the list is for, with Change: "Claude Sonnet 4 · Anthropic".
+  /// The model the list is for: "Claude Sonnet 4" over "Anthropic", and
+  /// "· no background subagents" when the server says so. The whole row
+  /// opens the model picker (one way to change it, marked by the chevron).
   Widget _modelHeader(AppLocalizations l10n, ModelRef model) {
     final providers =
         widget.controller.catalog?.providers ?? const <CatalogProvider>[];
+    final capabilities = _capabilities;
     return KitRowGroup(
       margin: EdgeInsets.zero,
       children: [
@@ -194,72 +197,43 @@ class _ToolsScreenState extends State<ToolsScreen> {
           title: _modelName(model),
           titleMaxLines: 2,
           supporting: TextSpan(
-            text: presentedProviderName(model.providerID, providers),
+            text: [
+              presentedProviderName(model.providerID, providers),
+              if (capabilities != null && !capabilities.backgroundSubagents)
+                l10n.toolsScreenNoBackgroundSubagents,
+            ].join(' · '),
           ),
-          trailing: KitButton(
-            key: const ValueKey('tools-change-model'),
-            role: KitButtonRole.tertiary,
-            label: l10n.e7LibraryChange,
-            expand: false,
-            onPressed: _chooseModel,
-          ),
+          supportingMaxLines: 2,
+          trailing: const KitChevron(),
           onTap: _chooseModel,
         ),
       ],
     );
   }
 
-  /// One muted line of counts; a part the server could not report reads in
-  /// the failure tone beside them.
-  Widget _counts(AppLocalizations l10n) {
+  /// What the server could not report, in the failure tone, under the
+  /// model; nothing when everything loaded (no counts line).
+  Widget _gaps(AppLocalizations l10n) {
     final tokens = KitTokens.of(context);
-    final tools = _tools;
-    final registered = _registeredIDs;
-    final capabilities = _capabilities;
-    final values = <String>[
-      if (tools != null) l10n.e7LibraryUsable(tools.length.toString()),
-      if (registered != null)
-        l10n.e7LibraryRegistered(registered.length.toString()),
-      if (capabilities != null)
-        capabilities.backgroundSubagents
-            ? l10n.e7LibraryBackgroundSubagentsEnabled
-            : l10n.e7LibraryBackgroundSubagentsUnavailable,
-    ];
     final errors = [
       if (_registeredError != null)
         l10n.e7LibraryRegisteredInventoryUnavailable,
       if (_capabilitiesError != null) l10n.e7LibraryServerCapabilityUnavailable,
     ];
-    if (values.isEmpty && errors.isEmpty) return const SizedBox.shrink();
-    return Semantics(
-      container: true,
-      excludeSemantics: true,
-      label: [...values, ...errors].join(', '),
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: tokens.space1,
-          end: tokens.space1,
-          top: tokens.space3,
-          bottom: tokens.space3,
-        ),
-        child: Wrap(
-          spacing: tokens.space3,
-          runSpacing: tokens.space1,
-          children: [
-            for (final value in values)
-              KitText(
-                value,
-                role: KitTextRole.secondary,
-                tone: KitTextTone.secondary,
-              ),
-            for (final error in errors)
-              KitText(
-                error,
-                role: KitTextRole.secondary,
-                tone: KitTextTone.danger,
-              ),
-          ],
-        ),
+    if (errors.isEmpty) return SizedBox(height: tokens.space3);
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space3),
+      child: Wrap(
+        spacing: tokens.space3,
+        runSpacing: tokens.space1,
+        children: [
+          for (final error in errors)
+            KitText(
+              error,
+              role: KitTextRole.secondary,
+              tone: KitTextTone.danger,
+            ),
+        ],
       ),
     );
   }
@@ -274,7 +248,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         key: const Key('coding-tools-list'),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: padding,
-        children: [_modelHeader(l10n, model), _counts(l10n), ...children],
+        children: [_modelHeader(l10n, model), _gaps(l10n), ...children],
       ),
     );
     if (tools == null && _toolsError == null) {

@@ -159,7 +159,11 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     final source = _source;
     final choice = source == null
         ? null
-        : _SourceChoice(source: source, onChanged: _choose);
+        : _SourceChoice(
+            source: source,
+            serverName: widget.controller.profile?.name,
+            onChanged: _choose,
+          );
     return KeyedSubtree(
       key: const ValueKey('terminal-page'),
       child: switch (source) {
@@ -171,8 +175,9 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         TerminalSource.server => TerminalScreen(
           controller: widget.controller,
           page: true,
+          // The source choice above is the one way to this phone's
+          // terminal: no second "Use this phone's terminal" button.
           header: [?choice],
-          onUsePhone: () => _choose(TerminalSource.phone),
         ),
         null => KitScreen(
           topBar: KitTopBar(title: l10n.libraryTerminalTitle),
@@ -185,12 +190,18 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   }
 }
 
-/// Where the shell runs: this phone or the OpenCode server.
+/// Where the shell runs: this phone or the connected server, named
+/// ("Laptop"); "OpenCode server" only when the server has no name.
 class _SourceChoice extends StatelessWidget {
-  const _SourceChoice({required this.source, required this.onChanged});
+  const _SourceChoice({
+    required this.source,
+    required this.onChanged,
+    this.serverName,
+  });
 
   final TerminalSource source;
   final ValueChanged<TerminalSource> onChanged;
+  final String? serverName;
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +226,10 @@ class _SourceChoice extends StatelessWidget {
           KitSegment(
             key: const ValueKey('terminal-source-server'),
             value: TerminalSource.server,
-            label: l10n.localTerminalSourceServer,
+            label: switch (serverName?.trim()) {
+              final name? when name.isNotEmpty => name,
+              _ => l10n.localTerminalSourceServer,
+            },
           ),
         ],
         selected: source,
@@ -604,15 +618,22 @@ class _TerminalScreenState extends State<TerminalScreen> {
     );
   }
 
-  /// This server keeps no terminals: say so instead of an empty list, and
-  /// offer this phone's terminal where there is one.
+  /// This server keeps no terminals: say so, about the terminal only and
+  /// naming the server ("Laptop doesn't share a terminal"), instead of an
+  /// empty list, and offer this phone's terminal where there is one and no
+  /// source choice already offers it.
   Widget _unsupported(BuildContext context, AppLocalizations l10n) {
     final onUsePhone = widget.onUsePhone;
+    final name = widget.controller.profile?.name.trim();
     return KitStateView.missing(
       key: const ValueKey('terminal-unavailable'),
+      // The registry entry is shared with Files (no terminal-only id yet);
+      // the words here are the terminal's own.
       capability: _terminalCapability,
-      title: KitCapabilityExplainer.titleOf(context, _terminalCapability),
-      why: KitCapabilityExplainer.whyOf(context, _terminalCapability),
+      title: name == null || name.isEmpty
+          ? l10n.terminalScreenNoTerminalThisServer
+          : l10n.terminalScreenNoTerminalNamed(name),
+      why: l10n.terminalScreenNoTerminalWhy,
       size: KitStateSize.page,
       icon: AppIconography.terminal,
       enableKey: const ValueKey('terminal-use-phone'),

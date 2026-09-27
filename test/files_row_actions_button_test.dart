@@ -187,8 +187,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('files-viewer')), findsOneWidget);
     expect(find.textContaining('readme body'), findsWidgets);
-    // Attach is the viewer's one labelled action.
+    // "Attach to prompt" is the viewer's one labelled action, in the same
+    // words as the row menu (never a bare "Attach").
     expect(find.byKey(const Key('project-file-attach')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('project-file-attach')),
+        matching: find.text('Attach to prompt'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Attach'), findsNothing);
   });
 
   testWidgets('Add to prompt stages a reference with Undo, not a snackbar', (

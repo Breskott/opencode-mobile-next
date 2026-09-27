@@ -282,6 +282,22 @@ void main() {
       // leads the one list.
       expect(color.dy, lessThan(later.dy));
       expect(find.textContaining('Needs you'), findsOneWidget);
+      // The yellow mark leads the row that waits, and only that row.
+      final waitingRow = find.byType(KitRow).first;
+      expect(
+        find.descendant(of: waitingRow, matching: find.byType(KitTaskMark)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Quiet agent'),
+            matching: find.byType(KitRow),
+          ),
+          matching: find.byType(KitTaskMark),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('removal is on the row, names the agent and confirms', (

@@ -93,7 +93,10 @@ class _ShellProfileStore extends ProfileStore {
   String? get activeId => profile?.id;
 }
 
-Future<ConnectionController> _controller({String? profileName}) async {
+Future<ConnectionController> _controller({
+  String? profileName,
+  String? directory,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final store = _ShellProfileStore(
@@ -109,7 +112,9 @@ Future<ConnectionController> _controller({String? profileName}) async {
   return ConnectionController(store)
     ..api = _ShellApi()
     ..repository = _ShellRepository()
-    ..status = StreamStatus.connected;
+    ..status = StreamStatus.connected
+    // The Project hub lists its tools only once a project is open.
+    ..directory = directory;
 }
 
 Future<void> _pumpShell(
@@ -228,7 +233,7 @@ void main() {
     'Files Back clears search, ascends folders, returns home, then guards exit',
     (tester) async {
       final api = _NestedFilesApi();
-      final controller = await _controller()
+      final controller = await _controller(directory: '/srv/app')
         ..api = api;
       addTearDown(controller.dispose);
       var exits = 0;
@@ -322,7 +327,7 @@ void main() {
 
   testWidgets('inactive Files tab does not consume Back', (tester) async {
     final api = _NestedFilesApi();
-    final controller = await _controller()
+    final controller = await _controller(directory: '/srv/app')
       ..api = api;
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -349,7 +354,7 @@ void main() {
     tester,
   ) async {
     final api = _NestedFilesApi();
-    final controller = await _controller()
+    final controller = await _controller(directory: '/srv/app')
       ..api = api;
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -460,7 +465,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.resetViewInsets);
-      final controller = await _controller()
+      final controller = await _controller(directory: '/srv/app')
         ..api = _LongFilesApi();
       addTearDown(controller.dispose);
       await _pumpShell(tester, controller);

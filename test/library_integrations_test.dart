@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/mcp_oauth.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
@@ -227,6 +228,9 @@ Widget _app(
   Future<bool> Function(Uri destination)? authorizationLauncher,
   double textScale = 1,
 }) => MaterialApp(
+  // Kit parts read AppLocalizations.of.
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
     builder: (context) => MediaQuery(
       data: MediaQuery.of(
@@ -239,6 +243,14 @@ Widget _app(
     ),
   ),
 );
+
+/// Opens the waiting sign-in's row (the sign-in folded into the provider
+/// list) and taps its one primary, "Finish signing in to {name}".
+Future<void> _finishSignIn(WidgetTester tester, String name) async {
+  await tester.tap(find.byKey(const ValueKey('pending-provider-oauth')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Finish signing in to $name'));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1297,12 +1309,18 @@ void main() {
       await tester.tap(find.text('Open link'));
       await tester.pumpAndSettle();
 
+      // The sign-in is the provider's own row, marked and worded; no card.
+      final row = find.byKey(const ValueKey('pending-provider-oauth'));
+      expect(row, findsOneWidget);
       expect(
-        find.byKey(const ValueKey('pending-provider-oauth')),
+        find.descendant(
+          of: row,
+          matching: find.text('Sign-in waiting', findRichText: true),
+        ),
         findsOneWidget,
       );
-      expect(find.text('Connecting Cloud Provider'), findsOneWidget);
-      await tester.tap(find.text('Check'));
+      expect(find.text('Connecting Cloud Provider'), findsNothing);
+      await _finishSignIn(tester, 'Cloud Provider');
       await tester.pumpAndSettle();
 
       expect(repository.oauthStatusCalls, 1);
@@ -1349,16 +1367,22 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Check'));
+    await _finishSignIn(tester, 'Cloud Provider');
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byTooltip('Authentication options'), findsNothing);
+    // While the check runs, the row opens nothing: no Cancel mid-callback.
+    await tester.tap(find.byKey(const ValueKey('pending-provider-oauth')));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byKey(const ValueKey('sign-in-sheet')), findsNothing);
 
     statusCompleter.complete(
       const IntegrationAuthStatus(state: IntegrationAuthState.pending),
     );
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Authentication options'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('pending-provider-oauth')));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel Cloud Provider sign-in'), findsOneWidget);
   });
 
   testWidgets('code OAuth completes, refreshes models, and clears its state', (
@@ -1405,7 +1429,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Enter code'));
+    await _finishSignIn(tester, 'Cloud Provider');
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('oauth-completion-code')),
@@ -1581,16 +1605,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open link'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Check'));
+    await _finishSignIn(tester, 'Cloud Provider');
     await tester.pumpAndSettle();
 
-    expect(find.text('Authentication complete'), findsOneWidget);
-    expect(find.text('Finish'), findsOneWidget);
+    expect(
+      find.text('Signed in · tap to finish', findRichText: true),
+      findsOneWidget,
+    );
     expect(repository.oauthStatusCalls, 1);
     expect(repository.providerRefreshCalls, 1);
 
     repository.providerRefreshError = null;
-    await tester.tap(find.text('Finish'));
+    await tester.tap(find.byKey(const ValueKey('pending-provider-oauth')));
+    await tester.pumpAndSettle();
+    expect(find.text('Authentication complete'), findsOneWidget);
+    await tester.tap(find.text('Finish signing in to Cloud Provider'));
     await tester.pumpAndSettle();
 
     expect(repository.oauthStatusCalls, 1);

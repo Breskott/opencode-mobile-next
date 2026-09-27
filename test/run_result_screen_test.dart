@@ -169,6 +169,25 @@ Widget _app(Widget home, {Map<String, WidgetBuilder> routes = const {}}) =>
       routes: routes,
     );
 
+/// Opens "How this was put together", where the run id, the finish reason,
+/// the observed-live line and the source notes are folded.
+Future<void> _openHowMade(WidgetTester tester) async {
+  final toggle = find.byKey(const Key('run-result-how-made'));
+  await tester.scrollUntilVisible(
+    toggle,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(toggle);
+  await tester.pumpAndSettle();
+}
+
+const _observedLine =
+    'This phone received the completion of the newest step live.';
+const _historyLine =
+    'Recovered from server history. This phone did not observe the newest '
+    'step complete.';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -272,12 +291,13 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Add run results'), findsOneWidget);
-      expect(find.text('Run …a-edit'), findsOneWidget);
-      expect(find.text('2 assistant steps · build · gpt-5'), findsOneWidget);
+      // The conversation's title belongs to the page's top bar, not the
+      // body; the id and times are folded away.
+      expect(find.text('Add run results'), findsNothing);
+      expect(find.text('Run …a-edit'), findsNothing);
       expect(find.text('Completed'), findsOneWidget);
-      expect(find.text('Provider finish reason: stop'), findsOneWidget);
-      expect(find.byKey(const Key('run-result-history')), findsOneWidget);
+      expect(find.text('2 steps · under a minute · gpt-5'), findsOneWidget);
+      expect(find.text('Provider finish reason: stop'), findsNothing);
       expect(find.byKey(const Key('run-result-partial')), findsNothing);
       // Only this run's edit, never the previous run's.
       // The file's name leads; its folder follows as a technical value.
@@ -285,18 +305,22 @@ void main() {
       expect(find.text('lib/domain'), findsOneWidget);
       expect(find.text('old.dart'), findsNothing);
       expect(find.text('Edited'), findsOneWidget);
-      // Commands: recorded exit code vs explicit unknown, textual test label.
+      // Commands: the command is the title; how it ended leads the second
+      // line, state word first; no "looks like a test" guess.
       expect(
         find.text('flutter test test/run_result_test.dart'),
         findsOneWidget,
       );
-      expect(find.text('Exit code 0'), findsOneWidget);
-      expect(
-        find.text('Looks like a test command (from the command text only)'),
-        findsOneWidget,
-      );
+      expect(find.text('Passed · exit 0'), findsOneWidget);
+      expect(find.textContaining('Looks like a test'), findsNothing);
       expect(find.text('ls lib'), findsOneWidget);
-      expect(find.text('Exit code not recorded'), findsOneWidget);
+      expect(find.text('Exit not recorded'), findsOneWidget);
+      // The folded facts: the whole run id, the finish reason, where it
+      // came from.
+      await _openHowMade(tester);
+      expect(find.text('a-edit'), findsOneWidget);
+      expect(find.text('Provider finish reason: stop'), findsOneWidget);
+      expect(find.text(_historyLine), findsOneWidget);
       await tester.scrollUntilVisible(
         find.byKey(const Key('run-result-open-conversation')),
         200,
@@ -324,11 +348,19 @@ void main() {
           ),
         ),
       );
-      expect(find.byKey(const Key('run-result-observed')), findsOneWidget);
       await tester.tap(find.text('flutter test test/run_result_test.dart'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('run-result-output-sheet')), findsOneWidget);
-      expect(find.text('What it did'), findsOneWidget);
+      // The sheet is titled with the command it shows (the record under the
+      // title shows it too), not a generic "What it did".
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('run-result-output-sheet')),
+          matching: find.text('flutter test test/run_result_test.dart'),
+        ),
+        findsWidgets,
+      );
+      expect(find.text('What it did'), findsNothing);
       expect(find.byType(ToolCard), findsOneWidget);
       // The sheet exists to show this one record, so it opens already
       // expanded: the output reads without another tap.
@@ -366,14 +398,15 @@ void main() {
         ),
       );
       expect(find.byKey(const Key('run-result-partial')), findsOneWidget);
-      expect(
-        find.text('At least 1 assistant step loaded · build · gpt-5'),
-        findsOneWidget,
-      );
       expect(find.text('Failed'), findsOneWidget);
       expect(find.text('quota exceeded'), findsOneWidget);
+      expect(
+        find.text('At least 1 step · under a minute · gpt-5'),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('run-result-no-tools')), findsOneWidget);
       expect(find.byKey(const Key('run-result-no-files')), findsNothing);
+      await _openHowMade(tester);
       expect(find.text('The provider gave no finish reason.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -494,19 +527,22 @@ void main() {
       );
       expect(find.byKey(const Key('run-result-loading')), findsOneWidget);
       await tester.pumpAndSettle();
-      expect(find.text('Run results'), findsOneWidget);
+      // The top bar names the conversation, not "Run results".
+      expect(find.text('Add run results'), findsOneWidget);
+      expect(find.text('Run results'), findsNothing);
       expect(find.text('Completed'), findsOneWidget);
-      expect(find.byKey(const Key('run-result-history')), findsOneWidget);
+      await _openHowMade(tester);
+      expect(find.text(_historyLine), findsOneWidget);
 
       // A live completion for a DIFFERENT message must not count.
       controller.observedCompletedMessageIDs.add('a-edit');
       controller.notifyListeners();
       await tester.pump();
-      expect(find.byKey(const Key('run-result-history')), findsOneWidget);
+      expect(find.text(_historyLine), findsOneWidget);
       controller.observedCompletedMessageIDs.add('a-final');
       controller.notifyListeners();
       await tester.pump();
-      expect(find.byKey(const Key('run-result-observed')), findsOneWidget);
+      expect(find.text(_observedLine), findsOneWidget);
 
       await tester.scrollUntilVisible(
         find.byKey(const Key('run-result-open-conversation')),

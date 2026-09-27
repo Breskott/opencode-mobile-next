@@ -204,7 +204,7 @@ void main() {
     await tester.tap(find.text('/review'));
     await tester.tap(find.text('Save links'));
     await tester.pumpAndSettle();
-    await _sectionMenu(tester, 'Clear personal links');
+    await _sectionMenu(tester, 'Clear personal command links');
     expect(find.text('Clear all personal command links?'), findsOneWidget);
     await tester.tap(find.text('Cancel').hitTestable());
     await tester.pumpAndSettle();
@@ -212,7 +212,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Review /review'), findsOneWidget);
     await _closeSheet(tester);
-    await _sectionMenu(tester, 'Clear personal links');
+    await _sectionMenu(tester, 'Clear personal command links');
     await tester.tap(find.text('Clear links').hitTestable());
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('plugin-menu-reviewer')));
@@ -267,13 +267,24 @@ void main() {
     expect(tester.getTopLeft(app).dy, lessThan(tester.getTopLeft(server).dy));
     final team = find.byKey(const ValueKey('plugins-ai-team-row'));
     expect(tester.getTopLeft(team).dy, lessThan(tester.getTopLeft(server).dy));
+    // The server's plugins are carded in the section's own row group,
+    // like "In this app", and its actions are the page's top bar's.
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('plugins-section-server')),
+        of: find.byKey(const ValueKey('plugins-section-server-group')),
         matching: find.text('Reviewer'),
       ),
       findsOneWidget,
     );
+    expect(find.text('Loaded by the server for this project.'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(KitTopBar),
+        matching: find.byKey(const ValueKey('plugins-section-menu')),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Refresh plugins'), findsOneWidget);
   });
 
   testWidgets('unsupported servers make no plugin request', (tester) async {

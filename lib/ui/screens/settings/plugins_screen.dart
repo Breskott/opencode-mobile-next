@@ -86,17 +86,25 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     probe: widget.probe,
   );
 
+  /// The "On the server" section's refresh and link clearing, offered by
+  /// this page's top bar.
+  final ServerPluginsActions _serverActions = ServerPluginsActions();
+
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_changed);
     _discovery.addListener(_changed);
+    _serverActions.addListener(_changed);
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_changed);
     _discovery.removeListener(_changed);
+    _serverActions
+      ..removeListener(_changed)
+      ..dispose();
     _discovery.dispose();
     super.dispose();
   }
@@ -141,8 +149,33 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     final config = profile?.orchestration;
     final phoneTeamOn = BuiltinTeam.isBuiltinConfig(config);
     final phoneIsTheTeam = phoneHosts && (config == null || phoneTeamOn);
+    final serverPlugins = controller.capabilities.pluginInventory;
+    final refresh = serverPlugins ? _serverActions.refresh : null;
+    final clearLinks = serverPlugins ? _serverActions.clearLinks : null;
     return KitScreen(
-      topBar: KitTopBar(title: l10n.teamUiPluginsTitle),
+      topBar: KitTopBar(
+        title: l10n.teamUiPluginsTitle,
+        actions: [
+          if (serverPlugins)
+            KitAction(
+              key: const ValueKey('plugins-refresh'),
+              label: l10n.pluginsRefresh,
+              icon: AppIconography.retry,
+              onPressed: refresh,
+            ),
+        ],
+        menuKey: const ValueKey('plugins-section-menu'),
+        menu: [
+          if (clearLinks != null)
+            KitMenuItem(
+              key: const ValueKey('plugins-clear-links'),
+              label: l10n.pluginMappingClearAll,
+              icon: AppIconography.unlink,
+              destructive: true,
+              onSelected: clearLinks,
+            ),
+        ],
+      ),
       width: KitScreenWidth.reading,
       body: KitScrollArea(
         builder: (scrollController) => ListView(
@@ -241,7 +274,10 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 ],
               ),
             if (controller.capabilities.pluginInventory)
-              ServerPluginsSection(controller: controller),
+              ServerPluginsSection(
+                controller: controller,
+                actions: _serverActions,
+              ),
           ],
         ),
       ),

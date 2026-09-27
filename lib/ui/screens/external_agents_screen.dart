@@ -202,13 +202,19 @@ class _ExternalAgentsScreenState extends State<ExternalAgentsScreen> {
       issue = e.issue;
     }
     final needs = {for (final p in profiles) p.id: _needsCount(p)};
-    // Newest first, then urgency on top: a stable sort keeps that order
-    // inside each band.
-    final ordered = profiles.reversed.toList()
+    // One list by urgency: what needs the person first, then the rest,
+    // each band newest first. List.sort is not stable, so the newest-first
+    // position breaks ties explicitly.
+    final newestFirst = profiles.reversed.toList();
+    final position = {
+      for (final (index, p) in newestFirst.indexed) p.id: index,
+    };
+    int band(ExternalAgentProfile p) => p.deleting || needs[p.id]! > 0 ? 0 : 1;
+    final ordered = newestFirst
       ..sort((a, b) {
-        int band(ExternalAgentProfile p) =>
-            p.deleting || needs[p.id]! > 0 ? 0 : 1;
-        return band(a).compareTo(band(b));
+        final urgency = band(a).compareTo(band(b));
+        if (urgency != 0) return urgency;
+        return position[a.id]!.compareTo(position[b.id]!);
       });
     final add = KitAction(
       key: const ValueKey('external-agents-add'),
@@ -262,7 +268,9 @@ class _ExternalAgentsScreenState extends State<ExternalAgentsScreen> {
     final host = _host(p.card.cardUrl);
     return KitRow(
       key: ValueKey('external-agent-${p.id}'),
-      leading: p.deleting
+      // The yellow needs-you mark leads every row that waits on the
+      // person, so the list scans by it.
+      leading: p.deleting || count > 0
           ? KitNeedsYou.mark()
           : const KitRowIcon(AppIconography.network),
       title: p.card.name,
