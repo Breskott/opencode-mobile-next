@@ -1,0 +1,634 @@
+// Behaviour tests for KitRow v2 and KitSwipeAction
+// (docs/ux-system/kit-api/KitRow.md, KitSwipeAction.md "Tests required").
+// Arabic/RTL cases are dropped by the owner decision of 2026-09-27.
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitConfirmSheet;
+import 'package:opencode_mobile/ui/kit/kit_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_swipe_action.dart';
+import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
+
+Future<void> _pump(
+  WidgetTester tester,
+  Widget child, {
+  bool light = false,
+  double textScale = 1,
+  Size size = const Size(412, 915),
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: light ? AppTheme.light() : AppTheme.dark(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [child],
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void _desktop() {
+  debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+  addTearDown(() => debugPlatformCapabilities = null);
+}
+
+KitTokens _tokens(WidgetTester tester) =>
+    KitTokens.of(tester.element(find.byType(Scaffold)));
+
+Color? _titleColor(WidgetTester tester, String title) =>
+    tester.widget<Text>(find.text(title)).style?.color;
+
+/// The labels of the custom semantic actions on the row's node.
+List<String> _customActionLabels(WidgetTester tester, Finder row) {
+  final data = tester.getSemantics(row).getSemanticsData();
+  return [
+    for (final id in data.customSemanticsActionIds ?? const <int>[])
+      ?CustomSemanticsAction.getAction(id)!.label,
+  ];
+}
+
+void _performCustomAction(WidgetTester tester, Finder row, String label) {
+  final node = tester.getSemantics(row);
+  final id = node.getSemanticsData().customSemanticsActionIds!.firstWhere(
+    (id) => CustomSemanticsAction.getAction(id)!.label == label,
+  );
+  node.owner!.performAction(node.id, SemanticsAction.customAction, id);
+}
+
+Finder _richTextContaining(String text) => find.byWidgetPredicate(
+  (w) => w is RichText && w.text.toPlainText().contains(text),
+);
+
+void main() {
+  group('KitRow', () {
+    testWidgets('1: tap, Enter and Space call onTap; disabled ignores all', (
+      tester,
+    ) async {
+      _desktop();
+      var taps = 0;
+      await _pump(tester, KitRow(title: 'Open', onTap: () => taps++));
+      await tester.tap(find.text('Open'));
+      expect(taps, 1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      expect(taps, 3);
+
+      var disabledTaps = 0;
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Open',
+          onTap: () => disabledTaps++,
+          enabled: false,
+          disabledReason: 'Needs a connection',
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      expect(disabledTaps, 0);
+    });
+
+    testWidgets('2: disabled reason replaces supporting, is the hint, text3, '
+        'no Opacity', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Run tests',
+          supporting: const TextSpan(text: 'Hidden line'),
+          onTap: () {},
+          enabled: false,
+          disabledReason: 'Needs a connection',
+        ),
+      );
+      expect(find.text('Needs a connection'), findsOneWidget);
+      expect(find.text('Hidden line'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(KitRow),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+      expect(_titleColor(tester, 'Run tests'), _tokens(tester).roles.text3);
+      expect(
+        tester.getSemantics(find.byType(KitRow)),
+        matchesSemantics(
+          label: 'Run tests\nNeeds a connection',
+          hint: 'Needs a connection',
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('3: unavailable with enable: reason, 48 dp tertiary, row tap '
+        'runs it', (tester) async {
+      var runs = 0;
+      await _pump(
+        tester,
+        KitRow.unavailable(
+          title: 'Voice input',
+          reason: 'Voice needs a model on this phone.',
+          capability: 'voice.model',
+          enable: KitAction(
+            label: 'Download voice model',
+            onPressed: () => runs++,
+          ),
+        ),
+      );
+      expect(find.text('Voice needs a model on this phone.'), findsOneWidget);
+      final button = tester.widget<KitButton>(find.byType(KitButton));
+      expect(button.role, KitButtonRole.tertiary);
+      expect(
+        tester.getSize(find.byType(KitButton)).height,
+        greaterThanOrEqualTo(48),
+      );
+      await tester.tap(find.text('Download voice model'));
+      expect(runs, 1);
+      await tester.tap(find.text('Voice input'));
+      expect(runs, 2);
+      expect(
+        tester.widget<KitRow>(find.byType(KitRow)).capability,
+        'voice.model',
+      );
+      expect(_titleColor(tester, 'Voice input'), _tokens(tester).roles.text3);
+    });
+
+    testWidgets('3: unavailable without enable has no button and no action', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        const KitRow.unavailable(
+          title: 'Sub-agents',
+          reason: 'Available on OpenCode 2 servers.',
+        ),
+      );
+      expect(find.byType(KitButton), findsNothing);
+      expect(find.byType(KitTappable), findsNothing);
+      final data = tester.getSemantics(find.byType(KitRow)).getSemanticsData();
+      expect(data.hasAction(SemanticsAction.tap), isFalse);
+      expect(data.hint, 'Available on OpenCode 2 servers.');
+      handle.dispose();
+    });
+
+    testWidgets('4: long-press, right-click and Shift+F10 open the menu; '
+        'items are custom actions', (tester) async {
+      final handle = tester.ensureSemantics();
+      _desktop();
+      final picked = <String>[];
+      final menu = [
+        KitMenuItem(label: 'Delete', destructive: true, onSelected: () {}),
+        KitMenuItem(label: 'Rename', onSelected: () => picked.add('Rename')),
+      ];
+      await _pump(tester, KitRow(title: 'Fix login', onTap: () {}, menu: menu));
+      Future<void> expectOpenThenClose() async {
+        await tester.pumpAndSettle();
+        expect(find.text('Rename'), findsOneWidget);
+        // Destructive items render last (KitMenu ordering).
+        expect(
+          tester.getTopLeft(find.text('Delete')).dy,
+          greaterThan(tester.getTopLeft(find.text('Rename')).dy),
+        );
+        await tester.tap(find.text('Rename'));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.longPress(find.text('Fix login'));
+      await expectOpenThenClose();
+      await tester.tap(find.text('Fix login'), buttons: kSecondaryButton);
+      await expectOpenThenClose();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await expectOpenThenClose();
+      expect(picked, ['Rename', 'Rename', 'Rename']);
+
+      expect(
+        _customActionLabels(tester, find.byType(KitRow)),
+        containsAll(['Rename', 'Delete']),
+      );
+      _performCustomAction(tester, find.byType(KitRow), 'Rename');
+      expect(picked.length, 4);
+      handle.dispose();
+    });
+
+    testWidgets('5: onLongPress with a menu asserts; alone it still fires', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Both',
+          onLongPress: () {},
+          menu: [KitMenuItem(label: 'Rename', onSelected: () {})],
+        ),
+      );
+      expect(tester.takeException(), isAssertionError);
+
+      var presses = 0;
+      await _pump(
+        tester,
+        KitRow(title: 'Old', onTap: () {}, onLongPress: () => presses++),
+      );
+      await tester.longPress(find.text('Old'));
+      expect(presses, 1);
+      await _pump(tester, KitRow(title: 'Only', onLongPress: () => presses++));
+      await tester.longPress(find.text('Only'));
+      expect(presses, 2);
+    });
+
+    testWidgets('7: server label leads the supporting line, isolated', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const KitRow(
+          title: 'Fix login',
+          server: 'laptop',
+          supporting: TextSpan(text: 'Finished 5h ago'),
+        ),
+      );
+      expect(
+        _richTextContaining('${KitBidi.auto('laptop')} · Finished 5h ago'),
+        findsOneWidget,
+      );
+      expect(KitBidi.auto('laptop'), '${KitBidi.fsi}laptop${KitBidi.pdi}');
+    });
+
+    testWidgets('8: selected exposes selected semantics and paints surface3', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        KitRow(title: 'Chosen', selected: true, onTap: () {}),
+      );
+      expect(
+        tester.getSemantics(find.byType(KitTappable)),
+        matchesSemantics(
+          label: 'Chosen',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+        ),
+      );
+      final fill = tester.widget<ColoredBox>(
+        find
+            .descendant(
+              of: find.byType(KitRow),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
+      );
+      expect(fill.color, _tokens(tester).roles.surface3);
+      handle.dispose();
+    });
+
+    testWidgets('9: KitRowGroup puts destructive rows last behind a full '
+        'divider', (tester) async {
+      await _pump(
+        tester,
+        KitRowGroup(
+          label: 'Actions',
+          children: [
+            KitRow(title: 'Delete', destructive: true, onTap: () {}),
+            KitRow(title: 'Rename', onTap: () {}),
+            KitRow(title: 'Share', onTap: () {}),
+          ],
+        ),
+      );
+      final dy = {
+        for (final t in ['Delete', 'Rename', 'Share'])
+          t: tester.getTopLeft(find.text(t)).dy,
+      };
+      expect(dy['Rename']! < dy['Share']!, isTrue);
+      expect(dy['Share']! < dy['Delete']!, isTrue);
+      final divider = find.byKey(
+        const ValueKey('kit-row-group-destructive-divider'),
+      );
+      expect(divider, findsOneWidget);
+      expect(
+        tester.getSize(divider).width,
+        tester.getSize(find.byType(Material).last).width,
+      );
+      expect(_titleColor(tester, 'Delete'), _tokens(tester).roles.danger);
+    });
+
+    testWidgets('10: hover paints the next surface step; focus paints the '
+        'ring', (tester) async {
+      _desktop();
+      await _pump(
+        tester,
+        KitRowGroup(
+          children: [KitRow(title: 'Hover me', onTap: () {})],
+        ),
+      );
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('Hover me')));
+      await tester.pumpAndSettle();
+      final decoration =
+          tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: find.byType(KitTappable),
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as ShapeDecoration;
+      expect(decoration.color, _tokens(tester).roles.surface2);
+      await mouse.moveTo(Offset.zero);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(KitTappable),
+          matching: find.byType(CustomPaint),
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('11: 48 dp target and no overflow at 2.0 text and 320 dp', (
+      tester,
+    ) async {
+      await _pump(tester, KitRow(title: 'Short', onTap: () {}));
+      expect(
+        tester.getSize(find.byType(KitRow)).height,
+        greaterThanOrEqualTo(48),
+      );
+      await _pump(
+        tester,
+        KitRowGroup(
+          children: [
+            Builder(
+              builder: (context) => KitRow(
+                title:
+                    'A very long conversation title about fixing the login '
+                    'flow on every server',
+                leading: KitRow.icon(context, AppIconography.chat),
+                server: 'my-laptop-at-home',
+                supporting: const TextSpan(text: 'Finished 5h ago'),
+                trailing: const KitRowValue('Claude Sonnet 4'),
+                onTap: () {},
+              ),
+            ),
+          ],
+        ),
+        textScale: 2,
+        size: const Size(320, 800),
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(KitRow)).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+  });
+
+  group('KitSwipeAction', () {
+    KitSwipeAction swipe({
+      required Future<bool> Function() onAct,
+      required void Function() onUndo,
+      FutureOr<void> Function()? onCommit,
+    }) => KitSwipeAction(
+      id: const ValueKey('session-dismiss-1'),
+      label: 'Archive',
+      icon: AppIconography.archive,
+      onAct: onAct,
+      undoMessage: "Archived 'Fix login'",
+      onUndo: onUndo,
+      onCommit: onCommit,
+    );
+
+    testWidgets('1, 3, 10: a full swipe acts once, shows Undo, never '
+        'confirms, no haptic', (tester) async {
+      final haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') haptics.add('buzz');
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      var acts = 0;
+      var undos = 0;
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Fix login',
+          onTap: () {},
+          swipe: swipe(
+            onAct: () async {
+              acts++;
+              return true;
+            },
+            onUndo: () => undos++,
+          ),
+        ),
+      );
+      await tester.drag(find.text('Fix login'), const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      expect(acts, 1);
+      expect(find.text('Fix login'), findsOneWidget); // snapped back
+      expect(find.text("Archived 'Fix login'"), findsOneWidget);
+      expect(find.byType(KitConfirmSheet), findsNothing);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(undos, 1);
+      expect(haptics, isEmpty);
+    });
+
+    testWidgets('2: a failed or throwing act shows no undo line', (
+      tester,
+    ) async {
+      for (final act in <Future<bool> Function()>[
+        () async => false,
+        () async => throw StateError('offline'),
+      ]) {
+        await _pump(
+          tester,
+          KitRow(
+            title: 'Fix login',
+            onTap: () {},
+            swipe: swipe(onAct: act, onUndo: () {}),
+          ),
+        );
+        await tester.drag(find.text('Fix login'), const Offset(-400, 0));
+        await tester.pumpAndSettle();
+        expect(find.text("Archived 'Fix login'"), findsNothing);
+        expect(find.text('Fix login'), findsOneWidget);
+      }
+    });
+
+    testWidgets('4: the twin is in the menu and a custom action; both run '
+        'the undo path', (tester) async {
+      final handle = tester.ensureSemantics();
+      var acts = 0;
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Fix login',
+          onTap: () {},
+          menu: [KitMenuItem(label: 'Rename', onSelected: () {})],
+          swipe: swipe(
+            onAct: () async {
+              acts++;
+              return true;
+            },
+            onUndo: () {},
+          ),
+        ),
+      );
+      expect(
+        _customActionLabels(tester, find.byType(KitRow)),
+        containsAll(['Archive', 'Rename']),
+      );
+      await tester.longPress(find.text('Fix login'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      expect(acts, 1);
+      expect(find.text("Archived 'Fix login'"), findsOneWidget);
+      _performCustomAction(tester, find.byType(KitRow), 'Archive');
+      await tester.pumpAndSettle();
+      expect(acts, 2);
+      KitUndo.commitPending();
+      await tester.pumpAndSettle();
+      handle.dispose();
+    });
+
+    testWidgets('5: a menu item with the swipe label asserts', (tester) async {
+      await _pump(
+        tester,
+        KitRow(
+          title: 'Fix login',
+          onTap: () {},
+          menu: [KitMenuItem(label: 'Archive', onSelected: () {})],
+          swipe: swipe(onAct: () async => true, onUndo: () {}),
+        ),
+      );
+      expect(tester.takeException(), isAssertionError);
+    });
+
+    testWidgets('6: a deferred act commits once when the window closes, '
+        'never after Undo', (tester) async {
+      var commits = 0;
+      var undos = 0;
+      Future<void> pumpRow() => _pump(
+        tester,
+        KitRow(
+          title: 'Fix login',
+          onTap: () {},
+          swipe: swipe(
+            onAct: () async => true,
+            onUndo: () => undos++,
+            onCommit: () => commits++,
+          ),
+        ),
+      );
+      await pumpRow();
+      await tester.drag(find.text('Fix login'), const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      await tester.pump(KitUndo.window + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(commits, 1);
+
+      await tester.drag(find.text('Fix login'), const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      await tester.pump(KitUndo.window + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(commits, 1);
+      expect(undos, 1);
+    });
+
+    testWidgets('8, 9: the revealed panel is surface3/text1, never danger, '
+        'and settles at once under reduced motion', (tester) async {
+      await _pump(
+        tester,
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: KitRow(
+            title: 'Fix login',
+            onTap: () {},
+            swipe: swipe(onAct: () async => false, onUndo: () {}),
+          ),
+        ),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Fix login')),
+      );
+      await gesture.moveBy(const Offset(-40, 0));
+      await gesture.moveBy(const Offset(-120, 0));
+      await tester.pump();
+      final panel = tester.widget<ColoredBox>(
+        find.byKey(const ValueKey('kit-swipe-background')),
+      );
+      final roles = _tokens(tester).roles;
+      expect(panel.color, roles.surface3);
+      expect(panel.color, isNot(roles.danger));
+      expect(
+        tester.widget<Icon>(find.byIcon(AppIconography.archive)).color,
+        roles.text1,
+      );
+      await gesture.up();
+      await tester.pump();
+      await tester.pump();
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+  });
+}
