@@ -279,162 +279,133 @@ void main() {
 
     setUp(() => fixture = _ChannelFixture());
 
-    testWidgets('lists groups, flags orphans and refreshes every interval', (
-      tester,
-    ) async {
+    testWidgets('one list by urgency: orphans first, then by CPU; each row '
+        'names what it belongs to; refreshes every interval', (tester) async {
       await fixture.mount(tester);
       await tester.pump();
       expect(find.byKey(const Key('termux-procs-summary')), findsOneWidget);
       expect(find.text('6 processes · CPU 104%'), findsOneWidget);
-      expect(
-        find.byKey(const Key('termux-procs-group-orphans')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('termux-procs-group-opencode_server')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('termux-procs-group-ai_team')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('termux-procs-group-build_daemons')),
-        findsOneWidget,
-      );
-      expect(find.text('Managed from On this phone'), findsOneWidget);
-      expect(
-        find.byKey(const Key('termux-procs-stop-group-opencode_server')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const Key('termux-procs-stop-group-ai_team')),
-        findsOneWidget,
-      );
-      expect(find.text('minimax-coding-plan-mcp'), findsOneWidget);
-      expect(
-        find.text('Its parent is gone · running for 1 h 1 min'),
-        findsOneWidget,
-      );
-      expect(find.text('10 min of CPU with no owner'), findsOneWidget);
+      // One panel, no sections by owner, no counts, no captions
+      // (owner rule 2026-09-27).
+      expect(find.byKey(const Key('termux-procs-list-group')), findsOneWidget);
+      for (final group in [
+        'orphans',
+        'opencode_server',
+        'ai_team',
+        'build_daemons',
+      ]) {
+        expect(find.byKey(Key('termux-procs-group-$group')), findsNothing);
+        expect(find.byKey(Key('termux-procs-stop-group-$group')), findsNothing);
+      }
+      expect(find.text('Managed from On this phone'), findsNothing);
+      expect(find.textContaining('Helpers whose parent is gone'), findsNothing);
+      expect(find.text('Stop all'), findsNothing);
+      // No manual Refresh beside the automatic one.
+      expect(find.byKey(const Key('termux-procs-refresh')), findsNothing);
+      // Orphans first, then everything else by CPU, busiest first.
+      final order = [200, 500, 402, 300, 101, 400];
+      double top(int pid) =>
+          tester.getTopLeft(find.byKey(Key('termux-proc-$pid'))).dy;
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          top(order[i - 1]),
+          lessThan(top(order[i])),
+          reason: '${order[i - 1]} above ${order[i]}',
+        );
+      }
+      String line(int pid) => tester
+          .widget<RichText>(
+            find.descendant(
+              of: find.byKey(Key('termux-proc-line-$pid')),
+              matching: find.byType(RichText),
+            ),
+          )
+          .text
+          .toPlainText();
+      expect(line(200), 'Parent gone · CPU 99% · 43 MB · 1 h 1 min');
+      expect(line(500), startsWith('No owner · CPU 0.0% · '));
+      expect(line(402), startsWith('AI Team · CPU 3.5% · 48 MB'));
+      expect(line(300), startsWith('Build daemons · CPU 1.0%'));
       expect(
         find.byKey(const Key('termux-proc-protected-101')),
         findsOneWidget,
       );
+      expect(
+        find.text('Protected · control it from On this phone'),
+        findsOneWidget,
+      );
+      // The unlabeled stop square is gone: stopping lives in the menu and
+      // the details sheet.
+      expect(find.byKey(const Key('termux-proc-stop-200')), findsNothing);
+      expect(find.text('minimax-coding-plan-mcp'), findsOneWidget);
       expect(fixture.scans, 1);
       await tester.pump(const Duration(milliseconds: 120));
       expect(fixture.scans, 2);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('an orphan asks before stopping and reports what remained', (
-      tester,
-    ) async {
+    testWidgets('the one bulk stop names the orphans, asks first and reports '
+        'what remained', (tester) async {
       await fixture.mount(tester);
       await tester.pump();
-      fixture.stopResult = jsonEncode({
-        'stopped': <int>[],
-        'killed': [200],
-        'remaining': <Object>[],
-        'refused': <Object>[],
-      });
-      // "Orphan" is a heuristic, so even the one-tap row button confirms and
-      // says what is lost.
-      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      final bulk = find.byKey(const Key('termux-procs-stop-orphans'));
+      expect(bulk, findsOneWidget);
+      expect(find.text('Stop 2 orphaned helpers'), findsOneWidget);
+      await tester.tap(bulk);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
-      expect(
-        find.textContaining('whatever it was still doing is lost'),
-        findsOneWidget,
-      );
+      expect(find.text('Stop 2 orphaned helpers?'), findsOneWidget);
       await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(fixture.stops, isEmpty);
 
-      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      await tester.tap(bulk);
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('termux-procs-confirm')), findsNothing);
       expect(fixture.stops, isEmpty);
 
-      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      fixture.stopResult = jsonEncode({
+        'stopped': [500],
+        'killed': [200],
+        'remaining': <Object>[],
+        'refused': <Object>[],
+      });
+      await tester.tap(bulk);
       await tester.pumpAndSettle();
+      // The confirm button names what it stops.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('termux-procs-confirm-stop')),
+          matching: find.text('Stop 2 orphaned helpers'),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
       await tester.pumpAndSettle();
-      expect(fixture.stops, ['200']);
-      expect(find.text('Stopped 1 (1 needed a forced stop)'), findsOneWidget);
+      expect(fixture.stops, ['orphans']);
+      expect(find.text('Stopped 2 (1 needed a forced stop)'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'a group stop is two-step and a plain row confirms in its sheet',
-      (tester) async {
-        await fixture.mount(tester);
-        await tester.pump();
-        await tester.tap(
-          find.byKey(const Key('termux-procs-stop-group-ai_team')),
-        );
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
-        expect(find.text('Stop every process in AI Team?'), findsOneWidget);
-        expect(fixture.stops, isEmpty);
-        await tester.tap(find.text('Keep running'));
-        await tester.pumpAndSettle();
-        expect(fixture.stops, isEmpty);
-        await tester.tap(
-          find.byKey(const Key('termux-procs-stop-group-ai_team')),
-        );
-        await tester.pumpAndSettle();
-        fixture.stopResult = jsonEncode({
-          'stopped': [400, 401],
-          'killed': <int>[],
-          'remaining': [
-            {'pid': 402, 'name': 'opencode acp'},
-          ],
-          'refused': <Object>[],
-        });
-        await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
-        await tester.pumpAndSettle();
-        expect(fixture.stops, ['ai_team']);
-        expect(find.text('Stopped 2 · 1 would not stop'), findsOneWidget);
-        // A non-orphan row opens its details; Stop there confirms first.
-        await tester.tap(find.byKey(const Key('termux-proc-300')));
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('termux-procs-details')), findsOneWidget);
-        expect(find.text('PID 300 · parent 1'), findsOneWidget);
-        await tester.tap(find.byKey(const Key('termux-procs-details-stop')));
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
-        expect(find.text('Stop Gradle daemon?'), findsOneWidget);
-        await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
-        await tester.pumpAndSettle();
-        expect(fixture.stops, ['ai_team', '300']);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('stopping the AI Team says its tasks stop and how to restart', (
+    testWidgets('one process stops from its details sheet, after asking', (
       tester,
     ) async {
       await fixture.mount(tester);
       await tester.pump();
-      await tester.tap(
-        find.byKey(const Key('termux-procs-stop-group-ai_team')),
-      );
+      await tester.tap(find.byKey(const Key('termux-proc-300')));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Any task the team is working on stops too.'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('You can start the team again from AI Team.'),
-        findsOneWidget,
-      );
-      expect(find.text('Stop 2'), findsOneWidget);
-      await tester.tap(find.text('Keep running'));
+      expect(find.byKey(const Key('termux-procs-details')), findsOneWidget);
+      expect(find.text('PID 300 · parent 1'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('termux-procs-details-stop')));
       await tester.pumpAndSettle();
-      expect(fixture.stops, isEmpty);
+      expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
+      expect(find.text('Stop Gradle daemon?'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
+      await tester.pumpAndSettle();
+      expect(fixture.stops, ['300']);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a stop that did not take is said as a problem', (
@@ -450,8 +421,15 @@ void main() {
         ],
         'refused': <Object>[],
       });
-      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      await tester.tap(find.byKey(const Key('termux-proc-200')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('termux-procs-details-stop')));
+      await tester.pumpAndSettle();
+      // An orphan's stop says what is lost.
+      expect(
+        find.textContaining('whatever it was still doing is lost'),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
       await tester.pumpAndSettle();
       expect(find.text('Not everything stopped'), findsOneWidget);
@@ -560,18 +538,18 @@ void main() {
         await tester.pump();
         expect(find.byKey(const Key('termux-procs-summary')), findsOneWidget);
         await tester.scrollUntilVisible(
-          find.byKey(const Key('termux-proc-stop-200')),
+          find.byKey(const Key('termux-proc-500')),
           100,
         );
         await tester.pumpAndSettle();
         await tester.pump();
         await tester.scrollUntilVisible(
-          find.byKey(const Key('termux-proc-500')),
+          find.byKey(const Key('termux-proc-101')),
           100,
         );
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
-          find.byKey(const Key('termux-proc-101')),
+          find.byKey(const Key('termux-procs-stop-orphans')),
           100,
         );
         await tester.pumpAndSettle();

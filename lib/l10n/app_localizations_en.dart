@@ -13429,7 +13429,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamUiHomeGateLinkRun(String title) {
-    return 'Run $title';
+    return 'Task $title';
   }
 
   @override
@@ -14251,7 +14251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateFailureClassUnknown => 'Unknown';
 
   @override
-  String get teamUiGateFailureClassification => 'Classification';
+  String get teamUiGateFailureClassification => 'What went wrong';
 
   @override
   String get teamUiGateFailureError => 'Error';
@@ -14380,7 +14380,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateAnswerOptionsHint => 'Choose one option, then send.';
 
   @override
-  String get teamUiGateAnswerRunRetry => 'Try again';
+  String teamUiGateAnswerRunRetry(String work, String agent) {
+    return 'Send $work to $agent again';
+  }
 
   @override
   String teamUiGateAnswerRunRetryDetail(String work, String agent) {
@@ -14633,7 +14635,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set on the host; the phone shows it and does not choose it.';
 
   @override
-  String get teamUiStartRunSend => 'Send to planner';
+  String teamUiStartRunSend(String planner) {
+    return 'Send to the $planner';
+  }
 
   @override
   String get teamUiStartRunPlannerOffTitle =>
@@ -15109,7 +15113,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageNoteOpenCode =>
-      'The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.';
+      'The server, its sign-ins and conversation history. Conversations have their own screen.';
 
   @override
   String get termuxStorageCatProjects => 'Projects (your files)';
@@ -15288,7 +15292,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termuxProcsKeep => 'Keep';
 
   @override
-  String get termuxProcsProtected => 'Protected · open On this phone';
+  String get termuxProcsProtected =>
+      'Protected · control it from On this phone';
 
   @override
   String termuxProcsOrphanParentGone(String elapsed) {
@@ -15639,7 +15644,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneKeepRunningSubtitle =>
-      'Wake lock, battery setting and the phantom process killer';
+      'Stop Android from closing the team in the background';
 
   @override
   String get teamUiPhoneTipsIntro =>
@@ -17167,7 +17172,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupProgressViewContinue => 'Continue setup';
 
   @override
-  String get setupProgressViewCancel => 'Cancel';
+  String get setupProgressViewCancel => 'Stop setup';
 
   @override
   String get setupProgressViewShowDetails => 'Show details';
@@ -17226,14 +17231,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get builtinServerIntro =>
-      'The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.';
+      'The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.';
 
   @override
   String get builtinServerAndroidOnly =>
       'The built-in server runs on Android only.';
 
   @override
-  String get builtinServerStepUbuntu => 'Download Ubuntu (about 30 MB)';
+  String get builtinServerStepUbuntu => 'Ubuntu';
 
   @override
   String get builtinServerStepOpenCode => 'Install OpenCode';
@@ -17242,7 +17247,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtinServerStepStart => 'Start the server';
 
   @override
-  String get builtinServerStepConnect => 'Connect';
+  String get builtinServerStepConnect => 'Use it';
 
   @override
   String builtinServerStepSemantics(int number, String state, String title) {
@@ -17254,7 +17259,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.';
 
   @override
-  String get builtinServerUbuntuAction => 'Download Ubuntu';
+  String get builtinServerUbuntuAction => 'Download Ubuntu (30 MB)';
 
   @override
   String get builtinServerUbuntuWorking => 'Downloading and unpacking Ubuntu…';
@@ -17293,10 +17298,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtinServerChooseRuntime => 'Which OpenCode';
 
   @override
-  String get builtinServerStartAction => 'Start';
+  String get builtinServerStartAction => 'Start the server';
 
   @override
-  String get builtinServerStopAction => 'Stop';
+  String get builtinServerStopAction => 'Stop the server';
 
   @override
   String get builtinServerStarting =>
@@ -17324,7 +17329,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get builtinServerConnectAction => 'Connect';
+  String get builtinServerConnectAction => 'Connect to this phone';
 
   @override
   String builtinServerConnectHint(String name) {
@@ -17444,7 +17449,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get builtinServerShowLog => 'Show log';
+  String get builtinServerShowLog => 'Show server log';
 
   @override
   String get builtinServerLogTitle => 'Server log';
@@ -17813,7 +17818,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get phoneSetupStartSetUp => 'Set up';
+  String get phoneSetupStartSetUp => 'Set up OpenCode on this phone';
 
   @override
   String phoneSetupStartIncludes(String tools) {
@@ -17829,7 +17834,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneSetupStartListSeparator => ', ';
 
   @override
-  String get phoneSetupStartCustomize => 'Customize';
+  String get phoneSetupStartCustomize => 'Choose what to install';
 
   @override
   String get phoneSetupStartOtherWays => 'Other ways';
@@ -18426,7 +18431,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeNeedsYouAnswer => 'Answer';
 
   @override
-  String get teamUiHomeNeedsYouMore => 'More';
+  String get teamUiHomeNeedsYouMore => 'See the whole question';
 
   @override
   String get teamUiHomeNeedsYouFallbackTitle => 'The team has a question';
@@ -23061,7 +23066,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneServerCardStartOpenCode => 'Start OpenCode';
 
   @override
-  String get phoneServerCardStopOpenCode => 'Stop OpenCode';
+  String get phoneServerCardStopOpenCode => 'Stop OpenCode on this phone';
 
   @override
   String get phoneServerCardShowServerLog => 'Show server log';
@@ -23304,7 +23309,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gateSheetOpenAgent(String agent) {
-    return 'Open $agent';
+    return 'Open $agent\'s page';
   }
 
   @override
@@ -25493,4 +25498,102 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get composerDraftBlockedReason =>
       'Answer the question about this draft first';
+
+  @override
+  String get teamUiHomeRunReviewNext => 'a reviewer checks it next';
+
+  @override
+  String teamUiGateRunStoppedTitle(String title) {
+    return '$title stopped';
+  }
+
+  @override
+  String get termuxProcsKindParentGone => 'Parent gone';
+
+  @override
+  String get termuxProcsKindNoOwner => 'No owner';
+
+  @override
+  String termuxProcsStopOrphans(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers',
+      one: 'Stop 1 orphaned helper',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String termuxProcsStopOrphansTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers?',
+      one: 'Stop the orphaned helper?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamPhoneStopTeamRow => 'Stop the team on this phone';
+
+  @override
+  String get teamPhoneStopTeamRowSupporting =>
+      'Agents stop where they are; nothing is lost';
+
+  @override
+  String teamUiPhoneWorkingOn(String name) {
+    return 'Working on $name';
+  }
+
+  @override
+  String get teamUiPhoneVersionsLabel => 'Engine versions';
+
+  @override
+  String get teamUiPhoneProjectLabel => 'Project folder';
+
+  @override
+  String get phoneServerNameInSentence => 'this phone';
+
+  @override
+  String get teamAgentWorkUnblockedShort => 'nothing blocking it';
+
+  @override
+  String get teamAgentWorkBlockedShort => 'blocked';
+
+  @override
+  String get teamAgentStepCommand => 'Ran a command';
+
+  @override
+  String get teamAgentStepTest => 'Ran the tests';
+
+  @override
+  String get teamAgentStepRead => 'Read a file';
+
+  @override
+  String get teamAgentStepEdit => 'Edited a file';
+
+  @override
+  String get teamAgentStepSearch => 'Searched the code';
+
+  @override
+  String teamAgentStepTool(String tool) {
+    return 'Used $tool';
+  }
+
+  @override
+  String get teamAgentLastCommandLabel => 'Last command';
+
+  @override
+  String get termuxStorageOnlyBuildCaches =>
+      'Only build caches can be cleaned here';
+
+  @override
+  String get termuxStorageWhereItIs => 'Where it is';
+
+  @override
+  String termuxStorageCleanBuildCaches(String size) {
+    return 'Clean build caches ($size)';
+  }
 }

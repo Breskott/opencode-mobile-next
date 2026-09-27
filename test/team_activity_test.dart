@@ -559,7 +559,7 @@ void main() {
         );
         expect(
           find.text(
-            'Run failed · Run Add subtract() to calc.py · Workstation · 1d ago',
+            'Run failed · Task Add subtract() to calc.py · Workstation · 1d ago',
           ),
           findsOneWidget,
         );
@@ -738,7 +738,7 @@ void main() {
       expect(answer, findsOneWidget);
       expect(find.text('Approve'), findsNothing);
       expect(find.text('Cancel'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
 
@@ -858,12 +858,13 @@ void main() {
             ),
           ),
         );
+        // A failure a retry cannot recover offers no retry, and no row
+        // says so a second time.
         expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('team-gate-recoverable')))
-              .data,
-          'No — something needs changing first',
+          find.byKey(const ValueKey('team-gate-recoverable')),
+          findsNothing,
         );
+        expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
         expect(
           tester
               .widget<Text>(find.byKey(const ValueKey('team-gate-action')))
@@ -1110,7 +1111,7 @@ void main() {
             final how = find.byKey(const ValueKey('team-gate-how'));
             await reveal(tester, how);
             expect(tester.getSize(how).height, greaterThanOrEqualTo(48));
-            final close = find.byKey(const ValueKey('team-gate-close'));
+            final close = find.byKey(const ValueKey('kit-sheet-close'));
             await reveal(tester, close);
             expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
             await tester.tap(close);
@@ -1135,8 +1136,8 @@ void main() {
             tester,
             find.byKey(const ValueKey('team-gate-answer-on-host')),
           );
-          await reveal(tester, find.byKey(const ValueKey('team-gate-close')));
-          await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+          await reveal(tester, find.byKey(const ValueKey('kit-sheet-close')));
+          await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
           await tester.pumpAndSettle();
           expect(sheet, findsNothing);
 
@@ -1148,7 +1149,6 @@ void main() {
           for (final key in [
             'team-gate-classification',
             'team-gate-affected-w-tests',
-            'team-gate-recoverable',
             'team-gate-action',
             'team-gate-answer-on-host',
           ]) {
@@ -1160,7 +1160,7 @@ void main() {
           await tester.tap(technical);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          await reveal(tester, find.byKey(const ValueKey('team-gate-close')));
+          await reveal(tester, find.byKey(const ValueKey('kit-sheet-close')));
           expect(tester.takeException(), isNull);
         });
       }

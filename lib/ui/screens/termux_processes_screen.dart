@@ -1,17 +1,23 @@
 /// Settings › Termux server › Running now (TEAM-305): every process the
-/// app's Termux user owns, grouped by what owns it, with CPU and memory,
-/// refreshed on pull and every 10 seconds while open. Orphans carry the
-/// reason they were flagged and a one-tap Stop; stopping a whole group is
-/// two-step and says what it ends; the OpenCode server and sshd are
-/// protected and send the user to the server controls instead.
+/// app's Termux user owns, with CPU and memory, refreshed on pull and every
+/// 10 seconds while open.
 ///
-/// Built from kit parts only (KIT-1): a [KitScreen] page with the refresh
-/// in its [KitTopBar], [KitSkeletonRows] while the first list is read,
-/// [KitStateView] for a list that could not be read or is empty, one
-/// [KitRowGroup] of [KitRow]s per owner (each row with the same menu:
-/// Details, Copy command, Stop), [KitNotice] for what a stop did, a
-/// [showKitSheet] for a process's details with its technical values in one
-/// [KitDetailsFold], and [showKitConfirm] for every stop.
+/// ONE list ordered by urgency (owner rule 2026-09-27), never split into
+/// sections by owner: orphans first (a warning mark and "Parent gone ·
+/// CPU 99% · 43 MB · 1 h 1 min"), then everything else by CPU, each row
+/// naming what it belongs to in its supporting line ("AI Team · CPU 3.5% ·
+/// 48 MB · 12 min"). The OpenCode server and sshd are protected and say
+/// so in words; they send the user to the server controls instead.
+/// Stopping one process lives in its row's menu and its details sheet
+/// ("Stop Gradle daemon"); the one bulk stop, only while orphans exist, is
+/// the last row: "Stop 2 orphaned helpers".
+///
+/// Built from kit parts only (KIT-1): a [KitScreen] page, [KitSkeletonRows]
+/// while the first list is read, [KitStateView] for a list that could not
+/// be read or is empty, one [KitRowGroup] of [KitRow]s (each row with the
+/// same menu: Details, Copy command, Stop), [KitNotice] for what a stop
+/// did, a [showKitSheet] for a process's details with its technical values
+/// in one [KitDetailsFold], and [showKitConfirm] for every stop.
 library;
 
 import 'dart:async';
@@ -162,37 +168,29 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     await _runStop(() => TermuxProcesses.stopPid(process.pid));
   }
 
-  /// "Stop every process in AI Team?" (termux-processes-stop-group-sheet):
-  /// says what else ends and how to start it again (map infoMissing).
-  Future<void> _stopGroup(TermuxProcessGroup group) async {
+  /// "Stop the 2 orphaned helpers?": the one bulk stop, offered only while
+  /// orphans exist; the button names what it stops.
+  Future<void> _stopOrphans() async {
     final l10n = _copy(context);
     final count =
-        _report?.inGroup(group).where((p) => !p.protected).length ?? 0;
+        _report
+            ?.inGroup(TermuxProcessGroup.orphans)
+            .where((p) => !p.protected)
+            .length ??
+        0;
     final confirmed = await showKitConfirm(
       context,
-      title: l10n.termuxProcsStopGroupTitle(
-        termuxProcessGroupLabel(l10n, group),
-      ),
+      title: l10n.termuxProcsStopOrphansTitle(count),
       body: l10n.termuxProcsStopGroupBody(count),
-      confirmLabel: l10n.termuxProcsStopConfirm(count),
+      confirmLabel: l10n.termuxProcsStopOrphans(count),
       icon: AppIcons.stop,
       kind: KitConfirmKind.stop,
-      consequenceItems: [
-        if (group == TermuxProcessGroup.aiTeam) ...[
-          KitConsequence(
-            l10n.termuxProcsStopGroupTeamLost,
-            mark: KitConsequenceMark.lost,
-            key: const Key('termux-procs-confirm-team-lost'),
-          ),
-          KitConsequence(l10n.termuxProcsStopGroupTeamRestart),
-        ] else
-          KitConsequence(l10n.termuxProcsNoRestart),
-      ],
+      consequenceItems: [KitConsequence(l10n.termuxProcsNoRestart)],
       sheetKey: const Key('termux-procs-confirm'),
       confirmKey: const Key('termux-procs-confirm-stop'),
     );
     if (!confirmed || !mounted) return;
-    await _runStop(() => TermuxProcesses.stopGroup(group));
+    await _runStop(() => TermuxProcesses.stopGroup(TermuxProcessGroup.orphans));
   }
 
   Future<void> _runStop(
@@ -336,19 +334,10 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
         ),
       );
     }
+    // The list refreshes itself every 10 seconds (and on pull), and says
+    // so: no Refresh button repeats it.
     return KitScreen(
-      topBar: KitTopBar(
-        title: l10n.termuxProcsTitle,
-        actions: [
-          KitAction(
-            key: const Key('termux-procs-refresh'),
-            label: l10n.termuxProcsRefresh,
-            icon: AppIconography.retry,
-            onPressed: _busy ? null : _refresh,
-            disabledReason: _busy ? l10n.termuxProcsStopping : null,
-          ),
-        ],
-      ),
+      topBar: KitTopBar(title: l10n.termuxProcsTitle),
       width: KitScreenWidth.reading,
       loading: _busy,
       loadingLabel: l10n.termuxProcsStopping,
@@ -369,7 +358,14 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     );
     final error = _error;
     final outcome = _outcome;
-    final groups = report.groups.toList();
+    // Orphans first, then the rest; each by CPU, busiest first.
+    final ordered = [...report.processes]
+      ..sort((a, b) {
+        final orphan = (b.isOrphan ? 1 : 0) - (a.isOrphan ? 1 : 0);
+        if (orphan != 0) return orphan;
+        return b.cpuPct.compareTo(a.cpuPct);
+      });
+    final orphans = ordered.where((p) => p.isOrphan && !p.protected).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -428,120 +424,72 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
               padding: EdgeInsets.zero,
             ),
           ),
-        for (final group in groups)
+        if (ordered.isNotEmpty)
           Padding(
             padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
-            child: _group(context, l10n, group, report.inGroup(group)),
+            child: KitRowGroup(
+              key: const Key('termux-procs-list-group'),
+              children: [
+                for (final process in ordered) _row(context, l10n, process),
+                // The one bulk stop, only while orphans exist, last behind
+                // the group's destructive hairline (kit-v2 §4.2).
+                if (orphans > 0)
+                  KitRow(
+                    key: const Key('termux-procs-stop-orphans'),
+                    leading: KitRow.icon(context, AppIcons.stop),
+                    title: l10n.termuxProcsStopOrphans(orphans),
+                    destructive: true,
+                    enabled: !_busy,
+                    disabledReason: _busy ? l10n.termuxProcsStopping : null,
+                    onTap: _stopOrphans,
+                  ),
+              ],
+            ),
           ),
       ],
     );
   }
 
-  Widget _group(
-    BuildContext context,
-    AppLocalizations l10n,
-    TermuxProcessGroup group,
-    List<TermuxProcess> members,
-  ) {
-    final tokens = KitTokens.of(context);
-    final stoppable = members.where((p) => !p.protected).length;
-    final hint = switch (group) {
-      TermuxProcessGroup.opencodeServer => l10n.termuxProcsGroupOpenCodeHint,
-      TermuxProcessGroup.orphans => l10n.termuxProcsOrphansHint,
-      _ => null,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        KitRowGroup(
-          key: Key('termux-procs-group-${group.wireName}'),
-          label: '${termuxProcessGroupLabel(l10n, group)} · ${members.length}',
-          children: [
-            for (final process in members) _row(context, l10n, process),
-            // Stop all sits last, behind the group's destructive hairline
-            // (kit-v2 §4.2), not in the label: there it would squeeze the
-            // group's name at large text.
-            if (group.stoppable && stoppable > 0)
-              KitRow(
-                key: Key('termux-procs-stop-group-${group.wireName}'),
-                leading: KitRow.icon(context, AppIcons.stop),
-                title: l10n.termuxProcsStopGroup,
-                destructive: true,
-                enabled: !_busy,
-                disabledReason: _busy ? l10n.termuxProcsStopping : null,
-                onTap: () => _stopGroup(group),
-              ),
-          ],
-        ),
-        if (hint != null)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.gutter + tokens.space1,
-              end: tokens.gutter + tokens.space1,
-              top: tokens.space2,
-            ),
-            child: KitText(hint, role: KitTextRole.secondary),
-          ),
-      ],
-    );
-  }
+  /// What a process belongs to, first in its supporting line: why an
+  /// orphan was flagged, else its owner.
+  static String _kind(AppLocalizations l10n, TermuxProcess process) =>
+      switch (process.orphanReason) {
+        TermuxOrphanReason.parentGone => l10n.termuxProcsKindParentGone,
+        TermuxOrphanReason.cpuNoOwner => l10n.termuxProcsKindNoOwner,
+        null => termuxProcessGroupLabel(l10n, process.group),
+      };
 
   Widget _row(
     BuildContext context,
     AppLocalizations l10n,
     TermuxProcess process,
   ) {
-    final stats = l10n.termuxProcsStats(
-      formatTermuxCpuPct(process.cpuPct),
-      l10n.termuxProcsMemoryMb(process.rssKb ~/ 1024),
-      formatTermuxDuration(l10n, process.elapsedSeconds),
-    );
-    final reason = switch (process.orphanReason) {
-      TermuxOrphanReason.parentGone => l10n.termuxProcsOrphanParentGone(
+    final line = [
+      _kind(l10n, process),
+      l10n.termuxProcsStats(
+        formatTermuxCpuPct(process.cpuPct),
+        l10n.termuxProcsMemoryMb(process.rssKb ~/ 1024),
         formatTermuxDuration(l10n, process.elapsedSeconds),
       ),
-      TermuxOrphanReason.cpuNoOwner => l10n.termuxProcsOrphanCpu(
-        formatTermuxDuration(l10n, process.cpuSeconds),
-      ),
-      null => null,
-    };
+    ].join(' · ');
     final stopLabel = l10n.termuxProcsStopSemantics(process.name);
     return KitRow(
       key: Key('termux-proc-${process.pid}'),
+      // The warning glyph marks an orphan; its words lead the line.
       leading: KitRow.icon(context, _iconFor(process)),
       title: process.name,
-      supporting: TextSpan(text: stats),
-      below: reason == null && !process.protected
-          ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (reason != null)
-                  KitText(
-                    reason,
-                    key: Key('termux-proc-reason-${process.pid}'),
-                    role: KitTextRole.secondary,
-                    tone: KitTextTone.primary,
-                  ),
-                if (process.protected)
-                  KitText(
-                    l10n.termuxProcsProtected,
-                    key: Key('termux-proc-protected-${process.pid}'),
-                    role: KitTextRole.secondary,
-                  ),
-              ],
-            ),
-      trailing: process.isOrphan && !process.protected
-          ? KitIconButton(
-              key: Key('termux-proc-stop-${process.pid}'),
-              icon: AppIcons.stop,
-              tooltip: stopLabel,
-              destructive: true,
-              onPressed: _busy ? null : () => _stopProcess(process),
-              disabledReason: _busy ? l10n.termuxProcsStopping : null,
+      supporting: TextSpan(text: line),
+      supportingKey: Key('termux-proc-line-${process.pid}'),
+      supportingMaxLines: 2,
+      // The protected server says so in words, and where to control it.
+      below: process.protected
+          ? KitText(
+              l10n.termuxProcsProtected,
+              key: Key('termux-proc-protected-${process.pid}'),
+              role: KitTextRole.secondary,
             )
-          : const KitChevron(),
+          : null,
+      trailing: const KitChevron(),
       onTap: process.protected
           ? _openServerControls
           : () => _showDetails(process),

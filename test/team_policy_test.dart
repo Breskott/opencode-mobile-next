@@ -743,8 +743,13 @@ void main() {
         find.descendant(of: row, matching: find.byType(Checkbox)),
         findsNothing,
       );
-      // The row sits after the planner and before Send.
-      final planner = tester.getBottomLeft(key('team-start-run-planner'));
+      // The row sits after the choices and before Send; no read-only
+      // Planner row sits among them (the primary names the planner).
+      expect(key('team-start-run-planner'), findsNothing);
+      expect(find.text('Send to the Mayor'), findsOneWidget);
+      final planner = tester.getBottomLeft(
+        key('team-start-run-supervision-balanced'),
+      );
       final boundaries = tester.getTopLeft(row);
       final send = tester.getTopLeft(key('team-start-run-send'));
       expect(boundaries.dy, greaterThanOrEqualTo(planner.dy));

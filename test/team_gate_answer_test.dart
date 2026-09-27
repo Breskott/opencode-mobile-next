@@ -388,18 +388,19 @@ void main() {
     raw: const {'run_id': 'oc-loy', 'target': 'ocproof/polecats'},
   );
 
-  OrchestrationGate runGate() => OrchestrationGate(
-    id: 'run:oc-loy',
-    kind: GateKind.runFailed,
-    rawKind: 'failed',
-    title: 'Add subtract() to calc.py',
-    prompt: 'tests failed',
-    runId: 'oc-loy',
-    createdAt: clock.subtract(const Duration(minutes: 5)),
-    raw: const {'run_id': 'oc-loy', 'target': 'ocproof/polecats'},
-  );
+  OrchestrationGate runGate({String prompt = 'tests failed'}) =>
+      OrchestrationGate(
+        id: 'run:oc-loy',
+        kind: GateKind.runFailed,
+        rawKind: 'failed',
+        title: 'Add subtract() to calc.py',
+        prompt: prompt,
+        runId: 'oc-loy',
+        createdAt: clock.subtract(const Duration(minutes: 5)),
+        raw: const {'run_id': 'oc-loy', 'target': 'ocproof/polecats'},
+      );
 
-  void runShape(_Gateway gateway) {
+  void runShape(_Gateway gateway, {String prompt = 'tests failed'}) {
     gateway.runList.add(failedRun());
     gateway.workList.addAll(const [
       WorkItem(
@@ -426,7 +427,7 @@ void main() {
         lastActivity: clock.subtract(const Duration(minutes: 2)),
       ),
     );
-    gateway.gateList.add(runGate());
+    gateway.gateList.add(runGate(prompt: prompt));
   }
 
   Future<(OrchestrationController, _Gateway)> boot({
@@ -778,12 +779,36 @@ void main() {
   });
 
   group('run failed', () {
-    testWidgets('Retry re-slings the stuck work to its agent', (tester) async {
-      final (team, gateway) = await boot(configure: runShape);
+    testWidgets('a failure a retry cannot fix offers no retry; the title '
+        'names the task once', (tester) async {
+      final (team, _) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
+      // "tests failed": something needs changing first, so no Send again.
+      expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
+      expect(find.byKey(const ValueKey('team-gate-recoverable')), findsNothing);
+      expect(find.text('What went wrong'), findsOneWidget);
+      // The sheet is titled after the task; no second heading says it.
+      expect(find.text('Add subtract() to calc.py stopped'), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-gate-title')), findsNothing);
+      // Every action names what it acts on.
+      expect(find.text("Open Wolf's page"), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await team.stop();
+    });
+
+    testWidgets('Retry re-slings the stuck work to its agent', (tester) async {
+      final (team, gateway) = await boot(
+        configure: (g) => runShape(g, prompt: 'connection reset'),
+      );
+      await pumpSheet(tester, team, 'run:oc-loy');
+      // The button names what it sends and to whom; no note repeats it.
+      expect(
+        find.text('Send Write tests for calc.py to Wolf again'),
+        findsOneWidget,
+      );
       expect(
         find.text('Sends Write tests for calc.py to Wolf again.'),
-        findsOneWidget,
+        findsNothing,
       );
       await tester.tap(find.byKey(const ValueKey('team-gate-run-retry')));
       await tester.pump();
@@ -802,9 +827,10 @@ void main() {
     ) async {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
-      // Design standard §2: at most two tertiary actions show (Restart or
-      // reassign, Close); Cancel work is a rare destructive path and sits
-      // under More, still two-step.
+      // Design standard §2: at most two tertiary actions show (the agent's
+      // page, View logs); Cancel work is a rare destructive path and sits
+      // under More, still two-step. No Close repeats the sheet's X.
+      expect(find.byKey(const ValueKey('team-gate-close')), findsNothing);
       final cancel = find.byKey(const ValueKey('team-gate-run-cancel'));
       expect(cancel, findsNothing);
       await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
@@ -827,9 +853,7 @@ void main() {
     ) async {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
-      // View logs is under More (design standard §2: two tertiary shown).
-      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
-      await tester.pumpAndSettle();
+      // View logs is the second tertiary (design standard §2: two shown).
       await tester.tap(find.byKey(const ValueKey('team-gate-run-logs')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
@@ -1144,18 +1168,17 @@ void main() {
           find.byKey(const ValueKey('team-gate-answer-on-host')),
           findsOneWidget,
         );
-        await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+        await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
         await tester.pumpAndSettle();
       }
       await pumpSheet(tester, team, 'run:oc-loy');
       expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
-      // Reads are on: the agent screens still open (View logs under More,
-      // design standard §2).
+      // Reads are on: the agent screens still open, the two tertiary
+      // actions shown (design standard §2), no More and no Close.
       expect(find.byKey(const ValueKey('team-gate-run-agent')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
       expect(find.byKey(const ValueKey('team-gate-run-logs')), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-actions-more')), findsNothing);
+      expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
@@ -1623,7 +1646,7 @@ void main() {
             textScale: 2.5,
           );
           Future<void> close() async {
-            final close = find.byKey(const ValueKey('team-gate-close'));
+            final close = find.byKey(const ValueKey('kit-sheet-close'));
             await revealButton(tester, close);
             await tester.tap(close);
             await tester.pumpAndSettle();
@@ -1669,18 +1692,19 @@ void main() {
 
           await open('run:oc-loy');
           for (final key in [
-            'team-gate-run-retry',
             'team-gate-run-agent',
-            // View logs and Cancel work are under More (standard §2).
+            'team-gate-run-logs',
+            // Cancel work is under More (standard §2).
             'kit-actions-more',
           ]) {
             await revealButton(tester, find.byKey(ValueKey(key)));
           }
           await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
           await tester.pumpAndSettle();
-          for (final key in ['team-gate-run-logs', 'team-gate-run-cancel']) {
-            expect(find.byKey(ValueKey(key)), findsOneWidget);
-          }
+          expect(
+            find.byKey(const ValueKey('team-gate-run-cancel')),
+            findsOneWidget,
+          );
           await tester.tapAt(Offset.zero);
           await tester.pumpAndSettle();
           await close();

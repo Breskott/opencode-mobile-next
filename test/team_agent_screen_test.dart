@@ -652,9 +652,13 @@ void main() {
         AppTheme.monoFamily,
       );
       expect(find.text('polecat/oc-cq6'), findsWidgets);
-      expect(key('team-agent-work-chip'), findsOneWidget);
-      expect(find.text('Sync engine'), findsOneWidget);
-      expect(find.text('Nothing blocking it'), findsOneWidget);
+      // The task and what holds it up are the subtitle, said once; no task
+      // row repeats it.
+      expect(key('team-agent-work-chip'), findsNothing);
+      expect(
+        find.text('On “Sync engine” · nothing blocking it'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -808,11 +812,9 @@ void main() {
         findsOneWidget,
       );
       expect(key('team-agent-output-text'), findsOneWidget);
-      // Nothing more can arrive: the switch is disabled.
-      final follow = tester.widget<SwitchListTile>(
-        key('team-agent-output-follow'),
-      );
-      expect(follow.onChanged, isNull);
+      // Nothing more can arrive: no Follow switch, and no jump pill.
+      expect(key('team-agent-output-follow'), findsNothing);
+      expect(key('team-agent-output-jump').hitTestable(), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -868,8 +870,8 @@ void main() {
         find.textContaining('Answer this on the computer'),
         findsOneWidget,
       );
-      expect(key('team-agent-work-dependency'), findsOneWidget);
-      expect(find.text('Blocked'), findsOneWidget);
+      // What holds its task up ends the subtitle.
+      expect(find.textContaining(' · blocked'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -915,6 +917,9 @@ void main() {
         'fox',
         locale: const Locale('ar'),
         direction: TextDirection.rtl,
+        // Short enough to scroll: the page no longer spends a row on a
+        // Follow switch.
+        viewport: const Size(360, 420),
       );
       final text = key('team-agent-output-text');
       expect(text, findsOneWidget);
@@ -924,10 +929,10 @@ void main() {
       expect(Directionality.of(tester.element(text)), TextDirection.rtl);
       expect(find.textContaining('[tool:'), findsNothing);
       expect(find.text('مباشر'), findsOneWidget);
-      final follow = tester.widget<SwitchListTile>(
-        key('team-agent-output-follow'),
-      );
-      expect(follow.value, isTrue);
+      // Built from kit parts: no Follow switch (following is the default,
+      // a drag up stops it and the pill resumes it).
+      expect(key('team-agent-output-follow'), findsNothing);
+      expect(find.byType(SwitchListTile), findsNothing);
 
       var position = outputPosition(tester);
       expect(position.maxScrollExtent, greaterThan(0));
@@ -942,7 +947,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a drag up stops following; Follow resumes and jumps', (
+    testWidgets('a drag up stops following; the pill resumes and jumps', (
       tester,
     ) async {
       final (controller, gateway) = await boot(
@@ -952,17 +957,14 @@ void main() {
         },
       );
       await pumpOutput(tester, controller, 'fox');
-      expect(key('team-agent-output-jump'), findsNothing);
+      final jump = key('team-agent-output-jump').hitTestable();
+      expect(jump, findsNothing);
 
       await tester.drag(key('team-agent-output-list'), const Offset(0, 400));
       await tester.pumpAndSettle();
       var position = outputPosition(tester);
       expect(position.pixels, lessThan(position.maxScrollExtent - 24));
-      expect(
-        tester.widget<SwitchListTile>(key('team-agent-output-follow')).value,
-        isFalse,
-      );
-      expect(key('team-agent-output-jump'), findsOneWidget);
+      expect(jump, findsOneWidget);
 
       final held = position.pixels;
       gateway.inner.emitOutput('bl-5qc', 4);
@@ -971,23 +973,11 @@ void main() {
       expect(position.pixels, held, reason: 'new text does not move it');
       expect(position.pixels, lessThan(position.maxScrollExtent));
 
-      await tester.tap(key('team-agent-output-follow'));
-      await tester.pumpAndSettle();
-      position = outputPosition(tester);
-      expect(
-        tester.widget<SwitchListTile>(key('team-agent-output-follow')).value,
-        isTrue,
-      );
-      expect(position.pixels, position.maxScrollExtent);
-      expect(key('team-agent-output-jump'), findsNothing);
-
-      // The pill does the same.
-      await tester.drag(key('team-agent-output-list'), const Offset(0, 400));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-agent-output-jump'));
+      await tester.tap(jump);
       await tester.pumpAndSettle();
       position = outputPosition(tester);
       expect(position.pixels, position.maxScrollExtent);
+      expect(jump, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -1069,7 +1059,7 @@ void main() {
         }
         await tester.tap(key('team-agent-technical'));
         await tester.pumpAndSettle();
-        await reveal(tester, 'team-agent-list', key('team-agent-work-chip'));
+        await reveal(tester, 'team-agent-list', key('team-agent-header'));
         expect(tester.takeException(), isNull);
       });
 
@@ -1091,19 +1081,20 @@ void main() {
         );
         expect(tester.getSize(key('team-agent-output-page')).width, 320);
         expect(key('team-agent-output-status'), findsOneWidget);
-        expect(key('team-agent-output-follow'), findsOneWidget);
+        // No Follow switch: following is the default, the pill resumes it.
+        expect(key('team-agent-output-follow'), findsNothing);
         expect(key('team-agent-output-text'), findsOneWidget);
         var position = outputPosition(tester);
         expect(position.pixels, position.maxScrollExtent);
         await tester.drag(key('team-agent-output-list'), const Offset(0, 300));
         await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump'), findsOneWidget);
+        expect(key('team-agent-output-jump').hitTestable(), findsOneWidget);
         final pill = tester.getRect(key('team-agent-output-jump'));
         expect(pill.left, greaterThanOrEqualTo(0));
         expect(pill.right, lessThanOrEqualTo(320));
         gateway.inner.endOutput('bl-5qc');
         await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump'), findsNothing);
+        expect(key('team-agent-output-jump').hitTestable(), findsNothing);
         position = outputPosition(tester);
         expect(position.viewportDimension, greaterThan(0));
         expect(tester.takeException(), isNull);

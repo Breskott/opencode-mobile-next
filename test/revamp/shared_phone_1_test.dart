@@ -120,7 +120,10 @@ void main() {
       final item = find.byKey(const ValueKey('phone-server-disconnect'));
       expect(item, findsOneWidget);
       expect(
-        find.text(l10n.phoneServerCardDisconnect(l10n.phoneServerCardTitle)),
+        // The default name is lower case inside the sentence.
+        find.text(
+          l10n.phoneServerCardDisconnect(l10n.phoneServerNameInSentence),
+        ),
         findsOneWidget,
       );
       await tester.tap(item);
@@ -149,33 +152,27 @@ void main() {
       );
     });
 
-    testWidgets('running, not in use: one primary that names the server', (
-      tester,
-    ) async {
+    testWidgets('running, not in use: the row connects; no button repeats '
+        'it, and Stop lives in the menu', (tester) async {
       var opened = 0;
       await mount(tester, onOpen: () => opened++);
       expect(
         kitText(tester, 'phone-server-status'),
         l10n.phoneServerCardRunning,
       );
-      final connect = find.byKey(const ValueKey('phone-server-open'));
-      expect(
-        find.descendant(
-          of: connect,
-          matching: find.text(
-            l10n.phoneServerCardConnect(l10n.phoneServerCardTitle),
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text(l10n.phoneServerCardStopOpenCode), findsOneWidget);
-      await tester.tap(connect);
-      await tester.pumpAndSettle();
-      expect(opened, 1);
-      // The row's own tap does the same one likely thing.
+      // Nothing shown twice: the row's tap is the one way to connect.
+      expect(find.byKey(const ValueKey('phone-server-open')), findsNothing);
+      expect(find.text(l10n.phoneServerCardStopOpenCode), findsNothing);
       await tester.tap(find.byKey(const ValueKey('phone-server-title')));
       await tester.pumpAndSettle();
-      expect(opened, 2);
+      expect(opened, 1);
+      await openMenu(tester);
+      expect(find.byKey(const ValueKey('phone-server-stop')), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardStopOpenCode), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('phone-server-show-log')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('stopped: Start OpenCode starts it', (tester) async {
@@ -191,6 +188,7 @@ void main() {
 
     testWidgets('the server log opens in the one log view', (tester) async {
       await mount(tester);
+      await openMenu(tester);
       await tester.tap(find.text(l10n.phoneServerCardShowServerLog));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('phone-server-log')), findsOneWidget);
@@ -380,7 +378,7 @@ void main() {
       );
       await mount(tester);
       expect(status(tester), l10n.teamUiPhoneStatusRunning(2));
-      await tester.tap(find.text(l10n.teamPhoneStopTeam));
+      await tester.tap(find.text(l10n.teamPhoneStopTeamRow));
       await tester.pumpAndSettle();
       expect(runtime.calls, isEmpty, reason: 'the first tap only asks');
       expect(find.byKey(const ValueKey('team-phone-stop-sheet')), findsOne);

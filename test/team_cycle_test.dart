@@ -1608,7 +1608,7 @@ void main() {
       expect(key('team-work-sheet-cycle'), findsOneWidget);
       expect(
         tester.getTopLeft(key('team-work-sheet-cycle')).dy,
-        lessThan(tester.getTopLeft(key('team-work-sheet-state')).dy),
+        lessThan(tester.getTopLeft(key('team-work-sheet-owner')).dy),
       );
       // The title is the kit sheet's own header (screen-team-3), so the
       // strip is the body's first part.

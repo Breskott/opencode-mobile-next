@@ -186,7 +186,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Set up'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Set up OpenCode on this phone'),
+        findsOneWidget,
+      );
       // Other ways starts folded.
       expect(find.text('Use Termux instead'), findsNothing);
 

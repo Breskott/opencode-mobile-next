@@ -329,7 +329,7 @@ void main() {
   });
 
   group('a waiting task says when a worker starts', () {
-    testWidgets('fresh: how often the team checks, and the Now line', (
+    testWidgets('fresh: how often the team checks, on the task\'s row', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -341,13 +341,9 @@ void main() {
         text(tester, 'team-home-run-state-da-r7d'),
         '${_en.teamUiCardRunStateWaiting} · ${_en.teamNowChecksEveryMinute}',
       );
-      expect(
-        text(tester, 'team-home-now-waiting'),
-        _en.teamNowWaitingLine(
-          'Get all skills required online',
-          _en.teamNowChecksEveryMinute,
-        ),
-      );
+      // The task's own row says it; no Now line repeats the task above
+      // the list (owner rule 2026-09-27).
+      expect(_key('team-home-now-waiting'), findsNothing);
       await done(tester);
     });
 

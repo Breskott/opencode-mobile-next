@@ -509,20 +509,22 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
               ),
           ],
         ),
-        Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            tokens.gutter,
-            tokens.space2,
-            tokens.gutter,
-            tokens.space2,
-          ),
-          child: KitText(
-            l10n.termuxStorageNoteProjects,
-            role: KitTextRole.secondary,
-            tone: KitTextTone.secondary,
-          ),
-        ),
       ],
+      // Said once, under everything listed: the rows do not repeat it.
+      Padding(
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.gutter,
+          tokens.space2,
+          tokens.gutter,
+          tokens.space2,
+        ),
+        child: KitText(
+          l10n.termuxStorageOnlyBuildCaches,
+          key: const Key('termux-storage-footnote'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+      ),
     ];
   }
 }
@@ -557,13 +559,7 @@ class _CategoryRow extends StatelessWidget {
     return KitExpandRow(
       headerKey: Key('termux-storage-cat-${category.key}'),
       title: label,
-      supporting: TextSpan(
-        text: empty
-            ? l10n.termuxStorageNothingHere
-            : category.canClean
-            ? size
-            : '$size · ${l10n.termuxStorageNotDeletable}',
-      ),
+      supporting: TextSpan(text: empty ? l10n.termuxStorageNothingHere : size),
       supportingMaxLines: 2,
       children: [
         Padding(
@@ -589,7 +585,7 @@ class _CategoryRow extends StatelessWidget {
                 KitText(
                   category.canClean
                       ? l10n.termuxStorageWillRemove
-                      : l10n.termuxStorageNotDeletable,
+                      : l10n.termuxStorageWhereItIs,
                   role: KitTextRole.label,
                   tone: KitTextTone.secondary,
                 ),
@@ -622,9 +618,10 @@ class _CategoryRow extends StatelessWidget {
                 KitActionBlock(
                   secondary: KitAction(
                     key: Key('termux-storage-clean-${category.key}'),
+                    // Names what it removes and how much.
                     label: cleaning
                         ? l10n.termuxStorageCleaning
-                        : l10n.termuxStorageClean,
+                        : l10n.termuxStorageCleanBuildCaches(size),
                     icon: AppIconography.delete,
                     working: cleaning,
                     onPressed: stale || busy ? null : onClean,

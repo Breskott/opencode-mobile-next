@@ -423,7 +423,7 @@ void main() {
       final group = key('team-run-work-group-$name');
       await reveal(tester, group);
       expect(
-        tester.widget<Text>(key('team-run-work-group-count-$name')).data,
+        _textOf(tester, key('team-run-work-group-count-$name')).data,
         header,
       );
       final top = tester.getTopLeft(group).dy;
@@ -449,12 +449,12 @@ void main() {
     await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 2400));
     // Blocked: waits on the open Sync engine, not on the done Storage.
     expect(
-      tester.widget<Text>(key('team-run-work-detail-w-blocked')).data,
+      _textOf(tester, key('team-run-work-detail-w-blocked')).data,
       'Waits on 1 step · 3h ago',
     );
     // Needs input: the agent on it is the owner.
     expect(
-      tester.widget<Text>(key('team-run-work-detail-w-input')).data,
+      _textOf(tester, key('team-run-work-detail-w-input')).data,
       'Waits on 1 step · 3h ago',
     );
     expect(
@@ -467,7 +467,7 @@ void main() {
     expect(semanticLabels(tester), anyElement(contains('Owner: wolf')));
     // Working on a done need: no wait, just the age; assignee initial.
     expect(
-      tester.widget<Text>(key('team-run-work-detail-w-work-a')).data,
+      _textOf(tester, key('team-run-work-detail-w-work-a')).data,
       '5m ago',
     );
     expect(
@@ -514,7 +514,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(key('team-work-sheet-w-blocked'), findsOneWidget);
     expect(
-      tester.widget<Text>(key('team-work-sheet-title')).data,
+      _textOf(tester, key('team-work-sheet-title')).data,
       'Conflict policy',
     );
     expect(key('team-work-dependency-w-work-a'), findsOneWidget);
@@ -559,9 +559,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(key('team-work-sheet-w-input'), findsOneWidget);
     expect(
-      tester.widget<Text>(key('team-work-sheet-title')).data,
+      _textOf(tester, key('team-work-sheet-title')).data,
       'Database tests',
     );
     expect(tester.takeException(), isNull);
   });
+}
+
+/// The [Text] a keyed text draws: the widget itself, or the one inside a
+/// KitText (its key sits on the KitText).
+Text _textOf(WidgetTester tester, Finder finder) {
+  final widget = tester.widget(finder);
+  if (widget is Text) return widget;
+  return tester.widget<Text>(
+    find.descendant(of: finder, matching: find.byType(Text)).first,
+  );
 }

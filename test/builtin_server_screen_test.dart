@@ -205,7 +205,11 @@ void main() {
     tester,
   ) async {
     await mount(tester);
-    expect(find.text('Download Ubuntu (about 30 MB)'), findsOneWidget);
+    // The step is named once; the size sits on the one button that
+    // downloads it, and no heading repeats the top bar.
+    expect(find.text('Ubuntu'), findsOneWidget);
+    expect(find.text('Download Ubuntu (30 MB)'), findsOneWidget);
+    expect(find.text('Run OpenCode inside the app — no Termux'), findsNothing);
     expect(find.text('Experimental'), findsOneWidget);
     expect(find.byKey(const Key('builtin-install-opencode')), findsNothing);
 

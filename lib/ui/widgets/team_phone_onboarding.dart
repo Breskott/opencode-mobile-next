@@ -4,6 +4,12 @@
 /// live output panel the OpenCode install uses, the success card and the
 /// honest failure copy of §5.
 ///
+/// Built from kit parts (owner rule 2026-09-27, R6): each state on one
+/// [KitSurface] panel, the steps as [KitRow]s with a [KitStatusMark], the
+/// acts in a [KitActionBlock], what went wrong in a [KitNotice], the
+/// project picker in a kit sheet ([KitChoiceList], [KitField]) and the
+/// log copied through [KitCopy].
+///
 /// Everything here reads and drives [TermuxTeamRuntime] (TEAM-301). The
 /// runtime's state file is the truth: leaving the screen and coming back
 /// resumes the view from `aiteam.sh status`, and a verb that finished while
@@ -14,7 +20,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
@@ -24,6 +29,7 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'setup_terminal.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -453,11 +459,11 @@ class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
         ?.directory;
     if (saved != null && projects.contains(saved)) return saved;
     if (projects.length == 1) return projects.first;
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _ProjectSheet(projects: projects, runtime: _runtime),
+    return showKitSheet<String>(
+      context,
+      title: _copy(context).teamUiPhoneChooseProjectTitle,
+      icon: AppIconography.folders,
+      body: (_) => _ProjectSheet(projects: projects, runtime: _runtime),
     );
   }
 
@@ -605,14 +611,7 @@ class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
     }
   }
 
-  Future<void> _copyLog() async {
-    final l10n = _copy(context);
-    await Clipboard.setData(ClipboardData(text: _log));
-    if (!mounted) return;
-    ScaffoldMessenger.maybeOf(
-      context,
-    )?.showSnackBar(SnackBar(content: Text(l10n.workCopied)));
-  }
+  Future<void> _copyLog() => KitCopy.copy(context, _log);
 
   @override
   Widget build(BuildContext context) {
@@ -626,101 +625,71 @@ class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
     };
   }
 
-  Widget _card(
-    BuildContext context, {
-    required Key key,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
+  /// Every state sits on the one panel (KitSurface), its parts spaced by
+  /// the kit's steps.
+  Widget _card({required Key key, required List<Widget> children}) {
+    return KeyedSubtree(
       key: key,
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+      child: KitSurface.panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
       ),
-      child: child,
     );
   }
+
+  Widget _gap(BuildContext context) =>
+      SizedBox(height: KitTokens.of(context).space3);
 
   Widget _offer(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
-      height: 1.4,
-    );
     return _card(
-      context,
       key: const ValueKey('team-phone-offer'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneOptionalTag,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .6,
-            ),
+      children: [
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: KitChip(label: l10n.teamUiPhoneOptionalTag),
+        ),
+        _gap(context),
+        KitText(l10n.teamUiPhoneOfferTitle, role: KitTextRole.rowTitle),
+        SizedBox(height: KitTokens.of(context).space1),
+        KitText(l10n.teamUiPhoneOfferBody),
+        SizedBox(height: KitTokens.of(context).space1),
+        KitText(
+          l10n.teamUiPhoneOfferSize(teamPhoneDownloadMb(_manifest)),
+          key: const ValueKey('team-phone-offer-size'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        _gap(context),
+        KitNotice(
+          key: const ValueKey('team-phone-offer-warning'),
+          icon: AppIconography.warning,
+          message: l10n.teamUiPhoneOfferWarning,
+          liveRegion: false,
+        ),
+        _gap(context),
+        // The team is optional and heavy: leaving it for now is the one
+        // filled button, setting it up the outlined one.
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-phone-skip'),
+            label: l10n.teamUiPhoneSkip,
+            onPressed: _skip,
           ),
-          const SizedBox(height: 4),
-          Text(l10n.teamUiPhoneOfferTitle, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiPhoneOfferBody,
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+          secondary: KitAction(
+            key: const ValueKey('team-phone-set-up'),
+            label: l10n.teamUiPhoneSetUp,
+            onPressed: _setUp,
           ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.teamUiPhoneOfferSize(teamPhoneDownloadMb(_manifest)),
-            key: const ValueKey('team-phone-offer-size'),
-            style: muted,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.warning,
-                size: 18,
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.teamUiPhoneOfferWarning,
-                  key: const ValueKey('team-phone-offer-warning'),
-                  style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            children: [
-              FilledButton(
-                key: const ValueKey('team-phone-skip'),
-                onPressed: _skip,
-                child: Text(l10n.teamUiPhoneSkip),
-              ),
-              OutlinedButton(
-                key: const ValueKey('team-phone-set-up'),
-                onPressed: _setUp,
-                child: Text(l10n.teamUiPhoneSetUp),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
+  /// The five steps as rows on one group, each with its step mark.
   Widget _stepList(BuildContext context) {
     final l10n = _copy(context);
     final states = teamPhoneStepStates(_status, connected: _connected);
@@ -731,289 +700,160 @@ class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
       TeamPhoneStep.start: l10n.teamUiPhoneStepStart,
       TeamPhoneStep.connect: l10n.teamUiPhoneStepConnect,
     };
-    return Column(
+    return KitRowGroup(
       key: const ValueKey('team-phone-steps'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      margin: EdgeInsets.zero,
       children: [
         for (final step in TeamPhoneStep.values)
-          _StepRow(
+          KitRow(
             key: ValueKey('team-phone-step-${step.name}'),
-            number: step.index + 1,
+            leading: KitStatusMark(
+              state: switch (states[step]!) {
+                TeamPhoneStepState.idle => KitMarkState.waiting,
+                TeamPhoneStepState.running => KitMarkState.working,
+                TeamPhoneStepState.done => KitMarkState.done,
+                TeamPhoneStepState.error => KitMarkState.failed,
+              },
+            ),
             title: titles[step]!,
-            state: states[step]!,
+            titleMaxLines: 2,
           ),
       ],
     );
   }
 
+  Widget _terminal({required bool running}) => SetupTerminal(
+    output: _log,
+    running: running,
+    controller: _logController,
+    onCopy: _log.isEmpty ? null : _copyLog,
+  );
+
   Widget _steps(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final running = _busy || _status.busy;
     final project = _project ?? _status.project;
     return _card(
-      context,
       key: const ValueKey('team-phone-setup'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneSetupRunning,
-            style: theme.textTheme.titleMedium,
+      children: [
+        KitText(l10n.teamUiPhoneSetupRunning, role: KitTextRole.rowTitle),
+        if (project.isNotEmpty) ...[
+          SizedBox(height: KitTokens.of(context).space1),
+          KitText.mono(
+            l10n.teamUiPhoneProjectLine(project),
+            key: const ValueKey('team-phone-project'),
+            tone: KitTextTone.secondary,
           ),
-          if (project.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              l10n.teamUiPhoneProjectLine(project),
-              key: const ValueKey('team-phone-project'),
-              textDirection: TextDirection.ltr,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                fontFamily: AppTheme.monoFamily,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          _stepList(context),
-          const SizedBox(height: 12),
-          SetupTerminal(
-            output: _log,
-            running: running,
-            controller: _logController,
-            onCopy: _log.isEmpty ? null : _copyLog,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.teamUiPhoneLeaveNote,
-            key: const ValueKey('team-phone-leave-note'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          if (!running) ...[
-            const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: FilledButton.icon(
-                key: const ValueKey('team-phone-continue'),
-                onPressed: _resume,
-                icon: const Icon(AppIconography.play),
-                label: Text(l10n.teamUiPhoneContinue),
-              ),
-            ),
-          ],
         ],
-      ),
+        _gap(context),
+        _stepList(context),
+        _gap(context),
+        _terminal(running: running),
+        SizedBox(height: KitTokens.of(context).space2),
+        KitText(
+          l10n.teamUiPhoneLeaveNote,
+          key: const ValueKey('team-phone-leave-note'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        if (!running) ...[
+          _gap(context),
+          KitActionBlock(
+            primary: KitAction(
+              key: const ValueKey('team-phone-continue'),
+              label: l10n.teamUiPhoneContinue,
+              icon: AppIconography.play,
+              onPressed: _resume,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   Widget _success(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
-      context,
       key: const ValueKey('team-phone-success'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.checkCircle,
-                size: 20,
-                color: AppTheme.statusColor(theme, AppStatusTone.ok),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${l10n.teamUiPhoneSuccessTitle} · '
-                  '${l10n.teamUiPhoneAgentsReady(_status.agents ?? 0)}',
-                  key: const ValueKey('team-phone-success-title'),
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-            ],
+      children: [
+        KitNotice(
+          key: const ValueKey('team-phone-success-title'),
+          tone: AppStatusTone.ok,
+          icon: AppIconography.checkCircle,
+          title:
+              '${l10n.teamUiPhoneSuccessTitle} · '
+              '${l10n.teamUiPhoneAgentsReady(_status.agents ?? 0)}',
+          message: l10n.teamUiPhoneOfferWarning,
+        ),
+        _gap(context),
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-phone-open-workspace'),
+            label: l10n.teamUiPhoneOpenWorkspace,
+            icon: AppIconography.forward,
+            onPressed: widget.onOpenWorkspace,
           ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiPhoneOfferWarning,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-open-workspace'),
-              onPressed: widget.onOpenWorkspace,
-              icon: const Icon(AppIconography.forward),
-              label: Text(l10n.teamUiPhoneOpenWorkspace),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _failed(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final dispatch = _dispatchError;
     return _card(
-      context,
       key: const ValueKey('team-phone-failed'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneFailedTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
+      children: [
+        KitNotice.error(
+          title: l10n.teamUiPhoneFailedTitle,
+          message: dispatch != null
+              ? '${l10n.teamUiPhoneDispatchFailed} $dispatch'
+              : teamPhoneFailureText(l10n, _status),
+          messageKey: const ValueKey('team-phone-failed-reason'),
+        ),
+        _gap(context),
+        _stepList(context),
+        _gap(context),
+        _terminal(running: false),
+        _gap(context),
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-phone-retry'),
+            label: l10n.teamUiPhoneRetry,
+            icon: AppIconography.retry,
+            onPressed: _busy ? null : _retry,
           ),
-          const SizedBox(height: 6),
-          Text(
-            dispatch != null
-                ? '${l10n.teamUiPhoneDispatchFailed} $dispatch'
-                : teamPhoneFailureText(l10n, _status),
-            key: const ValueKey('team-phone-failed-reason'),
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          _stepList(context),
-          const SizedBox(height: 12),
-          SetupTerminal(
-            output: _log,
-            running: false,
-            controller: _logController,
-            onCopy: _log.isEmpty ? null : _copyLog,
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-retry'),
-              onPressed: _busy ? null : _retry,
-              icon: const Icon(AppIconography.retry),
-              label: Text(l10n.teamUiPhoneRetry),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _killed(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
-      context,
       key: const ValueKey('team-phone-killed'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.warning,
-                size: 20,
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.teamUiPhoneKilled,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-                ),
-              ),
-            ],
+      children: [
+        KitNotice(
+          icon: AppIconography.warning,
+          message: l10n.teamUiPhoneKilled,
+        ),
+        _gap(context),
+        KitActionBlock(
+          primary: KitAction(
+            key: const ValueKey('team-phone-start-again'),
+            label: l10n.teamUiPhoneStartAgain,
+            icon: AppIconography.play,
+            onPressed: _busy ? null : _startAgain,
           ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-start-again'),
-              onPressed: _busy ? null : _startAgain,
-              icon: const Icon(AppIconography.play),
-              label: Text(l10n.teamUiPhoneStartAgain),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _StepRow extends StatelessWidget {
-  const _StepRow({
-    super.key,
-    required this.number,
-    required this.title,
-    required this.state,
-  });
-
-  final int number;
-  final String title;
-  final TeamPhoneStepState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final Widget leading;
-    final Color color;
-    switch (state) {
-      case TeamPhoneStepState.idle:
-        color = AppTheme.mutedOf(theme);
-        leading = Text(
-          '$number',
-          style: theme.textTheme.labelMedium?.copyWith(color: color),
-        );
-      case TeamPhoneStepState.running:
-        color = scheme.primary;
-        leading = SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2, color: color),
-        );
-      case TeamPhoneStepState.done:
-        color = AppTheme.statusColor(theme, AppStatusTone.ok);
-        leading = Icon(AppIconography.check, size: 18, color: color);
-      case TeamPhoneStepState.error:
-        color = scheme.error;
-        leading = Icon(AppIconography.error, size: 18, color: color);
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 24, height: 20, child: Center(child: leading)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: state == TeamPhoneStepState.idle
-                    ? AppTheme.mutedOf(theme)
-                    : scheme.onSurface,
-                fontWeight: state == TeamPhoneStepState.running
-                    ? FontWeight.w600
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Picks one of the managed server's project folders, or names a new one
-/// when there are none. Pops with the chosen `/root/projects/<name>`.
+/// Picks one of the managed server's project folders (a tap chooses), or
+/// names a new one when there are none. Pops with the chosen
+/// `/root/projects/<name>`.
 class _ProjectSheet extends StatefulWidget {
   const _ProjectSheet({required this.projects, required this.runtime});
 
@@ -1025,9 +865,6 @@ class _ProjectSheet extends StatefulWidget {
 }
 
 class _ProjectSheetState extends State<_ProjectSheet> {
-  late String? _selected = widget.projects.isEmpty
-      ? null
-      : widget.projects.first;
   final _name = TextEditingController();
   String? _problem;
   bool _creating = false;
@@ -1064,86 +901,56 @@ class _ProjectSheetState extends State<_ProjectSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
+    final tokens = KitTokens.of(context);
+    return Column(
       key: const ValueKey('team-phone-project-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.teamUiPhoneChooseProjectTitle,
-            style: theme.textTheme.titleLarge,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitText(
+          widget.projects.isEmpty
+              ? l10n.teamUiPhoneNoProjects(managedProjectsDirectory)
+              : l10n.teamUiPhoneChooseProjectBody,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        SizedBox(height: tokens.space3),
+        if (widget.projects.isEmpty) ...[
+          KitField(
+            label: l10n.teamUiPhoneNewFolderLabel,
+            controller: _name,
+            kind: KitFieldKind.mono,
+            autofocus: true,
+            error: _problem,
+            onSubmitted: (_) => _create(),
+            fieldKey: const ValueKey('team-phone-new-folder'),
           ),
-          const SizedBox(height: 6),
-          Text(
-            widget.projects.isEmpty
-                ? l10n.teamUiPhoneNoProjects(managedProjectsDirectory)
-                : l10n.teamUiPhoneChooseProjectBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (widget.projects.isEmpty) ...[
-            TextField(
-              key: const ValueKey('team-phone-new-folder'),
-              controller: _name,
-              enabled: !_creating,
-              autofocus: true,
-              textDirection: TextDirection.ltr,
-              decoration: InputDecoration(
-                labelText: l10n.teamUiPhoneNewFolderLabel,
-                errorText: _problem,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _create(),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
+          SizedBox(height: tokens.space3),
+          KitActionBlock(
+            primary: KitAction(
               key: const ValueKey('team-phone-create-folder'),
+              label: l10n.teamUiPhoneCreateAndContinue,
+              working: _creating,
               onPressed: _creating ? null : _create,
-              child: Text(l10n.teamUiPhoneCreateAndContinue),
             ),
-          ] else ...[
-            RadioGroup<String>(
-              groupValue: _selected,
-              onChanged: (value) => setState(() => _selected = value),
-              child: Column(
-                children: [
-                  for (var i = 0; i < widget.projects.length; i++)
-                    RadioListTile<String>(
-                      key: ValueKey('team-phone-project-$i'),
-                      contentPadding: EdgeInsets.zero,
-                      value: widget.projects[i],
-                      title: Text(
-                        widget.projects[i].split('/').last,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                      subtitle: Text(
-                        widget.projects[i],
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const ValueKey('team-phone-project-continue'),
-              onPressed: _selected == null
-                  ? null
-                  : () => Navigator.of(context).pop(_selected),
-              child: Text(l10n.teamUiPhoneContinue),
-            ),
-          ],
-        ],
-      ),
+          ),
+        ] else
+          // One answer: a tap chooses the folder and the sheet closes.
+          KitChoiceList<String>.single(
+            semanticsLabel: l10n.teamUiPhoneChooseProjectTitle,
+            choices: [
+              for (var i = 0; i < widget.projects.length; i++)
+                KitChoice<String>(
+                  key: ValueKey('team-phone-project-$i'),
+                  value: widget.projects[i],
+                  title: widget.projects[i].split('/').last,
+                  supporting: widget.projects[i],
+                ),
+            ],
+            selected: null,
+            onSelected: (path) => Navigator.of(context).pop(path),
+          ),
+      ],
     );
   }
 }

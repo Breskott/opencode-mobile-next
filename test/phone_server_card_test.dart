@@ -15,11 +15,11 @@ import 'package:opencode_mobile/l10n/app_localizations_ar.dart';
 import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/local_terminal_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
-import 'package:opencode_mobile/ui/widgets/terminal_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_local_terminal.dart';
@@ -277,8 +277,14 @@ void main() {
     return saved;
   }
 
+  // The state word is a KitText; its words are read from the Text it draws.
   String status(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('phone-server-status')))
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('phone-server-status')),
+          matching: find.byType(Text),
+        ),
+      )
       .data!;
 
   // The detail is the card row's supporting line (design standard §6), a
@@ -298,18 +304,24 @@ void main() {
   }
 
   group('state', () {
-    testWidgets('running: This phone, version and size, Stop and Show log', (
-      tester,
-    ) async {
+    testWidgets('running: This phone and its version; Stop and Show log in '
+        'its menu, no buttons under the row', (tester) async {
       await mountCard(tester, connected: true);
       expect(find.text('This phone'), findsOneWidget);
       expect(status(tester), 'Running');
-      expect(detail(tester), 'OpenCode 1.18.29 · 700.0 MB');
+      // The size is not on the line (it is said where it matters: Remove).
+      expect(detail(tester), 'Connected · OpenCode 1.18.29');
+      expect(find.byKey(const ValueKey('phone-server-stop')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('phone-server-stop')), findsOneWidget);
+      expect(find.text('Stop OpenCode on this phone'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('phone-server-show-log')),
         findsOneWidget,
       );
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
       // Connected already: nothing to open, nothing to start.
       expect(find.byKey(const ValueKey('phone-server-open')), findsNothing);
       expect(find.byKey(const ValueKey('phone-server-start')), findsNothing);
@@ -333,14 +345,14 @@ void main() {
       expect(detail(tester), 'OpenCode 1');
     });
 
-    testWidgets('running and not connected offers Open as the one action', (
-      tester,
-    ) async {
+    testWidgets('running and not connected: the row connects, and no button '
+        'repeats it', (tester) async {
       var opened = 0;
       await mountCard(tester, onOpen: () => opened++);
       final filled = find.byWidgetPredicate((w) => w is FilledButton);
-      expect(filled, findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('phone-server-open')));
+      expect(filled, findsNothing);
+      expect(find.byKey(const ValueKey('phone-server-open')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('phone-server-title')));
       expect(opened, 1);
     });
 
@@ -410,8 +422,7 @@ void main() {
 
     testWidgets('Stop stops the server', (tester) async {
       await mountCard(tester, connected: true);
-      await tester.tap(find.byKey(const ValueKey('phone-server-stop')));
-      await tester.pumpAndSettle();
+      await choose(tester, 'phone-server-stop');
       expect(linux.calls, ['stop']);
       expect(status(tester), 'Stopped');
       expect(find.byKey(const ValueKey('phone-server-start')), findsOneWidget);
@@ -419,9 +430,9 @@ void main() {
 
     testWidgets('Show log opens the log in a terminal view', (tester) async {
       await mountCard(tester);
-      await tester.tap(find.byKey(const ValueKey('phone-server-show-log')));
-      await tester.pumpAndSettle();
-      expect(find.byType(TerminalView), findsOneWidget);
+      await choose(tester, 'phone-server-show-log');
+      // The one log view (KIT-31).
+      expect(find.byType(KitLogPanel), findsOneWidget);
       expect(find.textContaining('opencode server listening'), findsOneWidget);
     });
   });
@@ -447,7 +458,7 @@ void main() {
 
     testWidgets('on OpenCode 2 it offers the way back', (tester) async {
       await mountCard(tester, profile: phone(flavor: ServerFlavor.v2));
-      expect(detail(tester), 'OpenCode 2.0.10 · 700.0 MB');
+      expect(detail(tester), 'OpenCode 2.0.10');
       await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
       await tester.pumpAndSettle();
       expect(find.text('Switch to OpenCode 1'), findsOneWidget);
@@ -607,12 +618,7 @@ void main() {
           textScale: 2.5,
         );
         expect(tester.takeException(), isNull);
-        for (final key in [
-          'phone-server-open',
-          'phone-server-stop',
-          'phone-server-show-log',
-          'phone-server-menu',
-        ]) {
+        for (final key in ['phone-server-menu']) {
           final size = tester.getSize(find.byKey(ValueKey(key)));
           expect(size.height, greaterThanOrEqualTo(48), reason: key);
           expect(size.width, greaterThanOrEqualTo(48), reason: key);
@@ -765,7 +771,8 @@ void main() {
         find.byKey(const ValueKey('server-switcher-current')),
         findsOneWidget,
       );
-      await tester.tap(find.byKey(const ValueKey('phone-server-open')));
+      // The row's own tap connects (no button repeats it).
+      await tester.tap(find.byKey(const ValueKey('phone-server-title')));
       await tester.pumpAndSettle();
       final open = choice! as ServerSwitcherOpenServers;
       expect(open.request?.profileID, 'phone');

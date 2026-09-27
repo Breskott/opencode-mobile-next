@@ -21733,10 +21733,10 @@ abstract class AppLocalizations {
   /// **'Agent {name}'**
   String teamUiHomeGateLinkAgent(String name);
 
-  /// AI Team home Needs you row link text naming the run; title is server content
+  /// Gate sheet kicker: the task the question belongs to
   ///
   /// In en, this message translates to:
-  /// **'Run {title}'**
+  /// **'Task {title}'**
   String teamUiHomeGateLinkRun(String title);
 
   /// AI Team home Needs you row link text naming the work item; title is server content
@@ -22986,10 +22986,10 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get teamUiGateFailureClassUnknown;
 
-  /// Failed-run sheet heading
+  /// Gate sheet (failed task): label over the failure in words and what to do
   ///
   /// In en, this message translates to:
-  /// **'Classification'**
+  /// **'What went wrong'**
   String get teamUiGateFailureClassification;
 
   /// Failed-run sheet heading: the host's error text
@@ -23214,11 +23214,11 @@ abstract class AppLocalizations {
   /// **'Choose one option, then send.'**
   String get teamUiGateAnswerOptionsHint;
 
-  /// Failed-run sheet action sending the stuck work to its agent again
+  /// Gate sheet (failed task): sends the stuck work to its agent again; names the work and the agent
   ///
   /// In en, this message translates to:
-  /// **'Try again'**
-  String get teamUiGateAnswerRunRetry;
+  /// **'Send {work} to {agent} again'**
+  String teamUiGateAnswerRunRetry(String work, String agent);
 
   /// Helper under the failed-run Retry action naming the work item and agent
   ///
@@ -23658,11 +23658,11 @@ abstract class AppLocalizations {
   /// **'Set on the host; the phone shows it and does not choose it.'**
   String get teamUiStartRunPlannerHint;
 
-  /// Primary button of the Start-a-run sheet
+  /// Give the team a task: primary, names the planner it sends to
   ///
   /// In en, this message translates to:
-  /// **'Send to planner'**
-  String get teamUiStartRunSend;
+  /// **'Send to the {planner}'**
+  String teamUiStartRunSend(String planner);
 
   /// Shown instead of the form when the host lists the planner as suspended or stopped; nothing is sent
   ///
@@ -24407,10 +24407,10 @@ abstract class AppLocalizations {
   /// **'OpenCode itself'**
   String get termuxStorageCatOpenCode;
 
-  /// Storage category note
+  /// Storage on this phone: what the OpenCode category holds (the footnote says once that it is not removed here)
   ///
   /// In en, this message translates to:
-  /// **'The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.'**
+  /// **'The server, its sign-ins and conversation history. Conversations have their own screen.'**
   String get termuxStorageNoteOpenCode;
 
   /// Storage category
@@ -24689,10 +24689,10 @@ abstract class AppLocalizations {
   /// **'Keep'**
   String get termuxProcsKeep;
 
-  /// Row subtitle for sshd and opencode serve
+  /// Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled
   ///
   /// In en, this message translates to:
-  /// **'Protected · open On this phone'**
+  /// **'Protected · control it from On this phone'**
   String get termuxProcsProtected;
 
   /// Orphan reason line
@@ -25205,10 +25205,10 @@ abstract class AppLocalizations {
   /// **'Keep it running'**
   String get teamUiPhoneKeepRunningTitle;
 
-  /// On this phone: tips row subtitle
+  /// Settings › Plugins › On this phone: what the Keep it running row is for
   ///
   /// In en, this message translates to:
-  /// **'Wake lock, battery setting and the phantom process killer'**
+  /// **'Stop Android from closing the team in the background'**
   String get teamUiPhoneKeepRunningSubtitle;
 
   /// Keep it running sheet: intro
@@ -27725,10 +27725,10 @@ abstract class AppLocalizations {
   /// **'Continue setup'**
   String get setupProgressViewContinue;
 
-  /// Button that stops a running setup job
+  /// Setup progress: stops the running setup (opens 'Stop setup?')
   ///
   /// In en, this message translates to:
-  /// **'Cancel'**
+  /// **'Stop setup'**
   String get setupProgressViewCancel;
 
   /// Expands the live setup log
@@ -27833,10 +27833,10 @@ abstract class AppLocalizations {
   /// **'Experimental'**
   String get builtinServerExperimental;
 
-  /// Intro text of the built-in server screen
+  /// OpenCode inside the app: the one intro line
   ///
   /// In en, this message translates to:
-  /// **'The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.'**
+  /// **'The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.'**
   String get builtinServerIntro;
 
   /// Shown when the built-in server screen is opened off Android
@@ -27845,10 +27845,10 @@ abstract class AppLocalizations {
   /// **'The built-in server runs on Android only.'**
   String get builtinServerAndroidOnly;
 
-  /// Step 1 title
+  /// OpenCode inside the app: title of the Ubuntu step
   ///
   /// In en, this message translates to:
-  /// **'Download Ubuntu (about 30 MB)'**
+  /// **'Ubuntu'**
   String get builtinServerStepUbuntu;
 
   /// Step 2 title
@@ -27863,10 +27863,10 @@ abstract class AppLocalizations {
   /// **'Start the server'**
   String get builtinServerStepStart;
 
-  /// Step 4 title
+  /// OpenCode inside the app: title of the last step (connect to the server)
   ///
   /// In en, this message translates to:
-  /// **'Connect'**
+  /// **'Use it'**
   String get builtinServerStepConnect;
 
   /// Screen reader label of one setup step
@@ -27881,10 +27881,10 @@ abstract class AppLocalizations {
   /// **'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.'**
   String get builtinServerUbuntuHint;
 
-  /// Button starting the Ubuntu download
+  /// OpenCode inside the app: downloads Ubuntu, with its size
   ///
   /// In en, this message translates to:
-  /// **'Download Ubuntu'**
+  /// **'Download Ubuntu (30 MB)'**
   String get builtinServerUbuntuAction;
 
   /// Progress while Ubuntu installs
@@ -27941,16 +27941,16 @@ abstract class AppLocalizations {
   /// **'Which OpenCode'**
   String get builtinServerChooseRuntime;
 
-  /// Button starting the server
+  /// OpenCode inside the app: starts the server (also at the end of the server log)
   ///
   /// In en, this message translates to:
-  /// **'Start'**
+  /// **'Start the server'**
   String get builtinServerStartAction;
 
-  /// Button stopping the server
+  /// OpenCode inside the app: stops the server
   ///
   /// In en, this message translates to:
-  /// **'Stop'**
+  /// **'Stop the server'**
   String get builtinServerStopAction;
 
   /// Progress while the server starts
@@ -27989,10 +27989,10 @@ abstract class AppLocalizations {
   /// **'no answer within {seconds} seconds'**
   String builtinServerTimedOut(int seconds);
 
-  /// Button connecting to the built-in server
+  /// OpenCode inside the app: connects the app to the server inside it
   ///
   /// In en, this message translates to:
-  /// **'Connect'**
+  /// **'Connect to this phone'**
   String get builtinServerConnectAction;
 
   /// Explains the connect step
@@ -28181,10 +28181,10 @@ abstract class AppLocalizations {
   /// **'Using {size} of storage'**
   String builtinServerBytesUsed(String size);
 
-  /// Opens the server log
+  /// OpenCode inside the app: opens the server log
   ///
   /// In en, this message translates to:
-  /// **'Show log'**
+  /// **'Show server log'**
   String get builtinServerShowLog;
 
   /// Title of the server log sheet
@@ -28799,10 +28799,10 @@ abstract class AppLocalizations {
   /// **'{value} GB'**
   String phoneSetupStartGigabytes(String value);
 
-  /// The one primary button: installs everything needed to run a coding agent on this phone
+  /// Phone setup start: the primary that starts the setup
   ///
   /// In en, this message translates to:
-  /// **'Set up'**
+  /// **'Set up OpenCode on this phone'**
   String get phoneSetupStartSetUp;
 
   /// What Set up installs besides the agent, e.g. 'Includes Git, Python and Node.js.'
@@ -28823,10 +28823,10 @@ abstract class AppLocalizations {
   /// **', '**
   String get phoneSetupStartListSeparator;
 
-  /// Opens the sheet to choose which tools Set up installs
+  /// Phone setup start: opens the sheet of the same name
   ///
   /// In en, this message translates to:
-  /// **'Customize'**
+  /// **'Choose what to install'**
   String get phoneSetupStartCustomize;
 
   /// Collapsed section with the less common ways to get a coding agent
@@ -29717,10 +29717,10 @@ abstract class AppLocalizations {
   /// **'Answer'**
   String get teamUiHomeNeedsYouAnswer;
 
-  /// Opens the full question sheet from the inline question block
+  /// Opens the full question sheet from the inline question block; names what it opens
   ///
   /// In en, this message translates to:
-  /// **'More'**
+  /// **'See the whole question'**
   String get teamUiHomeNeedsYouMore;
 
   /// Title of the inline question block when the question belongs to no known task
@@ -36591,10 +36591,10 @@ abstract class AppLocalizations {
   /// **'Start OpenCode'**
   String get phoneServerCardStartOpenCode;
 
-  /// This phone card: stops the OpenCode server inside the app
+  /// This phone card menu: stops the OpenCode server inside the app
   ///
   /// In en, this message translates to:
-  /// **'Stop OpenCode'**
+  /// **'Stop OpenCode on this phone'**
   String get phoneServerCardStopOpenCode;
 
   /// This phone card: opens the OpenCode server's log
@@ -36975,10 +36975,10 @@ abstract class AppLocalizations {
   /// **'The task “{task}” failed with this error:\n{error}\nPlease find the cause, fix it and carry on.'**
   String gateSheetFixRequest(String task, String error);
 
-  /// Gate sheet, failed run: opens the worker's page. {agent} is its short name.
+  /// Gate sheet (failed task): opens the agent's page
   ///
   /// In en, this message translates to:
-  /// **'Open {agent}'**
+  /// **'Open {agent}\'s page'**
   String gateSheetOpenAgent(String agent);
 
   /// AI Team intro: primary on a phone server.
@@ -40310,6 +40310,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer the question about this draft first'**
   String get composerDraftBlockedReason;
+
+  /// AI Team home: the end of a working task's line, what happens after the work (owner rule 2026-09-27: said on the task's row, not in a line above the list)
+  ///
+  /// In en, this message translates to:
+  /// **'a reviewer checks it next'**
+  String get teamUiHomeRunReviewNext;
+
+  /// Gate sheet title for a failed task: the task's title then 'stopped', so the failure is said once
+  ///
+  /// In en, this message translates to:
+  /// **'{title} stopped'**
+  String teamUiGateRunStoppedTitle(String title);
+
+  /// Running now: first words of an orphan's line, why it was flagged
+  ///
+  /// In en, this message translates to:
+  /// **'Parent gone'**
+  String get termuxProcsKindParentGone;
+
+  /// Running now: first words of an orphan's line that burns CPU with nothing waiting on it
+  ///
+  /// In en, this message translates to:
+  /// **'No owner'**
+  String get termuxProcsKindNoOwner;
+
+  /// Running now: the one bulk stop, offered only while orphans exist; also its confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Stop 1 orphaned helper} other{Stop {count} orphaned helpers}}'**
+  String termuxProcsStopOrphans(int count);
+
+  /// Running now: title of the confirmation for the bulk orphan stop
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Stop the orphaned helper?} other{Stop {count} orphaned helpers?}}'**
+  String termuxProcsStopOrphansTitle(int count);
+
+  /// Settings › Plugins › On this phone: the row that stops the team while it runs
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the team on this phone'**
+  String get teamPhoneStopTeamRow;
+
+  /// Settings › Plugins › On this phone: what stopping the team does, under its row
+  ///
+  /// In en, this message translates to:
+  /// **'Agents stop where they are; nothing is lost'**
+  String get teamPhoneStopTeamRowSupporting;
+
+  /// Settings › Plugins › On this phone: the team's project by name under its status
+  ///
+  /// In en, this message translates to:
+  /// **'Working on {name}'**
+  String teamUiPhoneWorkingOn(String name);
+
+  /// Technical details label for the team engine's versions
+  ///
+  /// In en, this message translates to:
+  /// **'Engine versions'**
+  String get teamUiPhoneVersionsLabel;
+
+  /// Technical details label for the team's full project path
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get teamUiPhoneProjectLabel;
+
+  /// The default name of the in-app server inside a sentence ('Disconnect from this phone')
+  ///
+  /// In en, this message translates to:
+  /// **'this phone'**
+  String get phoneServerNameInSentence;
+
+  /// Agent page subtitle end: its task has nothing holding it up
+  ///
+  /// In en, this message translates to:
+  /// **'nothing blocking it'**
+  String get teamAgentWorkUnblockedShort;
+
+  /// Agent page subtitle end: its task is blocked
+  ///
+  /// In en, this message translates to:
+  /// **'blocked'**
+  String get teamAgentWorkBlockedShort;
+
+  /// Agent page: its newest step in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Ran a command'**
+  String get teamAgentStepCommand;
+
+  /// Agent page: its newest step in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Ran the tests'**
+  String get teamAgentStepTest;
+
+  /// Agent page: its newest step in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Read a file'**
+  String get teamAgentStepRead;
+
+  /// Agent page: its newest step in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Edited a file'**
+  String get teamAgentStepEdit;
+
+  /// Agent page: its newest step in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'Searched the code'**
+  String get teamAgentStepSearch;
+
+  /// Agent page: its newest step, a tool with no plain word of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Used {tool}'**
+  String teamAgentStepTool(String tool);
+
+  /// Agent page Technical details: the raw command of its newest step
+  ///
+  /// In en, this message translates to:
+  /// **'Last command'**
+  String get teamAgentLastCommandLabel;
+
+  /// Storage on this phone: the one footnote under the list
+  ///
+  /// In en, this message translates to:
+  /// **'Only build caches can be cleaned here'**
+  String get termuxStorageOnlyBuildCaches;
+
+  /// Storage on this phone: label over a category's folders when it cannot be cleaned
+  ///
+  /// In en, this message translates to:
+  /// **'Where it is'**
+  String get termuxStorageWhereItIs;
+
+  /// Storage on this phone: the one clean button, with the size it frees
+  ///
+  /// In en, this message translates to:
+  /// **'Clean build caches ({size})'**
+  String termuxStorageCleanBuildCaches(String size);
 }
 
 class _AppLocalizationsDelegate

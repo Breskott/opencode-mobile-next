@@ -361,13 +361,14 @@ void main() {
           320,
         );
 
-        // Needs you: two questions are rows, first; the read-only sheet
-        // scrolls and closes.
-        final gate = find.byKey(const ValueKey('team-home-gate-g1'));
+        // Needs you: two questions are their tasks' rows (no section of
+        // their own); the read-only sheet scrolls and closes.
+        final gate = find.byKey(const ValueKey('team-home-run-oc-xru'));
+        expect(find.byKey(const ValueKey('team-home-gate-g1')), findsNothing);
         await revealIn(
           tester,
           'team-home-runs',
-          find.byKey(const ValueKey('team-home-gate-g2')),
+          find.byKey(const ValueKey('team-home-run-r2')),
         );
         await revealIn(tester, 'team-home-runs', gate, up: true);
         await tester.tap(gate);
@@ -379,7 +380,7 @@ void main() {
           find.descendant(of: gateSheet, matching: find.text('SQLite')),
           findsOneWidget,
         );
-        final close = find.byKey(const ValueKey('team-gate-close'));
+        final close = find.byKey(const ValueKey('kit-sheet-close'));
         await tester.scrollUntilVisible(
           close,
           200,
