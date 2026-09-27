@@ -6,7 +6,7 @@ import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -89,12 +89,14 @@ Future<void> main() async {
   }
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(diagnostics);
-  // The persisted, redacted problem report (errors, timings, exits, heat).
-  unawaited(ReportProblemStartup.start(diagnostics));
   runApp(AppBootstrapGate(diagnostics: diagnostics));
-  WidgetsBinding.instance.addPostFrameCallback(
-    (_) => PerfTrace.markOnce('app.first_frame'),
-  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PerfTrace.markOnce('app.first_frame');
+    // Disk-backed diagnostics are not needed to paint the opening state.
+    // Capture imports buffered errors/timings when the store attaches, so
+    // installing in-memory error capture above still protects early failures.
+    unawaited(ReportProblemStartup.start(diagnostics));
+  });
 }
 
 typedef AppBootstrapLoader = Future<AppBootstrap> Function();
@@ -102,10 +104,23 @@ typedef AppBootstrapLoader = Future<AppBootstrap> Function();
 /// Renders immediately so a preferences or secure-storage failure can never
 /// leave Android showing a blank native window.
 class AppBootstrapGate extends StatefulWidget {
-  const AppBootstrapGate({super.key, required this.diagnostics, this.loader});
+  const AppBootstrapGate({
+    super.key,
+    required this.diagnostics,
+    this.loader,
+    this.controllerFactory,
+  });
 
   final AppDiagnosticsController diagnostics;
   final AppBootstrapLoader? loader;
+
+  /// Supplies controlled transports for startup ordering tests.
+  @visibleForTesting
+  final ConnectionController Function(
+    ProfileStore store,
+    AppDiagnosticsController diagnostics,
+  )?
+  controllerFactory;
 
   @override
   State<AppBootstrapGate> createState() => _AppBootstrapGateState();
@@ -130,26 +145,37 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
     // so even a start that fails can be reported.
     KitReportHook.handler = (context, report) =>
         openReportProblem(context, error: report);
-    unawaited(_load());
+    // Even the synchronous part of preferences/Keystore setup waits until
+    // the opening state has painted. Draft/photo/notification prerequisites
+    // below still complete before any conversation or connection is exposed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_load(initial: true));
+    });
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool initial = false}) async {
     final generation = ++_generation;
-    setState(() {
-      _loading = true;
-      _error = null;
-      _since = DateTime.now();
-    });
+    // Initial fields already describe the opening state. Do not schedule a
+    // redundant opening-state rebuild merely because work starts post-frame.
+    if (!initial) {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _since = DateTime.now();
+      });
+    }
     try {
       final bootstrap = await PerfTrace.span(
         'app.bootstrap',
         widget.loader ?? AppBootstrap.create,
       );
       if (!mounted || generation != _generation) return;
-      final controller = ConnectionController(
-        bootstrap.store,
-        diagnostics: widget.diagnostics,
-      );
+      final controller =
+          widget.controllerFactory?.call(bootstrap.store, widget.diagnostics) ??
+          ConnectionController(
+            bootstrap.store,
+            diagnostics: widget.diagnostics,
+          );
       // Before any conversation reads its draft: the older drafts move into
       // Saved prompts, then a photo the camera handed back after Android
       // stopped the app joins its own conversation's draft (P3.2). Both keep

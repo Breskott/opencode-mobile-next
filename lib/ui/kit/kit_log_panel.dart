@@ -90,6 +90,23 @@ class KitLogBuffer extends ValueNotifier<List<KitLogLine>> {
   KitLogLevel _partialLevel = KitLogLevel.normal;
   DateTime? _partialAt;
   int _dropped = 0;
+  int _debugCreatedLines = 0;
+
+  /// Counts internally materialized lines in debug/test builds only.
+  @visibleForTesting
+  int get debugCreatedLineCount => _debugCreatedLines;
+
+  KitLogLine _line(
+    String text, {
+    KitLogLevel level = KitLogLevel.normal,
+    DateTime? at,
+  }) {
+    assert(() {
+      _debugCreatedLines++;
+      return true;
+    }());
+    return KitLogLine(text, level: level, at: at);
+  }
 
   /// Lines dropped past [capacity] since the last [clear].
   int get dropped => _dropped;
@@ -102,12 +119,31 @@ class KitLogBuffer extends ValueNotifier<List<KitLogLine>> {
 
   void appendText(String chunk, {KitLogLevel level = KitLogLevel.normal}) {
     if (chunk.isEmpty) return;
-    final parts = (_partial + chunk).split('\n');
+    final text = _partial + chunk;
     final now = clock.now();
-    _partial = parts.removeLast();
-    for (final part in parts) {
-      _lines.add(KitLogLine(_strip(part), level: level, at: now));
+    var end = text.lastIndexOf('\n');
+    _partial = text.substring(end + 1);
+    final keep = _partial.isEmpty ? capacity : capacity - 1;
+    // Count all completed lines, but materialize only the tail that can survive
+    // this publication. A large polled log must not allocate its discarded
+    // prefix as thousands of strings and line objects first.
+    final tail = <KitLogLine>[];
+    var completed = 0;
+    while (end >= 0) {
+      final start = end == 0 ? -1 : text.lastIndexOf('\n', end - 1);
+      completed++;
+      if (tail.length < keep) {
+        tail.add(
+          _line(_strip(text.substring(start + 1, end)), level: level, at: now),
+        );
+      }
+      end = start;
     }
+    if (completed > keep) {
+      _dropped += _lines.length + completed - keep;
+      _lines.clear();
+    }
+    _lines.addAll(tail.reversed);
     _partialLevel = level;
     if (_partial.isNotEmpty) _partialAt = now;
     _publish();
@@ -131,9 +167,7 @@ class KitLogBuffer extends ValueNotifier<List<KitLogLine>> {
 
   void _closePartial() {
     if (_partial.isEmpty) return;
-    _lines.add(
-      KitLogLine(_strip(_partial), level: _partialLevel, at: _partialAt),
-    );
+    _lines.add(_line(_strip(_partial), level: _partialLevel, at: _partialAt));
     _partial = '';
   }
 
@@ -150,7 +184,7 @@ class KitLogBuffer extends ValueNotifier<List<KitLogLine>> {
     value = List.unmodifiable([
       ..._lines,
       if (_partial.isNotEmpty)
-        KitLogLine(_strip(_partial), level: _partialLevel, at: _partialAt),
+        _line(_strip(_partial), level: _partialLevel, at: _partialAt),
     ]);
   }
 }

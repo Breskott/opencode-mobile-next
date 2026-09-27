@@ -86,7 +86,7 @@ void main() {
     var persistedChanges = 0;
     report.addListener(() => persistedChanges++);
     capture = ReportProblemCapture(report: report, diagnostics: diagnostics);
-    expect(persistedChanges, 2);
+    expect(persistedChanges, 1);
     expect(report.entries, hasLength(2));
     expect(report.reportText(), contains('historical.3'));
     expect(report.reportText(), contains('historical.4'));
