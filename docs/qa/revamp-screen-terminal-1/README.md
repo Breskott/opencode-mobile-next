@@ -26,7 +26,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/screen-terminal-1`, base `da6a2a2f` (feat/phone-setup-v2), code head `6b2903df`.
+- Branch `revamp/screen-terminal-1`, base `9007257d` (feat/phone-setup-v2 when the branch was cut), code head `6b2903df`.
 - No APK (unit agents do not build).
 
 ## 3. Devices
