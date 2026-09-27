@@ -76,6 +76,10 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   final _expansion = <String, bool>{};
   final _message = TextEditingController();
   final _focus = FocusNode();
+
+  /// The transcript's scroll: a message just sent is brought into view
+  /// (the Now line above can take room and leave it under the fold).
+  final _scroll = ScrollController();
   Timer? _tick;
   String? _runId;
 
@@ -87,11 +91,6 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   /// Message records sent from this page (their receipts show under them).
   final _sentHere = <String>{};
   bool _sending = false;
-
-  /// A pending task waits this long before its Now line says it is slow and
-  /// offers the team's page (map statesMissing "still planning after N min
-  /// with an action").
-  static const _pendingSlowAfter = Duration(minutes: 10);
 
   OrchestrationController get _team => widget.team;
   DateTime Function() get _clock => widget.now ?? DateTime.now;
@@ -123,6 +122,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       ..removeListener(_keepDraft)
       ..dispose();
     _focus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -214,9 +214,29 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       if (!mounted) return;
       _sentHere.add(record.key);
       _message.clear();
+      _showLatest();
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  /// Scrolls the transcript to its end once the sent message is laid out.
+  void _showLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final position = _scroll.position;
+      if (KitMotion.reduced(context)) {
+        position.jumpTo(position.maxScrollExtent);
+      } else {
+        unawaited(
+          position.animateTo(
+            position.maxScrollExtent,
+            duration: KitMotion.standard,
+            curve: KitMotion.emphasized,
+          ),
+        );
+      }
+    });
   }
 
   Future<void> _openAgent(OrchestrationAgent agent) {
@@ -367,6 +387,163 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     };
   }
 
+  /// The facts for the task's one Now line (slice-P5.1), or null when the
+  /// line has nothing to add: a refused task says so in its turn, with Try
+  /// again. [connected] is false once the team has not answered for 8 s.
+  TeamNowInput? _nowInput({
+    required OrchestrationRun? run,
+    required List<WorkItem> work,
+    required List<OrchestrationGate> gates,
+    required MutationRecord? pendingRecord,
+    required bool connected,
+  }) {
+    final profile = _team.profileId;
+    final every = teamCheckInterval(_team);
+    // How long the next stage usually takes, only where the app knows it:
+    // a worker's start (the host's documented 1–5 min), and a wait for a
+    // worker on the team inside the app (its own check interval).
+    TeamNowInput timed(TeamNowInput input) {
+      final usual = switch (input.activity) {
+        TeamNowActivity.startingWorker => teamWorkerStartUsual,
+        TeamNowActivity.waitingForWorker => every,
+        _ => null,
+      };
+      if (usual == null) return input;
+      return TeamNowInput(
+        activityKey: input.activityKey,
+        activity: input.activity,
+        next: input.next,
+        reason: input.reason,
+        since: input.since,
+        typicalUpperBound: usual,
+        canCancel: input.canCancel,
+        canDismiss: input.canDismiss,
+      );
+    }
+
+    if (run != null) {
+      return timed(
+        TeamNowInput.forRun(
+          activityKey: '$profile:${run.id}',
+          run: run,
+          work: work,
+          cycleOf: _team.cycleFor,
+          agents: _team.snapshot.agents,
+          gates: gates,
+          connected: connected,
+          canCancel: _canStop(run),
+          now: _clock(),
+        ),
+      );
+    }
+    final pending = widget.pending;
+    if (pending == null) return null;
+    final key = '$profile:pending:${pendingRecord?.key ?? pending.workId}';
+    if (!connected) {
+      return TeamNowInput(
+        activityKey: key,
+        activity: TeamNowActivity.unavailable,
+        next: TeamNowNext.checkActivity,
+        reason: TeamNowReason.connectionUnavailable,
+      );
+    }
+    if (pendingRecord != null) {
+      if (pendingRecord.status == MutationStatus.rejected) return null;
+      final request = teamPlanningRequests(
+        mutations: [pendingRecord],
+        runs: const [],
+        dismissed: const {},
+        now: _clock(),
+      ).firstOrNull;
+      if (request != null) {
+        return TeamNowInput.forPlanning(activityKey: key, request: request);
+      }
+    }
+    // A direct task: made and given to the worker pool; no worker yet.
+    return timed(
+      TeamNowInput(
+        activityKey: key,
+        activity: TeamNowActivity.waitingForWorker,
+        next: TeamNowNext.worker,
+        reason: TeamNowReason.noWorkerReported,
+        since: pending.sentAt,
+      ),
+    );
+  }
+
+  /// This page's way out for a Now line suggestion, naming its target.
+  KitAction? _wayOut(
+    TeamNowAction action, {
+    required OrchestrationRun? run,
+    required List<OrchestrationAgent> agents,
+    required MutationRecord? pendingRecord,
+  }) {
+    final l10n = _chatL10n(context);
+    switch (action) {
+      case TeamNowAction.refresh:
+        return KitAction(
+          key: const ValueKey('team-conversation-now-refresh'),
+          label: l10n.teamUiRefresh,
+          working: _refreshing,
+          onPressed: _refreshing ? null : () => unawaited(_refresh()),
+        );
+      case TeamNowAction.openActivity:
+        if (run == null) {
+          final planner = pendingRecord?.targetId;
+          if (planner == null) return null;
+          return KitAction(
+            key: const ValueKey('team-conversation-now-watch'),
+            label: l10n.teamNowWatchPlanner,
+            onPressed: () => unawaited(
+              openTeamAgentConversationById(context, _team, planner),
+            ),
+          );
+        }
+        OrchestrationAgent? worker;
+        for (final agent in agents) {
+          if (teamAgentRole(agent) == TeamAgentRole.worker) {
+            worker = agent;
+            break;
+          }
+        }
+        worker ??= agents.firstOrNull;
+        if (worker == null) {
+          return KitAction(
+            key: const ValueKey('team-conversation-now-details'),
+            label: l10n.teamChatTaskDetails,
+            onPressed: () => _openDetails(run.id),
+          );
+        }
+        final agent = worker;
+        return KitAction(
+          key: const ValueKey('team-conversation-now-watch'),
+          label: l10n.teamNowWatchAgent(_teamAgentName(l10n, agent)),
+          onPressed: () => unawaited(_openAgent(agent)),
+        );
+      case TeamNowAction.dismissRequest:
+        final record = pendingRecord;
+        if (record == null) return null;
+        return KitAction(
+          key: const ValueKey('team-conversation-now-dismiss'),
+          label: l10n.teamNowDismissRequest,
+          onPressed: () async {
+            await _team.dismissPlanning(record.key);
+            if (mounted) await Navigator.of(context).maybePop();
+          },
+        );
+      case TeamNowAction.cancelRun:
+        if (run == null || !_canStop(run)) return null;
+        return KitAction(
+          key: const ValueKey('team-conversation-now-stop'),
+          label: l10n.teamChatStopTask,
+          destructive: true,
+          onPressed: () => unawaited(_stop(run)),
+        );
+      case TeamNowAction.answer:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _team,
@@ -479,15 +656,27 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
           menuKey: const ValueKey('team-conversation-menu'),
         ),
         header: [
-          _TeamNowLine(
-            team: _team,
-            now: now,
-            taskTitle: title,
-            pending: run == null && !gone ? widget.pending : null,
-            clock: _clock,
-            slowAfter: _pendingSlowAfter,
-            onOpenTeam: _openTeamPage,
-          ),
+          if (!gone)
+            _TeamNowLine(
+              team: _team,
+              clock: _clock,
+              input: (connected) => _nowInput(
+                run: run,
+                work: work,
+                gates: gates,
+                pendingRecord: pendingRecord,
+                connected: connected,
+              ),
+              wayOut: (action) => _wayOut(
+                action,
+                run: run,
+                agents: agents,
+                pendingRecord: pendingRecord,
+              ),
+              // Quiet for an hour or more: the notice under the worker
+              // line says since when and offers its ways out.
+              quiet: _noProgress(now, _clock()),
+            ),
           // The strip is the header's last row, with room under it and the
           // header's edge, so the transcript never reads as running under
           // its chips (owner report, build 2055).
@@ -614,6 +803,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     return Builder(
       builder: (context) => ListView(
         key: const ValueKey('team-conversation-list'),
+        controller: _scroll,
         padding: EdgeInsetsDirectional.fromSTEB(
           tokens.gutter,
           tokens.space3,
@@ -962,30 +1152,30 @@ String teamLeadSentence(
   };
 }
 
-/// The one status line: what is happening now and what happens next.
-/// Honest after 8 s: a team that does not answer says so, with Retry. A
-/// task the team has not picked up after [slowAfter] says so and offers
-/// the team's page.
+/// The task's one Now line ([TeamNowLineView], slice-P5.1): what the team
+/// is doing for this task now, for how long, what comes next and how long
+/// that usually takes; after 8 s without the next stage it says why and
+/// unfolds the Why in place. A team that has not answered for 8 s is
+/// "not answering", with Try again.
 class _TeamNowLine extends StatelessWidget {
   const _TeamNowLine({
     required this.team,
-    required this.now,
-    required this.taskTitle,
-    required this.pending,
     required this.clock,
-    required this.slowAfter,
-    required this.onOpenTeam,
+    required this.input,
+    required this.wayOut,
+    required this.quiet,
   });
 
   final OrchestrationController team;
-  final TeamNow? now;
-
-  /// The task's words (the prompt): a step that is the task is "it".
-  final String taskTitle;
-  final TeamPendingTask? pending;
   final DateTime Function() clock;
-  final Duration slowAfter;
-  final VoidCallback onOpenTeam;
+
+  /// The line's facts, given whether the team answers; null hides it.
+  final TeamNowInput? Function(bool connected) input;
+  final KitAction? Function(TeamNowAction action) wayOut;
+
+  /// How long the task has shown no progress, past an hour; its notice
+  /// in the transcript explains, so the line only says how long.
+  final Duration? quiet;
 
   @override
   Widget build(BuildContext context) {
@@ -998,131 +1188,28 @@ class _TeamNowLine extends StatelessWidget {
       waiting: waiting,
       grace: KitMotion.escalateAfter,
       builder: (context, overdue) {
-        final line = _line(context, overdue && waiting);
-        return KitReveal(child: line);
+        final facts = input(!(overdue && waiting));
+        final quiet = this.quiet;
+        return KitReveal(
+          child: facts == null
+              ? null
+              : TeamNowLineView(
+                  keyPrefix: 'team-conversation',
+                  input: facts,
+                  wayOut: wayOut,
+                  clock: clock,
+                  message:
+                      quiet == null ||
+                          facts.activity == TeamNowActivity.unavailable
+                      ? null
+                      : l10n.teamChatNowNoProgress(
+                          KitSince.durationWords(l10n, quiet),
+                        ),
+                  explains: quiet == null,
+                ),
+        );
       },
     );
-  }
-
-  Widget? _line(BuildContext context, bool overdue) {
-    final l10n = _chatL10n(context);
-    Duration waited(DateTime at) {
-      final span = clock().difference(at);
-      return span.isNegative ? Duration.zero : span;
-    }
-
-    // Hours and days past the first hour: never "2,715 min".
-    String since(DateTime? at) =>
-        at == null ? '' : KitSince.durationWords(l10n, waited(at));
-
-    KitStatusLine status(
-      String message, {
-      AppStatusTone tone = AppStatusTone.progress,
-      IconData icon = AppIconography.statusDot,
-      KitAction? action,
-    }) => KitStatusLine(
-      key: const ValueKey('team-conversation-now'),
-      messageKey: const ValueKey('team-conversation-now-text'),
-      icon: icon,
-      tone: tone,
-      message: message,
-      action: action,
-    );
-
-    if (overdue) {
-      return status(
-        l10n.teamChatNowNotAnswering,
-        // A degraded state, never the attention look (LOOK-4): the error
-        // line's neutral glyph, and the fix as its action.
-        tone: AppStatusTone.failure,
-        icon: AppIconography.cloudOff,
-        action: KitAction(
-          key: const ValueKey('team-conversation-retry'),
-          label: l10n.commonRetry,
-          onPressed: () => unawaited(
-            team.phase == OrchestrationPhase.failed
-                ? team.retry()
-                : team.refresh(),
-          ),
-        ),
-      );
-    }
-    final task = pending;
-    if (task != null) {
-      if (waited(task.sentAt) >= slowAfter) {
-        return status(
-          l10n.teamChatNowPendingSlow(since(task.sentAt)),
-          tone: AppStatusTone.neutral,
-          icon: AppIconography.waiting,
-          action: KitAction(
-            key: const ValueKey('team-conversation-pending-team-page'),
-            label: l10n.teamChatOpenTeam,
-            onPressed: onOpenTeam,
-          ),
-        );
-      }
-      return status(l10n.teamChatNowPending(since(task.sentAt)));
-    }
-    final now = this.now;
-    if (now == null) return null;
-    final onPhone =
-        (team.host?.hostMode ?? team.config.hostMode) ==
-        OrchestrationHostMode.phone;
-    final name = now.agentName;
-    return switch (now.kind) {
-      TeamNowKind.finished => status(
-        l10n.teamChatNowFinished,
-        tone: AppStatusTone.ok,
-        icon: AppIconography.check,
-      ),
-      TeamNowKind.needsYou => status(
-        l10n.teamChatNowNeedsYou(now.gateTitle ?? ''),
-        tone: AppStatusTone.neutral,
-        icon: AppIconography.question,
-      ),
-      TeamNowKind.stalled when _noProgress(now, clock()) != null => status(
-        l10n.teamChatNowNoProgress(
-          KitSince.durationWords(l10n, _noProgress(now, clock())!),
-        ),
-        tone: AppStatusTone.neutral,
-        icon: AppIconography.waiting,
-      ),
-      TeamNowKind.stalled => status(
-        [
-          if (now.stall case final stall?) teamCycleStallSentence(l10n, stall),
-          if (now.since != null) since(now.since),
-        ].join(' · '),
-        tone: AppStatusTone.neutral,
-        icon: AppIconography.waiting,
-      ),
-      TeamNowKind.waitingForWorker => status(
-        l10n.teamChatNowWaitingForWorker(since(now.since)),
-      ),
-      TeamNowKind.starting => status(
-        onPhone
-            ? l10n.teamChatNowStartingPhone(
-                name ?? l10n.teamChatAWorker,
-                since(now.since),
-              )
-            : l10n.teamChatNowStarting(
-                name ?? l10n.teamChatAWorker,
-                since(now.since),
-              ),
-      ),
-      TeamNowKind.working => status(
-        _sameTaskText(now.workTitle, taskTitle)
-            ? l10n.teamChatNowWorkingIt(
-                name ?? l10n.teamChatAWorker,
-                since(now.since),
-              )
-            : l10n.teamChatNowWorking(
-                name ?? l10n.teamChatAWorker,
-                now.workTitle ?? '',
-                since(now.since),
-              ),
-      ),
-      TeamNowKind.review => status(l10n.teamChatNowReview(since(now.since))),
-    };
   }
 }
 

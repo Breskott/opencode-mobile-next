@@ -76,6 +76,8 @@ import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart';
+import '../../widgets/team_now_line_view.dart'
+    show TeamNowActivity, teamNowActivityLine;
 import '../../widgets/team_discovery_card.dart'
     show teamHostDisclaimer, teamHostKindFor;
 import '../../widgets/team_host_form.dart'
@@ -90,6 +92,8 @@ import '../settings/plugins_screen.dart' show teamPhoneProfile;
 import '../team_conversation/team_conversation.dart' show TeamConversation;
 import 'gate_sheet.dart';
 import 'start_run_sheet.dart';
+import '../../../state/team_planning.dart'
+    show TeamPlanningRequest, TeamPlanningStatus;
 import 'team_board_screen.dart';
 import 'team_agents_screen.dart';
 import 'team_needs_you.dart';
@@ -817,6 +821,46 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     // list's section spacing.
     final gap = SizedBox(height: tokens.sectionGap);
     final planning = teamPendingPlanning(controller, _now);
+    final planned = filtering ? const <TeamPlanningRequest>[] : planning;
+
+    Widget planningRow(TeamPlanningRequest request) {
+      final activity = switch (request.status) {
+        TeamPlanningStatus.refused => TeamNowActivity.refused,
+        TeamPlanningStatus.unconfirmed => TeamNowActivity.unconfirmed,
+        _ => TeamNowActivity.planning,
+      };
+      final waited = _now.difference(request.sentAt);
+      return KitRow(
+        key: ValueKey('team-home-planning-${request.key}'),
+        leading: KitTaskMark(
+          state: switch (activity) {
+            TeamNowActivity.refused => KitTaskState.failed,
+            TeamNowActivity.unconfirmed => KitTaskState.waiting,
+            _ => KitTaskState.working,
+          },
+        ),
+        title: request.objective,
+        titleMaxLines: 2,
+        supporting: TextSpan(
+          text: teamNowActivityLine(
+            l10n,
+            activity,
+            elapsed: waited.isNegative ? Duration.zero : waited,
+          ),
+        ),
+        supportingMaxLines: 2,
+        supportingKey: ValueKey('team-home-planning-${request.key}-state'),
+        onTap: () => unawaited(
+          TeamConversation.openPlanning(
+            context,
+            controller,
+            request,
+            now: widget.now,
+          ),
+        ),
+      );
+    }
+
     // One status line (design standard §5): old data wins; else the team's
     // Now (what it is doing, what happens next) heads the list, where it
     // scrolls with it instead of taking room from the tasks.
@@ -840,8 +884,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             controller: controller,
             now: _now,
             keyPrefix: 'team-home-now',
-            // Working, in review and waiting are said on the task's row.
-            taskLines: false,
           );
     final refusal = _refusal;
     final inset = EdgeInsetsDirectional.symmetric(
@@ -860,17 +902,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             icon: AppIconography.error,
             message: teamReceiptLine(l10n, refusal),
             onDismiss: () => setState(() => _refusal = null),
-          ),
-        ),
-      for (final (index, request) in planning.indexed)
-        Padding(
-          padding: inset,
-          child: TeamPlanningCard(
-            controller: controller,
-            request: request,
-            now: widget.now,
-            // One moving drawing per screen (design standard §10).
-            ambient: index == 0,
           ),
         ),
       // 1. What needs the person, first, and only when something does: the
@@ -902,15 +933,14 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       ] else
         SizedBox(height: tokens.space3),
       // 2. The tasks: one panel, most urgent first, what finished last.
-      if (runs.isEmpty)
+      if (runs.isEmpty && planning.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty'),
           size: KitStateSize.inline,
           liveRegion: false,
           icon: AppIconography.checklist,
-          // The team gathered at an empty board, its one slot waiting;
-          // not while a task is being planned, whose card has the drawing.
-          illustration: planning.isEmpty ? const TeamBoardScene() : null,
+          // The team gathered at an empty board, its one slot waiting.
+          illustration: const TeamBoardScene(),
           // Room for the board and its three agents to read (88 dp, the
           // inline default, cramped them).
           illustrationWidth: 168,
@@ -921,7 +951,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
               ? l10n.emptyTeachTeamRunsMessage
               : l10n.teamUiCardEmptyHint,
         )
-      else if (visible.isEmpty)
+      // A task still being planned is a row of its own: the list is not
+      // empty, so no "No tasks match" over it.
+      else if (visible.isEmpty && planned.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty-filtered'),
           size: KitStateSize.inline,
@@ -930,8 +962,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           title: l10n.teamUiHomeRunsEmptyFiltered,
           body: l10n.teamUiHomeRunsEmptyHint,
         ),
-      if (runs.isEmpty || visible.isEmpty) gap,
-      if (listed.isNotEmpty || loose.isNotEmpty) ...[
+      if (visible.isEmpty && planned.isEmpty) gap,
+      if (listed.isNotEmpty || loose.isNotEmpty || planned.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),
           // No heading: the page is the task list and its title says so.
@@ -945,6 +977,10 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                 now: _now,
                 onTap: () => _openGate(gate),
               ),
+            // A task just given, before the planner lists it: its row
+            // opens its conversation, whose Now line says where it stands
+            // (the planning card this replaced is gone, slice-P5.1).
+            for (final request in planned) planningRow(request),
             for (final run in open) row(run),
             for (final run in doneShown) row(run),
             if (hiddenDone > 0)

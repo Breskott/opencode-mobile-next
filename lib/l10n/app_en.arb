@@ -9613,10 +9613,6 @@
   "@teamUiCardLoading": {
     "description": "Workspace AI Team card loading state (skeleton) label"
   },
-  "teamUiCardRefresh": "Refresh",
-  "@teamUiCardRefresh": {
-    "description": "Workspace AI Team card secondary action: refetch every scope from the host"
-  },
   "teamUiCardRefreshFailed": "Last refresh failed · showing data from {time}",
   "@teamUiCardRefreshFailed": {
     "description": "Workspace AI Team card line when the host was reached but a read failed; cached data stays on show",
@@ -10657,10 +10653,6 @@
   "@teamUiControlStopConfirmBody": {
     "description": "Body of the Stop confirmation"
   },
-  "teamUiControlStopConfirmAction": "Stop agent",
-  "@teamUiControlStopConfirmAction": {
-    "description": "Confirming button of the Stop confirmation"
-  },
   "teamUiControlRestartConfirmTitle": "Restart {agent}?",
   "@teamUiControlRestartConfirmTitle": {
     "description": "Title of the two-step Restart confirmation; {agent} is the agent name",
@@ -10840,44 +10832,11 @@
       }
     }
   },
-  "teamUiStartRunPlanning": "Planning the steps…",
-  "@teamUiStartRunPlanning": {
-    "description": "Title of the pending card on the AI Team home after the objective was sent, until a run appears"
-  },
-  "teamUiStartRunPlanningHint": "The planner is turning it into steps. The task shows in this list once it has.",
-  "@teamUiStartRunPlanningHint": {
-    "description": "Body of the pending Planning card"
-  },
-  "teamUiStartRunStillPlanning": "Still planning — check the planner's output",
-  "@teamUiStartRunStillPlanning": {
-    "description": "Title of the pending card after 30 minutes without a run"
-  },
-  "teamUiStartRunUnconfirmed": "Sent, unconfirmed — check the planner's output before sending again",
-  "@teamUiStartRunUnconfirmed": {
-    "description": "Pending card line when the host never confirmed the message"
-  },
   "teamUiStartRunRefused": "The host refused the objective: {reason}",
   "@teamUiStartRunRefused": {
     "description": "Pending card line when the host or the front refused; {reason} is the host's text",
     "placeholders": {
       "reason": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiStartRunPlannerOutput": "Watch the planner",
-  "@teamUiStartRunPlannerOutput": {
-    "description": "Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read"
-  },
-  "teamUiStartRunDismiss": "Dismiss",
-  "@teamUiStartRunDismiss": {
-    "description": "Button on the pending card hiding it for good"
-  },
-  "teamUiStartRunSentAt": "Sent {time}",
-  "@teamUiStartRunSentAt": {
-    "description": "Pending card footer; {time} is a clock time",
-    "placeholders": {
-      "time": {
         "type": "String"
       }
     }
@@ -11122,143 +11081,6 @@
   "teamUiRunLabelRawTitle": "Provider title",
   "@teamUiRunLabelRawTitle": {
     "description": "Run Technical details: the host's own title of the run (a convoy's sling-<id> name) when the product shows the work's title instead"
-  },
-  "teamUiCycleStepRouted": "Routed",
-  "@teamUiCycleStepRouted": {
-    "description": "Dispatch cycle strip (TEAM-116), step 1: the host chose an agent pool for the work item"
-  },
-  "teamUiCycleStepAgentStarting": "Agent starting",
-  "@teamUiCycleStepAgentStarting": {
-    "description": "Dispatch cycle step 2: a session of the routed pool is waking on the host"
-  },
-  "teamUiCycleStepClaimed": "Claimed",
-  "@teamUiCycleStepClaimed": {
-    "description": "Dispatch cycle step 3: the agent took the work item"
-  },
-  "teamUiCycleStepWorking": "Working",
-  "@teamUiCycleStepWorking": {
-    "description": "Dispatch cycle step 4: the agent is editing in its worktree"
-  },
-  "teamUiCycleStepPushed": "Pushed",
-  "@teamUiCycleStepPushed": {
-    "description": "Dispatch cycle step 5: the change is on a branch"
-  },
-  "teamUiCycleStepHandedToMerge": "Handed to merge",
-  "@teamUiCycleStepHandedToMerge": {
-    "description": "Dispatch cycle step 6: the merge agent (Gas City refinery) owns the branch"
-  },
-  "teamUiCycleStepMerged": "Merged",
-  "@teamUiCycleStepMerged": {
-    "description": "Dispatch cycle end mark: the branch merged and the item closed"
-  },
-  "teamUiCycleWaitingForAgent": "Waiting for an agent · usually 1–5 min",
-  "@teamUiCycleWaitingForAgent": {
-    "description": "Dispatch cycle hint under Agent starting while it is the current step: the host polls, so a few minutes is normal"
-  },
-  "teamUiCycleCurrent": "{step} · since {time}",
-  "@teamUiCycleCurrent": {
-    "description": "Dispatch cycle compact line on the Workspace card: the current step word and the HH:MM the wait began",
-    "placeholders": {
-      "step": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiCycleSemantics": "Step {position} of {total}, {step}, since {time}",
-  "@teamUiCycleSemantics": {
-    "description": "Screen-reader label of the dispatch cycle strip: one-based position of the current step, the number of steps (6), the step word, the HH:MM the wait began",
-    "placeholders": {
-      "position": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "step": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiCycleSemanticsNoTime": "Step {position} of {total}, {step}",
-  "@teamUiCycleSemanticsNoTime": {
-    "description": "Screen-reader label of the dispatch cycle strip when no time is known",
-    "placeholders": {
-      "position": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "step": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiCycleSemanticsMerged": "All {total} steps done, merged at {time}",
-  "@teamUiCycleSemanticsMerged": {
-    "description": "Screen-reader label of the dispatch cycle strip once the item merged",
-    "placeholders": {
-      "total": {
-        "type": "int"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiCycleStallHostNotStarted": "The host has not started an agent yet",
-  "@teamUiCycleStallHostNotStarted": {
-    "description": "Dispatch cycle stall: routed for over three minutes without an agent starting"
-  },
-  "teamUiCycleStallAgentCannotStart": "The agent could not start on the host",
-  "@teamUiCycleStallAgentCannotStart": {
-    "description": "Dispatch cycle stall: the agent session woke and stopped again twice or more within a minute"
-  },
-  "teamUiCycleStallProviderLimit": "The model provider reached its usage limit",
-  "@teamUiCycleStallProviderLimit": {
-    "description": "Dispatch cycle stall: the agent transcript says the model provider hit a usage limit, quota or rate limit"
-  },
-  "teamUiCycleStallWorkingLong": "Still working — check the agent's output",
-  "@teamUiCycleStallWorkingLong": {
-    "description": "Dispatch cycle stall: working for over thirty minutes with nothing pushed"
-  },
-  "teamUiCycleStallMergeWaiting": "Waiting for the merge agent",
-  "@teamUiCycleStallMergeWaiting": {
-    "description": "Dispatch cycle stall: handed to merge over fifteen minutes ago and not merged"
-  },
-  "teamUiCycleActionHow": "How the host dispatches",
-  "@teamUiCycleActionHow": {
-    "description": "Dispatch cycle action and sheet title: opens three lines explaining the host's polling chain"
-  },
-  "teamUiCycleActionOpenOutput": "Watch the agent",
-  "@teamUiCycleActionOpenOutput": {
-    "description": "Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read"
-  },
-  "teamUiCycleActionNudgeRefinery": "Nudge refinery",
-  "@teamUiCycleActionNudgeRefinery": {
-    "description": "Dispatch cycle action: nudges the rig's merge agent (Gas City refinery); refinery is the Gas City term"
-  },
-  "teamUiCycleHowLine1": "The host checks for new work about once a minute and routes it to an agent pool.",
-  "@teamUiCycleHowLine1": {
-    "description": "How the host dispatches sheet, line 1 of 3: the beads cache pass (up to 60 s)"
-  },
-  "teamUiCycleHowLine2": "A patrol every 30 seconds wakes an agent within its wake budget; the agent's harness takes 5–10 seconds to start.",
-  "@teamUiCycleHowLine2": {
-    "description": "How the host dispatches sheet, line 2 of 3: the patrol tick and the ACP start"
-  },
-  "teamUiCycleHowLine3": "The first model turn takes 10–60 seconds before the agent claims the work, so 2–6 minutes from routed to claimed is normal.",
-  "@teamUiCycleHowLine3": {
-    "description": "How the host dispatches sheet, line 3 of 3: the first model turn and the normal total"
-  },
-  "teamUiCycleHowClose": "Got it",
-  "@teamUiCycleHowClose": {
-    "description": "How the host dispatches sheet: the button that closes it"
   },
   "termuxStorageTitle": "Storage on this phone",
   "@termuxStorageTitle": {
@@ -15389,18 +15211,6 @@
   "@teamNowPausedLine": {
     "description": "AI Team home: the Now line while the team's agents are paused on purpose"
   },
-  "teamNowStuckLine": "“{title}” has waited {age} and no worker has started",
-  "@teamNowStuckLine": {
-    "description": "AI Team home: the Now line when a task waits too long; {title} is the task, {age} like '6 min'",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      },
-      "age": {
-        "type": "String"
-      }
-    }
-  },
   "teamNowStartWorker": "Start a worker",
   "@teamNowStartWorker": {
     "description": "AI Team: the action that wakes a worker for a task that waits too long"
@@ -15408,36 +15218,6 @@
   "teamNowWhy": "Why?",
   "@teamNowWhy": {
     "description": "AI Team: opens the team's technical details when the app has no action that helps"
-  },
-  "teamNowWorkingLine": "Working on “{title}” · a reviewer checks it next",
-  "@teamNowWorkingLine": {
-    "description": "AI Team home: the Now line while a task is worked on",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "teamNowReviewingLine": "Reviewing “{title}” · it merges when the check passes",
-  "@teamNowReviewingLine": {
-    "description": "AI Team home: the Now line while a task's work waits for review and merge",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "teamNowWaitingLine": "“{title}” waits for a worker · {next}",
-  "@teamNowWaitingLine": {
-    "description": "AI Team home: the Now line while a task waits for a worker; {next} says when one starts",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      },
-      "next": {
-        "type": "String"
-      }
-    }
   },
   "teamAgentDidNotStartTitle": "The worker didn't start",
   "@teamAgentDidNotStartTitle": {
@@ -15755,89 +15535,6 @@
   "teamChatAWorker": "A worker",
   "@teamChatAWorker": {
     "description": "Team conversation Now line: an unnamed worker"
-  },
-  "teamChatNowNotAnswering": "The team isn't answering",
-  "@teamChatNowNotAnswering": {
-    "description": "Team conversation Now line after 8 s without an answer from the team"
-  },
-  "teamChatNowPending": "Waiting for the team to pick it up · {elapsed}",
-  "@teamChatNowPending": {
-    "description": "Team conversation Now line: a task just given, not yet listed; elapsed time",
-    "placeholders": {
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowFinished": "Finished",
-  "@teamChatNowFinished": {
-    "description": "Team conversation Now line: the task is over"
-  },
-  "teamChatNowNeedsYou": "Needs you · {question}",
-  "@teamChatNowNeedsYou": {
-    "description": "Team conversation Now line: something waits on the person",
-    "placeholders": {
-      "question": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowWaitingForWorker": "Waiting for a worker · waited {elapsed}",
-  "@teamChatNowWaitingForWorker": {
-    "description": "Team conversation Now line: no worker has started yet; how long it has waited",
-    "placeholders": {
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowStartingPhone": "{name} is starting · can take a few minutes on a phone · {elapsed}",
-  "@teamChatNowStartingPhone": {
-    "description": "Team conversation Now line: a worker is starting on this phone (slow cold start); elapsed time",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowStarting": "{name} is starting · {elapsed}",
-  "@teamChatNowStarting": {
-    "description": "Team conversation Now line: a worker is starting; elapsed time",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowWorking": "{name} is working on “{title}” · {elapsed}",
-  "@teamChatNowWorking": {
-    "description": "Team conversation Now line: a worker is working on a step; elapsed time",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "title": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatNowReview": "Waiting for review · {elapsed}",
-  "@teamChatNowReview": {
-    "description": "Team conversation Now line: the work waits for the reviewer (merge); elapsed time",
-    "placeholders": {
-      "elapsed": {
-        "type": "String"
-      }
-    }
   },
   "teamChatStepsSummary": "{count, plural, =1{1 step} other{{count} steps}} · {done} done",
   "@teamChatStepsSummary": {
@@ -20586,10 +20283,6 @@
   "@teamNowWakeRefusedNoReason": {
     "description": "Shown when the team host refused to wake an agent without a reason (shared-team-1)."
   },
-  "teamCycleStripNoAgentYet": "No agent has taken this step yet.",
-  "@teamCycleStripNoAgentYet": {
-    "description": "Why Open agent output is unavailable on the dispatch strip (shared-team-1)."
-  },
   "teamHostFormTeamLabel": "Team name (optional)",
   "@teamHostFormTeamLabel": {
     "description": "Label of the field for the Gas City city name on the Add AI Team host sheet (shared-team-1; was 'City')."
@@ -23646,16 +23339,6 @@
   "commandLauncherAgentCommandsUnavailable": "This agent can't list its own commands here yet. These are the app's actions.",
   "@commandLauncherAgentCommandsUnavailable": {
     "description": "Commands and agents sheet: shown when the session's agent (Codex, Claude Code) cannot list its own slash commands, so only the app's actions appear."
-  },
-  "teamChatNowPendingSlow": "Still waiting for the team to plan this · {elapsed}",
-  "@teamChatNowPendingSlow": {
-    "description": "Team conversation Now line: a task given to the team has not been picked up after several minutes. elapsed is a short duration such as '12 min'.",
-    "placeholders": {
-      "elapsed": {
-        "type": "String",
-        "example": "12 min"
-      }
-    }
   },
   "teamChatRefusedTitle": "Task not taken",
   "@teamChatRefusedTitle": {
@@ -26811,18 +26494,6 @@
   "@teamChatLeadStepCancelledIt": {
     "description": "Team conversation, the lead's line: the task named in the prompt above was cancelled"
   },
-  "teamChatNowWorkingIt": "{name} is working on it · {elapsed}",
-  "@teamChatNowWorkingIt": {
-    "description": "Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
   "teamChatNowNoProgress": "No progress for {elapsed}",
   "@teamChatNowNoProgress": {
     "description": "Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as \"1 d 21 h\"",
@@ -26997,5 +26668,205 @@
   "bootstrapResettingBody": "Keep the app open while this finishes.",
   "bootstrapResetFailedTitle": "Sign-in reset failed",
   "bootstrapResetFailedBody": "Some saved sign-ins could not be removed. Try again.",
-  "workStalled": "Stalled"
+  "workStalled": "Stalled",
+  "teamNowActivityPlanning": "Waiting for a plan",
+  "@teamNowActivityPlanning": {
+    "description": "Team Now line (slice-P5.1): the planner has the task and has not listed its steps yet. Also a task row's line on the team page."
+  },
+  "teamNowActivityWaitingForWorker": "Waiting for a worker",
+  "@teamNowActivityWaitingForWorker": {
+    "description": "Team Now line: the task waits for a worker to be started."
+  },
+  "teamNowActivityStartingWorker": "Starting a worker",
+  "@teamNowActivityStartingWorker": {
+    "description": "Team Now line: a worker is starting on the task and has not begun it yet."
+  },
+  "teamNowActivityWorking": "Working on your task",
+  "@teamNowActivityWorking": {
+    "description": "Team Now line: a worker is working on the task."
+  },
+  "teamNowActivityReviewing": "Reviewing the changes",
+  "@teamNowActivityReviewing": {
+    "description": "Team Now line: the task's changes are with review or wait for it to close."
+  },
+  "teamNowActivityNeedsYou": "Waiting for your answer",
+  "@teamNowActivityNeedsYou": {
+    "description": "Team Now line: the team asked the person a question (its card is below)."
+  },
+  "teamNowActivityDelayed": "Taking longer than expected",
+  "@teamNowActivityDelayed": {
+    "description": "Team Now line: the current stage waited past its usual time."
+  },
+  "teamNowActivityUnconfirmed": "Request not confirmed",
+  "@teamNowActivityUnconfirmed": {
+    "description": "Team Now line: the app sent the task but does not know whether the team received it."
+  },
+  "teamNowActivityRefused": "Request not accepted",
+  "@teamNowActivityRefused": {
+    "description": "Team Now line / task row: the team refused the task."
+  },
+  "teamNowActivityUnavailable": "The team isn't answering",
+  "@teamNowActivityUnavailable": {
+    "description": "Team Now line after 8 s without an answer from the team."
+  },
+  "teamNowActivityCompleted": "Finished",
+  "@teamNowActivityCompleted": {
+    "description": "Team Now line: the task finished."
+  },
+  "teamNowActivityFailed": "Could not finish",
+  "@teamNowActivityFailed": {
+    "description": "Team Now line: the task failed."
+  },
+  "teamNowActivityCancelled": "Stopped",
+  "@teamNowActivityCancelled": {
+    "description": "Team Now line: the task was stopped."
+  },
+  "teamNowReasonNoPlanReported": "No plan has been reported yet. The reason is unknown.",
+  "@teamNowReasonNoPlanReported": {
+    "description": "Team Now line reason after 8 s while planning."
+  },
+  "teamNowReasonNoWorkerReported": "No worker has been reported yet.",
+  "@teamNowReasonNoWorkerReported": {
+    "description": "Team Now line reason: no worker started on the task yet."
+  },
+  "teamNowReasonWorkerStarting": "The worker has started but hasn't begun the task.",
+  "@teamNowReasonWorkerStarting": {
+    "description": "Team Now line reason while a worker starts."
+  },
+  "teamNowReasonWorkInProgress": "The task is being worked on.",
+  "@teamNowReasonWorkInProgress": {
+    "description": "Team Now line reason while a worker works."
+  },
+  "teamNowReasonReviewPending": "Review or completion is still pending.",
+  "@teamNowReasonReviewPending": {
+    "description": "Team Now line reason while in review."
+  },
+  "teamNowReasonAnswerNeeded": "The team is waiting for your answer.",
+  "@teamNowReasonAnswerNeeded": {
+    "description": "Team Now line reason: a question waits."
+  },
+  "teamNowReasonWorkerCouldNotStart": "The worker couldn't stay running.",
+  "@teamNowReasonWorkerCouldNotStart": {
+    "description": "Team Now line reason: the worker stopped while starting."
+  },
+  "teamNowReasonProviderLimit": "The AI service reported a usage limit.",
+  "@teamNowReasonProviderLimit": {
+    "description": "Team Now line reason: the model provider hit a usage limit."
+  },
+  "teamNowReasonWorkTakingLonger": "The work is taking longer than expected.",
+  "@teamNowReasonWorkTakingLonger": {
+    "description": "Team Now line reason: working a long time without handing anything on."
+  },
+  "teamNowReasonConfirmationMissing": "We can't confirm the request arrived. Check before sending it again.",
+  "@teamNowReasonConfirmationMissing": {
+    "description": "Team Now line reason: the task's request is unconfirmed."
+  },
+  "teamNowReasonRequestRefused": "The request was not accepted.",
+  "@teamNowReasonRequestRefused": {
+    "description": "Team Now line reason: the team refused the request."
+  },
+  "teamNowReasonConnectionUnavailable": "Progress can't be checked while disconnected.",
+  "@teamNowReasonConnectionUnavailable": {
+    "description": "Team Now line reason: no connection to the team."
+  },
+  "teamNowReasonCauseUnknown": "The reason is unknown. Check what the team is doing.",
+  "@teamNowReasonCauseUnknown": {
+    "description": "Team Now line reason when the cause is unknown."
+  },
+  "teamNowWhyPlanning": "The planner turns your task into steps. This conversation follows the task as soon as the team lists them. Stopping following it here doesn't cancel it on the team's computer.",
+  "@teamNowWhyPlanning": {
+    "description": "Team Now line Why fold while planning."
+  },
+  "teamNowWhyWaitingForWorker": "The team looks for new work regularly and starts a worker for it when one is free.",
+  "@teamNowWhyWaitingForWorker": {
+    "description": "Team Now line Why fold while waiting for a worker."
+  },
+  "teamNowWhyStartingWorker": "A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.",
+  "@teamNowWhyStartingWorker": {
+    "description": "Team Now line Why fold while a worker starts."
+  },
+  "teamNowWhyWorking": "The worker makes the changes on its own copy, then hands them to review.",
+  "@teamNowWhyWorking": {
+    "description": "Team Now line Why fold while working."
+  },
+  "teamNowWhyReviewing": "A reviewer checks the changes before they are merged.",
+  "@teamNowWhyReviewing": {
+    "description": "Team Now line Why fold while reviewing."
+  },
+  "teamNowWhyUnconfirmed": "The app sent the task but didn't hear back. Sending it again could start it twice, so look at the planner first.",
+  "@teamNowWhyUnconfirmed": {
+    "description": "Team Now line Why fold for an unconfirmed request."
+  },
+  "teamNowWhyWorkerCouldNotStart": "The worker stopped while it was starting. Its conversation may say why.",
+  "@teamNowWhyWorkerCouldNotStart": {
+    "description": "Team Now line Why fold: the worker could not start."
+  },
+  "teamNowWhyProviderLimit": "The AI service limits how much can be used in a period. Work continues when the limit resets, or you can stop the task.",
+  "@teamNowWhyProviderLimit": {
+    "description": "Team Now line Why fold: usage limit."
+  },
+  "teamNowWhyWorkTakingLonger": "Large tasks can take a while. Watching the worker shows whether it is still moving.",
+  "@teamNowWhyWorkTakingLonger": {
+    "description": "Team Now line Why fold: working long."
+  },
+  "teamNowWhyCauseUnknown": "What the team reports doesn't say why it is waiting.",
+  "@teamNowWhyCauseUnknown": {
+    "description": "Team Now line Why fold when the cause is unknown."
+  },
+  "teamNowWhyHide": "Hide",
+  "@teamNowWhyHide": {
+    "description": "Team Now line: folds the Why away again."
+  },
+  "teamNowNextPlan": "Next: the team lists the steps",
+  "@teamNowNextPlan": {
+    "description": "Team Now line second line while planning."
+  },
+  "teamNowNextWorker": "Next: a worker starts",
+  "@teamNowNextWorker": {
+    "description": "Team Now line second line while waiting for a worker."
+  },
+  "teamNowNextWork": "Next: the worker begins the task",
+  "@teamNowNextWork": {
+    "description": "Team Now line second line while a worker starts."
+  },
+  "teamNowNextReview": "Next: the changes are reviewed",
+  "@teamNowNextReview": {
+    "description": "Team Now line second line while working."
+  },
+  "teamNowNextFinish": "Next: the task finishes",
+  "@teamNowNextFinish": {
+    "description": "Team Now line second line while reviewing."
+  },
+  "teamNowWatchPlanner": "Watch the planner",
+  "@teamNowWatchPlanner": {
+    "description": "Team Now line way out: opens the planner's conversation."
+  },
+  "teamNowDismissRequest": "Stop following this request",
+  "@teamNowDismissRequest": {
+    "description": "Team Now line way out while planning: hides the request here; it does not cancel it on the team's computer."
+  },
+  "teamNowUsuallyWithin": "usually within {duration}",
+  "@teamNowUsuallyWithin": {
+    "description": "Team Now line: how long the next stage usually takes, never a countdown.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "5 min"
+      }
+    }
+  },
+  "teamNowWatchAgent": "Watch {name}",
+  "@teamNowWatchAgent": {
+    "description": "Team Now line way out: opens the worker's conversation. name is its short name or role.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "furiosa"
+      }
+    }
+  },
+  "teamNowNotStartingLine": "The team isn't starting a worker",
+  "@teamNowNotStartingLine": {
+    "description": "Team page Now line (slice-P5.1): a task waits past the team's checks and no worker has started; one sentence about the team, never the task (its row says which and how long). The action wakes a worker or explains why."
+  }
 }

@@ -1050,22 +1050,6 @@ String teamElapsedLabel(AppLocalizations l10n, Duration elapsed) {
   return l10n.teamUiRunElapsedDays(elapsed.inDays);
 }
 
-/// The agents working on a run: those whose current work item belongs to
-/// it, in the fleet order.
-List<OrchestrationAgent> teamAgentsOnRun(
-  OrchestrationSnapshot snapshot,
-  String runId,
-) {
-  final workIds = {
-    for (final item in snapshot.work)
-      if (item.runId == runId) item.id,
-  };
-  return [
-    for (final agent in snapshot.agents)
-      if (workIds.contains(agent.currentWorkId)) agent,
-  ]..sort(teamCompareAgents);
-}
-
 // ---------------------------------------------------------------------------
 // Usage (05-beads TEAM-113)
 // ---------------------------------------------------------------------------

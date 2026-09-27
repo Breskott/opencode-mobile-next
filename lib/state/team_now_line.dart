@@ -87,6 +87,8 @@ class TeamNowInput {
   final bool canDismiss;
 
   /// Uses the existing conversation selection so the status has one source.
+  /// [now] (host clock) lets a step quiet for `teamNoProgressAfter` read as
+  /// delayed (P3.5's stalled-task detection).
   factory TeamNowInput.forRun({
     required String activityKey,
     required OrchestrationRun run,
@@ -97,6 +99,7 @@ class TeamNowInput {
     bool connected = true,
     bool canCancel = false,
     Duration? typicalUpperBound,
+    DateTime? now,
   }) {
     if (!connected) {
       return TeamNowInput(
@@ -112,6 +115,7 @@ class TeamNowInput {
       cycleOf: cycleOf,
       agents: agents,
       gates: gates,
+      now: now,
     );
     final activity = switch (fact.kind) {
       TeamNowKind.needsYou => TeamNowActivity.needsYou,

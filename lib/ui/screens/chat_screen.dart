@@ -83,10 +83,14 @@ import '../../domain/team_agent_sessions.dart';
 import '../../state/orchestration.dart';
 import '../../state/team_conversation.dart';
 import '../../state/team_planning.dart'
-    show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
+    show
+        teamPlanningRequests,
+        teamPlanningRunMatches,
+        teamPlannerAgent,
+        teamPlannerIsOff;
 import '../widgets/team_controls.dart' show teamControlReceipt;
-import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
-import '../widgets/team_now.dart' show teamUnstickAction;
+import '../widgets/team_now.dart' show teamCheckInterval, teamUnstickAction;
+import '../widgets/team_now_line_view.dart';
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';
 import 'team/agent_screen.dart' show AgentScreen;
