@@ -1,15 +1,22 @@
-import '../../l10n/app_localizations.dart';
-import '../widgets/setup_ui_messages.dart';
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../platform/camera.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/pairing.dart';
-import '../app_iconography.dart';
+import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
+import '../widgets/setup_ui_messages.dart';
 
 /// Scans the QR that `opencode2 pair` prints and returns the parsed payload.
 ///
@@ -55,10 +62,18 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
   MobileScannerController? _controller;
   _ScanStage _stage = _ScanStage.starting;
 
+  /// When the camera was asked for: the starting state escalates from here
+  /// after 8 s (STATE-5) and offers pasting instead.
+  DateTime _startedAt = DateTime.now();
+
   /// Why the last decode was rejected. Shown under the preview so the user
   /// can tell "that QR is not a pairing code" from "the camera is broken",
   /// while scanning continues.
   String? _rejected;
+
+  /// The device's own words for a camera that would not open (never a
+  /// decoded value): the failed state's Details.
+  String? _deviceMessage;
 
   /// Set the instant a valid payload is found, so a second frame decoding the
   /// same code cannot pop the route twice.
@@ -67,6 +82,16 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
   @override
   void initState() {
     super.initState();
+    unawaited(_start());
+  }
+
+  void _restart() {
+    setState(() {
+      _stage = _ScanStage.starting;
+      _startedAt = DateTime.now();
+      _rejected = null;
+      _deviceMessage = null;
+    });
     unawaited(_start());
   }
 
@@ -109,7 +134,7 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
         _stage = _ScanStage.failed;
         // A camera failure message is about the device, not the payload, so
         // it is safe to show — and it is the only clue the user has.
-        _rejected = error is MobileScannerException
+        _deviceMessage = error is MobileScannerException
             ? error.errorDetails?.message ?? error.errorCode.name
             : '$error';
       });
@@ -155,232 +180,135 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    void pasteInstead() => Navigator.of(context).pop();
+    final paste = KitAction(
+      key: const ValueKey('pairing-scanner-secondary'),
+      label: l10n.e7SetupPasteInstead,
+      icon: AppIconography.paste,
+      onPressed: pasteInstead,
+    );
+    return KitScreen(
       key: const ValueKey('pairing-scanner-screen'),
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupCloseScanner,
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(AppIconography.close),
-        ),
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupScanPairing,
-        ),
+      topBar: KitTopBar(
+        title: l10n.e7SetupScanPairing,
+        exit: KitTopBarExit.close,
+        exitKey: const ValueKey('pairing-scanner-close'),
       ),
-      body: SafeArea(
-        child: switch (_stage) {
-          _ScanStage.starting => const Center(
-            key: ValueKey('pairing-scanner-starting'),
-            child: CircularProgressIndicator(),
-          ),
-          _ScanStage.scanning => _preview(theme),
-          _ScanStage.denied => _Recovery(
-            key: const ValueKey('pairing-scanner-denied'),
+      body: switch (_stage) {
+        _ScanStage.starting => KitStateView(
+          key: const ValueKey('pairing-scanner-starting'),
+          icon: AppIconography.camera,
+          tone: AppStatusTone.progress,
+          title: l10n.pairingScannerStarting,
+          progress: const KitProgress.waiting(),
+          since: _startedAt,
+          onSlow: [paste],
+        ),
+        _ScanStage.scanning => _preview(context, l10n),
+        _ScanStage.denied => KitStateView(
+          key: const ValueKey('pairing-scanner-denied'),
+          icon: AppIconography.camera,
+          title: l10n.e7SetupCameraNeeded,
+          body: l10n.e7SetupCameraPrivacy,
+          primary: KitAction(
+            key: const ValueKey('pairing-scanner-primary'),
+            label: l10n.pairingScannerAllowCamera,
             icon: AppIconography.camera,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCameraNeeded,
-            body: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCameraPrivacy,
-            primaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).isolatedTaskRetryOpen,
-            onPrimary: () {
-              setState(() => _stage = _ScanStage.starting);
-              unawaited(_start());
-            },
-            secondaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupPasteInstead,
-            onSecondary: () => Navigator.of(context).pop(),
+            onPressed: _restart,
           ),
-          _ScanStage.permanentlyDenied => _Recovery(
-            key: const ValueKey('pairing-scanner-blocked'),
-            icon: AppIconography.cameraOff,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCameraDisabled,
-            body: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCameraSettingsDetail,
-            primaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupOpenAppSettings,
-            onPrimary: () => unawaited(cameraPlatform.openAppSettings()),
-            secondaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupPasteInstead,
-            onSecondary: () => Navigator.of(context).pop(),
+          secondary: paste,
+        ),
+        _ScanStage.permanentlyDenied => KitStateView(
+          key: const ValueKey('pairing-scanner-blocked'),
+          icon: AppIconography.cameraOff,
+          title: l10n.e7SetupCameraDisabled,
+          body: l10n.e7SetupCameraSettingsDetail,
+          primary: KitAction(
+            key: const ValueKey('pairing-scanner-primary'),
+            label: l10n.e7SetupOpenAppSettings,
+            icon: AppIconography.settings,
+            onPressed: () => unawaited(cameraPlatform.openAppSettings()),
           ),
-          _ScanStage.noCamera => _Recovery(
-            key: const ValueKey('pairing-scanner-no-camera'),
-            icon: AppIconography.cameraOff,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupNoCamera,
-            body: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupNoCameraDetail,
-            primaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupPasteInstead,
-            onPrimary: () => Navigator.of(context).pop(),
+          secondary: paste,
+        ),
+        _ScanStage.noCamera => KitStateView(
+          key: const ValueKey('pairing-scanner-no-camera'),
+          icon: AppIconography.cameraOff,
+          title: l10n.e7SetupNoCamera,
+          body: l10n.e7SetupNoCameraDetail,
+          primary: KitAction(
+            key: const ValueKey('pairing-scanner-primary'),
+            label: l10n.e7SetupPasteInstead,
+            icon: AppIconography.paste,
+            onPressed: pasteInstead,
           ),
-          _ScanStage.failed => _Recovery(
-            key: const ValueKey('pairing-scanner-failed'),
-            icon: AppIconography.error,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCameraFailed,
-            body: [
-              ?_rejected,
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupCameraFailedDetail,
-            ].join('\n\n'),
-            primaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).isolatedTaskRetryOpen,
-            onPrimary: () {
-              setState(() {
-                _stage = _ScanStage.starting;
-                _rejected = null;
-              });
-              unawaited(_start());
-            },
-            secondaryLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupPasteInstead,
-            onSecondary: () => Navigator.of(context).pop(),
+        ),
+        _ScanStage.failed => KitStateView(
+          key: const ValueKey('pairing-scanner-failed'),
+          icon: AppIconography.error,
+          tone: AppStatusTone.failure,
+          title: l10n.e7SetupCameraFailed,
+          body: l10n.e7SetupCameraFailedDetail,
+          details: _deviceMessage,
+          primary: KitAction(
+            key: const ValueKey('pairing-scanner-primary'),
+            label: l10n.isolatedTaskRetryOpen,
+            icon: AppIconography.retry,
+            onPressed: _restart,
           ),
-        },
-      ),
+          secondary: paste,
+        ),
+      },
     );
   }
 
-  Widget _preview(ThemeData theme) {
+  Widget _preview(BuildContext context, AppLocalizations l10n) {
     final controller = _controller;
     if (controller == null) {
-      return const Center(child: CircularProgressIndicator());
+      return KitStateView(
+        icon: AppIconography.camera,
+        tone: AppStatusTone.progress,
+        title: l10n.pairingScannerStarting,
+        progress: const KitProgress.waiting(),
+      );
     }
+    final tokens = KitTokens.of(context);
     final rejected = _rejected;
     return Column(
       key: const ValueKey('pairing-scanner-preview'),
       children: [
+        // The camera surface itself; kit-KitScanner (blocked, not built)
+        // will own it with its viewfinder.
         Expanded(
           child: MobileScanner(controller: controller, onDetect: _onDetect),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: EdgeInsets.fromLTRB(
+            tokens.gutter,
+            tokens.space4,
+            tokens.gutter,
+            tokens.space5,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupScanInstruction,
+              KitText(
+                l10n.e7SetupScanInstruction,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                tone: KitTextTone.secondary,
               ),
               if (rejected != null) ...[
-                const SizedBox(height: 12),
-                Semantics(
+                SizedBox(height: tokens.space3),
+                KitNotice(
                   key: const ValueKey('pairing-scanner-rejected'),
-                  container: true,
-                  liveRegion: true,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      setupUiMessage(
-                        lookupAppLocalizations(Localizations.localeOf(context)),
-                        rejected,
-                      ),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onErrorContainer,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
+                  icon: AppIconography.warning,
+                  message: setupUiMessage(l10n, rejected),
                 ),
               ],
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-/// A full-screen "this did not work, here is what to do" state.
-class _Recovery extends StatelessWidget {
-  const _Recovery({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.primaryLabel,
-    required this.onPrimary,
-    this.secondaryLabel,
-    this.onSecondary,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final String primaryLabel;
-  final VoidCallback onPrimary;
-  final String? secondaryLabel;
-  final VoidCallback? onSecondary;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-      children: [
-        Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(height: 20),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 10),
-        Text(
-          body,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          key: const ValueKey('pairing-scanner-primary'),
-          onPressed: onPrimary,
-          child: Text(primaryLabel),
-        ),
-        if (secondaryLabel case final label?) ...[
-          const SizedBox(height: 10),
-          TextButton(
-            key: const ValueKey('pairing-scanner-secondary'),
-            onPressed: onSecondary,
-            child: Text(label),
-          ),
-        ],
       ],
     );
   }

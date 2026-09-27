@@ -3,6 +3,11 @@ part of '../settings_screen.dart';
 /// "This server": connection identity, health, host management, and the
 /// server update flow. Saved servers are a sibling row in the hub, not a row
 /// here, so each has one home.
+///
+/// Versions are the health probe's first ("Health-reported version
+/// everywhere"): the connection's own reading only fills in until it
+/// answers. The address and the other technical values sit in the one
+/// Details fold at the end.
 class ServerSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
   const ServerSettingsScreen({super.key, required this.controller});
@@ -10,6 +15,12 @@ class ServerSettingsScreen extends StatefulWidget {
   @override
   State<ServerSettingsScreen> createState() => _ServerSettingsScreenState();
 }
+
+/// The helper script's restart, as Run as a Linux service installs it.
+const _serverRestartCommand = 'bash ubuntu-opencode.sh restart';
+
+/// The official upgrade and model refresh, run on the server's computer.
+const _serverUpdateCommands = 'opencode upgrade\nopencode models --refresh';
 
 class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   Health? _health;
@@ -28,6 +39,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   void _connectionChanged() {
     if (mounted) setState(() {});
   }
+
+  /// The running version: the health probe's answer, else the connection's.
+  String? get _runningVersion => _health?.version ?? widget.controller.version;
 
   Future<void> _checkHealth() async {
     // Runs from initState, so inherited lookups are not yet allowed.
@@ -51,57 +65,57 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     }
   }
 
-  Future<void> _copyRemoteUpdateCommands() async {
-    await Clipboard.setData(
-      const ClipboardData(text: 'opencode upgrade\nopencode models --refresh'),
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_settingsCopy(context).e7SettingsUi45),
-        duration: Duration(seconds: 2),
+  /// "Restart OpenCode on its host": the command to run there, and "I
+  /// restarted it", which checks the server again (map: restart dialog
+  /// "fix").
+  Future<void> _showRemoteRestartSheet(String version) async {
+    final copy = _settingsCopy(context);
+    final restarted = await showKitSheet<bool>(
+      context,
+      title: copy.e7SettingsUi46,
+      icon: AppIconography.restart,
+      sheetKey: const ValueKey('server-restart-sheet'),
+      body: (sheetContext) {
+        final tokens = KitTokens.of(sheetContext);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitText(
+              copy.e7SettingsRestartBody(
+                version,
+                _runningVersion ?? copy.e7SettingsUi52,
+              ),
+            ),
+            SizedBox(height: tokens.space4),
+            KitText(
+              copy.serverSettingsRestartCommandLabel,
+              role: KitTextRole.label,
+            ),
+            SizedBox(height: tokens.space2),
+            KitCodeBlock(
+              text: _serverRestartCommand,
+              kind: KitCodeKind.command,
+              copyLabel: copy.handoffCopyCommand,
+              copyKey: const ValueKey('server-restart-copy'),
+            ),
+          ],
+        );
+      },
+      primary: KitAction(
+        key: const ValueKey('server-restart-done'),
+        label: copy.serverSettingsRestartedIt,
+        icon: AppIconography.retry,
+        onPressed: () => Navigator.of(context).pop(true),
       ),
     );
+    if (restarted == true && mounted) await _checkHealth();
   }
 
-  Future<void> _showRemoteRestartNotice(String version) => showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(_settingsCopy(context).e7SettingsUi46),
-      content: Text(
-        _settingsCopy(context).e7SettingsRestartBody(
-          version,
-          widget.controller.version ?? _settingsCopy(context).e7SettingsUi52,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(_settingsCopy(context).modelChoiceDone),
-        ),
-      ],
-    ),
-  );
-
-  Future<void> _upgradeRemoteServer(String target) async {
+  /// Installs [target] inside the confirmation: the question shows the
+  /// install working, and a failure keeps it open with Try again (the row
+  /// says why as well).
+  Future<void> _install(String target, ServerProfile profile) async {
     final copy = _settingsCopy(context);
-    if (_upgradingServer || !isExactServerVersion(target)) return;
-    final profile = widget.controller.profile;
-    if (profile == null) return;
-    final confirmed = await showConfirmSheet(
-      context,
-      title: copy.e7SettingsUi48,
-      message: copy.e7SettingsUpgradeBody(
-        target,
-        profile.name,
-        widget.controller.version ?? copy.e7SettingsUi53,
-      ),
-      confirmLabel: copy.e7SettingsInstallVersion(target),
-      icon: AppIconography.download,
-      confirmKey: const Key('confirm-server-upgrade'),
-    );
-    if (!confirmed || !mounted) return;
-
     setState(() {
       _upgradingServer = true;
       _serverUpgradeError = null;
@@ -112,30 +126,51 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         throw ProductException(copy.e7SettingsUi19);
       }
       final installed = await repository.upgradeServer(target);
-      if (!mounted) return;
       if (widget.controller.profile?.id != profile.id) {
         throw ProductException(copy.e7SettingsUi49);
       }
       widget.controller.recordServerUpgradeInstalled(installed);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(copy.e7SettingsInstalledVersion(installed)),
-          duration: const Duration(seconds: 5),
-        ),
-      );
     } catch (error) {
       if (mounted) {
         setState(() => _serverUpgradeError = productErrorText(error));
       }
+      rethrow;
     } finally {
       if (mounted) setState(() => _upgradingServer = false);
     }
+  }
+
+  Future<void> _upgradeRemoteServer(String target) async {
+    final copy = _settingsCopy(context);
+    if (_upgradingServer || !isExactServerVersion(target)) return;
+    final profile = widget.controller.profile;
+    if (profile == null) return;
+    final current = _runningVersion ?? copy.e7SettingsUi53;
+    await showKitConfirm(
+      context,
+      title: copy.e7SettingsUi48,
+      body: copy.serverSettingsUpgradeBody(target, profile.name, current),
+      confirmLabel: copy.e7SettingsInstallVersion(target),
+      icon: AppIconography.download,
+      consequenceItems: [
+        KitConsequence(copy.serverSettingsUpgradeKeepsRunning(current)),
+        KitConsequence(copy.serverSettingsUpgradeRestartAfter(target)),
+        KitConsequence(
+          copy.serverSettingsUpgradeKeepsData,
+          mark: KitConsequenceMark.kept,
+        ),
+      ],
+      confirmKey: const Key('confirm-server-upgrade'),
+      action: () => _install(target, profile),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final profile = controller.profile;
+    final copy = _settingsCopy(context);
+    final tokens = KitTokens.of(context);
     // Termux management only exists on Android; desktop loopback servers
     // follow the ordinary remote-update path.
     final managedLocally =
@@ -147,163 +182,187 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     final installedVersion = managedLocally
         ? null
         : controller.installedServerVersion;
+    final running = _runningVersion;
     late final String serverUpdateTitle;
     late final String serverUpdateSubtitle;
-    late final IconData serverUpdateIcon;
+    Widget? serverUpdateTrailing;
     VoidCallback? serverUpdateAction;
     if (managedLocally) {
-      serverUpdateTitle = _settingsCopy(context).e7SettingsUi50;
-      serverUpdateSubtitle = _settingsCopy(context).e7SettingsUi51;
-      serverUpdateIcon = AppIconography.chevronRight;
+      serverUpdateTitle = copy.e7SettingsUi50;
+      serverUpdateSubtitle = copy.e7SettingsUi51;
+      serverUpdateTrailing = const _RowMark(AppIconography.chevronRight);
       serverUpdateAction = () =>
           Navigator.of(context).pushNamed('/termux-setup');
     } else if (installedVersion != null) {
-      serverUpdateTitle = _settingsCopy(
-        context,
-      ).e7SettingsRestartVersion(installedVersion);
+      serverUpdateTitle = copy.e7SettingsRestartVersion(installedVersion);
       serverUpdateSubtitle = _serverUpgradeError != null
-          ? _settingsCopy(context).e7SettingsRetryError(_serverUpgradeError!)
-          : _settingsCopy(context).e7SettingsInstalledCurrent(
-              installedVersion,
-              controller.version ?? _settingsCopy(context).e7SettingsUi52,
-            );
-      serverUpdateIcon = AppIconography.restart;
-      serverUpdateAction = () => _showRemoteRestartNotice(installedVersion);
+          ? copy.e7SettingsRetryError(_serverUpgradeError!)
+          : copy.e7SettingsInstalledVersion(installedVersion);
+      serverUpdateTrailing = const _RowMark(AppIconography.restart);
+      serverUpdateAction = () => _showRemoteRestartSheet(installedVersion);
     } else if (availableVersion != null) {
-      serverUpdateTitle = _settingsCopy(
-        context,
-      ).e7SettingsUpdateVersion(availableVersion);
+      serverUpdateTitle = copy.e7SettingsUpdateVersion(availableVersion);
       serverUpdateSubtitle = _serverUpgradeError != null
-          ? _settingsCopy(context).e7SettingsRetryError(_serverUpgradeError!)
-          : _settingsCopy(context).e7SettingsCurrentServer(
-              controller.version ?? _settingsCopy(context).e7SettingsUi17,
-            );
-      serverUpdateIcon = AppIconography.download;
+          ? copy.e7SettingsRetryError(_serverUpgradeError!)
+          : copy.e7SettingsCurrentServer(running ?? copy.e7SettingsUi17);
+      serverUpdateTrailing = const _RowMark(AppIconography.download);
       serverUpdateAction = () => _upgradeRemoteServer(availableVersion);
     } else {
-      serverUpdateTitle = _settingsCopy(context).e7SettingsUi54;
-      serverUpdateSubtitle = _settingsCopy(context).e7SettingsUi55;
-      serverUpdateIcon = AppIcons.copy;
-      serverUpdateAction = _copyRemoteUpdateCommands;
+      serverUpdateTitle = copy.e7SettingsUi54;
+      serverUpdateSubtitle = copy.e7SettingsUi55;
+      // The copy shows its own check (K2 §4.8): never a snackbar.
+      serverUpdateTrailing = KitIconButton.copy(
+        key: const ValueKey('server-update-commands-copy'),
+        tooltip: copy.serverSettingsCopyUpdateCommands,
+        text: () => _serverUpdateCommands,
+      );
+      serverUpdateAction = null;
     }
-    final copy = _settingsCopy(context);
-    final theme = Theme.of(context);
     final healthy = _health?.healthy == true;
-    return Scaffold(
-      appBar: AppBar(title: Text(copy.e7SettingsUi1)),
-      body: KitScreen(
-        // The health check and an update in flight are the screen's one
-        // loading bar (design standard §4); the rows say what is happening.
-        loading: _checking || _upgradingServer,
-        loadingLabel: _upgradingServer
-            ? serverUpdateTitle
-            : copy.e7SettingsUi11,
-        body: ListView(
-          padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
-          children: [
-            KitRow(
-              leading: KitRow.icon(context, AppIconography.server),
-              title: profile?.name ?? copy.e7SettingsUi9,
-              supporting: TextSpan(
-                text: profile?.baseUrl ?? copy.e7SettingsUi56,
-                style: profile?.baseUrl == null
-                    ? null
-                    : const TextStyle(fontFamily: AppTheme.monoFamily),
-              ),
-              trailing: IconButton(
-                tooltip: copy.e7SettingsUi57,
-                // The bar and the "Checking…" row below are the reason it
-                // rests while a check runs.
-                onPressed: _checking ? null : _checkHealth,
-                icon: const Icon(AppIconography.retry),
-              ),
-            ),
-            // Neutral until the first probe answers: a red "unavailable" row
-            // that flashes for the half-second before the result lands reads
-            // as a real outage.
-            if (_health == null && _healthError == null)
+    final hasPassword = profile?.password.isNotEmpty == true;
+    final baseUrl = profile?.baseUrl;
+    final checkAgain = KitIconButton(
+      key: const ValueKey('server-health-check'),
+      icon: AppIconography.retry,
+      tooltip: copy.e7SettingsUi57,
+      // The bar and the "Checking…" row are the reason it rests while a
+      // check runs.
+      onPressed: _checking ? null : _checkHealth,
+      disabledReason: _checking ? copy.e7SettingsUi11 : null,
+    );
+    return KitScreen(
+      topBar: KitTopBar(title: copy.e7SettingsUi1),
+      width: KitScreenWidth.reading,
+      // The health check and an update in flight are the screen's one
+      // loading bar (design standard §4); the rows say what is happening.
+      loading: _checking || _upgradingServer,
+      loadingLabel: _upgradingServer ? serverUpdateTitle : copy.e7SettingsUi11,
+      body: ListView(
+        padding: EdgeInsets.only(
+          top: tokens.space3,
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          KitRowGroup(
+            children: [
               KitRow(
-                key: const Key('server-health-checking'),
-                leading: KitRow.icon(context, AppIconography.activity),
-                title: copy.e7SettingsUi11,
-                supporting: TextSpan(text: copy.e7SettingsUi58),
-              )
-            else
-              KitRow(
-                key: const Key('server-health-result'),
-                leading: KitRow.icon(
-                  context,
-                  healthy ? AppIconography.checkCircle : AppIconography.error,
-                  color: healthy
-                      ? AppTheme.successOf(theme)
-                      : theme.colorScheme.error,
+                key: const Key('server-identity'),
+                leading: KitRow.icon(context, AppIconography.server),
+                title: profile?.name ?? copy.e7SettingsUi9,
+                // The address is technical: it sits in Details below.
+                supporting: baseUrl == null
+                    ? TextSpan(text: copy.e7SettingsUi56)
+                    : null,
+              ),
+              // Neutral until the first probe answers: a red "unavailable"
+              // row that flashes for the half-second before the result lands
+              // reads as a real outage.
+              if (_health == null && _healthError == null)
+                KitRow(
+                  key: const Key('server-health-checking'),
+                  leading: KitRow.icon(context, AppIconography.activity),
+                  title: copy.e7SettingsUi11,
+                  supporting: TextSpan(text: copy.e7SettingsUi58),
+                  trailing: checkAgain,
+                )
+              else
+                KitRow(
+                  key: const Key('server-health-result'),
+                  leading: KitRow.icon(
+                    context,
+                    healthy ? AppIconography.checkCircle : AppIconography.error,
+                    color: healthy ? tokens.roles.success : null,
+                  ),
+                  title: healthy ? copy.e7SettingsUi59 : copy.e7SettingsUi60,
+                  supporting: TextSpan(
+                    text:
+                        _healthError ??
+                        copy.e7SettingsVersion(running ?? copy.e7SettingsUi17),
+                  ),
+                  supportingMaxLines: 3,
+                  trailing: checkAgain,
                 ),
-                title: healthy ? copy.e7SettingsUi59 : copy.e7SettingsUi60,
+              KitRow(
+                key: const Key('server-authentication'),
+                leading: KitRow.icon(context, AppIconography.person),
+                title: copy.e7SettingsUi61,
                 supporting: TextSpan(
-                  text:
-                      _healthError ??
-                      copy.e7SettingsVersion(
-                        _health?.version ??
-                            controller.version ??
-                            copy.e7SettingsUi17,
-                      ),
+                  text: [
+                    hasPassword
+                        ? copy.e7SettingsAuthenticationUser(
+                            profile?.username.isNotEmpty == true
+                                ? profile!.username
+                                : 'opencode',
+                          )
+                        : copy.e7SettingsUi62,
+                    copy.serverSettingsPasswordInServers,
+                  ].join(' · '),
                 ),
                 supportingMaxLines: 2,
+                trailing: const _RowMark(AppIconography.chevronRight),
+                onTap: () => Navigator.of(context).pushNamed('/servers'),
               ),
-            KitRow(
-              leading: KitRow.icon(context, AppIconography.person),
-              title: copy.e7SettingsUi61,
-              supporting: TextSpan(
-                text: profile?.password.isNotEmpty == true
-                    ? copy.e7SettingsAuthenticationUser(
-                        profile?.username.isNotEmpty == true
-                            ? profile!.username
-                            : 'opencode',
-                      )
-                    : copy.e7SettingsUi62,
-              ),
-            ),
-            if (!managedLocally)
-              KitRow(
-                key: const Key('host-management-entry'),
-                leading: KitRow.icon(context, AppIconography.terminal),
-                title: copy.e7SettingsUi65,
-                supporting: TextSpan(text: copy.e7SettingsUi66),
-                supportingMaxLines: 2,
-                trailing: const _Chevron(),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        HostManagementScreen(controller: controller),
+            ],
+          ),
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            children: [
+              if (!managedLocally)
+                KitRow(
+                  key: const Key('host-management-entry'),
+                  leading: KitRow.icon(context, AppIconography.terminal),
+                  title: copy.e7SettingsUi65,
+                  supporting: TextSpan(text: copy.e7SettingsUi66),
+                  supportingMaxLines: 2,
+                  trailing: const _RowMark(AppIconography.chevronRight),
+                  onTap: () => pushKitPage<void>(
+                    context,
+                    (_) => HostManagementScreen(controller: controller),
                   ),
                 ),
-              ),
-            // §7 row 23. A Termux-managed server is upgraded by this device, so
-            // that path is never gated — only the remote-host one is.
-            if (!managedLocally && !controller.capabilities.remoteUpgrade)
-              GatedRowTile(
-                feature: 'remote-upgrade',
-                title: copy.e7SettingsUi67,
-                explainer: copy.e7SettingsUi68,
-                leading: KitRow.icon(context, AppIconography.systemDownload),
-              )
-            else
-              KitRow(
-                key: const Key('server-updates-tile'),
-                leading: KitRow.icon(context, AppIconography.systemDownload),
-                title: serverUpdateTitle,
-                supporting: TextSpan(text: serverUpdateSubtitle),
-                supportingMaxLines: 2,
-                trailing: SizedBox.square(
-                  dimension: 48,
-                  child: Icon(serverUpdateIcon, size: 20),
+              // §7 row 23. A Termux-managed server is upgraded by this
+              // device, so that path is never gated — only the remote-host
+              // one is. whenMissing: explains (STATE-12).
+              if (!managedLocally && !controller.capabilities.remoteUpgrade)
+                KitRow.unavailable(
+                  key: const ValueKey('gated-remote-upgrade'),
+                  title: copy.e7SettingsUi67,
+                  reason: copy.e7SettingsUi68,
+                  capability: 'remote-upgrade',
+                  leading: KitRow.icon(context, AppIconography.systemDownload),
+                )
+              else
+                KitRow(
+                  key: const Key('server-updates-tile'),
+                  leading: KitRow.icon(context, AppIconography.systemDownload),
+                  title: serverUpdateTitle,
+                  titleMaxLines: 2,
+                  supporting: TextSpan(text: serverUpdateSubtitle),
+                  supportingMaxLines: 3,
+                  trailing: serverUpdateTrailing,
+                  // Rests while its own update runs; the bar says so.
+                  enabled: !_upgradingServer,
+                  onTap: serverUpdateAction,
                 ),
-                // Rests while its own update runs; the bar says so.
-                enabled: !_upgradingServer,
-                onTap: serverUpdateAction,
+            ],
+          ),
+          if (baseUrl != null) ...[
+            SizedBox(height: tokens.sectionGap),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+              child: KitDetailsFold(
+                values: [
+                  KitTechnicalValue(copy.serverSettingsAddressLabel, baseUrl),
+                  if (running != null)
+                    KitTechnicalValue(
+                      copy.serverSettingsRunningVersionLabel,
+                      running,
+                    ),
+                ],
               ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -313,4 +372,18 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     widget.controller.removeListener(_connectionChanged);
     super.dispose();
   }
+}
+
+/// A row's trailing mark: what tapping the row does (opens, restarts,
+/// downloads).
+class _RowMark extends StatelessWidget {
+  const _RowMark(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsetsDirectional.only(end: KitTokens.of(context).space3),
+    child: KitIcon(icon, size: KitIconSize.small, tone: KitTextTone.tertiary),
+  );
 }

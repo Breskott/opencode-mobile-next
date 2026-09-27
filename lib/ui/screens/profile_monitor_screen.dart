@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/profile_monitor.dart';
+import '../../domain/session_title_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/profiles.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
+import '../../state/profiles.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_icon.dart';
+import '../kit/kit_needs_you.dart';
+import '../kit/kit_page_route.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import 'activity_screen.dart' show showQuestionSheet;
 import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
 import 'chat_screen.dart' show ChatScreen;
 import 'settings_screen.dart' show NotificationsSettingsScreen;
-import '../../domain/session_title_text.dart';
 
 /// Shared explicit route: revalidates profile, location and exact request before
 /// displaying the existing resolver. It never answers from monitor metadata.
@@ -25,11 +36,22 @@ Future<void> openMonitoredRequest(
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   if (controller.profile?.id != route.profileID &&
       controller.busySessions.isNotEmpty) {
+    final profiles = controller.store.profiles;
+    String nameOf(String? id) => serverDisplayName(
+      profiles.where((p) => p.id == id).firstOrNull,
+      l10n,
+      among: profiles,
+    );
+    // Names both servers and what keeps running (map: switch dialog "fix").
     final accepted = await showKitConfirm(
       context,
       title: l10n.monitorSwitchTitle,
-      body: l10n.monitorSwitchDetail,
+      body: l10n.profileMonitorSwitchBody(
+        nameOf(controller.profile?.id),
+        nameOf(route.profileID),
+      ),
       confirmLabel: l10n.monitorSwitch,
+      icon: AppIconography.swap,
     );
     if (!accepted || !context.mounted) return;
   }
@@ -73,7 +95,7 @@ Future<void> openMonitoredRequest(
         // The reminder's answer is the conversation itself, on the existing
         // chat route; nothing is sent or resolved on the user's behalf.
         await navigator.push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => ChatScreen(sessionID: route.sessionID),
           ),
         );
@@ -87,70 +109,93 @@ Future<void> openMonitoredRequest(
         controller.profile?.id == route.profileID &&
         route.sessionID != 'global') {
       await navigator.push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => ChatScreen(sessionID: route.sessionID),
         ),
       );
       return;
     }
     if (navigator.mounted) {
-      ScaffoldMessenger.of(
+      // The row it came from may be gone: the answer is a blocking alert,
+      // never a snackbar (K2 §4.8).
+      await showKitAlert(
         here(),
-      ).showSnackBar(SnackBar(content: Text(l10n.monitorOpenFailed)));
+        title: l10n.profileMonitorOpenFailedTitle,
+        body: l10n.monitorOpenFailed,
+        icon: AppIconography.info,
+      );
     }
   }
 }
 
+// revamp: merge-into:servers (slice-P4.2b)
 class ProfileMonitorScreen extends StatelessWidget {
   const ProfileMonitorScreen({super.key, required this.controller});
   final ConnectionController controller;
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.monitorTitle),
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.monitorTitle,
         actions: [
-          IconButton(
-            tooltip: l10n.monitorRefresh,
+          KitAction(
+            label: l10n.monitorRefresh,
+            icon: AppIconography.retry,
             onPressed: controller.profileMonitor.refresh,
-            icon: const Icon(AppIconography.retry),
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: controller,
-          builder: (context, _) => ListView(
-            padding: const EdgeInsets.all(16),
+      width: KitScreenWidth.reading,
+      body: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          final tokens = KitTokens.of(context);
+          return ListView(
+            padding: EdgeInsets.only(
+              top: tokens.space3,
+              bottom: KitScreen.endPadding(context),
+            ),
             children: [
-              Text(l10n.monitorScope),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+                child: KitText(l10n.monitorScope, tone: KitTextTone.secondary),
+              ),
               // The list lives here; how it notifies lives in one place.
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  key: const ValueKey('monitor-notification-settings'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: tokens.space2),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: KitButton.tertiary(
+                    key: const ValueKey('monitor-notification-settings'),
+                    label: l10n.monitorNotificationSettings,
+                    icon: AppIconography.notificationImportant,
+                    onPressed: () => pushKitPage<void>(
+                      context,
+                      (_) =>
                           NotificationsSettingsScreen(controller: controller),
                     ),
                   ),
-                  icon: const Icon(AppIconography.notificationImportant),
-                  label: Text(l10n.monitorNotificationSettings),
                 ),
               ),
               if (controller.store.profiles.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(l10n.monitorNoServers),
+                KitStateView(
+                  icon: AppIconography.server,
+                  title: l10n.monitorNoServers,
+                  size: KitStateSize.inline,
                 ),
               for (final profile in controller.store.profiles)
                 if (controller.isProfileReadable(profile.id))
-                  _MonitorProfile(controller: controller, profile: profile),
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.sectionGap),
+                    child: _MonitorProfile(
+                      controller: controller,
+                      profile: profile,
+                    ),
+                  ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -168,12 +213,13 @@ class ProfileMonitorInbox extends StatelessWidget {
   Widget build(BuildContext context) {
     if (controller.isIsolated) return const SizedBox.shrink();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     final monitor = controller.profileMonitor;
-    final summary = ListTile(
-      leading: const Icon(AppIconography.server),
-      title: Text(compact ? l10n.activitySavedServers : l10n.monitorTitle),
-      subtitle: Text(
-        compact
+    final summary = KitRow(
+      leading: KitRow.icon(context, AppIconography.server),
+      title: compact ? l10n.activitySavedServers : l10n.monitorTitle,
+      supporting: TextSpan(
+        text: compact
             ? [
                 if (controller.unifiedAttentionCount > 0)
                   l10n.activityPendingCount(controller.unifiedAttentionCount),
@@ -188,11 +234,11 @@ class ProfileMonitorInbox extends StatelessWidget {
                 controller.unknownAttentionProfileCount,
               ),
       ),
-      trailing: const Icon(AppIconography.chevronRight),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ProfileMonitorScreen(controller: controller),
-        ),
+      supportingMaxLines: 2,
+      trailing: const _Chevron(),
+      onTap: () => pushKitPage<void>(
+        context,
+        (_) => ProfileMonitorScreen(controller: controller),
       ),
     );
     return Column(
@@ -201,11 +247,8 @@ class ProfileMonitorInbox extends StatelessWidget {
         if (!compact) summary,
         if (!compact)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              l10n.monitorScope,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+            child: KitText(l10n.monitorScope, role: KitTextRole.secondary),
           ),
         for (final profile in controller.store.profiles)
           if (controller.isProfileReadable(profile.id))
@@ -233,6 +276,9 @@ class ProfileMonitorInbox extends StatelessWidget {
   }
 }
 
+/// One request another saved server is waiting on: the Inbox's own
+/// "needs you" row, naming the server (map: embedded inbox "fix"). A
+/// check-in reminder is not a request, so it stays a plain row.
 class _MonitorRequestRow extends StatelessWidget {
   const _MonitorRequestRow({
     required this.controller,
@@ -246,67 +292,73 @@ class _MonitorRequestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final checked = controller.profileMonitor.snapshotFor(profile.id).checkedAt;
-    return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: ListTile(
-        key: ValueKey('monitor-row-${request.identity}'),
-        leading: request.kind == MonitoredRequestKind.checkIn
-            ? const Icon(AppIconography.waitingStart, size: 20)
-            : const ServerAttentionDot(current: true),
-        title: Text(
-          displaySessionTitleText(request.title).isNotEmpty
-              ? displaySessionTitleText(request.title)
-              : l10n.monitorSession,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          l10n.monitorRequestSummary(
-            serverDisplayName(profile, l10n, among: controller.store.profiles),
-            switch (request.kind) {
-              MonitoredRequestKind.permission => l10n.monitorPermission,
-              MonitoredRequestKind.question => l10n.monitorQuestion,
-              MonitoredRequestKind.form => l10n.monitorForm,
-              MonitoredRequestKind.checkIn => l10n.monitorCheckInDue,
-            },
-            l10n.monitorLastChecked,
-            _time(context, checked),
-          ),
-        ),
-        onTap: () => openMonitoredRequest(
-          context,
-          controller,
-          MonitoredRoute(
-            profileID: profile.id,
-            requestID: request.id,
-            sessionID: request.sessionID,
-            kind: request.kind,
-            createdAt: checked ?? DateTime.now(),
-            serverUrl: profile.baseUrl,
-            sourceIdentity: ProfileMonitor.routeSourceIdentity(profile),
-            directory: request.directory,
-            workspace: request.workspace,
-          ),
+    final shown = displaySessionTitleText(request.title);
+    final title = shown.isNotEmpty ? shown : l10n.monitorSession;
+    final server = serverDisplayName(
+      profile,
+      l10n,
+      among: controller.store.profiles,
+    );
+    final key = ValueKey('monitor-row-${request.identity}');
+    void open() => openMonitoredRequest(
+      context,
+      controller,
+      MonitoredRoute(
+        profileID: profile.id,
+        requestID: request.id,
+        sessionID: request.sessionID,
+        kind: request.kind,
+        createdAt: checked ?? DateTime.now(),
+        serverUrl: profile.baseUrl,
+        sourceIdentity: ProfileMonitor.routeSourceIdentity(profile),
+        directory: request.directory,
+        workspace: request.workspace,
+      ),
+    );
+    final reason = switch (request.kind) {
+      MonitoredRequestKind.permission => KitNeedsYouReason.consent,
+      MonitoredRequestKind.question => KitNeedsYouReason.decision,
+      MonitoredRequestKind.form => KitNeedsYouReason.decision,
+      MonitoredRequestKind.checkIn => null,
+    };
+    if (reason != null) {
+      return KitNeedsYou.row(
+        key: key,
+        title: title,
+        reason: reason,
+        server: server,
+        ifIgnored: l10n.profileMonitorIfIgnored,
+        onOpen: open,
+      );
+    }
+    return KitRow(
+      key: key,
+      leading: KitRow.icon(context, AppIconography.waitingStart),
+      title: title,
+      titleMaxLines: 2,
+      supporting: TextSpan(
+        text: l10n.monitorRequestSummary(
+          server,
+          l10n.monitorCheckInDue,
+          l10n.monitorLastChecked,
+          _time(context, checked),
         ),
       ),
+      supportingMaxLines: 2,
+      trailing: const _Chevron(),
+      onTap: open,
     );
   }
 }
 
-/// A server-status dot always paired with textual status by its parent row.
+/// A server-status mark always paired with textual status by its parent row.
 class ServerAttentionDot extends StatelessWidget {
   const ServerAttentionDot({super.key, required this.current});
   final bool current;
   @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: Icon(
-      AppIconography.statusDot,
-      size: 12,
-      color: AppTheme.statusColor(
-        Theme.of(context),
-        current ? AppStatusTone.ok : AppStatusTone.neutral,
-      ),
-    ),
+  Widget build(BuildContext context) => KitIcon.status(
+    current ? AppStatusTone.ok : AppStatusTone.neutral,
+    icon: AppIconography.statusDot,
   );
 }
 
@@ -338,41 +390,41 @@ class _MonitorProfile extends StatelessWidget {
     final monitor = controller.profileMonitor, id = profile.id;
     final rules = monitor.rulesFor(id), snapshot = monitor.snapshotFor(id);
     final supported = monitor.supportsProfile(profile);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return KitRowGroup(
       children: [
-        const SizedBox(height: 24),
-        const Divider(),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
+        KitRow(
           leading: ServerAttentionDot(current: snapshot.isCurrent),
-          title: Text(
-            serverDisplayName(profile, l10n, among: controller.store.profiles),
-            style: Theme.of(context).textTheme.titleMedium,
+          title: serverDisplayName(
+            profile,
+            l10n,
+            among: controller.store.profiles,
           ),
-          subtitle: Text(
-            supported
+          supporting: TextSpan(
+            text: supported
                 ? monitorStatusText(l10n, snapshot.status)
                 : l10n.e7ProjectMonitorUnsupported,
           ),
+          supportingMaxLines: 2,
         ),
         if (supported && rules.enabled) ...[
-          Text(
-            l10n.monitorLabeledTime(
+          KitRow(
+            leading: KitRow.icon(context, AppIconography.clock),
+            title: l10n.monitorLabeledTime(
               l10n.monitorLastChecked,
               _time(context, snapshot.checkedAt),
             ),
-          ),
-          Text(
-            l10n.monitorLabeledTime(
-              l10n.monitorNextCheck,
-              _time(context, snapshot.nextCheckAt),
+            supporting: TextSpan(
+              text: l10n.monitorLabeledTime(
+                l10n.monitorNextCheck,
+                _time(context, snapshot.nextCheckAt),
+              ),
             ),
           ),
           if (snapshot.isCurrent && snapshot.requests.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(l10n.monitorAllClear),
+            KitRow(
+              leading: KitRow.icon(context, AppIconography.checkCircle),
+              title: l10n.monitorAllClear,
+              titleMaxLines: 2,
             ),
           if (snapshot.isCurrent)
             for (final request in snapshot.requests)
@@ -421,16 +473,19 @@ class _BusyIntervalRow extends StatelessWidget {
       interval.observedFor.inMinutes,
       _time(context, interval.firstObservedBusyAt),
     );
-    return ListTile(
+    return KitRow(
       key: ValueKey('monitor-busy-${interval.sessionID}'),
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
+      leading: KitRow.icon(
+        context,
         due ? AppIconography.waitingStart : AppIconography.waitingEmpty,
-        color: due ? Theme.of(context).colorScheme.primary : null,
       ),
-      title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text(due ? '${l10n.monitorCheckInDue} · $observed' : observed),
-      trailing: due ? const Icon(AppIconography.chevronRight) : null,
+      title: title,
+      titleMaxLines: 2,
+      supporting: TextSpan(
+        text: due ? '${l10n.monitorCheckInDue} · $observed' : observed,
+      ),
+      supportingMaxLines: 2,
+      trailing: due ? const _Chevron() : null,
       onTap: () => openMonitoredRequest(
         context,
         controller,
@@ -448,4 +503,19 @@ class _BusyIntervalRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A row's trailing "opens" mark.
+class _Chevron extends StatelessWidget {
+  const _Chevron();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsetsDirectional.only(end: KitTokens.of(context).space3),
+    child: const KitIcon(
+      AppIconography.chevronRight,
+      size: KitIconSize.small,
+      tone: KitTextTone.tertiary,
+    ),
+  );
 }
