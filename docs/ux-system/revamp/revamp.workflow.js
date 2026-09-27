@@ -245,7 +245,7 @@ function owns(u) {
 function describe(u) {
   const lines = [
     `Unit ${u.id} (wave ${u.wave}${u.tier ? `, tier ${u.tier}` : ''}): ${u.title}.`,
-    u.fromCut ? `Full definition (title, finishLine, nonGoal, acceptance, gate, proof): read the unit with id "${u.id}" in docs/ux-system/revamp/work-units.json and honour all of it.` : '',
+    u.fromCut ? `Full definition (title, finishLine, nonGoal, acceptance, gate, proof): read the unit with id "${u.id}" in ${typeof u.fromCut === 'string' ? u.fromCut : 'docs/ux-system/revamp/work-units.json'} and honour all of it.` : '',
     A.commonAcceptance ? `Also:\n- ${A.commonAcceptance.join('\n- ')}` : '',
     A.unitNotes && A.unitNotes[u.id] ? `Notes for this unit:\n- ${A.unitNotes[u.id].join('\n- ')}` : '',
     u.write && u.write.length ? `Write set (only these files, plus a new kit part and your tests): ${u.write.join(', ')}.` : '',
