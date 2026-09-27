@@ -155,6 +155,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final path = await ProjectFolderActions.createFolder(
       context,
       widget.controller,
+      suggestedName: ProjectFolderActions.suggestedName(_projects),
     );
     if (path != null && mounted) Navigator.of(context).pop(true);
   }

@@ -9,11 +9,13 @@ import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
+import '../../state/interaction_defaults.dart';
 import '../../state/nudges.dart';
 import '../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../state/orchestration.dart';
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
+import '../widgets/default_notices.dart';
 import '../widgets/grace_timer.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/other_servers_panel.dart';
@@ -130,6 +132,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   /// A project picked on a fresh connection is being opened.
   bool _selectingInitial = false;
+
+  /// Said once per server after this tab opened a project by itself (the
+  /// only one, or the one worked on most recently) instead of asking.
+  String? _defaultNotice;
+
+  /// Whether another project could have been opened instead: only then does
+  /// the notice offer the way to one.
+  bool _defaultCanChange = false;
 
   /// Whether this server can run an AI Team (a Termux phone asks its
   /// runtime once), for New conversation's Team choice.
@@ -268,6 +278,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       projects.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       var shouldSelectInitialLocation = false;
       var shouldRestoreSaved = false;
+      DefaultChoice<DefaultProject>? projectDefault;
       setState(() {
         _projects = projects;
         if (projects.isEmpty && widget.controller.directory != null) {
@@ -303,19 +314,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           // Only a real project folder is opened automatically. The server's
           // catch-all root and any home folder are skipped, so a fresh
           // connection lands on the folder chooser instead of `/root`.
-          final usable = projects.where(
-            (project) =>
-                !isProtectedWorkspaceDirectory(project.directory) &&
-                !isAiTeamDirectory(project.directory),
+          // Defaults instead of questions (P6.6): the project still picked
+          // here, else the only one, else the one worked on most recently
+          // (the list is newest first). None: the chooser proposes a new
+          // "my-app".
+          final usable = projects
+              .where(
+                (project) =>
+                    !isProtectedWorkspaceDirectory(project.directory) &&
+                    !isAiTeamDirectory(project.directory),
+              )
+              .toList();
+          final choice = InteractionDefaults.project(
+            usable,
+            explicitID: _selectedProjectID,
+            lastUsedID: usable.firstOrNull?.id,
           );
-          final retained = usable.where(
-            (project) => project.id == _selectedProjectID,
-          );
-          final selected = retained.isNotEmpty
-              ? retained.first
-              : usable.isNotEmpty
-              ? usable.first
-              : null;
+          final selected = choice.value?.project;
           if (selected == null) {
             _selectedProjectID = null;
             _selectedDirectory = null;
@@ -327,6 +342,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           _selectedWorkspaceID = null;
           shouldSelectInitialLocation = true;
           _selectingInitial = true;
+          projectDefault = choice;
         }
       });
       final selected = _selectedProject;
@@ -338,6 +354,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         } finally {
           if (mounted) setState(() => _selectingInitial = false);
         }
+        final opened = projectDefault;
+        if (opened != null &&
+            mounted &&
+            widget.controller.directory != null &&
+            widget.controller.locationError == null) {
+          unawaited(_announceProject(opened));
+        }
       }
       if (shouldRestoreSaved) await _restoreSaved();
     } catch (error) {
@@ -347,6 +370,27 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     }
     if (generation != _loadGeneration) return;
     await _loadWorkspaces();
+  }
+
+  /// Says once per server which project this tab opened by itself, with
+  /// the way to another one when there is one; nothing when it was the
+  /// person's own pick.
+  Future<void> _announceProject(DefaultChoice<DefaultProject> choice) async {
+    final said = await claimDefaultNotice(
+      kind: DefaultKind.project,
+      choice: choice,
+      profileId: widget.controller.profile?.id,
+      prefs: widget.controller.store.prefs,
+    );
+    if (said == null || !mounted) return;
+    final l10n = _l10n(context);
+    final name = KitBidi.auto(said);
+    setState(() {
+      _defaultCanChange = choice.canChange;
+      _defaultNotice = choice.reason == DefaultReason.onlyOption
+          ? l10n.defaultProjectOnlyNotice(name)
+          : l10n.defaultProjectLastUsedNotice(name);
+    });
   }
 
   /// Opens the saved project when the connection came up without it. When
@@ -852,6 +896,42 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ],
                 ),
               ),
+            // A project this tab opened by itself, said once (P6.6).
+            if (_defaultNotice case final said?)
+              SliverPadding(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.gutter,
+                  vertical: tokens.space2,
+                ),
+                sliver: SliverToBoxAdapter(
+                  // The only project has no other to offer; the header
+                  // still opens the project sheet.
+                  child: _defaultCanChange
+                      ? KitNotice.offer(
+                          key: const ValueKey('work-default-project'),
+                          icon: AppIconography.folders,
+                          message: said,
+                          action: KitAction(
+                            label: l10n.defaultProjectChange,
+                            onPressed: () {
+                              setState(() => _defaultNotice = null);
+                              unawaited(_openProjects());
+                            },
+                          ),
+                          dismissLabel: l10n.workspaceDismissNotice,
+                          onDismiss: () =>
+                              setState(() => _defaultNotice = null),
+                        )
+                      : KitNotice(
+                          key: const ValueKey('work-default-project'),
+                          icon: AppIconography.folders,
+                          message: said,
+                          dismissLabel: l10n.workspaceDismissNotice,
+                          onDismiss: () =>
+                              setState(() => _defaultNotice = null),
+                        ),
+                ),
+              ),
             // The pin tip sits just above the list it is about.
             if (pinNudge != null)
               SliverPadding(
@@ -1299,6 +1379,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final path = await ProjectFolderActions.createFolder(
       context,
       widget.controller,
+      suggestedName: ProjectFolderActions.suggestedName(_projects),
     );
     if (path != null && mounted) await _load();
   }
