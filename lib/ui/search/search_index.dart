@@ -43,6 +43,10 @@ import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/transcript_display_toggles.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_page_route.dart';
+import '../kit/kit_sheet.dart';
 
 /// What a result is, which decides the header it is listed under.
 enum SearchEntryKind {
@@ -177,7 +181,7 @@ List<SearchEntry> searchEntries(
 }
 
 Future<void> _push(BuildContext context, Widget screen) =>
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    pushKitPage<void>(context, (_) => screen);
 
 SearchOpen _screen(Widget Function(SearchScope scope) build) =>
     (context, scope) => _push(context, build(scope));
@@ -218,29 +222,43 @@ Future<void> _openExternalAgents(
   }
 }
 
+// revamp: merge-into:settings (slice-P3.10) — the two switches move onto the
+// Settings hub; until then the sheet is the kit sheet with no new states.
 Future<void> _openTranscriptDisplay(BuildContext context, SearchScope scope) {
   final l10n = AppLocalizations.of(context);
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionLabel(l10n.chatUiTranscriptDisplay),
-            // The same two stored values the conversation menu flips.
-            TranscriptDisplayToggles(
-              connection: scope.controller,
-              reasoningExpanded: scope.controller.transcriptReasoningExpanded,
-              timestampsVisible: scope.controller.transcriptTimestampsVisible,
-            ),
-          ],
-        ),
-      ),
+  return showKitSheet<void>(
+    context,
+    title: l10n.chatUiTranscriptDisplay,
+    body: (context) => TranscriptDisplayToggles(
+      // The same two stored values the conversation menu flips.
+      connection: scope.controller,
+      reasoningExpanded: scope.controller.transcriptReasoningExpanded,
+      timestampsVisible: scope.controller.transcriptTimestampsVisible,
     ),
+  );
+}
+
+/// Why Claude Code on this phone is not offered here, instead of a search
+/// that finds nothing (P7.4 "explain instead of vanish"): it runs on the
+/// phone only through the Termux bridge; on a computer it is a Paseo server.
+Future<void> _explainClaudeCodeGate(BuildContext context, SearchScope scope) {
+  final l10n = AppLocalizations.of(context);
+  final navigator = Navigator.of(context);
+  return showKitAlert(
+    context,
+    title: l10n.searchClaudeCodeGateTitle,
+    body: scope.desktop
+        ? l10n.searchClaudeCodeGateDesktop
+        : l10n.searchClaudeCodeGateDevice,
+    icon: AppIconography.agent,
+    alertKey: const ValueKey('search-claude-code-gate'),
+    action: scope.controller.isIsolated
+        ? null
+        : KitAction(
+            key: const ValueKey('search-claude-code-gate-servers'),
+            label: l10n.searchClaudeCodeGateServers,
+            onPressed: () => unawaited(navigator.pushNamed('/servers')),
+          ),
   );
 }
 
@@ -994,6 +1012,19 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
           ).pushNamedAndRemoveUntil('/home', (_) => false),
         ),
       ),
+    ),
+    // The same door where the Termux bridge is missing: it explains why
+    // instead of vanishing from search (P7.4).
+    SearchEntry(
+      id: 'inside-phone-claude-code-unavailable',
+      kind: SearchEntryKind.insideSettings,
+      icon: AppIconography.agent,
+      title: l10n.localAgentPageTitle,
+      parent: onThisPhone,
+      keywords: l10n.localAgentTitle,
+      pages: const ['local-agent-page'],
+      gate: (scope) => !scope.platform.supportsTermux,
+      open: _explainClaudeCodeGate,
     ),
     SearchEntry(
       id: 'inside-servers-monitor',

@@ -72,124 +72,126 @@ void main() {
   final captureDirectory =
       Platform.environment['OC_COMPLETION_DIGEST_CAPTURE_DIR'];
 
-  testWidgets('captures the production Activity completion digest states', (
-    tester,
-  ) async {
-    final output = Directory(captureDirectory!);
-    expect(
-      output.existsSync(),
-      isTrue,
-      reason:
-          'Verify/create the capture directory before setting '
-          'OC_COMPLETION_DIGEST_CAPTURE_DIR',
-    );
-    await loadCaptureFonts();
-    tester.view.physicalSize = const Size(320, 640);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'captures the production Activity completion digest states',
+    (tester) async {
+      final output = Directory(captureDirectory!);
+      expect(
+        output.existsSync(),
+        isTrue,
+        reason:
+            'Verify/create the capture directory before setting '
+            'OC_COMPLETION_DIGEST_CAPTURE_DIR',
+      );
+      await loadCaptureFonts();
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
 
-    final controller = await _captureController();
-    addTearDown(controller.dispose);
+      final controller = await _captureController();
+      addTearDown(controller.dispose);
 
-    for (final variant in _variants) {
-      // Dispose the previous production subtree so its scroll position and
-      // lazy sliver children cannot leak into the next visual variant.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      final boundary = GlobalKey();
-      await tester.pumpWidget(
-        RepaintBoundary(
-          key: boundary,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: captureTheme(light: variant.light),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: MediaQuery(
-              data: MediaQueryData(
-                size: const Size(320, 640),
-                textScaler: variant.textScaler,
-              ),
-              child: Directionality(
-                textDirection: variant.textDirection,
-                child: Scaffold(
-                  body: ActivityScreen(
-                    key: ValueKey('digest-capture-${variant.name}'),
-                    controller: controller,
-                    embedded: true,
+      for (final variant in _variants) {
+        // Dispose the previous production subtree so its scroll position and
+        // lazy sliver children cannot leak into the next visual variant.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        final boundary = GlobalKey();
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundary,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: captureTheme(light: variant.light),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(320, 640),
+                  textScaler: variant.textScaler,
+                ),
+                child: Directionality(
+                  textDirection: variant.textDirection,
+                  child: Scaffold(
+                    body: ActivityScreen(
+                      key: ValueKey('digest-capture-${variant.name}'),
+                      controller: controller,
+                      embedded: true,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-
-      final scrollable = find.byType(Scrollable).first;
-      final scrollableState = tester.state<ScrollableState>(scrollable);
-      final digestSection = find.text('Completion digests');
-      var outerActivityMoved = false;
-      if (variant.name == 'rtl-large') {
-        final before = scrollableState.position.pixels;
-        await tester.drag(scrollable, const Offset(0, -180));
-        await tester.pump();
-        outerActivityMoved = scrollableState.position.pixels > before;
-      }
-      for (
-        var attempt = 0;
-        attempt < 20 && digestSection.evaluate().isEmpty;
-        attempt++
-      ) {
-        final before = scrollableState.position.pixels;
-        await tester.drag(scrollable, const Offset(0, -180));
-        await tester.pump();
-        outerActivityMoved |= scrollableState.position.pixels > before;
-      }
-      if (variant.name == 'rtl-large') {
-        expect(
-          outerActivityMoved,
-          isTrue,
-          reason: 'large RTL capture must scroll the outer Activity list',
         );
-      }
-      expect(digestSection, findsOneWidget);
-      await tester.ensureVisible(digestSection);
-      await tester.pump();
-      await tester.tap(digestSection);
-      await tester.pump();
-      final session = find.text('Review the migration');
-      await tester.scrollUntilVisible(session, 180, scrollable: scrollable);
-      await tester.pump();
-      await tester.tap(session);
-      await tester.pump();
+        await tester.pump();
 
-      final card = find.byKey(const Key('completion-digest-card'));
-      for (
-        var attempt = 0;
-        attempt < 20 && card.evaluate().isEmpty;
-        attempt++
-      ) {
-        await tester.drag(scrollable, const Offset(0, -180));
+        final scrollable = find.byType(Scrollable).first;
+        final scrollableState = tester.state<ScrollableState>(scrollable);
+        final digestSection = find.text('Finished while you were away');
+        var outerActivityMoved = false;
+        if (variant.name == 'rtl-large') {
+          final before = scrollableState.position.pixels;
+          await tester.drag(scrollable, const Offset(0, -180));
+          await tester.pump();
+          outerActivityMoved = scrollableState.position.pixels > before;
+        }
+        for (
+          var attempt = 0;
+          attempt < 20 && digestSection.evaluate().isEmpty;
+          attempt++
+        ) {
+          final before = scrollableState.position.pixels;
+          await tester.drag(scrollable, const Offset(0, -180));
+          await tester.pump();
+          outerActivityMoved |= scrollableState.position.pixels > before;
+        }
+        if (variant.name == 'rtl-large') {
+          expect(
+            outerActivityMoved,
+            isTrue,
+            reason: 'large RTL capture must scroll the outer Activity list',
+          );
+        }
+        expect(digestSection, findsOneWidget);
+        await tester.ensureVisible(digestSection);
+        await tester.pump();
+        await tester.tap(digestSection);
+        await tester.pump();
+        final session = find.text('Review the migration');
+        await tester.scrollUntilVisible(session, 180, scrollable: scrollable);
+        await tester.pump();
+        await tester.tap(session);
+        await tester.pump();
+
+        final card = find.byKey(const Key('completion-digest-card'));
+        for (
+          var attempt = 0;
+          attempt < 20 && card.evaluate().isEmpty;
+          attempt++
+        ) {
+          await tester.drag(scrollable, const Offset(0, -180));
+          await tester.pump();
+        }
+        expect(card, findsOneWidget);
+        await tester.ensureVisible(card);
+        await tester.pump();
+        await tester.pump();
+        final cardContext = tester.element(card);
+        expect(Directionality.of(cardContext), variant.textDirection);
+        expect(
+          MediaQuery.textScalerOf(cardContext).scale(10),
+          variant.textScaler.scale(10),
+        );
+        expect(tester.takeException(), isNull);
+        final png = await capturePng(tester, boundary, pixelRatio: 1);
+        File(
+          '${output.path}/${variant.name}.png',
+        ).writeAsBytesSync(png, flush: true);
+        await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
       }
-      expect(card, findsOneWidget);
-      await tester.ensureVisible(card);
-      await tester.pump();
-      await tester.pump();
-      final cardContext = tester.element(card);
-      expect(Directionality.of(cardContext), variant.textDirection);
-      expect(
-        MediaQuery.textScalerOf(cardContext).scale(10),
-        variant.textScaler.scale(10),
-      );
-      expect(tester.takeException(), isNull);
-      final png = await capturePng(tester, boundary, pixelRatio: 1);
-      File(
-        '${output.path}/${variant.name}.png',
-      ).writeAsBytesSync(png, flush: true);
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    }
-  }, skip: captureDirectory == null || captureDirectory.trim().isEmpty);
+    },
+    skip: captureDirectory == null || captureDirectory.trim().isEmpty,
+  );
 }
