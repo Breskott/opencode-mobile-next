@@ -69,7 +69,60 @@ void main() {
     expect(repository.sends, 1);
     expect(repository.message, contains('1 handled errors'));
     expect(repository.extra?['entryCount'], 1);
-    expect(find.text('Diagnostics sent to OpenCode'), findsOneWidget);
+    // The result stays on the page and names where it went (no snackbar).
+    expect(find.text("Sent to OpenCode server's log"), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('Send names the server it goes to and says what happens', (
+    tester,
+  ) async {
+    final controller = await _controller(_DiagnosticsRepository());
+    addTearDown(controller.dispose);
+    controller.diagnostics.record(StateError('boom'), null, source: 'sse');
+
+    await tester.pumpWidget(
+      MaterialApp(home: AppDiagnosticsScreen(controller: controller)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Send to OpenCode server's log"), findsOneWidget);
+    expect(find.byKey(const Key('app-diagnostics-send-where')), findsOneWidget);
+    expect(find.textContaining("makers don't receive them"), findsOneWidget);
+  });
+
+  testWidgets('Clear asks first with the count, then empties the list', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final controller = await _controller(_DiagnosticsRepository());
+    addTearDown(controller.dispose);
+    controller.diagnostics
+      ..record(StateError('first'), null, source: 'flutter')
+      ..record(StateError('second'), null, source: 'sse');
+
+    await tester.pumpWidget(
+      MaterialApp(home: AppDiagnosticsScreen(controller: controller)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('clear-app-diagnostics')));
+    await tester.pumpAndSettle();
+    expect(find.text('Clear 2 errors?'), findsOneWidget);
+    expect(find.textContaining('The 2 errors recorded since'), findsOneWidget);
+    // Cancel keeps them.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(controller.diagnostics.count, 2);
+
+    await tester.tap(find.byKey(const Key('clear-app-diagnostics')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('clear-app-diagnostics-confirm')));
+    await tester.pumpAndSettle();
+    expect(controller.diagnostics.count, 0);
+    expect(find.text('No captured app errors'), findsOneWidget);
   });
 
   testWidgets('diagnostics screen explains an empty process-local report', (

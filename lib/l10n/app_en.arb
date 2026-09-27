@@ -27781,5 +27781,187 @@
   "reviewRevertFailed": "That didn't finish. Check the conversation, then try again.",
   "@reviewRevertFailed": {
     "description": "Review the undo page: notice when keeping or putting back the undo failed; the raw reason is behind Details."
+  },
+  "perfTraceClearTimings": "Clear timings",
+  "@perfTraceClearTimings": {
+    "description": "screen-system-1: App diagnostics › Performance: clears the measured step timings (not the errors)."
+  },
+  "appDiagnosticsSendTo": "Send to {server}'s log",
+  "@appDiagnosticsSendTo": {
+    "description": "screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Workstation"
+      }
+    }
+  },
+  "appDiagnosticsSendWhere": "Adds these errors to the log of {server}. The app's makers don't receive them.",
+  "@appDiagnosticsSendWhere": {
+    "description": "screen-system-1: App diagnostics: says where Send goes, under the Send button.",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Workstation"
+      }
+    }
+  },
+  "appDiagnosticsSentTo": "Sent to {server}'s log",
+  "@appDiagnosticsSentTo": {
+    "description": "screen-system-1: App diagnostics: notice after a successful send.",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Workstation"
+      }
+    }
+  },
+  "appDiagnosticsCopyErrors": "Copy errors",
+  "@appDiagnosticsCopyErrors": {
+    "description": "screen-system-1: App diagnostics secondary: copies the redacted error report."
+  },
+  "appDiagnosticsClearErrors": "Clear errors",
+  "@appDiagnosticsClearErrors": {
+    "description": "screen-system-1: App diagnostics tertiary (destructive, confirmed): clears the captured errors."
+  },
+  "appDiagnosticsClearTitle": "{count, plural, =1{Clear 1 error?} other{Clear {count} errors?}}",
+  "@appDiagnosticsClearTitle": {
+    "description": "screen-system-1: Confirmation title before clearing the captured errors.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appDiagnosticsClearBody": "{count, plural, =1{The error recorded since the app opened is removed from this phone. This can't be undone.} other{The {count} errors recorded since the app opened are removed from this phone. This can't be undone.}}",
+  "@appDiagnosticsClearBody": {
+    "description": "screen-system-1: Confirmation body before clearing the captured errors.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appDiagnosticsClearConfirm": "{count, plural, =1{Clear 1 error} other{Clear {count} errors}}",
+  "@appDiagnosticsClearConfirm": {
+    "description": "screen-system-1: Confirm button that clears the captured errors.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appDiagnosticsEmptyBody": "Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.",
+  "@appDiagnosticsEmptyBody": {
+    "description": "screen-system-1: App diagnostics empty state body."
+  },
+  "capabilityStateHere": "Works here",
+  "@capabilityStateHere": {
+    "description": "screen-system-1: Available on this server: state word of a feature this server and device have."
+  },
+  "capabilityStateNotServer": "Not on this server",
+  "@capabilityStateNotServer": {
+    "description": "screen-system-1: Available on this server: state word of a feature the connected server lacks."
+  },
+  "capabilityStateNotDevice": "Not on this device",
+  "@capabilityStateNotDevice": {
+    "description": "screen-system-1: Available on this server: state word of a feature this device lacks."
+  },
+  "capabilityNeedsAndroid": "Needs the Android app",
+  "@capabilityNeedsAndroid": {
+    "description": "screen-system-1: Available on this server: how to get a feature this device lacks."
+  },
+  "capabilityAvailableCount": "{count, plural, =1{1 feature works here} other{{count} features work here}}",
+  "@capabilityAvailableCount": {
+    "description": "screen-system-1: Available on this server: the one row that unfolds every available feature.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "capabilityAvailableCountDetail": "Show what this server and device can do",
+  "@capabilityAvailableCountDetail": {
+    "description": "screen-system-1: Available on this server: supporting line of the available fold."
+  },
+  "capabilityAddServer": "Add a server that has these",
+  "@capabilityAddServer": {
+    "description": "screen-system-1: Available on this server: opens adding a server, shown when this server lacks features."
+  },
+  "capabilityAddServerDetail": "Connect another computer or set one up on this phone, then switch to it",
+  "@capabilityAddServerDetail": {
+    "description": "screen-system-1: Available on this server: supporting line of Add a server."
+  },
+  "keepRunningAllSetTitle": "You're set",
+  "@keepRunningAllSetTitle": {
+    "description": "screen-system-1: Keep running: title of the notice once nothing checkable is left to allow."
+  },
+  "keepRunningAllSetBody": "Android leaves the app running in the background. There is nothing else to allow on this phone.",
+  "@keepRunningAllSetBody": {
+    "description": "screen-system-1: Keep running: body of the all-set notice."
+  },
+  "keepRunningDailyLimit": "On Android 15 and newer, Android allows background syncing for about 6 hours a day, even with everything here allowed. After that the app pauses in the background until you open it.",
+  "@keepRunningDailyLimit": {
+    "description": "screen-system-1: Keep running: the daily background limit Android keeps regardless of these settings."
+  },
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "screen-system-1: About screen title."
+  },
+  "aboutCopyVersion": "Copy version",
+  "@aboutCopyVersion": {
+    "description": "screen-system-1: About: icon button that copies the version."
+  },
+  "aboutCheckUpdates": "Check for updates",
+  "@aboutCheckUpdates": {
+    "description": "screen-system-1: About: row that checks for a newer version of the app."
+  },
+  "aboutUpdateIdle": "Looks for a newer version of this app",
+  "@aboutUpdateIdle": {
+    "description": "screen-system-1: About: update row line before a check."
+  },
+  "aboutUpdateChecking": "Checking…",
+  "@aboutUpdateChecking": {
+    "description": "screen-system-1: About: update row line while checking."
+  },
+  "aboutUpdateCurrent": "You have the latest version",
+  "@aboutUpdateCurrent": {
+    "description": "screen-system-1: About: update row line when up to date."
+  },
+  "aboutUpdateDownloading": "Downloading the update…",
+  "@aboutUpdateDownloading": {
+    "description": "screen-system-1: About: update row line while the update downloads."
+  },
+  "aboutUpdateReady": "Update ready. Close and reopen the app to use it.",
+  "@aboutUpdateReady": {
+    "description": "screen-system-1: About: update row line once the update is downloaded."
+  },
+  "aboutUpdateCannot": "This build can't update itself. Install the newest release instead.",
+  "@aboutUpdateCannot": {
+    "description": "screen-system-1: About: update row line on a build without the updater."
+  },
+  "aboutUpdateFailed": "Couldn't check for updates. Check your connection and try again.",
+  "@aboutUpdateFailed": {
+    "description": "screen-system-1: About: update row line after a failed check."
+  },
+  "aboutReportBugOnGithub": "Report a bug on GitHub",
+  "@aboutReportBugOnGithub": {
+    "description": "screen-system-1: About: opens the prefilled GitHub bug form."
+  },
+  "aboutDocuments": "Documents",
+  "@aboutDocuments": {
+    "description": "screen-system-1: About: accessible name of the Privacy / Open source tab strip."
+  },
+  "aboutAllLicences": "All package licenses",
+  "@aboutAllLicences": {
+    "description": "screen-system-1: About › Open source: row that opens every bundled package license."
+  },
+  "aboutAllLicencesDetail": "The license text of every library bundled in this build",
+  "@aboutAllLicencesDetail": {
+    "description": "screen-system-1: About › Open source: supporting line of All package licenses."
+  },
+  "aboutPackageId": "Package id",
+  "@aboutPackageId": {
+    "description": "screen-system-1: About › Details: label of the Android package id."
   }
 }
