@@ -1,0 +1,476 @@
+{
+  "generatedFrom": [
+    "rethink pass wf_c44195a1-66d: audit findings (severity low + every kitChange) and fix 'skipped' lists",
+    "builder gaps/contractProblems flagged no owner / kit change / Proposal / left for / outside the write set, all wf_*/journal.jsonl",
+    "queued kit fixes (KitIconButton/KitMenuItem.copy redact, KitTurn band, KitAvatar badge, KitShellControls, showKitSheet header, in-place confirm, l10n fallback, progress legend, KitStatusLineSlot docs)"
+  ],
+  "notes": [
+    "Every unit's copy goes into lib/l10n/app_en.arb only (Arabic dropped). The ARB is a shared append file listed under sharedAppend, not in write; the coordinator merges it and runs gen-l10n once.",
+    "Owner rules in every unit: one list ordered by urgency, no state sections; actions name their target and live on the page of the thing they act on; nothing shown twice; every item justifies its place; kit parts only; English copy only.",
+    "Items already fixed on feat/phone-setup-v2 (e.g. KitStatusLineSlot child, primaryListenable, KitTokens.toneFor, clock dependency, switcher onDisconnect) were dropped after checking the source."
+  ],
+  "units": [
+    {
+      "id": "slice-R1",
+      "wave": 3,
+      "programme": "R",
+      "title": "R1 KitTopBar flat and on the gutter; KitShellControls and KitViewer header fixes",
+      "write": ["lib/ui/kit/kit_top_bar.dart", "lib/ui/kit/kit_viewer.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_top_bar.dart: with no leading back/close control the title starts at tokens.gutter (16 dp), not gutter - space1; a golden shows the title x equal to the first content row x",
+        "kit_top_bar.dart: the large/fine-pointer 'toolbar' branch no longer wraps the bar in KitGlass; it draws flat on the ground role with a hairline below (glass stays on the floating nav layer only)",
+        "kit_top_bar.dart KitShellControls: in the 296 dp PC sidebar the server name is never truncated; the status goes on a second line, and the word is dropped for 'Connected' (the green dot says it) but kept for Offline and Reconnecting; kit_top_bar_shell_sidebar_1280x800 golden updated",
+        "kit_viewer.dart: the body is padded with tokens.gutter (mono body no longer at 12 dp under a 16 dp header)",
+        "kit_viewer.dart: the primary action sits in a full-width, start-aligned row under the header, never squeezed beside the menu or wrapped to two centred lines",
+        "kit_viewer.dart header: the subtitle is the parent folder only ('docs/'), hidden for a root file, so 'README.md / README.md' never shows; 'Copy path' still copies the full path",
+        "Owner rules hold: nothing shown twice, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_top_bar_test.dart", "test/goldens/kit/kit_top_bar_golden_test.dart", "test/kit/kit_viewer_test.dart", "test/goldens/kit/kit_viewer_golden_test.dart"]
+    },
+    {
+      "id": "slice-R2",
+      "wave": 3,
+      "programme": "R",
+      "title": "R2 Sheets, confirms and input dialogs: one close control, live actions, list body, text scale",
+      "write": ["lib/ui/kit/kit_sheet.dart", "lib/ui/kit/kit_confirm_sheet.dart", "lib/ui/kit/kit_dialog.dart", "lib/ui/kit/kit_consequences.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_sheet.dart showKitSheet: a new flag (e.g. secondaryDismisses: true) omits the header X when the secondary is a plain dismiss, so a sheet never has two close controls; test pins one close control",
+        "kit_sheet.dart showKitSheet: accepts secondaryListenable (ValueListenable<KitAction?>) next to the existing primaryListenable, so a form whose actions change (Test and turn on -> Cancel test -> Save anyway) keeps them pinned (KIT-17)",
+        "kit_sheet.dart: a list/sliver body mode (e.g. KitSheet.list(itemCount, itemBuilder)) that virtualises long lists instead of the always-SingleChildScrollView body",
+        "kit_sheet.dart: at 2.5x text on a 320x640 window the header scrolls with the body so the body keeps at least half of the sheet height; at 1.0x the header stays pinned; golden at 2.5x",
+        "kit_sheet.dart / kit_confirm_sheet.dart: a showKitConfirm shown in place over an open KitSheet gets the full sheet height, not a squeezed band; test measures the frame",
+        "kit_sheet.dart: at an 800x600 window the side-panel sheet's pinned actions are reachable by ensureVisible/tap (verify _RenderKitSheetFrame transform); test taps the primary at 800x600",
+        "kit_confirm_sheet.dart showKitConfirm: 'alternative' renders between confirm and Cancel, not under Cancel; consequence items can take the same neutral mark (no good/bad check vs info pairing)",
+        "kit_dialog.dart showKitInputDialog: _lastText is initialised in initState (the late initialiser missed the first edit); validation shows only after the first edit, the error sits under the field, not under the button; the dialog uses the same bottom-sheet frame as showKitConfirm",
+        "kit_consequences.dart: the stale doc comment about the private _KitConsequences 'until kit-KitDetailsFold moves it' is corrected",
+        "Owner rules hold: nothing shown twice (one close control), actions name their target, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_sheet_test.dart", "test/kit/kit_sheet_live_actions_test.dart", "test/kit/kit_sheet_wrap_test.dart", "test/kit/kit_confirm_sheet_test.dart", "test/kit/kit_confirm_sheet_look_test.dart", "test/kit/kit_dialog_test.dart", "test/kit/kit_consequences_test.dart", "test/goldens/kit/kit_sheet_golden_test.dart", "test/goldens/kit/kit_confirm_sheet_golden_test.dart", "test/goldens/kit/kit_dialog_golden_test.dart"]
+    },
+    {
+      "id": "slice-R3",
+      "wave": 3,
+      "programme": "R",
+      "title": "R3 KitCodeBlock and KitLogPanel: no empty header bands, commands readable",
+      "write": ["lib/ui/kit/kit_code_block.dart", "lib/ui/kit/kit_log_panel.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_code_block.dart: with no caption, fileName or counts the copy button sits trailing on the command's own line (vertically centred); no header row and no space2 gap; a one-line 'flutter run' block is one line tall",
+        "kit_code_block.dart: the Wrap toggle is hidden when no line overflows at the current width; its selected state is an accent icon tint, not a filled circle",
+        "kit_code_block.dart command kind: long commands either soft-wrap with the continuation indented under '$' (new wrap: true honoured for command blocks) or show the sideways-scroll edge fade whenever the text overflows; adb commands in the Keep it running sheet are fully readable",
+        "kit_code_block.dart: when a copy label is given the header reads it ('Copy commands'); no floating icon in an empty band",
+        "kit_log_panel.dart: the header Wrap toggle is sized to the header height with the standard inset (never touches the card edge) and has a visible label or pressed state ('Wrap lines')",
+        "kit_log_panel.dart: accepts one extra header action so a host's 'Copy failure report' sits next to Copy inside the panel",
+        "Owner rules hold: every item justifies its place, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_code_block_test.dart", "test/goldens/kit/kit_code_block_golden_test.dart", "test/kit/kit_log_panel_test.dart", "test/goldens/kit/kit_log_panel_golden_test.dart"]
+    },
+    {
+      "id": "slice-R4",
+      "wave": 3,
+      "programme": "R",
+      "title": "R4 Row groups on one inset: section gaps, KitSectionLabel, KitSliverRowGroup, two-line fold titles",
+      "write": ["lib/ui/kit/kit_row.dart", "lib/ui/kit/kit_row_parts.dart", "lib/ui/kit/kit_section_label.dart", "lib/ui/kit/kit_sliver_row_group.dart", "lib/ui/kit/kit.dart", "test/kit_overflow_scenes.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_row.dart KitRowGroup: the label starts at the same inset as KitField's label and KitDetailsFold's title (page or sheet gutter), including with margin: EdgeInsets.zero; 'Planner' and 'Supervision' share one x in the start sheet",
+        "kit_row.dart KitRowGroup: a gapBefore that defaults to tokens.sectionGap whenever a label is set, except for the first child of a scroll view; test stacks three labelled groups and measures the gaps",
+        "kit_row.dart KitRowGroup: optional labelTerm (a KitTerm explanation on the group label) so Providers / MCP servers / Resources can keep their explanation",
+        "kit_section_label.dart: new KitSectionLabel with the same start inset as KitRowGroup's label (replaces widgets/product_states.dart SectionLabel)",
+        "kit_sliver_row_group.dart: new KitSliverRowGroup (surface1, panelCornerRadius, text-inset hairlines) that wraps a lazy SliverList so Work's head and recent rows can be one panel",
+        "kit_row_parts.dart KitExpandRow: new titleMaxLines (default 1) so error titles can use 2",
+        "kit.dart exports and doc rows for KitSectionLabel and KitSliverRowGroup; test/kit_overflow_scenes.dart gains a scene for each (G4/G6 green)",
+        "Owner rules hold: one list, no state sections, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_row_test.dart", "test/kit/kit_row_group_test.dart", "test/kit/kit_row_parts_test.dart", "test/goldens/kit/kit_row_golden_test.dart", "test/goldens/kit/kit_row_parts_golden_test.dart", "test/kit/kit_manifest_test.dart"]
+    },
+    {
+      "id": "slice-R5",
+      "wave": 3,
+      "programme": "R",
+      "title": "R5 Buttons, menus and tokens: accent tertiary, copy without redaction, spinner stroke",
+      "write": ["lib/ui/kit/kit_buttons.dart", "lib/ui/kit/kit_menu.dart", "lib/ui/kit/kit_tokens.dart", "lib/ui/kit/kit_status_mark.dart", "lib/ui/kit/kit_needs_you.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_buttons.dart: enabled tertiary buttons use roles.accent (danger stays for destructive); disabled keeps text3, so an enabled inline action never looks disabled",
+        "kit_buttons.dart KitIconButton.copy and kit_menu.dart KitMenuItem.copy gain an optional redact parameter (default true) passed to KitCopy.copy; test copies a string with a fake key both ways",
+        "kit_tokens.dart: new KitTokens.spinnerStroke; kit_status_mark.dart spinner and kit_buttons.dart _Spinner use it instead of focusRingWidth / literals",
+        "kit_tokens.dart: a named badge-offset token; kit_needs_you.dart uses it instead of badgeHeight / 3",
+        "kit_buttons.dart KitIconButton: the long-press tooltip keeps a side margin at 412 dp and 2.0 text",
+        "Owner rules hold: kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_action_test.dart", "test/kit/kit_icon_button_test.dart", "test/kit/kit_menu_test.dart", "test/kit/kit_copy_test.dart", "test/kit/kit_redact_test.dart", "test/kit/kit_status_mark_test.dart", "test/kit/kit_needs_you_test.dart", "test/kit/kit_tokens_test.dart"]
+    },
+    {
+      "id": "slice-R6",
+      "wave": 3,
+      "programme": "R",
+      "title": "R6 KitChoiceList current vs selected, KitNotice.offer layout, KitReceipt sending words, KitTaskCard single error glyph",
+      "write": ["lib/ui/kit/kit_choice_list.dart", "lib/ui/kit/kit_notice.dart", "lib/ui/kit/kit_receipt.dart", "lib/ui/kit/kit_task_card.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_choice_list.dart: separate 'current' (applied) and 'selected' states; the 'Current' word shows only on the applied value when it differs from the selection (a pending change), never next to a radio that already marks it; 'Balanced · Current · 153 MB download' before download is impossible",
+        "kit_choice_list.dart: KitChoiceRow accepts an optional row menu (List<KitMenuItem>) so per-choice actions (Download again, Delete) live on the choice they act on",
+        "kit_notice.dart KitNotice.offer: the dismiss X is at the end of the message line and the action starts at the message's text inset",
+        "kit_receipt.dart: an optional sending-word override (e.g. sendingLabel 'Moving to Review…') that still turns into 'Not confirmed yet' with Try again",
+        "kit_task_card.dart: a failed card shows the error glyph once (leading mark); the footer says 'Stopped with an error' without a second glyph, like the Needs you card",
+        "Owner rules hold: nothing shown twice, actions live on the thing they act on, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_choice_list_test.dart", "test/goldens/kit/kit_choice_list_golden_test.dart", "test/kit/kit_notice_test.dart", "test/goldens/kit/kit_notice_golden_test.dart", "test/kit/kit_receipt_test.dart", "test/kit/kit_task_card_test.dart", "test/goldens/kit/kit_task_card_golden_test.dart"]
+    },
+    {
+      "id": "slice-R7",
+      "wave": 3,
+      "programme": "R",
+      "title": "R7 KitDiffView: compact lines, one file switcher, file-change callback",
+      "write": ["lib/ui/kit/kit_diff_view.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_diff_view.dart: diff lines draw at the text line height (about 20-24 dp), not minTarget 48; the 48 dp hit target is kept by the line-number gutter's overlapping hit area or long-press/drag selection; a 10-line hunk no longer fills the phone screen",
+        "kit_diff_view.dart phone header: one switcher row 'checkout_page.dart · 1 of 3 ›' with +/- counts on the right replaces the '3 files +4 −2' bar; the file count is shown once",
+        "kit_diff_view.dart wide file list: no 'Current' word on the selected row (the highlight says it); a viewed tick, not a radio, marks viewed files",
+        "kit_diff_view.dart: new ValueChanged<int>? onFileChanged so hosts track the current file without reading it from fileActions",
+        "kit_diff_view.dart: KitDiffSelection reports when a whole hunk is selected (optional hunk flag) so a hunk stages as a hunk",
+        "Owner rules hold: nothing shown twice, kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_diff_view_test.dart", "test/goldens/kit/kit_diff_view_golden_test.dart"]
+    },
+    {
+      "id": "slice-R8",
+      "wave": 3,
+      "programme": "R",
+      "title": "R8 Fields, progress row, avatar and status slot: l10n fallback, 200 % text, badge overlap, docs",
+      "write": ["lib/ui/kit/kit_field.dart", "lib/ui/kit/kit_search_field.dart", "lib/ui/kit/kit_progress_row.dart", "lib/ui/kit/kit_image.dart", "lib/ui/kit/kit_status_slot.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_field.dart and kit_search_field.dart: when AppLocalizations.of(context) is null (no delegates, e.g. a bare test harness) they fall back to English kit words instead of throwing; test pumps each without localization delegates",
+        "kit_progress_row.dart KitProgressRow.segments: at 200 % text the legend stacks one entry per line with no overflow; golden at 2.0 text",
+        "kit_progress_row.dart: the 4th segment and 'Other' fills are distinguishable from the unfilled track (track drawn in a role no fill uses, or a distinct fill); the segments golden no longer reads 76 % as 62 % (coordinator confirms the token choice)",
+        "kit_image.dart KitAvatar: the small error badge no longer overlaps the second initial (badge moved to the corner outside the initials box or initials inset); kit_image_avatar_error golden updated",
+        "kit_status_slot.dart: KitStatusLineSlot docs state what child is for, how KitStatusContribution reaches the nearest slot, and the priority order (connection > app killed > heat > update)",
+        "Owner rules hold: kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_field_test.dart", "test/kit/kit_search_field_test.dart", "test/kit/kit_progress_row_test.dart", "test/goldens/kit/kit_progress_row_golden_test.dart", "test/kit/kit_image_test.dart", "test/goldens/kit/kit_image_golden_test.dart", "test/kit/kit_status_line_test.dart"]
+    },
+    {
+      "id": "slice-R9",
+      "wave": 3,
+      "programme": "R",
+      "title": "R9 Theme: disabled buttons pass AA in dark, one accent-meaning check",
+      "write": ["lib/ui/theme_roles.dart", "lib/ui/kit/kit_swatch.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "theme_roles.dart: the dark pack's disabled primary/secondary (text3 on surface3) reaches at least 4.5:1 (was 4.44:1); theme_roles_test asserts it for every pack",
+        "theme_roles.dart: a public accentKeepsMeaning check; kit_swatch.dart's LOOK-39 debug assert calls it and its private CIEDE2000 duplicate is deleted",
+        "Owner rules hold: kit parts only"
+      ],
+      "tests": ["test/theme_roles_test.dart", "test/kit/kit_swatch_test.dart", "test/goldens/kit/kit_swatch_golden_test.dart"]
+    },
+    {
+      "id": "slice-R10",
+      "wave": 3,
+      "programme": "R",
+      "title": "R10 Capability registry: terminal-only, MCP why, tool inventory",
+      "write": ["lib/ui/kit/kit_capability_explainer.dart", "docs/ux-system/capabilities.json"],
+      "after": [],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_capability_explainer.dart + capabilities.json: a terminal-only capability entry (title, reason, hosts line) so the Terminal page no longer borrows 'flag:fileBrowsing+terminal'",
+        "a kitCapMcpAnyWhy reason that explains a server that cannot add MCP servers (not the offer copy)",
+        "a 'flag:toolInventory' matrix row so the Tools gate no longer uses 'server.oc1'",
+        "Owner rules hold: kit parts only, English copy only"
+      ],
+      "tests": ["test/kit/kit_capability_explainer_test.dart", "test/goldens/kit/kit_capability_explainer_golden_test.dart", "test/server_capabilities_screen_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R11",
+      "wave": 3,
+      "programme": "R",
+      "title": "R11 KitTurn: copy buttons with the copied check, highlight band visible in light",
+      "note": "runs after chat-9",
+      "write": ["lib/ui/kit/chat/kit_turn.dart"],
+      "after": ["chat-9", "slice-R5"],
+      "tier": 1,
+      "kind": "kit-change",
+      "model": "opus",
+      "acceptance": [
+        "kit_turn.dart: the footer Copy uses KitIconButton.copy(redact: false) and the menu copy uses KitMenuItem.copy(redact: false) instead of plain buttons calling KitCopy.copy, so the copied-check glyph shows (SEC-13 still holds: turns copy verbatim)",
+        "kit_turn.dart _HighlightBand: uses a role that differs from surface2 in both light and dark packs, so the prompt bubble stays visible on a highlighted turn; kit_turn_highlighted_light golden shows the bubble edge",
+        "Owner rules hold: kit parts only"
+      ],
+      "tests": ["test/kit/kit_turn_test.dart", "test/goldens/kit/kit_turn_golden_test.dart"]
+    },
+    {
+      "id": "slice-R12",
+      "wave": 3,
+      "programme": "R",
+      "title": "R12 AI Team phone offer, host form, board card and setup output",
+      "write": ["lib/ui/widgets/team_phone_section.dart", "lib/ui/widgets/team_host_form.dart", "lib/ui/widgets/team_board_card.dart", "lib/ui/widgets/setup_terminal.dart", "lib/ui/screens/phone_setup/phone_setup_routes.dart"],
+      "after": ["slice-R2", "slice-R3", "slice-R6"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "team_phone_section.dart TeamPhoneReofferCard: message 'Let a team of agents work on this phone too' (teamUiPhoneReofferTitle), action 'Set up AI Team on this phone' (teamUiPhoneSetUp); 'AI Team' capitalised; message and action no longer say the same thing",
+        "team_host_form.dart: confirm reads 'Turn off AI Team for {host}'; 'Save without an answer' becomes 'Save the address anyway' with the note 'The team card stays off until the computer answers'; the 'Details' fold is 'Connection details'",
+        "team_host_form.dart: the changing actions (Test and turn on -> Cancel test -> Save the address anyway) are pinned via showKitSheet primaryListenable/secondaryListenable instead of a KitActionBlock in the body; the 320 dp / 2.5x layout test taps the pinned button again (no keyboard-Done workaround)",
+        "team_board_card.dart: the moving receipt uses KitReceipt's sending-word override ('Moving to Review…') instead of automatic: true",
+        "setup_terminal.dart: 'Copy failure report' moves into KitLogPanel's extra header action; the loose KitButton.tertiary under the panel is removed",
+        "phone_setup_routes.dart: the three MaterialPageRoute become KitPageRoute",
+        "Owner rules hold: actions name their target, nothing shown twice, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/team_phone_onboarding_test.dart", "test/team_board_test.dart", "test/team_plugins_layout_test.dart", "test/phone_setup_progress_screen_test.dart", "test/phone_setup_start_screen_test.dart", "test/phone_setup_notification_route_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R13",
+      "wave": 3,
+      "programme": "R",
+      "title": "R13 Work tool pages: no counts, no refresh icons, one inset",
+      "write": ["lib/ui/screens/global_sessions_screen.dart", "lib/ui/screens/worktrees_screen.dart", "lib/ui/screens/managed_workspaces_screen.dart", "lib/ui/screens/project_health_screen.dart", "lib/ui/screens/projects_screen.dart", "lib/ui/screens/saved_permissions_screen.dart"],
+      "after": ["slice-R4"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "global_sessions_screen.dart: the global-session-count summary and the per-project labelTrailing counts are removed; inside each project group rows order needs-you, then working, then the rest newest first; the KitSearchField sits on the 16 dp gutter like the segmented control",
+        "worktrees_screen.dart: the 'Worktrees' group label and its count are removed (the page title says it); the refresh KitAction leaves the top bar (pull-to-refresh stays; Try again only in error states)",
+        "project_health_screen.dart, managed_workspaces_screen.dart, projects_screen.dart, saved_permissions_screen.dart: the top-bar refresh KitAction is removed where KitRefresh already provides pull-to-refresh",
+        "managed_workspaces_screen.dart: _providers() is removed from the page body; provider choice lives only in the New environment sheet, and with one provider the sheet drops the radio row and says 'In Daytona' in its subtitle",
+        "project_health_screen.dart and managed_workspaces_screen.dart: SectionLabel is replaced by KitRowGroup labels / KitSectionLabel and the ad-hoc SizedBox(sectionGap) calls are removed (KitRowGroup gapBefore does it); 'Language services', 'Formatters', 'Environments' and 'Open projects' get a section gap",
+        "Owner rules hold: one list ordered by urgency, nothing shown twice, every item justifies its place, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/global_sessions_screen_test.dart", "test/worktrees_screen_test.dart", "test/managed_workspaces_screen_test.dart", "test/project_health_screen_test.dart", "test/projects_screen_test.dart", "test/saved_permissions_screen_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R14",
+      "wave": 3,
+      "programme": "R",
+      "title": "R14 Shell and shared widgets: PC pane without a repeated title, terminal gate shown, runaway Stop",
+      "write": ["lib/ui/screens/home_screen.dart", "lib/ui/screens/session_export_screen.dart", "lib/ui/widgets/product_states.dart", "lib/ui/widgets/safety_confirms.dart", "lib/ui/widgets/work_status_line.dart", "lib/ui/widgets/phone_server_card.dart"],
+      "after": ["slice-R1", "slice-R4", "slice-R10"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "home_screen.dart: sidebar layouts pass no topBar (the KitTopBar(title: _titles[activeTab]) that repeats the highlighted sidebar destination is removed); the pane starts with the project header as in Desktop.png",
+        "home_screen.dart: OpenTerminalIntent no longer silently does nothing when capabilities.terminal is false; it opens the Terminal page, which explains the gate with the terminal-only capability",
+        "session_export_screen.dart: SectionLabel replaced by KitSectionLabel",
+        "product_states.dart: SectionLabel forwards to KitSectionLabel with a '/// Retired: use KitSectionLabel' doc comment (deleted in P9.10 once run_screen.dart is gone)",
+        "safety_confirms.dart: the unused confirmStopProcess is deleted",
+        "work_status_line.dart WorkRunawayNotice: its one action is 'Stop {helper}' with a showKitConfirm, using TermuxProcesses.stopPid; the stopped result is announced once",
+        "phone_server_card.dart: a row variant (KitRow with Start/Set up as the trailing button, the rest in the row menu) that the Servers list can use in place of the separate card",
+        "Owner rules hold: nothing shown twice, actions name their target and live on the thing they act on, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/session_export_test.dart", "test/safety_confirms_test.dart", "test/work_tab_status_line_test.dart", "test/profile_monitor_phone_servers_test.dart", "test/servers_scenes_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R15",
+      "wave": 3,
+      "programme": "R",
+      "title": "R15 Servers, server settings, Linux service, guide and Tailscale pages",
+      "write": ["lib/ui/screens/servers_screen.dart", "lib/ui/widgets/local_server_row.dart", "lib/ui/screens/settings/server_settings_screen.dart", "lib/ui/screens/host_management_screen.dart", "lib/ui/screens/guide_screen.dart", "lib/ui/screens/tailscale_setup_screen.dart"],
+      "after": ["slice-R3", "slice-R4", "slice-R14"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "servers_screen.dart: the in-app phone server is a row in the one urgency-ordered list (PhoneServerCard row variant), not a separate card above it",
+        "local_server_row.dart: the row shows its own agent mark, a per-row ⋮ menu (KIT-28) and the failure text in the failure tone (LOOK-5)",
+        "server_settings_screen.dart: the external-updates row is 'Copy update commands for {server}' and copies on tap (no trailing copy icon); the trailing download _RowMark on the update row is removed; e7SettingsUi66 reads 'Keep OpenCode running after you close the terminal.'; the KitDivider plus extra SizedBox before the disconnect group is removed (one sectionGap)",
+        "host_management_screen.dart: the 'This server' group (e7SetupThisServer) is deleted; the intro under the top bar says 'These commands run on the computer that hosts {server}; copy each into a terminal there.'; the page is titled 'Run {server} as a Linux service'",
+        "guide_screen.dart: step two reads 'Tap Add server, then Scan code and point the camera at the QR, or Paste code.' with the Add server button kept; the 'Open Servers' instruction is gone",
+        "tailscale_setup_screen.dart: steps sit in a KitRowGroup (or KitChecklist) with each button under its text; setup steps use the neutral to-do mark and 'To do', never 'Needs you'; one caveat line 'Paste the HTTPS address Tailscale Serve printed.', the rest in the 'Tailscale setup and recovery' fold; 'Check Tailscale again' is a row in the step panel; SectionLabel replaced by KitSectionLabel",
+        "Owner rules hold: one list ordered by urgency, actions name their target, nothing shown twice, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/servers_scenes_test.dart", "test/host_management_screen_test.dart", "test/tailscale_setup_test.dart", "test/tailscale_profile_test.dart", "test/profile_monitor_phone_servers_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R16",
+      "wave": 3,
+      "programme": "R",
+      "title": "R16 Account, demo, capabilities, note and context pages say things once",
+      "write": ["lib/ui/screens/agent_account_screen.dart", "lib/ui/screens/demo_screen.dart", "lib/demo/demo_copy.dart", "lib/ui/screens/server_capabilities_screen.dart", "lib/ui/screens/session_note_screen.dart", "lib/ui/screens/active_context_screen.dart"],
+      "after": [],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "agent_account_screen.dart: agentAccountSignInNote is removed from the KitDetailsFold notes (it is already the signed-out body)",
+        "demo_screen.dart: the demo-set-up-server-menu item is removed; the X means 'Leave demo'; 'Set up a server' stays only in the finished notice; demo_copy.dart disclosure drops the trailing 'Nothing is saved.'; DemoCopy.reset and DemoCopy.disclosure move into app_en.arb",
+        "server_capabilities_screen.dart _FeatureRow: the hosts line shows only for the focused feature or when it differs from the most common one; the intro says once 'Missing features work on other OpenCode servers.'",
+        "session_note_screen.dart: 'Save note' appears only after the text differs from the saved note; sessionNoteUnchanged is deleted; 'Delete saved note' stays",
+        "active_context_screen.dart: activeContextIntro reads 'What the model reads on its next turn, after the latest summary.'; the group count label is dropped; the detail page is titled '{Role} message' (e.g. 'Assistant message'); activeContextContentHelp moves into the page's Details fold",
+        "Owner rules hold: nothing shown twice, every item justifies its place, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/agent_account_widget_test.dart", "test/demo_isolation_test.dart", "test/server_capabilities_screen_test.dart", "test/session_note_test.dart", "test/active_context_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R17",
+      "wave": 3,
+      "programme": "R",
+      "title": "R17 Move confirm names the destination; budget dialog and quota alert roles",
+      "write": ["lib/ui/screens/session_destination_sheet.dart", "lib/ui/screens/usage_screen.dart", "lib/ui/widgets/quota_monitor_section.dart"],
+      "after": ["slice-R2"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "session_destination_sheet.dart: e7SharedDetail429 reads 'Move conversation to {destination}?'; confirm labels are 'Move to {destination} with changes', or 'Move to {destination}' when there are none; the alternative is 'Move to {destination} without changes' and renders between confirm and Cancel; both consequence items use the same neutral mark",
+        "usage_screen.dart: usageBudgetInvalid splits into 'Enter an amount above 0, like 2.50' (USD) and 'Enter a whole number of tokens above 0' (tokens); confirmLabel is 'Save USD budget' / 'Save token budget'; the empty dialog shows no error until the first edit",
+        "quota_monitor_section.dart: the three AppStatusTone.attention uses (paused, Wi-Fi required, source changed) move to a non-attention tone so kit_ratchet G17 passes (attention is reserved for Needs you)",
+        "Owner rules hold: actions name their target, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/usage_budgets_test.dart", "test/provider_quota_monitor_test.dart", "test/kit_ratchet_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    },
+    {
+      "id": "slice-R18",
+      "wave": 3,
+      "programme": "R",
+      "title": "R18 Review, Terminal, Integrations, Tools and External agents: one reload, no dead rows",
+      "write": ["lib/ui/screens/review_workspace.dart", "lib/ui/screens/terminal_screen.dart", "lib/ui/screens/library/integrations_screen.dart", "lib/ui/screens/library/integration_tiles.dart", "lib/ui/screens/tools_screen.dart", "lib/ui/screens/external_agents_screen.dart"],
+      "after": ["slice-R4", "slice-R7", "slice-R10"],
+      "tier": 1,
+      "kind": "screen-revamp",
+      "model": "opus",
+      "acceptance": [
+        "review_workspace.dart: the top-bar 'Refresh changes' is hidden while the body shows KitStateView.error or the slow state (Try again is the one reload); the always-on review-scope-hint line is removed (shown only when the list is empty); the 'N of M viewed' progress uses KitDiffView.onFileChanged",
+        "terminal_screen.dart: 'Remove N ended terminals' moves into the Terminal top-bar menu; the empty title is 'No terminals yet' with body 'Start one in {project}.'; the gated state uses the terminal-only capability entry",
+        "integrations_screen.dart: the Providers-mode subtitle count '1 of 2 connected' is removed; the Providers / MCP servers / Resources explanations come back through KitRowGroup labelTerm",
+        "integration_tiles.dart: when !removalSupported the MCP row menu leaves out 'Remove … until restart' instead of listing a dead item",
+        "tools_screen.dart: the 'Parameter schema' fold is removed; 'Copy parameter schema' is a menu item on the tool sheet",
+        "external_agents_screen.dart: an empty skills group is omitted; the 'Reopening checks…' caption is removed; the unverified caption shows once, on Add agent; the section gap (space5) sits between the top-bar subtitle and the description; the stop confirm reads 'Stop “{task}”?' with confirm 'Ask {agent} to stop' and 'Keep running'",
+        "Owner rules hold: nothing shown twice, actions name their target, every item justifies its place, kit parts only, English copy in app_en.arb only"
+      ],
+      "tests": ["test/review_workspace_test.dart", "test/terminal_accessibility_test.dart", "test/library_integrations_test.dart", "test/integration_auth_recovery_test.dart", "test/tools_screen_test.dart", "test/external_agent_widget_test.dart"],
+      "sharedAppend": ["lib/l10n/app_en.arb"]
+    }
+  ],
+  "sliceAdditions": {
+    "slice-P1.2": [
+      "phone_setup_start_screen.dart: the 'Other ways' fold uses the same fold part as the progress screen (KitDetailsFold) and starts at the page gutter (x=16), like the headline and primary",
+      "SetupProgressView: the host label, and the no-internet and low-storage states, show as named rows"
+    ],
+    "slice-P1.5": [
+      "This phone: the setup output / server log (KitLogPanel) is folded under 'Details', collapsed by default"
+    ],
+    "slice-P3.1": [
+      "team_card.dart is deleted with its kit_ratchet_baseline entries, and the team_discover.dart comments that name TeamCard are updated",
+      "server_plugins_section.dart: nothing raw is left (no IconButton, Text/bodySmall, SectionLabel or numeric insets) whether it is deleted or kept"
+    ],
+    "slice-P3.3": [
+      "The model sheet uses the KitSheet list body mode (after slice-R2) instead of 'Show N more models', and its pinned 'Use …' action goes through primaryListenable so it shows a disabled reason and a working state"
+    ],
+    "slice-P3.4": [
+      "team_home_screen.dart: the 'Tasks' label (teamUiHomeTasksHeading) is dropped from the team-home-tasks KitRowGroup; TeamNeedsYouCard is padded with the list gutter minus KitTokens.needsYouRingWidth so its outer edge lines up with the rows",
+      "The AI Team actions that survive the team-plugin-sheet removal name their target ('Add an AI Team address', 'Change AI Team address', 'Refresh AI Team', 'Turn off AI Team'); the title is 'AI Team' and 'Gas City' appears only in Technical details",
+      "Off state: one sentence says what turning the team on does ('Off. Add a team's address to see its tasks here.') instead of a radio-looking '○ Off'",
+      "team-intro 'offline while looking' names the discovery failure reason (add a failure field to TeamDiscovery)"
+    ],
+    "slice-P3.7a": [
+      "files_screen.dart: the '3 changed files' entry shows only when Files is opened outside the project hub (the hub's Changes row already goes to Review)",
+      "files_screen.dart passes the file preview's path / onOpenInReview so 'Open in Review' works from Files"
+    ],
+    "slice-P3.10": [
+      "plugins_screen.dart is kit only: no AppBar, Scaffold, ExpansionTile, FilledButton, AlertDialog, CheckboxListTile, SnackBar or raw TextStyle (KitScreen/KitTopBar, KitRowGroup/KitRow, KitExpandRow, KitButton, showKitConfirm, KitUndo)"
+    ],
+    "slice-P3.11a": [
+      "workspace_screen.dart folder chooser: body 'Conversations run inside a folder on {server}.' (not a repeat of the title); tertiary workspaceChooserRecentProjects becomes 'Open a project you used before'; the 'Work' subtitle under the server pill is dropped",
+      "workspace_screen.dart: the urgent head and recent rows render as one KitSliverRowGroup panel with the same inset as 'Other projects' (after slice-R4)",
+      "credential_sheet.dart: one caption 'Keys stay on your server.'; the 'Active account unknown…' paragraph is deleted; the remove confirm reads 'Remove the {provider} account “{name}”?' with confirm 'Remove “{name}”'",
+      "project_hub_screen.dart: the Terminal tool shows with its gate explanation instead of being hidden when capabilities.terminal is false",
+      "session_handoff.dart / continue-on-computer: the resume command uses a KitCodeBlock command block with wrap (after slice-R3), not an output block standing in for it",
+      "activity_screen.dart question sheet: Send is pinned through showKitSheet primaryListenable and enables as the person answers",
+      "command_auth_sheet.dart: after 8 s without an answer the sheet offers 'Check {provider} sign-in now'"
+    ],
+    "slice-P4.1c": [
+      "Team receipts that show a moving state use KitReceipt's sending-word override (after slice-R6) instead of automatic: true"
+    ],
+    "slice-P4.2b": [
+      "No refresh action and no 'Last checked' / 'Next check' rows survive when profile-monitor folds into the server rows; the scope caveat is one supporting line 'Watches the project you last opened on each server.'"
+    ],
+    "slice-P5.4": [
+      "provider_quota_screen.dart: the window row's valueLabel reads '{used}% used · {left}% left' (new quotaUsedLeft) so the bar and its words agree",
+      "The collector origin shows once: the quotaSource KitTechnicalValue leaves the page's Details fold and the enrol sheet's Details"
+    ],
+    "slice-P8.2": [
+      "bug_report.dart 'browser did not open': 'Your browser didn't open. The bug form link is copied; paste it into a browser.' with 'Copy link again' as tertiary and 'Done' as primary",
+      "Report a problem: error titles use KitExpandRow titleMaxLines: 2 (after slice-R4)"
+    ],
+    "slice-P9.10": [
+      "kit_ratchet_test.dart G2 gains the retired names TerminalView(, stripAnsi(, TerminalKeyBar, KitNotice.card(, NudgeCard(, AppScrollBehavior(, DesktopScrollbarArea(, OwnScrollbar(, DesktopSelectionArea(, ContextMenuRegion(, ContextMenuAction( and showContextMenu(; the _scrollbarHome G16 exception is removed ('ratchet-tighten: G16 Scrollbar')",
+      "SectionLabel is deleted from widgets/product_states.dart once run_screen.dart is gone (P3.5)"
+    ],
+    "slice-P10.3": [
+      "The voice composer drops its 'Cancel' secondary and keeps the header X (after slice-R2)"
+    ],
+    "slice-P10.4": [
+      "The voice setup sheet drops 'Not now' and keeps the header X (after slice-R2)",
+      "voice_ui.dart passes KitChoiceList current: the installed active pack, so 'Current' marks only the applied pack (after slice-R6)",
+      "'Download {pack} again' and 'Delete {pack}' move into that pack row's menu (KitChoiceRow menu, after slice-R6)",
+      "Model sizes show in MB, not MiB (formatModelBytes in lib/voice/model_manifest.dart)"
+    ]
+  },
+  "parked": [
+    {"item": "Staged revert: 'The hidden prompt and N messages after it are deleted'", "reason": "SessionRevertReview carries no message count and the messages live in the chat library; needs a count from the gateway or chat-9 first"},
+    {"item": "Restore an archived conversation", "reason": "no unarchive gateway call"},
+    {"item": "Worktrees: merge a copy back, uncommitted changes per copy, which conversation uses a copy", "reason": "needs gateway data or per-row calls that do not exist"},
+    {"item": "Restart an ended terminal command; terminal age ('Running · 4 min')", "reason": "ServerOperationsGateway.createTerminal takes only a title and the server reports no start time"},
+    {"item": "Undo an AI Team approval", "reason": "no unapprove gateway call"},
+    {"item": "Tools: source MCP server; turn a tool or MCP server off", "reason": "the server reports neither"},
+    {"item": "MCP: delete from configuration, undo a runtime Remove, OAuth 'expired' state, automatic reconnect on token expiry", "reason": "no config-delete or re-add gateway call and no expiry signal"},
+    {"item": "'Get a key' links for providers", "reason": "the app has no provider key-page URL data"},
+    {"item": "Folder browser: clone a repository; recent projects first", "reason": "needs a clone call and project order from the server"},
+    {"item": "Start a fresh conversation seeded with a summary", "reason": "no gateway call seeds a new conversation with a summary"},
+    {"item": "Move conversation: create a new separate copy as the destination; 'changes conflict at the destination' state", "reason": "no create-copy-and-move call and the server reports no conflict state"},
+    {"item": "Time left for a command started elsewhere", "reason": "the server does not report the limit a command started with"},
+    {"item": "Team agent 'restarting automatically', 'recycling', per-agent cost", "reason": "the team host does not report them"},
+    {"item": "Environment error reason; stop an environment without removing it", "reason": "WorkspaceInfo has no reason field and there is no stop call"},
+    {"item": "Storage: 'phone nearly full', in-app host storage; processes: in-app host runaway, thermal pause, memory trend", "reason": "no free-space, host or thermal data in the process/storage sources"},
+    {"item": "Linux service: pinned or checksummed install script; pairing 'expired code'", "reason": "needs a published script artifact; pairing payloads carry no expiry"},
+    {"item": "Update notice: 'Restart now' and 'what changes'", "reason": "no in-app restart facility and code-push patches carry no release notes"},
+    {"item": "Background hours used today", "reason": "BackgroundLiveController exposes no budget data"},
+    {"item": "Share a file out instead of saving", "reason": "needs a native FileProvider and outgoing oc/share support (single-owner MethodChannel), not a screen change"},
+    {"item": "Skills: 'Use in a new conversation' and 'ask an agent to write a skill'", "reason": "no create-then-activate flow exists"},
+    {"item": "References: browse a reference folder's files", "reason": "Files has no start-folder route; revisit after slice-P3.7a owns files_screen.dart"},
+    {"item": "One noun for worktrees across Work, Manage, Move and the task sheet", "reason": "owner copy decision needed before any unit can build it"},
+    {"item": "Spec rulings: KitSurface raised/glass vs G21, KitQr short-window module rule, KitText multi-class files vs G4/G6, Confirm.png typography vs frozen KitSheet roles", "reason": "coordinator decisions on frozen specs, not buildable work"}
+  ]
+}
