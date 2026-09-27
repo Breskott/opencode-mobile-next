@@ -64,6 +64,7 @@ class KitStep {
     this.supporting,               // "29 of 30 MB · about 1 min left"; the failure's reason; "Already installed"
     this.personAction,             // a step only the person can do: "Allow", "Get Termux" → needs-you mark + its button
     this.retry,                    // "Try again": on the failed row only (asserted)
+    this.report,                   // "Report this failure" (P8.4): failed row only (asserted), tertiary, under the row's words
     this.value,                    // 0..1 within this step when measured: a thin bar under the row while working
     this.key,
   });
@@ -74,6 +75,7 @@ class KitStep {
   final String? supporting;
   final KitAction? personAction;
   final KitAction? retry;
+  final KitAction? report;
   final double? value;
   final Key? key;
 }
@@ -190,6 +192,7 @@ KIT-12 doc comment: "States: before-start, working, person-step, slow, failed, p
 
 - **Marks come from the engine**, never inferred. "Waiting" is never ticked as done (the map defect). A step from an existing install is done with "Already installed" (STATE-11). A resumed job starts at its step.
 - **Try again appears only on the failed row.** `retry` on a row that is not failed asserts.
+- **Report this failure appears only on the failed row** (P8.4). `report` on a row that is not failed asserts; it is a tertiary action under the row's words, after Try again, and opens Report a problem with the job's log (`failedJobReportAction` in `lib/feedback/bug_report.dart`).
 - **Stop does not confirm by itself.** The caller confirms only when work would be lost (`showKitConfirm` kind `stop`; DATA-11). Otherwise stopping is "neither" and just stops.
 - **The bar never goes backwards within a job** (KitProgress rule; SetupProgressView's "eases towards the furthest point").
 - **No silent waits:** a working step with `since` escalates after 8 s (STATE-5). The adapter passes the time of the last progress report.

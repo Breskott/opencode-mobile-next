@@ -7,7 +7,6 @@ import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_icon.dart';
 import '../kit/kit_notice.dart';
-import '../kit/kit_page_route.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_screen.dart';
@@ -15,8 +14,8 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../setup_commands.dart';
-import 'connection_help_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
+import 'servers_screen.dart' show ServersRouteRequest;
 
 /// Setup guide. Leads with the one story a first-time user needs — run
 /// `opencode2 pair`, scan or paste, start talking — and folds every other
@@ -99,7 +98,12 @@ class GuideScreen extends StatelessWidget {
                   label: l10n.e7SetupAddServer,
                   icon: AppIconography.add,
                   expand: false,
-                  onPressed: () => Navigator.of(context).pushNamed('/servers'),
+                  // Add server itself, the same flow as the Servers page's
+                  // (P3.9), not the list to find it on.
+                  onPressed: () => Navigator.of(context).pushNamed(
+                    '/servers',
+                    arguments: const ServersRouteRequest.add(),
+                  ),
                 ),
               ),
             ),
@@ -111,10 +115,10 @@ class GuideScreen extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: tokens.sectionGap),
-        KitRowGroup(
-          children: [
-            if (onDevice)
+        if (onDevice) ...[
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            children: [
               KitRow(
                 key: const ValueKey('guide-phone-path'),
                 leading: KitRow.icon(context, AppIconography.phone),
@@ -125,19 +129,9 @@ class GuideScreen extends StatelessWidget {
                 trailing: const _Chevron(),
                 onTap: () => openPhoneSetupStart(context),
               ),
-            KitRow(
-              leading: KitRow.icon(context, AppIconography.question),
-              title: l10n.connectionHelpTitle,
-              supporting: TextSpan(text: l10n.connectionHelpEntrySubtitle),
-              supportingMaxLines: 2,
-              trailing: const _Chevron(),
-              onTap: () => pushKitPage<void>(
-                context,
-                (_) => const ConnectionHelpScreen(),
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
         SizedBox(height: tokens.sectionGap),
         KitRowGroup(
           children: [

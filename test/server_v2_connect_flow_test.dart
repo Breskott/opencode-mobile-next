@@ -8,7 +8,6 @@ import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/agent_choice_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -292,7 +291,7 @@ void main() {
     expect(profile.password, 'the-serve-password');
   });
 
-  testWidgets('a first connection leaves no question screen on top', (
+  testWidgets('a first connection ends on the ready step, then the shell', (
     tester,
   ) async {
     serverProbe = ({required baseUrl, username, password}) async =>
@@ -334,7 +333,12 @@ void main() {
     controller.finishConnect.complete();
     await tester.pumpAndSettle();
 
-    expect(find.byType(AgentChoiceScreen), findsNothing);
+    // The editor, still on top of the new shell, shows the ready moment;
+    // its one way on leaves nothing else on top.
+    expect(find.byKey(const ValueKey('server-ready-step')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('server-ready-open')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
     expect(find.text('shell'), findsOneWidget);
   });
 

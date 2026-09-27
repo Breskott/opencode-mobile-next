@@ -38,12 +38,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../diagnostics/failed_job_report.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/relative_time.dart';
+import '../app_diagnostics_screen.dart' show openReportProblem;
 import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_receipt.dart' show teamGateMutation;
 import '../../widgets/team_vocabulary.dart';
@@ -145,6 +147,10 @@ Future<void> showGateSheet(
           ),
         );
       },
+      onReport: (report) {
+        Navigator.of(sheetContext).pop();
+        unawaited(openReportProblem(context, error: report));
+      },
     ),
   );
 }
@@ -159,6 +165,7 @@ class GateSheet extends StatelessWidget {
     required this.onOpenWork,
     this.onOpenAgent,
     this.onOpenLogs,
+    this.onReport,
     this.now,
   });
 
@@ -172,6 +179,10 @@ class GateSheet extends StatelessWidget {
 
   /// Opens the agent's output page (View logs).
   final ValueChanged<String>? onOpenLogs;
+
+  /// Opens Report a problem with the failed run attached, its log when
+  /// the host serves it (P8.4); Report is absent when null.
+  final ValueChanged<KitReport>? onReport;
   final DateTime Function()? now;
 
   @override
@@ -199,6 +210,7 @@ class GateSheet extends StatelessWidget {
         onOpenWork: onOpenWork,
         onOpenAgent: onOpenAgent,
         onOpenLogs: onOpenLogs,
+        onReport: onReport,
       );
     },
   );
@@ -237,6 +249,7 @@ class _Body extends StatefulWidget {
     required this.onOpenWork,
     required this.onOpenAgent,
     required this.onOpenLogs,
+    required this.onReport,
   });
 
   final OrchestrationController controller;
@@ -246,6 +259,7 @@ class _Body extends StatefulWidget {
   final ValueChanged<String> onOpenWork;
   final ValueChanged<String>? onOpenAgent;
   final ValueChanged<String>? onOpenLogs;
+  final ValueChanged<KitReport>? onReport;
 
   @override
   State<_Body> createState() => _BodyState();
@@ -260,6 +274,9 @@ class _BodyState extends State<_Body> {
     controller: _text,
   );
   bool _sending = false;
+
+  /// Report is waiting for the failed agent's output to arrive.
+  bool _reporting = false;
 
   /// The record this sheet sent or retried; the receipt follows it (and
   /// any retry that superseded it).
@@ -797,6 +814,17 @@ class _BodyState extends State<_Body> {
               },
       );
     }
+    // Report is always there for a failed run (P8.4), with the log when
+    // the host serves it; it never answers the gate.
+    KitAction? report;
+    if (widget.onReport != null) {
+      report = KitAction(
+        key: const ValueKey('team-gate-run-report'),
+        label: l10n.failedJobReport,
+        icon: AppIconography.bug,
+        onPressed: _reporting ? null : () => unawaited(_report(stuck)),
+      );
+    }
     return _GateActions(
       answers:
           fix != null ||
@@ -809,8 +837,80 @@ class _BodyState extends State<_Body> {
       notes: notes,
       // Two tertiary actions show; the rest go under More. Stop work is
       // last; the sheet's close button is its way out.
-      tertiary: [?agent, ?logs, ?cancel],
+      tertiary: [?agent, ?logs, ?report, ?cancel],
     );
+  }
+
+  /// How long Report waits for a failed agent's output before it opens
+  /// the report without a log.
+  static const reportOutputWait = Duration(seconds: 3);
+
+  /// Captures the failed run for Report: the gate's own work item (else
+  /// the run's displayed stuck one) and, when the host serves output, its
+  /// agent's tail. [FailedJobReport.teamGate] attaches the log only when
+  /// the tail's session is that work's session, never a reused agent's
+  /// newer one.
+  Future<void> _report(WorkItem? displayed) async {
+    final onReport = widget.onReport;
+    if (onReport == null || _reporting) return;
+    WorkItem? work = displayed;
+    if (gate.workId case final id?) {
+      work = null;
+      for (final item in snapshot.work) {
+        if (item.id == id) work = item;
+      }
+    }
+    final agentId = work?.assignee ?? gate.agentId;
+    AgentOutputTail? tail;
+    if (agentId != null && controller.capabilities.agentOutput) {
+      setState(() => _reporting = true);
+      tail = controller.watchAgentOutput(agentId);
+      try {
+        await _firstOutput(tail);
+      } finally {
+        controller.unwatchAgentOutput(agentId);
+      }
+      if (!mounted) return;
+      setState(() => _reporting = false);
+    }
+    final report = FailedJobReport.teamGate(
+      gate,
+      work: work,
+      sessionId: tail?.sessionId,
+      logTail: tail?.text ?? '',
+    );
+    if (report == null) return;
+    onReport(report.toKitReport(title: _stoppedTitle()));
+  }
+
+  /// The sheet's own title for a stopped task ("Sync engine stopped"),
+  /// else the gate's.
+  String? _stoppedTitle() {
+    final stopped = _stoppedTask(snapshot, gate);
+    return stopped == null
+        ? null
+        : _copy(context).teamUiGateRunStoppedTitle(stopped);
+  }
+
+  /// Completes once [tail] has text, ended, cannot be served or stopped
+  /// streaming, or after [reportOutputWait].
+  static Future<void> _firstOutput(AgentOutputTail tail) {
+    bool settled() =>
+        tail.text.isNotEmpty ||
+        tail.received ||
+        tail.ended ||
+        !tail.available ||
+        !tail.watching;
+    if (settled()) return Future.value();
+    final done = Completer<void>();
+    void check() {
+      if (settled() && !done.isCompleted) done.complete();
+    }
+
+    tail.addListener(check);
+    return done.future
+        .timeout(reportOutputWait, onTimeout: () {})
+        .whenComplete(() => tail.removeListener(check));
   }
 
   /// The failed run's open work, stuck items first.

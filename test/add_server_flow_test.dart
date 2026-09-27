@@ -19,6 +19,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/server_editor.dart';
+
 /// A stand-in serve password. Never a live one.
 const _password = 'fixture-not-a-live-serve-password-000000000';
 
@@ -66,8 +68,12 @@ final _laptop = ServerProfile(
   baseUrl: 'https://laptop.example.net',
 );
 
-/// Servers beside one saved server, with Add server open.
-Future<(_Store, _Connection)> _openAddServer(WidgetTester tester) async {
+/// Servers beside one saved server, with Add server open on the connect
+/// step for [kind] (null stays on the first step, what runs there).
+Future<(_Store, _Connection)> _openAddServer(
+  WidgetTester tester, {
+  String? kind = 'opencode',
+}) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -97,6 +103,7 @@ Future<(_Store, _Connection)> _openAddServer(WidgetTester tester) async {
   await tester.tap(find.text('Add server'));
   await tester.pumpAndSettle();
   expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+  if (kind != null) await chooseServerKind(tester, kind: kind);
   return (store, connection);
 }
 
@@ -145,7 +152,7 @@ void main() {
   testWidgets('the type is one choice of three rows, without jargon', (
     tester,
   ) async {
-    await _openAddServer(tester);
+    await _openAddServer(tester, kind: null);
     for (final key in const [
       'server-backend-opencode',
       'server-backend-codex',
@@ -267,6 +274,9 @@ void main() {
     expect(added.flavor, ServerFlavor.v2);
     expect(added.serverVersion, '2.0.10');
     expect(connection.connected.single.id, added.id);
+    // The flow ends on its ready moment; its one way on opens the app.
+    expect(find.byKey(const ValueKey('server-ready-step')), findsOneWidget);
+    await openReadyServer(tester);
     expect(find.text('home-route'), findsOneWidget);
   });
 
@@ -332,7 +342,7 @@ void main() {
     testWidgets('choosing $type shows its own fields, not pairing', (
       tester,
     ) async {
-      final (store, connection) = await _openAddServer(tester);
+      final (store, connection) = await _openAddServer(tester, kind: null);
       await tester.tap(find.byKey(ValueKey('server-backend-$type')));
       await tester.pumpAndSettle();
       expect(

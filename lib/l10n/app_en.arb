@@ -856,30 +856,7 @@
   "pendingAuthForgetDetail": "Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.",
   "pendingAuthUnsupported": "This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
   "pendingAuthOtherSource": "Other pending sign-ins belong to another server or project. Return to their original source to manage them.",
-  "connectionHelpTitle": "Connection help",
-  "connectionHelpEntrySubtitle": "Explain an address locally, without connecting",
-  "connectionHelpGuideTip": "Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.",
-  "connectionHelpPrivacy": "This checks address rules only, not connectivity. Nothing is sent or saved. Input is hidden and cleared after checking. Paste only an address, not a password or pairing code.",
-  "connectionHelpAddress": "Server address",
-  "connectionHelpCheck": "Explain address",
-  "connectionHelpEmpty": "Enter a server address to explain.",
-  "connectionHelpMalformed": "This address could not be understood. Use a complete origin such as https://server.example, with no path, credentials or query.",
-  "connectionHelpCredentials": "Credentials do not belong in a URL. Remove them and enter the server username and password separately in Servers. The pasted value has been cleared.",
-  "connectionHelpQuery": "Remove query parameters and fragments. They can contain secrets; enter only the server origin. The pasted value has been cleared.",
-  "connectionHelpPath": "Remove the path. This app needs the server origin, not a page or API route.",
-  "connectionHelpScheme": "Use HTTPS for a remote server, or HTTP only for this device's supported loopback addresses.",
-  "connectionHelpRemoteHttp": "Remote HTTP is blocked, including LAN and 100.64.0.0/10 addresses. A VPN does not change this rule. Set up private HTTPS or an encrypted tunnel ending on this device.",
-  "connectionHelpHttps": "This address passes the HTTPS address rules. That does not verify its certificate, reachability, sign-in or privacy. A bare remote address is interpreted as HTTPS.",
-  "connectionHelpLoopback": "This address passes the loopback address rules. Localhost means this device, not another computer. A server or tunnel must be listening here; this check does not verify that.",
-  "connectionHelpPrivateTitle": "Private HTTPS or reverse proxy",
-  "connectionHelpPrivateSteps": "1. Keep the server on its host's loopback with authentication enabled.\n2. Connect both devices to your private network and restrict access to intended users.\n3. Configure private HTTPS, such as Tailscale Serve, or a reverse proxy with a trusted certificate forwarding to the server. Support streaming and WebSockets.\n4. Add the HTTPS origin in Servers with sign-in in separate fields.\nTailscale Funnel exposes the service publicly; it is not a private-network fix. This app cannot infer VPN presence. The example below is a placeholder.",
-  "connectionHelpTunnelTitle": "Localhost on the wrong device?",
-  "connectionHelpTunnelSteps": "Localhost, 127.0.0.1 and [::1] refer to the device running this app. For a server on another computer, use private HTTPS or an encrypted tunnel ending here. If an SSH client is available on this device, adapt the example below, verify the host key and keep it running. Replace user@host with your SSH destination. Running it on another computer does not forward this device's port. Keep server authentication enabled.",
-  "connectionHelpVerifyTitle": "Verify connectivity separately",
-  "connectionHelpVerifySteps": "On this device, check private-network membership, DNS, firewall access and certificate trust using your network tools. Check server and proxy configuration on the host, then use Servers to connect. Never disable TLS verification or share passwords, pairing codes or unredacted logs. Access to this server is shell access.",
-  "connectionHelpCopyExample": "Copy example",
-  "connectionHelpCopied": "Example copied",
-  "connectionHelpCopyFailed": "Could not copy the example. Select the example text to copy it manually.",
+  "connectionHelpGuideTip": "Keep the server off the public internet. Reach it over Tailscale's private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.",
   "voiceConversationTitle": "Voice conversation",
   "voiceConversationDescription": "Listen, review, then Send. No automatic listening; replies are read aloud only if you turn that on.",
   "voiceConversationSpeakReplies": "Speak replies",
@@ -2933,14 +2910,9 @@
   "workBackgroundUnavailable": "This server has not confirmed support for moving work to the background.",
   "workBackgroundEligible": "Run in background is available while a supported agent task or command is blocking this conversation.",
   "workBackgroundAutomatic": "Ask your agent to delegate work in the background. Results return to this conversation automatically.",
-  "oc2DiscoveryConnect": "Connect OpenCode 2",
-  "@oc2DiscoveryConnect": {
-    "description": "Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol."
-  },
   "oc2DiscoveryEditorTitle": "OpenCode 2",
   "oc2DiscoveryExisting": "Use a server that is already running.",
   "oc2DiscoveryTypes": "OpenCode 1 or 2",
-  "oc2DiscoveryAutodetect": "Detects OpenCode 1 or 2 automatically.",
   "oc2DiscoveryPhone": "Set up OpenCode 1 or 2 here with Termux.",
   "setupSwitchUse": "Try {runtime}",
   "@setupSwitchUse": {
@@ -12700,13 +12672,9 @@
   "@handoffUiPhoneUnavailable": {
     "description": "QR sheet state when the session or server reference fails validation"
   },
-  "handoffUiLinkServerMissing": "This server is not saved on this phone. Add it under Servers, then scan the code again.",
+  "handoffUiLinkServerMissing": "The conversation is on a server this phone has not saved. Add it here, then scan the code again.",
   "@handoffUiLinkServerMissing": {
     "description": "Banner shown when a scanned session link names a server this phone does not have"
-  },
-  "handoffUiLinkOpenServers": "Open Servers",
-  "@handoffUiLinkOpenServers": {
-    "description": "Banner action opening the servers screen"
   },
   "handoffUiLinkDismiss": "Dismiss",
   "@handoffUiLinkDismiss": {
@@ -17165,7 +17133,7 @@
   "discoverRunningNowAliases": "running now processes termux services stop on this phone",
   "discoverStorageAliases": "storage on this phone disk space clean termux",
   "discoverMonitorAliases": "saved-server attention monitor other servers waiting server attention",
-  "discoverConnectionHelpAliases": "connection help cannot connect troubleshooting network refused timeout",
+  "discoverConnectionHelpAliases": "add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout",
   "gestureEquivFileRowActions": "Actions for {name}",
   "@gestureEquivFileRowActions": {
     "description": "Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.",
@@ -17362,29 +17330,13 @@
   "@firstRunJustShowMe": {
     "description": "First-run welcome choice that opens the simulated demo."
   },
-  "firstRunWhichAgent": "Which agent first?",
-  "@firstRunWhichAgent": {
-    "description": "First run, computer path: the question above the three agent choices."
-  },
   "firstRunAgentOpenCode": "OpenCode",
   "@firstRunAgentOpenCode": {
     "description": "Agent choice title; a product name, not translated."
   },
-  "firstRunAgentClaudeOrPi": "Claude Code, Codex, Pi and more",
-  "@firstRunAgentClaudeOrPi": {
-    "description": "Agent choice title for the Paseo backend; product names are not translated."
-  },
-  "firstRunAgentClaudeOrPiDetail": "One connection to the Paseo daemon drives every agent installed there. Experimental.",
-  "@firstRunAgentClaudeOrPiDetail": {
-    "description": "Agent choice: one line under 'Claude Code or Pi'."
-  },
   "firstRunAgentCodex": "Codex",
   "@firstRunAgentCodex": {
     "description": "Agent choice title; a product name, not translated."
-  },
-  "firstRunAgentCodexDetail": "Directly, through Codex app-server. Experimental.",
-  "@firstRunAgentCodexDetail": {
-    "description": "Agent choice: one line under 'Codex'."
   },
   "firstRunRunOnComputer": "On your computer, run:",
   "@firstRunRunOnComputer": {
@@ -30630,5 +30582,105 @@
         "type": "int"
       }
     }
+  },
+  "addServerConnectedHost": "Connected to {host}",
+  "@addServerConnectedHost": {
+    "description": "Add server, ready step: line under the linked drawing.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerCheckSlow": "{host} has not answered yet. A slow network can take a while.",
+  "@addServerCheckSlow": {
+    "description": "Add server: notice when a connection check or pairing has run for 8 seconds.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerCheckCancel": "Stop checking",
+  "@addServerCheckCancel": {
+    "description": "Add server: action on the slow-check notice; the answer, when it comes, is ignored."
+  },
+  "addServerRemoteHttpAdvice": "A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.",
+  "@addServerRemoteHttpAdvice": {
+    "description": "Add server: under an http:// address on the network, which is refused. Never suggests a public relay."
+  },
+  "addServerUseTailscale": "Use Tailscale",
+  "@addServerUseTailscale": {
+    "description": "Add server: action that opens the Tailscale step from the http:// advice."
+  },
+  "addServerStepsLabel": "Add server progress",
+  "@addServerStepsLabel": {
+    "description": "Add server: what a screen reader calls the step bar."
+  },
+  "addServerStepKind": "What runs there",
+  "@addServerStepKind": {
+    "description": "Add server, step 1: choose what runs on the computer."
+  },
+  "addServerStepTailscale": "Tailscale on this phone",
+  "@addServerStepTailscale": {
+    "description": "Add server, Tailscale step: the app and the VPN on this phone."
+  },
+  "addServerStepPair": "Pair or enter the address",
+  "@addServerStepPair": {
+    "description": "Add server, connect step for OpenCode."
+  },
+  "addServerStepAddress": "Address and sign-in",
+  "@addServerStepAddress": {
+    "description": "Add server, connect step for Codex and Paseo."
+  },
+  "addServerStepCheck": "Checking",
+  "@addServerStepCheck": {
+    "description": "Add server: the step while the connection is checked."
+  },
+  "addServerStepReady": "Ready",
+  "@addServerStepReady": {
+    "description": "Add server: the last step, connected."
+  },
+  "addServerReadyTitle": "{name} is connected",
+  "@addServerReadyTitle": {
+    "description": "Add server, ready step: heading.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerReadyBody": "Its conversations open next. Start one, or pick up one already there.",
+  "@addServerReadyBody": {
+    "description": "Add server, ready step: what happens next."
+  },
+  "addServerReadyOpen": "Open {name}",
+  "@addServerReadyOpen": {
+    "description": "Add server, ready step: the primary; opens the server's conversations.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoffUiLinkAddTitle": "Add this server?",
+  "@handoffUiLinkAddTitle": {
+    "description": "Session link for a server this phone has not saved: sheet title."
+  },
+  "handoffUiLinkAddServer": "Add server",
+  "@handoffUiLinkAddServer": {
+    "description": "Session link sheet: opens Add server."
+  },
+  "failedJobReport": "Report this failure",
+  "@failedJobReport": {
+    "description": "P8.4: action on a failed job (setup step, AI Team start, failed team run, failed dev service) that opens Report a problem with the job's log attached"
+  },
+  "reportProblemJobLog": "Log of the failed job",
+  "@reportProblemJobLog": {
+    "description": "P8.4: title of the log panel on Report a problem when a failed job's log is attached"
+  },
+  "reportProblemJobLogNone": "No log was kept for this job, so none is attached.",
+  "@reportProblemJobLogNone": {
+    "description": "P8.4: Report a problem, a failed job is attached but no log could be kept for it"
   }
 }

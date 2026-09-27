@@ -214,57 +214,58 @@ void main() {
     expect(probed, hasLength(2));
   });
 
-  testWidgets('Codex waits for every required field, then tests once', (
-    tester,
-  ) async {
-    final calls = <(ServerBackend, String, String, String)>[];
-    socketAgentProbe =
-        ({
-          required backend,
-          required baseUrl,
-          required secret,
-          required directory,
-        }) async {
-          calls.add((backend, baseUrl, secret, directory));
-          return const CodexConnectionProbeResult(
-            ok: true,
-            message: 'Codex connection verified.',
-          );
-        };
-    final (store, controller) = await _state();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(store, controller));
-    await openFirstRunConnect(tester, agent: 'codex');
+  testWidgets(
+    'Codex waits for every required field, then tests once',
+    (tester) async {
+      final calls = <(ServerBackend, String, String, String)>[];
+      socketAgentProbe =
+          ({
+            required backend,
+            required baseUrl,
+            required secret,
+            required directory,
+          }) async {
+            calls.add((backend, baseUrl, secret, directory));
+            return const CodexConnectionProbeResult(
+              ok: true,
+              message: 'Codex connection verified.',
+            );
+          };
+      final (store, controller) = await _state();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(store, controller));
+      await openFirstRunConnect(tester, agent: 'codex');
 
-    await tester.enterText(
-      find.byKey(const ValueKey('codex-server-address-field')),
-      'ws://127.0.0.1:4141',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('codex-project-directory-field')),
-      '/work/project',
-    );
-    // No token yet: the address alone is not a testable connection.
-    await tester.pump(const Duration(seconds: 3));
-    expect(calls, isEmpty);
-
-    await tester.enterText(
-      find.byKey(const ValueKey('codex-connection-token-field')),
-      'synthetic-token',
-    );
-    await tester.pump(autoTestPause + const Duration(milliseconds: 50));
-    await tester.pump();
-    expect(calls, [
-      (
-        ServerBackend.codex,
+      await tester.enterText(
+        find.byKey(const ValueKey('codex-server-address-field')),
         'ws://127.0.0.1:4141',
-        'synthetic-token',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('codex-project-directory-field')),
         '/work/project',
-      ),
-    ]);
-    expect(find.byKey(const ValueKey('codex-test-success')), findsOneWidget);
-    expect(probed, isEmpty);
-  });
+      );
+      // No token yet: the address alone is not a testable connection.
+      await tester.pump(const Duration(seconds: 3));
+      expect(calls, isEmpty);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('codex-connection-token-field')),
+        'synthetic-token',
+      );
+      await tester.pump(autoTestPause + const Duration(milliseconds: 50));
+      await tester.pump();
+      expect(calls, [
+        (
+          ServerBackend.codex,
+          'ws://127.0.0.1:4141',
+          'synthetic-token',
+          '/work/project',
+        ),
+      ]);
+      expect(find.byKey(const ValueKey('codex-test-success')), findsOneWidget);
+      expect(probed, isEmpty);
+    },
+  );
 
   testWidgets('editing a saved server never tests by itself', (tester) async {
     final (store, controller) = await _state(
@@ -295,8 +296,8 @@ void main() {
     expect(probed, isEmpty);
     expect(find.byKey(const ValueKey('server-probe-verdict')), findsNothing);
 
-    // Neither does "Add server" beside saved servers: only the first-run
-    // path is sequenced.
+    // "Add server" beside saved servers is the same flow as the first-run
+    // path (P3.9), so its connect step does test after the pause.
     await tester.tap(find.byKey(const ValueKey('server-editor-close')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Discard'));
@@ -306,7 +307,7 @@ void main() {
     await openServerManualAddress(tester);
     await tester.enterText(find.byKey(_url), 'https://another.example');
     await tester.pump(const Duration(seconds: 5));
-    expect(probed, isEmpty);
+    expect(probed, hasLength(1));
   });
 
   testWidgets('leaving the screen cancels the queued test', (tester) async {
