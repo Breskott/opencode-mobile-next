@@ -17129,11 +17129,11 @@
   "@settingsHubSearchVoiceAliases": {
     "description": "Search aliases for the Voice row; preserve English terms."
   },
-  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
+  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
   "@settingsHubSearchNotificationsAliases": {
     "description": "Search aliases for the Notifications row; preserve English terms."
   },
-  "settingsHubSearchAppearanceAliases": "appearance theme dark light language arabic english font text size colors",
+  "settingsHubSearchAppearanceAliases": "appearance theme dark light language arabic english colors",
   "@settingsHubSearchAppearanceAliases": {
     "description": "Search aliases for the Appearance row; preserve English terms."
   },
@@ -17328,7 +17328,7 @@
   },
   "discoverNotifyWhatAliases": "finished runs approvals questions check-ins check in quota alerts what notifies",
   "discoverNotifyQuietAliases": "quiet hours do not disturb night silence mute schedule",
-  "discoverNotifyBackgroundAliases": "background connection stay connected battery keep alive service",
+  "discoverNotifyBackgroundAliases": "background connection stay connected keep alive service",
   "discoverNotifyServersAliases": "monitor saved servers attention wi-fi wifi check in the background",
   "discoverAppearanceModeAliases": "light dark mode system appearance night",
   "discoverLanguageAliases": "language arabic english locale translation rtl",

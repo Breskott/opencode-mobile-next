@@ -49,6 +49,7 @@
 /// | [KitPageRoute] | §10 a pushed page with the kit's one transition |
 /// | [KitSwap], [KitSpin], [KitAnimatedBox], [KitDim], [KitAnimatedValue], [KitPace] | §10 the small motion parts: cross-fade, spin, surface change, dim, eased number |
 /// | [KitFindMark] | chat-2 the find-in-conversation mark: an accent wash behind a hit (passive .18, active .38, as [KitCodeBlock] marks), never a text colour |
+/// | [KitArrival], [KitArrivalScope] | P9.4 a search result's arrival: the page opened for one row scrolls to it, focuses it and washes it once |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -138,6 +139,7 @@ export 'kit_breadcrumb.dart';
 export 'kit_choice_list.dart';
 export 'kit_details_fold.dart';
 export 'kit_field.dart';
+export 'kit_arrival.dart';
 export 'kit_jump_pill.dart';
 export 'kit_nav.dart';
 export 'kit_needs_you.dart';

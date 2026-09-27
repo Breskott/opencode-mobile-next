@@ -157,68 +157,75 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
                 bottom: KitScreen.endPadding(context),
               ),
               children: [
-                rails(
-                  KitText(
-                    l10n.keepRunningIntro(KitBidi.auto(makerName)),
-                    key: const ValueKey('keep-running-intro'),
-                  ),
-                ),
-                if (allSet) ...[
-                  SizedBox(height: tokens.space3),
-                  rails(
-                    KitNotice(
-                      key: const ValueKey('keep-running-done'),
-                      tone: AppStatusTone.ok,
-                      icon: AppIconography.checkCircle,
-                      title: l10n.keepRunningAllSetTitle,
-                      message: l10n.keepRunningAllSetBody,
-                      liveRegion: false,
-                    ),
-                  ),
-                ],
-                if (maker.closesOnSwipe) ...[
-                  SizedBox(height: tokens.space3),
-                  rails(
-                    KitNotice(
-                      key: const ValueKey('keep-running-swipe'),
-                      icon: AppIconography.warning,
-                      message: l10n.keepRunningSwipeWarning,
-                      liveRegion: false,
-                    ),
-                  ),
-                ],
-                SizedBox(height: tokens.space4),
-                KitRowGroup(
+                // Not a lazy list: a search result that means one row (the
+                // battery step, the heat pause) must find it laid out.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final step in ordered)
-                      _stepRow(context, l10n, step, maker, done(step)),
-                  ],
-                ),
-                if (_openFailed) ...[
-                  SizedBox(height: tokens.space3),
-                  rails(
-                    KitNotice(
-                      key: const ValueKey('keep-running-open-failed'),
-                      icon: AppIconography.info,
-                      message: l10n.keepRunningOpenFailed,
+                    rails(
+                      KitText(
+                        l10n.keepRunningIntro(KitBidi.auto(makerName)),
+                        key: const ValueKey('keep-running-intro'),
+                      ),
                     ),
-                  ),
-                ],
-                _ThermalGuardGroup(l10n: l10n),
-                SizedBox(height: tokens.sectionGap),
-                rails(
-                  KitText(
-                    l10n.keepRunningDailyLimit,
-                    key: const ValueKey('keep-running-daily-limit'),
-                    role: KitTextRole.secondary,
-                  ),
-                ),
-                SizedBox(height: tokens.space2),
-                rails(
-                  KitText(
-                    l10n.keepRunningFootnote,
-                    role: KitTextRole.secondary,
-                  ),
+                    if (allSet) ...[
+                      SizedBox(height: tokens.space3),
+                      rails(
+                        KitNotice(
+                          key: const ValueKey('keep-running-done'),
+                          tone: AppStatusTone.ok,
+                          icon: AppIconography.checkCircle,
+                          title: l10n.keepRunningAllSetTitle,
+                          message: l10n.keepRunningAllSetBody,
+                          liveRegion: false,
+                        ),
+                      ),
+                    ],
+                    if (maker.closesOnSwipe) ...[
+                      SizedBox(height: tokens.space3),
+                      rails(
+                        KitNotice(
+                          key: const ValueKey('keep-running-swipe'),
+                          icon: AppIconography.warning,
+                          message: l10n.keepRunningSwipeWarning,
+                          liveRegion: false,
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: tokens.space4),
+                    KitRowGroup(
+                      children: [
+                        for (final step in ordered)
+                          _stepRow(context, l10n, step, maker, done(step)),
+                      ],
+                    ),
+                    if (_openFailed) ...[
+                      SizedBox(height: tokens.space3),
+                      rails(
+                        KitNotice(
+                          key: const ValueKey('keep-running-open-failed'),
+                          icon: AppIconography.info,
+                          message: l10n.keepRunningOpenFailed,
+                        ),
+                      ),
+                    ],
+                    _ThermalGuardGroup(l10n: l10n),
+                    SizedBox(height: tokens.sectionGap),
+                    rails(
+                      KitText(
+                        l10n.keepRunningDailyLimit,
+                        key: const ValueKey('keep-running-daily-limit'),
+                        role: KitTextRole.secondary,
+                      ),
+                    ),
+                    SizedBox(height: tokens.space2),
+                    rails(
+                      KitText(
+                        l10n.keepRunningFootnote,
+                        role: KitTextRole.secondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -245,26 +252,32 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     };
     final setting = step.setting;
     final opens = setting != null && !allowed;
-    return KitRow(
-      key: ValueKey('keep-running-${step.kind.name}'),
-      leading: KitRow.icon(
-        context,
-        allowed ? AppIconography.check : icon,
-        color: allowed ? roles.success : null,
+    // A search result for this step arrives here (KitArrival).
+    return KitArrival(
+      id: 'keep-running-${step.kind.name}',
+      child: KitRow(
+        key: ValueKey('keep-running-${step.kind.name}'),
+        leading: KitRow.icon(
+          context,
+          allowed ? AppIconography.check : icon,
+          color: allowed ? roles.success : null,
+        ),
+        title: text.title,
+        titleMaxLines: 2,
+        supporting: TextSpan(
+          text: text.detail,
+          style: allowed
+              ? KitTokens.of(
+                  context,
+                ).rowSupporting.copyWith(color: roles.success)
+              : null,
+        ),
+        supportingMaxLines: 4,
+        // The row opens Android's own screen for this step; the value says
+        // so, since the chevron alone would promise a page in this app.
+        trailing: opens ? KitRowValue(l10n.keepRunningOpen) : null,
+        onTap: opens ? () => unawaited(_open(setting)) : null,
       ),
-      title: text.title,
-      titleMaxLines: 2,
-      supporting: TextSpan(
-        text: text.detail,
-        style: allowed
-            ? KitTokens.of(context).rowSupporting.copyWith(color: roles.success)
-            : null,
-      ),
-      supportingMaxLines: 4,
-      // The row opens Android's own screen for this step; the value says
-      // so, since the chevron alone would promise a page in this app.
-      trailing: opens ? KitRowValue(l10n.keepRunningOpen) : null,
-      onTap: opens ? () => unawaited(_open(setting)) : null,
     );
   }
 }
@@ -290,14 +303,17 @@ class _ThermalGuardGroup extends ConsumerWidget {
             listenable: guard,
             builder: (context, _) => KitRowGroup(
               children: [
-                KitSwitchRow(
-                  key: const ValueKey('keep-running-thermal'),
-                  switchKey: const ValueKey('keep-running-thermal-switch'),
-                  leading: KitRow.icon(context, AppIconography.pause),
-                  title: l10n.thermalGuardSetting,
-                  supporting: l10n.thermalGuardSettingDetail,
-                  value: guard.enabled,
-                  onChanged: (value) => unawaited(guard.setEnabled(value)),
+                KitArrival(
+                  id: 'keep-running-thermal',
+                  child: KitSwitchRow(
+                    key: const ValueKey('keep-running-thermal'),
+                    switchKey: const ValueKey('keep-running-thermal-switch'),
+                    leading: KitRow.icon(context, AppIconography.pause),
+                    title: l10n.thermalGuardSetting,
+                    supporting: l10n.thermalGuardSettingDetail,
+                    value: guard.enabled,
+                    onChanged: (value) => unawaited(guard.setEnabled(value)),
+                  ),
                 ),
               ],
             ),

@@ -328,6 +328,8 @@ void main() {
       expect(matchCommands(commands, 'theme').single.label, 'Appearance');
       expect(matchCommands(commands, 'logs').single.label, 'Diagnostics');
       expect(matchCommands(commands, 'zzz'), isEmpty);
+      // The shared settings matcher (P9.4): one typo still finds it.
+      expect(matchCommands(commands, 'diagnotics').single.label, 'Diagnostics');
     });
 
     Future<List<String>> openPalette(WidgetTester tester) async {
