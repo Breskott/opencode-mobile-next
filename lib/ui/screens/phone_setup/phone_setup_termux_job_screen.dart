@@ -11,6 +11,8 @@ import '../../../termux/bridge.dart';
 import '../../app_iconography.dart';
 import '../../kit/kit.dart';
 import '../../widgets/external_link.dart';
+import '../../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../../widgets/setup_progress_view.dart';
 import '../servers_screen.dart' show ServersRouteRequest;
 import 'phone_setup_routes.dart';
@@ -110,6 +112,10 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
   /// Why the gate is where it is, when Termux said something ("Android
   /// denied…", "Termux did not answer…").
   String? _gateError;
+
+  /// The technical text behind [_gateError], redacted, for the Details
+  /// fold only (never the words).
+  String? _gateDetails;
   bool _busy = false;
   bool _checking = false;
 
@@ -193,10 +199,12 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     setState(() {
       _gate = _Gate.checking;
       _gateError = null;
+      _gateDetails = null;
     });
     final l10n = _l10n;
     var gate = _Gate.ready;
     String? error;
+    String? details;
     try {
       final capabilities = await TermuxBridge.capabilities();
       if (!capabilities.installed) {
@@ -214,21 +222,25 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
           gate = _Gate.needAllow;
           error = failure.code == 'command_timeout'
               ? l10n.e7SetupTermuxNoAnswer
-              : failure.message;
+              : productErrorText(failure, l10n: l10n);
+          details = productErrorDetails(failure);
         }
       }
     } on PlatformException catch (failure) {
       gate = _Gate.outdated;
-      error = failure.message ?? l10n.e7SetupInspectTermuxFailed;
+      error = l10n.e7SetupInspectTermuxFailed;
+      details = productErrorDetails(failure);
     } catch (failure) {
       gate = _Gate.outdated;
-      error = '$failure';
+      error = productErrorText(failure, l10n: l10n);
+      details = productErrorDetails(failure);
     }
     _checking = false;
     if (!mounted) return;
     setState(() {
       _gate = gate;
       _gateError = error;
+      _gateDetails = details;
     });
     if (gate == _Gate.ready) await _startIfNew();
   }
@@ -335,8 +347,10 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     setState(() {
       _busy = true;
       _gateError = null;
+      _gateDetails = null;
     });
     String? error;
+    String? details;
     try {
       if (!await TermuxBridge.requestPermission()) {
         error = l10n.termuxPermissionDenied;
@@ -351,12 +365,14 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
       }
     } on PlatformException catch (failure) {
       _openedTermux = false;
-      error = failure.message ?? l10n.termuxGuideCopyOpenFailed;
+      error = l10n.termuxGuideCopyOpenFailed;
+      details = productErrorDetails(failure);
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _gateError = error;
+      _gateDetails = details;
     });
   }
 
@@ -516,6 +532,8 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
         _ => termuxGetRowId,
       },
       error: _gate == _Gate.outdated ? _gateError : null,
+      // What the words leave out, under the view's Details fold.
+      logTail: _gateDetails ?? '',
       jobId: 'termux-gate',
       firstSetup: widget.firstSetup,
       adding: widget.adding.toList(),

@@ -14,8 +14,10 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/termux/processes.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 
 import 'revamp/screen_phone_1_fixtures.dart';
@@ -77,6 +79,7 @@ void main() {
   Future<TermuxChannelFixture> termux(
     WidgetTester tester, {
     String version = '1.18.29',
+    Future<TermuxProcessReport> Function()? scan,
   }) async {
     final channel = TermuxChannelFixture()
       ..inventoryOutput =
@@ -85,7 +88,7 @@ void main() {
     channel.install();
     await pumpPhone(
       tester,
-      home: const ThisPhoneScreen(kind: PhoneHostKind.termux),
+      home: ThisPhoneScreen(kind: PhoneHostKind.termux, scanProcesses: scan),
       profiles: [_termuxProfile],
     );
     await _settle(tester);
@@ -140,7 +143,7 @@ void main() {
   testWidgets('in Termux: the same page, with Termux\'s own rows', (
     tester,
   ) async {
-    await termux(tester);
+    await termux(tester, scan: () async => const TermuxProcessReport([]));
     expect(find.text(_l10n.phoneServerCardTitle), findsOneWidget);
     expect(text(tester, 'this-phone-state'), _l10n.phoneServerCardRunning);
     expect(
@@ -161,6 +164,46 @@ void main() {
     );
     expect(find.byKey(const ValueKey('this-phone-terminal')), findsNothing);
     expect(find.byKey(const ValueKey('this-phone-remove')), findsNothing);
+    await unmountPhone(tester);
+  });
+
+  testWidgets('Running on this phone: its line is the budget; a list that '
+      'cannot be read leaves no dead row and no stray line', (tester) async {
+    final listing = TermuxProcessReport([
+      for (var pid = 100; pid < 118; pid++)
+        TermuxProcess.fromJson({'pid': pid, 'name': 'p$pid', 'rss_kb': 1024})!,
+    ]);
+    await termux(tester, scan: () async => listing);
+    final row = find.byKey(const ValueKey('termux-procs-row'));
+    await tester.scrollUntilVisible(
+      row,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Running on this phone'), findsOneWidget);
+    expect(find.text('18 of 32 background processes'), findsOneWidget);
+    expect(find.text('Not available right now'), findsNothing);
+    await unmountPhone(tester);
+
+    await termux(
+      tester,
+      scan: () async =>
+          throw const TermuxBridgeException('no tools', code: 'tools_missing'),
+    );
+    final list = find.byKey(const ValueKey('this-phone-list'));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('termux-storage-row')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const ValueKey('termux-procs-row')), findsNothing);
+    expect(find.text('Not available right now'), findsNothing);
+    // One hairline between each pair of rows, none for the missing one.
+    final group = tester.widget<KitRowGroup>(list);
+    expect(
+      find.descendant(of: list, matching: find.byType(KitDivider)),
+      findsNWidgets(group.children.length - 1),
+    );
     await unmountPhone(tester);
   });
 
@@ -267,7 +310,7 @@ void main() {
   testWidgets('Update is not offered when the pinned version is installed', (
     tester,
   ) async {
-    await termux(tester);
+    await termux(tester, version: TermuxRuntime.openCode1.pinnedVersion);
     expect(find.byKey(const ValueKey('this-phone-update')), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 2));

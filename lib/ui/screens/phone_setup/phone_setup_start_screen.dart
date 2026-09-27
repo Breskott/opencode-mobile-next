@@ -335,12 +335,15 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
         if (failure == null) {
           await connection.connect(profile);
           if (!connection.hasConnectedServer) {
-            failure = connection.lastError ?? l10n.builtinServerStopped;
+            final error = connection.lastError;
+            failure = error == null
+                ? l10n.builtinServerStopped
+                : productErrorText(error, l10n: l10n);
           }
         }
       }
     } catch (error) {
-      failure = productErrorText(error);
+      failure = productErrorText(error, l10n: l10n);
     }
     if (!mounted) return;
     setState(() {
