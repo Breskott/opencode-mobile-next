@@ -24,9 +24,7 @@ import '../kit/kit.dart';
 import '../kit/scenes/servers_link_scene.dart';
 import '../kit/scenes/servers_welcome_scene.dart';
 import '../setup_commands.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/first_run_choice.dart';
-import '../widgets/product_states.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
@@ -37,7 +35,6 @@ import 'agent_choice_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_welcome_entry.dart';
 import 'demo_screen.dart';
-import 'guide_screen.dart' show Cmd;
 import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
 import 'pairing_scanner_screen.dart';
@@ -221,16 +218,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
   }
 
+  /// A removal that did not finish, said where the list is: the same inline
+  /// notice a failed connect uses, never a snackbar (KIT-34, STATE-3).
   void _showFailure(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+    setState(() => _listFailure = message);
   }
 
   Future<void> _openTermuxSetup() async {
@@ -442,7 +434,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     // the connect) has succeeded, so any failure is shown where the fields
     // that fix it are — not as a snackbar over a list the user just left.
     final result = await Navigator.of(context).push<ServerProfile>(
-      MaterialPageRoute<ServerProfile>(
+      KitPageRoute<ServerProfile>(
         builder: (_) => _ProfileEditorScreen(
           existing: existing,
           reconnectOnSave:
@@ -477,8 +469,8 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// so Back returns to the question rather than to the welcome.
   Future<void> _computerPath() {
     final navigator = Navigator.of(context);
-    late final MaterialPageRoute<void> question;
-    question = MaterialPageRoute<void>(
+    late final KitPageRoute<void> question;
+    question = KitPageRoute<void>(
       builder: (_) => AgentChoiceScreen(
         onChoose: (backend) async {
           final saved = await _edit(presetBackend: backend);
@@ -494,8 +486,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 
   Future<void> _tailscale() async {
-    final url = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const TailscaleSetupScreen()),
+    final url = await pushKitPage<String>(
+      context,
+      (_) => const TailscaleSetupScreen(),
     );
     if (!mounted || url == null) return;
     await _edit(tailscale: true, initialUrl: url);
@@ -552,28 +545,61 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
   }
 
-  /// Names what removal actually deletes. Queued prompts and drafts are the
-  /// only unsent work at stake, so they are counted rather than described in
-  /// the abstract; the rest is settings the user cannot inspect anyway.
-  String _deletionDisclosure(ConnectionController connection, String id) {
+  /// Names what removal actually deletes, as counted facts (DATA-11: a
+  /// removal nobody can restore is confirmed first). Queued prompts and
+  /// drafts are the only unsent work at stake, so they are counted; the
+  /// server itself keeps everything; and removing the server in use says
+  /// what the person sees next.
+  List<KitConsequence> _removalConsequences(
+    AppLocalizations copy,
+    ConnectionController connection,
+    String id, {
+    required bool active,
+  }) {
     final queued = connection.queuedPromptCountForProfile(id);
     final drafts = connection.draftCountForProfile(id);
-    return lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7SetupDeleteDisclosure(queued, drafts);
+    return [
+      if (queued > 0)
+        KitConsequence(
+          copy.serversRemoveQueued(queued),
+          mark: KitConsequenceMark.lost,
+        ),
+      if (drafts > 0)
+        KitConsequence(
+          copy.serversRemoveDrafts(drafts),
+          mark: KitConsequenceMark.lost,
+        ),
+      if (active)
+        KitConsequence(
+          copy.serversRemoveActiveNext,
+          key: const ValueKey('remove-server-active-next'),
+        ),
+      KitConsequence(
+        copy.serversRemoveServerKeeps,
+        mark: KitConsequenceMark.kept,
+      ),
+    ];
   }
 
   Future<void> _delete(ServerProfile p) async {
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final connection = ref.read(connProvider);
-    final disclosure = _deletionDisclosure(connection, p.id);
-    final ok = await showConfirmSheet(
+    final active =
+        ref.read(bootstrapProvider).store.activeId == p.id &&
+        connection.api != null;
+    final ok = await showKitConfirm(
       context,
+      kind: KitConfirmKind.destructive,
       title: copy.e7SetupRemoveServer(p.name),
-      message: disclosure,
+      body: copy.serversRemoveBody,
       confirmLabel: copy.capsuleRemove,
       icon: AppIconography.delete,
-      destructive: true,
+      consequenceItems: _removalConsequences(
+        copy,
+        connection,
+        p.id,
+        active: active,
+      ),
       sheetKey: ValueKey('remove-server-sheet-${p.id}'),
       confirmKey: ValueKey('confirm-remove-server-${p.id}'),
     );
@@ -581,7 +607,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final store = ref.read(bootstrapProvider).store;
     final wasActive = store.activeId == p.id;
     var removed = false;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _listFailure = null;
+    });
     try {
       // The cascade verifies every store it writes and reports what refused.
       // A partial deletion is stated, never rounded up to the silent success
@@ -616,291 +645,299 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       bootstrap.store.secure,
     );
     try {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (_) => ExternalAgentsScreen(store: store)),
+      await pushKitPage<void>(
+        context,
+        (_) => ExternalAgentsScreen(store: store),
       );
     } finally {
       store.dispose();
     }
   }
 
-  void _demo() => Navigator.of(
-    context,
-  ).push<void>(MaterialPageRoute<void>(builder: (_) => const DemoScreen()));
+  void _demo() =>
+      unawaited(pushKitPage<void>(context, (_) => const DemoScreen()));
 
   @override
   Widget build(BuildContext context) {
     final bootstrap = ref.watch(bootstrapProvider);
     final accountConnection = ref.watch(connProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AppBrandMark(size: 28),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                _connectionL10n(context).openCodeConnectionLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (bootstrap.store.profiles.isNotEmpty)
-            IconButton(
-              tooltip: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).attentionTitle,
-              icon: const Icon(AppIconography.activity),
-              onPressed: _busy
-                  ? null
-                  : () async {
-                      final controller = ref.read(connProvider);
-                      final chosen = await Navigator.of(context).push<String>(
-                        MaterialPageRoute(
-                          builder: (sheetContext) => AttentionOverviewScreen(
-                            controller: controller,
-                            onOpenProfile: (id) =>
-                                Navigator.of(sheetContext).pop(id),
-                          ),
-                        ),
-                      );
-                      if (!mounted ||
-                          chosen == null ||
-                          !controller.isProfileReadable(chosen)) {
-                        return;
-                      }
-                      final matches = bootstrap.store.profiles
-                          .where((profile) => profile.id == chosen)
-                          .toList();
-                      if (matches.length != 1) return;
-                      await _connect(matches.single);
-                    },
-            ),
-          IconButton(
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupAboutNotices,
-            icon: const Icon(AppIconography.info),
-            onPressed: () => Navigator.pushNamed(context, '/about'),
+    final store = bootstrap.store;
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final hasServers = store.profiles.isNotEmpty;
+    // A root page (§1.18): the product mark and name, and the page's few
+    // actions — the attention overview and the guide once there are servers
+    // to manage (first run asks one question; the guide is reference
+    // material, UX plan 5.4), and About always.
+    final topBar = KitTopBar(
+      title: copy.openCodeConnectionLabel,
+      brand: true,
+      actions: [
+        if (hasServers)
+          KitAction(
+            key: const ValueKey('servers-attention'),
+            label: copy.attentionTitle,
+            icon: AppIconography.activity,
+            onPressed: _busy ? null : _openAttention,
           ),
-          // First run asks one question; the guide is reference material and
-          // lives in Settings → Help (UX plan 5.4). It stays here once there
-          // are servers to manage.
-          if (bootstrap.store.profiles.isNotEmpty)
-            IconButton(
-              tooltip: _connectionL10n(context).onboardingSetupGuide,
-              icon: const Icon(AppIconography.question),
-              onPressed: () => Navigator.pushNamed(context, '/guide'),
-            ),
+        KitAction(
+          key: const ValueKey('servers-about'),
+          label: copy.e7SetupAboutNotices,
+          icon: AppIconography.info,
+          onPressed: () => Navigator.pushNamed(context, '/about'),
+        ),
+        if (hasServers)
+          KitAction(
+            key: const ValueKey('servers-guide'),
+            label: copy.onboardingSetupGuide,
+            icon: AppIconography.question,
+            onPressed: () => Navigator.pushNamed(context, '/guide'),
+          ),
+      ],
+    );
+    if (!hasServers) {
+      return KitScreen(
+        topBar: topBar,
+        width: KitScreenWidth.reading,
+        body: _WelcomeView(
+          busy: _busy,
+          runningServer: _runningServerEntry(store.profiles, accountConnection),
+          phoneSetup: PhoneSetupWelcomeEntry(revision: _termuxRevision),
+          onComputer: _computerPath,
+          onPhone: _openPhoneSetup,
+          onDemo: _demo,
+        ),
+      );
+    }
+    final activeId = store.activeId;
+    final phoneServer = phoneServerProfile(store.profiles, activeId);
+    final needsCredential = store.profiles.any(
+      (profile) =>
+          profile.id == activeId &&
+          (profile.usesAgentSocket
+              ? profile.requiresCodexTokenReentry
+              : profile.requiresPasswordReentry),
+    );
+    final needsToken = store.profiles.any(
+      (profile) =>
+          profile.id == activeId &&
+          profile.usesAgentSocket &&
+          profile.requiresCodexTokenReentry,
+    );
+    final saved = [
+      for (final p in store.profiles)
+        if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p)) p,
+    ];
+    final tokens = KitTokens.of(context);
+    return KitScreen(
+      topBar: topBar,
+      width: KitScreenWidth.list,
+      // One bar for a connect, save or removal in flight (standard §4).
+      loading: _busy,
+      loadingLabel: copy.e7SetupServerOperation,
+      // Adding a server is what this screen offers beyond its rows:
+      // the one primary, pinned below the list (§1, §2).
+      bottom: KitActionBlock(
+        primary: KitAction(
+          key: const ValueKey('servers-add'),
+          label: copy.e7SetupAddServer,
+          icon: AppIconography.add,
+          onPressed: _busy ? null : () => _edit(),
+        ),
+        tertiary: [
+          KitAction(
+            key: const ValueKey('servers-try-demo'),
+            label: DemoCopy.tryDemo,
+            icon: AppIconography.playCircle,
+            onPressed: _busy ? null : _demo,
+          ),
         ],
       ),
-      body: Builder(
-        builder: (context) {
-          final store = bootstrap.store;
-          if (store.profiles.isEmpty) {
-            return _WelcomeView(
-              busy: _busy,
-              runningServer: _runningServerEntry(
-                store.profiles,
-                accountConnection,
-              ),
-              phoneSetup: PhoneSetupWelcomeEntry(revision: _termuxRevision),
-              onComputer: _computerPath,
-              onPhone: _openPhoneSetup,
-              onDemo: _demo,
-            );
-          }
-          final activeId = store.activeId;
-          final phoneServer = phoneServerProfile(store.profiles, activeId);
-          final needsCredential = store.profiles.any(
-            (profile) =>
-                profile.id == activeId &&
-                (profile.usesAgentSocket
-                    ? profile.requiresCodexTokenReentry
-                    : profile.requiresPasswordReentry),
-          );
-          final needsToken = store.profiles.any(
-            (profile) =>
-                profile.id == activeId &&
-                profile.usesAgentSocket &&
-                profile.requiresCodexTokenReentry,
-          );
-          final copy = lookupAppLocalizations(Localizations.localeOf(context));
-          return KitScreen(
-            // One bar for a connect, save or removal in flight (standard §4).
-            loading: _busy,
-            loadingLabel: copy.e7SetupServerOperation,
-            // Adding a server is what this screen offers beyond its rows:
-            // the one primary, pinned below the list (§1, §2).
-            bottom: KitActionBlock(
-              primary: KitAction(
-                key: const ValueKey('servers-add'),
-                label: copy.e7SetupAddServer,
-                icon: AppIconography.add,
-                onPressed: _busy ? null : () => _edit(),
-              ),
-              tertiary: [
-                KitAction(
-                  key: const ValueKey('servers-try-demo'),
-                  label: DemoCopy.tryDemo,
-                  icon: AppIconography.playCircle,
-                  onPressed: _busy ? null : _demo,
+      body: ListView(
+        padding: EdgeInsetsDirectional.only(
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          if (needsCredential)
+            _Rails(
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                excludeSemantics: true,
+                label: needsToken
+                    ? copy.e7SetupTokenBanner
+                    : copy.e7SetupPasswordBanner,
+                child: KitNotice(
+                  key: const Key('password-reentry-banner'),
+                  tone: AppStatusTone.neutral,
+                  icon: AppIconography.locked,
+                  message: copy.connectionCredentialUnavailable,
+                  liveRegion: false,
                 ),
-              ],
+              ),
             ),
-            body: ListView(
-              padding: const EdgeInsets.only(bottom: 16),
-              children: [
-                SectionLabel(copy.e7SetupServers),
-                if (needsCredential)
-                  _Rails(
-                    child: Semantics(
-                      container: true,
-                      liveRegion: true,
-                      excludeSemantics: true,
-                      label: needsToken
-                          ? copy.e7SetupTokenBanner
-                          : copy.e7SetupPasswordBanner,
-                      child: KitNotice(
-                        key: const Key('password-reentry-banner'),
-                        tone: AppStatusTone.attention,
-                        icon: Icons.lock_reset_rounded,
-                        message: _connectionL10n(
-                          context,
-                        ).connectionCredentialUnavailable,
-                        liveRegion: false,
-                      ),
-                    ),
-                  ),
-                // A connect that failed unfolds over the rows and folds
-                // away when dismissed or retried (design standard §10).
-                KitReveal(
-                  key: const ValueKey('server-connect-failure-slot'),
-                  child: switch (_listFailure) {
-                    final failure? => _Rails(
-                      child: KitNotice(
-                        key: const ValueKey('server-connect-failure'),
-                        tone: AppStatusTone.failure,
-                        message: failure,
-                        onDismiss: () => setState(() => _listFailure = null),
-                      ),
-                    ),
-                    null => null,
-                  },
+          // A connect or a removal that failed unfolds over the rows and
+          // folds away when dismissed or retried (design standard §10).
+          KitReveal(
+            key: const ValueKey('server-connect-failure-slot'),
+            child: switch (_listFailure) {
+              final failure? => _Rails(
+                child: KitNotice(
+                  key: const ValueKey('server-connect-failure'),
+                  tone: AppStatusTone.failure,
+                  message: failure,
+                  onDismiss: () => setState(() => _listFailure = null),
                 ),
-                // The phone's own servers lead the list, one row each; the
-                // saved sign-ins they stand for are not listed again below.
-                _runningServerEntry(store.profiles, accountConnection),
-                // OpenCode inside this app is "This phone", managed in place;
-                // its saved entries are how the app reaches it, so they are
-                // not listed again below.
-                if (phoneServer != null) ...[
-                  _Rails(
-                    child: PhoneServerCard(
-                      key: ValueKey('phone-server-card-${phoneServer.id}'),
-                      connection: accountConnection,
-                      profile: phoneServer,
-                      connected:
-                          accountConnection.api != null &&
-                          accountConnection.profile?.id == phoneServer.id,
-                      onOpen: _busy ? null : () => _connect(phoneServer),
-                      onRemoved: () {
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                  ),
-                  const Divider(height: 17),
-                ],
-                // A server added or forgotten while the list is open
-                // unfolds in or folds away where it was (design standard
-                // §10); the list's first paint shows the rows at once.
+              ),
+              null => null,
+            },
+          ),
+          // The phone's own servers lead the list, one row each; the
+          // saved sign-ins they stand for are not listed again below.
+          _runningServerEntry(store.profiles, accountConnection),
+          // OpenCode inside this app is "This phone", managed in place;
+          // its saved entries are how the app reaches it, so they are
+          // not listed again below.
+          if (phoneServer != null)
+            _Rails(
+              child: PhoneServerCard(
+                key: ValueKey('phone-server-card-${phoneServer.id}'),
+                connection: accountConnection,
+                profile: phoneServer,
+                connected:
+                    accountConnection.api != null &&
+                    accountConnection.profile?.id == phoneServer.id,
+                onOpen: _busy ? null : () => _connect(phoneServer),
+                onRemoved: () {
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
+          // The saved servers, one panel of rows (VL §5). A server added
+          // or forgotten while the list is open unfolds in or folds away
+          // where it was (design standard §10); the first paint shows the
+          // rows at once.
+          if (saved.isNotEmpty) ...[
+            SizedBox(height: tokens.space4),
+            KitRowGroup(
+              label: copy.e7SetupServers,
+              children: [
                 KitAnimatedRows(
                   key: const ValueKey('saved-server-rows'),
                   children: [
-                    for (final p in store.profiles)
-                      if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p))
-                        _ServerRow(
-                          key: ValueKey('saved-server-${p.id}'),
-                          profile: p,
-                          connected:
-                              accountConnection.api != null &&
-                              accountConnection.profile?.id == p.id,
-                          busy: _busy,
-                          showAccount:
-                              p.id == activeId &&
-                              accountConnection.isConnected &&
-                              accountConnection.capabilities.agentAccount,
-                          onConnect: () => _connect(p),
-                          onEdit: () => _edit(existing: p),
-                          onRemove: () => _delete(p),
-                          onAccount: () => Navigator.of(context).push<void>(
-                            MaterialPageRoute(
-                              builder: (_) => AgentAccountScreen(
-                                connection: accountConnection,
+                    for (final (i, p) in saved.indexed)
+                      KeyedSubtree(
+                        key: ValueKey('saved-server-${p.id}'),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (i > 0)
+                              const KitDivider(inset: KitDividerInset.text),
+                            _ServerRow(
+                              profile: p,
+                              connected:
+                                  accountConnection.api != null &&
+                                  accountConnection.profile?.id == p.id,
+                              busy: _busy,
+                              showAccount:
+                                  p.id == activeId &&
+                                  accountConnection.isConnected &&
+                                  accountConnection.capabilities.agentAccount,
+                              onConnect: () => _connect(p),
+                              onEdit: () => _edit(existing: p),
+                              onRemove: () => _delete(p),
+                              onAccount: () => pushKitPage<void>(
+                                context,
+                                (_) => AgentAccountScreen(
+                                  connection: accountConnection,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
+                      ),
                   ],
-                ),
-                // Other ways in, as rows (§6): the OpenCode 2 shortcut, this
-                // phone, and the rarer setups folded under one row. A
-                // hairline keeps them from reading as more servers.
-                const Divider(height: 17, indent: 16, endIndent: 16),
-                _OpenCode2Entry(
-                  onTap: _busy ? null : () => _edit(openCode2Intent: true),
-                ),
-                if (platformCapabilities.supportsTermux)
-                  _PhoneSetupEntry(
-                    key: const ValueKey('quick-add-phone-card'),
-                    onTap: _busy ? null : _openPhoneSetup,
-                  ),
-                _SetupOptions(
-                  busy: _busy,
-                  onTailscale: _tailscale,
-                  onGuide: () => Navigator.pushNamed(context, '/guide'),
-                  onExternalAgents: _externalAgents,
                 ),
               ],
             ),
-          );
-        },
+          ],
+          // Other ways in, as their own panel so they never read as more
+          // servers (§6): the OpenCode 2 shortcut, this phone, and the
+          // rarer setups folded under one row.
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            label: copy.serversOtherWays,
+            children: [
+              _OpenCode2Entry(
+                onTap: _busy ? null : () => _edit(openCode2Intent: true),
+              ),
+              if (platformCapabilities.supportsTermux)
+                _PhoneSetupEntry(
+                  key: const ValueKey('quick-add-phone-card'),
+                  onTap: _busy ? null : _openPhoneSetup,
+                ),
+              _SetupOptions(
+                busy: _busy,
+                onTailscale: _tailscale,
+                onGuide: () => Navigator.pushNamed(context, '/guide'),
+                onExternalAgents: _externalAgents,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+  /// The attention overview across saved servers; choosing one connects it.
+  Future<void> _openAttention() async {
+    final bootstrap = ref.read(bootstrapProvider);
+    final controller = ref.read(connProvider);
+    final chosen = await pushKitPage<String>(
+      context,
+      (pageContext) => AttentionOverviewScreen(
+        controller: controller,
+        onOpenProfile: (id) => Navigator.of(pageContext).pop(id),
+      ),
+    );
+    if (!mounted || chosen == null || !controller.isProfileReadable(chosen)) {
+      return;
+    }
+    final matches = bootstrap.store.profiles
+        .where((profile) => profile.id == chosen)
+        .toList();
+    if (matches.length != 1) return;
+    await _connect(matches.single);
+  }
 }
 
-/// A saved server the phone's own row stands for (the OpenCode server this
-/// app runs in Termux, or Claude Code on this phone): on a phone that can
-/// run them the list shows that row, not a second one named after the
-/// address it was saved with (docs/design/phone-server-screens-cleanup-
-/// 2026-09-24.md §1: one row per server).
-/// The page's 16 dp side rails for a part that does not pad itself (the
-/// kit's rows and section labels do).
+/// The page's side rails for a part that does not pad itself (the kit's
+/// rows and groups do), with a little air above and below.
 class _Rails extends StatelessWidget {
   const _Rails({required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    child: child,
-  );
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: tokens.gutter,
+        vertical: tokens.space1,
+      ),
+      child: child,
+    );
+  }
 }
 
 /// One saved server as a kit row (design standard §6): its kind as the
 /// icon, the name, then what it runs and its address, with a credential that
-/// must be re-entered said first, in the error colour. The server the app is
-/// connected to carries the current mark: a filled accent circle and
-/// "Connected" leading its line. Tapping connects; the rest is in the menu.
+/// must be re-entered said first. The server the app is connected to
+/// carries the current mark and "Connected" leading its line. Tapping
+/// connects; the rest is on long-press or right-click (KIT-28), destructive
+/// last.
 class _ServerRow extends StatelessWidget {
   const _ServerRow({
-    super.key,
     required this.profile,
     required this.connected,
     required this.busy,
@@ -922,10 +959,8 @@ class _ServerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final p = profile;
-    final error = theme.colorScheme.error;
     final kind = p.usesAgentSocket
         ? '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}'
         : p.backend == ServerBackend.openCode
@@ -936,52 +971,51 @@ class _ServerRow extends StatelessWidget {
         : p.requiresCodexTokenReentry
         ? copy.e7SetupTokenRequired
         : null;
-    return Semantics(
-      selected: connected,
-      child: KitRow(
-        key: ValueKey('server-row-${p.id}'),
-        leading: KitRowIcon(
-          isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
-              ? AppIconography.phone
-              : AppIconography.server,
-          current: connected,
-        ),
-        title: p.name,
-        supporting: TextSpan(
-          children: [
-            if (reentry != null)
-              TextSpan(
-                text: '$reentry · ',
-                style: TextStyle(color: error, fontWeight: FontWeight.w600),
-              ),
-            if (connected) kitCurrentSpan(context, copy.serverRowConnected),
-            if (kind != null) TextSpan(text: '$kind · '),
-            TextSpan(text: _shortAddress(p.baseUrl)),
-          ],
-        ),
-        supportingMaxLines: 2,
-        enabled: !busy,
-        onTap: onConnect,
-        trailing: KitRowMenu(
-          key: ValueKey('server-menu-${p.id}'),
-          enabled: !busy,
-          items: [
-            if (showAccount)
-              KitMenuItem(
-                label: _connectionL10n(context).agentAccountTitle,
-                onSelected: onAccount,
-              ),
-            KitMenuItem(label: copy.e7SetupConnect, onSelected: onConnect),
-            KitMenuItem(label: copy.e7SetupEdit, onSelected: onEdit),
-            // Destructive: error-coloured, confirmed by the sheet it opens.
-            KitMenuItem(
-              label: copy.capsuleRemove,
-              destructive: true,
-              onSelected: onRemove,
-            ),
-          ],
-        ),
+    return KitRow(
+      key: ValueKey('server-row-${p.id}'),
+      leading: KitRowIcon(
+        isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+            ? AppIconography.phone
+            : AppIconography.server,
+        current: connected,
       ),
+      title: p.name,
+      supporting: TextSpan(
+        children: [
+          // LOOK-5 interim: a credential to re-enter is said in words, in
+          // the strong label weight, never in the danger colour.
+          if (reentry != null)
+            TextSpan(
+              text: '$reentry · ',
+              style: KitText.styleOf(
+                context,
+                KitTextRole.label,
+                tone: KitTextTone.primary,
+              ),
+            ),
+          if (connected) kitCurrentSpan(context, copy.serverRowConnected),
+          if (kind != null) TextSpan(text: '$kind · '),
+          TextSpan(text: _shortAddress(p.baseUrl)),
+        ],
+      ),
+      supportingMaxLines: 2,
+      selected: connected,
+      enabled: !busy,
+      disabledReason: busy ? copy.e7SetupServerOperation : null,
+      onTap: onConnect,
+      menuLabel: p.name,
+      menu: [
+        if (showAccount)
+          KitMenuItem(label: copy.agentAccountTitle, onSelected: onAccount),
+        KitMenuItem(label: copy.e7SetupConnect, onSelected: onConnect),
+        KitMenuItem(label: copy.e7SetupEdit, onSelected: onEdit),
+        // Destructive: last, confirmed by the sheet it opens.
+        KitMenuItem(
+          label: copy.capsuleRemove,
+          destructive: true,
+          onSelected: onRemove,
+        ),
+      ],
     );
   }
 }
@@ -1026,88 +1060,101 @@ class _WelcomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final copy = _connectionL10n(context);
-    return SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: Column(
-                    key: const ValueKey('first-run-welcome'),
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // The hero (design standard §10): this phone and the
-                      // computer the agent runs on. Drawn in once; the
-                      // welcome is a resting screen, so it never loops.
-                      const Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: KitIllustration(
-                          key: ValueKey('servers-welcome-hero'),
-                          scene: ServersWelcomeScene(),
-                          width: 220,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        copy.onboardingValueTitle,
-                        style: theme.textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        copy.onboardingValueBody,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      if (platformCapabilities.supportsTermux) phoneSetup,
-                      runningServer,
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          copy.firstRunWhereQuestion,
-                          key: const ValueKey('welcome-question'),
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      FirstRunChoice(
-                        key: const ValueKey('welcome-choice-computer'),
-                        icon: AppIconography.server,
-                        title: copy.firstRunOnComputer,
-                        detail: copy.firstRunOnComputerDetail,
-                        onTap: busy ? null : onComputer,
-                      ),
-                      if (platformCapabilities.supportsTermux)
-                        FirstRunChoice(
-                          key: const ValueKey('welcome-choice-phone'),
-                          icon: AppIconography.phone,
-                          title: copy.onboardingTermuxSetup,
-                          detail: copy.firstRunOnPhoneDetail,
-                          onTap: busy ? null : onPhone,
-                        ),
-                      FirstRunChoice(
-                        key: const ValueKey('welcome-choice-demo'),
-                        icon: AppIconography.playCircle,
-                        title: copy.firstRunJustShowMe,
-                        detail: copy.onboardingDemoNote,
-                        onTap: busy ? null : onDemo,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+    final tokens = KitTokens.of(context);
+    final busyReason = busy ? copy.e7SetupServerOperation : null;
+    Widget choice({
+      required String key,
+      required IconData icon,
+      required String title,
+      required String detail,
+      required VoidCallback onTap,
+    }) => KitRow(
+      key: ValueKey(key),
+      leading: KitRow.icon(context, icon),
+      title: title,
+      titleMaxLines: 2,
+      supporting: TextSpan(text: detail),
+      supportingMaxLines: 3,
+      trailing: const KitChevron(),
+      enabled: !busy,
+      disabledReason: busyReason,
+      onTap: onTap,
+    );
+    return ListView(
+      key: const ValueKey('first-run-welcome'),
+      padding: EdgeInsetsDirectional.only(
+        top: tokens.space6,
+        bottom: KitScreen.endPadding(context),
+      ),
+      children: [
+        // The hero (design standard §10): this phone and the computer the
+        // agent runs on. Drawn in once; the welcome is a resting screen, so
+        // it never loops.
+        const _Rails(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitIllustration(
+              key: ValueKey('servers-welcome-hero'),
+              scene: ServersWelcomeScene(),
             ),
           ),
         ),
-      ),
+        SizedBox(height: tokens.space5),
+        _Rails(
+          child: Semantics(
+            header: true,
+            child: KitText(
+              copy.onboardingValueTitle,
+              role: KitTextRole.largeTitle,
+            ),
+          ),
+        ),
+        SizedBox(height: tokens.space2),
+        _Rails(
+          child: KitText(copy.onboardingValueBody, tone: KitTextTone.secondary),
+        ),
+        SizedBox(height: tokens.space6),
+        if (platformCapabilities.supportsTermux) phoneSetup,
+        runningServer,
+        _Rails(
+          child: Semantics(
+            header: true,
+            child: KitText(
+              copy.firstRunWhereQuestion,
+              key: const ValueKey('welcome-question'),
+              role: KitTextRole.headline,
+            ),
+          ),
+        ),
+        SizedBox(height: tokens.space2),
+        KitRowGroup(
+          children: [
+            choice(
+              key: 'welcome-choice-computer',
+              icon: AppIconography.server,
+              title: copy.firstRunOnComputer,
+              detail: copy.firstRunOnComputerDetail,
+              onTap: onComputer,
+            ),
+            if (platformCapabilities.supportsTermux)
+              choice(
+                key: 'welcome-choice-phone',
+                icon: AppIconography.phone,
+                title: copy.onboardingTermuxSetup,
+                detail: copy.firstRunOnPhoneDetail,
+                onTap: onPhone,
+              ),
+            choice(
+              key: 'welcome-choice-demo',
+              icon: AppIconography.playCircle,
+              title: copy.firstRunJustShowMe,
+              detail: copy.onboardingDemoNote,
+              onTap: onDemo,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -1152,21 +1199,6 @@ String _knownOpenCodeGeneration(ServerProfile profile) =>
       _ => 'OpenCode',
     };
 
-/// The trailing mark of a row that opens another screen.
-class _Chevron extends StatelessWidget {
-  const _Chevron();
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: 48,
-    child: Icon(
-      AppIconography.chevronRight,
-      size: 20,
-      color: AppTheme.mutedOf(Theme.of(context)),
-    ),
-  );
-}
-
 /// A discovery shortcut into the same autodetecting editor, not a flavor override.
 class _OpenCode2Entry extends StatelessWidget {
   const _OpenCode2Entry({required this.onTap});
@@ -1179,7 +1211,11 @@ class _OpenCode2Entry extends StatelessWidget {
     title: _connectionL10n(context).oc2DiscoveryConnect,
     supporting: TextSpan(text: _connectionL10n(context).oc2DiscoveryExisting),
     supportingMaxLines: 2,
-    trailing: const _Chevron(),
+    trailing: const KitChevron(),
+    enabled: onTap != null,
+    disabledReason: onTap == null
+        ? _connectionL10n(context).e7SetupServerOperation
+        : null,
     onTap: onTap,
   );
 }
@@ -1200,7 +1236,11 @@ class _PhoneSetupEntry extends StatelessWidget {
       text: _connectionL10n(context).phoneSetupStartEntryDetail,
     ),
     supportingMaxLines: 2,
-    trailing: const _Chevron(),
+    trailing: const KitChevron(),
+    enabled: onTap != null,
+    disabledReason: onTap == null
+        ? _connectionL10n(context).e7SetupServerOperation
+        : null,
     onTap: onTap,
   );
 }
@@ -1219,47 +1259,43 @@ class _SetupOptions extends StatelessWidget {
   final VoidCallback onExternalAgents;
 
   @override
-  Widget build(BuildContext context) => ListTileTheme(
-    // The kit row's geometry: a 32 dp icon, 12 dp to the title.
-    data: const ListTileThemeData(horizontalTitleGap: 12, minLeadingWidth: 32),
-    child: _setupOptions(context),
-  );
-
-  Widget _setupOptions(BuildContext context) => ExpansionTile(
-    leading: KitRow.icon(context, AppIconography.tools),
-    title: Text(
-      _connectionL10n(context).onboardingMoreSetup,
-      style: Theme.of(context).textTheme.bodyLarge,
-    ),
-    tilePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
-    childrenPadding: EdgeInsets.zero,
-    shape: const Border(),
-    collapsedShape: const Border(),
-    children: [
-      if (platformCapabilities.supportsTailscaleHandoff)
-        KitRow(
-          key: const ValueKey('welcome-tailscale-card'),
-          leading: KitRow.icon(context, AppIconography.secureNetwork),
-          title: _connectionL10n(context).tailscaleTitle,
-          supporting: TextSpan(
-            text: _connectionL10n(context).onboardingPrivateNetwork,
+  Widget build(BuildContext context) {
+    final copy = _connectionL10n(context);
+    final busyReason = busy ? copy.e7SetupServerOperation : null;
+    return KitExpandRow(
+      key: const ValueKey('servers-more-setup'),
+      leading: KitRow.icon(context, AppIconography.tools),
+      title: copy.onboardingMoreSetup,
+      children: [
+        if (platformCapabilities.supportsTailscaleHandoff)
+          KitRow(
+            key: const ValueKey('welcome-tailscale-card'),
+            leading: KitRow.icon(context, AppIconography.secureNetwork),
+            title: copy.tailscaleTitle,
+            supporting: TextSpan(text: copy.onboardingPrivateNetwork),
+            supportingMaxLines: 2,
+            enabled: !busy,
+            disabledReason: busyReason,
+            onTap: onTailscale,
           ),
-          supportingMaxLines: 2,
-          onTap: busy ? null : onTailscale,
+        KitRow(
+          key: const ValueKey('welcome-guide-card'),
+          leading: KitRow.icon(context, AppIconography.guide),
+          title: copy.onboardingSetupGuide,
+          enabled: !busy,
+          disabledReason: busyReason,
+          onTap: onGuide,
         ),
-      KitRow(
-        key: const ValueKey('welcome-guide-card'),
-        leading: KitRow.icon(context, AppIconography.guide),
-        title: _connectionL10n(context).onboardingSetupGuide,
-        onTap: busy ? null : onGuide,
-      ),
-      KitRow(
-        leading: KitRow.icon(context, AppIconography.network),
-        title: _connectionL10n(context).a2aTitle,
-        onTap: busy ? null : onExternalAgents,
-      ),
-    ],
-  );
+        KitRow(
+          leading: KitRow.icon(context, AppIconography.network),
+          title: copy.a2aTitle,
+          enabled: !busy,
+          disabledReason: busyReason,
+          onTap: onExternalAgents,
+        ),
+      ],
+    );
+  }
 }
 
 class _ProfileEditorScreen extends StatefulWidget {
@@ -1327,15 +1363,45 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   late final TextEditingController _user = TextEditingController(
     text: widget.existing?.username ?? '',
   );
-  late final TextEditingController _pass = TextEditingController(
-    text: widget.existing?.password ?? '',
-  );
+
+  /// Always empty when the field mounts (SEC-3): a stored password stays
+  /// in [_heldPassword] and the field says "Saved · Replace".
+  final TextEditingController _pass = TextEditingController();
   late final TextEditingController _codexDirectory = TextEditingController(
     text: widget.existing?.codexDirectory ?? '',
   );
-  late final TextEditingController _codexToken = TextEditingController(
-    text: widget.existing?.codexToken ?? '',
+
+  /// Always empty when the field mounts, like [_pass]; see [_heldToken].
+  final TextEditingController _codexToken = TextEditingController();
+
+  /// The password this editor holds without showing it: the saved one, or
+  /// the one a pairing code brought. A stored secret is never put back into
+  /// a field (SEC-3, KIT-40): while this is set the field says "Saved ·
+  /// Replace" and a save keeps it; Replace (or a check that found it
+  /// refused) drops it for whatever is typed.
+  late String? _heldPassword = _held(
+    widget.existing?.password,
+    reentry: widget.existing?.requiresPasswordReentry ?? false,
   );
+
+  /// The Codex token or Paseo password held the same way.
+  late String? _heldToken = _held(
+    widget.existing?.codexToken,
+    reentry: widget.existing?.requiresCodexTokenReentry ?? false,
+  );
+
+  /// A stored secret is held unless it must be re-entered or the person
+  /// came to paste a new one (the connection banner's "Update password").
+  String? _held(String? stored, {required bool reentry}) =>
+      stored == null || stored.isEmpty || reentry || widget.focusPassword
+      ? null
+      : stored;
+
+  /// The password a check or a save uses.
+  String get _password => _heldPassword ?? _pass.text;
+
+  /// The token a check or a save uses.
+  String get _token => _heldToken ?? _codexToken.text;
   final _urlFocus = FocusNode();
   final _nameFocus = FocusNode();
   final _userFocus = FocusNode();
@@ -1343,7 +1409,6 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   final _codexDirectoryFocus = FocusNode();
   final _codexTokenFocus = FocusNode();
   String? _error;
-  bool _obscurePassword = true;
   bool _closing = false;
   bool _testing = false;
 
@@ -1440,11 +1505,15 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// Opens "Enter the address instead" (when folded and closed) and then
   /// focuses [node], once the field it belongs to is built.
   void _focusField(FocusNode node) {
-    if (_foldsManualAddress && node.context == null) {
-      setState(() {
-        _manualForcedOpen = true;
-        _manualFold++;
-      });
+    // Not built yet: under the closed fold, or a held secret's field that
+    // is opening for a new value this frame.
+    if (node.context == null) {
+      if (_foldsManualAddress) {
+        setState(() {
+          _manualForcedOpen = true;
+          _manualFold++;
+        });
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) node.requestFocus();
       });
@@ -1589,7 +1658,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     return validateServerProfileUrl(
           normalizeServerProfileUrl(_url.text),
           username: _user.text,
-          password: _pass.text,
+          password: _password,
         ) ==
         null;
   }
@@ -1659,7 +1728,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final error = validateServerProfileUrl(
       url,
       username: _user.text,
-      password: _pass.text,
+      password: _password,
     );
     if (error != null) {
       setState(() {
@@ -1685,7 +1754,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final result = await serverProbe(
       baseUrl: url,
       username: _user.text.trim(),
-      password: _pass.text,
+      password: _password,
     );
     if (!mounted || generation != _probeGeneration) return false;
     setState(() {
@@ -1697,7 +1766,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     // Per the v2 auth taxonomy: a 401 without a password sends the user to
     // the password field; a rejected password selects it for a clean repaste.
     if (!auto && result.flavor == ServerFlavor.v2 && result.needsPassword) {
-      if (_pass.text.isNotEmpty) {
+      // A held password was refused: the field opens for a new one.
+      if (_heldPassword != null) {
+        setState(() => _heldPassword = null);
+      } else if (_pass.text.isNotEmpty) {
         _pass.selection = TextSelection(
           baseOffset: 0,
           extentOffset: _pass.text.length,
@@ -1712,10 +1784,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   String? _validateSocketFields(String url) => _isPaseo
       ? validatePaseoServerUrl(url) ??
             validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-            validatePaseoPassword(_codexToken.text)
+            validatePaseoPassword(_token)
       : validateCodexServerUrl(url) ??
             validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-            validateCodexConnectionToken(_codexToken.text);
+            validateCodexConnectionToken(_token);
 
   Future<bool> _testCodexConnection({
     bool auto = false,
@@ -1764,7 +1836,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       final result = await socketAgentProbe(
         backend: _backend,
         baseUrl: url,
-        secret: _codexToken.text,
+        secret: _token,
         directory: _codexDirectory.text.trim(),
       );
       if (!mounted || generation != _probeGeneration) return false;
@@ -1823,10 +1895,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// nothing to explain here beyond a payload that arrived.
   Future<void> _scanPairing() async {
     if (!platformCapabilities.supportsQrPairing) return;
-    final payload = await Navigator.of(context).push<PairingPayload>(
-      MaterialPageRoute<PairingPayload>(
-        builder: (_) => const PairingScannerScreen(),
-      ),
+    final payload = await pushKitPage<PairingPayload>(
+      context,
+      (_) => const PairingScannerScreen(),
     );
     if (payload == null || !mounted) {
       payload?.consume();
@@ -1883,7 +1954,8 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _url.value = TextEditingValue(text: chosen);
     _urlLength = chosen.length;
     _user.text = username;
-    _pass.text = password;
+    _heldPassword = password;
+    _pass.clear();
 
     final host = Uri.tryParse(chosen)?.host ?? chosen;
     final tried = selection.outcomes.length;
@@ -1935,40 +2007,54 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           Localizations.localeOf(context),
         ).e7SetupPairingDesktopHint;
 
-  /// Paste-first entry for the per-run serve password: nobody types a random
-  /// 32-byte base64url string. Trims whitespace and a copied
-  /// `server password ` line prefix.
+  /// The password field changed: typed, or pasted with the field's own
+  /// Paste (paste-first entry for the per-run serve password; nobody types
+  /// a random 32-byte base64url string). A copied `server password ` line
+  /// prefix is dropped.
   ///
-  /// A clipboard holding a whole pairing payload is routed to [_applyPairing]
-  /// instead — stuffing that JSON into the password field would be both
-  /// wrong and a way to get the credential rendered on screen.
-  Future<void> _pastePassword() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (looksLikePairingPayload(data?.text ?? '')) {
-      final parsed = parsePairingPayload(data!.text!);
-      if (!mounted) return;
+  /// A whole pairing payload landing here is routed to [_applyPairing]
+  /// instead, and the field is emptied at once — leaving that JSON in the
+  /// password field would be both wrong and a way to get the credential
+  /// rendered on screen.
+  void _passwordChanged(String value) {
+    if (looksLikePairingPayload(value)) {
+      _pass.clear();
+      final parsed = parsePairingPayload(value);
       if (!parsed.ok) {
         setState(() {
+          _invalidateProbe();
           _pairingNotice = null;
           _pairingFailure = parsed.error;
         });
         return;
       }
-      await _applyPairing(parsed.payload!);
+      setState(_invalidateProbe);
+      unawaited(_applyPairing(parsed.payload!));
       return;
     }
-    var text = data?.text?.trim() ?? '';
     const prefix = 'server password';
-    if (text.toLowerCase().startsWith(prefix)) {
-      text = text.substring(prefix.length).trim();
+    final trimmed = value.trim();
+    if (trimmed.toLowerCase().startsWith(prefix)) {
+      final bare = trimmed.substring(prefix.length).trim();
+      _pass.value = TextEditingValue(
+        text: bare,
+        selection: TextSelection.collapsed(offset: bare.length),
+      );
     }
-    if (text.isEmpty || !mounted || _submitting) return;
-    setState(() {
-      _invalidateProbe();
-      _pass.text = text;
-    });
-    _scheduleAutoTest();
-    _passFocus.requestFocus();
+    _fieldChanged();
+  }
+
+  /// The token field changed; a pasted token loses the whitespace a copy
+  /// from a terminal carries.
+  void _tokenChanged(String value) {
+    final trimmed = value.trim();
+    if (trimmed != value && trimmed.isNotEmpty) {
+      _codexToken.value = TextEditingValue(
+        text: trimmed,
+        selection: TextSelection.collapsed(offset: trimmed.length),
+      );
+    }
+    _fieldChanged();
   }
 
   bool get _dirty {
@@ -1980,9 +2066,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _name.text != (baseline?.name ?? '') ||
         _url.text != (baseline?.baseUrl ?? '') ||
         _user.text != (baseline?.username ?? '') ||
-        _pass.text != (baseline?.password ?? '') ||
+        _password != (baseline?.password ?? '') ||
         _codexDirectory.text != (baseline?.codexDirectory ?? '') ||
-        _codexToken.text != (baseline?.codexToken ?? '');
+        _token != (baseline?.codexToken ?? '');
   }
 
   @override
@@ -2010,21 +2096,17 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       return;
     }
     _closing = true;
-    final discard = await showConfirmSheet(
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final discard = await showKitConfirm(
       context,
-      title: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7SetupDiscardChanges,
-      message: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7SetupUnsavedProfile,
-      confirmLabel: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7SetupDiscard,
-      cancelLabel: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).draftKeepEditing,
+      kind: KitConfirmKind.discard,
+      title: copy.e7SetupDiscardChanges,
+      body: copy.e7SetupUnsavedProfile,
+      confirmLabel: copy.e7SetupDiscard,
+      cancelLabel: copy.draftKeepEditing,
       icon: AppIconography.editOff,
+      sheetKey: const ValueKey('server-discard-sheet'),
+      confirmKey: const ValueKey('server-discard-confirm'),
     );
     _closing = false;
     if (discard && mounted) Navigator.pop(context);
@@ -2035,10 +2117,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final before = _url.text;
     final generation = ++_probeGeneration;
     setState(() => _testing = false);
-    final reviewed = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => TailscaleSetupScreen(initialAddress: before),
-      ),
+    final reviewed = await pushKitPage<String>(
+      context,
+      (_) => TailscaleSetupScreen(initialAddress: before),
     );
     if (!mounted ||
         reviewed == null ||
@@ -2062,9 +2143,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   Future<void> _notSameNetwork() async {
     if (!_isCodex) return _tailscaleHelp();
     if (_submitting) return;
-    await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const TailscaleSetupScreen()),
-    );
+    await pushKitPage<String>(context, (_) => const TailscaleSetupScreen());
   }
 
   /// Null where the link must not exist: off the first-run path, and on a
@@ -2129,7 +2208,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final error = validateServerProfileUrl(
       url,
       username: _user.text,
-      password: _pass.text,
+      password: _password,
     );
     if (error != null) {
       setState(() => _error = error);
@@ -2167,7 +2246,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
       baseUrl: normalizedUrl,
       username: _user.text.trim(),
-      password: _pass.text,
+      password: _password,
       flavor: detected,
       serverVersion:
           probed?.version ??
@@ -2216,7 +2295,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       baseUrl: url,
       backend: _backend,
       codexDirectory: _codexDirectory.text.trim(),
-      codexToken: _codexToken.text,
+      codexToken: _token,
       serverVersion: probed?.version ?? widget.existing?.serverVersion,
     );
     FocusScope.of(context).unfocus();
@@ -2240,134 +2319,86 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _revealStatus();
   }
 
-  Future<void> _pasteCodexToken() async {
-    final value = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim();
-    if (value == null || value.isEmpty || !mounted || _submitting) return;
-    setState(() {
-      _invalidateProbe();
-      _codexToken.text = value;
-    });
-    _scheduleAutoTest();
-    _codexTokenFocus.requestFocus();
-  }
-
-  List<Widget> _buildCodexFields(ThemeData theme) => [
-    const SizedBox(height: 12),
-    TextField(
-      enabled: !_submitting,
-      key: const ValueKey('codex-server-address-field'),
-      textDirection: TextDirection.ltr,
+  /// The Codex and Paseo fields: address, project folder, token, then the
+  /// name most people never change (KIT-20: a labelled kit field each; the
+  /// token is the secret kind, never prefilled).
+  List<Widget> _buildCodexFields(AppLocalizations copy, KitTokens tokens) => [
+    SizedBox(height: tokens.space3),
+    KitField(
+      label: copy.connectionServerAddress,
+      kind: KitFieldKind.url,
       controller: _url,
       focusNode: _urlFocus,
-      autofocus: false,
-      keyboardType: TextInputType.url,
+      fieldKey: const ValueKey('codex-server-address-field'),
+      hint: _isPaseo ? copy.paseoAddressHint : copy.codexAddressHint,
+      helper: _isPaseo ? copy.paseoAddressHelp : copy.codexAddressHelp,
+      error: _error,
+      enabled: !_submitting,
+      disabledReason: _submitting ? copy.e7SetupSaving : null,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _codexDirectoryFocus.requestFocus(),
       onChanged: _urlChanged,
-      decoration: InputDecoration(
-        labelText: _connectionL10n(context).connectionServerAddress,
-        hintText: _isPaseo
-            ? _connectionL10n(context).paseoAddressHint
-            : _connectionL10n(context).codexAddressHint,
-        errorText: _error,
-        errorMaxLines: 3,
-        helperText: _isPaseo
-            ? _connectionL10n(context).paseoAddressHelp
-            : _connectionL10n(context).codexAddressHelp,
-        helperMaxLines: 3,
-      ),
     ),
     ?_notSameNetworkLink(),
-    const SizedBox(height: 20),
-    TextField(
-      enabled: !_submitting,
-      key: const ValueKey('codex-project-directory-field'),
-      textDirection: TextDirection.ltr,
+    SizedBox(height: tokens.space4),
+    KitField(
+      label: copy.codexProjectFolder,
+      kind: KitFieldKind.path,
       controller: _codexDirectory,
       focusNode: _codexDirectoryFocus,
+      fieldKey: const ValueKey('codex-project-directory-field'),
+      hint: '/work/my-project',
+      enabled: !_submitting,
+      disabledReason: _submitting ? copy.e7SetupSaving : null,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _codexTokenFocus.requestFocus(),
       onChanged: (_) => _fieldChanged(),
-      decoration: InputDecoration(
-        labelText: _connectionL10n(context).codexProjectFolder,
-        hintText: '/work/my-project',
-      ),
     ),
-    const SizedBox(height: 20),
-    TextField(
-      enabled: !_submitting,
-      key: const ValueKey('codex-connection-token-field'),
-      textDirection: TextDirection.ltr,
+    SizedBox(height: tokens.space4),
+    KitField.secret(
+      label: _needsCodexToken
+          ? copy.codexTokenReentry
+          : _isPaseo
+          ? copy.paseoPasswordLabel
+          : copy.codexTokenLabel,
       controller: _codexToken,
       focusNode: _codexTokenFocus,
+      fieldKey: const ValueKey('codex-connection-token-field'),
+      revealKey: const ValueKey('codex-token-visibility'),
+      pasteKey: const ValueKey('codex-token-paste'),
+      replaceKey: const ValueKey('codex-token-replace'),
+      helper: _isPaseo ? copy.paseoPasswordHelp : copy.codexTokenStorageHelp,
+      saved: _heldToken != null,
+      onReplace: () => setState(() {
+        _heldToken = null;
+        _invalidateProbe();
+      }),
       autofocus: _needsCodexToken || widget.focusPassword,
-      onChanged: (_) => _fieldChanged(),
-      obscureText: _obscurePassword,
-      autocorrect: false,
-      enableSuggestions: false,
-      keyboardType: TextInputType.visiblePassword,
-      style: _obscurePassword
-          ? null
-          : const TextStyle(fontFamily: AppTheme.monoFamily),
+      enabled: !_submitting,
+      disabledReason: _submitting ? copy.e7SetupSaving : null,
       textInputAction: TextInputAction.done,
       onSubmitted: (_) => _save(),
-      decoration: InputDecoration(
-        labelText: _needsCodexToken
-            ? _connectionL10n(context).codexTokenReentry
-            : _isPaseo
-            ? _connectionL10n(context).paseoPasswordLabel
-            : _connectionL10n(context).codexTokenLabel,
-        helperText: _isPaseo
-            ? _connectionL10n(context).paseoPasswordHelp
-            : _connectionL10n(context).codexTokenStorageHelp,
-        helperMaxLines: 2,
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              key: const ValueKey('codex-token-visibility'),
-              tooltip: _obscurePassword
-                  ? _connectionL10n(context).codexShowToken
-                  : _connectionL10n(context).codexHideToken,
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
-              icon: Icon(
-                _obscurePassword
-                    ? AppIconography.visible
-                    : AppIconography.hidden,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('codex-token-paste'),
-              tooltip: _connectionL10n(context).codexPasteToken,
-              onPressed: () => unawaited(_pasteCodexToken()),
-              icon: const Icon(AppIconography.paste),
-            ),
-          ],
-        ),
-      ),
+      onChanged: _tokenChanged,
     ),
     // What most people never change, after what they must fill in.
-    const SizedBox(height: 20),
-    TextField(
-      enabled: !_submitting,
-      key: const ValueKey('codex-server-name-field'),
+    SizedBox(height: tokens.space4),
+    KitField(
+      label: copy.connectionDisplayName,
       controller: _name,
       focusNode: _nameFocus,
+      fieldKey: const ValueKey('codex-server-name-field'),
+      hint: copy.connectionDisplayNameHint,
+      enabled: !_submitting,
+      disabledReason: _submitting ? copy.e7SetupSaving : null,
       textInputAction: TextInputAction.done,
       onSubmitted: (_) => _save(),
       onChanged: (_) => _fieldChanged(),
-      decoration: InputDecoration(
-        labelText: _connectionL10n(context).connectionDisplayName,
-        hintText: _connectionL10n(context).connectionDisplayNameHint,
-      ),
     ),
-    const SizedBox(height: 16),
+    SizedBox(height: tokens.space4),
   ];
 
-  Widget _buildCodexProbeVerdict(ThemeData theme) {
+  Widget _buildCodexProbeVerdict(AppLocalizations copy) {
     final result = _codexTestResult!;
-    final copy = lookupAppLocalizations(Localizations.localeOf(context));
     // A verdict is a notice on the form's rails, not a filled block (§3).
     return KeyedSubtree(
       key: const ValueKey('codex-probe-verdict'),
@@ -2402,7 +2433,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// The phone and the computer linking up (design standard §10): at the
   /// head of a new server's form, moving only while it pairs, checks or
   /// connects, with one line saying what it is doing then.
-  Widget _linkMoment(AppLocalizations copy) {
+  Widget _linkMoment(AppLocalizations copy, KitTokens tokens) {
     final state = _linkState;
     if (state != ServersLinkState.idle) _linkMoved = true;
     final caption = switch (state) {
@@ -2413,7 +2444,6 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       ServersLinkState.linking => copy.addServerCheckingHost(_host),
       _ => null,
     };
-    final theme = Theme.of(context);
     return Column(
       key: const ValueKey('server-link-moment'),
       children: [
@@ -2423,7 +2453,6 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             // the spark landing, the link breaking.
             key: ValueKey('server-link-${state.name}'),
             scene: ServersLinkScene(state, intro: !_linkMoved),
-            width: 240,
             ambient: state == ServersLinkState.linking,
             // Paired: a finished moment, so the spark takes the longer
             // celebration entrance (design standard §10).
@@ -2432,19 +2461,19 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                 : KitMotion.entrance,
           ),
         ),
+        // One line, held open so the form does not jump when it speaks.
         SizedBox(
-          height: 24,
+          height: tokens.space6,
           child: Semantics(
             liveRegion: true,
-            child: Text(
+            child: KitText(
               caption ?? '',
               key: const ValueKey('server-link-caption'),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
             ),
           ),
         ),
@@ -2456,97 +2485,61 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// under "Enter the address instead" for a new server (pairing is the
   /// main path); shown at once where the fields are what the person came
   /// to change.
-  Widget _manualAddress(AppLocalizations copy) {
-    final fields = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+  Widget _manualAddress(AppLocalizations copy, KitTokens tokens) {
+    final fields = _Rails(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: _foldsManualAddress ? 4 : 12),
-          TextField(
-            enabled: !_submitting,
-            key: const ValueKey('server-url-field'),
-            textDirection: TextDirection.ltr,
+          SizedBox(height: _foldsManualAddress ? tokens.space1 : tokens.space3),
+          KitField(
+            label: copy.e7SetupServerUrl,
+            kind: KitFieldKind.url,
             controller: _url,
             focusNode: _urlFocus,
-            autofocus: false,
-            keyboardType: TextInputType.url,
+            fieldKey: const ValueKey('server-url-field'),
+            hint: 'https://server.example',
+            helper: widget.tailscale
+                ? copy.tailscaleAddressDetail
+                : copy.e7SetupHttpsHint,
+            error: _error,
+            enabled: !_submitting,
+            disabledReason: _submitting ? copy.e7SetupSaving : null,
             textInputAction: TextInputAction.next,
             // Straight to the password: the name and username are under
             // More options and rarely needed.
             onSubmitted: (_) => _passFocus.requestFocus(),
             onChanged: _urlChanged,
-            scrollPadding: const EdgeInsets.only(bottom: 160),
-            decoration: InputDecoration(
-              labelText: copy.e7SetupServerUrl,
-              hintText: 'https://server.example',
-              errorText: _error,
-              errorMaxLines: 3,
-              helperText: widget.tailscale
-                  ? copy.tailscaleAddressDetail
-                  : copy.e7SetupHttpsHint,
-              helperMaxLines: 3,
-            ),
           ),
           ?_notSameNetworkLink(),
-          const SizedBox(height: 16),
-          TextField(
-            enabled: !_submitting,
-            key: const ValueKey('server-password-field'),
-            textDirection: TextDirection.ltr,
+          SizedBox(height: tokens.space4),
+          // Paste is the main way in for the per-run random serve password;
+          // the kit field carries it beside the reveal toggle.
+          KitField.secret(
+            label: _needsPassword
+                ? copy.e7SetupReenterPassword
+                : copy.e7SetupServerPassword,
             controller: _pass,
             focusNode: _passFocus,
+            fieldKey: const ValueKey('server-password-field'),
+            revealKey: const ValueKey('server-password-visibility'),
+            pasteKey: const ValueKey('server-password-paste'),
+            replaceKey: const ValueKey('server-password-replace'),
+            helper: _needsPassword
+                ? copy.e7SetupEmptyPasswordHint
+                : copy.e7SetupPasswordStartupHint,
+            saved: _heldPassword != null,
+            onReplace: () => setState(() {
+              _heldPassword = null;
+              _invalidateProbe();
+            }),
             autofocus: _needsPassword || widget.focusPassword,
-            onChanged: (_) => _fieldChanged(),
-            obscureText: _obscurePassword,
-            autocorrect: false,
-            enableSuggestions: false,
-            keyboardType: TextInputType.visiblePassword,
-            // Room for the Save button above the keyboard, so the field
-            // being typed in is never hidden behind it.
-            scrollPadding: const EdgeInsets.only(bottom: 160),
-            style: _obscurePassword
-                ? null
-                : const TextStyle(fontFamily: AppTheme.monoFamily),
+            enabled: !_submitting,
+            disabledReason: _submitting ? copy.e7SetupSaving : null,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
-            decoration: InputDecoration(
-              labelText: _needsPassword
-                  ? copy.e7SetupReenterPassword
-                  : copy.e7SetupServerPassword,
-              helperText: _needsPassword
-                  ? copy.e7SetupEmptyPasswordHint
-                  : copy.e7SetupPasswordStartupHint,
-              helperMaxLines: 3,
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: const ValueKey('server-password-visibility'),
-                    tooltip: _obscurePassword
-                        ? copy.e7SetupShowPassword
-                        : copy.e7SetupHidePassword,
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                    icon: Icon(
-                      _obscurePassword
-                          ? AppIconography.visible
-                          : AppIconography.hidden,
-                    ),
-                  ),
-                  // Paste is the primary affordance for the per-run random
-                  // serve password, so it sits closest to the field edge.
-                  IconButton(
-                    key: const ValueKey('server-password-paste'),
-                    tooltip: copy.e7SetupPastePassword,
-                    onPressed: () => unawaited(_pastePassword()),
-                    icon: const Icon(AppIconography.paste),
-                  ),
-                ],
-              ),
-            ),
+            onChanged: _passwordChanged,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.space1),
           _testAction(copy),
         ],
       ),
@@ -2557,7 +2550,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       headerKey: const ValueKey('server-manual-address'),
       title: copy.addServerManual,
       initiallyExpanded: _manualForcedOpen,
-      children: [fields, const SizedBox(height: 8)],
+      children: [
+        fields,
+        SizedBox(height: tokens.space2),
+      ],
     );
   }
 
@@ -2574,7 +2570,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   /// The verdicts, in one place near the action that produced them: a save
   /// that failed, and what the check found.
-  Widget _status(AppLocalizations copy) {
+  Widget _status(AppLocalizations copy, KitTokens tokens) {
     final failure = _submitFailure;
     final result = _isCodex ? null : _testResult;
     final codex = _isCodex ? _codexTestResult : null;
@@ -2584,10 +2580,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     Widget slot(Widget? child) => KitReveal(
       child: child == null
           ? null
-          : Padding(padding: const EdgeInsets.only(top: 8), child: child),
+          : Padding(
+              padding: EdgeInsetsDirectional.only(top: tokens.space2),
+              child: child,
+            ),
     );
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return _Rails(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -2600,9 +2598,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     message: failure,
                   ),
           ),
-          slot(
-            codex == null ? null : _buildCodexProbeVerdict(Theme.of(context)),
-          ),
+          slot(codex == null ? null : _buildCodexProbeVerdict(copy)),
           slot(
             result == null
                 ? null
@@ -2616,12 +2612,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                   ),
           ),
-          // The 8 dp under the verdicts, only while there is one.
+          // The air under the verdicts, only while there is one.
           KitReveal(
             fade: false,
             child: failure == null && result == null && codex == null
                 ? null
-                : const SizedBox(height: 8),
+                : SizedBox(height: tokens.space2),
           ),
         ],
       ),
@@ -2631,64 +2627,68 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// Name, username and the AI Team host: what most people never change,
   /// out of the way. The name comes from the address and the username is
   /// "opencode" unless the server was started with another.
-  Widget _moreOptions(ThemeData theme, AppLocalizations copy) => KitExpandRow(
+  Widget _moreOptions(AppLocalizations copy, KitTokens tokens) => KitExpandRow(
     key: const ValueKey('server-editor-more-options'),
     headerKey: const ValueKey('server-editor-more-options-header'),
     title: copy.serverEditorMoreOptions,
     initiallyExpanded: _moreOptionsOpen,
     children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.gutter,
+          tokens.space1,
+          tokens.gutter,
+          tokens.space2,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              enabled: !_submitting,
-              key: const ValueKey('server-name-field'),
+            KitField(
+              label: copy.connectionDisplayName,
               controller: _name,
               focusNode: _nameFocus,
+              fieldKey: const ValueKey('server-name-field'),
+              hint: copy.connectionDisplayNameHint,
+              enabled: !_submitting,
+              disabledReason: _submitting ? copy.e7SetupSaving : null,
               textInputAction: TextInputAction.next,
               onSubmitted: (_) => _userFocus.requestFocus(),
               onChanged: (_) => _fieldChanged(),
-              decoration: InputDecoration(
-                labelText: copy.connectionDisplayName,
-                hintText: copy.connectionDisplayNameHint,
-              ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              enabled: !_submitting,
-              key: const ValueKey('server-username-field'),
-              textDirection: TextDirection.ltr,
+            SizedBox(height: tokens.space4),
+            KitField(
+              label: copy.e7SetupUsername,
+              kind: KitFieldKind.mono,
               controller: _user,
               focusNode: _userFocus,
+              fieldKey: const ValueKey('server-username-field'),
+              hint: 'opencode',
+              enabled: !_submitting,
+              disabledReason: _submitting ? copy.e7SetupSaving : null,
               textInputAction: TextInputAction.next,
               onSubmitted: (_) => _passFocus.requestFocus(),
               onChanged: (_) => _fieldChanged(),
-              decoration: InputDecoration(
-                labelText: copy.e7SetupUsername,
-                hintText: 'opencode',
+            ),
+            SizedBox(height: tokens.space5),
+            Semantics(
+              header: true,
+              child: KitText(
+                copy.teamUiEditorTitle,
+                key: const ValueKey('server-editor-team-section'),
+                role: KitTextRole.label,
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              copy.teamUiEditorTitle,
-              key: const ValueKey('server-editor-team-section'),
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 4),
-            Text(
+            SizedBox(height: tokens.space1),
+            KitText(
               _orchestration == null
                   ? copy.teamUiEditorBody
                   : copy.teamUiEditorConfigured(_orchestration!.url),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.35,
-              ),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
             ),
             KitInset(
               child: Wrap(
-                spacing: 4,
+                spacing: tokens.space1,
                 children: [
                   KitButton.tertiary(
                     key: const ValueKey('server-editor-team-learn'),
@@ -2716,6 +2716,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final copy = _connectionL10n(context);
+    final tokens = KitTokens.of(context);
     final title = widget.presetBackend != null
         ? switch (widget.presetBackend!) {
             ServerBackend.openCode => copy.firstRunAgentOpenCode,
@@ -2731,7 +2732,6 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         : _needsPassword
         ? copy.e7SetupReenterPassword
         : copy.e7SetupEditServer;
-    final theme = Theme.of(context);
     final isNew = widget.existing == null;
     // The person who came through "Which agent?" already chose; asking
     // again would be a second, harder copy of the same question.
@@ -2740,225 +2740,207 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     // type chosen (the phone's own server and Tailscale have their own).
     final showsCommand =
         isNew && !widget.tailscale && widget.initialUrl == null;
-    Widget rails(Widget child) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: child,
-    );
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_close());
       },
-      child: Scaffold(
+      child: KitScreen(
         key: const ValueKey('server-profile-editor'),
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: copy.connectionCloseEditor,
-            onPressed: _submitting ? null : _close,
-            icon: const Icon(AppIconography.close),
-          ),
-          title: Text(title),
+        width: KitScreenWidth.reading,
+        topBar: KitTopBar(
+          title: title,
+          exit: KitTopBarExit.close,
+          exitKey: const ValueKey('server-editor-close'),
+          // Closing asks first when something is unsaved; nothing closes
+          // while a save is in flight.
+          onExit: () => unawaited(_close()),
+        ),
+        // The one primary (§2), pinned below the form and lifted above the
+        // keyboard. Its tap checks the connection, saves and connects; the
+        // spinner is that tap in flight, the drawing and its line say which
+        // step.
+        bottom: KitButton.primary(
+          key: const ValueKey('save-server-profile'),
+          onPressed: _submitting || _testing ? null : _save,
+          working: _submitting || (_testing && _checkingForSave),
+          label: _testing && _checkingForSave
+              ? copy.addServerChecking
+              : _submitting
+              ? copy.e7SetupSaving
+              : _connectsOnSave
+              ? copy.onboardingSaveConnect
+              : copy.onboardingSaveChanges,
         ),
         body: AbsorbPointer(
           absorbing: _submitting,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // The form scrolls; the primary follows it, so a short form has
-                // no gap above the button, and a long one (or the keyboard) keeps
-                // the button pinned in view below it.
-                Flexible(
-                  child: SingleChildScrollView(
-                    key: const ValueKey('server-profile-fields'),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.only(top: 4, bottom: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (widget.tailscale)
-                          rails(
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: 8),
-                                Text(copy.tailscaleEditorDetail),
-                                KitInset(
-                                  child: KitButton.tertiary(
-                                    onPressed: _tailscaleHelp,
-                                    icon: AppIconography.secureNetwork,
-                                    label: copy.tailscaleHelp,
-                                  ),
+          // One box, not a lazy list: every field exists while the form is
+          // open, so focus can move to one that is scrolled away.
+          child: CustomScrollView(
+            key: const ValueKey('server-profile-fields'),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsetsDirectional.only(
+                  top: tokens.space1,
+                  bottom: KitScreen.endPadding(context),
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.tailscale)
+                        _Rails(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              KitText(copy.tailscaleEditorDetail),
+                              KitInset(
+                                child: KitButton.tertiary(
+                                  onPressed: _tailscaleHelp,
+                                  icon: AppIconography.secureNetwork,
+                                  label: copy.tailscaleHelp,
                                 ),
-                                if (_testResult?.ok == false ||
-                                    _submitFailure != null)
-                                  Text(copy.tailscaleRecovery),
-                              ],
-                            ),
-                          ),
-                        // The connection's moment and what it found, together at
-                        // the head of the form: the drawing, its line, then the
-                        // verdict. Every check and save scrolls back to it.
-                        Column(
-                          key: _statusKey,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (isNew) _linkMoment(copy),
-                            _status(copy),
-                          ],
-                        ),
-                        if (asksType)
-                          _BackendChoice(
-                            selected: _backend,
-                            onSelected: _submitting
-                                ? null
-                                : (backend) => setState(() {
-                                    _backend = backend;
-                                    _invalidateProbe();
-                                  }),
-                          ),
-                        if (showsCommand) ...[
-                          SizedBox(height: asksType ? 12 : 4),
-                          rails(
-                            _ComputerCommand(
-                              key: ValueKey(
-                                'connect-computer-command-${_backend.name}',
                               ),
-                              backend: _backend,
-                              // Pairing, the main path, right under the command
-                              // that prints the code.
-                              below: _isCodex
-                                  ? null
-                                  : _PairingActions(
-                                      // The command is on screen above, with its copy
-                                      // button; only the next move is left to say.
-                                      instructions:
-                                          platformCapabilities.supportsQrPairing
-                                          ? copy.firstRunPairingNextScan
-                                          : copy.firstRunPairingNextPaste,
-                                      busy: _pairing,
-                                      notice: _pairingNotice,
-                                      failure: _pairingFailure,
-                                      onPaste: _pairing || _submitting
-                                          ? null
-                                          : () => unawaited(_pastePairing()),
-                                      // Rendered only where a camera path exists. Desktop
-                                      // gets no affordance at all rather than one that
-                                      // opens and fails.
-                                      onScan:
-                                          platformCapabilities.supportsQrPairing
-                                          ? () => unawaited(_scanPairing())
-                                          : null,
-                                    ),
-                            ),
-                          ),
-                        ],
-                        if (_secureStorageNotice case final notice?)
-                          rails(
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: KitNotice(
-                                key: const ValueKey(
-                                  'server-secure-storage-notice',
-                                ),
-                                tone: AppStatusTone.attention,
-                                message: notice,
-                              ),
-                            ),
-                          ),
-                        // Unfolds when a check finds the password missing,
-                        // folds away once it is typed (design standard §10).
-                        rails(
-                          KitReveal(
-                            child: !_needsPassword
-                                ? null
-                                : Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: Semantics(
-                                      container: true,
-                                      liveRegion: true,
-                                      excludeSemantics: true,
-                                      label: copy.e7SetupMissingPasswordLong,
-                                      child: KitNotice(
-                                        tone: AppStatusTone.attention,
-                                        icon: Icons.lock_reset_rounded,
-                                        liveRegion: false,
-                                        message:
-                                            copy.e7SetupMissingPasswordShort,
-                                      ),
-                                    ),
-                                  ),
+                              if (_testResult?.ok == false ||
+                                  _submitFailure != null)
+                                KitText(copy.tailscaleRecovery),
+                            ],
                           ),
                         ),
-                        if (_isCodex) ...[
-                          rails(
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: _buildCodexFields(theme),
-                            ),
-                          ),
-                          rails(
-                            Text(
-                              _isPaseo
-                                  ? copy.paseoSetupNotice
-                                  : copy.codexApprovalRecoveryNotice,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          rails(_testAction(copy)),
-                        ] else ...[
-                          if (_foldsManualAddress) const SizedBox(height: 8),
-                          _manualAddress(copy),
-                          if (!widget.tailscale && !showsCommand)
-                            // Editing a saved server: pairing again (a rotated
-                            // password) stays one tap away, under the fields
-                            // the person came to change.
-                            rails(
-                              _PairingActions(
-                                compact: true,
-                                busy: _pairing,
-                                notice: _pairingNotice,
-                                failure: _pairingFailure,
-                                onPaste: _pairing || _submitting
-                                    ? null
-                                    : () => unawaited(_pastePairing()),
-                                onScan: platformCapabilities.supportsQrPairing
-                                    ? () => unawaited(_scanPairing())
-                                    : null,
-                              ),
-                            ),
-                          const SizedBox(height: 4),
-                          _moreOptions(theme, copy),
+                      // The connection's moment and what it found, together
+                      // at the head of the form: the drawing, its line, then
+                      // the verdict. Every check and save scrolls back to it.
+                      Column(
+                        key: _statusKey,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (isNew) _linkMoment(copy, tokens),
+                          _status(copy, tokens),
                         ],
+                      ),
+                      if (asksType)
+                        _BackendChoice(
+                          selected: _backend,
+                          onSelected: (backend) {
+                            if (_submitting || backend == _backend) return;
+                            setState(() {
+                              _backend = backend;
+                              _invalidateProbe();
+                            });
+                          },
+                        ),
+                      if (showsCommand) ...[
+                        SizedBox(
+                          height: asksType ? tokens.space3 : tokens.space1,
+                        ),
+                        _ComputerCommand(
+                          key: ValueKey(
+                            'connect-computer-command-${_backend.name}',
+                          ),
+                          backend: _backend,
+                          // Pairing, the main path, right under the command
+                          // that prints the code.
+                          below: _isCodex
+                              ? null
+                              : _PairingActions(
+                                  // The command is on screen above, with its
+                                  // copy button; only the next move is left
+                                  // to say.
+                                  instructions:
+                                      platformCapabilities.supportsQrPairing
+                                      ? copy.firstRunPairingNextScan
+                                      : copy.firstRunPairingNextPaste,
+                                  busy: _pairing,
+                                  notice: _pairingNotice,
+                                  failure: _pairingFailure,
+                                  onPaste: _pairing || _submitting
+                                      ? null
+                                      : () => unawaited(_pastePairing()),
+                                  // Rendered only where a camera path exists.
+                                  // Desktop gets no affordance at all rather
+                                  // than one that opens and fails.
+                                  onScan: platformCapabilities.supportsQrPairing
+                                      ? () => unawaited(_scanPairing())
+                                      : null,
+                                ),
+                        ),
                       ],
-                    ),
+                      if (_secureStorageNotice case final notice?)
+                        _Rails(
+                          child: KitNotice(
+                            key: const ValueKey('server-secure-storage-notice'),
+                            tone: AppStatusTone.neutral,
+                            message: notice,
+                          ),
+                        ),
+                      // Unfolds when a check finds the password missing,
+                      // folds away once it is typed (design standard §10).
+                      KitReveal(
+                        child: !_needsPassword
+                            ? null
+                            : _Rails(
+                                child: Semantics(
+                                  container: true,
+                                  liveRegion: true,
+                                  excludeSemantics: true,
+                                  label: copy.e7SetupMissingPasswordLong,
+                                  child: KitNotice(
+                                    tone: AppStatusTone.neutral,
+                                    icon: AppIconography.locked,
+                                    liveRegion: false,
+                                    message: copy.e7SetupMissingPasswordShort,
+                                  ),
+                                ),
+                              ),
+                      ),
+                      if (_isCodex) ...[
+                        _Rails(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _buildCodexFields(copy, tokens),
+                          ),
+                        ),
+                        _Rails(
+                          child: KitText(
+                            _isPaseo
+                                ? copy.paseoSetupNotice
+                                : copy.codexApprovalRecoveryNotice,
+                            role: KitTextRole.secondary,
+                            tone: KitTextTone.secondary,
+                          ),
+                        ),
+                        _Rails(child: _testAction(copy)),
+                      ] else ...[
+                        if (_foldsManualAddress)
+                          SizedBox(height: tokens.space2),
+                        _manualAddress(copy, tokens),
+                        if (!widget.tailscale && !showsCommand)
+                          // Editing a saved server: pairing again (a rotated
+                          // password) stays one tap away, under the fields
+                          // the person came to change.
+                          _Rails(
+                            child: _PairingActions(
+                              compact: true,
+                              busy: _pairing,
+                              notice: _pairingNotice,
+                              failure: _pairingFailure,
+                              onPaste: _pairing || _submitting
+                                  ? null
+                                  : () => unawaited(_pastePairing()),
+                              onScan: platformCapabilities.supportsQrPairing
+                                  ? () => unawaited(_scanPairing())
+                                  : null,
+                            ),
+                          ),
+                        SizedBox(height: tokens.space1),
+                        _moreOptions(copy, tokens),
+                      ],
+                    ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  // The one primary (§2). Its tap checks the connection, saves
-                  // and connects; the spinner is that tap in flight, the
-                  // drawing and its line say which step.
-                  child: KitButton.primary(
-                    key: const ValueKey('save-server-profile'),
-                    onPressed: _submitting || _testing ? null : _save,
-                    working: _submitting || (_testing && _checkingForSave),
-                    label: _testing && _checkingForSave
-                        ? copy.addServerChecking
-                        : _submitting
-                        ? copy.e7SetupSaving
-                        : _connectsOnSave
-                        ? copy.onboardingSaveConnect
-                        : copy.onboardingSaveChanges,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -2981,56 +2963,75 @@ class _ComputerCommand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final copy = _connectionL10n(context);
-    final caption = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      height: 1.35,
+    final tokens = KitTokens.of(context);
+    Widget caption(String text) => Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.space2),
+      child: KitText(
+        text,
+        role: KitTextRole.secondary,
+        tone: KitTextTone.secondary,
+      ),
+    );
+    Widget command(String text, {Key? key, String? caption}) => Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.space2),
+      child: KitCodeBlock(
+        key: key,
+        text: text,
+        kind: KitCodeKind.command,
+        caption: caption,
+        copyLabel: copy.handoffCopyCommand,
+      ),
     );
     return Column(
       key: const ValueKey('connect-computer-command'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(copy.firstRunRunOnComputer, style: theme.textTheme.titleSmall),
-        Cmd(
-          SetupCommands.startFor(backend),
-          key: const ValueKey('connect-command'),
-        ),
-        if (below case final below?) ...[const SizedBox(height: 4), below],
-        Theme(
-          data: theme.copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            key: const ValueKey('connect-show-commands'),
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-            shape: const Border(),
-            collapsedShape: const Border(),
-            title: Text(copy.firstRunShowCommands),
-            children: switch (backend) {
-              ServerBackend.openCode => [
-                Text(
-                  copy.e7SharedServersStartedWithOpencodeServeDoNot,
-                  style: caption,
-                ),
-                const Cmd(SetupCommands.legacyServe),
-                Text(
-                  copy.e7SharedThenAddTheServerManuallyWithUsername,
-                  style: caption,
-                ),
+        _Rails(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The block's header says what to do with it, beside its copy
+              // button.
+              command(
+                SetupCommands.startFor(backend),
+                key: const ValueKey('connect-command'),
+                caption: copy.firstRunRunOnComputer,
+              ),
+              if (below case final below?) ...[
+                SizedBox(height: tokens.space3),
+                below,
               ],
-              ServerBackend.paseo => [
-                Text(copy.firstRunCommandsPaseoNetwork, style: caption),
-                const Cmd(SetupCommands.paseoStartPrivateNetwork),
-              ],
-              ServerBackend.codex => [
-                Text(copy.firstRunCommandsCodexToken, style: caption),
-                const Cmd(SetupCommands.codexToken),
-                Text(copy.firstRunCommandsCodexUsb, style: caption),
-                const Cmd(SetupCommands.codexUsb),
-              ],
-            },
+            ],
           ),
+        ),
+        KitExpandRow(
+          key: const ValueKey('connect-show-commands'),
+          title: copy.firstRunShowCommands,
+          children: [
+            _Rails(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: switch (backend) {
+                  ServerBackend.openCode => [
+                    caption(copy.e7SharedServersStartedWithOpencodeServeDoNot),
+                    command(SetupCommands.legacyServe),
+                    caption(copy.e7SharedThenAddTheServerManuallyWithUsername),
+                  ],
+                  ServerBackend.paseo => [
+                    caption(copy.firstRunCommandsPaseoNetwork),
+                    command(SetupCommands.paseoStartPrivateNetwork),
+                  ],
+                  ServerBackend.codex => [
+                    caption(copy.firstRunCommandsCodexToken),
+                    command(SetupCommands.codexToken),
+                    caption(copy.firstRunCommandsCodexUsb),
+                    command(SetupCommands.codexUsb),
+                  ],
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -3072,8 +3073,8 @@ class _PairingActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     final notice = this.notice;
     final failure = this.failure;
     final scan = onScan;
@@ -3081,7 +3082,7 @@ class _PairingActions extends StatelessWidget {
     if (compact) {
       buttons = KitInset(
         child: Wrap(
-          spacing: 4,
+          spacing: tokens.space1,
           children: [
             KitButton.tertiary(
               key: const ValueKey('server-pairing-paste'),
@@ -3123,7 +3124,7 @@ class _PairingActions extends StatelessWidget {
                     label: copy.addServerScan,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.space3),
                 Expanded(child: paste),
               ],
             );
@@ -3133,14 +3134,12 @@ class _PairingActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (instructions case final line?) ...[
-          Text(
+          KitText(
             line,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.35,
-            ),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: tokens.space3),
         ],
         buttons,
         // What the code said unfolds under the buttons and folds away when
@@ -3149,7 +3148,7 @@ class _PairingActions extends StatelessWidget {
           child: notice == null
               ? null
               : Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: EdgeInsetsDirectional.only(top: tokens.space2),
                   child: KitNotice(
                     key: const ValueKey('server-pairing-notice'),
                     tone: AppStatusTone.ok,
@@ -3161,7 +3160,7 @@ class _PairingActions extends StatelessWidget {
           child: failure == null
               ? null
               : Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: EdgeInsetsDirectional.only(top: tokens.space2),
                   child: KitNotice(
                     key: const ValueKey('server-pairing-failure'),
                     tone: AppStatusTone.failure,
@@ -3222,81 +3221,71 @@ class _ProbeVerdict extends StatelessWidget {
   }
 }
 
-/// What a new server is, as one clear choice (ledger row 15): a row each,
-/// with a line saying what it is, and the chosen one marked.
+/// What a new server is, as one clear choice (ledger row 15): the kit's
+/// single choice list (KIT-25), a row each with a line saying what it is,
+/// the chosen one marked; it acts on tap.
 class _BackendChoice extends StatelessWidget {
   const _BackendChoice({required this.selected, required this.onSelected});
 
   final ServerBackend selected;
-
-  /// Null while a save is in flight: the choice is frozen with the fields.
-  final ValueChanged<ServerBackend>? onSelected;
+  final ValueChanged<ServerBackend> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
-    Widget row(
-      ServerBackend backend,
-      String key,
-      IconData icon,
-      String title,
-      String detail,
-    ) {
-      final chosen = backend == selected;
-      final accent = theme.colorScheme.primary;
-      return Semantics(
-        inMutuallyExclusiveGroup: true,
-        checked: chosen,
-        child: KitRow(
-          key: ValueKey(key),
-          leading: KitRow.icon(context, icon, color: chosen ? accent : null),
-          title: title,
-          supporting: TextSpan(text: detail),
-          enabled: onSelected != null,
-          onTap: () => onSelected?.call(backend),
-          trailing: SizedBox.square(
-            dimension: 48,
-            child: Icon(
-              chosen ? AppIconography.radioSelected : AppIconography.radioEmpty,
-              size: 22,
-              color: chosen ? accent : AppTheme.mutedOf(theme),
+    final tokens = KitTokens.of(context);
+    return Padding(
+      key: const ValueKey('server-backend-selector'),
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        top: tokens.space1,
+        end: tokens.gutter,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.space1,
+              bottom: tokens.labelGap,
+            ),
+            child: Semantics(
+              header: true,
+              child: KitText(copy.addServerConnectTo, role: KitTextRole.label),
             ),
           ),
-        ),
-      );
-    }
-
-    return Column(
-      key: const ValueKey('server-backend-selector'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionLabel(
-          copy.addServerConnectTo,
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-        ),
-        row(
-          ServerBackend.openCode,
-          'server-backend-opencode',
-          AppIconography.computer,
-          copy.addServerTypeOpenCode,
-          copy.addServerTypeOpenCodeDetail,
-        ),
-        row(
-          ServerBackend.codex,
-          'server-backend-codex',
-          AppIconography.code,
-          copy.addServerTypeCodex,
-          copy.addServerTypeCodexDetail,
-        ),
-        row(
-          ServerBackend.paseo,
-          'server-backend-paseo',
-          AppIconography.agent,
-          copy.addServerTypePaseo,
-          copy.addServerTypePaseoDetail,
-        ),
-      ],
+          KitChoiceList<ServerBackend>.single(
+            semanticsLabel: copy.addServerConnectTo,
+            // A tap only selects; Save & connect acts on the whole form.
+            actsOnTap: false,
+            selected: selected,
+            onSelected: onSelected,
+            choices: [
+              KitChoice(
+                key: const ValueKey('server-backend-opencode'),
+                value: ServerBackend.openCode,
+                leading: KitRow.icon(context, AppIconography.computer),
+                title: copy.addServerTypeOpenCode,
+                supporting: copy.addServerTypeOpenCodeDetail,
+              ),
+              KitChoice(
+                key: const ValueKey('server-backend-codex'),
+                value: ServerBackend.codex,
+                leading: KitRow.icon(context, AppIconography.code),
+                title: copy.addServerTypeCodex,
+                supporting: copy.addServerTypeCodexDetail,
+              ),
+              KitChoice(
+                key: const ValueKey('server-backend-paseo'),
+                value: ServerBackend.paseo,
+                leading: KitRow.icon(context, AppIconography.agent),
+                title: copy.addServerTypePaseo,
+                supporting: copy.addServerTypePaseoDetail,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

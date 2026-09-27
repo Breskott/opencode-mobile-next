@@ -271,7 +271,14 @@ void main() {
       };
       addTearDown(() => serverProbe = oldProbe);
       await tester.pumpWidget(_app(store, controller));
-      await tester.tap(find.byType(KitRowMenu));
+      await tester.longPress(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('saved-server-rows')),
+              matching: find.byType(KitRow),
+            )
+            .first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Edit'));
       await tester.pumpAndSettle();
@@ -309,7 +316,7 @@ void main() {
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     // Titled with the agent chosen at "Which agent?".
-    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
+    expect(find.widgetWithText(KitTopBar, 'OpenCode'), findsOneWidget);
     expect(find.text('Save & connect'), findsOneWidget);
     // Address and password only; the rest waits under More options.
     expect(find.text('AUTHENTICATION'), findsNothing);
@@ -357,12 +364,15 @@ void main() {
       expect(
         tester
             .widget<TextField>(
-              find.byKey(const ValueKey('server-password-field')),
+              find.descendant(
+                of: find.byKey(const ValueKey('server-password-field')),
+                matching: find.byType(TextField),
+              ),
             )
             .obscureText,
         isFalse,
       );
-      expect(find.byTooltip('Hide server password'), findsOneWidget);
+      expect(find.byTooltip('Hide Server password'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('save-server-profile')));
       await tester.pumpAndSettle();
@@ -493,7 +503,14 @@ void main() {
     addTearDown(connection.dispose);
     await tester.pumpWidget(_app(store, connection));
 
-    await tester.tap(find.byType(KitRowMenu));
+    await tester.longPress(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('saved-server-rows')),
+            matching: find.byType(KitRow),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -526,7 +543,7 @@ void main() {
       find.byKey(const ValueKey('server-name-field')),
       'Workstation',
     );
-    await tester.tap(find.byTooltip('Close server editor'));
+    await tester.tap(find.byKey(const ValueKey('server-editor-close')));
     await tester.pumpAndSettle();
 
     expect(find.text('Discard server changes?'), findsOneWidget);

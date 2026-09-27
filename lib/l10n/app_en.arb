@@ -25455,5 +25455,39 @@
   "kitRequestSendAnswers": "Send answers",
   "@kitRequestSendAnswers": {
     "description": "KitRequestSheet: the default label of a form's pinned submit button, which sends every typed answer to the agent"
+  },
+  "serversOtherWays": "Other ways to connect",
+  "@serversOtherWays": {
+    "description": "Servers: section label above the rows that add a server another way (OpenCode 2, this phone, more setup options)."
+  },
+  "serversRemoveBody": "This phone forgets the server: its password, chosen model and agent, project and widget conversations.",
+  "@serversRemoveBody": {
+    "description": "Servers › Remove server sheet: what removing a saved server deletes on this device, in one sentence."
+  },
+  "serversRemoveQueued": "{count, plural, =1{1 queued prompt will be deleted} other{{count} queued prompts will be deleted}}",
+  "@serversRemoveQueued": {
+    "description": "Servers › Remove server sheet: unsent queued prompts lost with the server.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversRemoveDrafts": "{count, plural, =1{1 unsent draft will be deleted} other{{count} unsent drafts will be deleted}}",
+  "@serversRemoveDrafts": {
+    "description": "Servers › Remove server sheet: unsent drafts lost with the server.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversRemoveActiveNext": "You are connected to it: the app disconnects and shows your servers",
+  "@serversRemoveActiveNext": {
+    "description": "Servers › Remove server sheet: removing the server in use says what shows next."
+  },
+  "serversRemoveServerKeeps": "Nothing is deleted on the server or at your AI providers",
+  "@serversRemoveServerKeeps": {
+    "description": "Servers › Remove server sheet: what is kept."
   }
 }

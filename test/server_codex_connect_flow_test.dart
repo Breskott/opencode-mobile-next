@@ -318,7 +318,10 @@ void main() {
       expect(
         tester
             .widget<TextField>(
-              find.byKey(const ValueKey('server-password-field')),
+              find.descendant(
+                of: find.byKey(const ValueKey('server-password-field')),
+                matching: find.byType(TextField),
+              ),
             )
             .controller
             ?.text,
@@ -348,7 +351,14 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
 
-    await tester.tap(find.byType(KitRowMenu));
+    await tester.longPress(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('saved-server-rows')),
+            matching: find.byType(KitRow),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
