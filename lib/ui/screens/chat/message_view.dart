@@ -1040,11 +1040,10 @@ class _MessageView extends StatelessWidget {
   final String searchLabel;
   final ValueChanged<BuildContext>? onSearchExcerptContext;
 
-  /// Opens the host's actions for this message; the footer's More calls it.
-  final VoidCallback? onLongPress;
-
-  /// The message's actions as menu entries (copy, fork, revert, delete):
-  /// the prompt's long-press and right-click menu, and the reply's.
+  /// The message's actions as menu entries (copy, fork, read aloud, revert,
+  /// delete): the prompt's long-press and right-click menu, and the reply's
+  /// More, long-press and right-click menu (without Copy, which the turn's
+  /// footer shows beside More).
   final List<ContextMenuAction> Function()? contextActions;
   final ToolOutputFileLoader filePreviewLoader;
   final ToolOutputFileAction? onAttachFile;
@@ -1074,7 +1073,6 @@ class _MessageView extends StatelessWidget {
     this.searchMatch,
     this.searchLabel = '',
     this.onSearchExcerptContext,
-    this.onLongPress,
     this.contextActions,
     required this.filePreviewLoader,
     required this.onAttachFile,
@@ -1334,7 +1332,7 @@ class _MessageView extends StatelessWidget {
         ? KitTurnPhase.running
         : KitTurnPhase.finished;
 
-    final footer = onCopy == null && onLongPress == null
+    final footer = onCopy == null && contextActions == null
         ? null
         : KitTurnFooter(
             copyText: () =>
@@ -1342,7 +1340,6 @@ class _MessageView extends StatelessWidget {
             copyLabel: chat?._messageCopy(m).label,
             meta: metaParts.isEmpty ? null : metaParts.join(' · '),
             menu: _menuItems(withCopy: false),
-            onMore: onLongPress,
           );
 
     final Widget turn = KitTurn(

@@ -212,34 +212,42 @@ void main() {
     expect(find.text('Adds to this turn'), findsOneWidget);
   });
 
-  testWidgets('cancelling an inbox item returns its text to the composer', (
-    tester,
-  ) async {
+  testWidgets('cancelling an inbox item returns its text to the draft, and '
+      'Undo sends it again the same way', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
     addTearDown(controller.dispose);
     await _pumpChat(tester, controller);
+    controller.busySessions.add('session-1');
     _enqueue(controller, inboxID: 'msg_1', text: 'bring me back');
     await _settle(tester);
 
-    // The item's own menu holds its actions.
+    // The item's own menu holds its actions. Words only: Undo puts it back,
+    // so nothing asks first (kit-v2 §4.1).
     await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
     await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('inbox-action-cancel')));
     await _settle(tester);
-    // Confirm sheet: cancel-back-to-composer is destructive-confirmed.
-    await tester.tap(find.text('Cancel message'));
-    await _settle(tester);
 
     expect(api.inboxCancels.single, ('session-1', 'msg_1'));
     expect(find.byKey(const ValueKey('pending-send-msg_1')), findsNothing);
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-          .controller
-          ?.text,
-      'bring me back',
-    );
+    String composerText() => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.byKey(const Key('chat-composer-field')),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .controller
+        .text;
+    expect(composerText(), 'bring me back');
+    expect(find.text('Returned to your draft'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await _settle(tester);
+    expect(composerText(), isEmpty);
+    expect(api.prompts.single.text, 'bring me back');
+    expect(api.prompts.single.delivery, PromptDelivery.queue);
   });
 
   testWidgets('the bubble offers only the inline flip that changes the mode', (
@@ -431,12 +439,22 @@ void main() {
       return (api, controller);
     }
 
-    Future<void> send(WidgetTester tester, String text) async {
+    Future<void> send(
+      WidgetTester tester,
+      String text, {
+      bool steer = false,
+    }) async {
       await tester.enterText(
         find.byKey(const Key('chat-composer-field')),
         text,
       );
       await tester.pump();
+      if (steer) {
+        // "Send after this reply" is the default (P6.6); adding to the
+        // running turn is the person's choice.
+        await tester.tap(find.text('Add to this turn').last);
+        await tester.pump();
+      }
       await tester.tap(find.byKey(const Key('chat-send-button')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -467,7 +485,7 @@ void main() {
       );
       await tester.pump();
 
-      await send(tester, 'with a detail sheet');
+      await send(tester, 'with a detail sheet', steer: true);
 
       expect(api.inboxCancels.map((c) => c.$2), ['m1', 'm2']);
       expect(api.prompts.single.delivery, PromptDelivery.steer);

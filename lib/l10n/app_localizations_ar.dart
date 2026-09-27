@@ -242,9 +242,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commonClearSearch => 'مسح البحث';
 
   @override
-  String get commonUndo => 'تراجع';
-
-  @override
   String get workTitle => 'المهام';
 
   @override
@@ -8718,10 +8715,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiReloadMessages => 'تحديث الرسائل';
 
   @override
-  String get chatUiRemovesItFromTheConversationPermanently =>
-      'إزالتها من المحادثة نهائيًا';
-
-  @override
   String get chatUiRename => 'إعادة تسمية';
 
   @override
@@ -8911,10 +8904,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get chatUiStartACleanSessionInThisWorkspace =>
       'بدء محادثة جديدة خالية من السياق في هذا المشروع';
-
-  @override
-  String get chatUiStartANewSessionWithThisPrompt =>
-      'بدء محادثة جديدة بهذا الطلب في محرّر الرسالة';
 
   @override
   String get chatUiStartCoding => 'بدء البرمجة';

@@ -127,7 +127,6 @@
   "modelUnavailableSelection": "The conversation's model is unavailable in this catalog. Refresh models or choose another.",
   "modelScopeChanged": "The server changed. Reopen the model selector to continue.",
   "commonClearSearch": "Clear search",
-  "commonUndo": "Undo",
   "workTitle": "Tasks",
   "workDescription": "Agents and commands related to this conversation.",
   "workAgents": "Agents",
@@ -7409,10 +7408,6 @@
   "@chatUiReloadMessages": {
     "description": "Chat journey: Reload messages"
   },
-  "chatUiRemovesItFromTheConversationPermanently": "Removes it from the conversation permanently",
-  "@chatUiRemovesItFromTheConversationPermanently": {
-    "description": "Chat journey: Removes it from the conversation permanently"
-  },
   "chatUiRename": "Rename",
   "@chatUiRename": {
     "description": "Chat journey: Rename"
@@ -7644,10 +7639,6 @@
   "chatUiStartACleanSessionInThisWorkspace": "Start a clean conversation in this project",
   "@chatUiStartACleanSessionInThisWorkspace": {
     "description": "Chat journey: Start a clean session in this workspace"
-  },
-  "chatUiStartANewSessionWithThisPrompt": "Start a new conversation with this prompt in the composer",
-  "@chatUiStartANewSessionWithThisPrompt": {
-    "description": "Chat journey: Start a new session with this prompt in the composer"
   },
   "chatUiStartCoding": "Start coding",
   "@chatUiStartCoding": {
