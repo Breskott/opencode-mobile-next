@@ -26205,5 +26205,260 @@
   "teamStartRunRefusedKept": "Your task is still here. Edit it and send it again.",
   "@teamStartRunRefusedKept": {
     "description": "AI Team start-a-task sheet: under the planner's refusal, says the typed task is kept so the person can edit and resend it."
+  },
+  "catalogScreenTitle": "Models",
+  "@catalogScreenTitle": {
+    "description": "Models page (catalog): top bar title. Agents live under the picker's Options."
+  },
+  "catalogScreenLoading": "Loading models",
+  "@catalogScreenLoading": {
+    "description": "Models page: the loading bar's accessible label while the catalog loads."
+  },
+  "catalogScreenOffline": "Can't reach the server right now. Models appear once it answers.",
+  "@catalogScreenOffline": {
+    "description": "Models page: notice while the server is unreachable and no catalog has loaded."
+  },
+  "catalogScreenOfflineStale": "Can't reach the server right now. This is the list it last sent.",
+  "@catalogScreenOfflineStale": {
+    "description": "Models page: notice while the server is unreachable; the shown list is the last one received."
+  },
+  "catalogScreenNoProviderBody": "Only signed-in providers' models are listed. Connect one to choose a model.",
+  "@catalogScreenNoProviderBody": {
+    "description": "Models page: notice body under the no-provider title."
+  },
+  "catalogScreenConnectProvider": "Connect a provider",
+  "@catalogScreenConnectProvider": {
+    "description": "Models page: notice action that opens the Providers page."
+  },
+  "integrationsMcpTitle": "MCP servers",
+  "@integrationsMcpTitle": {
+    "description": "Integrations page in MCP mode: top bar title."
+  },
+  "integrationsMcpServersLabel": "MCP servers",
+  "@integrationsMcpServersLabel": {
+    "description": "Integrations page: section label above the MCP server rows; the term is explained in place."
+  },
+  "integrationsProvidersSummary": "{connected} of {total} connected",
+  "@integrationsProvidersSummary": {
+    "description": "Integrations page: count at the end of the Providers section label.",
+    "placeholders": {
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "integrationsModelCount": "{count, plural, one{1 model} other{{count} models}}",
+  "@integrationsModelCount": {
+    "description": "Integrations page: provider row supporting line, how many models the provider serves.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "integrationsProviderActions": "{name} actions",
+  "@integrationsProviderActions": {
+    "description": "Integrations page: accessible name of a provider row's menu.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsManageAccounts": "Manage {name} accounts",
+  "@integrationsManageAccounts": {
+    "description": "Integrations page: provider row menu item and sheet title for the saved accounts of this provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsManageAccountsUnavailable": "This server can't list saved accounts from the app.",
+  "@integrationsManageAccountsUnavailable": {
+    "description": "Integrations page: why the Manage accounts menu item is unavailable on this server."
+  },
+  "integrationsServerSignIn": "Sign in to {name} on the server",
+  "@integrationsServerSignIn": {
+    "description": "Integrations page: provider row menu item and sheet title; runs the provider's sign-in command on the server.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsServerSignInUnavailable": "This server can't run a sign-in command from the app.",
+  "@integrationsServerSignInUnavailable": {
+    "description": "Integrations page: why the server sign-in menu item is unavailable on this server."
+  },
+  "integrationsDisconnectNamed": "Disconnect {name}",
+  "@integrationsDisconnectNamed": {
+    "description": "Integrations page: menu item and confirm button that disconnect a provider or an MCP server.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsDisconnectBody": "Removes the {name} key from this server. A reply already running finishes first.",
+  "@integrationsDisconnectBody": {
+    "description": "Integrations page: disconnect-provider confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsConnectMethodSubtitle": "Choose how to connect",
+  "@integrationsConnectMethodSubtitle": {
+    "description": "Integrations page: connect-method sheet subtitle under 'Connect {provider}'."
+  },
+  "integrationsKeyHelper": "The key is stored on this server. The app never shows it again.",
+  "@integrationsKeyHelper": {
+    "description": "Integrations page: helper under the API key field in the connect dialog."
+  },
+  "integrationsKeyEmpty": "Paste the key first.",
+  "@integrationsKeyEmpty": {
+    "description": "Integrations page: reason under the disabled Connect button while the key field is empty."
+  },
+  "integrationsKeyRejected": "The server didn't accept this key. Check it and try again.",
+  "@integrationsKeyRejected": {
+    "description": "Integrations page: error under the key field when connecting failed. Never quotes the server reply."
+  },
+  "integrationsSignInAtHost": "Sign in at {host}?",
+  "@integrationsSignInAtHost": {
+    "description": "Integrations page: authorization launch confirmation title, host first.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsSignInBody": "Approve access in your browser, then come back to this app.",
+  "@integrationsSignInBody": {
+    "description": "Integrations page: authorization launch confirmation body."
+  },
+  "integrationsSignInInstructions": "The server says: {instructions}",
+  "@integrationsSignInInstructions": {
+    "description": "Integrations page: authorization launch confirmation, the server's instructions (may contain a one-time device code).",
+    "placeholders": {
+      "instructions": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsFinishSignInTitle": "Finish signing in",
+  "@integrationsFinishSignInTitle": {
+    "description": "Integrations page: the one dialog that takes a sign-in code for a provider or an MCP server."
+  },
+  "integrationsFinishSignInAction": "Finish signing in",
+  "@integrationsFinishSignInAction": {
+    "description": "Integrations page: primary button of the finish-signing-in dialog."
+  },
+  "integrationsFinishSignInEmpty": "Paste the code first.",
+  "@integrationsFinishSignInEmpty": {
+    "description": "Integrations page: reason under the disabled primary while the code field is empty."
+  },
+  "integrationsFinishSignInMcpHelper": "Paste the address your browser ended on after you approved access, or the code it showed.",
+  "@integrationsFinishSignInMcpHelper": {
+    "description": "Integrations page: helper under the MCP sign-in code field."
+  },
+  "integrationsFinishSignInProviderHelper": "Paste the code the sign-in page showed after you approved access.",
+  "@integrationsFinishSignInProviderHelper": {
+    "description": "Integrations page: helper under the provider sign-in code field when the server sent no instructions."
+  },
+  "integrationsOAuthInputsContinue": "Open {name} sign-in",
+  "@integrationsOAuthInputsContinue": {
+    "description": "Integrations page: primary of the sign-in questions sheet; names its result.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsCancelSignIn": "Cancel sign-in",
+  "@integrationsCancelSignIn": {
+    "description": "Integrations page: action on a pending sign-in notice."
+  },
+  "integrationsPendingNotRecoverable": "Keep this screen open until you finish: this server can't resume a sign-in after you leave.",
+  "@integrationsPendingNotRecoverable": {
+    "description": "Integrations page: note on a pending provider sign-in when the server cannot recover it."
+  },
+  "integrationsMcpActions": "{name} actions",
+  "@integrationsMcpActions": {
+    "description": "Integrations page: accessible name of an MCP server row's menu.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpSignIn": "Sign in to {name}",
+  "@integrationsMcpSignIn": {
+    "description": "Integrations page: MCP server row action when the server needs sign-in.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpReconnect": "Reconnect {name}",
+  "@integrationsMcpReconnect": {
+    "description": "Integrations page: MCP server row action after its connection failed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpSigningIn": "Signing in to {name}",
+  "@integrationsMcpSigningIn": {
+    "description": "Integrations page: pending MCP sign-in notice title.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpSignInOnServer": "Sign in on the server's computer; this server can't do it from the app.",
+  "@integrationsMcpSignInOnServer": {
+    "description": "Integrations page: MCP row supporting line when the server needs sign-in the app cannot run."
+  },
+  "integrationsMcpRemoveUntilRestart": "Remove {name} until restart",
+  "@integrationsMcpRemoveUntilRestart": {
+    "description": "Integrations page: MCP server row menu item; runtime removal.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpRemoveUnavailable": "This server can't remove MCP servers from the app. Edit its configuration on the computer.",
+  "@integrationsMcpRemoveUnavailable": {
+    "description": "Integrations page: why Remove is unavailable on this server."
+  },
+  "integrationsMcpRemoveTitle": "Remove {name} until restart?",
+  "@integrationsMcpRemoveTitle": {
+    "description": "Integrations page: remove-MCP confirmation title.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsMcpRemoveBody": "Its tools stop working in this project now. If it's in the server's configuration, it comes back when the server restarts.",
+  "@integrationsMcpRemoveBody": {
+    "description": "Integrations page: remove-MCP confirmation body."
+  },
+  "integrationsMcpRemoveConfirm": "Remove until restart",
+  "@integrationsMcpRemoveConfirm": {
+    "description": "Integrations page: remove-MCP confirmation button."
+  },
+  "integrationsCopyResourceAddress": "Copy address",
+  "@integrationsCopyResourceAddress": {
+    "description": "Integrations page: resource row menu item that copies the resource's address."
   }
 }
