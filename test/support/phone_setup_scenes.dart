@@ -422,6 +422,8 @@ Future<void> pumpSetupScene(
   final engine = FakeSetupEngine();
   if (scene.progress case final progress?) engine.emit(progress);
   PhoneSetup.engine = engine;
+  // No Termux job: the start screen also reads Termux's engine (P1.7).
+  PhoneSetup.termux = FakeSetupEngine();
   final linux = scene.linux ?? SceneLinux();
   final navigatorKey = GlobalKey<NavigatorState>();
   await tester.pumpWidget(

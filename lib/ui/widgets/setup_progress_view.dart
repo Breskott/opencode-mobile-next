@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/setup_contract.dart';
+import '../../diagnostics/failed_job_report.dart';
+import '../../feedback/bug_report.dart' show failedJobReportAction;
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
@@ -244,6 +246,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
               ),
           ];
     final failed = progress.state == SetupState.failed;
+    final failedRow = rows.any((r) => r.state == ComponentState.failed);
     final stopped =
         progress.state == SetupState.interrupted ||
         progress.state == SetupState.cancelled;
@@ -257,7 +260,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     final String? body;
     Key? bodyKey;
     if (failed) {
-      if (rows.any((r) => r.state == ComponentState.failed)) {
+      if (failedRow) {
         body = null;
       } else {
         body = network
@@ -293,6 +296,18 @@ class _SetupProgressViewState extends State<SetupProgressView> {
             personAction: row.state == ComponentState.pending
                 ? widget.personActions[row.id]
                 : null,
+            // Report this failure (P8.4): the job's log as it is at the tap
+            // (widget.progress is the host's latest), for this row.
+            report: row.state == ComponentState.failed
+                ? failedJobReportAction(
+                    context,
+                    key: ValueKey('setup-progress-report-${row.id}'),
+                    capture: () => FailedJobReport.setup(
+                      widget.progress,
+                      componentId: row.id,
+                    ),
+                  )
+                : null,
           ),
       ],
       since: running ? _lastReport : null,
@@ -317,6 +332,15 @@ class _SetupProgressViewState extends State<SetupProgressView> {
         lines: _log,
         live: running,
         emptyText: l10n.setupProgressViewNoLog,
+        // A job that failed between components has no failed row to carry
+        // the report: the whole job's report sits on its log instead.
+        headerAction: failed && !failedRow
+            ? failedJobReportAction(
+                context,
+                key: const Key('setup-progress-report-job'),
+                capture: () => FailedJobReport.setup(widget.progress),
+              )
+            : null,
       ),
     );
 

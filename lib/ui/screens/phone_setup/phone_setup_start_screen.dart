@@ -112,15 +112,15 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       // turns this screen into "Continue". A read that hangs must not hold
       // the screen hostage, so it gets a few seconds and then the screen
       // shows what it knows.
-      await Future.wait([
-        _engine.restore().timeout(const Duration(seconds: 3)),
-        _restoreTermux(),
-      ]);
+      await _engine.restore().timeout(const Duration(seconds: 3));
     } catch (_) {
       // Nothing restored: the progress stays idle and the promise shows.
     }
     if (!mounted) return;
     setState(() => _restored = true);
+    // Termux's job is read beside the rest, never before the screen shows:
+    // its progress listener redraws the hero when it arrives.
+    unawaited(_restoreTermux());
     unawaited(_probeInApp());
     unawaited(_probeTermux());
     unawaited(_probeDevice());

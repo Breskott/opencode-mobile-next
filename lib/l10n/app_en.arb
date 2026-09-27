@@ -26416,20 +26416,15 @@
   "@teamIntroCostMemory": {
     "description": "AI Team intro cost item: memory each worker uses on a phone."
   },
-  "teamPhoneReadyChooseTitle": "Choose the project the team works on",
+  "teamPhoneReadyChooseTitle": "Choose the team's project",
   "@teamPhoneReadyChooseTitle": {
     "description": "AI Team ready page (after Add tools installed AI Team): title when no project is open yet."
   },
-  "teamPhoneReadyTurningOnTitle": "Turning on AI Team for {project}",
+  "teamPhoneReadyTurningOnTitle": "Turning on AI Team",
   "@teamPhoneReadyTurningOnTitle": {
-    "description": "AI Team ready page: title while the team is turned on for the project. {project} is the project's folder name.",
-    "placeholders": {
-      "project": {
-        "type": "String"
-      }
-    }
+    "description": "AI Team ready page: title while the team is turned on for the project; the stages below name the project."
   },
-  "teamPhoneReadyFailedTitle": "AI Team did not turn on",
+  "teamPhoneReadyFailedTitle": "AI Team didn't start",
   "@teamPhoneReadyFailedTitle": {
     "description": "AI Team ready page: title when turning the team on failed; the reason follows."
   },

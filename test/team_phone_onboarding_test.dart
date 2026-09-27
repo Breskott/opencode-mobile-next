@@ -1,15 +1,14 @@
-// TEAM-302: the optional on-device AI Team step of the Termux setup and the
-// Settings › Plugins › AI Team "On this phone" section, over a fake
-// TermuxTeamRuntime whose phase sequence the test scripts.
+// AI Team on this phone through phone setup v2 (programme P1.7), over a
+// fake TermuxTeamRuntime whose verbs the test scripts and fake setup
+// engines for both hosts.
 //
-// Covers: block absent without `supportsAiTeam`; present after step 3;
-// Skip is primary and records the dismissal; the five steps follow the
-// runtime's phases with the live output panel; the checksum refusal's own
-// sentence; success writes the phone config onto the Termux profile and
-// Workspace then carries the Team card; killed_by_android copy with Start
-// again; Remove is two-step, drops the config and calls remove; the
-// re-offer shows once from Settings; the unsupported copy; and the layout
-// at 320 dp / 2.5x in LTR English and RTL Arabic.
+// Covers: "Set up AI Team on this phone" opens Add tools with AI Team on
+// the connected server's host and runs it as that host's v2 job; installed
+// already goes straight on; an unfinished job never opens the ready page;
+// the ready page's stages, failure and retry, project choice and "Give the
+// team a first task"; the team page's "Android stopped the team" line;
+// Settings › Plugins › AI Team › On this phone; the failure copy; and the
+// layout at 320 dp / 2.5x in LTR English and RTL Arabic.
 
 import 'dart:async';
 
@@ -19,18 +18,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/builtin/setup/components.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
+import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
+import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
-import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart'
+    show debugBuiltinTeam;
 import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart';
 import 'package:opencode_mobile/ui/widgets/team_phone_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_setup_engine.dart';
 
 const _profileId = 'phone';
 
@@ -80,37 +87,8 @@ TeamRuntimeStatus _ready({int agents = 1, bool killed = false}) => _status(
 /// A scripted runtime: [current] is what `status` answers; each verb waits
 /// on its gate (when set), then answers its scripted result and makes it
 /// the current status.
-/// Where the block lives now: This phone's "Add tools to this phone" sheet
-/// for Termux (programme P1.3; the Termux wizard that hosted it is gone).
-/// The block alone, in a scrolling page, with the sheet's Open Workspace.
-class _BlockHost extends ConsumerWidget {
-  const _BlockHost();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final connection = ref.watch(connProvider);
-    final profile = connection.store.profiles.firstWhere(
-      (p) => TermuxBridge.managesServerUrl(p.baseUrl),
-    );
-    return Scaffold(
-      body: ListView(
-        children: [
-          TeamPhoneOnboardingBlock(
-            key: ValueKey('team-phone-block-${profile.id}'),
-            connection: connection,
-            profile: profile,
-            onOpenWorkspace: () => Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/home', (_) => false),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _FakeRuntime extends TermuxTeamRuntime {
-  _FakeRuntime({this.supported = true, this.manifestJson})
+  _FakeRuntime({this.supported = true})
     : super(
         runner: (_, {timeout = Duration.zero}) async => '',
         manifestLoader: () async => null,
@@ -118,7 +96,6 @@ class _FakeRuntime extends TermuxTeamRuntime {
       );
 
   final bool supported;
-  final String? manifestJson;
   TeamRuntimeStatus current = _status(TeamRuntimePhase.idle);
   String log = '';
   List<String> projects = const ['/root/projects/calc'];
@@ -131,8 +108,7 @@ class _FakeRuntime extends TermuxTeamRuntime {
   Future<bool> get supportsAiTeam async => supported;
 
   @override
-  Future<TeamRuntimeManifest?> manifest() async =>
-      manifestJson == null ? null : TeamRuntimeManifest.parse(manifestJson!);
+  Future<TeamRuntimeManifest?> manifest() async => null;
 
   @override
   Future<TeamRuntimeStatus> status() async => current;
@@ -349,10 +325,69 @@ Future<Object?> _termux(MethodCall call) async {
   }
 }
 
+/// The fake registry with AI Team, as both hosts' engines list it.
+final _registry = [
+  ...FakeSetupEngine.fakeRegistry,
+  const SetupComponent(
+    id: SetupComponentIds.aiTeam,
+    title: 'AI Team',
+    shortTitle: 'AI Team',
+    checkScript: 'true',
+    installScript: 'true',
+    dependsOn: ['essentials', 'opencode'],
+    estimatedSeconds: 150,
+    downloadBytes: 112000000,
+  ),
+];
+
+/// An Add tools job that installed AI Team, ended in [state].
+SetupProgress _teamJob(SetupState state) => SetupProgress(
+  state: state,
+  components: [
+    ComponentProgress(
+      id: SetupComponentIds.aiTeam,
+      state: state == SetupState.done
+          ? ComponentState.done
+          : ComponentState.failed,
+    ),
+  ],
+  overall: state == SetupState.done ? 1 : 0.5,
+  jobId: 'job-team',
+  adding: const [SetupComponentIds.aiTeam],
+);
+
+ServerProfile _inAppProfile() => ServerProfile(
+  id: 'in-app',
+  name: 'This phone',
+  baseUrl: 'http://127.0.0.1:4097',
+  password: 'in-app-secret',
+  flavor: ServerFlavor.v2,
+);
+
+/// The in-app team: turning on records the project and passes each stage.
+class _BuiltinTeam extends BuiltinTeam {
+  final turnedOn = <String>[];
+
+  @override
+  Future<void> turnOn(
+    String path, {
+    required String notice,
+    void Function(BuiltinTeamStage stage)? onStage,
+    Duration healthTimeout = const Duration(minutes: 6),
+  }) async {
+    turnedOn.add(path);
+    for (final stage in BuiltinTeamStage.values) {
+      onStage?.call(stage);
+    }
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late SharedPreferences prefs;
   late _FakeRuntime runtime;
+  late FakeSetupEngine termuxEngine;
+  late FakeSetupEngine inAppEngine;
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   setUp(() async {
@@ -380,6 +415,18 @@ void main() {
       const MethodChannel('oc/termux'),
       _termux,
     );
+    // Add tools' pre-flight asks the device at once, and nothing waits.
+    messenger.setMockMethodCallHandler(
+      const MethodChannel('oc/voice'),
+      (call) async =>
+          call.method == 'getDeviceInfo' ? <String, Object?>{} : null,
+    );
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(
+        const MethodChannel('oc/voice'),
+        null,
+      ),
+    );
     addTearDown(
       () => messenger.setMockMethodCallHandler(
         const MethodChannel('oc/termux'),
@@ -388,6 +435,11 @@ void main() {
     );
     debugTeamPhoneRuntime = runtime;
     addTearDown(() => debugTeamPhoneRuntime = null);
+    termuxEngine = FakeSetupEngine(registry: _registry);
+    inAppEngine = FakeSetupEngine(registry: _registry);
+    PhoneSetup.termux = termuxEngine;
+    PhoneSetup.engine = inAppEngine;
+    addTearDown(() => debugTeamPhoneRunJob = null);
   });
 
   /// A connection over the fake v2 gateway, connected to [profile].
@@ -446,11 +498,6 @@ void main() {
     }
   }
 
-  Future<void> poll(WidgetTester tester) async {
-    await tester.pump(teamPhonePollInterval);
-    await settle(tester, frames: 3);
-  }
-
   /// Scrolls the outer list until [finder] is built and on screen: the
   /// setup screen's list builds its children lazily, so a block below the
   /// fold has no element until the list reaches it.
@@ -484,272 +531,348 @@ void main() {
     await tester.pump();
   }
 
-  Future<(ConnectionController, _MemoryStore)> pumpSetup(
+  /// A page whose one button is "Set up AI Team on this phone".
+  Future<(ConnectionController, _MemoryStore)> pumpDoor(
     WidgetTester tester, {
     ServerProfile? profile,
-    double textScale = 1,
-    bool rtl = false,
-    Locale locale = const Locale('en'),
+    String? directory = '/root/projects/calc',
   }) async {
     final (controller, store) = await connect(profile ?? _phoneProfile());
+    controller.directory = directory;
     await tester.pumpWidget(
       app(
-        const _BlockHost(),
+        Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () =>
+                    openTeamOnThisPhone(context, controller, runtime: runtime),
+                child: const Text('set up'),
+              ),
+            ),
+          ),
+        ),
         controller: controller,
         store: store,
-        textScale: textScale,
-        rtl: rtl,
-        locale: locale,
       ),
     );
     await settle(tester);
     return (controller, store);
   }
 
-  group('onboarding block', () {
-    testWidgets('absent when the runtime does not advertise support', (
+  /// The Termux turn-on answering every verb as it should.
+  void turnOnSucceeds({int agents = 1}) {
+    runtime.results['install'] = _status(
+      TeamRuntimePhase.installed,
+      installed: true,
+    );
+    runtime.results['init'] = _status(
+      TeamRuntimePhase.cityReady,
+      installed: true,
+      city: 'phone',
+    );
+    runtime.results['start'] = _ready(agents: agents);
+  }
+
+  group('Set up AI Team on this phone (v2)', () {
+    testWidgets('Termux: Add tools › AI Team runs as a Termux v2 job, then '
+        'the ready page turns it on and offers a first task', (tester) async {
+      final jobs = <(SetupHostKind, Set<String>)>[];
+      debugTeamPhoneRunJob = (context, host, ids) async {
+        jobs.add((host, ids));
+        termuxEngine.emit(_teamJob(SetupState.done));
+      };
+      turnOnSucceeds();
+      final (controller, store) = await pumpDoor(tester);
+      await tester.tap(find.text('set up'));
+      await settle(tester);
+      // Add tools, with AI Team switched on.
+      expect(
+        find.byKey(const ValueKey('phone-setup-customize-sheet')),
+        findsOneWidget,
+      );
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('phone-setup-customize-done')),
+      );
+      expect(jobs.single.$1, SetupHostKind.termux);
+      expect(jobs.single.$2, contains(SetupComponentIds.aiTeam));
+      // The ready page turned it on for the open project.
+      expect(runtime.calls, [
+        'install',
+        'init:/root/projects/calc',
+        'init',
+        'start',
+      ]);
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-done')),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.teamUiPhoneSuccessTitle), findsOneWidget);
+      expect(find.text(l10n.teamPhoneReadyFirstTask), findsOneWidget);
+      expect(
+        store.saved.single.orchestration?.hostMode,
+        OrchestrationHostMode.phone,
+      );
+      expect(controller.orchestration, isNotNull);
+      await teardown(tester, controller);
+    });
+
+    testWidgets('installed already: straight to the ready page', (
       tester,
     ) async {
-      runtime = _FakeRuntime(supported: false);
-      debugTeamPhoneRuntime = runtime;
-      final (controller, _) = await pumpSetup(tester);
-      expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
+      var jobRan = false;
+      debugTeamPhoneRunJob = (_, _, _) async => jobRan = true;
+      termuxEngine.optionalInstalled = {SetupComponentIds.aiTeam};
+      turnOnSucceeds();
+      final (controller, _) = await pumpDoor(tester);
+      await tester.tap(find.text('set up'));
+      await settle(tester);
       expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w.key is ValueKey<String> &&
-              (w.key as ValueKey<String>).value.startsWith('team-phone-'),
-        ),
+        find.byKey(const ValueKey('phone-setup-customize-sheet')),
         findsNothing,
       );
+      expect(jobRan, isFalse);
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-done')),
+        findsOneWidget,
+      );
       await teardown(tester, controller);
     });
 
-    testWidgets(
-      'present after step 3 when supported, Skip primary, size from the manifest',
-      (tester) async {
-        runtime = _FakeRuntime(
-          manifestJson:
-              '{"schema":1,"arch":"arm64","files":{"gc":{"bytes":93716776},'
-              '"bd":{"bytes":72941864},"dolt":{"bytes":126391984},'
-              '"wrapper":{"bytes":1200}}}',
-        );
-        debugTeamPhoneRuntime = runtime;
-        final (controller, _) = await pumpSetup(tester);
-        final offer = find.byKey(const ValueKey('team-phone-offer'));
-        await reveal(tester, offer);
-        expect(find.text(l10n.teamUiPhoneOfferTitle), findsOneWidget);
-        expect(find.text(l10n.teamUiPhoneOfferWarning), findsOneWidget);
-        expect(find.text(l10n.teamUiPhoneOfferSize(294)), findsOneWidget);
-        // Skip is the filled (primary) button; Set up is outlined.
-        expect(
-          find.descendant(
-            of: find.byKey(const ValueKey('team-phone-skip')),
-            matching: find.text(l10n.teamUiPhoneSkip),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          tester
-              .widget<KitButton>(find.byKey(const ValueKey('team-phone-skip')))
-              .role,
-          KitButtonRole.primary,
-        );
-        expect(
-          tester
-              .widget<KitButton>(
-                find.byKey(const ValueKey('team-phone-set-up')),
-              )
-              .role,
-          KitButtonRole.secondary,
-        );
-        await teardown(tester, controller);
-      },
-    );
-
-    testWidgets('Skip records the dismissal and hides the block', (
+    testWidgets('a job that did not finish never opens the ready page', (
       tester,
     ) async {
-      final (controller, _) = await pumpSetup(tester);
-      await tapRevealed(tester, find.byKey(const ValueKey('team-phone-skip')));
-      expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
+      debugTeamPhoneRunJob = (_, _, _) async =>
+          termuxEngine.emit(_teamJob(SetupState.failed));
+      final (controller, _) = await pumpDoor(tester);
+      await tester.tap(find.text('set up'));
+      await settle(tester);
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('phone-setup-customize-done')),
+      );
+      expect(find.byKey(const ValueKey('team-phone-ready')), findsNothing);
+      expect(runtime.calls, isEmpty);
+      expect(controller.orchestration, isNull);
+      await teardown(tester, controller);
+    });
+
+    testWidgets('OpenCode inside the app: the in-app engine and team', (
+      tester,
+    ) async {
+      final jobs = <SetupHostKind>[];
+      debugTeamPhoneRunJob = (context, host, ids) async {
+        jobs.add(host);
+        inAppEngine.emit(_teamJob(SetupState.done));
+      };
+      final team = _BuiltinTeam();
+      debugBuiltinTeam = team;
+      addTearDown(() => debugBuiltinTeam = null);
+      final (controller, store) = await pumpDoor(
+        tester,
+        profile: _inAppProfile(),
+        directory: '/root/projects/calc',
+      );
+      await tester.tap(find.text('set up'));
+      await settle(tester);
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('phone-setup-customize-done')),
+      );
+      expect(jobs, [SetupHostKind.builtin]);
+      expect(team.turnedOn, ['/root/projects/calc']);
+      expect(runtime.calls, isEmpty, reason: 'Termux is not asked');
       expect(
-        prefs.getString(OrchestrationStore.phoneOfferKey(_profileId)),
-        'skipped',
+        find.byKey(const ValueKey('team-phone-ready-done')),
+        findsOneWidget,
       );
       expect(
-        controller.orchestrationStore.phoneOffer(_profileId),
-        PhoneOffer.skipped,
+        BuiltinTeam.isBuiltinConfig(store.saved.single.orchestration),
+        isTrue,
       );
-      // Re-entering the screen: the block stays away (Settings re-offers).
-      await tester.pumpWidget(const SizedBox.shrink());
-      final store = _MemoryStore(prefs: prefs, seeded: [_phoneProfile()]);
+      await teardown(tester, controller);
+    });
+  });
+
+  group('the ready page', () {
+    Future<(ConnectionController, _MemoryStore)> pumpReady(
+      WidgetTester tester, {
+      String? directory = '/root/projects/calc',
+      Future<String?> Function(BuildContext context)? chooseProject,
+      Future<void> Function(BuildContext, OrchestrationController)? startTask,
+      double textScale = 1,
+      bool rtl = false,
+      Locale locale = const Locale('en'),
+    }) async {
+      final (controller, store) = await connect(_phoneProfile());
+      controller.directory = directory;
       await tester.pumpWidget(
-        app(const _BlockHost(), controller: controller, store: store),
+        app(
+          TeamPhoneReadyScreen(
+            connection: controller,
+            host: SetupHostKind.termux,
+            runtime: runtime,
+            chooseProject: chooseProject,
+            startTask: startTask,
+          ),
+          controller: controller,
+          store: store,
+          textScale: textScale,
+          rtl: rtl,
+          locale: locale,
+        ),
       );
       await settle(tester);
-      expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
+      return (controller, store);
+    }
+
+    testWidgets('shows the stages while it turns on', (tester) async {
+      turnOnSucceeds();
+      runtime.gates['start'] = Completer<void>();
+      final (controller, _) = await pumpReady(tester);
+      expect(find.text(l10n.teamPhoneReadyTurningOnTitle), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('builtin-team-stage-starting')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.aiteamComponentStageProject('calc')),
+        findsOneWidget,
+      );
+      runtime.gates['start']!.complete();
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-done')),
+        findsOneWidget,
+      );
       await teardown(tester, controller);
     });
 
-    testWidgets('the five steps follow the phases, with the live output panel', (
-      tester,
-    ) async {
-      runtime.gates['install'] = Completer<void>();
-      runtime.gates['init'] = Completer<void>();
-      runtime.gates['start'] = Completer<void>();
-      runtime.results['install'] = _status(
-        TeamRuntimePhase.installed,
-        installed: true,
-        versions: _versions,
+    testWidgets('a failure says why and turns on again', (tester) async {
+      turnOnSucceeds();
+      runtime.results['init'] = _status(
+        TeamRuntimePhase.failed,
+        rawPhase: 'failed:project-not-git',
+        reason: 'project-not-git',
+        verb: 'init',
+      );
+      final (controller, _) = await pumpReady(tester);
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-failed')),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.teamPhoneReadyFailedTitle), findsOneWidget);
+      expect(find.text(l10n.teamUiPhoneFailedProject), findsOneWidget);
+      expect(controller.orchestration, isNull);
+      // Report this failure (P8.4) sits under the retry.
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-report')),
+        findsOneWidget,
       );
       runtime.results['init'] = _status(
         TeamRuntimePhase.cityReady,
         installed: true,
         city: 'phone',
-        project: '/root/projects/calc',
       );
-      runtime.results['start'] = _ready(agents: 2);
-      final (controller, store) = await pumpSetup(tester);
       await tapRevealed(
         tester,
-        find.byKey(const ValueKey('team-phone-set-up')),
+        find.byKey(const ValueKey('team-phone-ready-retry')),
       );
-      // One managed project: used without asking.
-      expect(runtime.calls, ['install']);
-      final steps = find.byKey(const ValueKey('team-phone-steps'));
-      await reveal(tester, steps);
-      expect(find.byKey(const ValueKey('setup-live-output')), findsOneWidget);
-      expect(find.text(l10n.teamUiPhoneLeaveNote), findsOneWidget);
       expect(
-        find.text(l10n.teamUiPhoneProjectLine('/root/projects/calc')),
+        find.byKey(const ValueKey('team-phone-ready-done')),
         findsOneWidget,
       );
-      for (final step in TeamPhoneStep.values) {
-        expect(
-          find.byKey(ValueKey('team-phone-step-${step.name}')),
-          findsOneWidget,
-        );
-      }
-      Map<TeamPhoneStep, TeamPhoneStepState> states() =>
-          teamPhoneStepStates(runtime.current, connected: false);
-
-      // Downloading: step 1 runs, the panel shows the script's lines.
-      runtime.current = _status(
-        TeamRuntimePhase.downloading,
-        verb: 'install',
-        busy: true,
-      );
-      runtime.log = '[aiteam] downloading gc-1.4.1-android-arm64\n';
-      await poll(tester);
-      expect(states()[TeamPhoneStep.download], TeamPhoneStepState.running);
-      expect(
-        find.textContaining('downloading gc-1.4.1-android-arm64'),
-        findsOneWidget,
-      );
-      runtime.current = _status(
-        TeamRuntimePhase.installingPackages,
-        verb: 'install',
-        busy: true,
-      );
-      await poll(tester);
-      expect(states()[TeamPhoneStep.download], TeamPhoneStepState.done);
-      expect(states()[TeamPhoneStep.packages], TeamPhoneStepState.running);
-
-      runtime.gates['install']!.complete();
-      await settle(tester);
-      expect(runtime.calls, ['install', 'init:/root/projects/calc', 'init']);
-      runtime.current = _status(
-        TeamRuntimePhase.creatingCity,
-        verb: 'init',
-        busy: true,
-        installed: true,
-      );
-      await poll(tester);
-      expect(states()[TeamPhoneStep.packages], TeamPhoneStepState.done);
-      expect(states()[TeamPhoneStep.city], TeamPhoneStepState.running);
-      runtime.gates['init']!.complete();
-      await settle(tester);
-      expect(runtime.calls.last, 'start');
-      runtime.current = _status(
-        TeamRuntimePhase.starting,
-        verb: 'start',
-        busy: true,
-        installed: true,
-        city: 'phone',
-      );
-      await poll(tester);
-      expect(states()[TeamPhoneStep.start], TeamPhoneStepState.running);
-      runtime.gates['start']!.complete();
-      await settle(tester);
-
-      // Success: config written, card with the agent count.
-      final success = find.byKey(const ValueKey('team-phone-success'));
-      await reveal(tester, success);
-      expect(
-        find.text(
-          '${l10n.teamUiPhoneSuccessTitle} · ${l10n.teamUiPhoneAgentsReady(2)}',
-        ),
-        findsOneWidget,
-      );
-      final saved = store.saved.single.orchestration;
-      expect(saved, isNotNull);
-      expect(saved!.hostMode, OrchestrationHostMode.phone);
-      expect(saved.hostKind, OrchestrationHostKind.phone);
-      expect(saved.url, TermuxBridge.aiteamSupervisorUrl);
-      expect(saved.city, 'phone');
-      expect(saved.front, isFalse);
-      expect(controller.orchestration?.profileId, _profileId);
+      expect(controller.orchestration, isNotNull);
       await teardown(tester, controller);
     });
 
-    testWidgets('a checksum mismatch gets its own sentence and Retry', (
+    testWidgets('no project open: it asks for one first', (tester) async {
+      turnOnSucceeds();
+      final (controller, _) = await pumpReady(
+        tester,
+        directory: null,
+        chooseProject: (_) async => '/root/projects/notes',
+      );
+      expect(runtime.calls, isEmpty);
+      expect(find.text(l10n.teamPhoneReadyChooseTitle), findsOneWidget);
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('team-phone-ready-choose-project')),
+      );
+      expect(runtime.calls, contains('init:/root/projects/notes'));
+      expect(
+        find.byKey(const ValueKey('team-phone-ready-done')),
+        findsOneWidget,
+      );
+      await teardown(tester, controller);
+    });
+
+    testWidgets('Give the team a first task starts it on this team', (
       tester,
     ) async {
-      runtime.results['install'] = _status(
-        TeamRuntimePhase.failed,
-        rawPhase: 'failed:checksum-mismatch gc',
-        reason: 'checksum-mismatch gc',
-        verb: 'install',
-        lastError: 'gc: checksum mismatch',
+      turnOnSucceeds();
+      OrchestrationController? started;
+      final (controller, _) = await pumpReady(
+        tester,
+        startTask: (_, team) async => started = team,
       );
-      runtime.log = '[aiteam] ERROR: gc: checksum mismatch\n';
-      final (controller, store) = await pumpSetup(tester);
       await tapRevealed(
         tester,
-        find.byKey(const ValueKey('team-phone-set-up')),
+        find.byKey(const ValueKey('team-phone-ready-first-task')),
       );
-      final failed = find.byKey(const ValueKey('team-phone-failed'));
-      await reveal(tester, failed);
-      expect(
-        _textOf(
-          tester,
-          find.byKey(const ValueKey('team-phone-failed-reason')),
-        ).data,
-        l10n.teamUiPhoneFailedChecksum('gc'),
+      expect(started, isNotNull);
+      expect(identical(started, controller.orchestration), isTrue);
+      await teardown(tester, controller);
+    });
+  });
+
+  group('the team page', () {
+    testWidgets('a team Android stopped says so, with Start the team again', (
+      tester,
+    ) async {
+      runtime.current = _ready(killed: true);
+      final (controller, store) = await connect(
+        _phoneProfile(config: _phoneConfig()),
       );
-      expect(
-        teamPhoneStepStates(
-          runtime.current,
-          connected: false,
-        )[TeamPhoneStep.download],
-        TeamPhoneStepState.error,
+      final team = controller.orchestration!;
+      await tester.pumpWidget(
+        app(
+          TeamHomeScreen(controller: team),
+          controller: controller,
+          store: store,
+        ),
       );
-      expect(find.byKey(const ValueKey('setup-live-output')), findsOneWidget);
-      expect(store.saved.single.orchestration, isNull);
-      // Retry runs the install again.
-      runtime.results['install'] = _status(
-        TeamRuntimePhase.failed,
-        rawPhase: 'failed:download',
-        reason: 'download',
-        verb: 'install',
-      );
-      await tapRevealed(tester, find.byKey(const ValueKey('team-phone-retry')));
-      expect(runtime.calls, ['install', 'install']);
-      expect(find.text(l10n.teamUiPhoneFailedDownload), findsOneWidget);
+      await settle(tester);
+      expect(find.byKey(const ValueKey('team-phone-killed')), findsOneWidget);
+      expect(find.text(l10n.teamUiPhoneKilled), findsOneWidget);
+      runtime.results['start'] = _ready(agents: 1);
+      await tester.tap(find.byKey(const ValueKey('team-phone-killed-start')));
+      await settle(tester);
+      expect(runtime.calls, ['start']);
+      expect(find.byKey(const ValueKey('team-phone-killed')), findsNothing);
       await teardown(tester, controller);
     });
 
+    testWidgets('a running phone team shows no such line', (tester) async {
+      runtime.current = _ready();
+      final (controller, store) = await connect(
+        _phoneProfile(config: _phoneConfig()),
+      );
+      await tester.pumpWidget(
+        app(
+          TeamHomeScreen(controller: controller.orchestration!),
+          controller: controller,
+          store: store,
+        ),
+      );
+      await settle(tester);
+      expect(find.byKey(const ValueKey('team-phone-killed')), findsNothing);
+      await teardown(tester, controller);
+    });
+  });
+
+  group('failure copy', () {
     testWidgets('failure copy per reason', (tester) async {
       String text(String reason, {String? error, String verb = 'start'}) =>
           teamPhoneFailureText(
@@ -821,237 +944,6 @@ void main() {
         l10n.teamUiPhoneFailedDownload,
       );
       expect(l10n.teamUiPhoneFailedDownloadHttp(gh, '404'), contains(gh));
-      for (final reason in ['download http $gh 404', 'download']) {
-        expect(
-          teamPhoneFailedStep(
-            _status(
-              TeamRuntimePhase.failed,
-              rawPhase: 'failed:$reason',
-              reason: reason,
-              verb: 'install',
-            ),
-          ),
-          TeamPhoneStep.download,
-        );
-      }
-    });
-
-    testWidgets(
-      'success writes the phone config and Workspace shows the Team card',
-      (tester) async {
-        runtime.results['install'] = _status(
-          TeamRuntimePhase.installed,
-          installed: true,
-        );
-        runtime.results['init'] = _status(
-          TeamRuntimePhase.cityReady,
-          installed: true,
-          city: 'phone',
-        );
-        runtime.results['start'] = _ready(agents: 1);
-        final (controller, store) = await pumpSetup(tester);
-        await tapRevealed(
-          tester,
-          find.byKey(const ValueKey('team-phone-set-up')),
-        );
-        expect(
-          find.text(
-            '${l10n.teamUiPhoneSuccessTitle} · ${l10n.teamUiPhoneAgentsReady(1)}',
-          ),
-          findsOneWidget,
-        );
-        final profile = controller.profile!;
-        expect(profile.orchestration?.hostMode, OrchestrationHostMode.phone);
-        expect(controller.orchestration, isNotNull);
-        // Open Workspace lands on the Workspace, where the card is present
-        // for the Termux profile.
-        await tapRevealed(
-          tester,
-          find.byKey(const ValueKey('team-phone-open-workspace')),
-        );
-        expect(find.text('home'), findsOneWidget);
-        // A fresh tree: the navigator above still holds the /home route.
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpWidget(
-          app(
-            WorkspaceScreen(controller: controller),
-            controller: controller,
-            store: store,
-          ),
-        );
-        await settle(tester);
-        // The team's tasks are rows in the one list (docs/design/
-        // team-conversation-2026-09-26.md); no door row (owner rule R4).
-        expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
-        expect(find.byType(WorkspaceScreen), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        await teardown(tester, controller);
-      },
-    );
-
-    testWidgets('re-entering resumes the view from the status file', (
-      tester,
-    ) async {
-      runtime.current = _status(
-        TeamRuntimePhase.installingPackages,
-        verb: 'install',
-        busy: true,
-      );
-      runtime.log = '[aiteam] Installing libicu git jq tmux\n';
-      final (controller, _) = await pumpSetup(tester);
-      final steps = find.byKey(const ValueKey('team-phone-steps'));
-      await reveal(tester, steps);
-      expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
-      expect(find.textContaining('Installing libicu'), findsOneWidget);
-      // The verb finishes while the screen watches: Continue takes over.
-      runtime.current = _status(
-        TeamRuntimePhase.installed,
-        installed: true,
-        verb: 'install',
-      );
-      await poll(tester);
-      final resume = find.byKey(const ValueKey('team-phone-continue'));
-      await reveal(tester, resume);
-      runtime.results['init'] = _status(
-        TeamRuntimePhase.cityReady,
-        installed: true,
-        city: 'phone',
-      );
-      runtime.results['start'] = _ready();
-      await tapRevealed(tester, resume);
-      expect(runtime.calls, ['init:/root/projects/calc', 'init', 'start']);
-      expect(find.byKey(const ValueKey('team-phone-success')), findsOneWidget);
-      await teardown(tester, controller);
-    });
-
-    testWidgets('re-entering a failure shows its last output', (tester) async {
-      runtime.current = _status(
-        TeamRuntimePhase.failed,
-        rawPhase: 'failed:init',
-        reason: 'init',
-        verb: 'init',
-        installed: true,
-      );
-      runtime.log =
-          '[aiteam] init started\n'
-          'gc init: bead store: exec beads start: context deadline exceeded\n'
-          '[aiteam] ERROR: gc init failed\n';
-      final (controller, _) = await pumpSetup(tester);
-      final steps = find.byKey(const ValueKey('team-phone-steps'));
-      await reveal(tester, steps);
-      expect(find.textContaining('context deadline exceeded'), findsOneWidget);
-      await teardown(tester, controller);
-    });
-
-    testWidgets('a team that came up while away gets its config on entry', (
-      tester,
-    ) async {
-      runtime.current = _ready(agents: 1);
-      final (controller, store) = await pumpSetup(tester);
-      await reveal(tester, find.byKey(const ValueKey('team-phone-success')));
-      expect(
-        store.saved.single.orchestration?.hostMode,
-        OrchestrationHostMode.phone,
-      );
-      expect(controller.orchestration?.profileId, _profileId);
-      expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
-      await teardown(tester, controller);
-    });
-
-    testWidgets('up but not answering reads as a failure, not a success', (
-      tester,
-    ) async {
-      runtime.current = TeamRuntimeStatus(
-        phase: TeamRuntimePhase.ready,
-        rawPhase: 'ready',
-        installed: true,
-        city: 'phone',
-        health: 'unreachable',
-        supervisorPid: 4242,
-        versions: _versions,
-      );
-      final (controller, store) = await pumpSetup(tester);
-      await reveal(tester, find.byKey(const ValueKey('team-phone-failed')));
-      expect(
-        find.text(
-          l10n.teamUiPhoneFailedHealth(TermuxBridge.aiteamSupervisorUrl),
-        ),
-        findsOneWidget,
-      );
-      expect(store.saved.single.orchestration, isNull);
-      expect(
-        teamPhoneStepStates(
-          runtime.current,
-          connected: false,
-        )[TeamPhoneStep.start],
-        TeamPhoneStepState.error,
-      );
-      expect(
-        teamPhoneStatusLine(l10n, runtime.current),
-        l10n.teamUiPhoneStatusUnreachable(TermuxBridge.aiteamSupervisorUrl),
-      );
-      await teardown(tester, controller);
-    });
-
-    testWidgets('killed by Android: the honest line and Start again', (
-      tester,
-    ) async {
-      runtime.current = _ready(killed: true);
-      final (controller, _) = await pumpSetup(
-        tester,
-        profile: _phoneProfile(config: _phoneConfig()),
-      );
-      final killed = find.byKey(const ValueKey('team-phone-killed'));
-      await reveal(tester, killed);
-      expect(find.text(l10n.teamUiPhoneKilled), findsOneWidget);
-      runtime.results['start'] = _ready(agents: 1);
-      await tapRevealed(
-        tester,
-        find.byKey(const ValueKey('team-phone-start-again')),
-      );
-      expect(runtime.calls, ['start']);
-      expect(find.byKey(const ValueKey('team-phone-success')), findsOneWidget);
-      await teardown(tester, controller);
-    });
-
-    testWidgets('no managed project: the sheet creates one', (tester) async {
-      runtime.projects = const [];
-      runtime.results['install'] = _status(
-        TeamRuntimePhase.installed,
-        installed: true,
-      );
-      runtime.results['init'] = _status(
-        TeamRuntimePhase.cityReady,
-        installed: true,
-        city: 'phone',
-      );
-      runtime.results['start'] = _ready();
-      final (controller, _) = await pumpSetup(tester);
-      await tapRevealed(
-        tester,
-        find.byKey(const ValueKey('team-phone-set-up')),
-      );
-      expect(
-        find.byKey(const ValueKey('team-phone-project-sheet')),
-        findsOneWidget,
-      );
-      expect(runtime.calls, isEmpty);
-      await tester.enterText(
-        find.byKey(const ValueKey('team-phone-new-folder')),
-        'calc',
-      );
-      await tapRevealed(
-        tester,
-        find.byKey(const ValueKey('team-phone-create-folder')),
-      );
-      expect(runtime.calls, [
-        'create calc',
-        'install',
-        'init:/root/projects/calc',
-        'init',
-        'start',
-      ]);
-      await teardown(tester, controller);
     });
   });
 
@@ -1281,7 +1173,7 @@ void main() {
       await teardown(tester, controller);
     });
 
-    testWidgets('not installed: the sheet points at the phone setup', (
+    testWidgets('not installed: the sheet sets it up through Add tools', (
       tester,
     ) async {
       final (controller, _) = await pumpPlugins(tester);
@@ -1292,8 +1184,11 @@ void main() {
         tester,
         find.byKey(const ValueKey('team-phone-open-setup')),
       );
-      // This phone for Termux, where the AI Team is added (P1.3).
-      expect(find.text('this phone'), findsOneWidget);
+      // Phone setup v2's Add tools, on the Termux host (P1.7).
+      expect(
+        find.byKey(const ValueKey('phone-setup-customize-sheet')),
+        findsOneWidget,
+      );
       await teardown(tester, controller);
     });
   });
@@ -1303,75 +1198,43 @@ void main() {
       final locale = Locale(rtl ? 'ar' : 'en');
       final label = rtl ? 'RTL ar' : 'LTR en';
 
-      testWidgets('offer, steps and success in the setup screen · $label', (
+      testWidgets('the ready page, turning on and ready · $label', (
         tester,
       ) async {
         tester.view.physicalSize = const Size(320, 844);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        runtime.gates['install'] = Completer<void>();
-        runtime.results['install'] = _status(
-          TeamRuntimePhase.installed,
-          installed: true,
+        turnOnSucceeds();
+        runtime.gates['start'] = Completer<void>();
+        final (controller, store) = await connect(_phoneProfile());
+        controller.directory = '/root/projects/calc';
+        await tester.pumpWidget(
+          app(
+            TeamPhoneReadyScreen(
+              connection: controller,
+              host: SetupHostKind.termux,
+              runtime: runtime,
+            ),
+            controller: controller,
+            store: store,
+            textScale: 2.5,
+            rtl: rtl,
+            locale: locale,
+          ),
         );
-        runtime.results['init'] = _status(
-          TeamRuntimePhase.cityReady,
-          installed: true,
-          city: 'phone',
-        );
-        runtime.results['start'] = _ready(agents: 3);
-        final (controller, _) = await pumpSetup(
-          tester,
-          textScale: 2.5,
-          rtl: rtl,
-          locale: locale,
-        );
-        expect(tester.takeException(), isNull);
-        // The card is taller than the screen at 2.5x: its controls are what
-        // must be reachable.
-        await reveal(tester, find.byKey(const ValueKey('team-phone-skip')));
-        await tapRevealed(
-          tester,
-          find.byKey(const ValueKey('team-phone-set-up')),
-        );
-        runtime.current = _status(
-          TeamRuntimePhase.downloading,
-          verb: 'install',
-          busy: true,
-        );
-        runtime.log = '[aiteam] downloading gc-1.4.1-android-arm64\n';
-        await poll(tester);
-        expect(tester.takeException(), isNull);
-        await reveal(
-          tester,
-          find.byKey(const ValueKey('team-phone-step-download')),
-        );
-        await reveal(
-          tester,
-          find.byKey(const ValueKey('team-phone-step-connect')),
-        );
-        // The live output stays LTR in RTL.
-        final line = find.descendant(
-          of: find.byKey(const ValueKey('setup-live-output')),
-          matching: find.textContaining('[aiteam] downloading'),
-        );
-        expect(
-          tester
-              .widget<Directionality>(
-                find
-                    .ancestor(of: line, matching: find.byType(Directionality))
-                    .first,
-              )
-              .textDirection,
-          TextDirection.ltr,
-        );
-        runtime.gates['install']!.complete();
         await settle(tester);
         expect(tester.takeException(), isNull);
         await reveal(
           tester,
-          find.byKey(const ValueKey('team-phone-open-workspace')),
+          find.byKey(const ValueKey('builtin-team-stage-waiting')),
+        );
+        runtime.gates['start']!.complete();
+        await settle(tester);
+        expect(tester.takeException(), isNull);
+        await reveal(
+          tester,
+          find.byKey(const ValueKey('team-phone-ready-first-task')),
         );
         await teardown(tester, controller);
       });

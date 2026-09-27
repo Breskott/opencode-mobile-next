@@ -31,6 +31,8 @@ import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/team/builtin_team.dart';
 import '../../builtin/team/builtin_team_job.dart';
+import '../../diagnostics/failed_job_report.dart';
+import '../../feedback/bug_report.dart' show failedJobReportAction;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration.dart';
@@ -268,6 +270,15 @@ class _TermuxTeamFailure implements Exception {
   const _TermuxTeamFailure(this.status);
 
   final TeamRuntimeStatus status;
+
+  /// What a failure report carries: the step and why, in the runtime's own
+  /// words (the report redacts it).
+  @override
+  String toString() => [
+    'aiteam.sh ${status.verb}: ${status.rawPhase}',
+    if (status.reason case final reason? when reason.isNotEmpty) reason,
+    if (status.lastError case final error? when error.isNotEmpty) error,
+  ].join('\n');
 }
 
 /// The turn-on of the Termux team, one at a time, kept outside the page so
@@ -558,7 +569,7 @@ class _TeamPhoneReadyScreenState extends State<TeamPhoneReadyScreen> {
           key: const ValueKey('team-phone-ready-turning-on'),
           scene: const TeamWakingScene(),
           ambient: running,
-          title: l10n.teamPhoneReadyTurningOnTitle(name),
+          title: l10n.teamPhoneReadyTurningOnTitle,
           titleKey: const ValueKey('team-phone-ready-title'),
           body: l10n.aiteamComponentTurnOnExpectation,
           progress: const KitProgress.waiting(),
@@ -593,6 +604,17 @@ class _TeamPhoneReadyScreenState extends State<TeamPhoneReadyScreen> {
             icon: AppIconography.retry,
             onPressed: () => unawaited(_turnOn()),
           ),
+          // Report this failure (P8.4), with what stopped the turn-on.
+          tertiary: [
+            ?failedJobReportAction(
+              context,
+              key: const ValueKey('team-phone-ready-report'),
+              title: error == null
+                  ? null
+                  : teamPhoneTurnOnFailureText(l10n, error),
+              capture: () => FailedJobReport.teamSetup(_job),
+            ),
+          ],
         );
       case _Ready.ready:
         final team = widget.connection.orchestration;

@@ -33,6 +33,9 @@ import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart';
 import 'package:opencode_mobile/ui/widgets/team_discover.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
+import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart'
+    show debugTeamPhoneRunJob;
+import 'package:opencode_mobile/voice/device.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -91,6 +94,19 @@ class _Runtime extends TermuxTeamRuntime {
       const TeamRuntimeStatus(phase: TeamRuntimePhase.idle);
 }
 
+/// The fake registry with AI Team, as a host's engine lists it.
+final _teamRegistry = [
+  ...FakeSetupEngine.fakeRegistry,
+  const SetupComponent(
+    id: SetupComponentIds.aiTeam,
+    title: 'AI Team',
+    shortTitle: 'AI Team',
+    checkScript: 'true',
+    installScript: 'true',
+    dependsOn: ['essentials', 'opencode'],
+  ),
+];
+
 /// The in-app team, not installed; nothing reaches the phone's Linux.
 class _BuiltinTeam extends BuiltinTeam {
   @override
@@ -104,10 +120,15 @@ void _mockChannels() {
     'plugins.it_nomads.com/flutter_secure_storage',
     'oc/background',
     'oc/shortcut',
+    'oc/voice',
   ]) {
     messenger.setMockMethodCallHandler(
       MethodChannel(channel),
-      (call) async => call.method == 'readAll' ? <String, String>{} : null,
+      (call) async => switch (call.method) {
+        'readAll' => <String, String>{},
+        'getDeviceInfo' => <String, Object?>{},
+        _ => null,
+      },
     );
     addTearDown(
       () => messenger.setMockMethodCallHandler(MethodChannel(channel), null),
@@ -367,10 +388,20 @@ void main() {
       await _settle(tester);
     }
 
+    /// A 64-bit phone with room and memory: its pre-flight passes.
+    Future<VoiceDeviceInfo> goodPhone() async => const VoiceDeviceInfo(
+      supportedAbis: ['arm64-v8a'],
+      totalMemoryMb: 8192,
+      memoryClassMb: 512,
+      hasMicrophone: true,
+      availableStorageBytes: 20000000000,
+    );
+
     Future<void> pumpIntro(
       WidgetTester tester,
       ConnectionController controller, {
       TermuxTeamRuntime? runtime,
+      Future<VoiceDeviceInfo> Function()? device,
     }) async {
       _tallScreen(tester);
       await tester.pumpWidget(
@@ -379,8 +410,12 @@ void main() {
             body: Builder(
               builder: (context) => Center(
                 child: TextButton(
-                  onPressed: () =>
-                      openTeamIntro(context, controller, runtime: runtime),
+                  onPressed: () => openTeamIntro(
+                    context,
+                    controller,
+                    runtime: runtime,
+                    deviceProbe: device ?? goodPhone,
+                  ),
                   child: const Text('open'),
                 ),
               ),
@@ -455,11 +490,15 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('OpenCode inside the app: Set it up opens its set-up', (
-      tester,
-    ) async {
+    testWidgets('OpenCode inside the app: Set it up is Add tools › AI Team '
+        'on the in-app host', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       debugBuiltinTeam = _BuiltinTeam();
+      final hosts = <SetupHostKind>[];
+      debugTeamPhoneRunJob = (_, host, _) async => hosts.add(host);
+      addTearDown(() => debugTeamPhoneRunJob = null);
+      final engine = FakeSetupEngine(registry: _teamRegistry);
+      PhoneSetup.engine = engine;
       _mockChannels();
       final controller = await _boot(_inApp());
       expect(teamServerKindOf(controller.profile!), TeamServerKind.inApp);
@@ -468,47 +507,93 @@ void main() {
       expect(find.text(_en.teamDiscoverNeedsPhone), findsOneWidget);
       await tester.tap(_key('team-intro-set-up'));
       await _settle(tester);
-      expect(find.byType(PluginsSettingsScreen), findsOneWidget);
-      expect(find.byType(BuiltinTeamSection), findsOneWidget);
-      expect(_key('builtin-team-add'), findsOneWidget);
+      // Phone setup v2's Add tools, with AI Team switched on.
+      expect(_key('phone-setup-customize-sheet'), findsOneWidget);
+      await tester.tap(_key('phone-setup-customize-done'));
+      await _settle(tester);
+      expect(hosts, [SetupHostKind.builtin]);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Termux: Set it up reopens the offer and opens its setup', (
+    testWidgets('Termux: Set it up is Add tools › AI Team on the Termux host', (
       tester,
     ) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
+      final hosts = <SetupHostKind>[];
+      debugTeamPhoneRunJob = (_, host, _) async => hosts.add(host);
+      addTearDown(() => debugTeamPhoneRunJob = null);
+      PhoneSetup.termux = FakeSetupEngine(registry: _teamRegistry);
       _mockChannels();
       final controller = await _boot(_termux());
-      // Skipped during the first setup: the setup screen would hide it.
-      await controller.orchestrationStore.setPhoneOffer(
-        'termux',
-        PhoneOffer.skipped,
-      );
       await pumpIntro(tester, controller, runtime: _Runtime(supported: true));
       await reveal(tester, find.text(_en.teamDiscoverTermuxBatteryBody));
       await tester.tap(_key('team-intro-set-up'));
       await _settle(tester);
-      expect(find.text('termux setup screen'), findsOneWidget);
-      expect(
-        controller.orchestrationStore.phoneOffer('termux'),
-        PhoneOffer.open,
-      );
+      expect(_key('phone-setup-customize-sheet'), findsOneWidget);
+      await tester.tap(_key('phone-setup-customize-done'));
+      await _settle(tester);
+      expect(hosts, [SetupHostKind.termux]);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('a Termux phone that cannot run it says so and offers a '
-        'computer', (tester) async {
+    testWidgets('a 32-bit phone is told why by the pre-flight, never '
+        'hidden, and offered a computer', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       _mockChannels();
       final controller = await _boot(_termux());
-      await pumpIntro(tester, controller, runtime: _Runtime(supported: false));
+      // New conversation still offers Team on this server.
+      expect(await teamPossibleOn(controller.profile!), isTrue);
+      await pumpIntro(
+        tester,
+        controller,
+        device: () async => const VoiceDeviceInfo(
+          supportedAbis: ['armeabi-v7a'],
+          totalMemoryMb: 4096,
+          memoryClassMb: 256,
+          hasMicrophone: true,
+          availableStorageBytes: 20000000000,
+        ),
+      );
       await reveal(tester, _key('team-intro-on-computer'));
       expect(_key('team-intro-unsupported'), findsOneWidget);
+      expect(
+        find.text(_en.phoneSetupPreflightUnsupportedHeadline),
+        findsOneWidget,
+      );
+      expect(
+        find.text(_en.phoneSetupPreflightUnsupportedBody('armeabi-v7a')),
+        findsOneWidget,
+      );
       expect(_key('team-intro-set-up'), findsNothing);
       await tester.tap(_key('team-intro-on-computer'));
       await _settle(tester);
       expect(_key('team-host-guide'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a phone short of space is told how much to free', (
+      tester,
+    ) async {
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      _mockChannels();
+      final controller = await _boot(_inApp());
+      await pumpIntro(
+        tester,
+        controller,
+        device: () async => const VoiceDeviceInfo(
+          supportedAbis: ['arm64-v8a'],
+          totalMemoryMb: 8192,
+          memoryClassMb: 512,
+          hasMicrophone: true,
+          availableStorageBytes: 100000000,
+        ),
+      );
+      await reveal(tester, _key('team-intro-unsupported'));
+      expect(
+        find.text(_en.phoneSetupPreflightLowSpaceHeadline),
+        findsOneWidget,
+      );
+      expect(_key('team-intro-set-up'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
