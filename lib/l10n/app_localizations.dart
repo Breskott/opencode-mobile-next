@@ -34433,11 +34433,35 @@ abstract class AppLocalizations {
   /// **'This phone forgets the server: its password, chosen model and agent, project and widget conversations.'**
   String get serversRemoveBody;
 
-  /// Servers › Remove server sheet: unsent queued prompts lost with the server.
+  /// Remove server / remove from this phone sheets: the server's unsent queued prompts are kept as drafts in Saved prompts, shown under every server, instead of being deleted.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 queued prompt will be deleted} other{{count} queued prompts will be deleted}}'**
-  String serversRemoveQueued(int count);
+  /// **'{count, plural, =1{1 queued prompt moves to Saved prompts} other{{count} queued prompts move to Saved prompts}}'**
+  String serversRemoveQueuedKept(int count);
+
+  /// Servers › Remove server sheet: queued prompts whose send started but was never confirmed; check before sending them again.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 of them may already have been sent} other{{count} of them may already have been sent}}'**
+  String serversRemoveQueuedUncertain(int count);
+
+  /// Servers › Remove server sheet: the other answer, which removes the server and deletes its queued prompts instead of keeping them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Remove and delete the queued prompt} other{Remove and delete {count} queued prompts}}'**
+  String serversRemoveDeleteQueued(int count);
+
+  /// Removing a server stopped because its queued prompts changed after the person confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'The queued prompts for {name} changed, so nothing was removed. Remove it again to see the new count.'**
+  String serversRemoveQueuedChanged(String name);
+
+  /// Removing a server stopped because its queued prompts could not be kept in Saved prompts (full or storage refused).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move the queued prompts for {name} to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.'**
+  String serversRemoveQueuedNotKept(String name);
 
   /// Servers › Remove server sheet: unsent drafts lost with the server.
   ///

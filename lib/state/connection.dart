@@ -59,6 +59,7 @@ import 'saved_prompts_controller.dart';
 import 'session_pins.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
+import 'queued_prompt_removal.dart';
 import 'session_read_state.dart';
 import 'return_brief_state.dart';
 import '../domain/return_brief.dart';
@@ -5351,6 +5352,19 @@ class ConnectionController extends ChangeNotifier {
   OfflineQueueStore get _queueStore =>
       _offlineQueueStore ??= OfflineQueueStore(prefs: store.prefs);
 
+  QueuedPromptRemoval? _keptQueuedStore;
+
+  /// Queued prompts a removed server left behind as drafts (P7.2). App-owned,
+  /// so the removed server's deletion sweep does not take them.
+  QueuedPromptRemoval get _keptQueued => _keptQueuedStore ??=
+      QueuedPromptRemoval(preferences: store.prefs, queue: _queueStore);
+
+  /// The queued prompts removing [profileId] would affect, counted for the
+  /// confirmation. Throws when the queue cannot be read (never a zero).
+  /// Pass the result to [deleteProfileAndLocalData].
+  QueuedPromptRemovalPlan inspectQueuedPromptsForRemoval(String profileId) =>
+      _keptQueued.inspect(profileId);
+
   Future<T> _serializeQueueChange<T>(Future<T> Function() change) {
     final operation = _queueChanges.then((_) => change());
     _queueChanges = operation.then<void>((_) {}, onError: (Object _) {});
@@ -5799,9 +5813,22 @@ class ConnectionController extends ChangeNotifier {
   ///
   /// Server-side and provider-side data is untouched; only this device is
   /// cleared.
-  Future<DeleteProfileResult> deleteProfileAndLocalData(String profileId) {
+  ///
+  /// [queuedPrompts] is the confirmed [inspectQueuedPromptsForRemoval]
+  /// snapshot. When given, the removal stops with a
+  /// [QueuedPromptRemovalException] (and removes nothing) if the server's
+  /// queued prompts changed since, and [keepQueuedPrompts] moves them into
+  /// Saved prompts before they leave the queue.
+  Future<DeleteProfileResult> deleteProfileAndLocalData(
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) {
     if (_disposed || profileId.isEmpty) {
       return Future.error(StateError('The server profile is unavailable'));
+    }
+    if (queuedPrompts != null && queuedPrompts.profileID != profileId) {
+      return Future.error(ArgumentError('Queued prompts of another server'));
     }
     final pending = _profileDeletions[profileId];
     if (pending != null) return pending;
@@ -5840,7 +5867,11 @@ class ConnectionController extends ChangeNotifier {
           }
           await _profileMonitor?.drain(profileId);
           await _quotaMonitor?.drain(profileId);
-          return _deleteProfileAndLocalData(profileId);
+          return _deleteProfileAndLocalData(
+            profileId,
+            queuedPrompts: queuedPrompts,
+            keepQueuedPrompts: keepQueuedPrompts,
+          );
         })
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
@@ -5856,8 +5887,10 @@ class ConnectionController extends ChangeNotifier {
   }
 
   Future<DeleteProfileResult> _deleteProfileAndLocalData(
-    String profileId,
-  ) async {
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) async {
     await _draftChanges;
     await _pendingAuth.drain(profileId);
     // Selection writes begin before network refresh; drain them before the
@@ -5907,6 +5940,31 @@ class ConnectionController extends ChangeNotifier {
       //    prompt is on the wire.
       var clearedQueued = 0;
       await _serializeQueueChange(() async {
+        if (queuedPrompts != null) {
+          // The person confirmed a count: act on exactly that, or on nothing.
+          final live = [
+            for (final entry in _queue)
+              if (entry.profileID == profileId) entry.toJson(),
+          ];
+          final confirmed = [
+            for (final entry in queuedPrompts.prompts) entry.toJson(),
+          ];
+          try {
+            if (jsonEncode(live) != jsonEncode(confirmed)) {
+              throw StateError('Queued prompts changed');
+            }
+            _keptQueued.validateCurrent(queuedPrompts);
+          } on StateError {
+            throw const QueuedPromptRemovalException(changed: true);
+          }
+          if (keepQueuedPrompts) {
+            try {
+              await _keptQueued.keepAsDrafts(queuedPrompts);
+            } on StateError {
+              throw const QueuedPromptRemovalException(changed: false);
+            }
+          }
+        }
         final keptQueue = [
           for (final entry in _queue)
             if (entry.profileID != profileId) entry,
@@ -7652,8 +7710,26 @@ class ConnectionController extends ChangeNotifier {
   final _promptShelfDeletionRevisions = <String, int>{};
   String get promptShelfProfileID => (_connectedProfile ?? profile)?.id ?? '';
   bool get canUsePromptShelf => isProfileReadable(promptShelfProfileID);
-  List<StashedPrompt> get promptStash =>
-      canUsePromptShelf ? _promptShelf.stashes(promptShelfProfileID) : const [];
+  List<StashedPrompt> get promptStash {
+    if (!canUsePromptShelf) return const [];
+    final prompts = [
+      ..._promptShelf.stashes(promptShelfProfileID),
+      ...keptQueuedDrafts,
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return List.unmodifiable(prompts);
+  }
+
+  /// Queued prompts kept from removed servers, shown in every server's Saved
+  /// prompts. Unreadable ones stay on disk and are left out of the list.
+  List<StashedPrompt> get keptQueuedDrafts {
+    try {
+      return _keptQueued.savedDrafts;
+    } on StateError {
+      return const [];
+    }
+  }
+
+  static bool _isKeptQueuedDraft(String id) => id.startsWith('kept-');
   List<String> get sentPromptHistory =>
       canUsePromptShelf ? _promptShelf.history(promptShelfProfileID) : const [];
 
@@ -7718,6 +7794,21 @@ class ConnectionController extends ChangeNotifier {
     required int locationRevision,
   }) async {
     final current = _promptShelfScope(locationRevision);
+    if (_isKeptQueuedDraft(id)) {
+      // Only embedded bytes travel: a removed server's file or link is not
+      // this server's, so it is named as unavailable instead.
+      final prompt = keptQueuedDrafts.firstWhere((p) => p.id == id);
+      return DraftAttachmentRecovery(
+        [
+          for (final attachment in prompt.attachments)
+            if (attachment.url.startsWith('data:')) attachment,
+        ],
+        [
+          for (final attachment in prompt.attachments)
+            if (!attachment.url.startsWith('data:')) attachment.filename,
+        ],
+      );
+    }
     final owner = promptShelfProfileID;
     final prompt = _promptShelf.stashes(owner).firstWhere((p) => p.id == id);
     final sameLocation =
@@ -7804,6 +7895,11 @@ class ConnectionController extends ChangeNotifier {
   }) async {
     _promptShelfScope(locationRevision);
     try {
+      if (_isKeptQueuedDraft(id)) {
+        final removed = await _keptQueued.forgetDraft(id);
+        if (removed == null) throw StateError('The saved prompt is gone');
+        return SavedPromptUndo.kept(() => _keptQueued.rememberDraft(removed));
+      }
       return await _savedPromptsForShelf.delete(id);
     } finally {
       if (!_disposed) notifyListeners();

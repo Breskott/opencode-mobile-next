@@ -7,6 +7,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
+import 'package:opencode_mobile/state/queued_prompt_removal.dart';
 
 final l10n = AppLocalizationsEn();
 
@@ -50,8 +51,10 @@ class PhoneConnection extends ConnectionController {
 
   @override
   Future<DeleteProfileResult> deleteProfileAndLocalData(
-    String profileId,
-  ) async {
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) async {
     deleted.add(profileId);
     (store as PhoneStore).saved.removeWhere((p) => p.id == profileId);
     return const DeleteProfileResult();

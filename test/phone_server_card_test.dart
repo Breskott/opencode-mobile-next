@@ -20,6 +20,7 @@ import 'package:opencode_mobile/ui/screens/local_terminal_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
+import 'package:opencode_mobile/state/queued_prompt_removal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_local_terminal.dart';
@@ -69,8 +70,10 @@ class _Connection extends ConnectionController {
 
   @override
   Future<DeleteProfileResult> deleteProfileAndLocalData(
-    String profileId,
-  ) async {
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) async {
     deleted.add(profileId);
     final store = this.store as _Store;
     store.saved.removeWhere((profile) => profile.id == profileId);

@@ -19,6 +19,7 @@ import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
+import '../../state/queued_prompt_removal.dart';
 import '../../state/external_agents.dart';
 import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
@@ -535,22 +536,28 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   /// Names what removal actually deletes, as counted facts (DATA-11: a
   /// removal nobody can restore is confirmed first). Queued prompts and
-  /// drafts are the only unsent work at stake, so they are counted; the
-  /// server itself keeps everything; and removing the server in use says
-  /// what the person sees next.
+  /// drafts are the only unsent work at stake, so they are counted; queued
+  /// prompts move to Saved prompts unless the person deletes them too
+  /// (P7.2); the server itself keeps everything; and removing the server in
+  /// use says what the person sees next.
   List<KitConsequence> _removalConsequences(
     AppLocalizations copy,
     ConnectionController connection,
     String id, {
+    required QueuedPromptRemovalPlan? queued,
     required bool active,
   }) {
-    final queued = connection.queuedPromptCountForProfile(id);
     final drafts = connection.draftCountForProfile(id);
     return [
-      if (queued > 0)
+      if (queued != null && queued.count > 0)
         KitConsequence(
-          copy.serversRemoveQueued(queued),
-          mark: KitConsequenceMark.lost,
+          copy.serversRemoveQueuedKept(queued.count),
+          key: const ValueKey('remove-server-queued-kept'),
+          mark: KitConsequenceMark.kept,
+        ),
+      if (queued != null && queued.uncertainCount > 0)
+        KitConsequence(
+          copy.serversRemoveQueuedUncertain(queued.uncertainCount),
         ),
       if (drafts > 0)
         KitConsequence(
@@ -575,6 +582,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final active =
         ref.read(bootstrapProvider).store.activeId == p.id &&
         connection.api != null;
+    // Counted now and acted on exactly: a changed queue stops the removal.
+    QueuedPromptRemovalPlan? queued;
+    try {
+      queued = connection.inspectQueuedPromptsForRemoval(p.id);
+    } catch (_) {
+      queued = null;
+    }
+    var deleteQueued = false;
     final ok = await showKitConfirm(
       context,
       kind: KitConfirmKind.destructive,
@@ -586,12 +601,21 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         copy,
         connection,
         p.id,
+        queued: queued,
         active: active,
       ),
+      alternative: queued != null && queued.count > 0
+          ? KitAction(
+              key: ValueKey('remove-server-delete-queued-${p.id}'),
+              label: copy.serversRemoveDeleteQueued(queued.count),
+              destructive: true,
+              onPressed: () => deleteQueued = true,
+            )
+          : null,
       sheetKey: ValueKey('remove-server-sheet-${p.id}'),
       confirmKey: ValueKey('confirm-remove-server-${p.id}'),
     );
-    if (!ok || !mounted) return;
+    if (!(ok || deleteQueued) || !mounted) return;
     final store = ref.read(bootstrapProvider).store;
     final wasActive = store.activeId == p.id;
     var removed = false;
@@ -603,7 +627,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       // The cascade verifies every store it writes and reports what refused.
       // A partial deletion is stated, never rounded up to the silent success
       // the list rebuild would otherwise imply.
-      final result = await connection.deleteProfileAndLocalData(p.id);
+      final result = await connection.deleteProfileAndLocalData(
+        p.id,
+        queuedPrompts: queued,
+        keepQueuedPrompts: !deleteQueued,
+      );
       final partial = result.partialDeletionMessage;
       if (partial != null) {
         _showFailure(partial);
@@ -613,6 +641,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       if (wasActive) {
         await connection.disconnect(keepActive: true);
       }
+    } on QueuedPromptRemovalException catch (error) {
+      _showFailure(
+        error.changed
+            ? copy.serversRemoveQueuedChanged(p.name)
+            : copy.serversRemoveQueuedNotKept(p.name),
+      );
     } catch (error) {
       if (removed) {
         _showFailure(

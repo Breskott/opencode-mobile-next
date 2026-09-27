@@ -21697,14 +21697,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'This phone forgets the server: its password, chosen model and agent, project and widget conversations.';
 
   @override
-  String serversRemoveQueued(int count) {
+  String serversRemoveQueuedKept(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count queued prompts will be deleted',
-      one: '1 queued prompt will be deleted',
+      other: '$count queued prompts move to Saved prompts',
+      one: '1 queued prompt moves to Saved prompts',
     );
     return '$_temp0';
+  }
+
+  @override
+  String serversRemoveQueuedUncertain(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count of them may already have been sent',
+      one: '1 of them may already have been sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveDeleteQueued(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove and delete $count queued prompts',
+      one: 'Remove and delete the queued prompt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveQueuedChanged(String name) {
+    return 'The queued prompts for $name changed, so nothing was removed. Remove it again to see the new count.';
+  }
+
+  @override
+  String serversRemoveQueuedNotKept(String name) {
+    return 'Could not move the queued prompts for $name to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.';
   }
 
   @override

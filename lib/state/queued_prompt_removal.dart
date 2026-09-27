@@ -6,6 +6,19 @@ import '../ui/kit/kit_redact.dart';
 import 'offline_queue.dart';
 import 'prompt_shelf.dart';
 
+/// Why a server removal kept the server: its queued prompts changed since
+/// the person confirmed ([changed]), or they could not be kept as drafts.
+/// Nothing was removed in either case.
+class QueuedPromptRemovalException implements Exception {
+  const QueuedPromptRemovalException({required this.changed});
+  final bool changed;
+
+  @override
+  String toString() => changed
+      ? 'Queued prompts changed; confirm removal again'
+      : 'Queued prompts could not be kept; nothing was removed';
+}
+
 /// A confirmation snapshot. A changed queue requires a fresh confirmation.
 class QueuedPromptRemovalPlan {
   QueuedPromptRemovalPlan._(this.profileID, this._queue);
@@ -176,10 +189,26 @@ class QueuedPromptRemoval {
   }
 
   /// Explicit deletion from Saved prompts; a failed write keeps the draft.
-  Future<void> forgetDraft(String id) => _serialize(() async {
+  /// Returns the removed record (for Undo), or null when it was not there.
+  Future<QueuedPrompt?> forgetDraft(String id) => _serialize(() async {
     final current = keptPrompts;
     final next = current.where((prompt) => draftID(prompt) != id).toList();
-    if (next.length != current.length) await _save(next);
+    if (next.length == current.length) return null;
+    await _save(next);
+    return current.firstWhere((prompt) => draftID(prompt) == id);
+  });
+
+  /// Puts back a record [forgetDraft] returned (Undo). A record with the same
+  /// identity already present is left as it is; a full store refuses.
+  Future<void> rememberDraft(QueuedPrompt prompt) => _serialize(() async {
+    final current = keptPrompts;
+    if (current.any((item) => draftID(item) == draftID(prompt))) return;
+    final next = [...current, _redacted(prompt)];
+    if (next.length > capacity ||
+        utf8.encode(_encode(next)).length > OfflineQueueStore.maxTotalBytes) {
+      throw StateError('Saved prompts are full');
+    }
+    await _save(next);
   });
 
   /// Recover after a storage failure whose optimistic cache could not reload.

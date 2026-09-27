@@ -38,8 +38,9 @@ enum KitConfirmKind {
 ///   When given, [consequences] must be empty.
 /// - [typedName] (heavy deletes): the confirm stays disabled, with its
 ///   reason shown, until this exact name is typed.
-/// - [alternative] is a safer path ("Export first"); choosing it closes
-///   the question (false) and runs it.
+/// - [alternative] is another path ("Export first"); choosing it closes
+///   the question (false) and runs it. A destructive one ("Delete
+///   everything") keeps its danger words.
 /// - [details] are technical values, folded under Details, left to right.
 /// - [action], when given, runs inside the question: the confirm shows it
 ///   is working, and a failure keeps the question open with a notice and
@@ -443,6 +444,8 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               key: alternative.key,
               label: alternative.label,
               icon: alternative.icon,
+              // A heavier path ("Delete everything") keeps its danger words.
+              destructive: alternative.destructive,
               onPressed: alternative.onPressed == null || _working
                   ? null
                   : () {
