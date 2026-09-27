@@ -71,6 +71,20 @@ Finder _codeBlock(String text) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('password commands prompt privately and pass SEC-4 unchanged', () {
+    for (final entry in {
+      'OPENCODE_SERVER_PASSWORD': SetupCommands.legacyServe,
+      'PASEO_PASSWORD': SetupCommands.paseoStartPrivateNetwork,
+    }.entries) {
+      expect(KitRedact.text(entry.value), entry.value);
+      expect(entry.value, contains('IFS= read -rsp '));
+      expect(entry.value, contains('test -n "\$${entry.key}" &&'));
+      expect(entry.value, contains('export ${entry.key} &&'));
+      expect(entry.value, isNot(contains('${entry.key}=')));
+    }
+  });
+
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   const termux = MethodChannel('oc/termux');
@@ -184,9 +198,12 @@ void main() {
         tester.getRect(command).bottom,
         lessThanOrEqualTo(tester.getRect(find.byKey(ValueKey(want.field))).top),
       );
-      // The block's copy button, after its wrap toggle.
+      // R3 moved Copy onto the command's first line.
       await tester.tap(
-        find.descendant(of: command, matching: find.byType(KitIconButton)).last,
+        find.descendant(
+          of: command,
+          matching: find.byKey(const ValueKey('kit-code-copy')),
+        ),
       );
       await tester.pump();
       expect(copied, [want.command]);
@@ -434,7 +451,13 @@ void main() {
           final manual = find.byKey(const ValueKey('server-manual-address'));
           if (manual.evaluate().isNotEmpty) {
             await tester.scrollUntilVisible(manual, 160, scrollable: list);
-            await tester.tap(manual);
+            await tester.ensureVisible(manual);
+            await tester.pumpAndSettle();
+            // Like the kind rows, this label can be taller than the viewport
+            // at 2.5x. Its visible leading edge remains a full row target.
+            await tester.tapAt(
+              tester.getTopLeft(manual) + const Offset(24, 24),
+            );
             await tester.pumpAndSettle();
           }
           final link = find.byKey(const ValueKey('connect-not-same-network'));
