@@ -6019,18 +6019,6 @@ abstract class AppLocalizations {
   /// **'Disable quota monitoring'**
   String get quotaMonitorDisable;
 
-  /// Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string.
-  ///
-  /// In en, this message translates to:
-  /// **'Alert when used reaches'**
-  String get quotaMonitorThreshold;
-
-  /// Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved.
-  ///
-  /// In en, this message translates to:
-  /// **'Saving…'**
-  String get quotaMonitorSaving;
-
   /// No description provided for @setupChooseServerTitle.
   ///
   /// In en, this message translates to:
@@ -33388,6 +33376,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn off'**
   String get kitRiskTurnOff;
+
+  /// Body of the Disconnect from server confirmation for a server that is not on this phone. Two sentences at most.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. The server keeps running and nothing on it changes.'**
+  String get safetyDisconnectBody;
+
+  /// Body of the Disconnect from server confirmation when the server runs on this phone: says it stays running and keeps using battery.
+  ///
+  /// In en, this message translates to:
+  /// **'Live updates stop and you return to the server list. OpenCode keeps running on this phone, using battery, until you stop it.'**
+  String get safetyDisconnectBodyPhone;
+
+  /// One consequence line on the Disconnect confirmation, shown only when queued prompts or unsent drafts exist for this server. count is their total.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message waiting to send stays on this phone until you connect again.} other{{count} messages waiting to send stay on this phone until you connect again.}}'**
+  String safetyDisconnectWaiting(int count);
+
+  /// Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert when used reaches'**
+  String get quotaMonitorThreshold;
+
+  /// Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get quotaMonitorSaving;
+
+  /// Folder browser: title shown once listing a folder has taken 8 seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Still reading this folder'**
+  String get folderBrowserSlowTitle;
+
+  /// Folder browser: says why listing a folder is slow (a Termux read may take up to 15 seconds)
+  ///
+  /// In en, this message translates to:
+  /// **'Folders on this phone can take up to 15 seconds to list.'**
+  String get folderBrowserSlowBody;
+
+  /// Folder browser: the empty projects folder's first step; puts the cursor in the project name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name your first project'**
+  String get folderBrowserFirstProject;
+
+  /// KitRequestCard: a permission's allow button (one time only)
+  ///
+  /// In en, this message translates to:
+  /// **'Allow once'**
+  String get kitRequestAllowOnce;
+
+  /// KitRequestCard: a permission's reject button
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get kitRequestReject;
+
+  /// KitRequestCard: an AI Team gate's approve button
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get kitRequestApprove;
+
+  /// KitRequestCard: an AI Team gate's reject button; the work goes back to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send back'**
+  String get kitRequestSendBack;
+
+  /// KitRequestCard: the one button that opens the request's details sheet to answer it (a form, several answers)
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get kitRequestAnswer;
+
+  /// KitRequestCard: sends the typed reply to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitRequestSend;
+
+  /// KitRequestCard: why Send is unavailable while the reply field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Type a reply first.'**
+  String get kitRequestReplyEmptyReason;
+
+  /// KitRequestCard: opens the details sheet with the answers that do not fit in the card
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 more answer} other{{count} more answers}}'**
+  String kitRequestMoreAnswers(int count);
+
+  /// KitRequestCard: a request the agent no longer waits for; nothing to press
+  ///
+  /// In en, this message translates to:
+  /// **'Expired · the agent stopped waiting'**
+  String get kitRequestExpired;
+
+  /// KitRequestCard: the header's age, composed with KitSince.ageLabel, mid-sentence ("waiting 4 min")
+  ///
+  /// In en, this message translates to:
+  /// **'waiting {age}'**
+  String kitRequestAge(String age);
 }
 
 class _AppLocalizationsDelegate
