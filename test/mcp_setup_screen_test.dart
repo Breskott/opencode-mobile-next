@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/diagnostics/app_diagnostics.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton;
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/api2/gateway_mappers.dart';
@@ -133,17 +134,37 @@ Future<void> _open(
   await tester.pumpAndSettle();
 }
 
+/// Brings the field with [key] on screen. It moves the form's own scroll
+/// position rather than dragging, so a multiline field under the drag point
+/// cannot swallow the gesture, and it looks both ways (a field may sit
+/// above the current position).
 Future<void> _reveal(WidgetTester tester, Key key) async {
-  await tester.scrollUntilVisible(
-    find.byKey(key),
-    180,
-    scrollable: find
-        .descendant(
-          of: find.byKey(const ValueKey('mcp-setup-form')),
-          matching: find.byType(Scrollable),
-        )
-        .first,
-  );
+  // A focused field keeps scrolling its caret back into view; let go first.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
+  final target = find.byKey(key);
+  final position = tester
+      .state<ScrollableState>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('mcp-setup-form')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      )
+      .position;
+  for (final step in const [150.0, -150.0]) {
+    while (target.evaluate().isEmpty) {
+      final next = (position.pixels + step).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump();
+    }
+  }
+  await Scrollable.ensureVisible(tester.element(target), alignment: 0.3);
   await tester.pump();
 }
 
@@ -228,7 +249,7 @@ void main() {
     expect(find.byType(McpSetupScreen), findsOneWidget);
     expect(
       tester
-          .widget<FilledButton>(find.byKey(const ValueKey('mcp-save')))
+          .widget<KitButton>(find.byKey(const ValueKey('mcp-save')))
           .onPressed,
       isNull,
     );
@@ -269,6 +290,10 @@ void main() {
       find.byKey(const ValueKey('mcp-header-value-0')),
       'Bearer test-token',
     );
+    // The rarer settings are folded under Advanced (map proposal).
+    await _reveal(tester, const ValueKey('mcp-advanced'));
+    await tester.tap(find.text('Advanced'));
+    await tester.pumpAndSettle();
     await _reveal(tester, const ValueKey('mcp-oauth-detection'));
     await tester.tap(find.byKey(const ValueKey('mcp-oauth-detection')));
     await _reveal(tester, const ValueKey('mcp-timeout'));
@@ -312,6 +337,9 @@ void main() {
       find.byKey(const ValueKey('mcp-command')),
       'npx\n-y\n@example/mcp-server',
     );
+    await _reveal(tester, const ValueKey('mcp-advanced'));
+    await tester.tap(find.text('Advanced'));
+    await tester.pumpAndSettle();
     await _reveal(tester, const ValueKey('mcp-cwd'));
     await tester.enterText(
       find.byKey(const ValueKey('mcp-cwd')),
@@ -379,7 +407,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('mcp-save')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('mcp-save-error')), findsOneWidget);
+    // The failure sits on the status line; the draft stays.
+    expect(find.text("Couldn't add the MCP server"), findsOneWidget);
     expect(find.textContaining('already exists'), findsOneWidget);
     expect(controller.reloadCalls, 0);
     expect(find.byType(McpSetupScreen), findsOneWidget);
@@ -405,17 +434,13 @@ void main() {
     expect(repository.addedDraft?.normalizedName, 'docs');
     expect(repository.addCalls, 1);
     expect(controller.reloadCalls, 1);
-    expect(find.text('Saved in OpenCode'), findsOneWidget);
+    // The saved state replaces the form: what happened and what is left.
+    expect(find.text('Saved docs in OpenCode'), findsOneWidget);
     expect(find.byKey(const ValueKey('mcp-saved-status')), findsOneWidget);
-    expect(find.byKey(const ValueKey('mcp-connection-status')), findsOneWidget);
+    expect(find.textContaining("didn't reconnect"), findsOneWidget);
     expect(find.byKey(const ValueKey('mcp-retry-reconnect')), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
-    expect(
-      tester
-          .widget<TextFormField>(find.byKey(const ValueKey('mcp-name')))
-          .enabled,
-      isFalse,
-    );
+    expect(find.byKey(const ValueKey('mcp-name')), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('mcp-retry-reconnect')));
     await tester.pumpAndSettle();
@@ -461,7 +486,7 @@ void main() {
 
     controller.switchProfile('other-server');
     await tester.pump();
-    final retry = tester.widget<OutlinedButton>(
+    final retry = tester.widget<KitButton>(
       find.byKey(const ValueKey('mcp-retry-reconnect')),
     );
     expect(retry.onPressed, isNull);
@@ -544,7 +569,6 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('mcp-header-reveal-0')));
         await tester.pump();
         expect(obscured(tester, 'mcp-header-value-0'), isFalse);
-        expect(find.byTooltip('Hide header value'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('mcp-header-reveal-0')));
         await tester.pump();
         expect(obscured(tester, 'mcp-header-value-0'), isTrue);
@@ -563,7 +587,7 @@ void main() {
         );
         await tester.tap(find.byKey(const ValueKey('mcp-save')));
         await tester.pumpAndSettle();
-        expect(find.byKey(const ValueKey('mcp-save-error')), findsOneWidget);
+        expect(find.text("Couldn't add the MCP server"), findsOneWidget);
         for (final text in renderedTexts()) {
           expect(text, isNot(contains(fakeToken)));
         }
