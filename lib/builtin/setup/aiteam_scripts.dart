@@ -41,7 +41,7 @@ class AiTeamDownload {
 abstract final class AiTeamPins {
   static const gascity = '1.4.1';
   static const beads = '1.2.2';
-  static const dolt = '2.3.3';
+  static const dolt = '2.3.5';
 
   /// The Gas City pack the city imports, pinned by commit (the Termux
   /// runtime's pin).
@@ -58,7 +58,7 @@ abstract final class AiTeamPins {
 
   /// From each project's release: gascity_1.4.1_checksums.txt and the beads
   /// checksums.txt; Dolt publishes none, so its hashes are the ones GitHub
-  /// reports for the assets (checked against a download, 2026-09-24).
+  /// reports for the assets (checked against downloads, 2026-09-27).
   static const arm64 = [
     AiTeamDownload(
       tool: 'gc',
@@ -80,8 +80,8 @@ abstract final class AiTeamPins {
       tool: 'dolt',
       url: '$_dolt/dolt-linux-arm64.tar.gz',
       sha256:
-          '850a880aece6587cb9251ea0f07eb51fcc0a37450471fd89e03ac2fba1fdaed3',
-      bytes: 40750254,
+          '9ce70fc81e50139e97758ef7f4dc57e9583e4e5ef05ad75d7535c30caa161387',
+      bytes: 40789338,
       member: 'dolt-linux-arm64/bin/dolt',
     ),
   ];
@@ -107,8 +107,8 @@ abstract final class AiTeamPins {
       tool: 'dolt',
       url: '$_dolt/dolt-linux-amd64.tar.gz',
       sha256:
-          '4acd730a4c53991996854a72fbb1add102b0a583bd07411320efb65037a43d9d',
-      bytes: 43971030,
+          'c49d4c3e004cf1581ba0d4a00c5023a26f84eb2ec15d5fe876eed36d5343f463',
+      bytes: 44023897,
       member: 'dolt-linux-amd64/bin/dolt',
     ),
   ];

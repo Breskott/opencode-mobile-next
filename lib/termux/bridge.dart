@@ -11,7 +11,7 @@ import 'team_scripts.dart';
 /// The runtime selected for the one app-managed Ubuntu server. It is separate
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
-  openCode1('opencode1', '1.18.29'),
+  openCode1('opencode1', '1.18.32'),
   openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
@@ -67,7 +67,7 @@ class TermuxBridge {
   ///
   /// Keep this in step with the shell fallback in [_managerScript]
   /// (`requested_version="${2:-…}"`); a test asserts the two agree.
-  static const defaultOpenCodeVersion = '1.18.29';
+  static const defaultOpenCodeVersion = '1.18.32';
 
   /// The npm dist-tag, available only when a caller passes it to
   /// [installAndServeScript] on purpose. Nothing in the app does today: it
@@ -1755,16 +1755,16 @@ install_ubuntu_base() {
   local filename checksum
   case "$(uname -m)" in
     aarch64|arm64)
-      filename='ubuntu-base-24.04.4-base-arm64.tar.gz'
-      checksum='04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2'
+      filename='ubuntu-base-24.04.5-base-arm64.tar.gz'
+      checksum='a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2'
       ;;
     arm|armv7l|armv8l)
-      filename='ubuntu-base-24.04.4-base-armhf.tar.gz'
-      checksum='991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4'
+      filename='ubuntu-base-24.04.5-base-armhf.tar.gz'
+      checksum='4fcee4d278f1c5232e085a021a85e4c6cef3853557a88d98ff380b5e5d5841bb'
       ;;
     x86_64|amd64)
-      filename='ubuntu-base-24.04.4-base-amd64.tar.gz'
-      checksum='c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58'
+      filename='ubuntu-base-24.04.5-base-amd64.tar.gz'
+      checksum='e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86'
       ;;
     *) fail_setup "Unsupported CPU architecture: $(uname -m)" "$CURRENT_PORT" ;;
   esac
@@ -1784,7 +1784,7 @@ install_ubuntu_base() {
       return
     fi
   fi
-  printf 'source=canonical-ubuntu-base-24.04.4\n' > "$UBUNTU_INSTALL_MARKER"
+  printf 'source=canonical-ubuntu-base-24.04.5\n' > "$UBUNTU_INSTALL_MARKER"
   proot-distro install "$archive" --name "$PROOT_NAME"
   rm -f "$archive"
   ubuntu_usable || fail_setup 'Ubuntu Base extraction did not create a usable container' "$CURRENT_PORT"
@@ -1810,7 +1810,7 @@ setup() {
   managed_runtime >/dev/null || return 64
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
   fi
@@ -2077,7 +2077,7 @@ switch_runtime() {
     require_setup_space
     local requested_version
     case "$target" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
@@ -3353,7 +3353,8 @@ echo "aiteam-started:\$!"
   ///
   /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
   /// and, with a real Claude Opus 5.5 turn, 0.9.1 (the first release whose
-  /// Claude model list includes Opus 5.5; 2026-09-23).
+  /// Claude model list includes Opus 5.5; 2026-09-23). The 0.9.2 patch is
+  /// reviewed for compatible protocol changes; device validation is pending.
   /// Claude Code is not pinned; the installed version is recorded in the
   /// script's state and shown in the app.
   static const localAgentsPins = <String, String>{
@@ -3363,7 +3364,7 @@ echo "aiteam-started:\$!"
         '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
     'node_sha256_x64':
         '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
-    'paseo_version': '0.9.1',
+    'paseo_version': '0.9.2',
   };
 
   /// The verbs `claude.sh` runs detached from the bridge shell (their

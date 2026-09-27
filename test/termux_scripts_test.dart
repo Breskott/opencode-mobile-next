@@ -1094,13 +1094,13 @@ wait
 
     expect(manager, isNot(contains('proot-distro install ubuntu')));
     expect(manager, contains('cdimage.ubuntu.com/ubuntu-base/releases/24.04'));
-    expect(manager, contains('ubuntu-base-24.04.4-base-arm64.tar.gz'));
-    expect(manager, contains('ubuntu-base-24.04.4-base-armhf.tar.gz'));
-    expect(manager, contains('ubuntu-base-24.04.4-base-amd64.tar.gz'));
+    expect(manager, contains('ubuntu-base-24.04.5-base-arm64.tar.gz'));
+    expect(manager, contains('ubuntu-base-24.04.5-base-armhf.tar.gz'));
+    expect(manager, contains('ubuntu-base-24.04.5-base-amd64.tar.gz'));
     expect(
       manager,
       contains(
-        '04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2',
+        'a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2',
       ),
     );
     expect(manager, contains("printf '%s  %s\\n' \"\$checksum\""));
