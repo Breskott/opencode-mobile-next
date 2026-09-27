@@ -1,5 +1,5 @@
 {
- "generatedFrom": "2bec3ed3293d8afee0853858ad262097c5bab750",
+ "generatedFrom": "0fc6e557719423f82fb723342e749ab8dd52559c",
  "pages": [
   {
    "id": "system",
@@ -414,19 +414,6 @@
      "action": "navigate",
      "target": "app-diagnostics",
      "effect": "named route '/debug' via desktop command \"Diagnostics\" (lib/main.dart:1150, route at 1244)",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "system-automatic-post-frame-in-scheduleagententry-when-widget-focus-to-model-picker-sheet-agent-dialog",
-     "type": "gesture",
-     "label": "automatic post-frame in _scheduleAgentEntry when widget.focusAgent (coding-settings-default-agent)",
-     "key": null,
-     "file": "lib/main.dart",
-     "line": null,
-     "action": "open-dialog",
-     "target": "model-picker-sheet-agent-dialog",
-     "effect": "automatic post-frame in _scheduleAgentEntry when widget.focusAgent (coding-settings-default-agent)",
      "gates": [],
      "destructive": false
     },
@@ -1420,6 +1407,50 @@
    "gates": [],
    "elements": [
     {
+     "id": "activity-auto-row",
+     "type": "list-tile",
+     "label": "<what it was done to> / <what was done> · <when>",
+     "key": "activity-auto-<actId>",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "/chat/<sessionID>",
+     "effect": "P6.2 While you were away: one automatic act (reconnect, request allowed by itself, queued message sent, heat pause/stop/resume) from controller.automaticActsHere, sorted newest first together with the finished rows below everything that waits. A tap opens the conversation it was done to (_openChat); server-wide acts have no page to open.",
+     "gates": [
+      "act of the shown server or project, not acknowledged",
+      "onTap only when the act names a conversation"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "activity-auto-dismiss",
+     "type": "button",
+     "label": "Dismiss",
+     "key": "activity-auto-dismiss-<actId>",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitSwipeAction (and its row-menu twin): hides the act with KitUndo; on commit AutomaticActivityController.acknowledge([id]) (oc.automaticActivity.<profileId>); a refused save brings it back.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "activity-auto-undo",
+     "type": "button",
+     "label": "Undo",
+     "key": "activity-auto-undo-<actId>",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "AutomaticActivityController.undo(id): runs the act's in-memory inverse at most once; the line then says Undone, Undo didn't go through, or Undo not confirmed.",
+     "gates": [
+      "history.canUndo(id): only acts recorded with a real inverse, this process"
+     ],
+     "destructive": false
+    },
+    {
      "id": "activity-digests-toggle",
      "type": "list-tile",
      "label": "Completion digests",
@@ -1682,7 +1713,7 @@
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "onDismiss -> adds (session.id, idle) to _dismissedDigests (view state only, not persisted).",
+     "effect": "onDismiss -> hides (session.id, idle) at once with KitUndo; when the window closes, controller.dismissReturnBrief(ReturnBrief.single(run)) saves it as reviewed (the same mark as Work's Mark as reviewed); a refused save brings the row back.",
      "gates": [
       "digest expanded"
      ],
@@ -4841,25 +4872,8 @@
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "ExpansionTile: expands the Context capsule / Add web source / Voice conversation rows.",
+     "effect": "ExpansionTile: expands the Add web source / Voice conversation rows.",
      "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "prompt-tools-sheet-context-capsule",
-     "type": "list-tile",
-     "label": "Notes for this conversation",
-     "key": null,
-     "file": "lib/ui/screens/chat/composer.dart",
-     "line": 939,
-     "action": "navigate",
-     "target": "context-capsule",
-     "targetWidget": "ContextCapsuleScreen",
-     "effect": "Pops _PromptTool.contextCapsule; onContextCapsule -> ChatScreen._addContextCapsule() (chat_screen.dart:2920) pushes ContextCapsuleScreen and appends the result to the draft.",
-     "gates": [
-      "inside Advanced",
-      "disabled when voiceBlocked (busy || sending)"
-     ],
      "destructive": false
     },
     {
@@ -7077,6 +7091,10 @@
      "element": "activity-digest-open-conversation"
     },
     {
+     "page": "activity",
+     "element": "activity-auto-row"
+    },
+    {
      "page": "global-shortcuts",
      "element": "global-shortcuts-new-session"
     },
@@ -8537,21 +8555,6 @@
      "hostWiring": true
     },
     {
-     "id": "chat-composer-context-capsule",
-     "type": "icon-button",
-     "label": "[add context capsule]",
-     "key": null,
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 7288,
-     "action": "navigate",
-     "target": "context-capsule",
-     "targetWidget": "ContextCapsuleScreen",
-     "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onContextCapsule -> _addContextCapsule() (line 2920) pushes ContextCapsuleScreen.",
-     "gates": [],
-     "destructive": false,
-     "hostWiring": true
-    },
-    {
      "id": "chat-composer-send",
      "type": "button",
      "label": "[Send]",
@@ -9615,181 +9618,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Closes the sheet and stays in the chat.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "context-capsule",
-   "title": "Context capsule",
-   "kind": "screen",
-   "area": "chat",
-   "file": "lib/ui/screens/context_capsule_screen.dart",
-   "widget": "ContextCapsuleScreen",
-   "presentedBy": [],
-   "line": 10,
-   "purpose": "Builds a bundle of labelled text excerpts and images that is applied to the chat prompt draft.",
-   "reachedFrom": [
-    {
-     "page": "chat",
-     "element": "chat-composer-context-capsule"
-    },
-    {
-     "page": "prompt-tools-sheet",
-     "element": "prompt-tools-sheet-context-capsule"
-    }
-   ],
-   "gates": [
-    "!(_conn.isIsolated || _sending || _promptShelfBusy || _voiceConversation) (chat_screen.dart:2921)",
-    "controls hidden when _invalid (scope changed)"
-   ],
-   "elements": [
-    {
-     "id": "context-capsule-add-excerpt",
-     "type": "button",
-     "label": "Note | Error | Code",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 201,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_add(label): appends an excerpt card pre-labelled with the chosen kind (max 8); three buttons from one loop.",
-     "gates": [
-      "!_invalid",
-      "disabled when _busy || _excerpts.length >= 8"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-excerpt-label",
-     "type": "text-field",
-     "label": "Label",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 218,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Edits the excerpt label (max 80 chars).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-excerpt-text",
-     "type": "text-field",
-     "label": "Excerpt",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 228,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Edits the excerpt body (max 16000 chars); onChanged rebuilds to enable Apply.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-excerpt-paste",
-     "type": "button",
-     "label": "Paste",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 246,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_paste(excerpt): reads Clipboard.getData (line 97) and inserts at the selection, enforcing the 16000 limit.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-excerpt-remove",
-     "type": "button",
-     "label": "Remove",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 251,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Removes the excerpt from _excerpts and disposes its controllers.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "context-capsule-add-image",
-     "type": "button",
-     "label": "Add screenshot or image",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 268,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_pick(): calls widget.pickImage (chat's _chooseAttachment) and adds an image/* attachment.",
-     "gates": [
-      "widget.pickImage != null (chat _supportsPromptAttachments)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-image-tile",
-     "type": "list-tile",
-     "label": "<image filename> / Tap to preview",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 283,
-     "action": "open-sheet",
-     "target": "file-preview-sheet",
-     "targetWidget": "showFilePreviewSheet",
-     "effect": "showFilePreviewSheet(context, FilePreviewData.fromDataUrl(...)).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-image-remove",
-     "type": "button",
-     "label": "Remove",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 295,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Removes the image from _images.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "context-capsule-apply",
-     "type": "button",
-     "label": "Apply to draft",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 319,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_apply(): composes the capsule text and Navigator.pop(ContextCapsule(text, images)) (line 160); chat merges it into the draft.",
-     "gates": [
-      "!_busy && hasContent",
-      "!_invalid"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "context-capsule-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/context_capsule_screen.dart",
-     "line": 325,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop() without a result.",
      "gates": [],
      "destructive": false
     }
@@ -19011,10 +18839,6 @@
     {
      "page": "embedded-markdown-text",
      "element": "embedded-markdown-text-path-chip"
-    },
-    {
-     "page": "context-capsule",
-     "element": "context-capsule-image-tile"
     }
    ],
    "gates": [],
@@ -35872,12 +35696,12 @@
    "kind": "sheet",
    "area": "settings",
    "file": "lib/ui/widgets/pickers.dart",
-   "widget": "_ModelAgentSheet",
+   "widget": "ModelCatalogView",
    "presentedBy": [
     "showModelPicker"
    ],
    "line": 71,
-   "purpose": "The single model / thinking mode / agent selector (ModelCatalogView in a draggable sheet). On open it calls controller.refreshCatalog() and, for a session on a server that owns selection, controller.ensureSession(sessionID). pickers.dart defines only this picker (showModelPicker); the same ModelCatalogView is embedded full-screen by CatalogScreen (showHeader: false).",
+   "purpose": "The one model sheet (slice-P3.3): every door opens it through showModelPicker (composer model chip, '/model', a chat error's Choose model, Settings › Model and search; the catalog screen is gone). Settings opens it for new conversations (classic scope, promoted to newSessions on a server that owns selection); the chat opens it for this conversation (session scope, subtitle 'Applies to this conversation's next turns.'). Body: notices, a 'Reload providers' row when signed-in providers are not loaded, search with its filter menu, All/Favorites/Recent, the models (the chosen one checked, its details under it). Pinned footer: 'Thinking: <level>' and 'Agent: <agent>' chips that open KitMenus; the apply action under them. No dialog opens over the sheet. On open it calls controller.refreshCatalog().",
    "reachedFrom": [
     {
      "page": "home-shell",
@@ -35940,18 +35764,34 @@
    "gates": [],
    "elements": [
     {
-     "id": "model-picker-sheet-close",
-     "type": "icon-button",
-     "label": "Close model selector",
-     "key": null,
+     "id": "model-picker-sheet-thinking",
+     "type": "chip",
+     "label": "Thinking: <level>",
+     "key": "model-picker-thinking",
      "file": "lib/ui/widgets/pickers.dart",
-     "line": 340,
-     "action": "dismiss",
+     "line": null,
+     "action": "other",
      "target": null,
-     "targetWidget": null,
-     "effect": "onClose -> Navigator.maybePop.",
+     "targetWidget": "showKitMenu",
+     "effect": "Pinned footer chip; opens a KitMenu of Default and the drafted model's levels (checked = the drafted level); choosing one stages it until the apply action.",
      "gates": [
-      "widget.showHeader && widget.onClose != null (absent when embedded in CatalogScreen)"
+      "a model is drafted and has at least one enabled variant"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "model-picker-sheet-agent",
+     "type": "chip",
+     "label": "Agent: <agent>",
+     "key": "model-picker-agent",
+     "file": "lib/ui/widgets/pickers.dart",
+     "line": null,
+     "action": "other",
+     "target": null,
+     "targetWidget": "showKitMenu",
+     "effect": "Pinned footer chip; opens a KitMenu of the primary, unhidden agents, each with a line saying what it does (Build: edits files and runs commands; Plan: reads and plans). Staged until the apply action. showModelPicker(focusAgent: true) opens this menu once the catalog has agents.",
+     "gates": [
+      "the catalog has a primary agent that is not hidden"
      ],
      "destructive": false
     },
@@ -36018,24 +35858,8 @@
      "destructive": false
     },
     {
-     "id": "model-picker-sheet-unloaded-providers-info",
-     "type": "gesture",
-     "label": "{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}",
-     "key": null,
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 522,
-     "action": "open-dialog",
-     "target": "model-picker-sheet-unloaded-providers-dialog",
-     "targetWidget": "_catalog",
-     "effect": "InkWell: showDialog listing signed-in providers the server has not loaded.",
-     "gates": [
-      "controller.unloadedProviderIDs.isNotEmpty (row keyed picker-unloaded-providers)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "model-picker-sheet-reload-providers",
-     "type": "icon-button",
+     "type": "list-tile",
      "label": "Reload providers",
      "key": "picker-reload-providers",
      "file": "lib/ui/widgets/pickers.dart",
@@ -36043,7 +35867,7 @@
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "controller.reloadProviderRuntime(). Disabled while controller.catalogLoading.",
+     "effect": "A row (not a notice or dialog): says which signed-in providers the server has not loaded, in words; tap -> controller.reloadProviderRuntime(). Disabled with 'Loading model catalog' while controller.catalogLoading.",
      "gates": [
       "controller.unloadedProviderIDs.isNotEmpty"
      ],
@@ -36160,26 +35984,10 @@
      "destructive": false
     },
     {
-     "id": "model-picker-sheet-options",
-     "type": "button",
-     "label": "Options",
-     "key": "model-picker-options",
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 1001,
-     "action": "open-dialog",
-     "target": "model-picker-sheet-options-dialog",
-     "targetWidget": "_showModelOptions",
-     "effect": "_showModelOptions(context, catalog, model): model details, thinking mode chips and agent dropdown.",
-     "gates": [
-      "a drafted, enabled model exists (_draftedModel(catalog) != null)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "model-picker-sheet-apply",
      "type": "button",
-     "label": "Use model and mode | Use for this session | Use for new sessions",
-     "key": "use-model-<providerID>-<modelID>",
+     "label": "Use <model> · <agent> | Use for this conversation | Use for new conversations",
+     "key": "model-picker-apply",
      "file": "lib/ui/widgets/pickers.dart",
      "line": 1042,
      "action": "toggle-setting",
@@ -36187,8 +35995,8 @@
      "targetWidget": null,
      "effect": "_applyDraft(): session scope -> controller.selectModelForSession(sessionID, model, variant:) then controller.selectAgentForSession(sessionID, agent); otherwise controller.selectModel(model, variant:) then controller.selectAgent(agent) (profile defaults). Verifies the selection stuck, then onApplied (Navigator.maybePop). Errors: \"Could not confirm the model choice. Check your selection and try again.\" / \"Model saved. Agent choice was not confirmed. Try again.\" / \"This choice is no longer available. Refresh models and try again.\".",
      "gates": [
-      "bar keyed model-picker-apply-bar shown only when a drafted enabled model exists",
-      "disabled when !_sameScope || _applying || controller.sessionSelectionSaving(sessionID)",
+      "pinned in the sheet's action block, under the footer",
+      "disabled with 'Choose a model first.' while no enabled model is drafted; disabled with the locked reason while saving or after the scope changed",
       "label by applyScope: classic / session / newSessions (classic is promoted to newSessions when controller.serverOwnsSessionSelection)"
      ],
      "destructive": false
@@ -36200,156 +36008,6 @@
      "file": "lib/ui/screens/library/catalog_screen.dart",
      "line": 108,
      "note": "ModelCatalogView(controller, showHeader: false): same elements except the close button; apply does not pop (onApplied null -> _syncDraft)."
-    }
-   ]
-  },
-  {
-   "id": "model-picker-sheet-unloaded-providers-dialog",
-   "title": "Providers not loaded",
-   "kind": "dialog",
-   "area": "settings",
-   "file": "lib/ui/widgets/pickers.dart",
-   "widget": "_catalog",
-   "presentedBy": [],
-   "line": 522,
-   "purpose": "Explains which signed-in providers the server has not loaded.",
-   "reachedFrom": [
-    {
-     "page": "model-picker-sheet",
-     "element": "model-picker-sheet-unloaded-providers-info"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "model-picker-sheet-unloaded-providers-dialog-done",
-     "type": "button",
-     "label": "Done",
-     "key": null,
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 540,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "model-picker-sheet-agent-dialog",
-   "title": "Choose an agent",
-   "kind": "dialog",
-   "area": "settings",
-   "file": "lib/ui/widgets/pickers.dart",
-   "widget": "_showAgentOptions",
-   "presentedBy": [],
-   "line": 1076,
-   "purpose": "Agent-only dialog, opened automatically after the first frame when showModelPicker(focusAgent: true) and the catalog is loaded.",
-   "reachedFrom": [
-    {
-     "page": "system",
-     "element": "system-automatic-post-frame-in-scheduleagententry-when-widget-focus-to-model-picker-sheet-agent-dialog"
-    }
-   ],
-   "gates": [
-    "widget.focusAgent && controller.catalog != null && _sameScope"
-   ],
-   "elements": [
-    {
-     "id": "model-picker-sheet-agent-dialog-agent",
-     "type": "dropdown",
-     "label": "Agent",
-     "key": "model-picker-agent",
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 738,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_agentPicker: stages _draftAgent (visible, non-subagent agents); saved only by the sheet apply button via controller.selectAgent / selectAgentForSession.",
-     "gates": [
-      "disabled when !_sameScope || no visible agents || _applying || controller.sessionSelectionSaving(sessionID)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "model-picker-sheet-agent-dialog-done",
-     "type": "button",
-     "label": "Done",
-     "key": null,
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 1089,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "model-picker-sheet-options-dialog",
-   "title": "<model name>",
-   "kind": "dialog",
-   "area": "settings",
-   "file": "lib/ui/widgets/pickers.dart",
-   "widget": "_showModelOptions",
-   "presentedBy": [],
-   "line": 1109,
-   "purpose": "Model details plus staged thinking mode (variant) and agent.",
-   "reachedFrom": [
-    {
-     "page": "model-picker-sheet",
-     "element": "model-picker-sheet-options"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "model-picker-sheet-options-dialog-agent",
-     "type": "dropdown",
-     "label": "Agent",
-     "key": "model-picker-agent",
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 738,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_agentPicker: stages _draftAgent.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "model-picker-sheet-options-dialog-done",
-     "type": "button",
-     "label": "Done",
-     "key": null,
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 1170,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "model-picker-sheet-options-dialog-variant-chips",
-     "type": "chip",
-     "label": "Default | <variant id>",
-     "key": "model-variant-<model.id>-<default|variant.id>",
-     "file": "lib/ui/widgets/pickers.dart",
-     "line": 1197,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_variantSelector: stages _draftVariant (\"\" = default); saved by the sheet apply button.",
-     "gates": [
-      "model has at least one non-disabled variant"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -37450,6 +37108,11 @@
     "to": "run-result"
    },
    {
+    "from": "activity",
+    "element": "activity-auto-row",
+    "to": "chat"
+   },
+   {
     "from": "question-sheet",
     "element": "question-sheet-dismiss",
     "to": "confirm-sheet"
@@ -37740,11 +37403,6 @@
     "to": "app-diagnostics"
    },
    {
-    "from": "system",
-    "element": "system-automatic-post-frame-in-scheduleagententry-when-widget-focus-to-model-picker-sheet-agent-dialog",
-    "to": "model-picker-sheet-agent-dialog"
-   },
-   {
     "from": "share-session-failed-banner",
     "element": "share-session-failed-banner-retry",
     "to": "chat"
@@ -37983,11 +37641,6 @@
     "from": "chat",
     "element": "chat-composer-web-sources",
     "to": "web-sources"
-   },
-   {
-    "from": "chat",
-    "element": "chat-composer-context-capsule",
-    "to": "context-capsule"
    },
    {
     "from": "chat",
@@ -38298,11 +37951,6 @@
     "from": "prompt-tools-sheet",
     "element": "prompt-tools-sheet-voice",
     "to": "voice-composer-sheet"
-   },
-   {
-    "from": "prompt-tools-sheet",
-    "element": "prompt-tools-sheet-context-capsule",
-    "to": "context-capsule"
    },
    {
     "from": "prompt-tools-sheet",
@@ -40225,16 +39873,6 @@
     "to": "saved-permissions-revoke-dialog"
    },
    {
-    "from": "model-picker-sheet",
-    "element": "model-picker-sheet-unloaded-providers-info",
-    "to": "model-picker-sheet-unloaded-providers-dialog"
-   },
-   {
-    "from": "model-picker-sheet",
-    "element": "model-picker-sheet-options",
-    "to": "model-picker-sheet-options-dialog"
-   },
-   {
     "from": "commands",
     "element": "commands-row",
     "to": "run-command-dialog"
@@ -40388,11 +40026,6 @@
     "from": "session-note",
     "element": "session-note-back",
     "to": "session-note-discard-dialog"
-   },
-   {
-    "from": "context-capsule",
-    "element": "context-capsule-image-tile",
-    "to": "file-preview-sheet"
    },
    {
     "from": "run-result",
@@ -41831,10 +41464,6 @@
   },
   {
    "part": "b1-chat-screen",
-   "note": "_addContextCapsule (2920) -> Navigator.push(ContextCapsuleScreen) line 2967; its pickImage callback uses _chooseAttachment. Caller: composer onContextCapsule 7288."
-  },
-  {
-   "part": "b1-chat-screen",
    "note": "_pickAttachment (3013) / _chooseAttachment (3261) -> OS file picker FilePicker.pickFile(dialogTitle 'Attach to prompt') line 3282, not an app page; limits 5 files, 10 MB each, 20 MB total; gate _conn.capabilities.promptAttachments."
   },
   {
@@ -42303,7 +41932,7 @@
   },
   {
    "part": "k-session-misc",
-   "note": "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _addContextCapsule:2920, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent."
+   "note": "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent."
   },
   {
    "part": "k-session-misc",

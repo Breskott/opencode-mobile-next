@@ -6145,59 +6145,11 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get isolatedTaskClose;
 
-  /// No description provided for @returnBriefTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Unreviewed work'**
-  String get returnBriefTitle;
-
-  /// No description provided for @returnBriefDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'For this project on this device. Dismissing keeps conversations unread and requests pending.'**
-  String get returnBriefDescription;
-
-  /// No description provided for @returnBriefUntitled.
-  ///
-  /// In en, this message translates to:
-  /// **'Untitled conversation'**
-  String get returnBriefUntitled;
-
-  /// No description provided for @returnBriefStale.
-  ///
-  /// In en, this message translates to:
-  /// **'Last observed state. Reconnect or refresh to check current work and requests.'**
-  String get returnBriefStale;
-
   /// No description provided for @returnBriefStatusUnknown.
   ///
   /// In en, this message translates to:
   /// **'Review status unknown'**
   String get returnBriefStatusUnknown;
-
-  /// No description provided for @returnBriefUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'This server does not report read state. Unreviewed results are unknown.'**
-  String get returnBriefUnknown;
-
-  /// No description provided for @returnBriefPartial.
-  ///
-  /// In en, this message translates to:
-  /// **'Loaded conversations only. The conversation list is still incomplete.'**
-  String get returnBriefPartial;
-
-  /// No description provided for @returnBriefAnswer.
-  ///
-  /// In en, this message translates to:
-  /// **'Answer'**
-  String get returnBriefAnswer;
-
-  /// No description provided for @returnBriefUnreviewed.
-  ///
-  /// In en, this message translates to:
-  /// **'Unreviewed conversation. Open results to check the outcome.'**
-  String get returnBriefUnreviewed;
 
   /// No description provided for @returnBriefReview.
   ///
@@ -6210,30 +6162,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get returnBriefContinue;
-
-  /// No description provided for @returnBriefMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.'**
-  String returnBriefMore(int count);
-
-  /// No description provided for @returnBriefSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismissal was not saved. These items are still unreviewed. Try again.'**
-  String get returnBriefSaveFailed;
-
-  /// No description provided for @returnBriefSaving.
-  ///
-  /// In en, this message translates to:
-  /// **'Saving dismissal...'**
-  String get returnBriefSaving;
-
-  /// No description provided for @returnBriefDismiss.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss shown items'**
-  String get returnBriefDismiss;
 
   /// No description provided for @capsuleError.
   ///
@@ -40850,6 +40778,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'tools mcp integrations commands skills references slash capabilities plugins external agents a2a'**
   String get settingsHubSearchToolsAliases;
+
+  /// Inbox, While you were away: what the app did to the server named in the row's title (the event stream found the server again by itself).
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnected by itself'**
+  String get whileAwayActReconnected;
+
+  /// Inbox, While you were away: the server named in the title was restarted automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Restarted by itself'**
+  String get whileAwayActRestarted;
+
+  /// Inbox, While you were away: the heat guard paused the AI Team on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team paused while the phone was hot'**
+  String get whileAwayActHeatPaused;
+
+  /// Inbox, While you were away: the heat guard stopped the AI Team on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team stopped while the phone was hot'**
+  String get whileAwayActHeatStopped;
+
+  /// Inbox, While you were away: the heat guard gave the AI Team back on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team resumed once the phone cooled'**
+  String get whileAwayActHeatResumed;
+
+  /// Inbox, While you were away: an app update was downloaded automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Update downloaded by itself'**
+  String get whileAwayActUpdated;
+
+  /// Inbox, While you were away: a permission request in the conversation named in the title was allowed automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed a request by itself'**
+  String get whileAwayActAllowed;
+
+  /// Inbox, While you were away: a message queued while offline was sent to the conversation named in the title once the server was back.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent your queued message by itself'**
+  String get whileAwayActQueuedSent;
+
+  /// Inbox, While you were away: another automatic act on the thing named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'Done automatically'**
+  String get whileAwayActOther;
+
+  /// Inbox, While you were away: undoing the automatic act failed; the act stays as it was.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undo didn\'t go through'**
+  String whileAwayUndoFailed(String act);
+
+  /// Inbox, While you were away: swipe and menu action that removes one automatic act from the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get whileAwayDismiss;
+
+  /// Inbox, While you were away: the saved history of automatic acts was unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'The list of what ran by itself couldn\'t be read, so earlier automatic actions aren\'t shown.'**
+  String get whileAwayHistoryUnreadable;
+
+  /// Inbox, While you were away: the device refused to save an automatic act to the history.
+  ///
+  /// In en, this message translates to:
+  /// **'An automatic action couldn\'t be saved to this list. It happened, but it may not be listed.'**
+  String get whileAwayHistoryUnsaved;
+
+  /// Inbox, While you were away: an automatic act that was undone.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undone'**
+  String whileAwayActUndone(String act);
+
+  /// Inbox, While you were away: Undo was sent but the app could not confirm it.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undo not confirmed'**
+  String whileAwayUndoUnconfirmed(String act);
+
+  /// Inbox, While you were away: undo message after dismissing one automatic act, naming what it was done to.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed “{what}”'**
+  String whileAwayDismissed(String what);
+
+  /// Inbox, While you were away: what the done mark of an automatic act says to a screen reader.
+  ///
+  /// In en, this message translates to:
+  /// **'Done by itself'**
+  String get whileAwayMark;
 }
 
 class _AppLocalizationsDelegate
