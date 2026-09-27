@@ -19939,12 +19939,6 @@ abstract class AppLocalizations {
     int total,
   );
 
-  /// Workspace AI Team card secondary action: refetch every scope from the host
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get teamUiCardRefresh;
-
   /// Workspace AI Team card line when the host was reached but a read failed; cached data stays on show
   ///
   /// In en, this message translates to:
@@ -21744,12 +21738,6 @@ abstract class AppLocalizations {
   /// **'Its session ends now. Its work stays where it is; the host can wake it again later.'**
   String get teamUiControlStopConfirmBody;
 
-  /// Confirming button of the Stop confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Stop agent'**
-  String get teamUiControlStopConfirmAction;
-
   /// Title of the two-step Restart confirmation; {agent} is the agent name
   ///
   /// In en, this message translates to:
@@ -22026,53 +22014,11 @@ abstract class AppLocalizations {
   /// **'The host refused the task: {reason}'**
   String teamUiStartRunDirectRefused(String reason);
 
-  /// Title of the pending card on the AI Team home after the objective was sent, until a run appears
-  ///
-  /// In en, this message translates to:
-  /// **'Planning the steps…'**
-  String get teamUiStartRunPlanning;
-
-  /// Body of the pending Planning card
-  ///
-  /// In en, this message translates to:
-  /// **'The planner is turning it into steps. The task shows in this list once it has.'**
-  String get teamUiStartRunPlanningHint;
-
-  /// Title of the pending card after 30 minutes without a run
-  ///
-  /// In en, this message translates to:
-  /// **'Still planning — check the planner\'s output'**
-  String get teamUiStartRunStillPlanning;
-
-  /// Pending card line when the host never confirmed the message
-  ///
-  /// In en, this message translates to:
-  /// **'Sent, unconfirmed — check the planner\'s output before sending again'**
-  String get teamUiStartRunUnconfirmed;
-
   /// Pending card line when the host or the front refused; {reason} is the host's text
   ///
   /// In en, this message translates to:
   /// **'The host refused the objective: {reason}'**
   String teamUiStartRunRefused(String reason);
-
-  /// Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read
-  ///
-  /// In en, this message translates to:
-  /// **'Watch the planner'**
-  String get teamUiStartRunPlannerOutput;
-
-  /// Button on the pending card hiding it for good
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get teamUiStartRunDismiss;
-
-  /// Pending card footer; {time} is a clock time
-  ///
-  /// In en, this message translates to:
-  /// **'Sent {time}'**
-  String teamUiStartRunSentAt(String time);
 
   /// Header of the run Overview's Merge section when every readiness line is ok (02-ux §8a)
   ///
@@ -22355,161 +22301,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Provider title'**
   String get teamUiRunLabelRawTitle;
-
-  /// Dispatch cycle strip (TEAM-116), step 1: the host chose an agent pool for the work item
-  ///
-  /// In en, this message translates to:
-  /// **'Routed'**
-  String get teamUiCycleStepRouted;
-
-  /// Dispatch cycle step 2: a session of the routed pool is waking on the host
-  ///
-  /// In en, this message translates to:
-  /// **'Agent starting'**
-  String get teamUiCycleStepAgentStarting;
-
-  /// Dispatch cycle step 3: the agent took the work item
-  ///
-  /// In en, this message translates to:
-  /// **'Claimed'**
-  String get teamUiCycleStepClaimed;
-
-  /// Dispatch cycle step 4: the agent is editing in its worktree
-  ///
-  /// In en, this message translates to:
-  /// **'Working'**
-  String get teamUiCycleStepWorking;
-
-  /// Dispatch cycle step 5: the change is on a branch
-  ///
-  /// In en, this message translates to:
-  /// **'Pushed'**
-  String get teamUiCycleStepPushed;
-
-  /// Dispatch cycle step 6: the merge agent (Gas City refinery) owns the branch
-  ///
-  /// In en, this message translates to:
-  /// **'Handed to merge'**
-  String get teamUiCycleStepHandedToMerge;
-
-  /// Dispatch cycle end mark: the branch merged and the item closed
-  ///
-  /// In en, this message translates to:
-  /// **'Merged'**
-  String get teamUiCycleStepMerged;
-
-  /// Dispatch cycle hint under Agent starting while it is the current step: the host polls, so a few minutes is normal
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for an agent · usually 1–5 min'**
-  String get teamUiCycleWaitingForAgent;
-
-  /// Dispatch cycle compact line on the Workspace card: the current step word and the HH:MM the wait began
-  ///
-  /// In en, this message translates to:
-  /// **'{step} · since {time}'**
-  String teamUiCycleCurrent(String step, String time);
-
-  /// Dispatch cycle: under the current step, the HH:MM the wait began
-  ///
-  /// In en, this message translates to:
-  /// **'since {time}'**
-  String teamUiCycleSince(String time);
-
-  /// Screen-reader label of the dispatch cycle strip: one-based position of the current step, the number of steps (6), the step word, the HH:MM the wait began
-  ///
-  /// In en, this message translates to:
-  /// **'Step {position} of {total}, {step}, since {time}'**
-  String teamUiCycleSemantics(
-    int position,
-    int total,
-    String step,
-    String time,
-  );
-
-  /// Screen-reader label of the dispatch cycle strip when no time is known
-  ///
-  /// In en, this message translates to:
-  /// **'Step {position} of {total}, {step}'**
-  String teamUiCycleSemanticsNoTime(int position, int total, String step);
-
-  /// Screen-reader label of the dispatch cycle strip once the item merged
-  ///
-  /// In en, this message translates to:
-  /// **'All {total} steps done, merged at {time}'**
-  String teamUiCycleSemanticsMerged(int total, String time);
-
-  /// Dispatch cycle stall: routed for over three minutes without an agent starting
-  ///
-  /// In en, this message translates to:
-  /// **'The host has not started an agent yet'**
-  String get teamUiCycleStallHostNotStarted;
-
-  /// Dispatch cycle stall: the agent session woke and stopped again twice or more within a minute
-  ///
-  /// In en, this message translates to:
-  /// **'The agent could not start on the host'**
-  String get teamUiCycleStallAgentCannotStart;
-
-  /// Dispatch cycle stall: the agent transcript says the model provider hit a usage limit, quota or rate limit
-  ///
-  /// In en, this message translates to:
-  /// **'The model provider reached its usage limit'**
-  String get teamUiCycleStallProviderLimit;
-
-  /// Dispatch cycle stall: working for over thirty minutes with nothing pushed
-  ///
-  /// In en, this message translates to:
-  /// **'Still working — check the agent\'s output'**
-  String get teamUiCycleStallWorkingLong;
-
-  /// Dispatch cycle stall: handed to merge over fifteen minutes ago and not merged
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for the merge agent'**
-  String get teamUiCycleStallMergeWaiting;
-
-  /// Dispatch cycle action and sheet title: opens three lines explaining the host's polling chain
-  ///
-  /// In en, this message translates to:
-  /// **'How the host dispatches'**
-  String get teamUiCycleActionHow;
-
-  /// Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read
-  ///
-  /// In en, this message translates to:
-  /// **'Watch the agent'**
-  String get teamUiCycleActionOpenOutput;
-
-  /// Dispatch cycle action: nudges the rig's merge agent (Gas City refinery); refinery is the Gas City term
-  ///
-  /// In en, this message translates to:
-  /// **'Nudge refinery'**
-  String get teamUiCycleActionNudgeRefinery;
-
-  /// How the host dispatches sheet, line 1 of 3: the beads cache pass (up to 60 s)
-  ///
-  /// In en, this message translates to:
-  /// **'The host checks for new work about once a minute and routes it to an agent pool.'**
-  String get teamUiCycleHowLine1;
-
-  /// How the host dispatches sheet, line 2 of 3: the patrol tick and the ACP start
-  ///
-  /// In en, this message translates to:
-  /// **'A patrol every 30 seconds wakes an agent within its wake budget; the agent\'s harness takes 5–10 seconds to start.'**
-  String get teamUiCycleHowLine2;
-
-  /// How the host dispatches sheet, line 3 of 3: the first model turn and the normal total
-  ///
-  /// In en, this message translates to:
-  /// **'The first model turn takes 10–60 seconds before the agent claims the work, so 2–6 minutes from routed to claimed is normal.'**
-  String get teamUiCycleHowLine3;
-
-  /// How the host dispatches sheet: the button that closes it
-  ///
-  /// In en, this message translates to:
-  /// **'Got it'**
-  String get teamUiCycleHowClose;
 
   /// Settings › Termux server › Storage: screen title
   ///
@@ -28631,12 +28422,6 @@ abstract class AppLocalizations {
   /// **'The team is paused · nothing starts until you resume it'**
   String get teamNowPausedLine;
 
-  /// AI Team home: the Now line when a task waits too long; {title} is the task, {age} like '6 min'
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” has waited {age} and no worker has started'**
-  String teamNowStuckLine(String title, String age);
-
   /// AI Team: the action that wakes a worker for a task that waits too long
   ///
   /// In en, this message translates to:
@@ -28648,24 +28433,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Why?'**
   String get teamNowWhy;
-
-  /// AI Team home: the Now line while a task is worked on
-  ///
-  /// In en, this message translates to:
-  /// **'Working on “{title}” · a reviewer checks it next'**
-  String teamNowWorkingLine(String title);
-
-  /// AI Team home: the Now line while a task's work waits for review and merge
-  ///
-  /// In en, this message translates to:
-  /// **'Reviewing “{title}” · it merges when the check passes'**
-  String teamNowReviewingLine(String title);
-
-  /// AI Team home: the Now line while a task waits for a worker; {next} says when one starts
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” waits for a worker · {next}'**
-  String teamNowWaitingLine(String title, String next);
 
   /// Agent screen: a worker that should be working is not running
   ///
@@ -28966,60 +28733,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A worker'**
   String get teamChatAWorker;
-
-  /// Team conversation Now line after 8 s without an answer from the team
-  ///
-  /// In en, this message translates to:
-  /// **'The team isn\'t answering'**
-  String get teamChatNowNotAnswering;
-
-  /// Team conversation Now line: a task just given, not yet listed; elapsed time
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for the team to pick it up · {elapsed}'**
-  String teamChatNowPending(String elapsed);
-
-  /// Team conversation Now line: the task is over
-  ///
-  /// In en, this message translates to:
-  /// **'Finished'**
-  String get teamChatNowFinished;
-
-  /// Team conversation Now line: something waits on the person
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you · {question}'**
-  String teamChatNowNeedsYou(String question);
-
-  /// Team conversation Now line: no worker has started yet; how long it has waited
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for a worker · waited {elapsed}'**
-  String teamChatNowWaitingForWorker(String elapsed);
-
-  /// Team conversation Now line: a worker is starting on this phone (slow cold start); elapsed time
-  ///
-  /// In en, this message translates to:
-  /// **'{name} is starting · can take a few minutes on a phone · {elapsed}'**
-  String teamChatNowStartingPhone(String name, String elapsed);
-
-  /// Team conversation Now line: a worker is starting; elapsed time
-  ///
-  /// In en, this message translates to:
-  /// **'{name} is starting · {elapsed}'**
-  String teamChatNowStarting(String name, String elapsed);
-
-  /// Team conversation Now line: a worker is working on a step; elapsed time
-  ///
-  /// In en, this message translates to:
-  /// **'{name} is working on “{title}” · {elapsed}'**
-  String teamChatNowWorking(String name, String title, String elapsed);
-
-  /// Team conversation Now line: the work waits for the reviewer (merge); elapsed time
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for review · {elapsed}'**
-  String teamChatNowReview(String elapsed);
 
   /// Team conversation family strip, screen reader: an agent is running
   ///
@@ -34545,12 +34258,6 @@ abstract class AppLocalizations {
   /// **'The host didn\'t say why.'**
   String get teamNowWakeRefusedNoReason;
 
-  /// Why Open agent output is unavailable on the dispatch strip (shared-team-1).
-  ///
-  /// In en, this message translates to:
-  /// **'No agent has taken this step yet.'**
-  String get teamCycleStripNoAgentYet;
-
   /// Label of the field for the Gas City city name on the Add AI Team host sheet (shared-team-1; was 'City').
   ///
   /// In en, this message translates to:
@@ -37952,12 +37659,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This agent can\'t list its own commands here yet. These are the app\'s actions.'**
   String get commandLauncherAgentCommandsUnavailable;
-
-  /// Team conversation Now line: a task given to the team has not been picked up after several minutes. elapsed is a short duration such as '12 min'.
-  ///
-  /// In en, this message translates to:
-  /// **'Still waiting for the team to plan this · {elapsed}'**
-  String teamChatNowPendingSlow(String elapsed);
 
   /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
   ///
@@ -41445,12 +41146,6 @@ abstract class AppLocalizations {
   /// **'It was cancelled'**
   String get teamChatLeadStepCancelledIt;
 
-  /// Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)
-  ///
-  /// In en, this message translates to:
-  /// **'{name} is working on it · {elapsed}'**
-  String teamChatNowWorkingIt(String name, String elapsed);
-
   /// Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as "1 d 21 h"
   ///
   /// In en, this message translates to:
@@ -41582,6 +41277,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About the {role}'**
   String teamWatchAboutRole(String role);
+
+  /// Team Now line (slice-P5.1): the planner has the task and has not listed its steps yet. Also a task row's line on the team page.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a plan'**
+  String get teamNowActivityPlanning;
+
+  /// Team Now line: the task waits for a worker to be started.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a worker'**
+  String get teamNowActivityWaitingForWorker;
+
+  /// Team Now line: a worker is starting on the task and has not begun it yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting a worker'**
+  String get teamNowActivityStartingWorker;
+
+  /// Team Now line: a worker is working on the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Working on your task'**
+  String get teamNowActivityWorking;
+
+  /// Team Now line: the task's changes are with review or wait for it to close.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing the changes'**
+  String get teamNowActivityReviewing;
+
+  /// Team Now line: the team asked the person a question (its card is below).
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your answer'**
+  String get teamNowActivityNeedsYou;
+
+  /// Team Now line: the current stage waited past its usual time.
+  ///
+  /// In en, this message translates to:
+  /// **'Taking longer than expected'**
+  String get teamNowActivityDelayed;
+
+  /// Team Now line: the app sent the task but does not know whether the team received it.
+  ///
+  /// In en, this message translates to:
+  /// **'Request not confirmed'**
+  String get teamNowActivityUnconfirmed;
+
+  /// Team Now line / task row: the team refused the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Request not accepted'**
+  String get teamNowActivityRefused;
+
+  /// Team Now line after 8 s without an answer from the team.
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn\'t answering'**
+  String get teamNowActivityUnavailable;
+
+  /// Team Now line: the task finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get teamNowActivityCompleted;
+
+  /// Team Now line: the task failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish'**
+  String get teamNowActivityFailed;
+
+  /// Team Now line: the task was stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get teamNowActivityCancelled;
+
+  /// Team Now line reason after 8 s while planning.
+  ///
+  /// In en, this message translates to:
+  /// **'No plan has been reported yet. The reason is unknown.'**
+  String get teamNowReasonNoPlanReported;
+
+  /// Team Now line reason: no worker started on the task yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No worker has been reported yet.'**
+  String get teamNowReasonNoWorkerReported;
+
+  /// Team Now line reason while a worker starts.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker has started but hasn\'t begun the task.'**
+  String get teamNowReasonWorkerStarting;
+
+  /// Team Now line reason while a worker works.
+  ///
+  /// In en, this message translates to:
+  /// **'The task is being worked on.'**
+  String get teamNowReasonWorkInProgress;
+
+  /// Team Now line reason while in review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review or completion is still pending.'**
+  String get teamNowReasonReviewPending;
+
+  /// Team Now line reason: a question waits.
+  ///
+  /// In en, this message translates to:
+  /// **'The team is waiting for your answer.'**
+  String get teamNowReasonAnswerNeeded;
+
+  /// Team Now line reason: the worker stopped while starting.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker couldn\'t stay running.'**
+  String get teamNowReasonWorkerCouldNotStart;
+
+  /// Team Now line reason: the model provider hit a usage limit.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service reported a usage limit.'**
+  String get teamNowReasonProviderLimit;
+
+  /// Team Now line reason: working a long time without handing anything on.
+  ///
+  /// In en, this message translates to:
+  /// **'The work is taking longer than expected.'**
+  String get teamNowReasonWorkTakingLonger;
+
+  /// Team Now line reason: the task's request is unconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t confirm the request arrived. Check before sending it again.'**
+  String get teamNowReasonConfirmationMissing;
+
+  /// Team Now line reason: the team refused the request.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was not accepted.'**
+  String get teamNowReasonRequestRefused;
+
+  /// Team Now line reason: no connection to the team.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress can\'t be checked while disconnected.'**
+  String get teamNowReasonConnectionUnavailable;
+
+  /// Team Now line reason when the cause is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The reason is unknown. Check what the team is doing.'**
+  String get teamNowReasonCauseUnknown;
+
+  /// Team Now line Why fold while planning.
+  ///
+  /// In en, this message translates to:
+  /// **'The planner turns your task into steps. This conversation follows the task as soon as the team lists them. Stopping following it here doesn\'t cancel it on the team\'s computer.'**
+  String get teamNowWhyPlanning;
+
+  /// Team Now line Why fold while waiting for a worker.
+  ///
+  /// In en, this message translates to:
+  /// **'The team looks for new work regularly and starts a worker for it when one is free.'**
+  String get teamNowWhyWaitingForWorker;
+
+  /// Team Now line Why fold while a worker starts.
+  ///
+  /// In en, this message translates to:
+  /// **'A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.'**
+  String get teamNowWhyStartingWorker;
+
+  /// Team Now line Why fold while working.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker makes the changes on its own copy, then hands them to review.'**
+  String get teamNowWhyWorking;
+
+  /// Team Now line Why fold while reviewing.
+  ///
+  /// In en, this message translates to:
+  /// **'A reviewer checks the changes before they are merged.'**
+  String get teamNowWhyReviewing;
+
+  /// Team Now line Why fold for an unconfirmed request.
+  ///
+  /// In en, this message translates to:
+  /// **'The app sent the task but didn\'t hear back. Sending it again could start it twice, so look at the planner first.'**
+  String get teamNowWhyUnconfirmed;
+
+  /// Team Now line Why fold: the worker could not start.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker stopped while it was starting. Its conversation may say why.'**
+  String get teamNowWhyWorkerCouldNotStart;
+
+  /// Team Now line Why fold: usage limit.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service limits how much can be used in a period. Work continues when the limit resets, or you can stop the task.'**
+  String get teamNowWhyProviderLimit;
+
+  /// Team Now line Why fold: working long.
+  ///
+  /// In en, this message translates to:
+  /// **'Large tasks can take a while. Watching the worker shows whether it is still moving.'**
+  String get teamNowWhyWorkTakingLonger;
+
+  /// Team Now line Why fold when the cause is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'What the team reports doesn\'t say why it is waiting.'**
+  String get teamNowWhyCauseUnknown;
+
+  /// Team Now line: folds the Why away again.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get teamNowWhyHide;
+
+  /// Team Now line second line while planning.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: the team lists the steps'**
+  String get teamNowNextPlan;
+
+  /// Team Now line second line while waiting for a worker.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: a worker starts'**
+  String get teamNowNextWorker;
+
+  /// Team Now line second line while a worker starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: the worker begins the task'**
+  String get teamNowNextWork;
+
+  /// Team Now line second line while working.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: the changes are reviewed'**
+  String get teamNowNextReview;
+
+  /// Team Now line second line while reviewing.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: the task finishes'**
+  String get teamNowNextFinish;
+
+  /// Team Now line way out: opens the planner's conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch the planner'**
+  String get teamNowWatchPlanner;
+
+  /// Team Now line way out while planning: hides the request here; it does not cancel it on the team's computer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following this request'**
+  String get teamNowDismissRequest;
+
+  /// Team Now line: how long the next stage usually takes, never a countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'usually within {duration}'**
+  String teamNowUsuallyWithin(String duration);
+
+  /// Team Now line way out: opens the worker's conversation. name is its short name or role.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch {name}'**
+  String teamNowWatchAgent(String name);
+
+  /// Team page Now line (slice-P5.1): a task waits past the team's checks and no worker has started; one sentence about the team, never the task (its row says which and how long). The action wakes a worker or explains why.
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn\'t starting a worker'**
+  String get teamNowNotStartingLine;
 }
 
 class _AppLocalizationsDelegate

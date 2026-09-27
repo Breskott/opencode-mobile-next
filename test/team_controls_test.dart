@@ -874,21 +874,44 @@ void main() {
         expect(text, contains('inside the host boundaries'));
         expect(text, isNot(contains('Project:')));
 
-        // The task's conversation opens (P0.3); back on the home, the
-        // pending card has the planner's output a tap away.
+        // The task's conversation opens (P0.3); back on the home, the task
+        // is a row of the one list until the planner lists it
+        // (slice-P5.1: no planning card), and the row opens the task's
+        // conversation, whose Why leads to the planner.
         expect(key('team-start-run-sheet'), findsNothing);
         expect(find.byType(TeamConversationScreen), findsOneWidget);
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('Planning the steps…'), findsOneWidget);
+        expect(key('team-home-planning-key-1'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: key('team-home-planning-key-1'),
+            matching: find.textContaining(
+              'Waiting for a plan',
+              findRichText: true,
+            ),
+          ),
+          findsWidgets,
+        );
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
           findsOneWidget,
         );
-        await tester.tap(key('team-planning-output'));
+        await tester.tap(key('team-home-planning-key-1'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        // Eight seconds with no plan: the line says why, and its Why
+        // unfolds the ways out in place.
+        await tester.pump(const Duration(seconds: 9));
+        await tester.pumpAndSettle();
+        await tester.tap(key('team-conversation-now-why'));
+        await tester.pumpAndSettle();
+        await tester.tap(key('team-conversation-now-watch'));
         await tester.pumpAndSettle();
         // The planner's conversation, from the team's live output.
         expect(find.byType(TeamWatchLiveScreen), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
         await tester.pageBack();
         await tester.pumpAndSettle();
 
@@ -904,8 +927,7 @@ void main() {
         ];
         await controller.refresh();
         await settle(tester);
-        expect(find.text('Planning the steps…'), findsNothing);
-        expect(key('team-planning-key-1'), findsNothing);
+        expect(key('team-home-planning-key-1'), findsNothing);
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
           findsOneWidget,
@@ -1131,9 +1153,8 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('after 30 minutes: Still planning; Dismiss hides it', (
-      tester,
-    ) async {
+    testWidgets('after 31 minutes: a reason and a way out, never "Still '
+        'planning" alone (slice-P5.1)', (tester) async {
       await size(tester, const Size(400, 900));
       final (controller, _) = await boot(timeout: const Duration(seconds: 30));
       await pumpHome(tester, controller);
@@ -1145,17 +1166,38 @@ void main() {
       expect(find.byType(TeamConversationScreen), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('Planning the steps…'), findsOneWidget);
+      expect(key('team-home-planning-key-1'), findsOneWidget);
 
       clock = clock.add(const Duration(minutes: 31));
       await pumpHome(tester, controller);
       expect(
-        find.text('Still planning — check the planner\'s output'),
-        findsOneWidget,
+        find.descendant(
+          of: key('team-home-planning-key-1'),
+          matching: find.textContaining(
+            'Waiting for a plan · 31 min',
+            findRichText: true,
+          ),
+        ),
+        findsWidgets,
       );
-      await tester.tap(key('team-planning-dismiss'));
+      await tester.tap(key('team-home-planning-key-1'));
+      await tester.pumpAndSettle();
+      // Already 31 minutes old: the reason shows at once, with no
+      // engine word and no "Still planning".
+      expect(
+        find.textContaining(
+          'No plan has been reported yet',
+          findRichText: true,
+        ),
+        findsWidgets,
+      );
+      expect(find.textContaining('Still planning'), findsNothing);
+      await tester.tap(key('team-conversation-now-why'));
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-conversation-now-dismiss'));
       await settle(tester);
-      expect(key('team-planning-key-1'), findsNothing);
+      expect(find.byType(TeamConversationScreen), findsNothing);
+      expect(key('team-home-planning-key-1'), findsNothing);
       expect(controller.isPlanningDismissed('key-1'), isTrue);
       await drain(tester);
     });

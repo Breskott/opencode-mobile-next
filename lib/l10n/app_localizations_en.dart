@@ -12280,9 +12280,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiCardRefresh => 'Refresh';
-
-  @override
   String teamUiCardRefreshFailed(String time) {
     return 'Last refresh failed · showing data from $time';
   }
@@ -13410,9 +13407,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Its session ends now. Its work stays where it is; the host can wake it again later.';
 
   @override
-  String get teamUiControlStopConfirmAction => 'Stop agent';
-
-  @override
   String teamUiControlRestartConfirmTitle(String agent) {
     return 'Restart $agent?';
   }
@@ -13573,34 +13567,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlanning => 'Planning the steps…';
-
-  @override
-  String get teamUiStartRunPlanningHint =>
-      'The planner is turning it into steps. The task shows in this list once it has.';
-
-  @override
-  String get teamUiStartRunStillPlanning =>
-      'Still planning — check the planner\'s output';
-
-  @override
-  String get teamUiStartRunUnconfirmed =>
-      'Sent, unconfirmed — check the planner\'s output before sending again';
-
-  @override
   String teamUiStartRunRefused(String reason) {
     return 'The host refused the objective: $reason';
-  }
-
-  @override
-  String get teamUiStartRunPlannerOutput => 'Watch the planner';
-
-  @override
-  String get teamUiStartRunDismiss => 'Dismiss';
-
-  @override
-  String teamUiStartRunSentAt(String time) {
-    return 'Sent $time';
   }
 
   @override
@@ -13788,104 +13756,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiRunLabelRawTitle => 'Provider title';
-
-  @override
-  String get teamUiCycleStepRouted => 'Routed';
-
-  @override
-  String get teamUiCycleStepAgentStarting => 'Agent starting';
-
-  @override
-  String get teamUiCycleStepClaimed => 'Claimed';
-
-  @override
-  String get teamUiCycleStepWorking => 'Working';
-
-  @override
-  String get teamUiCycleStepPushed => 'Pushed';
-
-  @override
-  String get teamUiCycleStepHandedToMerge => 'Handed to merge';
-
-  @override
-  String get teamUiCycleStepMerged => 'Merged';
-
-  @override
-  String get teamUiCycleWaitingForAgent =>
-      'Waiting for an agent · usually 1–5 min';
-
-  @override
-  String teamUiCycleCurrent(String step, String time) {
-    return '$step · since $time';
-  }
-
-  @override
-  String teamUiCycleSince(String time) {
-    return 'since $time';
-  }
-
-  @override
-  String teamUiCycleSemantics(
-    int position,
-    int total,
-    String step,
-    String time,
-  ) {
-    return 'Step $position of $total, $step, since $time';
-  }
-
-  @override
-  String teamUiCycleSemanticsNoTime(int position, int total, String step) {
-    return 'Step $position of $total, $step';
-  }
-
-  @override
-  String teamUiCycleSemanticsMerged(int total, String time) {
-    return 'All $total steps done, merged at $time';
-  }
-
-  @override
-  String get teamUiCycleStallHostNotStarted =>
-      'The host has not started an agent yet';
-
-  @override
-  String get teamUiCycleStallAgentCannotStart =>
-      'The agent could not start on the host';
-
-  @override
-  String get teamUiCycleStallProviderLimit =>
-      'The model provider reached its usage limit';
-
-  @override
-  String get teamUiCycleStallWorkingLong =>
-      'Still working — check the agent\'s output';
-
-  @override
-  String get teamUiCycleStallMergeWaiting => 'Waiting for the merge agent';
-
-  @override
-  String get teamUiCycleActionHow => 'How the host dispatches';
-
-  @override
-  String get teamUiCycleActionOpenOutput => 'Watch the agent';
-
-  @override
-  String get teamUiCycleActionNudgeRefinery => 'Nudge refinery';
-
-  @override
-  String get teamUiCycleHowLine1 =>
-      'The host checks for new work about once a minute and routes it to an agent pool.';
-
-  @override
-  String get teamUiCycleHowLine2 =>
-      'A patrol every 30 seconds wakes an agent within its wake budget; the agent\'s harness takes 5–10 seconds to start.';
-
-  @override
-  String get teamUiCycleHowLine3 =>
-      'The first model turn takes 10–60 seconds before the agent claims the work, so 2–6 minutes from routed to claimed is normal.';
-
-  @override
-  String get teamUiCycleHowClose => 'Got it';
 
   @override
   String get termuxStorageTitle => 'Storage on this phone';
@@ -17671,30 +17541,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The team is paused · nothing starts until you resume it';
 
   @override
-  String teamNowStuckLine(String title, String age) {
-    return '“$title” has waited $age and no worker has started';
-  }
-
-  @override
   String get teamNowStartWorker => 'Start a worker';
 
   @override
   String get teamNowWhy => 'Why?';
-
-  @override
-  String teamNowWorkingLine(String title) {
-    return 'Working on “$title” · a reviewer checks it next';
-  }
-
-  @override
-  String teamNowReviewingLine(String title) {
-    return 'Reviewing “$title” · it merges when the check passes';
-  }
-
-  @override
-  String teamNowWaitingLine(String title, String next) {
-    return '“$title” waits for a worker · $next';
-  }
 
   @override
   String get teamAgentDidNotStartTitle => 'The worker didn\'t start';
@@ -17897,47 +17747,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamChatAWorker => 'A worker';
-
-  @override
-  String get teamChatNowNotAnswering => 'The team isn\'t answering';
-
-  @override
-  String teamChatNowPending(String elapsed) {
-    return 'Waiting for the team to pick it up · $elapsed';
-  }
-
-  @override
-  String get teamChatNowFinished => 'Finished';
-
-  @override
-  String teamChatNowNeedsYou(String question) {
-    return 'Needs you · $question';
-  }
-
-  @override
-  String teamChatNowWaitingForWorker(String elapsed) {
-    return 'Waiting for a worker · waited $elapsed';
-  }
-
-  @override
-  String teamChatNowStartingPhone(String name, String elapsed) {
-    return '$name is starting · can take a few minutes on a phone · $elapsed';
-  }
-
-  @override
-  String teamChatNowStarting(String name, String elapsed) {
-    return '$name is starting · $elapsed';
-  }
-
-  @override
-  String teamChatNowWorking(String name, String title, String elapsed) {
-    return '$name is working on “$title” · $elapsed';
-  }
-
-  @override
-  String teamChatNowReview(String elapsed) {
-    return 'Waiting for review · $elapsed';
-  }
 
   @override
   String get teamChatFamilyRunning => 'running';
@@ -21709,9 +21518,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
 
   @override
-  String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
-
-  @override
   String get teamHostFormTeamLabel => 'Team name (optional)';
 
   @override
@@ -23954,11 +23760,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get commandLauncherAgentCommandsUnavailable =>
       'This agent can\'t list its own commands here yet. These are the app\'s actions.';
-
-  @override
-  String teamChatNowPendingSlow(String elapsed) {
-    return 'Still waiting for the team to plan this · $elapsed';
-  }
 
   @override
   String get teamChatRefusedTitle => 'Task not taken';
@@ -26312,11 +26113,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamChatLeadStepCancelledIt => 'It was cancelled';
 
   @override
-  String teamChatNowWorkingIt(String name, String elapsed) {
-    return '$name is working on it · $elapsed';
-  }
-
-  @override
   String teamChatNowNoProgress(String elapsed) {
     return 'No progress for $elapsed';
   }
@@ -26409,4 +26205,170 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamWatchAboutRole(String role) {
     return 'About the $role';
   }
+
+  @override
+  String get teamNowActivityPlanning => 'Waiting for a plan';
+
+  @override
+  String get teamNowActivityWaitingForWorker => 'Waiting for a worker';
+
+  @override
+  String get teamNowActivityStartingWorker => 'Starting a worker';
+
+  @override
+  String get teamNowActivityWorking => 'Working on your task';
+
+  @override
+  String get teamNowActivityReviewing => 'Reviewing the changes';
+
+  @override
+  String get teamNowActivityNeedsYou => 'Waiting for your answer';
+
+  @override
+  String get teamNowActivityDelayed => 'Taking longer than expected';
+
+  @override
+  String get teamNowActivityUnconfirmed => 'Request not confirmed';
+
+  @override
+  String get teamNowActivityRefused => 'Request not accepted';
+
+  @override
+  String get teamNowActivityUnavailable => 'The team isn\'t answering';
+
+  @override
+  String get teamNowActivityCompleted => 'Finished';
+
+  @override
+  String get teamNowActivityFailed => 'Could not finish';
+
+  @override
+  String get teamNowActivityCancelled => 'Stopped';
+
+  @override
+  String get teamNowReasonNoPlanReported =>
+      'No plan has been reported yet. The reason is unknown.';
+
+  @override
+  String get teamNowReasonNoWorkerReported =>
+      'No worker has been reported yet.';
+
+  @override
+  String get teamNowReasonWorkerStarting =>
+      'The worker has started but hasn\'t begun the task.';
+
+  @override
+  String get teamNowReasonWorkInProgress => 'The task is being worked on.';
+
+  @override
+  String get teamNowReasonReviewPending =>
+      'Review or completion is still pending.';
+
+  @override
+  String get teamNowReasonAnswerNeeded =>
+      'The team is waiting for your answer.';
+
+  @override
+  String get teamNowReasonWorkerCouldNotStart =>
+      'The worker couldn\'t stay running.';
+
+  @override
+  String get teamNowReasonProviderLimit =>
+      'The AI service reported a usage limit.';
+
+  @override
+  String get teamNowReasonWorkTakingLonger =>
+      'The work is taking longer than expected.';
+
+  @override
+  String get teamNowReasonConfirmationMissing =>
+      'We can\'t confirm the request arrived. Check before sending it again.';
+
+  @override
+  String get teamNowReasonRequestRefused => 'The request was not accepted.';
+
+  @override
+  String get teamNowReasonConnectionUnavailable =>
+      'Progress can\'t be checked while disconnected.';
+
+  @override
+  String get teamNowReasonCauseUnknown =>
+      'The reason is unknown. Check what the team is doing.';
+
+  @override
+  String get teamNowWhyPlanning =>
+      'The planner turns your task into steps. This conversation follows the task as soon as the team lists them. Stopping following it here doesn\'t cancel it on the team\'s computer.';
+
+  @override
+  String get teamNowWhyWaitingForWorker =>
+      'The team looks for new work regularly and starts a worker for it when one is free.';
+
+  @override
+  String get teamNowWhyStartingWorker =>
+      'A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.';
+
+  @override
+  String get teamNowWhyWorking =>
+      'The worker makes the changes on its own copy, then hands them to review.';
+
+  @override
+  String get teamNowWhyReviewing =>
+      'A reviewer checks the changes before they are merged.';
+
+  @override
+  String get teamNowWhyUnconfirmed =>
+      'The app sent the task but didn\'t hear back. Sending it again could start it twice, so look at the planner first.';
+
+  @override
+  String get teamNowWhyWorkerCouldNotStart =>
+      'The worker stopped while it was starting. Its conversation may say why.';
+
+  @override
+  String get teamNowWhyProviderLimit =>
+      'The AI service limits how much can be used in a period. Work continues when the limit resets, or you can stop the task.';
+
+  @override
+  String get teamNowWhyWorkTakingLonger =>
+      'Large tasks can take a while. Watching the worker shows whether it is still moving.';
+
+  @override
+  String get teamNowWhyCauseUnknown =>
+      'What the team reports doesn\'t say why it is waiting.';
+
+  @override
+  String get teamNowWhyHide => 'Hide';
+
+  @override
+  String get teamNowNextPlan => 'Next: the team lists the steps';
+
+  @override
+  String get teamNowNextWorker => 'Next: a worker starts';
+
+  @override
+  String get teamNowNextWork => 'Next: the worker begins the task';
+
+  @override
+  String get teamNowNextReview => 'Next: the changes are reviewed';
+
+  @override
+  String get teamNowNextFinish => 'Next: the task finishes';
+
+  @override
+  String get teamNowWatchPlanner => 'Watch the planner';
+
+  @override
+  String get teamNowDismissRequest => 'Stop following this request';
+
+  @override
+  String teamNowUsuallyWithin(String duration) {
+    return 'usually within $duration';
+  }
+
+  @override
+  String teamNowWatchAgent(String name) {
+    return 'Watch $name';
+  }
+
+  @override
+  String get teamNowNotStartingLine => 'The team isn\'t starting a worker';
 }

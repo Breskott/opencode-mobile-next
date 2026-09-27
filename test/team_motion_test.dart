@@ -14,11 +14,9 @@ import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.d
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/scenes/team_scenes.dart';
-import 'package:opencode_mobile/ui/screens/team/start_run_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
@@ -141,60 +139,9 @@ void main() {
     expect(_key('kit-state-icon'), findsOneWidget);
   });
 
-  testWidgets('planning: agents pass the card while the planner plans; one '
-      'card moves, a refused one has no drawing', (tester) async {
-    await open(tester, TeamScene.loaded, () => const SizedBox());
-    TeamPlanningRequest request(String key, TeamPlanningStatus status) =>
-        TeamPlanningRequest(
-          record: MutationRecord(
-            key: key,
-            request: MutationRequest.message('mayor', 'Add dark mode'),
-            createdAt: teamSceneClock,
-            status: MutationStatus.confirmed,
-          ),
-          objective: 'Add dark mode',
-          supervision: TeamSupervision.balanced,
-          status: status,
-        );
-    await tester.pumpWidget(
-      _app(
-        Scaffold(
-          body: ListView(
-            children: [
-              TeamPlanningCard(
-                key: const ValueKey('first'),
-                controller: controller,
-                request: request('a', TeamPlanningStatus.planning),
-              ),
-              TeamPlanningCard(
-                key: const ValueKey('second'),
-                controller: controller,
-                request: request('b', TeamPlanningStatus.stillPlanning),
-                ambient: false,
-              ),
-              TeamPlanningCard(
-                key: const ValueKey('refused'),
-                controller: controller,
-                request: request('c', TeamPlanningStatus.refused),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    await _settle(tester);
-    final first = _drawings(tester, _key('first'));
-    expect(first.single.$1, isA<TeamPlanningScene>());
-    expect(first.single.$2, isTrue);
-    final second = _drawings(tester, _key('second'));
-    expect(second.single.$1, isA<TeamPlanningScene>());
-    expect(second.single.$2, isFalse);
-    expect(_drawings(tester, _key('refused')), isEmpty);
-    expect(find.text('Planning the steps…'), findsOneWidget);
-  });
-
-  testWidgets('a task given on the home: its planning card moves, and the '
-      'board steps aside', (tester) async {
+  testWidgets('a task given on the home: a row of the list until it is '
+      'planned, no drawing of its own, and the board steps aside '
+      '(slice-P5.1)', (tester) async {
     await open(tester, TeamScene.empty, home);
     await tester.tap(_key('team-home-start-run'));
     await _settle(tester);
@@ -205,15 +152,13 @@ void main() {
     await tester.pump();
     await tester.tap(_key('team-start-run-send'));
     await _settle(tester);
-    // The task's conversation opens (P0.3); its card waits on the home.
+    // The task's conversation opens (P0.3); its row waits on the home.
     expect(find.byType(TeamConversationScreen), findsOneWidget);
     await tester.pageBack();
     await _settle(tester);
-    expect(find.text('Planning the steps…'), findsOneWidget);
-    final planning = _drawings(tester, find.byType(TeamPlanningCard));
-    expect(planning.single.$1, isA<TeamPlanningScene>());
-    expect(planning.single.$2, isTrue, reason: 'the one moving drawing');
-    expect(_drawings(tester, _key('team-home-runs-empty')), isEmpty);
+    expect(find.textContaining('Waiting for a plan'), findsOneWidget);
+    expect(_key('team-home-runs-empty'), findsNothing);
+    expect(_drawings(tester, _key('team-home-tasks')), isEmpty);
     // Let the planning request's own timers run out.
     await tester.pumpWidget(const SizedBox());
     controller.dispose();

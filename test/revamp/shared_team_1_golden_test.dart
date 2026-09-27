@@ -17,7 +17,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/team_board.dart';
 import 'package:opencode_mobile/ui/widgets/team_board_move_sheet.dart';
-import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
@@ -229,15 +228,6 @@ void main() {
         'team_turn_off_sheet',
         light: light,
         open: (context) => showTeamTurnOffSheet(context, 'Laptop'),
-      );
-    });
-
-    testWidgets('cycle How sheet ($theme)', (tester) async {
-      await _shot(
-        tester,
-        'team_cycle_how_sheet',
-        light: light,
-        open: showTeamCycleHowSheet,
       );
     });
   }

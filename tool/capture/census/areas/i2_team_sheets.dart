@@ -123,7 +123,11 @@ Future<void> _planning(
     await team.refresh();
     await kit.settle(const Duration(seconds: 2));
   }
-  kit.expectVisible(find.byKey(const ValueKey('team-planning-title')));
+  // slice-P5.1: the planning card is gone; the task's conversation (open
+  // after Send) carries the planning state on its Now line.
+  if (status != MutationReceiptStatus.rejected) {
+    kit.expectVisible(find.byKey(const ValueKey('team-conversation-now')));
+  }
 }
 
 // -- Phone ----------------------------------------------------------------
@@ -467,20 +471,20 @@ final i2TeamSheetsArea = CensusArea(
       await kit.tapKey('team-home-start-run');
       kit.expectVisible(find.byKey(const ValueKey('team-start-run-direct')));
     }, note: 'Planner off on a host that creates work: the direct task form.'),
-    CensusShot('embedded-team-planning-card', state: 'planning', (kit) async {
+    CensusShot('team-conversation', state: 'planning', (kit) async {
       await _planning(kit, MutationReceiptStatus.accepted);
-    }, note: 'Host: the AI Team home after Send to planner.'),
-    CensusShot('embedded-team-planning-card', state: 'still-planning', (
+    }, note: 'The task\'s conversation after Send to planner.'),
+    CensusShot('team-conversation', state: 'planning-31-min', (
       kit,
     ) async {
       await _planning(kit, MutationReceiptStatus.accepted, late: true);
-    }, note: 'Host: the AI Team home, 31 minutes later.'),
-    CensusShot('embedded-team-planning-card', state: 'unconfirmed', (
+    }, note: 'The task\'s conversation, 31 minutes later.'),
+    CensusShot('team-conversation', state: 'planning-unconfirmed', (
       kit,
     ) async {
       await _planning(kit, MutationReceiptStatus.pending);
-    }, note: 'Host: the AI Team home; the host did not confirm.'),
-    CensusShot('embedded-team-planning-card', state: 'refused', (kit) async {
+    }, note: 'The task\'s conversation; the host did not confirm.'),
+    CensusShot('team-home', state: 'planning-refused', (kit) async {
       await _planning(kit, MutationReceiptStatus.rejected);
     }, note: 'Host: the AI Team home; the host refused the message.'),
 

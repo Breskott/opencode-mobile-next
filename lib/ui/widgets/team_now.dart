@@ -12,9 +12,9 @@
 ///   when one starts; past two checks (three minutes when the interval is
 ///   unknown), or when the host saw the start stall, it says no worker
 ///   has started.
-/// - [teamNowLine]: the home's one line for the whole team, with the one
-///   action that helps (wake a worker, resume the team, or Why? opening
-///   the Technical details).
+/// - [teamNowLine]: the team page's one line for the whole team, with the
+///   one action that helps (wake a worker, resume the team, or Why?
+///   opening the Technical details).
 library;
 
 import 'dart:async';
@@ -319,19 +319,16 @@ KitAction teamUnstickAction(
   );
 }
 
-/// The home's one line for the whole team when something is in flight:
-/// paused, a task stuck, working, in review, or waiting with when a worker
-/// starts. Null when nothing is.
-///
-/// With [taskLines] off, only the lines that carry an action (paused, a
-/// task stuck) are given: a page that lists the tasks says working, in
-/// review and waiting on the task's own row (nothing shown twice).
+/// The team page's one line for the whole team (slice-P5.1): one sentence
+/// on what the team as a whole is doing that the task rows below cannot
+/// say — it is paused, or it is not starting a worker for a waiting task —
+/// with the one action that helps. Never a task's title or its wait: the
+/// task's own row says those (nothing shown twice). Null otherwise.
 Widget? teamNowLine(
   BuildContext context, {
   required OrchestrationController controller,
   required DateTime now,
   String keyPrefix = 'team-now',
-  bool taskLines = true,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final snapshot = controller.snapshot;
@@ -339,14 +336,13 @@ Widget? teamNowLine(
   final rest = teamRest(agents, config: controller.config);
   final every = teamCheckInterval(controller);
   final cycleOf = controller.cycleFor;
-  final gated = teamGatedRuns(snapshot);
   final open = [
     for (final run in teamVisibleRuns(snapshot.runs))
       if (run.state != RunState.completed &&
           run.state != RunState.cancelled &&
           run.state != RunState.failed)
         run,
-  ]..sort((a, b) => teamCompareRuns(a, b, gated));
+  ];
   if (rest == TeamRest.paused && open.isNotEmpty) {
     return KitStatusLine(
       key: ValueKey('$keyPrefix-paused'),
@@ -367,25 +363,22 @@ Widget? teamNowLine(
       ),
     );
   }
-  for (final run in open) {
-    if (!teamRunStuck(
+  final stuck = open.any(
+    (run) => teamRunStuck(
       run,
       snapshot.work,
       now: now,
       every: every,
       cycleOf: cycleOf,
-    )) {
-      continue;
-    }
-    final age =
-        teamWaitingFor(run, snapshot.work, now: now, cycleOf: cycleOf) ??
-        Duration.zero;
+    ),
+  );
+  if (stuck) {
     final worker = teamSleepingWorker(agents);
     return KitStatusLine(
       key: ValueKey('$keyPrefix-stuck'),
       icon: AppIconography.warning,
       tone: AppStatusTone.neutral,
-      message: l10n.teamNowStuckLine(run.title, teamElapsedLabel(l10n, age)),
+      message: l10n.teamNowNotStartingLine,
       action: teamUnstickAction(
         context,
         controller,
@@ -394,37 +387,6 @@ Widget? teamNowLine(
         wakeLabel: l10n.teamNowStartWorker,
       ),
     );
-  }
-  if (!taskLines) return null;
-  for (final run in open) {
-    if (gated.contains(run.id)) continue;
-    if (teamRunAwaitsMerge(run, snapshot.work, cycleOf: cycleOf)) {
-      return KitStatusLine(
-        key: ValueKey('$keyPrefix-reviewing'),
-        icon: AppIconography.review,
-        tone: AppStatusTone.progress,
-        message: l10n.teamNowReviewingLine(run.title),
-      );
-    }
-    if (run.state == RunState.working) {
-      return KitStatusLine(
-        key: ValueKey('$keyPrefix-working'),
-        icon: AppIconography.play,
-        tone: AppStatusTone.progress,
-        message: l10n.teamNowWorkingLine(run.title),
-      );
-    }
-    if (teamRunWaitsForWorker(run, snapshot.work, cycleOf: cycleOf)) {
-      return KitStatusLine(
-        key: ValueKey('$keyPrefix-waiting'),
-        icon: AppIconography.waiting,
-        tone: AppStatusTone.neutral,
-        message: l10n.teamNowWaitingLine(
-          run.title,
-          teamCheckPhrase(l10n, every),
-        ),
-      );
-    }
   }
   return null;
 }
