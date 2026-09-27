@@ -18531,12 +18531,6 @@ abstract class AppLocalizations {
   /// **'Verifying downloaded model'**
   String get e7VoiceUiVerifying;
 
-  /// Shared voice or model selection UI: e7VoiceUiVerifyChecksum
-  ///
-  /// In en, this message translates to:
-  /// **'Verifying size and SHA-256…'**
-  String get e7VoiceUiVerifyChecksum;
-
   /// Shared voice or model selection UI: e7VoiceUiCancelDownload
   ///
   /// In en, this message translates to:
@@ -41564,6 +41558,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In {provider}'**
   String managedWorkspacesCreateIn(String provider);
+
+  /// First mic tap voice setup sheet (P10.4): sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing'**
+  String get voiceAutoSetupTitle;
+
+  /// First mic tap voice setup sheet (P10.4): waiting line while the phone's memory and the model files are checked
+  ///
+  /// In en, this message translates to:
+  /// **'Checking what this phone can run'**
+  String get voiceAutoSetupChecking;
+
+  /// First mic tap voice setup sheet (P10.4): what voice typing is and that it needs a download
+  ///
+  /// In en, this message translates to:
+  /// **'Speak instead of typing. Speech turns into text on this phone, even offline, and audio never leaves it. It needs a one-time download.'**
+  String get voiceAutoSetupOffer;
+
+  /// First mic tap voice setup sheet (P10.4): which model was picked and why; {model} is its plain name (Balanced)
+  ///
+  /// In en, this message translates to:
+  /// **'{model} speech model, picked for this phone\'s memory'**
+  String voiceAutoSetupPicked(String model);
+
+  /// First mic tap voice setup sheet (P10.4): warning on mobile data; the size is on the button
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on mobile data. This download counts against your data plan.'**
+  String get voiceAutoSetupMobileData;
+
+  /// First mic tap voice setup sheet (P10.4): warning when the network type is unknown; the size is on the button
+  ///
+  /// In en, this message translates to:
+  /// **'This connection may count against a data plan.'**
+  String get voiceAutoSetupMaybeMetered;
+
+  /// First mic tap voice setup sheet (P10.4): primary button on Wi-Fi; {size} is the download size
+  ///
+  /// In en, this message translates to:
+  /// **'Download {size}'**
+  String voiceAutoSetupDownload(String size);
+
+  /// First mic tap voice setup sheet (P10.4): primary button off Wi-Fi; {size} is the download size
+  ///
+  /// In en, this message translates to:
+  /// **'Download {size} on mobile data'**
+  String voiceAutoSetupDownloadMobile(String size);
+
+  /// First mic tap voice setup sheet (P10.4): opens Settings › Voice to pick a different model
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another speech model'**
+  String get voiceAutoSetupOtherModel;
+
+  /// First mic tap voice setup sheet (P10.4): under the progress when the download notification is posted
+  ///
+  /// In en, this message translates to:
+  /// **'Progress also shows in your notifications. Listening starts when it\'s done.'**
+  String get voiceAutoSetupNotified;
+
+  /// First mic tap voice setup sheet (P10.4): under the progress when no notification could be posted
+  ///
+  /// In en, this message translates to:
+  /// **'Listening starts when it\'s done.'**
+  String get voiceAutoSetupStartsAfter;
+
+  /// First mic tap voice setup sheet (P10.4): the download finished while the app was in the background
+  ///
+  /// In en, this message translates to:
+  /// **'The speech model is on this phone.'**
+  String get voiceAutoSetupReady;
+
+  /// First mic tap voice setup sheet (P10.4): opens Settings › Voice when no model could be picked automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a speech model'**
+  String get voiceAutoSetupChooseModel;
+
+  /// First mic tap voice setup sheet (P10.4): the phone's total memory is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'This phone didn\'t say how much memory it has, so no speech model was picked.'**
+  String get voiceAutoSetupUnknownMemory;
+
+  /// First mic tap voice setup sheet (P10.4): offline before the download
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Connect, then try again.'**
+  String get voiceAutoSetupOffline;
+
+  /// First mic tap voice setup sheet (P10.4): another download is running
+  ///
+  /// In en, this message translates to:
+  /// **'A speech model is already downloading.'**
+  String get voiceAutoSetupBusy;
+
+  /// First mic tap voice setup sheet (P10.4): opens Settings › Voice, which shows the running download
+  ///
+  /// In en, this message translates to:
+  /// **'Show the download'**
+  String get voiceAutoSetupShowDownload;
+
+  /// First mic tap voice setup sheet (P10.4): the phone has no usable microphone capture
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t record speech for voice typing.'**
+  String get voiceAutoSetupNoCapture;
+
+  /// First mic tap voice setup sheet (P10.4): Details: label of the model file names
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get voiceAutoSetupDetailFiles;
+
+  /// First mic tap voice setup sheet (P10.4): Details: label of the exact download size in MiB
+  ///
+  /// In en, this message translates to:
+  /// **'Exact size'**
+  String get voiceAutoSetupDetailSize;
+
+  /// First mic tap voice setup sheet (P10.4): Details: label of the memory rule
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get voiceAutoSetupDetailMemory;
+
+  /// First mic tap voice setup sheet (P10.4): Details: the model's memory need and the phone's total memory
+  ///
+  /// In en, this message translates to:
+  /// **'Needs {required} MB; this phone has {available} MB'**
+  String voiceAutoSetupDetailMemoryValue(int required, int available);
 }
 
 class _AppLocalizationsDelegate
