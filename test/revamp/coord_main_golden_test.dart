@@ -18,7 +18,6 @@ import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/platform/share_intent.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
