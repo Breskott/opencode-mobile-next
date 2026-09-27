@@ -1,5 +1,5 @@
 {
- "generatedFrom": "ebbc1a71a2bad43a38c34e9ca3884b50fe141f3d",
+ "generatedFrom": "4e4741689c203fa621d9b38d790f6079db4ff7a1",
  "pages": [
   {
    "id": "system",
@@ -7434,14 +7434,6 @@
      "element": "workspace-new-session"
     },
     {
-     "page": "workspace-archived-sheet",
-     "element": "workspace-archived-sheet-row"
-    },
-    {
-     "page": "workspace-archived-sheet",
-     "element": "workspace-archived-sheet-context-open"
-    },
-    {
      "page": "global-sessions",
      "element": "global-sessions-row"
     },
@@ -10438,8 +10430,8 @@
    "file": "lib/ui/screens/session_import_screen.dart",
    "widget": "SessionImportScreen",
    "presentedBy": [],
-   "line": 37,
-   "purpose": "Picks an exported session JSON file, reviews it, chooses a destination directory/workspace and imports it to the connected server.",
+   "line": 58,
+   "purpose": "Picks an exported conversation JSON file, reviews its title and message count (ids under Details), shows the destination as one row and imports it to the connected server with one pinned primary.",
    "reachedFrom": [
     {
      "page": "settings",
@@ -10527,8 +10519,8 @@
    "file": "lib/ui/screens/session_import_screen.dart",
    "widget": "_chooseDestination",
    "presentedBy": [],
-   "line": 248,
-   "purpose": "Lists project directories, worktrees and managed workspaces as import destinations.",
+   "line": 233,
+   "purpose": "Lists project folders, worktrees and managed workspaces as import destinations, the current one marked; hidden when there is only one place.",
    "reachedFrom": [
     {
      "page": "session-import",
@@ -12716,14 +12708,14 @@
   },
   {
    "id": "global-sessions",
-   "title": "All sessions",
+   "title": "All conversations",
    "kind": "screen",
    "area": "workspace",
    "file": "lib/ui/screens/global_sessions_screen.dart",
    "widget": "GlobalSessionsScreen",
    "presentedBy": [],
-   "line": 17,
-   "purpose": "Server-wide session finder: search titles across every folder, filter by archived/folder, open, open related, copy handoff or continue a session here.",
+   "line": 29,
+   "purpose": "Server-wide conversation finder: search titles across every project, narrow by project (one filter menu) and Active / Archived (archived conversations are a filter of this page, P3.12), open (switching Work to that project), open related, copy handoff or continue a conversation here.",
    "reachedFrom": [
     {
      "page": "workspace",
@@ -12749,6 +12741,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-sessions"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-archived-sessions"
     }
    ],
    "gates": [
@@ -13090,14 +13086,14 @@
   },
   {
    "id": "global-sessions-continue-here-sheet",
-   "title": "Continue this session here?",
+   "title": "Move to {project}?",
    "kind": "sheet",
    "area": "workspace",
    "file": "lib/ui/screens/global_sessions_screen.dart",
    "widget": "_steal",
    "presentedBy": [],
-   "line": 473,
-   "purpose": "Confirm moving (stealing) a session into the active workspace.",
+   "line": 578,
+   "purpose": "Confirm moving (stealing) a conversation into the current project: names both projects, how to move it back, and warns when it is working; the move runs inside the question.",
    "reachedFrom": [
     {
      "page": "global-sessions",
@@ -15242,10 +15238,10 @@
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 790,
-     "action": "open-sheet",
-     "target": "workspace-archived-sheet",
-     "targetWidget": "_showArchived",
-     "effect": "_showArchived() opens the archived sessions sheet.",
+     "action": "navigate",
+     "target": "global-sessions",
+     "targetWidget": "GlobalSessionsScreen",
+     "effect": "screen-work-1: opens All conversations, where archived conversations are a filter (P3.12); the archived sheet is gone.",
      "gates": [
       "archived.isNotEmpty || partial (controller.hasMoreSessions || sessionsLoading || sessionsError != null)"
      ],
@@ -15430,10 +15426,10 @@
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1551,
-     "action": "open-sheet",
-     "target": "workspace-archive-session-sheet",
-     "targetWidget": "_confirmArchive",
-     "effect": "_sessionAction('archive') -> _confirmArchive() confirm sheet.",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": "_archiveSwipe",
+     "effect": "screen-work-1: archives at once with Undo (showKitUndo), the same path as the swipe; the confirmation sheet is gone (P3.12).",
      "gates": [
       "widget.controller.capabilities.sessionArchive"
      ],
@@ -15572,10 +15568,10 @@
      "key": "session-menu-archive",
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1638,
-     "action": "open-sheet",
-     "target": "workspace-archive-session-sheet",
-     "targetWidget": "_confirmArchive",
-     "effect": "onAction('archive', session).",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": "_archiveSwipe",
+     "effect": "screen-work-1: archives at once with Undo (showKitUndo), the same path as the swipe; the confirmation sheet is gone (P3.12).",
      "gates": [
       "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop",
       "widget.controller.capabilities.sessionArchive"
@@ -15908,10 +15904,6 @@
     {
      "page": "workspace",
      "element": "workspace-session-context-rename"
-    },
-    {
-     "page": "workspace-archived-sheet",
-     "element": "workspace-archived-sheet-menu-rename"
     }
    ],
    "gates": [],
@@ -15955,60 +15947,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Pops with the trimmed text; _rename calls controller.renameSession(session.id, title) when non-empty, then refreshSessions().",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "workspace-archive-session-sheet",
-   "title": "Archive session?",
-   "kind": "sheet",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_confirmArchive",
-   "presentedBy": [],
-   "line": 1212,
-   "purpose": "Confirm archiving a session.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-session-menu-archive"
-    },
-    {
-     "page": "workspace",
-     "element": "workspace-session-context-archive"
-    }
-   ],
-   "gates": [
-    "widget.controller.capabilities.sessionArchive"
-   ],
-   "elements": [
-    {
-     "id": "workspace-archive-session-sheet-confirm",
-     "type": "button",
-     "label": "Archive",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1212,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Returns true; _sessionAction calls repository.archiveSession(session.id) then controller.refreshSessions().",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "workspace-archive-session-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1212,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
      "gates": [],
      "destructive": false
     }
@@ -16090,14 +16028,6 @@
     {
      "page": "workspace",
      "element": "workspace-session-row-swipe"
-    },
-    {
-     "page": "workspace-archived-sheet",
-     "element": "workspace-archived-sheet-menu-delete"
-    },
-    {
-     "page": "workspace-archived-sheet",
-     "element": "workspace-archived-sheet-context-delete"
     }
    ],
    "gates": [],
@@ -16127,116 +16057,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "workspace-archived-sheet",
-   "title": "[Archived sessions]",
-   "kind": "sheet",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_showArchived",
-   "presentedBy": [
-    "_showArchived"
-   ],
-   "line": 1260,
-   "purpose": "Lists archived sessions with open, rename and delete; no unarchive exists.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-archived-sessions"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "workspace-archived-sheet-context-open",
-     "type": "menu-item",
-     "label": "Open",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1304,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<sessionId>",
-     "effect": "Desktop context menu: pops the sheet and opens the chat.",
-     "gates": [
-      "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-archived-sheet-context-delete",
-     "type": "menu-item",
-     "label": "Delete",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1313,
-     "action": "open-sheet",
-     "target": "workspace-delete-session-sheet",
-     "targetWidget": "_confirmDelete",
-     "effect": "run('delete').",
-     "gates": [
-      "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "workspace-archived-sheet-menu",
-     "type": "icon-button",
-     "label": "Archived session actions",
-     "key": "archived-session-actions-<session.id>",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1330,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "opens overflow menu",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "workspace-archived-sheet-menu-rename",
-     "type": "menu-item",
-     "label": "Rename",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1335,
-     "action": "open-dialog",
-     "target": "workspace-rename-session-dialog",
-     "targetWidget": "_rename",
-     "effect": "run('rename'): pops the sheet then _sessionAction('rename').",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "workspace-archived-sheet-menu-delete",
-     "type": "menu-item",
-     "label": "Delete",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1339,
-     "action": "open-sheet",
-     "target": "workspace-delete-session-sheet",
-     "targetWidget": "_confirmDelete",
-     "effect": "run('delete'): pops the sheet then _sessionAction('delete') -> confirm sheet.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "workspace-archived-sheet-row",
-     "type": "list-tile",
-     "label": "<session title> / <directory>",
-     "key": "archived-session-<session.id>",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1348,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<sessionId>",
-     "effect": "Pops the sheet and _openSession(session) -> pushNamed('/chat/<id>').",
      "gates": [],
      "destructive": false
     }
@@ -16374,8 +16194,8 @@
    "file": "lib/ui/screens/worktrees_screen.dart",
    "widget": "WorktreesScreen",
    "presentedBy": [],
-   "line": 15,
-   "purpose": "List the project's primary checkout and isolated git worktrees; open, create, reset and remove them.",
+   "line": 32,
+   "purpose": "List the project's main copy and its worktrees with each row's state word; open, start a conversation in, create (pinned primary), reset and delete them.",
    "reachedFrom": [
     {
      "page": "manage-project",
@@ -16391,6 +16211,59 @@
     "project != null"
    ],
    "elements": [
+    {
+     "id": "worktrees-tile-context-open",
+     "type": "menu-item",
+     "label": "Open",
+     "key": "worktree-menu-open",
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 32,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onOpen.",
+     "gates": [
+      "desktop only: ContextMenuRegion is a pass-through off desktop",
+      "!busy",
+      "!current && !preparing && failure == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "worktrees-tile-context-reset",
+     "type": "menu-item",
+     "label": "Reset",
+     "key": "worktree-menu-reset",
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 32,
+     "action": "open-dialog",
+     "target": "worktrees-reset-dialog",
+     "targetWidget": "_confirmReset",
+     "effect": "onReset.",
+     "gates": [
+      "desktop only: ContextMenuRegion is a pass-through off desktop",
+      "!busy",
+      "capabilities.worktreeReset && !preparing && failure == null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "worktrees-tile-context-remove",
+     "type": "menu-item",
+     "label": "Remove",
+     "key": "worktree-menu-remove",
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 32,
+     "action": "open-dialog",
+     "target": "worktrees-remove-dialog",
+     "targetWidget": "_RemoveWorktreeDialog",
+     "effect": "onRemove.",
+     "gates": [
+      "desktop only: ContextMenuRegion is a pass-through off desktop",
+      "!busy"
+     ],
+     "destructive": true
+    },
     {
      "id": "worktrees-refresh",
      "type": "icon-button",
@@ -16581,59 +16454,74 @@
      "effect": "onRemove -> _remove(worktree): inspects changes, then opens _RemoveWorktreeDialog.",
      "gates": [],
      "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "worktrees-create-dialog",
+   "title": "New worktree",
+   "kind": "dialog",
+   "area": "workspace",
+   "file": "lib/ui/screens/worktrees_screen.dart",
+   "widget": "_create",
+   "presentedBy": [],
+   "line": 217,
+   "purpose": "Optional name for a new worktree (showKitInputDialog); the create call runs inside the dialog and a failure stays under the field.",
+   "reachedFrom": [
+    {
+     "page": "worktrees",
+     "element": "worktrees-create"
     },
     {
-     "id": "worktrees-tile-context-open",
-     "type": "menu-item",
-     "label": "Open",
-     "key": "worktree-menu-open",
+     "page": "worktrees",
+     "element": "worktrees-empty-create"
+    }
+   ],
+   "gates": [
+    "capabilities.worktreeCreate"
+   ],
+   "elements": [
+    {
+     "id": "worktrees-create-dialog-name",
+     "type": "text-field",
+     "label": "Name (optional)",
+     "key": "worktree-name-field",
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 761,
-     "action": "mutate",
+     "line": 217,
+     "action": "submit",
      "target": null,
      "targetWidget": null,
-     "effect": "onOpen.",
-     "gates": [
-      "desktop only: ContextMenuRegion is a pass-through off desktop",
-      "!busy",
-      "!current && !preparing && failure == null"
-     ],
+     "effect": "onSubmitted pops with the trimmed value.",
+     "gates": [],
      "destructive": false
     },
     {
-     "id": "worktrees-tile-context-reset",
-     "type": "menu-item",
-     "label": "Reset",
-     "key": "worktree-menu-reset",
+     "id": "worktrees-create-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 770,
-     "action": "open-dialog",
-     "target": "worktrees-reset-dialog",
-     "targetWidget": "_confirmReset",
-     "effect": "onReset.",
-     "gates": [
-      "desktop only: ContextMenuRegion is a pass-through off desktop",
-      "!busy",
-      "capabilities.worktreeReset && !preparing && failure == null"
-     ],
-     "destructive": true
+     "line": 217,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop().",
+     "gates": [],
+     "destructive": false
     },
     {
-     "id": "worktrees-tile-context-remove",
-     "type": "menu-item",
-     "label": "Remove",
-     "key": "worktree-menu-remove",
+     "id": "worktrees-create-dialog-create",
+     "type": "button",
+     "label": "Create",
+     "key": "confirm-create-worktree",
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 779,
-     "action": "open-dialog",
-     "target": "worktrees-remove-dialog",
-     "targetWidget": "_RemoveWorktreeDialog",
-     "effect": "onRemove.",
-     "gates": [
-      "desktop only: ContextMenuRegion is a pass-through off desktop",
-      "!busy"
-     ],
-     "destructive": true
+     "line": 217,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with the trimmed name; _create calls repository.createWorktree(projectDirectory, name) and tracks preparation for 45 s.",
+     "gates": [],
+     "destructive": false
     }
    ]
   },
@@ -16643,10 +16531,10 @@
    "kind": "dialog",
    "area": "workspace",
    "file": "lib/ui/screens/worktrees_screen.dart",
-   "widget": "_confirmReset",
+   "widget": "_reset",
    "presentedBy": [],
-   "line": 346,
-   "purpose": "Confirm discarding all changes in a worktree and resetting it to the default branch.",
+   "line": 349,
+   "purpose": "Confirm discarding all changes in a worktree (typed name when it has changes); the reset runs inside the question.",
    "reachedFrom": [
     {
      "page": "worktrees",
@@ -16692,83 +16580,15 @@
    ]
   },
   {
-   "id": "worktrees-create-dialog",
-   "title": "New worktree",
-   "kind": "dialog",
-   "area": "workspace",
-   "file": "lib/ui/screens/worktrees_screen.dart",
-   "widget": "_CreateWorktreeDialog",
-   "presentedBy": [],
-   "line": 819,
-   "purpose": "Optional name for a new isolated worktree.",
-   "reachedFrom": [
-    {
-     "page": "worktrees",
-     "element": "worktrees-create"
-    },
-    {
-     "page": "worktrees",
-     "element": "worktrees-empty-create"
-    }
-   ],
-   "gates": [
-    "capabilities.worktreeCreate"
-   ],
-   "elements": [
-    {
-     "id": "worktrees-create-dialog-name",
-     "type": "text-field",
-     "label": "Name (optional)",
-     "key": "worktree-name-field",
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 851,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onSubmitted pops with the trimmed value.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "worktrees-create-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 871,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop().",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "worktrees-create-dialog-create",
-     "type": "button",
-     "label": "Create",
-     "key": "confirm-create-worktree",
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 880,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops with the trimmed name; _create calls repository.createWorktree(projectDirectory, name) and tracks preparation for 45 s.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "worktrees-remove-dialog",
-   "title": "Remove {name}?",
+   "title": "Delete {name}?",
    "kind": "dialog",
    "area": "workspace",
    "file": "lib/ui/screens/worktrees_screen.dart",
-   "widget": "_RemoveWorktreeDialog",
+   "widget": "_remove",
    "presentedBy": [],
-   "line": 897,
-   "purpose": "Type-to-confirm permanent removal of a worktree and its branch, with a changed-files warning.",
+   "line": 390,
+   "purpose": "Type-to-confirm permanent deletion of a worktree and its branch, with a changed-files warning; the removal runs inside the question.",
    "reachedFrom": [
     {
      "page": "worktrees",
@@ -16787,7 +16607,7 @@
      "label": "Type {name} to confirm",
      "key": "remove-worktree-confirmation",
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 931,
+     "line": 390,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -16801,7 +16621,7 @@
      "label": "Cancel",
      "key": null,
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 945,
+     "line": 390,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -16815,7 +16635,7 @@
      "label": "Remove permanently",
      "key": "confirm-remove-worktree",
      "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 957,
+     "line": 390,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -17051,11 +16871,6 @@
      "page": "workspace",
      "element": null,
      "via": "embedded"
-    },
-    {
-     "page": "workspace-archived-sheet",
-     "element": null,
-     "via": "embedded"
     }
    ],
    "gates": [],
@@ -17066,8 +16881,7 @@
    ],
    "hostPages": [
     "run-command-dialog",
-    "workspace",
-    "workspace-archived-sheet"
+    "workspace"
    ],
    "elements": [
     {
@@ -17807,23 +17621,6 @@
      "destructive": false
     },
     {
-     "id": "files-file-viewer-sheet-wrap",
-     "type": "toggle",
-     "label": "Wrap lines / Scroll lines",
-     "key": null,
-     "file": "lib/ui/screens/files_screen.dart",
-     "line": 2098,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
-     "gates": [
-      "widget.initialLine != null",
-      "ReaderPreferencesScope present"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/reader_preferences.dart"
-    },
-    {
      "id": "files-file-viewer-sheet-copy",
      "type": "button",
      "label": "Copy",
@@ -17911,6 +17708,22 @@
      "effect": "ProductErrorState.onRetry -> _fetch().",
      "gates": [
       "_error != null && !_scopeInvalid"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "files-file-viewer-sheet-wrap",
+     "type": "toggle",
+     "label": "Wrap lines / Scroll lines",
+     "key": null,
+     "file": "lib/ui/widgets/reader_preferences.dart",
+     "line": 2098,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
+     "gates": [
+      "widget.initialLine != null",
+      "ReaderPreferencesScope present"
      ],
      "destructive": false
     }
@@ -19796,6 +19609,23 @@
      "destructive": false
     },
     {
+     "id": "embedded-file-preview-body-svg-source",
+     "type": "button",
+     "label": "Source",
+     "key": null,
+     "file": "lib/ui/widgets/file_preview.dart",
+     "line": 63,
+     "action": "other",
+     "target": null,
+     "effect": "SvgFilePreview: _source = true (SVG source text).",
+     "gates": [
+      "SVG file",
+      "enabled && svg != null && !_source"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/svg_file_preview.dart"
+    },
+    {
      "id": "embedded-file-preview-body-image-zoom",
      "type": "gesture",
      "label": "[pinch/pan image]",
@@ -19935,22 +19765,6 @@
      "gates": [
       "SVG file",
       "enabled && svg != null && _source"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-file-preview-body-svg-source",
-     "type": "button",
-     "label": "Source",
-     "key": null,
-     "file": "lib/ui/widgets/svg_file_preview.dart",
-     "line": 63,
-     "action": "other",
-     "target": null,
-     "effect": "SvgFilePreview: _source = true (SVG source text).",
-     "gates": [
-      "SVG file",
-      "enabled && svg != null && !_source"
      ],
      "destructive": false
     }
@@ -23730,26 +23544,28 @@
      "type": "button",
      "label": "Remove",
      "key": "builtin-server-remove-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; _remove() then calls BuiltinLinux.uninstall().",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "builtin-server-remove-confirm-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops false; nothing changes.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "key": "builtin-server-remove-confirm"
@@ -24009,7 +23825,7 @@
      "type": "button",
      "label": "Start",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
@@ -24017,14 +23833,15 @@
      "gates": [
       "action == 'start'"
      ],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "development-services-confirm-sheet-stop",
      "type": "button",
      "label": "Stop",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
@@ -24032,14 +23849,15 @@
      "gates": [
       "action == 'stop'"
      ],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "development-services-confirm-sheet-restart",
      "type": "button",
      "label": "Restart",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
@@ -24047,14 +23865,15 @@
      "gates": [
       "action == 'restart'"
      ],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "development-services-confirm-sheet-forget",
      "type": "button",
      "label": "Forget last run",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
@@ -24062,14 +23881,15 @@
      "gates": [
       "action == 'forget'"
      ],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "development-services-confirm-sheet-remove",
      "type": "button",
      "label": "Remove configuration",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
@@ -24077,20 +23897,22 @@
      "gates": [
       "action == 'remove'"
      ],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "development-services-confirm-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/development_services_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops with false.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -24383,26 +24205,28 @@
      "type": "button",
      "label": "Stop",
      "key": "phone-setup-progress-stop-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; SetupEngine.cancel().",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "phone-setup-progress-keep-going",
      "type": "button",
      "label": "Keep going",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops false; the job keeps running.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "key": "phone-setup-progress-stop-confirm"
@@ -24812,26 +24636,28 @@
      "type": "button",
      "label": "Stop",
      "key": "termux-procs-confirm-stop",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_processes_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_runStop(() => TermuxProcesses.stopPid(process.pid))`, shows a result line and refreshes.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-processes-stop-one-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_processes_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "key": "termux-procs-confirm"
@@ -24861,26 +24687,28 @@
      "type": "button",
      "label": "Stop {count}",
      "key": "termux-procs-confirm-stop",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_processes_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_runStop(() => TermuxProcesses.stopGroup(group))`.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-processes-stop-group-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_processes_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "key": "termux-procs-confirm"
@@ -25172,26 +25000,28 @@
      "type": "button",
      "label": "Switch version",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Verifies the bridge, refuses when the previous runtime credential is missing, `connProvider.prepareManagedRuntimeSwitch()`, ensures a profile for the target, then runs `TermuxBridge.restartScript(switchTarget:, switchPassword:)` and shows the installing view.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-switch-runtime-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "notes": "showConfirmSheet is called without `destructive: true` (primary-colored button), but the action stops the running server, so the ledger marks it destructive."
@@ -25227,26 +25057,28 @@
      "type": "button",
      "label": "Update",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_installAndStart()`: re-runs the install script for `_runtime` and reconnects this profile.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-update-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -25281,26 +25113,28 @@
      "type": "button",
      "label": "Restart",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_restartServer(profile)`: runs `TermuxBridge.restartScript`, shows the installing view, then `_finishRestart` reconnects (`connection.retryConnection`) and shows snackbar \"Local server restarted and reconnected.\"",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-restart-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "notes": "Sheet is not styled destructive; marked destructive in the ledger because it interrupts generating sessions."
@@ -26167,26 +26001,28 @@
      "type": "button",
      "label": "Start & connect",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_restartServer(profile, startExisting: true)` then `_connectReadyProfile`.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-start-installed-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -26221,26 +26057,28 @@
      "type": "button",
      "label": "Install & restart",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Continues `_reviewInstallChoice()` -> (optional unchecked-install sheet) -> `_installAndStart()`.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-replace-installed-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "notes": "Not styled destructive in code; marked destructive because it overwrites the installed version."
@@ -26276,26 +26114,28 @@
      "type": "button",
      "label": "Continue with Ubuntu",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`_installAndStart()`.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-setup-unchecked-install-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -26545,26 +26385,28 @@
      "type": "button",
      "label": "Remove {size}",
      "key": "termux-storage-confirm-remove",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_storage_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "`TermuxStorage.clean(category.key)`; shows \"Removed {size}\" or the in-use problem line; marks the report stale when a rescan is required.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "termux-storage-clean-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/termux_storage_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "key": "termux-storage-confirm"
@@ -27923,26 +27765,28 @@
      "type": "button",
      "label": "Stop task",
      "key": "team-conversation-stop-confirm-action",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; _stop then calls team.cancelRun(run.id); the receipt shows in the conversation.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-conversation-stop-confirm-sheet-keep",
      "type": "button",
      "label": "Keep running",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
      "line": 87,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-conversation-stop-confirm"
@@ -28401,26 +28245,28 @@
      "type": "button",
      "label": "Stop agent",
      "key": "team-agent-stop-confirm-action",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; _stop then calls controller.controlAgent(agent.id, AgentControlAction.stop).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-agent-stop-confirm-sheet-keep",
      "type": "button",
      "label": "Keep going",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 85,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-agent-stop-confirm"
@@ -28453,26 +28299,28 @@
      "type": "button",
      "label": "Restart agent",
      "key": "team-agent-restart-confirm-action",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; _restart then calls controller.controlAgent(agent.id, AgentControlAction.restart).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-agent-restart-confirm-sheet-keep",
      "type": "button",
      "label": "Keep going",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 85,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-agent-restart-confirm"
@@ -28504,26 +28352,28 @@
      "type": "text-field",
      "label": "Tell the agent what to do next",
      "key": "team-agent-message-field",
-     "file": "lib/ui/widgets/team_controls.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 239,
      "action": "other",
      "target": null,
      "effect": "TeamComposerField TextField (autofocus, multi-line) bound to _text.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_controls.dart"
     },
     {
      "id": "team-agent-message-sheet-send",
      "type": "icon-button",
      "label": "Send",
      "key": "team-agent-message-send",
-     "file": "lib/ui/widgets/team_controls.dart",
+     "file": "lib/ui/screens/team/agent_screen.dart",
      "line": 261,
      "action": "submit",
      "target": null,
      "effect": "_send() (agent_screen.dart:861): pops the sheet with the trimmed text; _ControlsState._message then calls controller.messageAgent(agent.id, text). Disabled while the text is empty.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_controls.dart"
     }
    ],
    "sheetKey": "team-agent-message-sheet"
@@ -28978,28 +28828,30 @@
      "type": "button",
      "label": "Approve / Deny / Cancel work",
      "key": "team-gate-confirm-yes",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/gate_sheet.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; the gate sheet then calls controller.answerGate(gate.id, GateResponse.confirmation(confirmed: true|false)) or controller.cancelRun(runId).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "gate-sheet-confirm-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/gate_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -29113,28 +28965,30 @@
      "type": "button",
      "label": "Merge into {branch}",
      "key": "team-merge-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/merge_section.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; _onMergeTap then calls controller.mergeRun(run.id).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-merge-confirm-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/merge_section.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -29161,28 +29015,30 @@
      "type": "button",
      "label": "Approve request",
      "key": "team-merge-approve-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/merge_section.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; _onApproveTap then calls controller.approveMergeRequest(request.id, runId: run.id).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-merge-approve-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/merge_section.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -29393,26 +29249,28 @@
      "type": "button",
      "label": "Cancel run / Close batch",
      "key": "team-run-cancel-confirm-action",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/run_screen.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; _cancelRun then calls controller.cancelRun(run.id) (run_screen.dart:230).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-run-cancel-confirm-sheet-keep",
      "type": "button",
      "label": "Keep going",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/team/run_screen.dart",
      "line": 85,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-run-cancel-confirm"
@@ -29491,6 +29349,94 @@
      "destructive": false
     },
     {
+     "id": "team-run-overview-cycle-refresh",
+     "type": "button",
+     "label": "Refresh",
+     "key": "team-cycle-action-refresh",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 713,
+     "action": "mutate",
+     "target": null,
+     "effect": "TeamCycleStrip._refresh -> controller.refresh(); disabled while busy. Primary for hostNotStarted and mergeWaiting-without-control, secondary for agentCannotStart.",
+     "gates": [
+      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
+      "`cycle.stalled && cycle.stallReason` in {hostNotStarted, agentCannotStart, mergeWaiting when !(canControl && refinery != null)}"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
+    },
+    {
+     "id": "team-run-overview-cycle-how",
+     "type": "button",
+     "label": "How the host dispatches",
+     "key": "team-cycle-action-how",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 719,
+     "action": "open-sheet",
+     "target": "team-cycle-how-sheet",
+     "targetWidget": "showTeamCycleHowSheet",
+     "effect": "onHow -> showTeamCycleHowSheet(context).",
+     "gates": [
+      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
+      "cycle.stalled && stallReason in {DispatchStall.hostNotStarted, DispatchStall.agentCannotStart}"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
+    },
+    {
+     "id": "team-run-overview-cycle-open-output",
+     "type": "button",
+     "label": "Open agent output",
+     "key": "team-cycle-action-output",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 725,
+     "action": "navigate",
+     "target": "team-agent-output",
+     "targetWidget": "AgentOutputScreen",
+     "effect": "onOpenOutput(agent) -> _openOutput (line 237): Navigator.push(AgentOutputScreen(controller, agentId)); disabled when controller.cycleAgentFor(workId) == null.",
+     "gates": [
+      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
+      "cycle.stalled && stallReason in {DispatchStall.providerLimit, DispatchStall.workingLong}"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
+    },
+    {
+     "id": "team-run-overview-cycle-stop",
+     "type": "button",
+     "label": "Stop",
+     "key": "team-cycle-action-stop",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 744,
+     "action": "open-sheet",
+     "target": "team-cycle-stop-confirm-sheet",
+     "targetWidget": "confirmTeamControl",
+     "effect": "onStop(agent) -> _stop (line 247): confirmTeamControl(...); on confirm controller.controlAgent(agentId, AgentControlAction.stop).",
+     "gates": [
+      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
+      "stallReason == DispatchStall.providerLimit && controller.capabilities.controlAgent && !_busy && agent != null"
+     ],
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
+    },
+    {
+     "id": "team-run-overview-cycle-nudge-refinery",
+     "type": "button",
+     "label": "Nudge refinery",
+     "key": "team-cycle-action-nudge",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 756,
+     "action": "mutate",
+     "target": null,
+     "effect": "onNudge(refinery) -> _nudge (line 263): controller.controlAgent(refineryId, AgentControlAction.nudge).",
+     "gates": [
+      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
+      "stallReason == DispatchStall.mergeWaiting && controller.capabilities.controlAgent && !_busy && controller.cycleRefineryFor(workId) != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_cycle_strip.dart"
+    },
+    {
      "id": "team-run-overview-merge-section",
      "type": "card",
      "label": "[Merge section]",
@@ -29532,89 +29478,6 @@
      "gates": [
       "`_cancelReceipt != null` (controller.latestMutation(kind: MutationKind.cancelRun, targetId: runId))",
       "`retry != null && record.canRetry`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-cycle-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "team-cycle-action-refresh",
-     "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 713,
-     "action": "mutate",
-     "target": null,
-     "effect": "TeamCycleStrip._refresh -> controller.refresh(); disabled while busy. Primary for hostNotStarted and mergeWaiting-without-control, secondary for agentCannotStart.",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "`cycle.stalled && cycle.stallReason` in {hostNotStarted, agentCannotStart, mergeWaiting when !(canControl && refinery != null)}"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-cycle-how",
-     "type": "button",
-     "label": "How the host dispatches",
-     "key": "team-cycle-action-how",
-     "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 719,
-     "action": "open-sheet",
-     "target": "team-cycle-how-sheet",
-     "targetWidget": "showTeamCycleHowSheet",
-     "effect": "onHow -> showTeamCycleHowSheet(context).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "cycle.stalled && stallReason in {DispatchStall.hostNotStarted, DispatchStall.agentCannotStart}"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-cycle-open-output",
-     "type": "button",
-     "label": "Open agent output",
-     "key": "team-cycle-action-output",
-     "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 725,
-     "action": "navigate",
-     "target": "team-agent-output",
-     "targetWidget": "AgentOutputScreen",
-     "effect": "onOpenOutput(agent) -> _openOutput (line 237): Navigator.push(AgentOutputScreen(controller, agentId)); disabled when controller.cycleAgentFor(workId) == null.",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "cycle.stalled && stallReason in {DispatchStall.providerLimit, DispatchStall.workingLong}"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-run-overview-cycle-stop",
-     "type": "button",
-     "label": "Stop",
-     "key": "team-cycle-action-stop",
-     "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 744,
-     "action": "open-sheet",
-     "target": "team-cycle-stop-confirm-sheet",
-     "targetWidget": "confirmTeamControl",
-     "effect": "onStop(agent) -> _stop (line 247): confirmTeamControl(...); on confirm controller.controlAgent(agentId, AgentControlAction.stop).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "stallReason == DispatchStall.providerLimit && controller.capabilities.controlAgent && !_busy && agent != null"
-     ],
-     "destructive": true
-    },
-    {
-     "id": "team-run-overview-cycle-nudge-refinery",
-     "type": "button",
-     "label": "Nudge refinery",
-     "key": "team-cycle-action-nudge",
-     "file": "lib/ui/widgets/team_cycle_strip.dart",
-     "line": 756,
-     "action": "mutate",
-     "target": null,
-     "effect": "onNudge(refinery) -> _nudge (line 263): controller.controlAgent(refineryId, AgentControlAction.nudge).",
-     "gates": [
-      "strip shown when `stages.isEmpty && run.kind == RunKind.batch && controller.cycleWorkForRun(run.id) != null` (run_screen.dart:804-807)",
-      "stallReason == DispatchStall.mergeWaiting && controller.capabilities.controlAgent && !_busy && controller.cycleRefineryFor(workId) != null"
      ],
      "destructive": false
     }
@@ -30072,6 +29935,67 @@
      "destructive": false
     },
     {
+     "id": "team-board-tabs",
+     "type": "tab",
+     "label": "Backlog | Ready | Working | Review | Done",
+     "key": null,
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 78,
+     "action": "other",
+     "target": null,
+     "effect": "TeamBoardTabs.onSelect -> _select(column): setState(() => _column = column) then pages.animateToPage (jumpToPage when motion is reduced).",
+     "gates": [],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_board_tabs.dart"
+    },
+    {
+     "id": "team-board-card-moves",
+     "type": "icon-button",
+     "label": "Move or change",
+     "key": "team-board-card-more-<id>",
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 299,
+     "action": "open-sheet",
+     "target": "team-board-move-sheet",
+     "targetWidget": "showTeamBoardMoveSheet",
+     "effect": "TeamBoardCardView.onMoves -> _showMoves(card): showTeamBoardMoveSheet.",
+     "gates": [
+      "edits.movesFor(card) is not empty (hidden when the host allows no moves for this card)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_board_card.dart"
+    },
+    {
+     "id": "team-board-card-long-press",
+     "type": "gesture",
+     "label": "[long press on a card]",
+     "key": "team-board-card-<id>",
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 322,
+     "action": "open-sheet",
+     "target": "team-board-move-sheet",
+     "targetWidget": "showTeamBoardMoveSheet",
+     "effect": "GestureDetector.onLongPress -> _showMoves(card): showTeamBoardMoveSheet (same sheet as the card's ⋯ button; unconditional, even when onMoves is hidden, in which case the sheet only offers Open conversation/details and says why there are no moves).",
+     "gates": [],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_board_card.dart"
+    },
+    {
+     "id": "team-board-card",
+     "type": "card",
+     "label": "<task title>",
+     "key": "team-board-card-<id>",
+     "file": "lib/ui/screens/team/team_board_screen.dart",
+     "line": 327,
+     "action": "navigate",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversation.open",
+     "effect": "TeamBoardCardView.onOpen -> _open(card) -> openTeamBoardCard: opens the task's conversation (TeamConversation.open) when card.runId != null, else the card's Work sheet (showWorkSheet, work-sheet) for a card that belongs to no task.",
+     "gates": [],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_board_card.dart"
+    },
+    {
      "id": "team-board-add",
      "type": "icon-button",
      "label": "Add to backlog",
@@ -30146,63 +30070,6 @@
      "gates": [
       "projects.length > 1"
      ],
-     "destructive": false
-    },
-    {
-     "id": "team-board-card-moves",
-     "type": "icon-button",
-     "label": "Move or change",
-     "key": "team-board-card-more-<id>",
-     "file": "lib/ui/widgets/team_board_card.dart",
-     "line": 299,
-     "action": "open-sheet",
-     "target": "team-board-move-sheet",
-     "targetWidget": "showTeamBoardMoveSheet",
-     "effect": "TeamBoardCardView.onMoves -> _showMoves(card): showTeamBoardMoveSheet.",
-     "gates": [
-      "edits.movesFor(card) is not empty (hidden when the host allows no moves for this card)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "team-board-card-long-press",
-     "type": "gesture",
-     "label": "[long press on a card]",
-     "key": "team-board-card-<id>",
-     "file": "lib/ui/widgets/team_board_card.dart",
-     "line": 322,
-     "action": "open-sheet",
-     "target": "team-board-move-sheet",
-     "targetWidget": "showTeamBoardMoveSheet",
-     "effect": "GestureDetector.onLongPress -> _showMoves(card): showTeamBoardMoveSheet (same sheet as the card's ⋯ button; unconditional, even when onMoves is hidden, in which case the sheet only offers Open conversation/details and says why there are no moves).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-board-card",
-     "type": "card",
-     "label": "<task title>",
-     "key": "team-board-card-<id>",
-     "file": "lib/ui/widgets/team_board_card.dart",
-     "line": 327,
-     "action": "navigate",
-     "target": "team-conversation",
-     "targetWidget": "TeamConversation.open",
-     "effect": "TeamBoardCardView.onOpen -> _open(card) -> openTeamBoardCard: opens the task's conversation (TeamConversation.open) when card.runId != null, else the card's Work sheet (showWorkSheet, work-sheet) for a card that belongs to no task.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "team-board-tabs",
-     "type": "tab",
-     "label": "Backlog | Ready | Working | Review | Done",
-     "key": null,
-     "file": "lib/ui/widgets/team_board_tabs.dart",
-     "line": 78,
-     "action": "other",
-     "target": null,
-     "effect": "TeamBoardTabs.onSelect -> _select(column): setState(() => _column = column) then pages.animateToPage (jumpToPage when motion is reduced).",
-     "gates": [],
      "destructive": false
     }
    ]
@@ -31210,26 +31077,28 @@
      "type": "button",
      "label": "Cancel task",
      "key": "team-board-cancel-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_board_move_sheet.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; the board's _move() then calls edits.run(TeamBoardMove.cancel, card).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-board-cancel-confirm-sheet-keep",
      "type": "button",
      "label": "Keep it",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_board_move_sheet.dart",
      "line": 85,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing changes.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-board-cancel-confirm"
@@ -31603,26 +31472,28 @@
      "type": "button",
      "label": "Stop agent",
      "key": "team-cycle-stop-confirm-action",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_cycle_strip.dart",
      "line": 68,
      "action": "mutate",
      "target": null,
      "effect": "Pops true; TeamCycleStripState._stop then calls controller.controlAgent(agentId, AgentControlAction.stop).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-cycle-stop-confirm-sheet-keep",
      "type": "button",
      "label": "Keep going",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_cycle_strip.dart",
      "line": 85,
      "action": "dismiss",
      "target": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ],
    "sheetKey": "team-cycle-stop-confirm"
@@ -31938,28 +31809,30 @@
      "type": "button",
      "label": "Turn off",
      "key": "team-turn-off-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_host_form.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; the caller (TeamPluginSheet, plugins_screen.dart:351) turns the plugin off for the profile.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-turn-off-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_host_form.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -32516,28 +32389,30 @@
      "type": "button",
      "label": "Stop team",
      "key": "team-phone-stop-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_phone_section.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; _stop then runs _run(runtime.stop). Not styled destructive (destructive: false in the call).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-phone-stop-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_phone_section.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -32564,28 +32439,30 @@
      "type": "button",
      "label": "Remove",
      "key": "team-phone-remove-confirm",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_phone_section.dart",
      "line": 82,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "Pops true; _remove then runtime.remove(), controller.remove() or orchestrationStore.sweep, clears profile.orchestration, setPhoneOffer(dismissed), syncOrchestration, SnackBar, onRemoved.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "team-phone-remove-sheet-cancel",
      "type": "button",
      "label": "Keep",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/widgets/team_phone_section.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is sent.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -32744,8 +32621,8 @@
    "presentedBy": [
     "showTeamHostDetailsSheet"
    ],
-   "line": 40,
-   "purpose": "Read-only host identity (provider, version, city, address, host mode, access), raw values with copy buttons and the product-to-provider term list.",
+   "line": 66,
+   "purpose": "Read-only host facts in the kit sheet (showKitSheet): where the host runs with its host kind's line, access (with the read-only explanation), the product-to-provider term glossary, then one open KitDetailsFold with provider, version, city, address and the host's last answer, each once and copyable.",
    "reachedFrom": [
     {
      "page": "team-home",
@@ -32757,14 +32634,14 @@
     {
      "id": "team-host-details-sheet-copy",
      "type": "icon-button",
-     "label": "Copy",
+     "label": "Copy {label}",
      "key": null,
      "file": "lib/ui/widgets/team_technical_details.dart",
-     "line": 229,
+     "line": 161,
      "action": "copy",
      "target": null,
      "targetWidget": null,
-     "effect": "Clipboard.setData(value) then SnackBar \"Copied\"; one per TeamTechnicalValue row (provider, address, city, last answer).",
+     "effect": "KitDetailsFold copy through KitCopy.copy (redacted): a check in place and \"Copied\" announced once, no snackbar; one per copyable value, plus Copy all.",
      "gates": [
       "row value is non-empty"
      ],
@@ -32780,7 +32657,7 @@
    "file": "lib/ui/widgets/team_technical_details.dart",
    "widget": "TeamTechnicalValue",
    "presentedBy": [],
-   "line": 190,
+   "line": 236,
    "purpose": "Label + selectable mono value + copy button, reused in Technical details expanders on hosts owned by other agents.",
    "reachedFrom": [
     {
@@ -32814,14 +32691,14 @@
     {
      "id": "embedded-team-technical-value-copy",
      "type": "icon-button",
-     "label": "Copy",
+     "label": "Copy {label}",
      "key": null,
      "file": "lib/ui/widgets/team_technical_details.dart",
-     "line": 229,
+     "line": 281,
      "action": "copy",
      "target": null,
      "targetWidget": null,
-     "effect": "Clipboard.setData(ClipboardData(text: value)) then SnackBar \"Copied\".",
+     "effect": "KitIconButton.copy through KitCopy.copy (redacted): a 48 dp target at the row's end, a check in place and \"Copied\" announced once, no snackbar.",
      "gates": [
       "value.isNotEmpty"
      ],
@@ -33497,28 +33374,30 @@
      "type": "button",
      "label": "Start server sign-in",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "command-auth-sheet-confirm-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -33750,28 +33629,30 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/credential_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.removeIntegrationCredential(integrationID, id, locationRevision), then _load().",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "credential-management-sheet-remove-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/credential_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -34252,57 +34133,6 @@
      "destructive": true
     },
     {
-     "id": "integrations-providers-load-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 911,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_SectionLoadError ('Could not load this section') -> _retryIntegrations(): _loadIntegrations(prepareActionRepository).",
-     "gates": [
-      "_showProviders (widget.mode != IntegrationsMode.mcp)",
-      "staleSource (scope changed) or _integrationError != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-mcp-load-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 911,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_SectionLoadError -> _retryServers(): clears _removalError, prepareActionRepository, _loadServers. Shown for _serverError, _removalError and scope-changed (integrations_screen.dart:912-921).",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)",
-      "_serverError != null || _removalError != null || _serversSource != _mcpSource"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "integrations-resources-load-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/screens/library/integration_tiles.dart",
-     "line": 911,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_SectionLoadError -> _retryResources().",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)",
-      "_resourceError != null"
-     ],
-     "destructive": false
-    },
-    {
      "id": "integrations-mcp-loopback-callback",
      "type": "gesture",
      "label": "[automatic OAuth loopback callback]",
@@ -34486,6 +34316,60 @@
      "destructive": false
     },
     {
+     "id": "integrations-providers-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError ('Could not load this section') -> _retryIntegrations(): _loadIntegrations(prepareActionRepository).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "staleSource (scope changed) or _integrationError != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/integration_tiles.dart"
+    },
+    {
+     "id": "integrations-mcp-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError -> _retryServers(): clears _removalError, prepareActionRepository, _loadServers. Shown for _serverError, _removalError and scope-changed (integrations_screen.dart:912-921).",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_serverError != null || _removalError != null || _serversSource != _mcpSource"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/integration_tiles.dart"
+    },
+    {
+     "id": "integrations-resources-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError -> _retryResources().",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_resourceError != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/library/integration_tiles.dart"
+    },
+    {
      "id": "integrations-mcp-empty-add",
      "type": "button",
      "label": "Add an MCP server",
@@ -34656,28 +34540,30 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.removeMcpServer(server.name, locationRevision), then refetches servers and resources; failure sets _removalError.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "integrations-remove-mcp-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -34766,28 +34652,30 @@
      "type": "button",
      "label": "Disconnect provider",
      "key": "confirm-provider-disconnect",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "repository.disconnectIntegration(integration), then _loadIntegrations + controller.refreshCatalog() and a snackbar.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "integrations-disconnect-provider-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -34924,28 +34812,30 @@
      "type": "button",
      "label": "Forget on this device",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -34974,28 +34864,30 @@
      "type": "button",
      "label": "Forget uncertain start",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
      "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
      "gates": [],
-     "destructive": true
+     "destructive": true,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     },
     {
      "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, false); nothing is changed.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -41116,11 +41008,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-session-menu-archive",
-    "to": "workspace-archive-session-sheet"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-session-menu-delete",
     "to": "workspace-delete-session-sheet"
    },
@@ -41146,11 +41033,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-session-context-archive",
-    "to": "workspace-archive-session-sheet"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-session-context-delete",
     "to": "workspace-delete-session-sheet"
    },
@@ -41167,7 +41049,7 @@
    {
     "from": "workspace",
     "element": "workspace-archived-sessions",
-    "to": "workspace-archived-sheet"
+    "to": "global-sessions"
    },
    {
     "from": "workspace",
@@ -41223,31 +41105,6 @@
     "from": "workspace-context-sheet",
     "element": "workspace-context-sheet-manage-project",
     "to": "manage-project"
-   },
-   {
-    "from": "workspace-archived-sheet",
-    "element": "workspace-archived-sheet-row",
-    "to": "chat"
-   },
-   {
-    "from": "workspace-archived-sheet",
-    "element": "workspace-archived-sheet-menu-rename",
-    "to": "workspace-rename-session-dialog"
-   },
-   {
-    "from": "workspace-archived-sheet",
-    "element": "workspace-archived-sheet-menu-delete",
-    "to": "workspace-delete-session-sheet"
-   },
-   {
-    "from": "workspace-archived-sheet",
-    "element": "workspace-archived-sheet-context-open",
-    "to": "chat"
-   },
-   {
-    "from": "workspace-archived-sheet",
-    "element": "workspace-archived-sheet-context-delete",
-    "to": "workspace-delete-session-sheet"
    },
    {
     "from": "projects",
@@ -43923,12 +43780,6 @@
    },
    {
     "from": "workspace",
-    "element": null,
-    "to": "embedded-session-inventory-footer",
-    "via": "embedded"
-   },
-   {
-    "from": "workspace-archived-sheet",
     "element": null,
     "to": "embedded-session-inventory-footer",
     "via": "embedded"
