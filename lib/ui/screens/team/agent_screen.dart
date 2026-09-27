@@ -776,7 +776,9 @@ class _AgentScreenState extends State<AgentScreen> {
           ? l10n.teamAgentScreenCrashedBody
           : l10n.teamAgentScreenStoppedBody,
       actions: [
-        if (caps.controlAgent)
+        // Never for an agent the app keeps off on its phone team: waking
+        // it runs the phone past Android's process limit.
+        if (caps.controlAgent && !teamAgentKeptOff(_controller.config, agent))
           KitAction(
             key: const ValueKey('team-agent-control-resume'),
             label: l10n.teamAgentScreenResume(agent.name),

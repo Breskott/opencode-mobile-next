@@ -5,11 +5,11 @@
 /// **Overview** (§4.1) answers the five BRD questions top to bottom with
 /// one element each: the objective with its state word and elapsed time;
 /// "N of M done" over one segmented bar; the Working and Blocked counts,
-/// then a quiet usage chip ("Team today · $0.42 est. · 12.4k tokens") when
-/// the host reports `/usage` — Gas City's figures are city-level for the
-/// day, never per run, and always its local estimate, so the chip says
-/// so and is absent entirely when nothing was reported or the capability
-/// is off; why work is blocked, when the host or the graph says; the single most
+/// then, when the host reports `/usage` at all, that it reports no cost for
+/// one task (slice-P5.2: Gas City's figures are the whole team's day or a
+/// worker's recent window, and neither can be charged to this task without
+/// billing it an earlier task's spend; the team page has the day's
+/// estimate); why work is blocked, when the host or the graph says; the single most
 /// urgent thing waiting on the person (read-only in Sprint A: the question
 /// and where to answer it); then the stages, or, for a convoy (which has
 /// no stages), the dispatch cycle strip of its least-advanced item
@@ -692,7 +692,10 @@ class _Overview extends StatelessWidget {
         : null;
     final cycle = cycleWork == null ? null : controller.cycleFor(cycleWork);
     final stall = cycle != null && cycle.stalled ? cycle.stallReason : null;
-    final usage = _usageLabel(l10n, controller, run);
+    // A task's own cost is not reported (docs/qa/codex-p52-2026-09-27):
+    // said once under Details where the host reports usage at all, never
+    // replaced by the team's day total or a worker's recent window.
+    final costUnreported = controller.capabilities.usage;
     final policy = controller.policy;
     final tokens = KitTokens.of(context);
 
@@ -855,12 +858,11 @@ class _Overview extends StatelessWidget {
                     ),
                     valueKey: const ValueKey('team-run-counts'),
                   ),
-                if (usage != null)
+                if (costUnreported)
                   _DetailLine(
                     label: l10n.teamUiRunDetailsUsage,
-                    value: usage,
+                    value: l10n.teamRunCostUnreported,
                     valueKey: const ValueKey('team-run-usage'),
-                    figures: true,
                   ),
                 // 02-ux §7: the host's supervision level and boundaries,
                 // read-only (TEAM-207); absent when the host reports none.
@@ -1113,19 +1115,17 @@ class _DetailsRow extends StatelessWidget {
   }
 }
 
-/// A label over its value, under Details; [figures] holds amounts still.
+/// A label over its value, under Details.
 class _DetailLine extends StatelessWidget {
   const _DetailLine({
     required this.label,
     required this.value,
     required this.valueKey,
-    this.figures = false,
   });
 
   final String label;
   final String value;
   final Key valueKey;
-  final bool figures;
 
   @override
   Widget build(BuildContext context) {
@@ -1140,51 +1140,11 @@ class _DetailLine extends StatelessWidget {
             role: KitTextRole.caption,
             tone: KitTextTone.secondary,
           ),
-          KitText(value, key: valueKey, tabular: figures),
+          KitText(value, key: valueKey),
         ],
       ),
     );
   }
-}
-
-/// The Overview's usage line, or null when there is nothing honest to
-/// show: the capability is off, `/usage` returned nothing, or it carried
-/// neither a cost nor a token count. Gas City reports usage for the city
-/// (today), not per run, so the line is labelled "Team today"; a run that
-/// carries its own `usage` in raw (no provider does yet) is preferred.
-String? _usageLabel(
-  AppLocalizations l10n,
-  OrchestrationController controller,
-  OrchestrationRun run,
-) {
-  if (!controller.capabilities.usage) return null;
-  final own = _runUsage(run);
-  final label = teamUsageLabel(l10n, own ?? controller.snapshot.usage);
-  if (label == null) return null;
-  return own == null ? l10n.teamUiUsageChip(label) : label;
-}
-
-/// A per-run usage figure from the run's raw payload, when a provider
-/// ever reports one: `usage.{input_tokens,output_tokens,cost_usd}`.
-OrchestrationUsage? _runUsage(OrchestrationRun run) {
-  final usage = run.raw['usage'];
-  if (usage is! Map<String, Object?>) return null;
-  int? count(String key) => switch (usage[key]) {
-    final int v => v,
-    final num v => v.toInt(),
-    _ => null,
-  };
-  final cost = switch (usage['cost_usd_estimate'] ?? usage['cost_usd']) {
-    final num v => v.toDouble(),
-    _ => null,
-  };
-  final mapped = OrchestrationUsage(
-    inputTokens: count('input_tokens'),
-    outputTokens: count('output_tokens'),
-    costUsd: cost,
-    raw: usage,
-  );
-  return mapped.isEmpty ? null : mapped;
 }
 
 // ---------------------------------------------------------------------------

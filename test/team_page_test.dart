@@ -586,7 +586,7 @@ void main() {
       final team = await _team(usage: usage(unpriced: 3));
       await pump(tester, team);
       expect(_key('team-home-spent'), findsOneWidget);
-      expect(find.text(_en.teamHomeSpentPartial), findsOneWidget);
+      expect(find.textContaining(_en.teamHomeSpentPartial), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

@@ -56,7 +56,7 @@ class TeamTaskRow extends StatelessWidget {
       cycleOf: team.cycleFor,
       explainWait: true,
       checkEvery: teamCheckInterval(team),
-      paused: teamRest(snapshot.agents) == TeamRest.paused,
+      paused: teamRest(snapshot.agents, config: team.config) == TeamRest.paused,
       // The list has no clock of the team's to draw an age from; the
       // task's own page says how long.
       showWaitAge: false,

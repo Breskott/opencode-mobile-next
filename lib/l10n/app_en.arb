@@ -14075,15 +14075,6 @@
       }
     }
   },
-  "teamUiUsageChip": "Team today · {usage}",
-  "@teamUiUsageChip": {
-    "description": "Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens",
-    "placeholders": {
-      "usage": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiUsageCostEstimated": "{cost} est.",
   "@teamUiUsageCostEstimated": {
     "description": "A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)",
@@ -15091,19 +15082,6 @@
         "type": "String"
       }
     }
-  },
-  "teamUiHomeUpkeepToggle": "Show team upkeep ({count})",
-  "@teamUiHomeUpkeepToggle": {
-    "description": "AI Team home, under the Runs list: switch that reveals the host's own housekeeping runs (patrols, chores), hidden by default; count is how many there are",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiHomeUpkeepHint": "Patrols and chores the host runs for itself",
-  "@teamUiHomeUpkeepHint": {
-    "description": "One line under the Show team upkeep switch saying what upkeep runs are"
   },
   "teamUiHomeSuspendedGroup": "Suspended on the host ({count})",
   "@teamUiHomeSuspendedGroup": {
@@ -25796,15 +25774,6 @@
   "@teamAgentsPausedHint": {
     "description": "AI Team agents list: after 'Paused', says nothing will start this agent by itself."
   },
-  "teamAgentsWake": "Wake {name}",
-  "@teamAgentsWake": {
-    "description": "AI Team agents list: button in a paused agent's row that asks the host to resume that agent. {name} is the agent's name or role, e.g. 'Wake furiosa'.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "teamWorkSheetMissingTitle": "Work item gone",
   "@teamWorkSheetMissingTitle": {
     "description": "AI Team work sheet title when the item the person opened is no longer listed by the host."
@@ -30472,13 +30441,13 @@
       }
     }
   },
-  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated",
+  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.",
   "@teamHomeSpentHint": {
     "description": "AI Team page: under today's spend; never a task's cost."
   },
-  "teamHomeSpentPartial": "Some of today’s use has no price yet, so it cost more than this",
+  "teamHomeSpentPartial": "Some of today’s use has no price yet, so it cost more than this.",
   "@teamHomeSpentPartial": {
-    "description": "AI Team page: under today's spend when part of it is unpriced or history is missing."
+    "description": "AI Team page: under today's spend when part of it has no price."
   },
   "teamIntroNotFound": "No AI Team found on {server}",
   "@teamIntroNotFound": {
@@ -31454,5 +31423,120 @@
   "connectionFailureTailnetCheck": "This is a Tailscale address: is Tailscale on, on this phone and on the server?",
   "@connectionFailureTailnetCheck": {
     "description": "Map page root-connecting: first thing to check when a Tailscale address did not answer."
+  },
+  "teamHomeSpentHistoryMissing": "Part of today’s history is missing, so it cost more than this.",
+  "@teamHomeSpentHistoryMissing": {
+    "description": "AI Team page: under today's spend when the host says part of today's history is missing."
+  },
+  "teamHomeSpentNotRecording": "The team isn’t counting new use right now.",
+  "@teamHomeSpentNotRecording": {
+    "description": "AI Team page: under today's spend when the host has stopped recording new usage."
+  },
+  "teamRunCostUnreported": "Not reported for one task. The AI Team page shows today’s estimate for the whole team.",
+  "@teamRunCostUnreported": {
+    "description": "A task's Details: the host reports no cost for a single task, only the whole team's day."
+  },
+  "teamHomeAgentsRowCrashed": "{count} crashed",
+  "@teamHomeAgentsRowCrashed": {
+    "description": "AI Team page agents row: how many live agents' sessions ended in an error.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamHomeAgentsRowPaused": "{count} paused",
+  "@teamHomeAgentsRowPaused": {
+    "description": "AI Team page agents row: agents switched off on purpose.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamHomeAgentsRowKeptOff": "{count} kept off on this phone",
+  "@teamHomeAgentsRowKeptOff": {
+    "description": "AI Team page agents row: agents the app keeps off on its own phone team to save the phone.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamHomeUpkeepTitle": "Team upkeep",
+  "@teamHomeUpkeepTitle": {
+    "description": "AI Team page: the row saying what the host's own upkeep runs are doing."
+  },
+  "teamHomeUpkeepPatrol": "Patrol",
+  "@teamHomeUpkeepPatrol": {
+    "description": "AI Team page upkeep row: the host checking on its agents."
+  },
+  "teamHomeUpkeepChore": "Chore",
+  "@teamHomeUpkeepChore": {
+    "description": "AI Team page upkeep row: any other housekeeping run."
+  },
+  "teamHomeUpkeepGroup": "{count, plural, =1{{kind} · {state}} other{{kind} ×{count} · {state}}}",
+  "@teamHomeUpkeepGroup": {
+    "description": "AI Team page upkeep row: one kind of upkeep with how many and its state, e.g. 'Patrol ×4 · planning'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentLooksAfterTeam": "whole team",
+  "@teamAgentLooksAfterTeam": {
+    "description": "Agents list: tells two supervisors apart; this one looks after the whole team."
+  },
+  "teamAgentLooksAfterWatchdog": "watchdog",
+  "@teamAgentLooksAfterWatchdog": {
+    "description": "Agents list: tells two supervisors apart; this one keeps the other supervisor running."
+  },
+  "teamAgentLooksAfterWorkers": "workers",
+  "@teamAgentLooksAfterWorkers": {
+    "description": "Agents list: tells two supervisors apart; this one watches the workers."
+  },
+  "teamAgentsKeptOff": "Off on this phone",
+  "@teamAgentsKeptOff": {
+    "description": "Agents list: an agent the app keeps off on its own phone team."
+  },
+  "teamAgentsKeptOffHint": "kept off so the phone can run the team",
+  "@teamAgentsKeptOffHint": {
+    "description": "Agents list: why an agent is off on the phone's own team."
+  },
+  "teamAgentsWakePaused": "{count, plural, =0{Wake the paused agents} =1{Wake the paused agent} other{Wake the {count} paused agents}}",
+  "@teamAgentsWakePaused": {
+    "description": "Agents list: one action that wakes every paused agent.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamAgentsWakePausedHint": "They start again one at a time and pick up waiting work.",
+  "@teamAgentsWakePausedHint": {
+    "description": "Agents list: what waking the paused agents does."
+  },
+  "teamAgentsWakeUnconfirmed": "The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.",
+  "@teamAgentsWakeUnconfirmed": {
+    "description": "Agents list: a wake the host did not confirm."
+  },
+  "teamAgentsWakeRefused": "The team didn’t wake them. Open an agent to see how it stands, or try again later.",
+  "@teamAgentsWakeRefused": {
+    "description": "Agents list: the host refused a wake."
+  },
+  "teamAgentsWaking": "Waking…",
+  "@teamAgentsWaking": {
+    "description": "Agents list: the wake is being sent."
+  },
+  "teamAgentsWakeCheckAgain": "Check again",
+  "@teamAgentsWakeCheckAgain": {
+    "description": "Agents list: reads the team again after a wake it did not confirm."
   }
 }

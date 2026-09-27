@@ -143,6 +143,13 @@ class BuiltinTeam {
       'port = $port\n'
       'allowed_hosts = ["127.0.0.1", "localhost"]\n';
 
+  /// The agents [_cityPatches] and [_rigPatches] keep suspended, by their
+  /// kind (the pool's last part): the app keeps them off so the phone can
+  /// run the team, so they are never the person's pause and the app never
+  /// offers to wake them (waking them runs past Android's process limit
+  /// and the team stops answering).
+  static const keptOffKinds = {'mayor', 'deacon', 'boot', 'witness'};
+
   /// The lean team: one worker per project and the planner, the patrols and
   /// the witness off. The phone runs a handful of processes, not thirty
   /// (Android stops an app's child processes past 32).

@@ -494,9 +494,9 @@ void main() {
       // Five live agents; the dog slots and the core helper are not agents.
       expect(find.textContaining('5 agents'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('team-home-upkeep-toggle')),
+        find.byKey(const ValueKey('team-home-upkeep-row')),
         findsNothing,
-        reason: 'no upkeep in the recording: no toggle',
+        reason: 'no upkeep in the recording: no upkeep line',
       );
       expect(find.text('Done today'), findsNothing);
       expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
@@ -1379,9 +1379,7 @@ void main() {
           updatedAt: clock.subtract(Duration(minutes: minutesAgo)),
         );
 
-    testWidgets('upkeep runs are hidden and uncounted until revealed', (
-      tester,
-    ) async {
+    testWidgets('upkeep runs are one line, never task rows', (tester) async {
       OrchestrationRun? opened;
       final (controller, _) = await boot(
         configure: (g) => g
@@ -1404,38 +1402,24 @@ void main() {
       // What finished lists the person's task only.
       expect(runRow('done'), findsOneWidget);
 
-      // The toggle sits under the list, off, with the hidden count.
-      final toggle = find.byKey(const ValueKey('team-home-upkeep-toggle'));
-      expect(toggle, findsOneWidget);
-      expect(find.text('Show team upkeep (3)'), findsOneWidget);
+      // Upkeep is one line in words in the team's own panel (owner, build
+      // 2055): no switch, no rows of engine names, duplicates collapsed.
+      final line = find.byKey(const ValueKey('team-home-upkeep-line'));
+      expect(line, findsOneWidget);
+      expect(find.byType(SwitchListTile), findsNothing);
+      expect(
+        find.text('Patrol ×3 · planning', findRichText: true),
+        findsOneWidget,
+      );
       expect(
         top(tester, find.byKey(const ValueKey('team-home-tasks'))),
-        lessThan(top(tester, toggle)),
+        lessThan(top(tester, line)),
       );
-      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
-
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
-      for (final name in ['refinery', 'deacon', 'witness']) {
-        expect(runRow('oc-wisp-$name'), findsOneWidget);
-        expect(
-          top(tester, toggle),
-          lessThan(top(tester, runRow('oc-wisp-$name'))),
-        );
-      }
-      expect(find.text('mol-refinery-patrol'), findsOneWidget);
-      // A revealed upkeep run opens like any other.
-      await tester.tap(runRow('oc-wisp-refinery'));
-      expect(opened?.id, 'oc-wisp-refinery');
-
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(runRow('oc-wisp-refinery'), findsNothing);
+      expect(opened, isNull);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('only upkeep: the empty state, with the toggle', (
+    testWidgets('only upkeep: the empty state, and the upkeep line', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -1449,11 +1433,11 @@ void main() {
         find.byKey(const ValueKey('team-home-runs-empty')),
         findsOneWidget,
       );
-      final toggle = find.byKey(const ValueKey('team-home-upkeep-toggle'));
-      expect(find.text('Show team upkeep (1)'), findsOneWidget);
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(runRow('oc-wisp-refinery'), findsOneWidget);
+      expect(
+        find.text('Patrol · planning', findRichText: true),
+        findsOneWidget,
+      );
+      expect(runRow('oc-wisp-refinery'), findsNothing);
     });
 
     testWidgets('suspended agents count apart and sit collapsed', (
