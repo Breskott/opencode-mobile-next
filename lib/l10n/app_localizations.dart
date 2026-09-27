@@ -4718,12 +4718,6 @@ abstract class AppLocalizations {
   /// **'Budget amount'**
   String get usageBudgetAmount;
 
-  /// No description provided for @usageBudgetInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a positive finite amount. Token budgets must use whole numbers.'**
-  String get usageBudgetInvalid;
-
   /// No description provided for @usageBudgetRemove.
   ///
   /// In en, this message translates to:
@@ -8821,12 +8815,6 @@ abstract class AppLocalizations {
   /// **'Other context'**
   String get e7SharedOtherContext;
 
-  /// Shared app interface: Move
-  ///
-  /// In en, this message translates to:
-  /// **'Move'**
-  String get e7SharedMove;
-
   /// Shared app interface: Session location changed. Close and reopen this sheet.
   ///
   /// In en, this message translates to:
@@ -8856,18 +8844,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The app could not inspect working changes. For safety, this continues without transferring changes.'**
   String get e7SharedTheAppCouldNotInspectWorkingChanges;
-
-  /// Shared app interface: Move with changes
-  ///
-  /// In en, this message translates to:
-  /// **'Move with changes'**
-  String get e7SharedMoveWithChanges;
-
-  /// Shared app interface: Copy changes and move
-  ///
-  /// In en, this message translates to:
-  /// **'Copy changes and move'**
-  String get e7SharedCopyChangesAndMove;
 
   /// Shared app interface: Move session
   ///
@@ -9193,23 +9169,17 @@ abstract class AppLocalizations {
   /// **'Moved to {destination}'**
   String e7SharedDetail428(String destination);
 
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
+  /// Move conversation confirmation title: names the folder or cloud machine it goes to.
   ///
   /// In en, this message translates to:
-  /// **'Move conversation?'**
-  String get e7SharedDetail429;
+  /// **'Move conversation to {destination}?'**
+  String e7SharedDetail429(String destination);
 
   /// Shared journey: lib/ui/screens/session_destination_sheet.dart
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the conversation.'**
   String e7SharedDetail430(int count, String action);
-
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Continue to {destination}?'**
-  String e7SharedDetail432(String destination);
 
   /// Shared journey: lib/ui/screens/session_destination_sheet.dart
   ///
@@ -35751,6 +35721,30 @@ abstract class AppLocalizations {
   /// **'Token budget'**
   String get usageBudgetTokensTitle;
 
+  /// USD budget dialog: the amount is empty, zero, negative or not a number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount above 0, like 2.50'**
+  String get usageBudgetInvalidUsd;
+
+  /// Token budget dialog: the amount is empty, zero or not a whole number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number of tokens above 0'**
+  String get usageBudgetInvalidTokens;
+
+  /// USD budget dialog: confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Save USD budget'**
+  String get usageBudgetSaveUsd;
+
+  /// Token budget dialog: confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Save token budget'**
+  String get usageBudgetSaveTokens;
+
   /// Codex account: title of the state shown when the connection moved to another server after the page opened.
   ///
   /// In en, this message translates to:
@@ -37251,11 +37245,35 @@ abstract class AppLocalizations {
   /// **'Without changes, they stay in {place}.'**
   String sessionDestinationChangesStay(String place);
 
-  /// Move conversation confirmation: moves the conversation and leaves working changes where they are.
+  /// Move conversation confirmation: the other answer; moves the conversation to the named place and leaves working changes where they are.
   ///
   /// In en, this message translates to:
-  /// **'Move without changes'**
-  String get sessionDestinationMoveWithout;
+  /// **'Move to {destination} without changes'**
+  String sessionDestinationMoveWithout(String destination);
+
+  /// Move conversation confirmation: confirm label when there are working changes; they move with it to the named folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {destination} with changes'**
+  String sessionDestinationMoveWithChanges(String destination);
+
+  /// Move to a cloud machine confirmation: confirm label when there are working changes; a copy goes with it to the named machine.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {destination} with a copy of changes'**
+  String sessionDestinationWarpWithChanges(String destination);
+
+  /// Move conversation confirmation: confirm label when there are no working changes to take along.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {destination}'**
+  String sessionDestinationMoveTo(String destination);
+
+  /// Move conversation confirmation body when the current place has no working changes.
+  ///
+  /// In en, this message translates to:
+  /// **'No working changes in {place}, so only the conversation moves.'**
+  String sessionDestinationNoChanges(String place);
 
   /// Move conversation: the move failed.
   ///

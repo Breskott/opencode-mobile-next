@@ -154,7 +154,7 @@ void main() {
           '2.5',
         );
         await tester.pump();
-        await _tapText(tester, 'Save');
+        await _tapText(tester, 'Save USD budget');
         expect(find.text('USD budget'), findsOneWidget);
         expect(find.textContaining('3.42 of 2.5 USD'), findsOneWidget);
         expect(
@@ -190,8 +190,11 @@ void main() {
         '0',
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('Enter a positive finite'), findsWidgets);
-      await _tapText(tester, 'Save');
+      expect(
+        find.textContaining('Enter a whole number of tokens above 0'),
+        findsWidgets,
+      );
+      await _tapText(tester, 'Save token budget');
       // Still open: nothing was saved.
       expect(find.byKey(const ValueKey('usage-budget-amount')), findsOneWidget);
     });
@@ -213,7 +216,7 @@ void main() {
         '25',
       );
       await tester.pump();
-      await _tapText(tester, 'Save');
+      await _tapText(tester, 'Save USD budget');
       expect(find.text('Budgets'), findsOneWidget);
       expect(find.text('Clear both budgets'), findsOneWidget);
       await _tapKey(tester, const ValueKey('usage-budget-clear'));

@@ -112,7 +112,7 @@ void main() {
           ),
           '25',
         );
-        await tester.tap(find.text(l10n.fileSave));
+        await tester.tap(find.text(l10n.usageBudgetSaveUsd));
         await tester.pumpAndSettle();
         expect(
           find.text(l10n.usageBudgetProgress('3.42', '25', 'USD')),

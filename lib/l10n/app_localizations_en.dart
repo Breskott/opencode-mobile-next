@@ -2782,10 +2782,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageBudgetAmount => 'Budget amount';
 
   @override
-  String get usageBudgetInvalid =>
-      'Enter a positive finite amount. Token budgets must use whole numbers.';
-
-  @override
   String get usageBudgetRemove => 'Remove budget';
 
   @override
@@ -5256,9 +5252,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SharedOtherContext => 'Other context';
 
   @override
-  String get e7SharedMove => 'Move';
-
-  @override
   String get e7SharedSessionLocationChangedCloseAndReopenThis =>
       'The conversation’s project changed. Close and reopen this sheet.';
 
@@ -5275,12 +5268,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7SharedTheAppCouldNotInspectWorkingChanges =>
       'The app could not inspect working changes. For safety, this continues without transferring changes.';
-
-  @override
-  String get e7SharedMoveWithChanges => 'Move with changes';
-
-  @override
-  String get e7SharedCopyChangesAndMove => 'Copy changes and move';
 
   @override
   String get e7SharedMoveSession => 'Move conversation';
@@ -5476,7 +5463,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SharedDetail429 => 'Move conversation?';
+  String e7SharedDetail429(String destination) {
+    return 'Move conversation to $destination?';
+  }
 
   @override
   String e7SharedDetail430(int count, String action) {
@@ -5491,11 +5480,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'other': 'be copied',
     });
     return '$_temp0 Choose whether those working changes should $_temp1 with the conversation.';
-  }
-
-  @override
-  String e7SharedDetail432(String destination) {
-    return 'Continue to $destination?';
   }
 
   @override
@@ -22514,6 +22498,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageBudgetTokensTitle => 'Token budget';
 
   @override
+  String get usageBudgetInvalidUsd => 'Enter an amount above 0, like 2.50';
+
+  @override
+  String get usageBudgetInvalidTokens =>
+      'Enter a whole number of tokens above 0';
+
+  @override
+  String get usageBudgetSaveUsd => 'Save USD budget';
+
+  @override
+  String get usageBudgetSaveTokens => 'Save token budget';
+
+  @override
   String get agentAccountScopeLostTitle => 'This server changed';
 
   @override
@@ -23536,7 +23533,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sessionDestinationMoveWithout => 'Move without changes';
+  String sessionDestinationMoveWithout(String destination) {
+    return 'Move to $destination without changes';
+  }
+
+  @override
+  String sessionDestinationMoveWithChanges(String destination) {
+    return 'Move to $destination with changes';
+  }
+
+  @override
+  String sessionDestinationWarpWithChanges(String destination) {
+    return 'Move to $destination with a copy of changes';
+  }
+
+  @override
+  String sessionDestinationMoveTo(String destination) {
+    return 'Move to $destination';
+  }
+
+  @override
+  String sessionDestinationNoChanges(String place) {
+    return 'No working changes in $place, so only the conversation moves.';
+  }
 
   @override
   String get sessionDestinationMoveFailed => 'Couldn\'t move the conversation.';
