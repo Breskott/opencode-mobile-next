@@ -654,9 +654,12 @@ enum KitShellControlsLayout {
   sidebar,
 }
 
-/// The glass top controls (VL §6): the server pill and search. Each control
-/// is its own KitGlass piece (dim: true, it holds words); they share one
-/// BackdropGroup provided by the shell.
+/// The glass top controls (VL §6): the server pill and search, dim glass
+/// (they hold words) sharing one BackdropGroup provided by the shell. Each
+/// gives under a finger (fluid glass). In the bar, pill and search are one
+/// [KitGlass.pair]: while the page is scrolled ([KitGlass.scrolledOf]) search
+/// slides next to the pill and the two join like drops; back at the top they
+/// pull apart.
 ///
 /// States: connected, reconnecting (word + working mark), not answering,
 /// needs-you badge. In the bar the status word is always visible (STATE-9).
@@ -714,56 +717,49 @@ class KitShellControls extends StatelessWidget {
     final project = this.project;
     final onProject = this.onProject;
 
+    final pillButton = KitTappable(
+      tappableKey: serverKey,
+      onTap: onServer,
+      label: [
+        KitBidi.auto(server),
+        serverStatus,
+        l10n.kitTopBarSwitchServer,
+      ].join(', '),
+      shape: KitShape.pill,
+      surface: KitSurfaceLevel.surface2,
+      child: ExcludeSemantics(
+        child: _KitServerPillContent(
+          server: server,
+          status: serverStatus,
+          tone: serverTone,
+          expand: sidebar,
+        ),
+      ),
+    );
     final pill = KitNeedsYou.badge(
       count: needsYou,
       child: KitGlass(
         dim: true,
+        respond: true,
         borderRadius: radius,
-        child: KitTappable(
-          tappableKey: serverKey,
-          onTap: onServer,
-          label: [
-            KitBidi.auto(server),
-            serverStatus,
-            l10n.kitTopBarSwitchServer,
-          ].join(', '),
-          shape: KitShape.pill,
-          surface: KitSurfaceLevel.surface2,
-          child: ExcludeSemantics(
-            child: _KitServerPillContent(
-              server: server,
-              status: serverStatus,
-              tone: serverTone,
-              expand: sidebar,
-            ),
-          ),
-        ),
+        child: pillButton,
       ),
     );
 
     if (!sidebar) {
-      return Row(
-        children: [
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: pill,
-            ),
-          ),
-          if (onSearch != null) ...[
-            SizedBox(width: tokens.space2),
-            KitGlass(
-              dim: true,
-              borderRadius: radius,
-              child: KitIconButton(
-                key: searchKey,
-                icon: AppIconography.search,
-                tooltip: l10n.kitTopBarSearch,
-                onPressed: onSearch,
-              ),
-            ),
-          ],
-        ],
+      if (onSearch == null) {
+        return Align(alignment: AlignmentDirectional.centerStart, child: pill);
+      }
+      return KitGlass.pair(
+        joined: KitGlass.scrolledOf(context),
+        borderRadius: radius,
+        leading: KitNeedsYou.badge(count: needsYou, child: pillButton),
+        trailing: KitIconButton(
+          key: searchKey,
+          icon: AppIconography.search,
+          tooltip: l10n.kitTopBarSearch,
+          onPressed: onSearch,
+        ),
       );
     }
 
@@ -816,6 +812,7 @@ class KitShellControls extends StatelessWidget {
         if (onSearch != null)
           KitGlass(
             dim: true,
+            respond: true,
             borderRadius: radius,
             child: KitTappable(
               tappableKey: searchKey,

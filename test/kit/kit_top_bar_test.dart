@@ -324,9 +324,12 @@ void main() {
     await tester.tap(find.textContaining('Connected', findRichText: true));
     await tester.tap(find.byTooltip('Search'));
     expect((servers, searches), (1, 1));
+    // Pill and search are one pair of dim glass that joins while the page
+    // is scrolled (fluid glass; test/kit/kit_glass_test.dart).
     final glass = tester.widgetList<KitGlass>(find.byType(KitGlass));
-    expect(glass.length, 2);
-    expect(glass.every((g) => g.dim), isTrue);
+    expect(glass.length, 1);
+    expect(glass.single.dim, isTrue);
+    expect(glass.single.trailing, isNotNull);
     semantics.dispose();
   });
 

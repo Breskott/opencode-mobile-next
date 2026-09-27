@@ -157,9 +157,11 @@ Rail and sidebar at the start (right in Arabic); `KitClearance.start` is directi
 
 ## Motion and haptics
 
-- The lens slides between tabs over `KitMotion.standard` on `KitMotion.emphasized`; labels cross-fade colour over `KitMotion.quick`. No scale, no blur on content (MOT-2, LOOK-22).
+- Fluid glass (kit-fluid-glass, 2026-09-28; the owner's approved "Fluid glass" sample, KitGlass.md): the lens's two edges ride separate springs, so it stretches towards a new tab, leading with its front edge (`KitMotion.lensLead`), the back edge following (`lensTrail`), thins a little while stretched, and settles on the tab. A drag along the dock (horizontal) or the rail (vertical) lifts the lens (it grows `space2` and its hairline turns `glassRimLight`, `lensLift`), it follows the finger (`lensDragLead`/`lensDragTrail`, resisting past the first and last destinations), and letting go opens the destination under the finger. Taps, keys and screen readers work as before; the drag is excluded from semantics. The lens is laid out alone and its edges sit on physical pixels; the destinations never rebuild or relayout while it moves. Labels cross-fade colour over `KitMotion.quick`. No scale, no blur on content (MOT-2, LOOK-22).
+- The dock and rail glass give under a finger (`KitGlass(respond: true)`): the drawn glass swells a few dp and brightens, then springs back.
 - The dock hides and shows with the keyboard at once (no animation: the keyboard itself moves).
-- Reduced motion: the lens jumps; one `pump()` settles.
+- KitNav watches the page's vertical scrolling (`KitGlass.trackScroll`, reset on a new destination) so the top controls can join while scrolled (KitTopBar.md).
+- Reduced motion: the lens jumps, follows a drag directly without lifting, and one `pump()` settles; no ticker runs.
 - Haptics: none (MOT-11: nothing on navigation).
 
 ## Data safety and honest state
