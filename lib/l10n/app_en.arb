@@ -25778,5 +25778,25 @@
   "workspaceConversations": "Conversations",
   "@workspaceConversations": {
     "description": "Work tab: the one header over this project's conversations, ordered with those that need you first, then running, then the rest newest first"
+  },
+  "serverSettingsDisconnectTitle": "Disconnect from {serverName}",
+  "@serverSettingsDisconnectTitle": {
+    "description": "Server settings: the destructive last row that disconnects the app from this server; opens a confirmation first",
+    "placeholders": {
+      "serverName": {
+        "type": "String",
+        "example": "Laptop"
+      }
+    }
+  },
+  "serverSettingsDisconnectDetail": "Stops live updates from {serverName}. Conversations stay on {serverName}; unsent messages stay on this phone until you reconnect.",
+  "@serverSettingsDisconnectDetail": {
+    "description": "Server settings: supporting line under the Disconnect row, saying what disconnecting stops and what stays where",
+    "placeholders": {
+      "serverName": {
+        "type": "String",
+        "example": "Laptop"
+      }
+    }
   }
 }

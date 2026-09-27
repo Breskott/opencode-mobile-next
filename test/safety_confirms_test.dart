@@ -155,8 +155,10 @@ void main() {
       await openSwitcherDisconnect(tester);
       expect(find.byKey(_sheet), findsOneWidget);
       expect(find.text('Disconnect from Studio box?'), findsOneWidget);
-      expect(find.textContaining('No queued prompts.'), findsOneWidget);
-      expect(find.textContaining('No unsent drafts.'), findsOneWidget);
+      // One sentence on what happens; nothing waits, so no count and never
+      // "No queued prompts" (settings-disconnect-sheet).
+      expect(find.textContaining('The server keeps running'), findsOneWidget);
+      expect(find.textContaining('queued'), findsNothing);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(controller.disconnects, 0);
@@ -184,8 +186,9 @@ void main() {
       expect(find.text('servers-route'), findsOneWidget);
     });
 
-    Future<void> tapSettingsDisconnect(WidgetTester tester) async {
-      final button = find.byKey(const ValueKey('settings-disconnect'));
+    // Disconnect lives on the server's own page (Settings > This server).
+    Future<void> tapServerPageDisconnect(WidgetTester tester) async {
+      final button = find.byKey(const ValueKey('server-disconnect'));
       await tester.scrollUntilVisible(
         button,
         200,
@@ -195,31 +198,38 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('Settings shows the same sheet and honours cancel', (
+    testWidgets('the server page shows the same sheet and honours cancel', (
       tester,
     ) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
+      await tester.pumpWidget(
+        _app(ServerSettingsScreen(controller: controller)),
+      );
       await tester.pumpAndSettle();
 
-      await tapSettingsDisconnect(tester);
+      await tapServerPageDisconnect(tester);
       expect(find.byKey(_sheet), findsOneWidget);
       expect(find.text('Disconnect from Studio box?'), findsOneWidget);
-      expect(find.textContaining('No queued prompts.'), findsOneWidget);
+      // One sentence on what happens; nothing waits, so no count and never
+      // "No queued prompts" (settings-disconnect-sheet).
+      expect(find.textContaining('The server keeps running'), findsOneWidget);
+      expect(find.textContaining('queued'), findsNothing);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(controller.disconnects, 0);
       expect(find.text('servers-route'), findsNothing);
     });
 
-    testWidgets('Settings disconnects once confirmed', (tester) async {
+    testWidgets('the server page disconnects once confirmed', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
+      await tester.pumpWidget(
+        _app(ServerSettingsScreen(controller: controller)),
+      );
       await tester.pumpAndSettle();
 
-      await tapSettingsDisconnect(tester);
+      await tapServerPageDisconnect(tester);
       await tester.tap(find.byKey(_confirm));
       await tester.pumpAndSettle();
       expect(controller.disconnects, 1);

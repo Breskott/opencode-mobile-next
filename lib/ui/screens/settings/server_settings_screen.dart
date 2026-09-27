@@ -7,10 +7,23 @@ part of '../settings_screen.dart';
 /// Versions are the health probe's first ("Health-reported version
 /// everywhere"): the connection's own reading only fills in until it
 /// answers. The address and the other technical values sit in the one
-/// Details fold at the end.
+/// Details fold, and Disconnect from this server is the last row, after a
+/// divider: the action lives on the page of the thing it acts on.
 class ServerSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
-  const ServerSettingsScreen({super.key, required this.controller});
+
+  /// A section to scroll to once the page is shown: search opens the page
+  /// at the row it names ([disconnectSection]).
+  final String? initialSection;
+
+  const ServerSettingsScreen({
+    super.key,
+    required this.controller,
+    this.initialSection,
+  });
+
+  /// [initialSection] for the Disconnect row.
+  static const disconnectSection = 'disconnect';
 
   @override
   State<ServerSettingsScreen> createState() => _ServerSettingsScreenState();
@@ -28,12 +41,30 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   bool _checking = false;
   bool _upgradingServer = false;
   String? _serverUpgradeError;
+  final _disconnectKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialSection == ServerSettingsScreen.disconnectSection) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _disconnectKey.currentContext;
+        if (mounted && target != null) Scrollable.ensureVisible(target);
+      });
+    }
     widget.controller.addListener(_connectionChanged);
     _checkHealth();
+  }
+
+  /// Confirms, then disconnects and returns to the server list. The same
+  /// flow the Settings hub's Disconnect button ran before it moved here.
+  Future<void> _disconnect() async {
+    final controller = widget.controller;
+    final confirmed = await confirmDisconnectServer(context, controller);
+    if (!confirmed || !mounted) return;
+    final navigator = Navigator.of(context);
+    await controller.disconnect();
+    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
   }
 
   void _connectionChanged() {
@@ -360,6 +391,30 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     ),
                 ],
               ),
+            ),
+          ],
+          // Destructive and last, set apart by a divider (KitRow-v2); it
+          // names the server and says what stops and what stays where.
+          if (profile != null) ...[
+            SizedBox(height: tokens.sectionGap),
+            const KitDivider(key: ValueKey('server-disconnect-divider')),
+            SizedBox(height: tokens.sectionGap),
+            KitRowGroup(
+              key: _disconnectKey,
+              children: [
+                KitRow(
+                  key: const ValueKey('server-disconnect'),
+                  destructive: true,
+                  leading: KitRow.icon(context, AppIconography.unlink),
+                  title: copy.serverSettingsDisconnectTitle(profile.name),
+                  titleMaxLines: 2,
+                  supporting: TextSpan(
+                    text: copy.serverSettingsDisconnectDetail(profile.name),
+                  ),
+                  supportingMaxLines: 4,
+                  onTap: _disconnect,
+                ),
+              ],
             ),
           ],
         ],

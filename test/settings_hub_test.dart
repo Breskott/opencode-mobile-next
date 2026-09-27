@@ -146,7 +146,62 @@ void main() {
     }
   });
 
-  testWidgets('Disconnect is the last, separated row of Connection', (
+  testWidgets(
+    'Disconnect is not on Settings; the server page names it and explains it',
+    (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      // No floating Disconnect below the Connection group any more.
+      expect(_row('settings-disconnect'), findsNothing);
+      expect(find.text(_en.e7SettingsUi8), findsNothing);
+
+      await tester.tap(_row('settings-category-server'));
+      await tester.pumpAndSettle();
+
+      final disconnect = _row('server-disconnect');
+      await tester.scrollUntilVisible(
+        disconnect,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(
+        find.descendant(
+          of: disconnect,
+          matching: find.text('Disconnect from Workstation'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: disconnect,
+          matching: find.text(
+            'Stops live updates from Workstation. Conversations stay on '
+            'Workstation; unsent messages stay on this phone until you '
+            'reconnect.',
+          ),
+        ),
+        findsOneWidget,
+      );
+      // Last on the page, after its divider.
+      final divider = _row('server-disconnect-divider');
+      expect(divider, findsOneWidget);
+      expect(
+        tester.getTopLeft(disconnect).dy,
+        greaterThan(tester.getBottomLeft(divider).dy),
+      );
+      expect(
+        tester.getTopLeft(disconnect).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byKey(const Key('server-identity'))).dy,
+        ),
+      );
+    },
+  );
+
+  testWidgets('searching disconnect lands on the server page row', (
     tester,
   ) async {
     final controller = await _controller();
@@ -154,26 +209,29 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    final connection = _row('settings-group-connection');
-    final disconnect = _row('settings-disconnect');
+    await tester.enterText(
+      find.byKey(const Key('library-search')),
+      'disconnect',
+    );
+    await _settleSearch(tester);
+    final result = _row('search-result-inside-server-disconnect');
+    expect(result, findsOneWidget);
     expect(
-      find.descendant(of: connection, matching: disconnect),
+      find.descendant(
+        of: result,
+        matching: find.text(_en.discoverSearchIn(_en.settingsHubThisServer)),
+      ),
       findsOneWidget,
     );
-    final tiles = find.descendant(
-      of: connection,
-      matching: find.byType(KitRow),
-    );
-    final lastTileBottom = tester.getBottomLeft(tiles.last).dy;
-    // Below every door of the group, with a gap that sets it apart.
-    expect(
-      tester.getTopLeft(disconnect).dy,
-      greaterThanOrEqualTo(lastTileBottom + 8),
-    );
-    expect(
-      tester.getBottomLeft(disconnect).dy,
-      lessThanOrEqualTo(tester.getBottomLeft(connection).dy),
-    );
+
+    await tester.tap(result);
+    await tester.pumpAndSettle();
+    expect(find.byType(ServerSettingsScreen), findsOneWidget);
+    final row = _row('server-disconnect');
+    expect(row, findsOneWidget);
+    // Opened at the row: it is on screen without scrolling.
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(tester.getBottomLeft(row).dy, lessThanOrEqualTo(screen.height));
   });
 
   testWidgets('search finds every hub row by its title and spec keywords', (
@@ -195,7 +253,7 @@ void main() {
       _en.settingsHubAccounts: ['settings-accounts'],
       _en.a2aTitle: ['settings-external-agents'],
       _en.tailscaleTitle: ['settings-tailscale'],
-      _en.e7SettingsUi8: ['settings-disconnect'],
+      _en.e7SettingsUi8: ['search-result-inside-server-disconnect'],
       _en.settingsHubModelAndMode: ['settings-model-and-mode'],
       _en.e7SettingsUi35: ['default-shell-settings-entry'],
       _en.e7SettingsUi74: ['saved-permissions-entry'],
@@ -625,7 +683,7 @@ void main() {
       }
       // The first group is open; its rows sit in the detail pane only.
       expect(
-        find.descendant(of: detail, matching: _row('settings-disconnect')),
+        find.descendant(of: detail, matching: _row('settings-saved-servers')),
         findsOneWidget,
       );
       expect(_row('settings-show-tips-again'), findsNothing);
@@ -636,7 +694,7 @@ void main() {
         find.descendant(of: detail, matching: _row('settings-show-tips-again')),
         findsOneWidget,
       );
-      expect(_row('settings-disconnect'), findsNothing);
+      expect(_row('settings-saved-servers'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
