@@ -43,3 +43,11 @@ Updated the exact root pin; the only lock changes are flutter_secure_storage 11.
 Command: `flutter test --no-pub --concurrency=1 test/profile_secure_storage_test.dart test/profile_store_test.dart test/external_agent_state_test.dart test/team_control_test.dart test/team_controller_test.dart` — **96 passed**. These cover the review's profile, external-agent and team-store areas. Tests use secure-storage channel mocks or injected memory/failing storage implementations which override the native operations; none relies on an unmocked ProfileStore channel.
 
 Device checks owed: credentials from an existing installation survive upgrade/restart; concurrent store instances; deleting one profile leaves other profiles' credentials intact. This upgrade does not recover credentials already lost when skipping the older major-version migration.
+
+## 5. OpenCode 1 1.18.32
+
+Updated all four active literals: enum, default version, setup fallback and switch-if-missing fallback in `lib/termux/bridge.dart`. Rechecked `lib/builtin/builtin_linux.dart` and `lib/builtin/setup/components.dart`: both inherit `runtime.pinnedVersion`; no separate built-in pin remains. Aligned the built-in setup script's accepted-version fake with 1.18.32; historical/parser/display fixtures keep their historical versions.
+
+Command: `flutter test --no-pub --concurrency=1 test/termux_scripts_test.dart test/termux_runtime_switch_test.dart test/managed_runtime_switch_preflight_test.dart` — **78 passed**. The setup-script fixture was updated but its additional test file was not separately run, following the requested named-test scope. In `packages/opencode_sdk/`, `dart analyze` remains **clean** and `dart test --concurrency=1` gives **47 passed** for the review's SDK checks.
+
+Device checks owed: fresh install and explicit update of an existing install, observed installed version, authenticated chat/SSE reconnect, provider variants and image attachments, Gas City ACP load/resume/fork. Switching to an already-installed runtime does not itself update it.

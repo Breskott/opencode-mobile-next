@@ -10,7 +10,7 @@ import 'team_scripts.dart';
 /// The runtime selected for the one app-managed Ubuntu server. It is separate
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
-  openCode1('opencode1', '1.18.29'),
+  openCode1('opencode1', '1.18.32'),
   openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
@@ -66,7 +66,7 @@ class TermuxBridge {
   ///
   /// Keep this in step with the shell fallback in [_managerScript]
   /// (`requested_version="${2:-…}"`); a test asserts the two agree.
-  static const defaultOpenCodeVersion = '1.18.29';
+  static const defaultOpenCodeVersion = '1.18.32';
 
   /// The npm dist-tag, available only when a caller passes it to
   /// [installAndServeScript] on purpose. Nothing in the app does today: it
@@ -1634,7 +1634,7 @@ setup() {
   managed_runtime >/dev/null || return 64
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
   fi
@@ -1901,7 +1901,7 @@ switch_runtime() {
     require_setup_space
     local requested_version
     case "$target" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
