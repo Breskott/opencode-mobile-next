@@ -147,12 +147,15 @@ Known limits:
 ### Not a page
 
 Files with no surface of their own and no interactive element (also in
-`ledger.json` under `notPages`). The three under `lib/ui/screens/`:
+`ledger.json` under `notPages`). Those under `lib/ui/screens/`:
 
 - `lib/ui/screens/chat/form_flow.dart`: `presentConnectionForm` is glue that calls `presentForm` from `lib/ui/widgets/form_renderer.dart` (page `form-sheet`) and routes submit/cancel.
 - `lib/ui/screens/library_screen.dart`: no surface since UX phase 2 (the More tab merged into the Settings hub); it only hosts the library part files and `defaultModelLabel()`.
 - `lib/ui/screens/team/policy_block.dart`: `TeamPolicyBlock` / `TeamBoundariesRow` are read-only rendering blocks embedded in the run overview and the start-run sheet; no taps.
 - `lib/ui/screens/phone_setup/phone_setup_hero.dart`: `PhoneSetupHero` lays out setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages.
+- `lib/ui/screens/phone_setup/phone_setup_routes.dart`: navigation only; opens the phone setup screens and routes a setup notification tap.
+- `lib/ui/screens/phone_setup/phone_setup_selection.dart`: pure arithmetic over the setup component registry (selection, totals, size and time text).
+- `lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart`: the first-run welcome's status line about an existing setup job, embedded in `servers-welcome`.
 
 Outside `lib/ui/screens/`:
 

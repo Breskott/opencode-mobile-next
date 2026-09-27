@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_she
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,7 +77,6 @@ Widget _app(
       child: child!,
     ),
     routes: {
-      '/termux-setup': (_) => const _RouteProbe('termux'),
       '/servers': (_) => const _RouteProbe('servers'),
       '/home': (_) => const _RouteProbe('home'),
     },
@@ -406,13 +406,20 @@ void main() {
     await tester.pumpAndSettle();
     await _expandOtherWays(tester);
 
-    await _tapVisible(
-      tester,
-      find.byKey(const ValueKey('phone-setup-start-use-termux')),
-    );
-    expect(find.text('termux null'), findsOneWidget);
-    await tester.pageBack();
+    final termux = find.byKey(const ValueKey('phone-setup-start-use-termux'));
+    await tester.ensureVisible(termux);
     await tester.pumpAndSettle();
+    await tester.tap(termux);
+    // Termux's own checks keep a working mark moving: frames, not settle.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // Termux is a host of phone setup (P1.3): its checklist, not a wizard.
+    expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
+    await tester.pageBack();
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     await _tapVisible(
       tester,

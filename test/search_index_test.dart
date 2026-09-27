@@ -82,9 +82,6 @@ const _excluded = <String, String>{
   'phone-setup-ready':
       'a step of phone setup; shown automatically when a '
       'first setup finishes',
-  'builtin-server-setup':
-      'an experimental repair path, superseded by phone '
-      'setup v2; opened from a failed saved connection or Termux setup',
 };
 
 class _Api extends OpenCodeApi {

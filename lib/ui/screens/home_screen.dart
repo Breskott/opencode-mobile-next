@@ -10,6 +10,7 @@ import '../../builtin/builtin_server.dart'
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
+import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
@@ -39,6 +40,7 @@ import 'servers_screen.dart' show ServersRouteRequest;
 import 'project_hub_screen.dart';
 import 'settings_screen.dart';
 import 'terminal_screen.dart';
+import 'this_phone_screen.dart' show openThisPhone;
 import 'workspace_screen.dart';
 
 /// Main mobile product shell for a connected OpenCode server.
@@ -535,7 +537,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case ServerSwitcherOpenServers(:final ServersRouteRequest? request):
         unawaited(navigator.pushNamed('/servers', arguments: request));
       case ServerSwitcherOpenPhoneSetup():
-        unawaited(navigator.pushNamed('/termux-setup'));
+        unawaited(openThisPhone(context, kind: PhoneHostKind.termux));
       case ServerSwitcherPhoneAction(
         :final action,
         :final profileID,

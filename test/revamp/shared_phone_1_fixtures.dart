@@ -97,6 +97,15 @@ class PhoneLinux extends BuiltinLinux {
   @override
   Future<String> serverLog({int tailBytes = 32768}) async => log;
 
+  /// The remove sheet's reading: the runtime and the projects kept apart.
+  @override
+  Future<BuiltinProjectStorage> projectStorage() async =>
+      const BuiltinProjectStorage(
+        runtimeBytes: 734003200,
+        projectsBytes: 52428800,
+        measuredAtMilliseconds: 0,
+      );
+
   @override
   Future<void> uninstall() async {
     calls.add('uninstall');

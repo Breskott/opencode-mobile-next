@@ -196,7 +196,7 @@ void main() {
         store,
         controller,
         routes: {
-          '/termux-setup': (_) => Scaffold(
+          '/this-phone': (_) => Scaffold(
             appBar: AppBar(title: const Text('Termux')),
             body: const Text('termux-route'),
           ),

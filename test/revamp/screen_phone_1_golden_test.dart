@@ -3,7 +3,8 @@
 // also there), its Customize sheet (first setup, nothing left to add), the
 // ready screen, the welcome's setup line, Termux storage (intro, scan,
 // report, an open category, the clean question, a failed scan) and the
-// built-in server (fresh, running, its log, the Remove question). Phone
+// This phone in the app (not set up, running, its log, the Remove question;
+// P1.5 replaced the built-in server page). Phone
 // 412x915 and one wide window (1280x800), dark and light (owner decision
 // 2026-09-27: no Arabic), with the app's real fonts at DPR 1.
 //
@@ -16,14 +17,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
+import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxRuntime;
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
-import 'package:opencode_mobile/ui/screens/builtin_server_screen.dart';
+import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_sheet.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_ready_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_welcome_entry.dart';
 import 'package:opencode_mobile/ui/screens/termux_storage_screen.dart';
+import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 
 import '../../tool/capture/fixtures.dart' show loadCaptureFonts;
 import 'screen_phone_1_fixtures.dart';
@@ -61,6 +64,7 @@ Future<void> _shot(
   SetupProgress? progress,
   Set<String> optionalInstalled = const {},
   PhoneLinux? linux,
+  List<ServerProfile> profiles = const [],
   Future<void> Function()? act,
 }) async {
   final boundary = GlobalKey();
@@ -73,6 +77,7 @@ Future<void> _shot(
       progress: progress,
       optionalInstalled: optionalInstalled,
       linux: linux,
+      profiles: profiles,
       boundary: boundary,
     );
     if (act != null) await act();
@@ -107,9 +112,6 @@ Widget _storage() => TermuxStorageScreen(
   now: () => DateTime.fromMillisecondsSinceEpoch(1788800120000),
   pollInterval: const Duration(hours: 1),
 );
-
-Widget _builtin(PhoneLinux linux) =>
-    BuiltinServerScreen(linux: linux, pollInterval: const Duration(hours: 1));
 
 void main() {
   setUpAll(loadCaptureFonts);
@@ -314,69 +316,72 @@ void main() {
       });
     }
 
-    // --- Built-in server -----------------------------------------------------
+    // --- This phone (P1.5: the built-in server page is gone) ----------------
 
-    testWidgets('built-in server fresh ($theme)', (tester) async {
+    testWidgets('this phone not set up ($theme)', (tester) async {
       await _shot(
         tester,
-        'phone_builtin_server_fresh',
+        'phone_this_phone_not_set_up',
         light: light,
-        home: _builtin(PhoneLinux(installed: false, openCode: false)),
+        home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+        linux: PhoneLinux(installed: false, openCode: false),
       );
     });
 
     for (final size in [phoneSize, if (!light) wideSize]) {
-      testWidgets('built-in server running ($theme, $size)', (tester) async {
+      testWidgets('this phone running ($theme, $size)', (tester) async {
         await _shot(
           tester,
-          'phone_builtin_server_running',
+          'phone_this_phone_running',
           light: light,
           size: size,
-          home: _builtin(PhoneLinux(running: true)),
+          home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+          linux: PhoneLinux(running: true),
+          profiles: [inAppProfile],
         );
       });
     }
 
-    testWidgets('built-in server log ($theme)', (tester) async {
+    testWidgets('this phone details with the server log ($theme)', (
+      tester,
+    ) async {
       final linux = PhoneLinux(
+        running: true,
         log:
             'opencode server listening on http://127.0.0.1:4097\n'
             'INFO  session created\nERROR provider timed out\n',
       );
       await _shot(
         tester,
-        'phone_builtin_server_log_sheet',
+        'phone_this_phone_details_log',
         light: light,
-        home: _builtin(linux),
+        home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
         linux: linux,
+        profiles: [inAppProfile],
         act: () async {
-          final log = find.byKey(const Key('builtin-show-log'));
-          await tester.ensureVisible(log);
+          final details = find.byKey(const ValueKey('this-phone-details'));
+          await tester.ensureVisible(details);
           await _settle(tester);
-          await tester.tap(log);
+          await tester.tap(details);
+          await _settle(tester);
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('this-phone-log')),
+          );
         },
       );
     });
 
-    testWidgets('built-in server remove question ($theme)', (tester) async {
+    testWidgets('this phone remove question ($theme)', (tester) async {
       await _shot(
         tester,
-        'phone_builtin_server_remove_confirm',
+        'phone_this_phone_remove_confirm',
         light: light,
-        home: _builtin(PhoneLinux()),
+        home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+        linux: PhoneLinux(),
+        profiles: [inAppProfile],
         act: () async {
-          final remove = find.byKey(const Key('builtin-remove'));
-          await tester.scrollUntilVisible(
-            remove,
-            200,
-            scrollable: find
-                .byWidgetPredicate(
-                  (widget) =>
-                      widget is Scrollable &&
-                      widget.axisDirection == AxisDirection.down,
-                )
-                .first,
-          );
+          final remove = find.byKey(const ValueKey('this-phone-remove'));
+          await tester.ensureVisible(remove);
           await _settle(tester);
           await tester.tap(remove);
         },

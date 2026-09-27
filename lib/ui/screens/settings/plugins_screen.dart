@@ -224,14 +224,6 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                   ),
                 ],
               ),
-            if (teamPhoneProfile(profile))
-              rails(
-                TeamPhoneReofferCard(
-                  connection: controller,
-                  profile: profile!,
-                  runtime: widget.teamRuntime,
-                ),
-              ),
             if (profile == null)
               // Plugins belong to a server: say so, with nothing to tap
               // (map: whenMissing server.any explains).

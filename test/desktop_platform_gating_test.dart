@@ -23,7 +23,7 @@ import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeApi extends OpenCodeApi with CompleteMessageHistory {
@@ -272,13 +272,16 @@ void main() {
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: TermuxSetupScreen(),
+            home: PhoneSetupTermuxScreen(),
           ),
         ),
       );
       await tester.pump();
 
-      expect(find.byKey(const Key('termux-setup-unsupported')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('phone-setup-termux-unsupported')),
+        findsOneWidget,
+      );
       expect(find.text('Setup on this phone is Android only'), findsOneWidget);
       // No step list, so nothing invites a tap that cannot work.
       expect(find.text('Get Termux'), findsNothing);

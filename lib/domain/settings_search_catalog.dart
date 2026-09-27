@@ -81,7 +81,7 @@ List<SettingsSearchDocument> settingsSearchRows(
             'crash restart recovery recover watchdog termux '
             'تعطل انهيار إعادة تشغيل استعادة',
         target: const SettingsSearchTarget(
-          pageId: 'termux-setup',
+          pageId: 'termux-setup-installed',
           sectionId: 'options',
           rowId: 'managed-recovery-option',
         ),

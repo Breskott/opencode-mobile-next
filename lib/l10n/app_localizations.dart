@@ -40581,6 +40581,180 @@ abstract class AppLocalizations {
   /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
   String get quotaMonitorConsentDetails;
 
+  /// This phone: where OpenCode runs, when it runs inside this app's own Linux
+  ///
+  /// In en, this message translates to:
+  /// **'In the app'**
+  String get thisPhoneHostInApp;
+
+  /// This phone: where OpenCode runs, when it runs in the Termux app
+  ///
+  /// In en, this message translates to:
+  /// **'In Termux'**
+  String get thisPhoneHostTermux;
+
+  /// This phone: the status word when a start or a switch between OpenCode versions failed or stopped half way
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get thisPhoneNeedsAttention;
+
+  /// This phone: the button when OpenCode is not set up yet
+  ///
+  /// In en, this message translates to:
+  /// **'Set up OpenCode on this phone'**
+  String get thisPhoneSetUp;
+
+  /// This phone: the button that starts the stopped OpenCode server
+  ///
+  /// In en, this message translates to:
+  /// **'Start the server on this phone'**
+  String get thisPhoneStart;
+
+  /// This phone: the button that stops the running OpenCode server (it asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the server on this phone'**
+  String get thisPhoneStop;
+
+  /// This phone: the row that installs the pinned OpenCode version again
+  ///
+  /// In en, this message translates to:
+  /// **'Update OpenCode on this phone'**
+  String get thisPhoneUpdate;
+
+  /// Technical: This phone: the line under Update, naming the pinned version it installs, e.g. 'Installs version 1.18.29'
+  ///
+  /// In en, this message translates to:
+  /// **'Installs version {version}'**
+  String thisPhoneUpdateDetail(String version);
+
+  /// This phone: the row (and sheet title) that adds optional tools
+  ///
+  /// In en, this message translates to:
+  /// **'Add tools to this phone'**
+  String get thisPhoneAddTools;
+
+  /// This phone: the line under Add tools for OpenCode inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Python, Node.js, AI Team and more'**
+  String get thisPhoneAddToolsInApp;
+
+  /// This phone: the line under Add tools for OpenCode in Termux
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team and Claude Code'**
+  String get thisPhoneAddToolsTermux;
+
+  /// This phone: the folded row that lists what setup installed
+  ///
+  /// In en, this message translates to:
+  /// **'Installed on this phone'**
+  String get thisPhoneInstalled;
+
+  /// This phone: the row that opens a shell in this phone's Linux
+  ///
+  /// In en, this message translates to:
+  /// **'Open a terminal on this phone'**
+  String get thisPhoneTerminal;
+
+  /// This phone: the destructive row that removes OpenCode (it asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove OpenCode from this phone'**
+  String get thisPhoneRemove;
+
+  /// This phone: why a row is off while OpenCode starts, stops or installs
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current step to finish'**
+  String get thisPhoneBusy;
+
+  /// Termux setup checklist: the instruction under 'Connect Termux once' while it waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'In Termux, paste the copied line and press Enter.'**
+  String get phoneSetupTermuxAllowHow;
+
+  /// Termux setup checklist: the title while an update runs
+  ///
+  /// In en, this message translates to:
+  /// **'Updating this phone'**
+  String get phoneSetupTermuxUpdatingTitle;
+
+  /// Termux setup checklist: the title while OpenCode starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the server'**
+  String get phoneSetupTermuxStartingTitle;
+
+  /// Termux setup checklist: the line under 'Start OpenCode' while the app connects to it
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get phoneSetupTermuxConnecting;
+
+  /// Termux setup checklist: the quiet line under the title while setup runs
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave the app. Termux keeps working and this list picks up where it is when you come back.'**
+  String get phoneSetupTermuxLeaveHint;
+
+  /// Phone setup start: the cost line under 'Use Termux instead', said before anything installs
+  ///
+  /// In en, this message translates to:
+  /// **'About 10–15 minutes the first time, in Termux\'s storage'**
+  String get phoneSetupTermuxCost;
+
+  /// Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.'**
+  String removeFromPhoneKeepBody(String size);
+
+  /// Remove from this phone: the default choice's body when the space could not be measured
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.'**
+  String get removeFromPhoneKeepBodyUnmeasured;
+
+  /// Remove from this phone: the default confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove OpenCode, keep my projects'**
+  String get removeFromPhoneKeepConfirm;
+
+  /// Remove from this phone: the other choice, which also deletes every project (asks for the typed name)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything'**
+  String get removeFromPhoneDeleteAll;
+
+  /// Remove from this phone: the title of the heavy delete
+  ///
+  /// In en, this message translates to:
+  /// **'Delete OpenCode and projects?'**
+  String get removeFromPhoneDeleteTitle;
+
+  /// Remove from this phone: the heavy delete's body with the space freed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.'**
+  String removeFromPhoneDeleteBody(String size);
+
+  /// Remove from this phone: the heavy delete's body when the space could not be measured
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode, its tools and every project on this phone are deleted. This cannot be undone.'**
+  String get removeFromPhoneDeleteBodyUnmeasured;
+
+  /// The This phone card's menu: opens This phone, where OpenCode on this phone is managed
+  ///
+  /// In en, this message translates to:
+  /// **'Manage This phone'**
+  String get thisPhoneManage;
+
   /// Chat request card: who asks, in the card caption and the request sheet subtitle.
   ///
   /// In en, this message translates to:

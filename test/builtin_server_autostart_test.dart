@@ -4,10 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/builtin/builtin_server.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_setup_engine.dart';
 
 class _OneProfileStore extends ProfileStore {
   _OneProfileStore({required super.prefs, required this.profile});
@@ -184,6 +188,32 @@ void main() {
     await settle(tester);
     expect(linux.starts, 1);
 
+    await unmount(tester);
+  });
+
+  testWidgets('its Open setup lands on phone setup, not the old in-app page '
+      '(builtin-server-setup merged into phone-setup-start, P1.3)', (
+    tester,
+  ) async {
+    final previous = PhoneSetup.engine;
+    PhoneSetup.engine = FakeSetupEngine();
+    addTearDown(() => PhoneSetup.engine = previous);
+    linux.serverDies = true;
+    await mount(tester);
+    await settle(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('saved-server-open-in-app-setup')),
+    );
+    await settle(tester);
+    expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+    expect(
+      ModalRoute.of(
+        tester.element(find.byType(PhoneSetupStartScreen)),
+      )?.settings.name,
+      'phone-setup-start',
+    );
+    // Let the start screen's probes run out before leaving.
+    await tester.pump(const Duration(seconds: 12));
     await unmount(tester);
   });
 

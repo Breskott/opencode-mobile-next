@@ -32,6 +32,7 @@ import '../../../builtin/setup/aiteam_scripts.dart' show AiTeamPins;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration_store.dart';
+import '../../../state/phone_host.dart' show PhoneHostKind;
 import '../../../state/profiles.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
@@ -44,6 +45,7 @@ import '../../widgets/team_phone_onboarding.dart'
     show teamPhoneDownloadMb, teamPhoneRuntime;
 import '../phone_setup/phone_setup_selection.dart' show setupSizeText;
 import '../settings/plugins_screen.dart' show PluginsSettingsScreen;
+import '../this_phone_screen.dart' show thisPhoneRoute;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -195,7 +197,11 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
       await store.setPhoneOffer(profile.id, PhoneOffer.open);
     }
     if (!mounted) return;
-    unawaited(Navigator.of(context).pushReplacementNamed('/termux-setup'));
+    unawaited(
+      Navigator.of(
+        context,
+      ).pushReplacementNamed(thisPhoneRoute, arguments: PhoneHostKind.termux),
+    );
   });
 
   Future<void> _turnOn() => _run(() async {

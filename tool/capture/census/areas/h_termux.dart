@@ -1,10 +1,11 @@
 // Census scenes for the ledger part `h-termux`
 // (docs/design/ui-ledger/parts/h-termux.json). See tool/capture/census_test.dart.
 //
-// On this phone (the Termux setup wizard, its steps and the installed
-// runtime's page with its confirm sheets), Running now, Storage on this
-// phone, development services, Claude Code on this phone, the in-app server
-// walkthrough and phone setup v2. The Termux side is one scripted `oc/termux`
+// This phone (one page for OpenCode in Termux and inside the app, with its
+// switch, log, add-tools and remove sheets), Running now, Storage on this
+// phone, development services, Claude Code on this phone and phone setup v2
+// with its Termux host (slice P1.3/P1.5 retired the Termux wizard and the
+// in-app steps page). The Termux side is one scripted `oc/termux`
 // channel (support/h_termux_fakes.dart); phone setup v2 uses the golden
 // scenes (test/support/phone_setup_scenes.dart).
 //
@@ -14,23 +15,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/development_service_store.dart';
+import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/termux_host_setup.dart'
+    show TermuxHostJob;
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxRuntime;
 import 'package:opencode_mobile/termux/processes.dart';
-import 'package:opencode_mobile/ui/screens/builtin_server_screen.dart';
 import 'package:opencode_mobile/ui/screens/development_services_screen.dart';
 import 'package:opencode_mobile/ui/screens/local_agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_sheet.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_processes_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_storage_screen.dart';
+import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
 import 'package:opencode_mobile/ui/widgets/termux_phone_tools.dart';
 
 import '../../../../test/support/development_service_fakes.dart';
@@ -123,7 +129,7 @@ Future<void> _pushed(
   await kit.push(page, settleFor: settleFor);
 }
 
-/// On this phone over [fake] with [profiles] saved.
+/// This phone for Termux over [fake] with [profiles] saved.
 Future<void> _setup(
   CensusKit kit,
   TermuxFake fake, {
@@ -138,7 +144,27 @@ Future<void> _setup(
     active: active,
     connected: connected,
   );
-  await _pushed(kit, const TermuxSetupScreen(), controller);
+  await _pushed(
+    kit,
+    const ThisPhoneScreen(kind: PhoneHostKind.termux),
+    controller,
+  );
+}
+
+/// Phone setup's progress for the Termux host over [fake]: [job] starts on
+/// its own once Termux answers.
+Future<void> _termuxHost(
+  CensusKit kit,
+  TermuxFake fake, {
+  TermuxHostJob job = TermuxHostJob.install,
+}) async {
+  _phone(kit, fake);
+  final controller = await _controller(kit);
+  await _pushed(
+    kit,
+    PhoneSetupTermuxScreen(job: job, firstSetup: job == TermuxHostJob.install),
+    controller,
+  );
 }
 
 /// The installed runtime page with OpenCode 1 running and in use.
@@ -160,7 +186,7 @@ Future<TermuxFake> _installedRunning(CensusKit kit) async {
     active: phone.id,
     connected: true,
   );
-  kit.expectText('OpenCode on this phone');
+  kit.expectText('This phone');
   return fake;
 }
 
@@ -181,17 +207,7 @@ Future<void> _installedStopped(CensusKit kit) async {
     profiles: [laptopProfile(), phoneProfileV2()],
     active: 'laptop',
   );
-  kit.expectText('OpenCode is stopped');
-}
-
-/// The wizard with Termux ready and nothing installed: step 3's choices.
-TermuxFake _freshPhone() => TermuxFake();
-
-Future<void> _scrollToText(CensusKit kit, String text) async {
-  await kit.scrollTo(find.text(text));
-  kit.expectText(text);
-  await kit.tester.ensureVisible(find.text(text).first);
-  await kit.settle(const Duration(milliseconds: 500));
+  kit.expectText('Stopped');
 }
 
 // ---------------------------------------------------------------------------
@@ -246,14 +262,38 @@ INFO  2026-09-25T09:12:09 +4102ms service=provider init
 INFO  2026-09-25T09:12:11 +2011ms service=session id=ses_7f2a created
 INFO  2026-09-25T09:13:40 +89002ms service=bus type=message.updated publishing''';
 
+/// This phone for OpenCode inside the app, over [linux].
 Future<void> _builtin(CensusKit kit, _CensusLinux linux) async {
-  final controller = await _controller(kit);
+  debugPlatformCapabilities = const PlatformCapabilities.android();
+  kit.onDispose(() => debugPlatformCapabilities = null);
+  final phone = ServerProfile(
+    id: 'phone-in-app',
+    name: 'This phone',
+    baseUrl: BuiltinLinux.serverUrl,
+    username: BuiltinLinux.serverUsername,
+    password: 'synthetic-test-secret',
+    serverVersion: '1.18.29',
+  );
+  final controller = await _controller(
+    kit,
+    profiles: [phone],
+    active: phone.id,
+  );
+  final starter = BuiltinServerStarter(linux: linux);
+  kit.onDispose(starter.dispose);
   await _pushed(
     kit,
-    BuiltinServerScreen(linux: linux, pollInterval: const Duration(hours: 1)),
+    ThisPhoneScreen(
+      host: InAppPhoneHost(
+        linux: linux,
+        starter: starter,
+        connection: controller,
+        pollInterval: null,
+      ),
+    ),
     controller,
   );
-  kit.expectText('OpenCode inside the app');
+  kit.expectText('This phone');
 }
 
 /// Development services over a server that tracks commands, with
@@ -369,13 +409,21 @@ Future<void> _setupScene(CensusKit kit, String name) async {
 final hTermuxArea = CensusArea(
   'h-termux',
   shots: [
-    // -- On this phone: the screen and its step states ----------------------
+    // -- This phone (Termux) ----------------------------------------------------
+    CensusShot('termux-setup-installed', state: 'running', (kit) async {
+      await _installedRunning(kit);
+      kit.expectVisible(find.byKey(const ValueKey('this-phone-stop')));
+    }),
+    CensusShot('termux-setup-installed', state: 'stopped', (kit) async {
+      await _installedStopped(kit);
+      kit.expectVisible(find.byKey(const ValueKey('this-phone-start')));
+    }),
     CensusShot(
-      'termux-setup',
+      'termux-setup-installed',
       state: 'switch-pending',
       note:
-          'A switch from OpenCode 1 to OpenCode 2 beta stopped half way: the '
-          'shared runtime-switch control (Retry / Return to) at the top.',
+          'A switch from OpenCode 1 to OpenCode 2 beta stopped half way: '
+          'Try again and Return lead the status row.',
       (kit) async {
         final fake = TermuxFake()
           ..inventory =
@@ -392,238 +440,17 @@ final hTermuxArea = CensusArea(
                 'switch_target=opencode2\nswitch_phase=starting\n',
             output: '[oc] Checking the selected runtime\n',
           );
-        final one = phoneProfileV1();
         await _setup(
           kit,
           fake,
-          profiles: [laptopProfile(), one, phoneProfileV2()],
+          profiles: [laptopProfile(), phoneProfileV1(), phoneProfileV2()],
           active: 'laptop',
         );
-        kit.expectText('OpenCode needs attention');
-      },
-    ),
-    CensusShot(
-      'termux-setup',
-      state: 'setup-help-open',
-      note:
-          'Installed and running, scrolled to the bottom with "Setup help" '
-          'unfolded: the shared "Connect existing server" control.',
-      (kit) async {
-        await _installedRunning(kit);
-        await kit.tapText('Setup help');
-        await kit.scrollTo(find.text('Connect existing server'));
-        await kit.settle();
-        kit.expectText('Connect existing server');
-      },
-    ),
-    CensusShot(
-      'termux-setup-unsupported',
-      note: 'Reached on a desktop build (platform capabilities: Linux).',
-      (kit) async {
-        debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
-        kit.onDispose(() => debugPlatformCapabilities = null);
-        final controller = await _controller(kit);
-        await _pushed(kit, const TermuxSetupScreen(), controller);
-        kit.expectText('Setup on this phone is Android only');
-      },
-    ),
-    CensusShot(
-      'termux-setup-checking',
-      note: 'Termux has not answered the capability check yet.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..hangCapabilities = true);
-        kit.expectVisible(find.textContaining('Checking Termux'));
-      },
-    ),
-    CensusShot(
-      'termux-setup-get-termux',
-      note:
-          'Termux is not installed. On Android the in-app server leads '
-          '(BuiltinLinux.supported), so "Download page" is the secondary.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..installed = false);
-        kit.expectText('Get Termux');
-        await _scrollToText(kit, 'Download page');
-      },
-    ),
-    CensusShot(
-      'termux-setup-connect-termux',
-      state: 'first-visit',
-      note: 'Termux is installed; the RUN_COMMAND permission is not granted.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..permissionGranted = false);
-        await _scrollToText(kit, 'Connect Termux once');
-        kit.expectText('Copy & open Termux');
-      },
-    ),
-    CensusShot(
-      'termux-setup-connect-termux',
-      state: 'no-answer',
-      note:
-          'Permission granted but the unlock line was never pasted: the '
-          'bridge probe times out.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..bridgeLocked = true);
-        await _scrollToText(kit, 'Connect Termux once');
-        kit.expectTextContaining('Termux did not answer');
-      },
-    ),
-    CensusShot(
-      'termux-setup-connect-termux',
-      state: 'paste-guide',
-      note: 'The same step scrolled to the illustrated paste guide.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..permissionGranted = false);
-        await _scrollToText(kit, 'Show command');
-      },
-    ),
-    CensusShot(
-      'termux-setup-choose',
-      state: 'fresh-phone',
-      note: 'Termux connected, nothing installed: the runtime choice.',
-      (kit) async {
-        await _setup(kit, _freshPhone());
-        await _scrollToText(kit, 'Which OpenCode would you like to use?');
-      },
-    ),
-    CensusShot(
-      'termux-setup-choose',
-      state: 'opencode2-picked',
-      note: 'The same step with OpenCode 2 chosen: the install line names it.',
-      (kit) async {
-        await _setup(kit, _freshPhone());
-        await _scrollToText(kit, 'Which OpenCode would you like to use?');
-        await kit.tapKey('setup-runtime-opencode2');
-        kit.expectText('Install & start');
-      },
-    ),
-    CensusShot(
-      'termux-setup-choose',
-      state: 'ubuntu-only',
-      note: 'Ubuntu is installed in Termux, OpenCode is not.',
-      (kit) async {
-        await _setup(
-          kit,
-          TermuxFake()..inventory = 'ubuntu=installed\nversion=\n',
-        );
-        await _scrollToText(
-          kit,
-          'Ubuntu is installed. OpenCode is not installed yet.',
+        kit.expectVisible(
+          find.byKey(const ValueKey('this-phone-switch-retry')),
         );
       },
     ),
-    CensusShot(
-      'termux-setup-choose',
-      state: 'check-failed',
-      note: 'The installation inventory timed out.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..inventoryFails = true);
-        await _scrollToText(kit, 'Could not check the installed environment.');
-      },
-    ),
-    CensusShot('termux-setup-installing', state: 'setting-up-ubuntu', (
-      kit,
-    ) async {
-      await _setup(
-        kit,
-        TermuxFake()
-          ..status = managerStatus(
-            phase: 'installing_ubuntu',
-            message: 'Downloading Ubuntu 24.04',
-            output: ubuntuLog,
-          ),
-      );
-      kit.expectVisible(find.text('Setting up Ubuntu'));
-    }),
-    CensusShot('termux-setup-installing', state: 'getting-models-ready', (
-      kit,
-    ) async {
-      await _setup(
-        kit,
-        TermuxFake()
-          ..status = managerStatus(
-            phase: 'refreshing_models',
-            message: 'Refreshing the OpenCode model catalog',
-            version: '1.18.29',
-            output: setupLog,
-          ),
-      );
-      kit.expectVisible(find.text('LIVE OUTPUT'));
-    }),
-    CensusShot(
-      'termux-setup-installing',
-      state: 'switching',
-      note: 'Switching the phone from OpenCode 1 to OpenCode 2 beta.',
-      (kit) async {
-        await _setup(
-          kit,
-          TermuxFake()
-            ..status = managerStatus(
-              phase: 'installing_opencode',
-              message: 'Installing OpenCode 2 beta',
-              version: '0.0.0-beta-18600',
-              runtime: 'opencode2',
-              extra:
-                  'switch_return=opencode1\nswitch_previous=opencode1\n'
-                  'switch_target=opencode2\nswitch_phase=starting\n',
-              output:
-                  '[oc] Checking the selected runtime\n'
-                  '[oc] Installing OpenCode 0.0.0-beta-18600\n',
-            ),
-        );
-        kit.expectVisible(find.textContaining('Switching to'));
-      },
-    ),
-    CensusShot(
-      'termux-setup-connected',
-      note:
-          'Server ready with no version reported, another server in use: the '
-          'wizard\'s step 3 connected state.',
-      (kit) async {
-        await _setup(
-          kit,
-          TermuxFake()
-            ..status = managerStatus(
-              phase: 'ready',
-              message: 'OpenCode is ready',
-            ),
-          profiles: [laptopProfile(), phoneProfileV1()],
-          active: 'laptop',
-          connected: true,
-        );
-        await _scrollToText(kit, 'Continue to app');
-      },
-    ),
-    CensusShot('termux-setup-failed', state: 'install-failed', (kit) async {
-      await _setup(
-        kit,
-        TermuxFake()
-          ..status = managerStatus(
-            phase: 'failed',
-            message: 'OpenCode installation failed',
-            output: failedLog,
-          ),
-      );
-      await _scrollToText(kit, 'Retry — resumes where setup left off');
-      kit.expectText('LAST OUTPUT');
-    }),
-    CensusShot(
-      'termux-setup-failed',
-      state: 'termux-too-old',
-      note: 'Termux is installed but cannot return command results.',
-      (kit) async {
-        await _setup(kit, TermuxFake()..protocolSupported = false);
-        await _scrollToText(kit, 'Choose how to continue');
-        kit.expectVisible(find.textContaining('Termux'));
-      },
-    ),
-    CensusShot('termux-setup-installed', state: 'running', (kit) async {
-      await _installedRunning(kit);
-      kit.expectText('Continue to app');
-    }),
-    CensusShot('termux-setup-installed', state: 'stopped', (kit) async {
-      await _installedStopped(kit);
-    }),
     CensusShot('termux-setup-installed', state: 'needs-attention', (kit) async {
       await _setup(
         kit,
@@ -641,52 +468,150 @@ final hTermuxArea = CensusArea(
         profiles: [laptopProfile(), phoneProfileV1()],
         active: 'laptop',
       );
-      kit.expectText('OpenCode needs attention');
+      kit.expectText('Needs you');
     }),
     CensusShot(
       'termux-setup-installed',
-      state: 'other-versions-open',
-      note: 'Running, with "Other OpenCode versions" unfolded.',
+      state: 'installed-open',
+      note: 'Running, with "Installed on this phone" unfolded.',
       (kit) async {
         await _installedRunning(kit);
-        await kit.tapKey('other-runtime-versions');
-        kit.expectVisible(find.byKey(const ValueKey('switch-managed-runtime')));
+        await kit.scrollTo(
+          find.byKey(const ValueKey('this-phone-installed-header')),
+        );
+        await kit.tapKey('this-phone-installed-header');
+        kit.expectText('Linux base');
+      },
+    ),
+    CensusShot(
+      'termux-setup-installed',
+      state: 'in-app-running',
+      note: 'The same page for OpenCode inside the app.',
+      (kit) async {
+        await _builtin(
+          kit,
+          _CensusLinux(installed: true, openCode: true, running: true),
+        );
+        kit.expectText('In the app');
+      },
+    ),
+    CensusShot(
+      'termux-setup-installed',
+      state: 'in-app-not-set-up',
+      note: 'Inside the app, nothing installed yet.',
+      (kit) async {
+        await _builtin(kit, _CensusLinux());
+        kit.expectVisible(find.byKey(const ValueKey('this-phone-set-up')));
       },
     ),
     CensusShot('termux-setup-switch-runtime-sheet', (kit) async {
       await _installedRunning(kit);
-      await kit.tapKey('other-runtime-versions');
-      await kit.tapKey('switch-managed-runtime');
-      kit.expectVisible(find.textContaining('Switch to'));
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-switch')));
+      await kit.tapKey('this-phone-switch');
       kit.expectText('Switch version');
     }),
-    CensusShot('termux-setup-update-sheet', (kit) async {
+    CensusShot('termux-setup-installed', state: 'details-log', (kit) async {
+      await _builtin(
+        kit,
+        _CensusLinux(installed: true, openCode: true, running: true),
+      );
+      // The log is folded under Details, last on This phone (P1.5).
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-details')));
+      await kit.tapKey('this-phone-details');
+      await kit.realWait();
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-log')));
+      kit.expectVisible(find.byKey(const ValueKey('this-phone-log')));
+    }),
+    CensusShot('this-phone-add-tools-sheet', (kit) async {
       await _installedRunning(kit);
-      await kit.tapKey('update-managed-opencode');
-      kit.expectText('Update managed OpenCode?');
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-add-tools')));
+      await kit.tapKey('this-phone-add-tools');
+      kit.expectVisible(find.byKey(const ValueKey('local-agent-row')));
     }),
-    CensusShot('termux-setup-restart-sheet', (kit) async {
-      await _installedRunning(kit);
-      await kit.tapKey('restart-managed-opencode');
-      kit.expectText('Restart the local server?');
+    CensusShot('remove-from-phone-sheet', (kit) async {
+      await _builtin(
+        kit,
+        _CensusLinux(installed: true, openCode: true, running: true),
+      );
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-remove')));
+      await kit.tapKey('this-phone-remove');
+      kit.expectVisible(
+        find.byKey(const ValueKey('phone-server-remove-confirm')),
+      );
     }),
-    CensusShot('termux-setup-start-installed-sheet', (kit) async {
-      await _installedStopped(kit);
-      await kit.tapKey('termux-start-installed');
-      kit.expectText('Start installed OpenCode?');
+    CensusShot('remove-from-phone-everything-sheet', (kit) async {
+      await _builtin(
+        kit,
+        _CensusLinux(installed: true, openCode: true, running: true),
+      );
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-remove')));
+      await kit.tapKey('this-phone-remove');
+      await kit.tapKey('phone-server-remove-everything');
+      kit.expectVisible(
+        find.byKey(const ValueKey('phone-server-delete-everything-confirm')),
+      );
     }),
-    CensusShot('termux-setup-replace-installed-sheet', (kit) async {
-      await _installedStopped(kit);
-      await kit.tapKey('termux-reinstall');
-      kit.expectText('Replace installed OpenCode?');
-    }),
+
+    // -- Phone setup's progress for the Termux host --------------------------
     CensusShot(
-      'termux-setup-unchecked-install-sheet',
-      note: 'Opened from "Install & start" after the inventory timed out.',
+      'phone-setup-progress',
+      state: 'termux-get-termux',
+      note:
+          'Termux host: Termux is not installed, a step only the person can do.',
       (kit) async {
-        await _setup(kit, TermuxFake()..inventoryFails = true);
-        await kit.tapText('Install & start');
-        kit.expectText('Continue without an installation check?');
+        await _termuxHost(kit, TermuxFake()..installed = false);
+        kit.expectVisible(find.byKey(const ValueKey('phone-setup-termux-get')));
+      },
+    ),
+    CensusShot(
+      'phone-setup-progress',
+      state: 'termux-allow',
+      note: 'Termux host: the RUN_COMMAND permission is not granted.',
+      (kit) async {
+        await _termuxHost(kit, TermuxFake()..permissionGranted = false);
+        kit.expectVisible(
+          find.byKey(const ValueKey('phone-setup-termux-allow')),
+        );
+      },
+    ),
+    CensusShot(
+      'phone-setup-progress',
+      state: 'termux-installing',
+      note: 'Termux host: the manager is setting up Ubuntu.',
+      (kit) async {
+        await _termuxHost(
+          kit,
+          TermuxFake()
+            ..status = managerStatus(
+              phase: 'installing_ubuntu',
+              message: 'Downloading Ubuntu 24.04',
+              output: ubuntuLog,
+            ),
+        );
+        kit.expectText('Setting up OpenCode on this phone');
+      },
+    ),
+    CensusShot(
+      'phone-setup-progress',
+      state: 'termux-too-old',
+      note: 'Termux host: Termux cannot return command results.',
+      (kit) async {
+        await _termuxHost(kit, TermuxFake()..protocolSupported = false);
+        kit.expectVisible(
+          find.byKey(const ValueKey('setup-progress-continue')),
+        );
+      },
+    ),
+    CensusShot(
+      'phone-setup-progress',
+      state: 'termux-unsupported',
+      note: 'Reached on a desktop build (platform capabilities: Linux).',
+      (kit) async {
+        debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+        kit.onDispose(() => debugPlatformCapabilities = null);
+        final controller = await _controller(kit);
+        await _pushed(kit, const PhoneSetupTermuxScreen(), controller);
+        kit.expectText('Setup on this phone is Android only');
       },
     ),
 
@@ -895,35 +820,39 @@ final hTermuxArea = CensusArea(
     CensusShot(
       'embedded-setup-terminal',
       state: 'live-output',
-      note: 'Host: On this phone while setup installs OpenCode.',
+      note: 'Host: the Claude Code block while it installs.',
       (kit) async {
-        await _setup(
+        await _localAgent(
           kit,
-          TermuxFake()
-            ..status = managerStatus(
-              phase: 'installing_opencode',
-              message: 'Installing OpenCode 1.18.29',
-              output: setupLog,
-            ),
+          claudeStatusLine(
+            phase: 'installing',
+            busy: true,
+            step: 'paseo',
+            verb: 'install',
+            message: 'Installing the Paseo daemon',
+          ),
+          log: claudeInstallLog,
         );
-        await _scrollToText(kit, 'LIVE OUTPUT');
+        await kit.scrollTo(find.byType(SetupTerminal));
+        kit.expectVisible(find.byType(SetupTerminal));
       },
     ),
     CensusShot(
       'embedded-setup-terminal',
       state: 'last-output',
-      note: 'Host: On this phone after setup failed.',
+      note: 'Host: the Claude Code block after its install failed.',
       (kit) async {
-        await _setup(
+        await _localAgent(
           kit,
-          TermuxFake()
-            ..status = managerStatus(
-              phase: 'failed',
-              message: 'OpenCode installation failed',
-              output: failedLog,
-            ),
+          claudeStatusLine(
+            phase: 'failed',
+            message: 'npm install failed: ECONNRESET',
+            failureKind: 'network',
+          ),
+          log: '$claudeInstallLog\nnpm error code ECONNRESET\n',
         );
-        await _scrollToText(kit, 'LAST OUTPUT');
+        await kit.scrollTo(find.byType(SetupTerminal));
+        kit.expectVisible(find.byType(SetupTerminal));
       },
     ),
 
@@ -1068,46 +997,6 @@ final hTermuxArea = CensusArea(
       kit.expectText('Restart Claude Code on this phone?');
     }),
 
-    // -- OpenCode inside the app (issue #87 walkthrough) ------------------
-    CensusShot('builtin-server-setup', state: 'fresh', (kit) async {
-      await _builtin(kit, _CensusLinux());
-      kit.expectVisible(find.byKey(const ValueKey('builtin-install-ubuntu')));
-    }),
-    CensusShot('builtin-server-setup', state: 'ubuntu-ready', (kit) async {
-      await _builtin(kit, _CensusLinux(installed: true));
-      await kit.scrollTo(
-        find.byKey(const ValueKey('builtin-install-opencode')),
-      );
-      kit.expectVisible(find.byKey(const ValueKey('builtin-install-opencode')));
-    }),
-    CensusShot('builtin-server-setup', state: 'running', (kit) async {
-      await _builtin(
-        kit,
-        _CensusLinux(installed: true, openCode: true, running: true),
-      );
-      await kit.scrollTo(find.byKey(const ValueKey('builtin-connect')));
-      kit.expectVisible(find.byKey(const ValueKey('builtin-connect')));
-    }),
-    CensusShot('builtin-server-log-sheet', (kit) async {
-      await _builtin(
-        kit,
-        _CensusLinux(installed: true, openCode: true, running: true),
-      );
-      await kit.tapKey('builtin-show-log');
-      await kit.realWait();
-      kit.expectVisible(find.byKey(const ValueKey('builtin-server-log')));
-    }),
-    CensusShot('builtin-server-remove-confirm-sheet', (kit) async {
-      await _builtin(
-        kit,
-        _CensusLinux(installed: true, openCode: true, running: true),
-      );
-      await kit.tapKey('builtin-remove');
-      kit.expectVisible(
-        find.byKey(const ValueKey('builtin-server-remove-confirm')),
-      );
-    }),
-
     // -- Phone setup v2 ------------------------------------------------------
     CensusShot('phone-setup-start', state: 'first-time', (kit) async {
       await _setupScene(kit, 'setup_start');
@@ -1194,12 +1083,9 @@ final hTermuxArea = CensusArea(
     }),
   ],
   notRendered: {
-    'embedded-managed-server-health':
-        'Unreachable in the current code: ManagedServerHealth '
-        '(lib/ui/widgets/managed_server_health.dart) no longer exists and '
-        'Servers no longer embeds it; its recovery switch lives on as '
-        'ManagedServerRecoveryOption under On this phone › Options (see '
-        'termux-setup-installed--options).',
+    'embedded-phone-server-card':
+        'Rendered as part of Servers and the server switcher (g-servers, '
+        'a-shell); this slice only records its Manage and Remove items.',
   },
 );
 

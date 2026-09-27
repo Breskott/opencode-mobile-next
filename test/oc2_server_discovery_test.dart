@@ -11,6 +11,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import 'support/fake_setup_engine.dart';
@@ -67,7 +68,7 @@ Widget _app(_Store store, _Connection controller, {double scale = 1}) =>
         ),
         routes: {
           '/home': (_) => const Scaffold(body: Text('Connected')),
-          '/termux-setup': (context) => Scaffold(
+          '/this-phone': (context) => Scaffold(
             body: Text(
               'Termux route: ${ModalRoute.of(context)!.settings.arguments}',
             ),
@@ -236,7 +237,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(conn.connectCalls, mode == 'mixed-local' ? 0 : 1);
       expect(
-        find.text('Termux route: null'),
+        find.text('Termux route: PhoneHostKind.termux'),
         mode == 'mixed-local' ? findsOneWidget : findsNothing,
       );
       expect(store.saved.first.flavor, ServerFlavor.v1);
@@ -329,8 +330,10 @@ void main() {
     await tester.ensureVisible(termux);
     await tester.pumpAndSettle();
     await tester.tap(termux);
-    await tester.pumpAndSettle();
-    expect(find.text('Termux route: null'), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    // Termux is a host of phone setup (P1.3): its progress, not a wizard.
+    expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
     expect(store.saved.single.flavor, ServerFlavor.v1);
     expect(tester.takeException(), isNull);
   });

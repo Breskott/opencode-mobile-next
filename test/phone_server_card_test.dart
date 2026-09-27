@@ -119,6 +119,15 @@ class _Linux extends BuiltinLinux {
   Future<String> serverLog({int tailBytes = 32768}) async =>
       'opencode server listening\n';
 
+  /// The remove sheet's reading: the runtime and the projects kept apart.
+  @override
+  Future<BuiltinProjectStorage> projectStorage() async =>
+      const BuiltinProjectStorage(
+        runtimeBytes: 734003200,
+        projectsBytes: 52428800,
+        measuredAtMilliseconds: 0,
+      );
+
   @override
   Future<void> uninstall() async {
     calls.add('uninstall');
@@ -523,11 +532,16 @@ void main() {
       connection.api = OpenCodeApi(baseUrl: BuiltinLinux.serverUrl);
       await mountCard(tester, connected: true, onRemoved: () => removed++);
       await choose(tester, 'phone-server-remove');
+      // What survives is said first: the default keeps the projects.
       expect(
         find.text(
-          'This deletes OpenCode, its tools and every project on this phone, '
-          'and frees 700.0 MB.',
+          'OpenCode and its tools are removed and 700.0 MB comes back. Your '
+          'projects stay on this phone and come back when you set up again.',
         ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phone-server-remove-everything')),
         findsOneWidget,
       );
       await tester.tap(

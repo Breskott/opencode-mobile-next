@@ -16,6 +16,7 @@ import '../../state/connection.dart';
 import '../../state/codex_connection_probe.dart';
 import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
+import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
 import '../../state/first_run.dart';
@@ -41,6 +42,7 @@ import 'guide_screen.dart' show GuideScreen;
 import 'agent_account_screen.dart';
 import 'pairing_scanner_screen.dart';
 import 'tailscale_setup_screen.dart';
+import 'this_phone_screen.dart' show openThisPhone;
 import '../../state/tailscale_address.dart';
 import 'external_agents_screen.dart';
 import 'profile_monitor_screen.dart' show ProfileMonitorScreen;
@@ -228,8 +230,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() => _listFailure = message);
   }
 
+  /// This phone for the Termux server: its status, versions, tools and log.
   Future<void> _openTermuxSetup() async {
-    await Navigator.pushNamed(context, '/termux-setup');
+    await openThisPhone(context, kind: PhoneHostKind.termux);
     if (mounted) setState(() => _termuxRevision++);
   }
 

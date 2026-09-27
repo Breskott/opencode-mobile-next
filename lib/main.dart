@@ -53,10 +53,10 @@ import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
 import 'ui/screens/team_conversation/team_conversation.dart'
     show TeamConversation;
-import 'ui/screens/termux_setup_screen.dart';
-import 'ui/screens/builtin_server_screen.dart';
+import 'ui/screens/this_phone_screen.dart';
+import 'state/phone_host.dart' show PhoneHostKind;
 import 'ui/screens/phone_setup/phone_setup_routes.dart'
-    show openPhoneSetupFromNotification;
+    show openPhoneSetupFromNotification, openPhoneSetupStart;
 import 'ui/screens/app_diagnostics_screen.dart';
 
 Future<void> main() async {
@@ -1334,11 +1334,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               '/home': (_) => const HomeScreen(),
               '/guide': (_) => GuideScreen(embedded: false),
               '/about': (_) => const AboutScreen(),
-              // Termux is an Android app. Registering the route everywhere
-              // meant a desktop deep link, or any leftover push, landed on a
-              // setup flow with no bridge behind it.
+              // This phone (in the app or in Termux) exists only on
+              // Android: a desktop deep link, or any leftover push, must not
+              // land on a page with no phone behind it.
               if (platformCapabilities.supportsTermux)
-                '/termux-setup': (_) => const TermuxSetupScreen(),
+                thisPhoneRoute: (context) => ThisPhoneScreen(
+                  kind:
+                      ModalRoute.of(context)?.settings.arguments
+                          as PhoneHostKind?,
+                ),
               '/debug': (_) => AppDiagnosticsScreen(controller: _controller),
             },
             onGenerateRoute: (settings) {
@@ -1633,7 +1637,7 @@ class _RootState extends ConsumerState<_Root> {
           startingInAppServer: inApp && _builtin.starting,
           inAppStartFailed: startFailure != null,
           onOpenInAppSetup: startFailure != null
-              ? () => openBuiltinServerScreen(context)
+              ? () => openPhoneSetupStart(context)
               : null,
           supportsTermux:
               !inApp &&
@@ -1655,7 +1659,11 @@ class _RootState extends ConsumerState<_Root> {
               !inApp &&
                   !conn.usesConnectionToken &&
                   platformCapabilities.supportsTermux
-              ? () => navigator.pushNamed('/termux-setup')
+              // The phone's own Termux server goes to This phone (Start is
+              // there); any other server on this phone goes to phone setup.
+              ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
+                    ? openThisPhone(context, kind: PhoneHostKind.termux)
+                    : openPhoneSetupStart(context)
               : null,
           // The app's own phone server: when nothing answers, it is stopped
           // (a phone restart, Android closing Termux, the app closed for
