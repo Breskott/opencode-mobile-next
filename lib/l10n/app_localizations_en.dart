@@ -21038,6 +21038,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get kitRequestChooseOneReason => 'Choose at least one answer.';
+
+  @override
+  String get kitRequestSendAnswers => 'Send answers';
+
+  @override
   String kitDiffFiles(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
