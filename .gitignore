@@ -55,3 +55,4 @@ app.*.map.json
 
 # APKs are distributed as release assets, not source files.
 /*.apk
+test/**/failures/
