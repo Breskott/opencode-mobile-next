@@ -1094,9 +1094,53 @@
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "onDismiss -> adds (session.id, idle) to _dismissedDigests (view state only, not persisted).",
+          "effect": "onDismiss -> hides (session.id, idle) at once with KitUndo; when the window closes, controller.dismissReturnBrief(ReturnBrief.single(run)) saves it as reviewed (the same mark as Work's Mark as reviewed); a refused save brings the row back.",
           "gates": [
             "digest expanded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-auto-row",
+          "type": "list-tile",
+          "label": "<what it was done to> / <what was done> · <when>",
+          "key": "activity-auto-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "P6.2 While you were away: one automatic act (reconnect, request allowed by itself, queued message sent, heat pause/stop/resume) from controller.automaticActsHere, sorted newest first together with the finished rows below everything that waits. A tap opens the conversation it was done to (_openChat); server-wide acts have no page to open.",
+          "gates": [
+            "act of the shown server or project, not acknowledged",
+            "onTap only when the act names a conversation"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-auto-dismiss",
+          "type": "swipe",
+          "label": "Dismiss",
+          "key": "activity-auto-dismiss-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "KitSwipeAction (and its row-menu twin): hides the act with KitUndo; on commit AutomaticActivityController.acknowledge([id]) (oc.automaticActivity.<profileId>); a refused save brings it back.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-auto-undo",
+          "type": "button",
+          "label": "Undo",
+          "key": "activity-auto-undo-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "AutomaticActivityController.undo(id): runs the act's in-memory inverse at most once; the line then says Undone, Undo didn't go through, or Undo not confirmed.",
+          "gates": [
+            "history.canUndo(id): only acts recorded with a real inverse, this process"
           ],
           "destructive": false
         }

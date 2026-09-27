@@ -3690,57 +3690,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get isolatedTaskClose => 'إغلاق';
 
   @override
-  String get returnBriefTitle => 'عمل لم يُراجع';
-
-  @override
-  String get returnBriefDescription =>
-      'لهذا المشروع على هذا الجهاز. يبقي التجاهل المحادثات غير مقروءة والطلبات معلّقة.';
-
-  @override
-  String get returnBriefUntitled => 'محادثة بلا عنوان';
-
-  @override
-  String get returnBriefStale =>
-      'آخر حالة مرصودة. أعد الاتصال أو حدّث للتحقق من العمل والطلبات الحالية.';
-
-  @override
   String get returnBriefStatusUnknown => 'حالة المراجعة غير معروفة';
-
-  @override
-  String get returnBriefUnknown =>
-      'لا يبلّغ هذا الخادم عن حالة القراءة. النتائج التي لم تُراجع غير معروفة.';
-
-  @override
-  String get returnBriefPartial =>
-      'المحادثات المحمّلة فقط. قائمة المحادثات لم تكتمل بعد.';
-
-  @override
-  String get returnBriefAnswer => 'إجابة';
-
-  @override
-  String get returnBriefUnreviewed =>
-      'محادثة لم تُراجع. افتح النتائج للتحقق من المحصلة.';
 
   @override
   String get returnBriefReview => 'مراجعة النتائج';
 
   @override
   String get returnBriefContinue => 'متابعة';
-
-  @override
-  String returnBriefMore(int count) {
-    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع المحادثات أدناه أو «الوارد».';
-  }
-
-  @override
-  String get returnBriefSaveFailed =>
-      'لم يُحفظ التجاهل. ما زالت هذه العناصر غير مراجعة. أعد المحاولة.';
-
-  @override
-  String get returnBriefSaving => 'جارٍ حفظ التجاهل…';
-
-  @override
-  String get returnBriefDismiss => 'تجاهل العناصر المعروضة';
 
   @override
   String get capsuleTitle => 'حزمة السياق';
@@ -26311,4 +26267,66 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get automationValueOff => 'Off';
+
+  @override
+  String get whileAwayActReconnected => 'Reconnected by itself';
+
+  @override
+  String get whileAwayActRestarted => 'Restarted by itself';
+
+  @override
+  String get whileAwayActHeatPaused => 'AI Team paused while the phone was hot';
+
+  @override
+  String get whileAwayActHeatStopped =>
+      'AI Team stopped while the phone was hot';
+
+  @override
+  String get whileAwayActHeatResumed => 'AI Team resumed once the phone cooled';
+
+  @override
+  String get whileAwayActUpdated => 'Update downloaded by itself';
+
+  @override
+  String get whileAwayActAllowed => 'Allowed a request by itself';
+
+  @override
+  String get whileAwayActQueuedSent => 'Sent your queued message by itself';
+
+  @override
+  String get whileAwayActOther => 'Done automatically';
+
+  @override
+  String whileAwayUndoFailed(String act) {
+    return '$act · Undo didn\'t go through';
+  }
+
+  @override
+  String get whileAwayDismiss => 'Dismiss';
+
+  @override
+  String get whileAwayHistoryUnreadable =>
+      'The list of what ran by itself couldn\'t be read, so earlier automatic actions aren\'t shown.';
+
+  @override
+  String get whileAwayHistoryUnsaved =>
+      'An automatic action couldn\'t be saved to this list. It happened, but it may not be listed.';
+
+  @override
+  String whileAwayActUndone(String act) {
+    return '$act · Undone';
+  }
+
+  @override
+  String whileAwayUndoUnconfirmed(String act) {
+    return '$act · Undo not confirmed';
+  }
+
+  @override
+  String whileAwayDismissed(String what) {
+    return 'Dismissed “$what”';
+  }
+
+  @override
+  String get whileAwayMark => 'Done by itself';
 }

@@ -3658,57 +3658,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get isolatedTaskClose => 'Close';
 
   @override
-  String get returnBriefTitle => 'Unreviewed work';
-
-  @override
-  String get returnBriefDescription =>
-      'For this project on this device. Dismissing keeps conversations unread and requests pending.';
-
-  @override
-  String get returnBriefUntitled => 'Untitled conversation';
-
-  @override
-  String get returnBriefStale =>
-      'Last observed state. Reconnect or refresh to check current work and requests.';
-
-  @override
   String get returnBriefStatusUnknown => 'Review status unknown';
-
-  @override
-  String get returnBriefUnknown =>
-      'This server does not report read state. Unreviewed results are unknown.';
-
-  @override
-  String get returnBriefPartial =>
-      'Loaded conversations only. The conversation list is still incomplete.';
-
-  @override
-  String get returnBriefAnswer => 'Answer';
-
-  @override
-  String get returnBriefUnreviewed =>
-      'Unreviewed conversation. Open results to check the outcome.';
 
   @override
   String get returnBriefReview => 'Review results';
 
   @override
   String get returnBriefContinue => 'Continue';
-
-  @override
-  String returnBriefMore(int count) {
-    return 'Additional items: $count. They remain unacknowledged; see the conversations below or Inbox.';
-  }
-
-  @override
-  String get returnBriefSaveFailed =>
-      'Dismissal was not saved. These items are still unreviewed. Try again.';
-
-  @override
-  String get returnBriefSaving => 'Saving dismissal...';
-
-  @override
-  String get returnBriefDismiss => 'Dismiss shown items';
 
   @override
   String get capsuleTitle => 'Context capsule';
@@ -26045,4 +26001,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get automationValueOff => 'Off';
+
+  @override
+  String get whileAwayActReconnected => 'Reconnected by itself';
+
+  @override
+  String get whileAwayActRestarted => 'Restarted by itself';
+
+  @override
+  String get whileAwayActHeatPaused => 'AI Team paused while the phone was hot';
+
+  @override
+  String get whileAwayActHeatStopped =>
+      'AI Team stopped while the phone was hot';
+
+  @override
+  String get whileAwayActHeatResumed => 'AI Team resumed once the phone cooled';
+
+  @override
+  String get whileAwayActUpdated => 'Update downloaded by itself';
+
+  @override
+  String get whileAwayActAllowed => 'Allowed a request by itself';
+
+  @override
+  String get whileAwayActQueuedSent => 'Sent your queued message by itself';
+
+  @override
+  String get whileAwayActOther => 'Done automatically';
+
+  @override
+  String whileAwayUndoFailed(String act) {
+    return '$act · Undo didn\'t go through';
+  }
+
+  @override
+  String get whileAwayDismiss => 'Dismiss';
+
+  @override
+  String get whileAwayHistoryUnreadable =>
+      'The list of what ran by itself couldn\'t be read, so earlier automatic actions aren\'t shown.';
+
+  @override
+  String get whileAwayHistoryUnsaved =>
+      'An automatic action couldn\'t be saved to this list. It happened, but it may not be listed.';
+
+  @override
+  String whileAwayActUndone(String act) {
+    return '$act · Undone';
+  }
+
+  @override
+  String whileAwayUndoUnconfirmed(String act) {
+    return '$act · Undo not confirmed';
+  }
+
+  @override
+  String whileAwayDismissed(String what) {
+    return 'Dismissed “$what”';
+  }
+
+  @override
+  String get whileAwayMark => 'Done by itself';
 }
