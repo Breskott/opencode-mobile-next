@@ -39,7 +39,7 @@ The host crashed during the original serial baseline run. `8f94659e` and 13 unco
 | `chat_server_state_ui_test.dart` | 8 / 1 / 0 |
 | `chat_states_standard_test.dart` | 4 / 2 / 0 |
 | `nudge_moments_test.dart` | 12 / 8 / 0 |
-| `text_scale_overflow_test.dart` | interrupted; rerun pending |
+| `text_scale_overflow_test.dart` | 101 / 2 / 0 (recovered full run) |
 | `voice_composer_test.dart` | 3 / 3 / 0 |
 | `voice_model_localization_test.dart` | 7 / 2 / 0 |
 | `voice_reply_pipeline_test.dart` | 0 / 20 / 3 |
@@ -56,3 +56,17 @@ The host crashed during the original serial baseline run. `8f94659e` and 13 unco
 ### Verified repair checkpoint 1
 
 Pinned serial per-file after runs: reference sends **6/6**, conversation menu hierarchy **2/2**, voice/model localization **9/9**. Reference sends now inspect the kit field's editor and combined visible draft warning; menu toggles use KitSwitchRow; localized model close waits for scrolling to finish. Payload, unsaved-reference, toggle and Arabic reachability assertions are retained. Other files are still under validation at this checkpoint.
+
+Additional product issues exposed after restoring the interactions:
+
+- **Missing load diagnostics:** `lib/ui/screens/chat/chat_states.dart:57` passes `productErrorText` to the error state's Details. In `chat_states_standard_test.dart`, “a conversation that could not load…” expects the original safe technical diagnostic under Details; it gets the friendly headline again. `productErrorDetails` is the documented diagnostic path. Final state-file check is **5 pass / 1 fail**.
+- **Model sheet does not close with a search:** `lib/ui/widgets/pickers.dart:137` uses `maybePop` after applying. `lib/ui/kit/kit_search_field.dart:463` intercepts that pop while a query exists, clears it and leaves the sheet open. Both “model selector searches and persists…” and session-selection reopening retain their failed dismissal assertions.
+- **Thinking-menu race:** `lib/ui/widgets/pickers.dart:395` resyncs an untouched draft after an external model change, but the open thinking menu still describes the previous model. Its callback at `:783` applies that previous model's variant to the new model. “the thinking menu keeps edits bound to the displayed model” retains its identity assertion.
+- **Dismiss while model apply is pending:** `lib/ui/widgets/pickers.dart:142` disposes the apply notifiers when the sheet closes, while the exiting body can still finish `_applySelection`; its finally block at `:1331` calls `_setApplying` (`:412`) on the disposed notifier. The existing authorized-agent-choice/dismissal test remains enabled.
+
+- **Home large-text toolbar:** `lib/ui/kit/kit_top_bar.dart:946` lays out the home context in a horizontal Row that overflows by 127 pixels on the 360×740, 2.5× home-shell scenario in `text_scale_overflow_test.dart`. The test now includes the original Flutter diagnostic as its failure reason, preserving the no-exception assertion.
+- **MCP command destination:** the live-events `/mcps` command reaches IntegrationsScreen, where simultaneous MCP/resource load failures independently create retry primaries (`lib/ui/screens/library/integrations_screen.dart:1350`, `:1417`). This is the same page-action hierarchy defect as provider-auth recovery, with two sections instead of three; its navigation test remains enabled.
+
+### Verified repair checkpoint 2
+
+Transcript search **9/9**, Codex chat capabilities **9/9**, transcript placement **17/17**, read-aloud **8/8**. States **5/6** and nudges **18/20** now fail only on the technical-details loss and approval overflow listed above. Search still verifies highlighting without reparsing, capability tests require disabled attachment actions and no unsupported transports, placement preserves alignment and nonoverlap, and read-aloud preserves consent and background draft disposal.

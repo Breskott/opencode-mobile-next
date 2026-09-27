@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _TranscriptApi extends OpenCodeApi with CompleteMessageHistory {
@@ -66,8 +67,7 @@ Future<ConnectionController> _pump(
       child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
     ),
   );
-  // The composer's activity ring animates forever, so a busy chat never
-  // settles.
+  // Working indicators can animate indefinitely, so use bounded frames.
   if (busy) {
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -95,7 +95,7 @@ void main() {
     // and nothing sits under it.
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const ValueKey('message-a2')), findsOneWidget);
-    final activity = find.byKey(const ValueKey('composer-activity'));
+    final activity = find.byKey(const Key('chat-stop-button'));
     expect(activity, findsOneWidget);
     final lastBubbleBottom = tester
         .getBottomLeft(find.byKey(const ValueKey('message-a2')))
@@ -104,7 +104,7 @@ void main() {
       tester.getTopLeft(activity).dy,
       greaterThanOrEqualTo(lastBubbleBottom),
     );
-    expect(find.bySemanticsLabel('Assistant is working'), findsOneWidget);
+    expect(find.bySemanticsLabel('Stop the reply'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -115,8 +115,8 @@ void main() {
       _message('a1', 'assistant', [_text('a1-t', 'Answer')], created: 2),
     ]);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
-    expect(find.bySemanticsLabel('Assistant is working'), findsNothing);
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
+    expect(find.bySemanticsLabel('Stop the reply'), findsNothing);
     semantics.dispose();
   });
 
@@ -249,7 +249,7 @@ void main() {
     );
     expect(
       tester.getTopRight(find.byKey(const ValueKey('user-prompt-u1'))).dx,
-      greaterThan(tester.getTopRight(find.text('Hi.')).dx),
+      equals(tester.getTopRight(find.text('Hi.')).dx),
     );
   });
 
@@ -388,10 +388,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('step-note')), findsOneWidget);
     expect(find.textContaining('The bundle is stale'), findsOneWidget);
-    // It reads from the leading edge, under the step's title; not centred.
+    // The kit body keeps one indent from its row's leading edge.
+    final row = find.ancestor(
+      of: find.text('Rebuilding latest source'),
+      matching: find.byType(KitToolRow),
+    );
+    final tokens = KitTokens.of(tester.element(row));
     expect(
       tester.getTopLeft(find.textContaining('The bundle is stale')).dx,
-      lessThan(60),
+      equals(tester.getTopLeft(row).dx + tokens.space3),
     );
   });
 
@@ -603,7 +608,9 @@ void main() {
     expect(title, findsOneWidget);
     final titleRight = tester.getRect(title).right;
     // Everything else on that row starts after the title ends.
-    final row = find.ancestor(of: title, matching: find.byType(InkWell)).first;
+    final row = find
+        .ancestor(of: title, matching: find.byType(KitTappable))
+        .first;
     for (final text
         in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
       if (identical(text.widget, tester.widget(title))) continue;

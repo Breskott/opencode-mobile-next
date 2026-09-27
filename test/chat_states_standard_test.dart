@@ -180,7 +180,15 @@ void main() {
 
     expect(find.text("Your message wasn't sent"), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
-    expect(tester.widget<TextField>(field).controller!.text, contains('suite'));
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: field, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      contains('suite'),
+    );
     // It does not leave on its own while the person reads it.
     await tester.pump(const Duration(seconds: 10));
     expect(find.text("Your message wasn't sent"), findsOneWidget);
