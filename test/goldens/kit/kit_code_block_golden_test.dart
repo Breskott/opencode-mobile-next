@@ -125,6 +125,35 @@ Widget _fillFindScene() => _onGround(
   ),
 );
 
+// R3: a one-line command with no caption keeps Copy on its own line (no
+// header band); several commands under a caller's label get a header that
+// reads it; a host that passes wrap: true gets hanging continuation lines.
+Widget _commandShortScene() => _onGround(
+  const KitCodeBlock(text: 'flutter run', kind: KitCodeKind.command),
+);
+
+const _adbCommands = '''
+adb shell dumpsys deviceidle whitelist +com.termux
+adb shell cmd appops set com.termux RUN_ANY_IN_BACKGROUND allow
+adb shell device_config put activity_manager max_phantom_processes 2147483647''';
+
+Widget _commandsLabelledScene() => _inSheet(
+  const KitCodeBlock(
+    text: _adbCommands,
+    kind: KitCodeKind.command,
+    copyLabel: 'Copy commands',
+  ),
+);
+
+Widget _commandWrappedScene() => _inSheet(
+  const KitCodeBlock(
+    text: _adbCommands,
+    kind: KitCodeKind.command,
+    copyLabel: 'Copy commands',
+    wrap: true,
+  ),
+);
+
 Widget _emptyScene() => _onGround(const KitCodeBlock(text: ''));
 
 Future<void> Function(BuildContext) _push(Widget scene) =>
@@ -184,6 +213,9 @@ void main() {
         'wrapped': _wrappedScene(),
         'fill_find': _fillFindScene(),
         'empty': _emptyScene(),
+        'command_short': _commandShortScene(),
+        'commands_labelled': _commandsLabelledScene(),
+        'command_wrapped': _commandWrappedScene(),
       }.entries) {
         testWidgets('kit_code_block $state · $at · $mode', (tester) async {
           await kitGalleryShot(
