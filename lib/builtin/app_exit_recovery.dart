@@ -7,6 +7,7 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
 import '../diagnostics/report_problem_startup.dart';
 import '../platform/app_exit.dart';
+import '../state/automation_policy.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
 import 'builtin_server.dart';
@@ -34,11 +35,16 @@ class AppExitNotice {
     required this.kind,
     required this.at,
     required this.teamStopped,
+    this.recoveryAllowed = true,
   });
 
   final AppExitKind kind;
   final DateTime at;
   final bool teamStopped;
+
+  /// Policy permission for this launch's recovery, not proof of success.
+  /// False must never be worded as "starting again" by a notice consumer.
+  final bool recoveryAllowed;
 
   /// A crash is ours to fix, not a phone setting to change.
   bool get offersKeepAlive => kind != AppExitKind.crash;
@@ -86,6 +92,12 @@ class AppExitRecovery extends ChangeNotifier {
     required BuiltinServerStarter starter,
     AppDiagnosticsController? diagnostics,
     Future<ReportProblemStartup?>? problemReport,
+    Future<bool> Function({
+      required String profileId,
+      required String eventId,
+      required DateTime at,
+    })?
+    onRestart,
   }) async {
     if (_ran) return;
     _ran = true;
@@ -124,10 +136,19 @@ class AppExitRecovery extends ChangeNotifier {
     }
     if (!wasRunning) return;
     if (exit != null && exit.kind.notable) {
+      final recoveryProfile = looksLikeInAppServer(active)
+          ? active
+          : _inAppProfile(store, team: teamWas);
       _notice = AppExitNotice(
         kind: exit.kind,
         at: exit.timestamp,
         teamStopped: teamWas,
+        recoveryAllowed:
+            recoveryProfile != null &&
+            AutomationPolicyController.forProfile(
+              store.prefs,
+              recoveryProfile.id,
+            ).value.allows(AutomationBehavior.restartPhoneServer),
       );
       _notify();
     }
@@ -136,6 +157,9 @@ class AppExitRecovery extends ChangeNotifier {
       active: active,
       starter: starter,
       team: teamWas,
+      eventId:
+          'app-exit:${exit?.timestamp.microsecondsSinceEpoch ?? DateTime.now().microsecondsSinceEpoch}',
+      onRestart: onRestart,
     );
   }
 
@@ -144,6 +168,13 @@ class AppExitRecovery extends ChangeNotifier {
     required ServerProfile? active,
     required BuiltinServerStarter starter,
     required bool team,
+    required String eventId,
+    Future<bool> Function({
+      required String profileId,
+      required String eventId,
+      required DateTime at,
+    })?
+    onRestart,
   }) async {
     if (looksLikeInAppServer(active)) {
       // The shell starts the server it opens on; nothing to add here.
@@ -155,7 +186,26 @@ class AppExitRecovery extends ChangeNotifier {
       PerfTrace.mark('app.recover', attrs: {'by': 'none', 'reason': 'profile'});
       return;
     }
-    final started = await starter.autoStartIfStopped(profile);
+    if (!AutomationPolicyController.forProfile(
+      store.prefs,
+      profile.id,
+    ).value.allows(AutomationBehavior.restartPhoneServer)) {
+      return;
+    }
+    final started = await starter.autoStartIfStopped(
+      profile,
+      mayStart: () => AutomationPolicyController.forProfile(
+        store.prefs,
+        profile.id,
+      ).value.allows(AutomationBehavior.restartPhoneServer),
+    );
+    if (started && onRestart != null) {
+      await onRestart(
+        profileId: profile.id,
+        eventId: eventId,
+        at: DateTime.now(),
+      );
+    }
     PerfTrace.mark(
       'app.recover',
       attrs: {

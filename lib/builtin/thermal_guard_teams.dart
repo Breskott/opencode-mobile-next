@@ -9,6 +9,7 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/report_problem_startup.dart';
 import '../platform/platform_capabilities.dart';
 import '../platform/thermal.dart';
+import '../state/automation_policy.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
 import 'setup/setup_engine.dart' show ChannelSetupEngine;
@@ -160,6 +161,7 @@ class GasCityThermalTeams implements ThermalTeamPort {
     // The person turned the team off meanwhile: nothing of ours to give
     // back, and it must not start again.
     if (!teamsHere().any((t) => t.url == team.url)) return true;
+    if (!_allowsRecovery(team.id)) return false;
     if (hold.serviceStopped) {
       await _builtin.ensureRunning(
         notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
@@ -170,6 +172,7 @@ class GasCityThermalTeams implements ThermalTeamPort {
     if (city == null) return false;
     final state = await _http('GET', _uri(team, city));
     if (state == null || !state.ok) return false;
+    if (!_allowsRecovery(team.id)) return false;
     if (_suspended(state.body)) {
       final resumed = await _http('PATCH', _uri(team, city), {
         'suspended': false,
@@ -177,14 +180,23 @@ class GasCityThermalTeams implements ThermalTeamPort {
       if (resumed == null || !resumed.ok) return false;
     }
     for (final id in hold.sessions) {
+      if (!_allowsRecovery(team.id)) return false;
       // A session that is gone was closed meanwhile; nothing to wake.
-      await _http(
+      final answer = await _http(
         'POST',
         _uri(team, city, '/session/${Uri.encodeComponent(id)}/wake'),
       );
+      if (answer == null || (!answer.ok && answer.status != 404)) return false;
     }
     return true;
   }
+
+  bool _allowsRecovery(String profileId) =>
+      store.profiles.any((profile) => profile.id == profileId) &&
+      AutomationPolicyController.forProfile(
+        store.prefs,
+        profileId,
+      ).value.allows(AutomationBehavior.thermalRecovery);
 
   Future<bool> _answers(ThermalTeam team) async {
     final deadline = DateTime.now().add(restartTimeout);

@@ -8,6 +8,7 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
 import '../l10n/app_localizations.dart';
 import '../platform/thermal.dart';
+import '../state/automation_policy.dart';
 import 'setup/setup_engine.dart' show ChannelSetupEngine;
 
 /// What the guard does next.
@@ -434,6 +435,10 @@ class ThermalGuard extends ChangeNotifier {
               .reduce((a, b) => a.isBefore(b) ? a : b);
     var allBack = true;
     for (final entry in _holds.entries.toList()) {
+      if (!_allowsRecovery(entry.key)) {
+        allBack = false;
+        continue;
+      }
       if (await port.resume(entry.value)) {
         _holds.remove(entry.key);
         await _dropHold(entry.key);
@@ -479,13 +484,22 @@ class ThermalGuard extends ChangeNotifier {
     _coolTimer?.cancel();
     _coolTimer = null;
     final at = policy.resumeAt;
-    if (at == null || _disposed) return;
+    if (at == null || _disposed || !_holds.keys.any(_allowsRecovery)) {
+      return;
+    }
     final wait = at.difference(now);
     _coolTimer = Timer(
       wait.isNegative ? Duration.zero : wait + const Duration(seconds: 1),
       () => unawaited(evaluate()),
     );
   }
+
+  // The optional recovery choice never disables protective pause/stop.
+  bool _allowsRecovery(String profileId) =>
+      AutomationPolicyController.forProfile(
+        prefs,
+        profileId,
+      ).value.allows(AutomationBehavior.thermalRecovery);
 
   void _restoreHolds() {
     for (final key in prefs.getKeys()) {

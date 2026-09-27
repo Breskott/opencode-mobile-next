@@ -33,6 +33,7 @@ import 'domain/session_handoff.dart';
 import 'domain/while_away.dart' show AutomaticActKind;
 import 'domain/team_link.dart';
 import 'state/connection.dart';
+import 'state/automation_policy.dart';
 import 'state/local_server_controls.dart';
 import 'termux/bridge.dart';
 import 'state/profiles.dart';
@@ -389,17 +390,41 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   Future<void> _resumeTransport() async {
     final profile = _controller.profile;
     var started = false;
-    if (looksLikeInAppServer(profile)) {
+    if (profile != null &&
+        looksLikeInAppServer(profile) &&
+        AutomationPolicyController.forProfile(
+          _controller.store.prefs,
+          profile.id,
+        ).value.allows(AutomationBehavior.restartPhoneServer)) {
       final starter = ref.read(builtinServerStarterProvider)..allowAutoStart();
-      started = await starter.autoStartIfStopped(profile);
+      started = await starter.autoStartIfStopped(
+        profile,
+        mayStart: () => AutomationPolicyController.forProfile(
+          _controller.store.prefs,
+          profile.id,
+        ).value.allows(AutomationBehavior.restartPhoneServer),
+      );
+      if (started) {
+        final at = DateTime.now();
+        await _controller.recordServerAct(
+          profileId: profile.id,
+          kind: AutomaticActKind.restart,
+          eventId: 'phone.resume:${at.microsecondsSinceEpoch}',
+          at: at,
+        );
+      }
     }
     await _controller.resumeFromLifecycle();
     // The opening card was up (nothing to resume): connect to the server
     // that now answers.
     if (started &&
+        AutomationPolicyController.forProfile(
+          _controller.store.prefs,
+          profile!.id,
+        ).value.allows(AutomationBehavior.reconnect) &&
         !_controller.hasConnectedServer &&
         _controller.api == null &&
-        _controller.profile?.id == profile!.id) {
+        _controller.profile?.id == profile.id) {
       await _controller.connect(profile);
     }
   }
@@ -1416,6 +1441,25 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                         UpdateStatusScope(status: notice, child: notices!),
                     child: ShorebirdUpdateNotice(
                       service: _updateService,
+                      currentProfileId: () => _controller.profile?.id,
+                      allowsAutomaticUpdate: (id) =>
+                          AutomationPolicyController.forProfile(
+                            _controller.store.prefs,
+                            id,
+                          ).value.allows(AutomationBehavior.applyCodePush),
+                      onDownloaded:
+                          ({
+                            required profileId,
+                            required eventId,
+                            required at,
+                          }) async {
+                            await _controller.recordServerAct(
+                              profileId: profileId,
+                              kind: AutomaticActKind.update,
+                              eventId: eventId,
+                              at: at,
+                            );
+                          },
                       child: DesktopReleaseNotice(
                         navigatorKey: _navigatorKey,
                         // Desktop only. On Android this returns its child
@@ -1644,6 +1688,13 @@ class _RootState extends ConsumerState<_Root> {
             active: _controller.profile,
             starter: _builtin,
             diagnostics: _controller.diagnostics,
+            onRestart: ({required profileId, required eventId, required at}) =>
+                _controller.recordServerAct(
+                  profileId: profileId,
+                  kind: AutomaticActKind.restart,
+                  eventId: eventId,
+                  at: at,
+                ),
           ),
     );
   }
@@ -1763,7 +1814,28 @@ class _RootState extends ConsumerState<_Root> {
   /// "Starting…" instead of a failure. Runs once; a start that fails leaves
   /// the card with its Start button rather than trying again by itself.
   Future<void> _autoStartThenConnect(ServerProfile profile) async {
-    await _builtin.autoStartIfStopped(profile);
+    final allowed = AutomationPolicyController.forProfile(
+      _controller.store.prefs,
+      profile.id,
+    ).value.allows(AutomationBehavior.restartPhoneServer);
+    final started =
+        allowed &&
+        await _builtin.autoStartIfStopped(
+          profile,
+          mayStart: () => AutomationPolicyController.forProfile(
+            _controller.store.prefs,
+            profile.id,
+          ).value.allows(AutomationBehavior.restartPhoneServer),
+        );
+    if (started) {
+      final at = DateTime.now();
+      await _controller.recordServerAct(
+        profileId: profile.id,
+        kind: AutomaticActKind.restart,
+        eventId: 'phone.launch:${at.microsecondsSinceEpoch}',
+        at: at,
+      );
+    }
     if (!mounted || _builtin.failureFor(profile) != null) return;
     if (_controller.api != null || _controller.profile?.id != profile.id) {
       return;

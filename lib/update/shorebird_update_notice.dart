@@ -150,10 +150,32 @@ class ShorebirdUpdateNotice extends StatefulWidget {
     required this.service,
     required this.child,
     this.messengerKey,
+    this.currentProfileId,
+    this.allowsAutomaticUpdate,
+    this.onDownloaded,
   });
 
   final AppUpdateService service;
   final Widget child;
+
+  /// The current saved server owns this app-wide automatic act. Returning
+  /// null keeps automatic checks unavailable until a server is selected.
+  final String? Function()? currentProfileId;
+
+  /// Reads that server's persisted `applyCodePush` automation choice at each
+  /// execution boundary. Missing policy wiring does not grant permission.
+  final bool Function(String profileId)? allowsAutomaticUpdate;
+
+  /// Reports a completed download, never a check or an already-ready patch.
+  /// The profile is captured before downloading so switching servers cannot
+  /// move the act into another server's history. A failed history save must
+  /// not trigger another download; the composition owner handles that state.
+  final Future<void> Function({
+    required String profileId,
+    required String eventId,
+    required DateTime at,
+  })?
+  onDownloaded;
 
   /// Not used: the notice speaks through the status line, never a
   /// snackbar. Kept so existing callers compile (R11).
@@ -174,20 +196,37 @@ class _ShorebirdUpdateNoticeState extends State<ShorebirdUpdateNotice>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_checkForUpdate());
-    });
+    if (_allowedProfile() != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_checkForUpdate());
+      });
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && _allowedProfile() != null) {
       unawaited(_checkForUpdate());
     }
   }
 
+  String? _allowedProfile() {
+    if (!mounted) return null;
+    final profileId = widget.currentProfileId?.call();
+    if (profileId == null ||
+        widget.allowsAutomaticUpdate?.call(profileId) != true) {
+      return null;
+    }
+    return profileId;
+  }
+
   Future<void> _checkForUpdate() async {
-    if (!widget.service.isAvailable || _checking || _ready) return;
+    if (_allowedProfile() == null ||
+        !widget.service.isAvailable ||
+        _checking ||
+        _ready) {
+      return;
+    }
     final now = DateTime.now();
     if (_lastCheck case final previous?
         when now.difference(previous) < const Duration(minutes: 15)) {
@@ -202,15 +241,25 @@ class _ShorebirdUpdateNoticeState extends State<ShorebirdUpdateNotice>
         case AppUpdateState.restartRequired:
           _showReady();
         case AppUpdateState.available:
-          // Silent: a download is not the person's business until it is
-          // ready (owner verdict). A failure lands in the catch below.
+          // Consent and profile may have changed during the check. Capture
+          // ownership and the recorder before the download leaves the app.
+          final profileId = _allowedProfile();
+          if (profileId == null) return;
+          final onDownloaded = widget.onDownloaded;
+          final eventId =
+              'shorebird-update:${DateTime.now().microsecondsSinceEpoch}';
           await widget.service.downloadUpdate();
           _showReady();
+          await onDownloaded?.call(
+            profileId: profileId,
+            eventId: eventId,
+            at: DateTime.now().toUtc(),
+          );
       }
-    } on Exception catch (error) {
+    } on Exception {
       // Never claims readiness after a failed download; the next resume
       // after the throttle tries again.
-      debugPrint('App update check failed: $error');
+      debugPrint('App update could not be completed.');
     } finally {
       _checking = false;
     }

@@ -14,6 +14,7 @@ import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/domain/while_away.dart';
 import 'package:opencode_mobile/state/automatic_activity.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -373,6 +374,7 @@ void main() {
     expect(controller.automaticActsHere, isEmpty);
 
     streams.single.emitStatus(StreamStatus.reconnecting);
+    expect(controller.automaticActsHere, isEmpty);
     streams.single.emitStatus(StreamStatus.connected);
     await tester.pump();
     final acts = controller.automaticActsHere;
@@ -382,6 +384,104 @@ void main() {
     expect(store.prefs.getString('oc.automaticActivity.laptop'), isNotNull);
     await controller.disconnect();
   });
+
+  testWidgets(
+    'disabled reconnect retires transport and never records a recovery',
+    (tester) async {
+      AutomaticActivityController.resetShared();
+      addTearDown(AutomaticActivityController.resetShared);
+      const secure = MethodChannel(
+        'plugins.it_nomads.com/flutter_secure_storage',
+      );
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(secure, (_) async => null);
+      addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+      SharedPreferences.setMockInitialValues({
+        'oc.profiles': jsonEncode([
+          {
+            'id': 'laptop',
+            'name': 'Laptop',
+            'baseUrl': 'http://127.0.0.1:1',
+            'username': '',
+          },
+        ]),
+        'oc.activeProfile': 'laptop',
+      });
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      await store.load();
+      final api = _ControlledApi('laptop');
+      final streams = <_FakeEventStream>[];
+      final controller = ConnectionController(
+        store,
+        apiFactory: (_) => api,
+        repositoryFactory: _repositoryFactory,
+        eventStreamFactory: _streamFactory(streams),
+      );
+      addTearDown(controller.dispose);
+      final connecting = controller.connect(store.profiles.single);
+      await tester.pump();
+      api.healthResult.complete(Health(healthy: true));
+      await connecting;
+      streams.single.emitStatus(StreamStatus.connected);
+      await tester.pump();
+      expect(controller.automaticActsHere, isEmpty);
+
+      await AutomationPolicyController.forProfile(
+        store.prefs,
+        'laptop',
+      ).setBehavior(AutomationBehavior.reconnect, false);
+      streams.single.emitStatus(StreamStatus.reconnecting);
+      expect(streams.single.disposed, isTrue);
+      expect(api.closed, isTrue);
+      expect(controller.status, StreamStatus.disconnected);
+      streams.single.emitStatus(StreamStatus.connected);
+      await tester.pump();
+      expect(controller.automaticActsHere, isEmpty);
+      controller.suspendForLifecycle();
+      await controller.resumeFromLifecycle();
+      expect(api.healthCalls, 1);
+      await controller.disconnect();
+    },
+  );
+
+  testWidgets(
+    'policy change during lifecycle health prevents channel restart',
+    (tester) async {
+      final store = await _store();
+      final apis = <_ControlledApi>[];
+      final streams = <_FakeEventStream>[];
+      final controller = ConnectionController(
+        store,
+        apiFactory: (_) {
+          final api = _ControlledApi('server');
+          apis.add(api);
+          return api;
+        },
+        repositoryFactory: _repositoryFactory,
+        eventStreamFactory: _streamFactory(streams),
+      );
+      final connect = controller.connect(_profile('server'));
+      await tester.pump();
+      apis.single.healthResult.complete(Health(healthy: true));
+      await connect;
+      streams.single.emitStatus(StreamStatus.connected);
+      controller.suspendForLifecycle();
+      final resume = controller.resumeFromLifecycle();
+      await tester.pump();
+      expect(apis, hasLength(2));
+      await AutomationPolicyController.forProfile(
+        store.prefs,
+        'server',
+      ).setBehavior(AutomationBehavior.reconnect, false);
+      apis.last.healthResult.complete(Health(healthy: true));
+      await resume;
+      expect(streams, hasLength(1));
+      expect(controller.status, StreamStatus.disconnected);
+      expect(controller.automaticActsHere, isEmpty);
+      controller.dispose();
+    },
+  );
 
   testWidgets('latest overlapping connect owns all commits and transport', (
     tester,
@@ -521,9 +621,36 @@ void main() {
     final forwarded = await worktreeEvent;
     expect(forwarded.directory, '/data/worktree/project-1/mobile-review');
 
+    scopedStreams.single.emitStatus(StreamStatus.connected);
+    globalStreams.single.emitStatus(StreamStatus.reconnecting);
+    await AutomationPolicyController.forProfile(
+      controller.store.prefs,
+      'server',
+    ).setBehavior(AutomationBehavior.reconnect, false);
+    expect(globalStreams.single.disposed, isTrue);
+    expect(scopedStreams.single.disposed, isFalse);
     controller.dispose();
     expect(scopedStreams.single.disposed, isTrue);
     expect(globalStreams.single.disposed, isTrue);
+  });
+
+  testWidgets('retry status can veto EventStream before another request', (
+    tester,
+  ) async {
+    final api = _FailingStreamApi();
+    late EventStream stream;
+    stream = EventStream(
+      api: api,
+      onEvent: (_) {},
+      onStatus: (status) {
+        if (status == StreamStatus.reconnecting) unawaited(stream.dispose());
+      },
+    );
+    stream.start();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 20));
+    expect(api.calls, 1);
+    api.close();
   });
 
   testWidgets('disposing EventStream cancels retry and suppresses callbacks', (

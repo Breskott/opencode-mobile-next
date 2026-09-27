@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api2/events.dart';
@@ -29,8 +30,43 @@ List<Sse2Frame> parse(String wire, {bool flush = true, int? chunkSize}) {
   return frames;
 }
 
+class _FailingTransport extends Api2Transport {
+  _FailingTransport() : super(baseUrl: 'http://localhost', password: 'fixture');
+  int calls = 0;
+  @override
+  Future<Response<ResponseBody>> openStream(
+    String path, {
+    Map<String, dynamic>? query,
+    CancelToken? cancelToken,
+  }) {
+    calls++;
+    return Future.error(StateError('unavailable'));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('retry status can veto Api2EventStream before another request', (
+    tester,
+  ) async {
+    final transport = _FailingTransport();
+    late Api2EventStream stream;
+    stream = Api2EventStream(
+      transport: transport,
+      onEvent: (_, _) {},
+      onStatus: (status) {
+        if (status == Api2StreamStatus.reconnecting) {
+          unawaited(stream.dispose());
+        }
+      },
+    );
+    stream.start();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 20));
+    expect(transport.calls, 1);
+    transport.close();
+  });
 
   test('parses bare data frames and keepalive comments', () {
     final frames = parse(

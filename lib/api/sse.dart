@@ -96,6 +96,7 @@ class EventStream implements LiveEventChannel {
               ? StreamStatus.disconnected
               : StreamStatus.reconnecting,
         );
+        if (!_isCurrent(generation)) return;
         _retryTimer = Timer(Duration(milliseconds: ms), () {
           _retryTimer = null;
           if (_isCurrent(generation)) _connect();
@@ -105,6 +106,7 @@ class EventStream implements LiveEventChannel {
   }
 
   Future<void> _pump(int generation) async {
+    if (!_isCurrent(generation)) return;
     Timer? backoffResetTimer;
     CancelToken? requestCancelToken;
     StreamSubscription<Uint8List>? subscription;
