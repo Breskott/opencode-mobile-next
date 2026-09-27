@@ -136,8 +136,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final controller = widget.controller;
     final gate = widget.gate;
     final canAnswer = controller.capabilities.controlRespond;
@@ -197,28 +196,24 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            KitText(
               gate.title,
               key: _key('question'),
-              style: theme.textTheme.bodyLarge?.copyWith(height: 1.3),
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
             ),
             if (promptShown)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
+                padding: EdgeInsetsDirectional.only(top: tokens.space1),
+                child: KitText(
                   prompt,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: muted,
-                    height: 1.35,
-                  ),
+                  role: KitTextRole.secondary,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             if (choices.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.space2),
               for (final (index, choice) in choices.indexed)
                 QuestionOptionRow(
                   choice: QuestionChoice(label: choice, description: ''),
@@ -232,7 +227,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
             // became of the answer (a refusal offers the choices again).
             if (record != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: EdgeInsetsDirectional.only(top: tokens.space2),
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: TeamReceiptChip(
@@ -244,8 +239,8 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
               ),
             if (!canAnswer)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                padding: EdgeInsetsDirectional.only(top: tokens.space2),
+                child: KitText(
                   switch (hostMode) {
                     OrchestrationHostMode.computer =>
                       l10n.teamUiHomeGateAnswerOnComputer,
@@ -253,10 +248,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
                       l10n.teamUiHomeGateAnswerOnPhone,
                   },
                   key: _key('watch-only'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: muted,
-                    height: 1.35,
-                  ),
+                  role: KitTextRole.secondary,
                 ),
               ),
           ],
@@ -298,10 +290,8 @@ class TeamGateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
     final (icon, tone) = teamGateGlyph(gate.kind);
-    final color = AppTheme.statusColor(theme, tone);
+    final color = AppTheme.statusColor(Theme.of(context), tone);
     final record = teamGateMutation(controller, gate);
     final age = gate.createdAt == null
         ? null
@@ -321,12 +311,20 @@ class TeamGateRow extends StatelessWidget {
       title: gate.title,
       titleMaxLines: 2,
       supporting: TextSpan(text: supporting),
-      trailing: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 8, end: 12),
-        child: (record != null && record.status != MutationStatus.confirmed)
-            ? TeamReceiptChip(key: receiptKey, record: record, onOpen: onTap)
-            : Icon(AppIconography.chevronRight, size: 20, color: muted),
-      ),
+      // The receipt while the host has not confirmed the answer; the
+      // chevron otherwise (the row opens the Gate sheet).
+      trailing: (record != null && record.status != MutationStatus.confirmed)
+          ? Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: KitTokens.of(context).space2,
+              ),
+              child: TeamReceiptChip(
+                key: receiptKey,
+                record: record,
+                onOpen: onTap,
+              ),
+            )
+          : const KitChevron(),
       onTap: onTap,
     );
   }
