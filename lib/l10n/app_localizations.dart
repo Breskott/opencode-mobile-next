@@ -33688,6 +33688,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// KitViewer: the More menu item and the search field label that find text in the open file
+  ///
+  /// In en, this message translates to:
+  /// **'Find in file'**
+  String get kitViewerFind;
+
+  /// KitViewer: which find match is current and how many there are, e.g. 3 of 12
+  ///
+  /// In en, this message translates to:
+  /// **'{index} of {count}'**
+  String kitViewerFindCount(int index, int count);
+
+  /// KitViewer: the find count when the typed text is not in the file
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get kitViewerFindNone;
+
+  /// KitViewer: the button that moves find to the previous match
+  ///
+  /// In en, this message translates to:
+  /// **'Previous match'**
+  String get kitViewerFindPrevious;
+
+  /// KitViewer: the button that moves find to the next match
+  ///
+  /// In en, this message translates to:
+  /// **'Next match'**
+  String get kitViewerFindNext;
+
+  /// KitViewer: the button that closes the find field
+  ///
+  /// In en, this message translates to:
+  /// **'Close find'**
+  String get kitViewerFindClose;
+
+  /// KitViewer: the More menu item that copies the whole file's text
+  ///
+  /// In en, this message translates to:
+  /// **'Copy contents'**
+  String get kitViewerCopyContents;
+
+  /// KitViewer: the checkable More menu item that shows a Markdown, SVG or table file as its raw text
+  ///
+  /// In en, this message translates to:
+  /// **'Show source'**
+  String get kitViewerShowSource;
+
+  /// KitViewer: shown instead of the body when the file has no text
+  ///
+  /// In en, this message translates to:
+  /// **'This file is empty'**
+  String get kitViewerEmpty;
+
+  /// KitViewer: the notice above a file that is only partly shown
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {shown} of {total} lines'**
+  String kitViewerTruncated(int shown, int total);
+
+  /// KitViewer: the notice above a file that is only partly shown when its full length is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Showing part of this file'**
+  String get kitViewerPartial;
+
+  /// KitViewer: the action on the truncation notice that opens the whole file
+  ///
+  /// In en, this message translates to:
+  /// **'Open all'**
+  String get kitViewerOpenAll;
+
+  /// KitViewer: the title shown for a file the app cannot display (a binary file)
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t show this file'**
+  String get kitViewerCantShow;
+
+  /// KitViewer: the file's type and size under 'Can't show this file', e.g. application/zip · 2.4 MB
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {size}'**
+  String kitViewerCantShowBody(String type, String size);
+
+  /// KitViewer: stands in for the file type when it is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown type'**
+  String get kitViewerUnknownType;
+
+  /// KitViewer: stands in for the file size when it is not known
+  ///
+  /// In en, this message translates to:
+  /// **'size unknown'**
+  String get kitViewerUnknownSize;
+
+  /// KitViewer: the title when the file failed to load; name is the file name
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open {name}'**
+  String kitViewerLoadFailed(String name);
+
+  /// KitViewer: a PDF page's caption and spoken label
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {count}'**
+  String kitViewerPage(int page, int count);
+
+  /// KitViewer: shown in place of one PDF page that failed to render
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t show page {page}'**
+  String kitViewerPageFailed(int page);
 }
 
 class _AppLocalizationsDelegate

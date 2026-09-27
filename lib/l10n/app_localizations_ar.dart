@@ -21505,4 +21505,100 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitViewerFind => 'Find in file';
+
+  @override
+  String kitViewerFindCount(int index, int count) {
+    final intl.NumberFormat indexNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String indexString = indexNumberFormat.format(index);
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$indexString of $countString';
+  }
+
+  @override
+  String get kitViewerFindNone => 'No matches';
+
+  @override
+  String get kitViewerFindPrevious => 'Previous match';
+
+  @override
+  String get kitViewerFindNext => 'Next match';
+
+  @override
+  String get kitViewerFindClose => 'Close find';
+
+  @override
+  String get kitViewerCopyContents => 'Copy contents';
+
+  @override
+  String get kitViewerShowSource => 'Show source';
+
+  @override
+  String get kitViewerEmpty => 'This file is empty';
+
+  @override
+  String kitViewerTruncated(int shown, int total) {
+    final intl.NumberFormat shownNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String shownString = shownNumberFormat.format(shown);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Showing the first $shownString of $totalString lines';
+  }
+
+  @override
+  String get kitViewerPartial => 'Showing part of this file';
+
+  @override
+  String get kitViewerOpenAll => 'Open all';
+
+  @override
+  String get kitViewerCantShow => 'Can\'t show this file';
+
+  @override
+  String kitViewerCantShowBody(String type, String size) {
+    return '$type · $size';
+  }
+
+  @override
+  String get kitViewerUnknownType => 'Unknown type';
+
+  @override
+  String get kitViewerUnknownSize => 'size unknown';
+
+  @override
+  String kitViewerLoadFailed(String name) {
+    return 'Couldn\'t open $name';
+  }
+
+  @override
+  String kitViewerPage(int page, int count) {
+    final intl.NumberFormat pageNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pageString = pageNumberFormat.format(page);
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Page $pageString of $countString';
+  }
+
+  @override
+  String kitViewerPageFailed(int page) {
+    final intl.NumberFormat pageNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pageString = pageNumberFormat.format(page);
+
+    return 'Couldn\'t show page $pageString';
+  }
 }
