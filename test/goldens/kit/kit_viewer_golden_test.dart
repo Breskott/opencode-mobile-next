@@ -2,8 +2,8 @@
 // the declared states (code, markdown, image, pdf, svg, delimited, binary,
 // loading, error, truncated, finding) at the two sizes the owner's
 // 2026-09-27 decision keeps (412x915 phone: the sheet; 1280x800 wide: the
-// page), light and dark. Arabic and text-2.0 galleries are dropped by that
-// same decision.
+// page), light and dark, and the default (code) at text 2.0 at both sizes
+// (TEST-9, G4). Arabic galleries are dropped by that same decision.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_viewer_golden_test.dart
@@ -335,6 +335,27 @@ void main() {
           );
         });
       }
+    }
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_viewer code · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await kitGalleryShot(
+            tester,
+            name: kitGalleryName(
+              'kit_viewer_code',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            open: _states['code']!.$1,
+          );
+        },
+      );
     }
   }
 }

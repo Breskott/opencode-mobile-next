@@ -37,6 +37,8 @@ const _kitBreadcrumbEllipsis = '…';
 ///
 /// One 48 dp row that grows with the text; no motion, no haptics. The part
 /// draws edge to edge within the host's rails.
+///
+/// States: none — every crumb but the current one always opens its place.
 class KitBreadcrumb extends StatelessWidget {
   const KitBreadcrumb({
     super.key,

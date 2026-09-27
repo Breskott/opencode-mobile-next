@@ -2,7 +2,8 @@
 // "Galleries required": the declared states and the keyboard focus at
 // 412x915, and the default at 1280x800, in light and dark. The owner
 // decision of 2026-09-27 (STANDARDS.md header) drops the Arabic/RTL shots
-// and narrows this wave's sizes to the phone and one wide size. The
+// and narrows this wave's sizes to the phone and one wide size; the
+// default is also shot at text 2.0 at both sizes (TEST-9, G4). The
 // fixture path is lib/ui/screens/settings/advanced under the root "oc_app".
 // The spec's "under a top bar" scene waits for KitTopBar (not merged yet):
 // the trail sits on ground within the 16 dp rails.
@@ -123,5 +124,25 @@ void main() {
         child: _trail(_default),
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets('default · text 2.0 · ${kitGallerySize(size)} · $mode', (
+        tester,
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_breadcrumb_default',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _trail(_default),
+        );
+      });
+    }
   }
 }

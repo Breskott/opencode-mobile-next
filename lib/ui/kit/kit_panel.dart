@@ -35,7 +35,9 @@ class KitPanel extends StatelessWidget {
     this.onTap,
   });
 
-  static const EdgeInsets _defaultPadding = EdgeInsets.all(16);
+  static const EdgeInsets _defaultPadding = EdgeInsets.all(
+    KitTokens.panelPadding,
+  );
 
   final Widget child;
 

@@ -141,19 +141,30 @@ Future<void> _shot(
   // A blinking caret never settles; the focused shot shows it steady.
   EditableText.debugDeterministicCursor = true;
   try {
-    await kitGalleryPart(
-      tester,
-      name: kitGalleryName(
-        'kit_field_$state',
-        size,
+    // Two literal calls, so the G4 manifest reads the text-2.0 shot.
+    if (text2) {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_field_$state',
+          size,
+          light: light,
+          text2: true,
+        ),
+        size: size,
         light: light,
-        text2: text2,
-      ),
-      size: size,
-      light: light,
-      textScale: text2 ? 2 : 1,
-      child: _scene(build()),
-    );
+        textScale: 2,
+        child: _scene(build()),
+      );
+    } else {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName('kit_field_$state', size, light: light),
+        size: size,
+        light: light,
+        child: _scene(build()),
+      );
+    }
   } finally {
     EditableText.debugDeterministicCursor = false;
   }

@@ -20530,7 +20530,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get kitCapServerAnyTitle => 'A server to work on';
+  String get kitCapServerAnyTitle => 'Server to work on';
 
   @override
   String get kitCapServerAnyWhy =>
@@ -20619,7 +20619,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Run this phone\'s server in Termux instead?';
 
   @override
-  String get kitCapPhoneAnyTitle => 'A server on this phone';
+  String get kitCapPhoneAnyTitle => 'Server on this phone';
 
   @override
   String get kitCapPhoneAnyWhy => 'Needs a server running on this phone.';
@@ -20832,7 +20832,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Work with agents from other apps. Add one?';
 
   @override
-  String get kitCapFlagFileBrowsingTerminalTitle => 'Files and Terminal';
+  String get kitCapFlagFileBrowsingTerminalTitle => 'Files and terminal';
 
   @override
   String get kitCapFlagFileBrowsingTerminalWhy =>
@@ -20890,7 +20890,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'This server can\'t be updated from the app.';
 
   @override
-  String get kitCapFlagPromptAttachmentsTitle => 'Photos and files in prompts';
+  String get kitCapFlagPromptAttachmentsTitle => 'Attach photos and files';
 
   @override
   String get kitCapFlagPromptAttachmentsWhy =>
@@ -21236,7 +21236,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get projectFolderMissingTitle => 'No folder there';
+  String get projectFolderMissingTitle => 'Create this folder?';
 
   @override
   String get projectFolderCreateFailedTitle => 'Couldn’t create the folder';
@@ -21245,7 +21245,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get projectFolderOpenFailedTitle => 'Couldn’t open the folder';
 
   @override
-  String get projectsOneFolderTitle => 'This server works in one folder';
+  String get projectsOneFolderTitle => 'Server uses one folder';
 
   @override
   String servicesStarted(String name) {
@@ -21269,7 +21269,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String servicesForgetTitle(String name) {
-    return 'Forget the last run of $name?';
+    return 'Forget $name\'s last run?';
   }
 
   @override
@@ -21295,7 +21295,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get servicesProjectFolder => 'Project folder';
 
   @override
-  String get servicesWorkspace => 'Workspace';
+  String get servicesWorkspace => 'Environment';
 
   @override
   String get servicesNameRequired => 'Enter a name.';
@@ -21393,7 +21393,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifySendingTest => 'Sending a test notification…';
 
   @override
-  String get notifyNoServersTitle => 'No saved servers to watch';
+  String get notifyNoServersTitle => 'No servers to watch';
 
   @override
   String get notifyNoServersDetail =>
@@ -21436,7 +21436,7 @@ class AppLocalizationsAr extends AppLocalizations {
       locale: localeName,
       other: 'Delete $count queued prompts',
       one: 'Delete 1 queued prompt',
-      zero: 'Delete',
+      zero: 'Delete queued prompts',
     );
     return '$_temp0';
   }
@@ -21448,7 +21448,7 @@ class AppLocalizationsAr extends AppLocalizations {
       locale: localeName,
       other: 'Delete $count drafts',
       one: 'Delete 1 draft',
-      zero: 'Delete',
+      zero: 'Delete drafts',
     );
     return '$_temp0';
   }
@@ -21531,7 +21531,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
 
   @override
-  String get guidePhonePathTitle => 'No computer? Run it on this phone';
+  String get guidePhonePathTitle => 'Use this phone instead';
 
   @override
   String get guidePhonePathBody =>
@@ -21577,7 +21577,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String serverSettingsUpgradeRestartAfter(String target) {
-    return 'The OpenCode process must be restarted on its host to use $target';
+    return 'Restart the OpenCode process on its computer to use $target';
   }
 
   @override
@@ -21596,10 +21596,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get serverSettingsRunningVersionLabel => 'Running version';
 
   @override
-  String get tailscaleSetupAppTitle => 'Tailscale app on this phone';
+  String get tailscaleSetupAppTitle => 'Tailscale on this phone';
 
   @override
-  String get tailscaleSetupVpnTitle => 'Sign in and turn on the VPN';
+  String get tailscaleSetupVpnTitle => 'Sign in and connect';
 
   @override
   String get tailscaleSetupVpnSupporting =>
@@ -21926,7 +21926,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get importNoDestinationsTitle => 'No projects to import into';
+  String get importNoDestinationsTitle => 'Nowhere to import';
 
   @override
   String importOnServer(String server) {
@@ -22079,7 +22079,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get handoffSheetCopyCommand => 'Copy command';
 
   @override
-  String get handoffSheetReloadConversation => 'Reload conversation';
+  String get handoffSheetReloadConversation => 'Try again';
 
   @override
   String get handoffSheetPhoneServerNote =>
@@ -22131,7 +22131,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get modelPickerCollections => 'Which models to show';
 
   @override
-  String get modelPickerSignInTitle => 'Sign in to a provider';
+  String get modelPickerSignInTitle => 'Provider sign-in needed';
 
   @override
   String get modelPickerSignInBody =>
@@ -22203,7 +22203,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamPhoneRemoveLost =>
-      'The team\'s programs, its city and its task list are deleted';
+      'The team\'s programs, its files and its task list are deleted';
 
   @override
   String get teamPhoneRemoveKept =>
@@ -22216,9 +22216,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamPhoneRemoveConfirm => 'Delete the team';
-
-  @override
-  String get phoneServerCardRemoveOpenCode => 'Remove OpenCode';
 
   @override
   String get productStatesActionFailedTitle => 'Couldn\'t finish that';
@@ -23086,8 +23083,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reviewRevertKeepTitle => 'Delete the hidden messages';
 
   @override
-  String get reviewRevertKeepConfirmTitle =>
-      'Delete the hidden messages for good?';
+  String get reviewRevertKeepConfirmTitle => 'Delete hidden messages forever?';
 
   @override
   String get reviewRevertKeepConfirmBody => 'This can\'t be undone.';
@@ -23388,7 +23384,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String desktopReleaseAvailable(String tag) {
-    return 'OpenCode $tag is available';
+    return 'Update $tag is available';
   }
 
   @override
@@ -23436,7 +23432,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get runningWorkStopAgentConfirm => 'Stop agent';
 
   @override
-  String get runningWorkScopeChangedTitle => 'The server or project changed';
+  String get runningWorkScopeChangedTitle => 'Server or project changed';
 
   @override
   String get runningWorkAgentsFailed =>
@@ -23501,7 +23497,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shellOutputReading => 'Reading output';
 
   @override
-  String get sessionDestinationWarpTitle => 'Move to a cloud machine';
+  String get sessionDestinationWarpTitle => 'Move to the cloud';
 
   @override
   String get sessionDestinationSeparateCopy => 'Separate copy';
@@ -23549,7 +23545,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Couldn\'t load the places to move to';
 
   @override
-  String get sessionDestinationNoneTitle => 'Nowhere else to move it yet';
+  String get sessionDestinationNoneTitle => 'Nowhere to move it';
 
   @override
   String get sessionDestinationNoneMoveBody =>
@@ -23693,10 +23689,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get activeContextChangedTitle => 'This view is out of date';
+  String get activeContextChangedTitle => 'This view is outdated';
 
   @override
-  String get activeContextFailedTitle => 'Couldn\'t read the active context';
+  String get activeContextFailedTitle => 'Couldn\'t read the context';
 
   @override
   String get activeContextIntro =>
@@ -23981,8 +23977,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Couldn\'t write the file on this device. Nothing changed on the server. Try again, or choose another folder.';
 
   @override
-  String get capabilitiesToolsMissingTitle =>
-      'This server doesn\'t list its tools';
+  String get capabilitiesToolsMissingTitle => 'Tools aren\'t listed';
 
   @override
   String capabilitiesToolsMissingOnServer(String server) {
@@ -24107,12 +24102,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.';
 
   @override
-  String get externalAgentsUnsupportedTitle =>
-      'This agent can\'t be used from this app';
+  String get externalAgentsUnsupportedTitle => 'Agent not supported';
 
   @override
   String get externalAgentsUnsupportedBody =>
-      'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.';
+      'It doesn\'t take text tasks the way this app sends them, or it asks for a sign-in this app doesn\'t support.';
 
   @override
   String get externalAgentsKeyLabel => 'Agent key';
@@ -24149,7 +24143,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String externalAgentsReplaceKeyTitle(String name) {
-    return 'Replace the key for $name';
+    return 'Replace key for $name';
   }
 
   @override
@@ -24224,7 +24218,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String mcpSetupSavedNamed(String name) {
-    return 'Saved $name in OpenCode';
+    return 'Saved $name on this server';
   }
 
   @override
@@ -24237,8 +24231,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'The server or project changed after saving, so this page can\'t reconnect for it. Close it and check MCP servers.';
 
   @override
-  String get mcpSetupUnavailableTitle =>
-      'This server can\'t add MCP servers from here';
+  String get mcpSetupUnavailableTitle => 'Can\'t add MCP servers';
 
   @override
   String get mcpSetupUnavailableBody =>
@@ -25264,7 +25257,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String newConversationCopyTitle(String project) {
-    return 'In a separate copy of $project';
+    return 'Separate copy of $project';
   }
 
   @override
@@ -25553,7 +25546,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String credentialRemoveAccountTitle(String provider, String name) {
-    return 'Remove the $provider account “$name”?';
+    return 'Remove $provider account “$name”?';
   }
 
   @override
@@ -25768,7 +25761,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get automationSaving => 'Saving…';
 
   @override
-  String get automationEmptyTitle => 'Nothing runs by itself here';
+  String get automationEmptyTitle => 'Nothing runs by itself';
 
   @override
   String get automationEmptyBody =>
@@ -26110,7 +26103,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String thisPhoneRemoveToolTitle(String tool) {
-    return 'Remove $tool from this phone?';
+    return 'Remove $tool?';
   }
 
   @override
@@ -26724,4 +26717,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamAgentsWakeCheckAgain => 'Check again';
+
+  @override
+  String get servicesStopConfirm => 'Stop service';
+
+  @override
+  String get servicesRestartConfirm => 'Restart service';
+
+  @override
+  String get managedWorkspacesRemoveConfirm => 'Remove environment';
 }

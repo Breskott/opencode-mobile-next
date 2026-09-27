@@ -551,7 +551,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  Future<void> _confirmAndClear({
+  /// Asks, then clears; true when the person confirmed and it cleared.
+  Future<bool> _confirmAndClear({
     required String title,
     required String body,
     required String confirmLabel,
@@ -569,17 +570,18 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       kind: KitConfirmKind.destructive,
       confirmKey: ValueKey(confirmKey),
     );
-    if (!ok || !mounted) return;
+    if (!ok || !mounted) return false;
     setState(() {
       _busy = true;
       _result = null;
     });
     final succeeded = await clear();
-    if (!mounted) return;
+    if (!mounted) return succeeded;
     setState(() {
       _busy = false;
       _result = (message: succeeded ? cleared : failed, ok: succeeded);
     });
+    return succeeded;
   }
 
   Widget _readState(BuildContext context) => ListenableBuilder(
@@ -726,9 +728,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                           ? l10n.queueStorageDiscardUnreadable
                           : copy.e7SettingsQueueDeleteBody(queued),
                       // The counted verb (privacy-settings-clear-queued-sheet).
-                      confirmLabel: queueReadable
-                          ? copy.privacyDeleteQueuedCount(queued)
-                          : copy.promptStashDelete,
+                      confirmLabel: copy.privacyDeleteQueuedCount(
+                        queueReadable ? queued : 0,
+                      ),
                       confirmKey: 'privacy-clear-queued-confirm',
                       clear: _controller.clearAllQueuedPrompts,
                       cleared: copy.e7SettingsUi81,

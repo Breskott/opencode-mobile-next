@@ -8,7 +8,7 @@
 // Owner decision 2026-09-27 (dated later than KitJumpPill.md, R15): Arabic
 // is dropped — no Arabic/RTL galleries, no text-2.0-at-every-size sweep;
 // galleries are phone 412x915 and one wide size 1280x800 only, light and
-// dark. This replaces KitJumpPill.md's own "Galleries required" list
+// dark, with the default also at text 2.0 at both sizes (TEST-9, G4). This replaces KitJumpPill.md's own "Galleries required" list
 // (360x800/800x1280/915x412/1600x1000, text 2.0 and Arabic RTL at 412x915
 // and 1280x800), a PROC-20 note recorded in the unit's QA record.
 //
@@ -50,9 +50,12 @@ Widget _composerScene(BuildContext context) {
 /// the solid pill: the pill is meant to hover clear of read messages, and a
 /// row a screen reader would announce out of visual top-to-bottom order
 /// (behind an opaque pill it never scrolls with) is a scene defect, not a
-/// KitJumpPill one (G5, STANDARDS §18, is absolute).
+/// KitJumpPill one (G5, STANDARDS §18, is absolute). At text 2.0 three
+/// rows fill the pane, so the scene shows three and none slides under the
+/// pill or the composer.
 Widget _transcriptScene(BuildContext context) {
   final tokens = KitTokens.of(context);
+  final large = MediaQuery.textScalerOf(context).scale(1) > 1.5;
   final reserve = tokens.navHeight + tokens.minTarget + tokens.space3 * 3;
   return ListView.builder(
     padding: EdgeInsets.fromLTRB(
@@ -61,7 +64,7 @@ Widget _transcriptScene(BuildContext context) {
       tokens.space4,
       reserve,
     ),
-    itemCount: 6,
+    itemCount: large ? 3 : 6,
     itemBuilder: (context, i) => Padding(
       padding: EdgeInsets.only(bottom: tokens.space3),
       child: KitText(
@@ -82,6 +85,7 @@ Future<void> _pillGalleryShot(
   required bool light,
   required KitJumpPill Function(BuildContext context) pill,
   Future<void> Function(WidgetTester tester)? then,
+  double textScale = 1,
 }) async {
   final own = light ? 'light' : 'dark';
   if (!name.endsWith('_$own')) {
@@ -110,7 +114,10 @@ Future<void> _pillGalleryShot(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(textScale),
+              ),
               child: child!,
             ),
             home: Scaffold(
@@ -250,6 +257,29 @@ void main() {
           },
         );
       });
+
+      testWidgets(
+        'kit_jump_pill default · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await _pillGalleryShot(
+            tester,
+            name: kitGalleryName(
+              'kit_jump_pill_default',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            pill: (context) => KitJumpPill(
+              label: KitJumpPill.latestLabel(context, newCount: 3),
+              onPressed: () {},
+              visible: true,
+            ),
+          );
+        },
+      );
     }
   }
 }

@@ -7,7 +7,9 @@
 //
 // Owner decision 2026-09-27 (dated later than KitNav.md, R15): Arabic is
 // dropped — no Arabic/RTL galleries, no text-2.0 sweep; galleries are phone
-// 412x915 and one wide size 1280x800 only, light and dark. This replaces
+// 412x915 and one wide size 1280x800 only, light and dark, plus the default
+// (the dock on the phone, the sidebar wide) at text 2.0 (TEST-9, G4). This
+// replaces
 // KitNav.md's own "Galleries required" list (360x800, 915x412, 800x1280,
 // 1600x1000, text 2.0 and Arabic RTL); the rail, which the spec shows at
 // 800x1280, is drawn at 1280x800 as a bare KitNavRail beside the content.
@@ -186,6 +188,43 @@ void main() {
         name: kitGalleryName('kit_nav_sidebar_default', wide, light: light),
         size: wide,
         light: light,
+        open: (context) =>
+            _open(context, _scene(child: _nav(inbox: 3, wide: true))),
+      );
+    });
+
+    testWidgets('dock default text 2.0 (${light ? 'light' : 'dark'})', (
+      tester,
+    ) async {
+      await kitGalleryShot(
+        tester,
+        name: kitGalleryName(
+          'kit_nav_dock_default',
+          phone,
+          light: light,
+          text2: true,
+        ),
+        size: phone,
+        light: light,
+        textScale: 2,
+        open: (context) => _open(context, _scene(child: _nav())),
+      );
+    });
+
+    testWidgets('sidebar default text 2.0 (${light ? 'light' : 'dark'})', (
+      tester,
+    ) async {
+      await kitGalleryShot(
+        tester,
+        name: kitGalleryName(
+          'kit_nav_sidebar_default',
+          wide,
+          light: light,
+          text2: true,
+        ),
+        size: wide,
+        light: light,
+        textScale: 2,
         open: (context) =>
             _open(context, _scene(child: _nav(inbox: 3, wide: true))),
       );

@@ -1144,6 +1144,8 @@ class _TimeEntry extends StatelessWidget {
 ///
 /// It is a [KitRow]; put it in a [KitRowGroup]. A null `onChanged` disables
 /// it, and then [disabledReason] is required and shown on the row.
+///
+/// States: disabled.
 class KitDateTimeRow extends StatelessWidget {
   const KitDateTimeRow.date({
     super.key,

@@ -18,7 +18,8 @@ import 'kit_layout.dart';
 /// would take the gesture desktop users select text with. Wheel and trackpad
 /// scrolling arrive as pointer signals and pan/zoom events, not drags.
 ///
-/// States: idle, hovered, dragged (decorative control; not a data part).
+/// States: none — a decorative scroll control, not a data part (it looks
+/// idle, hovered or dragged).
 class KitScrollBehavior extends MaterialScrollBehavior {
   const KitScrollBehavior();
 
@@ -50,7 +51,8 @@ class KitScrollBehavior extends MaterialScrollBehavior {
 /// No scrollbar is added here on purpose: the behaviour already builds one
 /// around every Scrollable, and a second would draw a second thumb.
 ///
-/// States: idle, hovered, dragged (decorative control; not a data part).
+/// States: none — a decorative scroll control, not a data part (it looks
+/// idle, hovered or dragged).
 class KitScrollArea extends StatefulWidget {
   const KitScrollArea({super.key, required this.builder});
 
@@ -84,7 +86,8 @@ class _KitScrollAreaState extends State<KitScrollArea> {
 /// pointer, the platform's thumb on touch. Wraps its child in
 /// [KitOwnScrollbar] so the behaviour does not add a second thumb.
 ///
-/// States: idle, hovered, dragged (decorative control; not a data part).
+/// States: none — a decorative scroll control, not a data part (it looks
+/// idle, hovered or dragged).
 class KitScrollbar extends StatelessWidget {
   const KitScrollbar({
     super.key,
@@ -114,7 +117,7 @@ class KitScrollbar extends StatelessWidget {
 /// Stops [KitScrollBehavior] adding a second thumb inside a subtree that
 /// builds its own [KitScrollbar] (moved from `OwnScrollbar`).
 ///
-/// States: none (configuration only).
+/// States: none — configuration only, it draws nothing itself.
 class KitOwnScrollbar extends StatelessWidget {
   const KitOwnScrollbar({super.key, required this.child});
 

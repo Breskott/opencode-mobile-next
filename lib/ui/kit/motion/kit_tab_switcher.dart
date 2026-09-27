@@ -57,6 +57,8 @@ class KitTab {
 /// Keyboard: the strip is one Tab stop, entered on the selected tab; Left
 /// and Right (mirrored right to left) move focus, Home and End jump, Enter
 /// and Space select. Arrows never select.
+///
+/// States: none — every tab can always be selected.
 class KitTabStrip extends StatefulWidget {
   const KitTabStrip({
     super.key,

@@ -117,12 +117,42 @@ void main() {
       await shot(tester, 'date', _date);
     });
 
+    // The wide and text-2.0 shots call kitGalleryShot directly, so the G4
+    // manifest reads their size and text scale from literal arguments.
     testWidgets('kit_date_time_picker date 1280x800 · $mode', (tester) async {
-      await shot(tester, 'date', _date, size: _wide);
+      await withClock(
+        Clock.fixed(_today),
+        () => kitGalleryShot(
+          tester,
+          name: kitGalleryName(
+            'kit_date_time_picker_date',
+            _wide,
+            light: light,
+          ),
+          size: _wide,
+          light: light,
+          open: _date,
+        ),
+      );
     });
 
     testWidgets('kit_date_time_picker date text2 · $mode', (tester) async {
-      await shot(tester, 'date', _date, textScale: 2);
+      await withClock(
+        Clock.fixed(_today),
+        () => kitGalleryShot(
+          tester,
+          name: kitGalleryName(
+            'kit_date_time_picker_date',
+            _phone,
+            light: light,
+            text2: true,
+          ),
+          size: _phone,
+          light: light,
+          open: _date,
+          textScale: 2,
+        ),
+      );
     });
 
     testWidgets('kit_date_time_picker date_typed · $mode', (tester) async {

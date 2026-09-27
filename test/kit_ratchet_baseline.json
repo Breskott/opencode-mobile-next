@@ -145,20 +145,20 @@
     "lib/diagnostics/app_diagnostics.dart": {
       "Color(0x": 2
     },
-    "lib/ui/kit/glass/kit_glass.dart": {
-      "Colors.*": 2
+    "lib/ui/screens/library/integration_tiles.dart": {
+      "attention roles": 2
     },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      ".textTheme": 2
+    "lib/ui/screens/provider_quota_screen.dart": {
+      "attention roles": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
-      ".textTheme": 3,
       "attention roles": 2
     },
     "lib/ui/screens/team/run_screen.dart": {
-      ".colorScheme": 6,
-      ".textTheme": 14,
       "attention roles": 3
+    },
+    "lib/ui/screens/team/team_home_screen.dart": {
+      "attention roles": 1
     },
     "lib/ui/screens/team/team_states.dart": {
       "attention roles": 5
@@ -177,16 +177,11 @@
     "lib/ui/widgets/saved_server_connection_card.dart": {
       "attention roles": 2
     },
-    "lib/ui/widgets/session_handoff.dart": {
-      ".textTheme": 1
-    },
     "lib/ui/widgets/team_board_card.dart": {
       "attention roles": 2
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {
-      ".colorScheme": 5,
-      ".textTheme": 19,
-      "attention roles": 2
+      "attention roles": 1
     },
     "lib/ui/widgets/team_vocabulary.dart": {
       "attention roles": 11
@@ -273,72 +268,10 @@
     "lib/main.dart": {
       "text scale clamp": 1
     },
-    "lib/ui/kit/glass/kit_glass.dart": {
-      "stroke width not KitTokens in kit": 1
-    },
-    "lib/ui/kit/kit_panel.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/kit/kit_progress.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 4
-    },
     "lib/ui/kit/kit_row.dart": {
       "SizedBox numeric": 2
     },
     "lib/ui/kit/kit_row_parts.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/kit/kit_screen.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/kit/kit_sheet.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/kit/scenes/folders_open_scene.dart": {
-      "Radius.circular(<n>": 8
-    },
-    "lib/ui/kit/scenes/portal_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/servers_cast.dart": {
-      "Radius.circular(<n>": 2
-    },
-    "lib/ui/kit/scenes/servers_link_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/setup_cast.dart": {
-      "Radius.circular(<n>": 2
-    },
-    "lib/ui/kit/scenes/setup_phone_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/setup_ready_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/setup_steps_scene.dart": {
-      "Radius.circular(<n>": 2
-    },
-    "lib/ui/kit/scenes/setup_unplugged_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/states_scenes.dart": {
-      "Radius.circular(<n>": 8
-    },
-    "lib/ui/kit/scenes/states_working_scene.dart": {
-      "Radius.circular(<n>": 1
-    },
-    "lib/ui/kit/scenes/team_scenes.dart": {
-      "Radius.circular(<n>": 3
-    },
-    "lib/ui/kit/terminal_key_bar.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 7
-    },
-    "lib/ui/screens/manage_project_screen.dart": {
       "EdgeInsets numeric": 1
     },
     "lib/ui/screens/managed_workspaces_screen.dart": {
@@ -350,17 +283,6 @@
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".toUpperCase()": 2,
       "TextStyle(": 2
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "EdgeInsets numeric": 4
-    },
-    "lib/ui/screens/team/run_screen.dart": {
-      "Border.all(": 2,
-      "EdgeInsets numeric": 17,
-      "SizedBox numeric": 13,
-      "TextStyle(": 2,
-      "fontSize:": 1,
-      "icon size not 20/22/24": 4
     },
     "lib/ui/screens/team/work_sheet.dart": {
       ".toUpperCase()": 1
@@ -378,16 +300,6 @@
       "EdgeInsets numeric": 9,
       "SizedBox numeric": 28,
       "icon size not 20/22/24": 5
-    },
-    "lib/ui/widgets/session_handoff.dart": {
-      "SizedBox numeric": 2
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 26,
-      "icon size not 20/22/24": 3
     },
     "lib/ui/widgets/thermal_notice.dart": {
       "EdgeInsets numeric": 1
@@ -449,6 +361,8 @@
       "KitGlass(/GlassSurface(": [
         "lib/ui/kit/chat/kit_composer.dart",
         "lib/ui/kit/glass/",
+        "lib/ui/kit/kit_nav.dart",
+        "lib/ui/kit/kit_top_bar.dart",
         "lib/ui/screens/home_screen.dart",
         "lib/ui/widgets/glass_surface.dart"
       ],

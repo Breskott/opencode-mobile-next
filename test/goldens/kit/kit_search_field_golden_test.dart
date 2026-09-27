@@ -6,8 +6,9 @@
 // and look at every changed image before committing it.
 //
 // Owner decision 2026-09-27 (dated later than KitSearchField.md, R15): Arabic
-// is dropped — no Arabic/RTL galleries, no text-2.0 sweep; galleries are
-// phone 412x915 and one wide size 1280x800 only, light and dark. This
+// is dropped — no Arabic/RTL galleries; galleries are phone 412x915 and
+// one wide size 1280x800 only, light and dark, with `typing` also at text
+// 2.0 at both sizes (TEST-9, G4). This
 // replaces the spec's own "Galleries required" list (32 PNGs), a PROC-20
 // note recorded in the unit's QA record.
 //
@@ -76,23 +77,33 @@ Widget _fixture(
   );
 }
 
+/// Opens [page] as a route with no transition.
+Future<void> Function(BuildContext) _open(
+  Widget Function(BuildContext context) page,
+) =>
+    (context) => Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        pageBuilder: (inner, _, _) => page(inner),
+      ),
+    );
+
+/// A state at the phone size.
 Future<void> _shot(
   WidgetTester tester, {
   required String state,
   required bool light,
-  Size size = const Size(412, 915),
   required Widget Function(BuildContext context) page,
 }) => kitGalleryShot(
   tester,
-  name: kitGalleryName('kit_search_field_$state', size, light: light),
-  size: size,
-  light: light,
-  open: (context) => Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: Duration.zero,
-      pageBuilder: (inner, _, _) => page(inner),
-    ),
+  name: kitGalleryName(
+    'kit_search_field_$state',
+    const Size(412, 915),
+    light: light,
   ),
+  size: const Size(412, 915),
+  light: light,
+  open: _open(page),
 );
 
 TextEditingController _query(String text) => TextEditingController(text: text);
@@ -193,13 +204,37 @@ void main() {
       });
     }
     testWidgets('KitSearchField typing 1280x800 ($theme)', (tester) async {
-      await _shot(
+      await kitGalleryShot(
         tester,
-        state: 'typing',
-        light: light,
+        name: kitGalleryName(
+          'kit_search_field_typing',
+          const Size(1280, 800),
+          light: light,
+        ),
         size: const Size(1280, 800),
-        page: _states['typing']!,
+        light: light,
+        open: _open(_states['typing']!),
       );
     });
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'KitSearchField typing · text 2.0 · ${kitGallerySize(size)} · $theme',
+        (tester) async {
+          await kitGalleryShot(
+            tester,
+            name: kitGalleryName(
+              'kit_search_field_typing',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            open: _open(_states['typing']!),
+          );
+        },
+      );
+    }
   }
 }

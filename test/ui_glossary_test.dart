@@ -1097,6 +1097,27 @@ const _allowedProductKeys = <String>{
   'setupRuntimeOne',
   'setupRuntimeTwo',
   'quotaCodex',
+  // A capability that needs one backend (KitCapabilityExplainer): the name
+  // is what the person has to connect, switch to or run, and where the
+  // part is available ("Available on computers with OpenCode 2").
+  'kitCapServerOc1Title',
+  'kitCapServerOc2Title',
+  'kitCapServerOc2Enable',
+  'kitCapServerCodexTitle',
+  'kitCapServerCodexEnable',
+  'kitCapServerPaseoEnable',
+  'kitHostOpenCode',
+  'kitHostOpenCode1',
+  'kitHostOpenCode2',
+  'kitHostCodex',
+  'kitHostPaseo',
+  // This phone lists OpenCode beside the other things it runs (Paseo, the
+  // optional tools such as Claude Code); the name says which one the
+  // action acts on.
+  'thisPhoneSetUp',
+  'thisPhoneUpdate',
+  'thisPhoneRemove',
+  'phoneServerCardStartOpenCode',
   // The app's own name, not a backend label.
   'appTitle',
   'iosAppTitle',
@@ -1189,6 +1210,16 @@ String? _titleCaseWord(String variant) {
   return null;
 }
 
+/// The fixed words of a title [variant], each of [_properPhrases] counted
+/// as one word.
+int _titleWords(String variant) {
+  var text = variant;
+  for (final phrase in _properPhrases) {
+    text = text.replaceAll(phrase, _slot);
+  }
+  return _wordsOf(text).length;
+}
+
 int _sentencesIn(String variant) => variant
     .split(RegExp(r'(?<=[.!?])\s+'))
     .where((s) => s.trim().isNotEmpty)
@@ -1228,8 +1259,12 @@ List<String> _g28Problems(String key, String value) {
   if (_allCaps.hasMatch(value)) problems.add('uppercase');
   // COPY-21.
   if (_modes.hasMatch(value)) problems.add('mode');
-  // COPY-6: the glossary nouns, in labels and sentences alike.
+  // COPY-6: the glossary nouns, in labels and sentences alike. Search
+  // keywords (`…Aliases`) are never shown: they keep the retired words so a
+  // person who types "workspace" or "session" still finds the row.
+  final shown = !key.endsWith('Aliases');
   for (final MapEntry(key: noun, value: pattern) in _glossaryNouns.entries) {
+    if (!shown) break;
     if (noun.startsWith('host') && key.startsWith('teamUi')) continue;
     if (variants.any(pattern.hasMatch)) {
       final kind = labels.any(pattern.hasMatch) ? 'label' : 'sentence';
@@ -1239,7 +1274,7 @@ List<String> _g28Problems(String key, String value) {
   // COPY-6: session and chat outside the labels the absolute test above
   // checks. That test uses [_isShortActionLabel], so a label ending in "…"
   // ("New session…") is counted here rather than slipping between the two.
-  if (!_allowedNounKeys.contains(key)) {
+  if (shown && !_allowedNounKeys.contains(key)) {
     for (final MapEntry(key: noun, value: pattern)
         in _conversationNouns.entries) {
       if (variants.any((v) => !_isShortActionLabel(v) && pattern.hasMatch(v))) {
@@ -1247,9 +1282,10 @@ List<String> _g28Problems(String key, String value) {
       }
     }
   }
-  // COPY-10: a title's fixed words.
+  // COPY-10: a title's fixed words. A name of more than one word ("AI
+  // Team", "Claude Code") is one word, as a placeholder is.
   if (key.endsWith('Title')) {
-    if (variants.any((v) => _wordsOf(v).length > _maxLabelWords)) {
+    if (variants.any((v) => _titleWords(v) > _maxLabelWords)) {
       problems.add('title over four words');
     }
     for (final v in variants) {
@@ -1669,6 +1705,11 @@ testWidgets('plain', (tester) async {
         'noun sentence workspace',
       ]);
       expect(_g28Problems('teamUiHostName', 'Host'), isEmpty);
+      expect(_g28Problems('xAliases', 'Pick a workspace or host.'), isEmpty);
+      expect(_g28Problems('xHint', 'Pick a workspace or host.'), [
+        'noun sentence host',
+        'noun sentence workspace',
+      ]);
       expect(_g28Problems('xSetup', 'Termux setup'), [
         'noun label termux setup',
       ]);
@@ -1694,6 +1735,10 @@ testWidgets('plain', (tester) async {
       expect(_g28Problems('xTitle', 'Remove {name}?'), isEmpty);
       expect(_g28Problems('xTitle', 'Connect to Tailscale'), isEmpty);
       expect(_g28Problems('xTitle', 'Turn off AI Team?'), isEmpty);
+      expect(_g28Problems('xTitle', 'AI Team on this phone'), isEmpty);
+      expect(_g28Problems('xTitle', 'Claude Code on this phone now'), [
+        'title over four words',
+      ]);
       expect(_g28Problems('addServerTypeCodex', 'Codex'), isEmpty);
       expect(_g28Problems('xTitle', 'Open MCP servers'), isEmpty);
       expect(_g28Problems('xTitle', 'Server Settings'), [
