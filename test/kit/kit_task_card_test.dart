@@ -23,6 +23,8 @@ import 'package:opencode_mobile/ui/widgets/team_board_card.dart';
 
 import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
+import 'kit_motion_still.dart';
+
 final _dark = AppTheme.dark();
 
 /// A colour as 8-bit ARGB, so a Paint's colour compares with a role.
@@ -168,6 +170,33 @@ _RecordingCanvas _paintGlyph(WidgetTester tester, KitPriority priority) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitTaskCard',
+    builds: {
+      'working': () => _card(),
+      'needs you': () => _card(mark: KitTaskState.needsYou),
+    },
+    changes: {
+      'task finishes': KitMotionChange(
+        build: () => _card(),
+        act: (tester, stage) => stage.rebuild(
+          _card(
+            mark: KitTaskState.done,
+            meta: const [KitTaskMeta('Review complete')],
+          ),
+        ),
+        shows: 'Review complete',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitPriorityGlyph',
+    builds: {
+      for (final priority in KitPriority.values)
+        priority.name: () => KitPriorityGlyph(priority: priority),
+    },
+  );
+
   testWidgets('1 open: a tap and Enter call onOpen once each', (tester) async {
     var opened = 0;
     var acted = 0;

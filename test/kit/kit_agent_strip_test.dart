@@ -14,6 +14,8 @@ import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/widgets/agent_color.dart';
 
+import 'kit_motion_still.dart';
+
 Future<void> _pump(
   WidgetTester tester,
   List<KitAgent> agents, {
@@ -78,6 +80,39 @@ List<KitAgent> _team({VoidCallback? open}) => [
 ];
 
 void main() {
+  kitMotionStillTests(
+    'KitAgentStrip',
+    builds: {
+      'mixed': () => KitAgentStrip(agents: _team()),
+      'working': () => const KitAgentStrip(
+        agents: [
+          KitAgent(id: 'lead', name: 'mayor', state: KitTaskState.working),
+        ],
+      ),
+    },
+    changes: {
+      'agent finishes': KitMotionChange(
+        build: () => const KitAgentStrip(
+          agents: [
+            KitAgent(id: 'lead', name: 'mayor', state: KitTaskState.working),
+          ],
+        ),
+        act: (tester, stage) => stage.rebuild(
+          const KitAgentStrip(
+            agents: [
+              KitAgent(
+                id: 'lead',
+                name: 'Finished review',
+                state: KitTaskState.done,
+              ),
+            ],
+          ),
+        ),
+        shows: KitBidi.auto('Finished review'),
+      ),
+    },
+  );
+
   testWidgets('agents render in order; empty renders nothing', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, _team());

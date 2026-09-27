@@ -13,6 +13,8 @@ import 'package:opencode_mobile/ui/kit/kit_chip.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
+import 'kit_motion_still.dart';
+
 const _lineKey = ValueKey('work-group-header');
 const _stepsKey = ValueKey('work-group-steps');
 
@@ -145,6 +147,27 @@ Finder? _focusOwner(WidgetTester tester) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitWorkLine',
+    builds: {
+      'running': () =>
+          _line(state: KitWorkState.running, now: 'Reading main.dart'),
+      'done': () => _line(),
+    },
+    changes: {
+      'steps open': KitMotionChange(
+        build: () => _line(expanded: false),
+        act: (tester, stage) => stage.rebuild(_line(expanded: true)),
+        shows: 'Step number 2',
+      ),
+      'steps close': KitMotionChange(
+        build: () => _line(expanded: true),
+        act: (tester, stage) => stage.rebuild(_line(expanded: false)),
+        hides: 'Step number 2',
+      ),
+    },
+  );
+
   group('summaryOf (1)', () {
     testWidgets('read 3 + edited 1', (tester) async {
       expect(

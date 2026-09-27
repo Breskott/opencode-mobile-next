@@ -14,6 +14,8 @@ import 'package:opencode_mobile/ui/kit/kit_jump_pill.dart';
 import 'package:opencode_mobile/ui/kit/kit_log_panel.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 
+import 'kit_motion_still.dart';
+
 const _panel = ValueKey('kit-log-panel');
 const _copyAll = ValueKey('kit-log-copy-all');
 const _wrap = ValueKey('kit-log-wrap');
@@ -73,6 +75,38 @@ bool _onScreen(WidgetTester tester, Finder finder) {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitLogPanel',
+    builds: {
+      'live': () {
+        final buffer = _buffer(3);
+        addTearDown(buffer.dispose);
+        return KitLogPanel(lines: buffer, live: true);
+      },
+      'ended': () {
+        final buffer = _buffer(3);
+        addTearDown(buffer.dispose);
+        return KitLogPanel(lines: buffer, ended: const KitLogEnd(exitCode: 0));
+      },
+    },
+    changes: {
+      'line arrives': KitMotionChange(
+        build: () {
+          final buffer = _buffer(2);
+          addTearDown(buffer.dispose);
+          return KitLogPanel(lines: buffer);
+        },
+        act: (tester, stage) async {
+          final buffer =
+              tester.widget<KitLogPanel>(find.byType(KitLogPanel)).lines
+                  as KitLogBuffer;
+          buffer.add(const KitLogLine('Review completed'));
+        },
+        shows: 'Review completed',
+      ),
+    },
+  );
+
   late List<MethodCall> platform;
   late List<Map<Object?, Object?>> announcements;
 
