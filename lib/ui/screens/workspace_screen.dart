@@ -513,8 +513,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Widget build(BuildContext context) {
     // The Work tab, top to bottom (work-tab cleanup, 2026-09-24): the
     // project header from the first frame, one loading bar, at most one
-    // status line, what needs you, this project's conversations, the other
-    // projects once each, and New conversation docked below the list.
+    // status line, this project's conversations in one list ordered by
+    // urgency, the other projects once each, and New conversation docked
+    // below the list.
     // Project discovery and session inventory are independent: a pending
     // or failed catalog never hides conversations the server can list.
     // Rows archived by swipe or menu vanish at once and come back on Undo;
@@ -526,11 +527,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         .sortedSessions()
         .where((session) => !_pendingArchive.contains(session.id))
         .toList();
-    // One order for every list (UX plan 5.7): what needs me, what is running,
-    // what I pinned, what I did recently. A conversation appears once, in the
-    // first section that fits: a blocked or running pin returns to Pinned as
-    // soon as it is answered or finishes, because every section is cut from
-    // the same sorted list.
+    // One list, one order (UX plan 5.7; owner decision 2026-09-27, no state
+    // sections): what needs me, what is running, what I pinned, what I did
+    // recently. A conversation appears once, in the first group that fits: a
+    // blocked or running pin returns among the pins as soon as it is
+    // answered or finishes, because every group is cut from the same sorted
+    // list.
     final blockers = <String, String>{
       for (final session in sessions) session.id: ?_blocker(session.id, l10n),
     };
@@ -575,8 +577,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           );
     final archived = controller.archivedSessions();
     // The team's open tasks are conversations too (docs/design/team-
-    // conversation-2026-09-26.md): what needs the person under Needs you,
-    // the rest under Running, each with the team's mark.
+    // conversation-2026-09-26.md): what needs the person sorts with the
+    // needs-you rows, the rest with the running rows, each with the team's
+    // mark.
     final team = controller.orchestration;
     final teamTasks = team == null
         ? const <OrchestrationRun>[]
@@ -677,7 +680,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         sessions.isEmpty &&
         archived.isEmpty &&
         _pendingArchive.isEmpty;
-    final showEmpty = recent.isEmpty && !partial && !firstLoad;
     final headerDirectory = _headerDirectory;
     final teamPossible = _teamPossibleNow();
     final teamMode = teamPossible && _teamMode;
@@ -712,6 +714,37 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           archive: capabilities.sessionArchive ? _archiveSwipe(session) : null,
           sharingAvailable: capabilities.sessionShare,
         );
+
+    // The top of the one list, most urgent first: needs you (the team's
+    // gated tasks too), running (the team's other open tasks too), pins.
+    final head = <Widget>[
+      for (final session in attention)
+        KeyedSubtree(
+          key: ValueKey('work-needs-you-${session.id}'),
+          child: row(
+            session,
+            busy: controller.busySessions.contains(session.id),
+            blocker: blockers[session.id],
+          ),
+        ),
+      for (final run in teamNeedsYou) teamRow(run),
+      for (final session in active)
+        KeyedSubtree(
+          key: ValueKey('work-running-${session.id}'),
+          child: row(session, busy: true),
+        ),
+      for (final run in teamRunning) teamRow(run),
+      for (final session in pinned)
+        KeyedSubtree(
+          key: ValueKey('work-pinned-${session.id}'),
+          child: row(
+            session,
+            busy: controller.busySessions.contains(session.id),
+          ),
+        ),
+    ];
+    // The empty state only when the whole list is empty.
+    final showEmpty = head.isEmpty && recent.isEmpty && !partial && !firstLoad;
 
     final notice = _notice;
     final header = <Widget>[
@@ -812,82 +845,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ],
                 ),
               ),
-            // 2. Work waiting on the user, first: the persona's top
-            // job is seeing what needs them, and a blocked run reads
-            // as "Working" anywhere else.
-            if (attention.isNotEmpty || teamNeedsYou.isNotEmpty)
-              SliverToBoxAdapter(
-                child: SectionLabel(
-                  l10n.e7WorkspaceNeedsYou,
-                  key: const ValueKey('workspace-needs-you'),
-                  trailing: _Count(attention.length + teamNeedsYou.length),
-                ),
-              ),
-            // The short sections move gently as conversations come and
-            // go between them (design standard §10); Recent may be long,
-            // so it stays a lazy list.
-            if (attention.isNotEmpty || teamNeedsYou.isNotEmpty)
-              SliverToBoxAdapter(
-                child: KitAnimatedRows(
-                  children: [
-                    for (final session in attention)
-                      KeyedSubtree(
-                        key: ValueKey('work-needs-you-${session.id}'),
-                        child: row(
-                          session,
-                          busy: controller.busySessions.contains(session.id),
-                          blocker: blockers[session.id],
-                        ),
-                      ),
-                    for (final run in teamNeedsYou) teamRow(run),
-                  ],
-                ),
-              ),
-            // 3. Running work, with its live state; then pins.
-            if (active.isNotEmpty || teamRunning.isNotEmpty)
-              SliverToBoxAdapter(
-                child: SectionLabel(
-                  l10n.workRunning,
-                  key: const ValueKey('workspace-running'),
-                  trailing: _Count(active.length + teamRunning.length),
-                ),
-              ),
-            if (active.isNotEmpty || teamRunning.isNotEmpty)
-              SliverToBoxAdapter(
-                child: KitAnimatedRows(
-                  children: [
-                    for (final session in active)
-                      KeyedSubtree(
-                        key: ValueKey('work-running-${session.id}'),
-                        child: row(session, busy: true),
-                      ),
-                    for (final run in teamRunning) teamRow(run),
-                  ],
-                ),
-              ),
-            if (pinned.isNotEmpty)
-              SliverToBoxAdapter(
-                child: SectionLabel(
-                  l10n.sessionPinned,
-                  trailing: _Count(pinned.length),
-                ),
-              ),
-            if (pinned.isNotEmpty)
-              SliverToBoxAdapter(
-                child: KitAnimatedRows(
-                  children: [
-                    for (final session in pinned)
-                      KeyedSubtree(
-                        key: ValueKey('work-pinned-${session.id}'),
-                        child: row(
-                          session,
-                          busy: controller.busySessions.contains(session.id),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            // The pin tip sits on the list it is about.
+            // The pin tip sits just above the list it is about.
             if (pinNudge != null)
               SliverPadding(
                 padding: EdgeInsetsDirectional.symmetric(
@@ -910,12 +868,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               ),
-            // 4. Recent sessions. Search stays a one-tap icon; the
-            // occasional actions sit behind one labelled menu so the
-            // caption keeps its width on a phone at large text.
+            // 2. This project's conversations: one list, one header (owner
+            // decision 2026-09-27, no state sections). Search stays a
+            // one-tap icon; the occasional actions sit behind one labelled
+            // menu so the caption keeps its width on a phone at large text.
             SliverToBoxAdapter(
               child: SectionLabel(
-                l10n.e7WorkspaceRecentSessions,
+                l10n.workspaceConversations,
+                key: const ValueKey('workspace-conversations'),
                 trailing: _SectionActions(
                   controller: controller,
                   onSearch: capabilities.globalSessionSearch
@@ -928,6 +888,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               ),
             ),
+            // Ordered by urgency: what waits on the person (amber mark and
+            // the words "Needs you"), then running work (spinner and
+            // "Working"), then pins, then the rest newest first. The row's
+            // mark and worded state carry the meaning, not a heading. The
+            // urgent head moves gently as rows come and go (design
+            // standard §10); the rest may be long, so it stays lazy.
             if (firstLoad)
               SliverToBoxAdapter(child: _firstLoadRows(l10n))
             else if (showEmpty)
@@ -942,8 +908,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   illustration: const StatesSheetScene(),
                   title: nothingYet
                       ? l10n.emptyTeachWorkTitle
-                      : pinned.isNotEmpty
-                      ? l10n.sessionsNoOtherRecent
                       : l10n.e7WorkspaceNoRecent,
                   body: nothingYet
                       ? l10n.emptyTeachWorkMessage
@@ -956,11 +920,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   // pins that).
                 ),
               )
-            else
+            else ...[
+              if (head.isNotEmpty)
+                SliverToBoxAdapter(child: KitAnimatedRows(children: head)),
               SliverList.builder(
                 itemCount: recent.length,
                 itemBuilder: (context, index) => row(recent[index]),
               ),
+            ],
             // Older pages: skeletons while one loads, and the footer
             // (Load more, or an error with Try again) only when
             // nothing is loading.
@@ -1839,20 +1806,6 @@ class _ContextChoice {
 }
 
 /// A section's count, in figures that line up.
-class _Count extends StatelessWidget {
-  const _Count(this.count);
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) => KitText(
-    '$count',
-    role: KitTextRole.label,
-    tone: KitTextTone.secondary,
-    tabular: true,
-  );
-}
-
 class _SessionRow extends StatelessWidget {
   final ConnectionController controller;
   final Session session;
@@ -2218,7 +2171,7 @@ class _SectionActions extends StatelessWidget {
           ),
         KitRowMenu(
           key: const ValueKey('workspace-section-menu'),
-          menuLabel: l10n.e7WorkspaceRecentSessions,
+          menuLabel: l10n.workspaceConversations,
           items: [
             KitMenuItem(
               key: const ValueKey('workspace-refresh-sessions'),

@@ -12601,6 +12601,12 @@ abstract class AppLocalizations {
   /// **'Recent conversations'**
   String get e7WorkspaceRecentSessions;
 
+  /// Work tab: the one header over this project's conversations, ordered with those that need you first, then running, then the rest newest first
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get workspaceConversations;
+
   /// Workspace and activity: No recent sessions
   ///
   /// In en, this message translates to:

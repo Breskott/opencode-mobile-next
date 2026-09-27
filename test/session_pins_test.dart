@@ -232,7 +232,8 @@ void main() {
       tester.getTopLeft(find.text('old')).dy,
       lessThan(tester.getTopLeft(find.text('new')).dy),
     );
-    expect(find.text('Pinned'), findsOneWidget);
+    // One list: the pin leads it with its pin mark, under no Pinned header.
+    expect(find.text('Pinned'), findsNothing);
     await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
     expect(find.text('Unpin'), findsOneWidget);

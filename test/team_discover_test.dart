@@ -246,7 +246,7 @@ void main() {
       expect(find.text(_en.teamDiscoverEntryBody), findsOneWidget);
       expect(_key('team-discover-drawing'), findsOneWidget);
       // After the person's own list, never above it.
-      final recent = find.text(_en.e7WorkspaceRecentSessions);
+      final recent = find.text(_en.workspaceConversations);
       expect(
         tester.getTopLeft(entry).dy,
         greaterThan(tester.getTopLeft(recent).dy),
@@ -359,9 +359,15 @@ void main() {
       final team = await _fixtureTeam();
       addTearDown(team.dispose);
       await pumpWork(tester, team: team);
-      // The recorded convoy waits for a worker: under Running, marked.
-      expect(_key('workspace-running'), findsOneWidget);
+      // The recorded convoy waits for a worker: a running row in the one
+      // Conversations list (no Running section), marked.
+      expect(_key('workspace-running'), findsNothing);
+      expect(_key('workspace-conversations'), findsOneWidget);
       expect(_key('team-work-task-oc-xru'), findsOneWidget);
+      expect(
+        tester.getTopLeft(_key('team-work-task-oc-xru')).dy,
+        greaterThan(tester.getTopLeft(_key('workspace-conversations')).dy),
+      );
       expect(_key('team-work-task-mark-oc-xru'), findsOneWidget);
       expect(
         tester

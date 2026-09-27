@@ -386,10 +386,9 @@ void main() {
       for (final dark in [false, true]) {
         final label =
             '${width.toInt()}px, ${textScale}x text, ${dark ? 'dark' : 'light'}';
-        testWidgets('$label: blocked sessions sit once under Needs you, above '
-            'Running, Pinned and Recent, and nothing overflows', (
-          tester,
-        ) async {
+        testWidgets('$label: one Conversations list, blocked sessions once '
+            'at the top above running, pinned and recent, and nothing '
+            'overflows', (tester) async {
           // Tall enough that every section is laid out; width is what the
           // caption row and the menu have to fit.
           tester.view.physicalSize = Size(width, 2400 * textScale);
@@ -411,11 +410,20 @@ void main() {
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
 
-          // One "Needs you" section holding both blocked rows, each once.
+          // One list under one header; no state sections (owner decision
+          // 2026-09-27). Both blocked rows are in it, each once.
           expect(
-            find.byKey(const ValueKey('workspace-needs-you')),
+            find.byKey(const ValueKey('workspace-conversations')),
             findsOneWidget,
           );
+          expect(find.text('Conversations'), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('workspace-needs-you')),
+            findsNothing,
+          );
+          expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+          expect(find.text('Pinned'), findsNothing);
+          expect(find.text('Recent conversations'), findsNothing);
           expect(_row('pinned-blocked'), findsOneWidget);
           expect(_row('busy-blocked'), findsOneWidget);
           expect(
@@ -437,35 +445,23 @@ void main() {
           expect((span.children![1] as TextSpan).text, 'Permission needed');
           expect(find.textContaining('Answer needed'), findsOneWidget);
 
-          // Section order top to bottom.
-          // UX plan 5.7: needs me, running, pinned, recent.
-          final needsYou = _top(tester, find.text('Needs you'));
-          final running = _top(
+          // Row order top to bottom (UX plan 5.7): needs me, running,
+          // pinned, recent. Blocked rows lead whatever their pin or busy
+          // state.
+          final header = _top(
             tester,
-            find.byKey(const ValueKey('workspace-running')),
+            find.byKey(const ValueKey('workspace-conversations')),
           );
-          final pinned = _top(tester, find.text('Pinned'));
-          final recent = _top(tester, find.text('Recent conversations'));
+          final running = _top(tester, _row('busy-working'));
+          final pinned = _top(tester, _row('pinned-idle'));
+          final recent = _top(tester, _row('recent-idle'));
           expect(find.text('Active conversations'), findsNothing);
-          expect(
-            find.descendant(
-              of: find.byKey(const ValueKey('workspace-running')),
-              matching: find.text('Running'),
-            ),
-            findsOneWidget,
-          );
-          expect(needsYou, lessThan(running));
-          expect(running, lessThan(pinned));
-          expect(pinned, lessThan(recent));
-          // Blocked rows are above the first ordinary row, whatever their
-          // pin or busy state.
+          expect(_top(tester, _row('busy-blocked')), greaterThan(header));
+          expect(_top(tester, _row('pinned-blocked')), greaterThan(header));
           expect(_top(tester, _row('busy-blocked')), lessThan(running));
           expect(_top(tester, _row('pinned-blocked')), lessThan(running));
-          expect(_top(tester, _row('busy-working')), greaterThan(running));
-          expect(_top(tester, _row('busy-working')), lessThan(pinned));
-          expect(_top(tester, _row('pinned-idle')), greaterThan(pinned));
-          expect(_top(tester, _row('pinned-idle')), lessThan(recent));
-          expect(_top(tester, _row('recent-idle')), greaterThan(recent));
+          expect(running, lessThan(pinned));
+          expect(pinned, lessThan(recent));
 
           // The caption's actions still fit and open a labelled menu.
           expect(
@@ -527,14 +523,18 @@ void main() {
     await _pumpFrames(tester);
     expect(find.textContaining('Answer needed'), findsNothing);
     expect(find.textContaining('Form response needed'), findsOneWidget);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
+    // Still at the top of the one list, above the running row.
+    expect(
+      _top(tester, _row('busy-blocked')),
+      lessThan(_top(tester, _row('busy-working'))),
+    );
     // Still one row, still busy underneath: it never fell into Active.
     expect(_row('busy-blocked'), findsOneWidget);
     expect(find.textContaining('Working'), findsOneWidget); // busy-working
   });
 
-  testWidgets('answering the request returns a pinned session to Pinned in '
-      'pin order and a busy one to Running', (tester) async {
+  testWidgets('answering the request returns a pinned session among the pins '
+      'in pin order and a busy one among the running rows', (tester) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -544,7 +544,7 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.textContaining('Needs you'), findsNothing);
     final pinnedBefore = _top(tester, _row('pinned-blocked'));
     expect(pinnedBefore, lessThan(_top(tester, _row('pinned-idle'))));
 
@@ -575,16 +575,16 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    final runningSection = find.byKey(const ValueKey('workspace-running'));
-    expect(runningSection, findsOneWidget); // busy-working
+    // Both now say "Needs you" and sit above the running row.
+    expect(find.textContaining('Needs you'), findsNWidgets(2));
+    final runningRow = _row('busy-working');
     expect(
       _top(tester, _row('pinned-blocked')),
-      lessThan(_top(tester, runningSection)),
+      lessThan(_top(tester, runningRow)),
     );
     expect(
       _top(tester, _row('busy-blocked')),
-      lessThan(_top(tester, runningSection)),
+      lessThan(_top(tester, runningRow)),
     );
     // The pin is still a pin: its menu (long-press, KIT-28) offers Unpin.
     await tester.longPress(
@@ -610,25 +610,30 @@ void main() {
       );
     }
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.textContaining('Needs you'), findsNothing);
     expect(_row('pinned-blocked'), findsOneWidget);
     expect(_row('busy-blocked'), findsOneWidget);
-    // Back under Pinned, first by recency among pins, as before.
-    final pinnedLabel = _top(tester, find.text('Pinned'));
-    final runningLabel = _top(tester, runningSection);
-    expect(runningLabel, lessThan(pinnedLabel));
-    expect(_top(tester, _row('pinned-blocked')), greaterThan(pinnedLabel));
+    // Back among the pins, first by recency among pins, as before; the
+    // busy one back among the running rows, above every pin.
+    expect(
+      _top(tester, _row('pinned-blocked')),
+      greaterThan(_top(tester, runningRow)),
+    );
     expect(
       _top(tester, _row('pinned-blocked')),
       lessThan(_top(tester, _row('pinned-idle'))),
     );
-    expect(_top(tester, _row('busy-blocked')), greaterThan(runningLabel));
-    expect(_top(tester, _row('busy-blocked')), lessThan(pinnedLabel));
+    expect(
+      _top(tester, _row('busy-blocked')),
+      lessThan(_top(tester, _row('pinned-blocked'))),
+    );
     expect(find.textContaining('Working'), findsNWidgets(2));
   });
 
-  testWidgets('a pinned conversation that is running sits once under Running '
-      'and returns to Pinned when the run ends', (tester) async {
+  testWidgets('a pinned conversation that is running sits once among the '
+      'running rows and returns among the pins when the run ends', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -639,21 +644,16 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    final running = find.byKey(const ValueKey('workspace-running'));
     expect(_row('pinned-idle'), findsOneWidget);
+    // Running rows first, then the pins: the idle pin (newer) now sits
+    // below the running pin (older).
     expect(
       _top(tester, _row('pinned-idle')),
-      greaterThan(_top(tester, running)),
+      lessThan(_top(tester, _row('pinned-blocked'))),
     );
-    expect(
-      _top(tester, _row('pinned-idle')),
-      lessThan(_top(tester, find.text('Pinned'))),
-    );
-    // The section counts what it holds: three running, one pinned.
-    expect(
-      find.descendant(of: running, matching: find.text('3')),
-      findsOneWidget,
-    );
+    // No section header, so no count.
+    expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+    expect(find.text('3'), findsNothing);
     expect(controller.isSessionPinned('pinned-idle'), isTrue);
 
     controller.busySessions.remove('pinned-idle');
@@ -662,7 +662,81 @@ void main() {
     expect(_row('pinned-idle'), findsOneWidget);
     expect(
       _top(tester, _row('pinned-idle')),
-      greaterThan(_top(tester, find.text('Pinned'))),
+      greaterThan(_top(tester, _row('pinned-blocked'))),
+    );
+    expect(
+      _top(tester, _row('pinned-idle')),
+      greaterThan(_top(tester, _row('busy-working'))),
+    );
+    expect(
+      _top(tester, _row('pinned-idle')),
+      lessThan(_top(tester, _row('recent-idle'))),
+    );
+  });
+
+  testWidgets('one list: a needs-you row sorts above a running row above a '
+      'finished row, and the needs-you row says "Needs you" in words', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    // Newest first by time is the opposite of the urgency order, so only
+    // the urgency order can put them the right way round.
+    controller.sessionsById = {
+      'finished': _session('finished', 90),
+      'running': _session('running', 60),
+      'waiting': _session('waiting', 30),
+    };
+    controller.busySessions
+      ..clear()
+      ..add('running');
+    controller.permissions['perm-waiting'] = _permission('waiting');
+
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    expect(tester.takeException(), isNull);
+
+    final header = find.byKey(const ValueKey('workspace-conversations'));
+    expect(header, findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+    final waiting = _top(tester, _row('waiting'));
+    final running = _top(tester, _row('running'));
+    final finished = _top(tester, _row('finished'));
+    expect(_top(tester, header), lessThan(waiting));
+    expect(waiting, lessThan(running));
+    expect(running, lessThan(finished));
+
+    // Never colour only: the needs-you row names its state in words, and
+    // the running row says it is working.
+    expect(
+      find.descendant(
+        of: _row('waiting'),
+        matching: find.textContaining('Needs you'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('session-attention-icon-waiting')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _row('running'),
+        matching: find.textContaining('Working'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _row('finished'),
+        matching: find.textContaining('Needs you'),
+      ),
+      findsNothing,
     );
   });
 

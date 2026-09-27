@@ -6190,6 +6190,10 @@
   "@e7WorkspaceRecentSessions": {
     "description": "Workspace and activity: Recent sessions"
   },
+  "workspaceConversations": "Conversations",
+  "@workspaceConversations": {
+    "description": "Work tab: the one header over this project's conversations, ordered with those that need you first, then running, then the rest newest first"
+  },
   "e7WorkspaceNoRecent": "No recent conversations",
   "@e7WorkspaceNoRecent": {
     "description": "Workspace and activity: No recent sessions"

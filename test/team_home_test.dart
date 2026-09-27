@@ -1235,7 +1235,7 @@ void main() {
       final card = find.byKey(const ValueKey('team-work-door'));
       expect(card, findsOneWidget);
       expect(find.byType(TeamCard), findsNothing);
-      expect(top(card), greaterThan(top(find.text('Recent conversations'))));
+      expect(top(card), greaterThan(top(find.text('Conversations'))));
       expect(top(card), greaterThan(top(find.text('recent conversation'))));
       expect(top(card), lessThan(top(find.text('Archived conversations'))));
     });
