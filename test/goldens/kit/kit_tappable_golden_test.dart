@@ -24,7 +24,6 @@ import 'package:opencode_mobile/ui/app_iconography.dart';
 // (KitMenu.md); hide the older one so the v2 type below is unambiguous.
 import 'package:opencode_mobile/ui/kit/kit.dart' hide KitMenuItem;
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
-import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 
 import '../../../tool/capture/fixtures.dart' show captureTheme;
 import 'kit_gallery.dart';

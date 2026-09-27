@@ -19,8 +19,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/file_drop.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/kit/kit_context_region.dart';
-import 'package:opencode_mobile/ui/kit/kit_scrollbar.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
