@@ -540,6 +540,11 @@ class _ToolCardState extends State<ToolCard> {
   @override
   void didUpdateWidget(covariant ToolCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // The host may open a step from outside (the conversation menu's Tasks
+    // lands on the plan open): the stored choice wins.
+    if (_storedExpansion case final stored? when stored != _expanded) {
+      _expanded = stored;
+    }
     if (!identical(oldWidget.state.outputFiles, widget.state.outputFiles) ||
         oldWidget.filePreviewLoader != widget.filePreviewLoader) {
       _syncPreviewLoads(reset: true);

@@ -1675,7 +1675,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent · 1 of 2'), findsOneWidget);
+    expect(find.text('Delegated conversation · 1 of 2'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('subagent-parent-session')),
       findsOneWidget,
@@ -3071,68 +3071,66 @@ void main() {
     expect(find.byKey(const Key('appearance-picker')), findsNothing);
   });
 
-  testWidgets('session todo view shows server status and priority', (
+  testWidgets('the menu\'s Tasks lands on the plan in the transcript, open', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi()
-      ..todoItems = [
-        Todo(
-          content: 'Verify production release',
-          status: 'in_progress',
-          priority: 'high',
-        ),
+      ..messagesHandler = (_) async => [
+        _message('assistant-plan', 'assistant', [
+          Part(
+            id: 'tool-plan',
+            messageID: 'assistant-plan',
+            type: 'tool',
+            toolName: 'todowrite',
+            toolState: ToolState.fromJson({
+              'status': 'completed',
+              'input': {
+                'todos': [
+                  {
+                    'content': 'Verify production release',
+                    'status': 'pending',
+                    'priority': 'high',
+                  },
+                ],
+              },
+              'output': '',
+            }),
+          ),
+          Part(
+            id: 'text-plan',
+            messageID: 'assistant-plan',
+            type: 'text',
+            text: 'Planned the release check.',
+          ),
+        ]),
       ];
 
     await _pumpChat(tester, api);
+    await tester.pumpAndSettle();
+    // The plan's step shows closed until asked for.
+    expect(find.text('Verify production release'), findsNothing);
+
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
+    // The step in the transcript and the menu's entry share one name; the
+    // menu's is the one on top.
+    await tester.tap(find.text('Tasks').last);
     await tester.pumpAndSettle();
 
+    // No sheet: the transcript's own checklist, opened in place.
+    expect(find.byKey(const Key('timeline-sheet')), findsNothing);
     expect(find.text('Verify production release'), findsOneWidget);
-    expect(find.text('in progress · high priority'), findsOneWidget);
+    expect(find.text('Pending'), findsWidgets);
   });
 
-  testWidgets('todos sheet failure offers retry instead of raw exception', (
+  testWidgets('no plan in the transcript, no Tasks entry in the menu', (
     tester,
   ) async {
-    final api = _FakeOpenCodeApi()
-      ..todosError = ApiException(
-        'Load todos failed (HTTP 500): session store unavailable',
-      );
-
-    await _pumpChat(tester, api);
+    await _pumpChat(tester, _FakeOpenCodeApi());
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
 
-    expect(
-      find.text('Load todos failed (HTTP 500): session store unavailable'),
-      findsOneWidget,
-    );
-    expect(find.text('Try again'), findsOneWidget);
-
-    api
-      ..todosError = null
-      ..todoItems = [Todo(content: 'Recovered todo', status: 'pending')];
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Recovered todo'), findsOneWidget);
-    expect(find.text('Try again'), findsNothing);
-  });
-
-  testWidgets('todos sheet explains an empty todo list', (tester) async {
-    final api = _FakeOpenCodeApi();
-
-    await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('No todos in this conversation'), findsOneWidget);
+    expect(find.text('Tasks'), findsNothing);
   });
 
   testWidgets('launcher combines mobile actions with server commands', (
@@ -4030,10 +4028,11 @@ void main() {
         tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
         isNot(false),
       );
-      final timelineList = tester.widget<ListView>(
+      // The kit sheet frame's one scroll carries the rows.
+      final timelineList = tester.widget<CustomScrollView>(
         find.descendant(
-          of: find.byType(BottomSheet),
-          matching: find.byType(ListView),
+          of: find.byKey(const ValueKey('timeline-sheet')),
+          matching: find.byType(CustomScrollView),
         ),
       );
       expect(
@@ -4051,8 +4050,8 @@ void main() {
         ),
       );
       expect(editable.focusNode.hasFocus, isTrue);
-      // First drag expands the draggable sheet to its max; the second one
-      // scrolls the result list itself, which releases the keyboard focus.
+      // Dragging the rows scrolls the sheet's body, which releases the
+      // keyboard focus.
       await tester.drag(
         find.byKey(const ValueKey('timeline-row-user-7')),
         const Offset(0, -300),
@@ -4067,7 +4066,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(editable.focusNode.hasFocus, isFalse);
 
-      await tester.tap(find.byTooltip('Close timeline'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
 
       await _useComposerTool(tester, 'commands');
@@ -4604,7 +4603,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('ECONNRESET'), findsOneWidget);
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     // The reply carries the same problem (worded slightly differently by the

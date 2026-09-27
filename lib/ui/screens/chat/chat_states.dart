@@ -74,7 +74,6 @@ class _ChatStatus {
     this.key,
     this.messageKey,
     this.supportingKey,
-    this.supportingSemanticsLabel,
   });
 
   /// Stable name of the kind of status, for keys and tests.
@@ -90,7 +89,6 @@ class _ChatStatus {
   final Key? key;
   final Key? messageKey;
   final Key? supportingKey;
-  final String? supportingSemanticsLabel;
 
   Widget line() => KitStatusLine(
     key: key ?? ValueKey('chat-status-$id'),
@@ -100,7 +98,6 @@ class _ChatStatus {
     messageKey: messageKey,
     supporting: supporting,
     supportingKey: supportingKey,
-    supportingSemanticsLabel: supportingSemanticsLabel,
     action: action,
     more: more,
     onDismiss: onDismiss,
@@ -108,28 +105,21 @@ class _ChatStatus {
   );
 }
 
-/// The server's exact words, for a status or error that shows the app's.
-Future<void> _showChatErrorDetails(BuildContext context, String text) =>
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_chatL10n(context).chatUiErrorDetails),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            text,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontFamily: AppTheme.monoFamily),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(_chatL10n(context).isolatedTaskClose),
-          ),
-        ],
-      ),
-    );
+/// The chat's one error-details path (the prompt error on the status line,
+/// a message that was not sent): the failure named in words as the title,
+/// the server's exact text whole, selectable and copyable
+/// ([showKitTechnicalDetails], the same sheet the transcript's error row
+/// opens).
+Future<void> _showChatErrorDetails(
+  BuildContext context, {
+  required String title,
+  required String text,
+}) => showKitTechnicalDetails(
+  context,
+  title: title,
+  text: text,
+  sheetKey: const ValueKey('chat-error-details'),
+);
 
 /// A prompt the server refused, or a session-level failure with no home in
 /// the transcript: the plain sentence, what to do, the fix when there is one
@@ -150,7 +140,13 @@ _ChatStatus _promptErrorStatus(
       ? KitAction(
           key: const ValueKey('prompt-error-details'),
           label: l10n.chatUiDetails,
-          onPressed: () => unawaited(_showChatErrorDetails(context, message)),
+          onPressed: () => unawaited(
+            _showChatErrorDetails(
+              context,
+              title: words.headline,
+              text: message,
+            ),
+          ),
         )
       : null;
   final choose = kind == MessageErrorKind.modelNotFound && onChooseModel != null
@@ -198,7 +194,13 @@ _ChatStatus _sendErrorStatus(
         ? KitAction(
             key: const ValueKey('chat-send-error-details'),
             label: l10n.chatUiDetails,
-            onPressed: () => unawaited(_showChatErrorDetails(context, raw)),
+            onPressed: () => unawaited(
+              _showChatErrorDetails(
+                context,
+                title: l10n.chatSendFailed,
+                text: raw,
+              ),
+            ),
           )
         : null,
     onDismiss: onDismiss,
@@ -214,7 +216,6 @@ _ChatStatus _stagedRevertStatus(
   return _ChatStatus(
     id: 'staged-revert',
     icon: AppIconography.history,
-    tone: AppStatusTone.attention,
     message: l10n.revertStaged,
     action: KitAction(
       key: const ValueKey('chat-status-revert-review'),
@@ -224,8 +225,9 @@ _ChatStatus _stagedRevertStatus(
   );
 }
 
-/// This conversation is a subagent's: where it sits, the way to its
-/// parent, and its siblings behind More.
+/// This conversation is one another agent delegated: where it sits among
+/// its siblings, the way back to the conversation that delegated it, and
+/// the siblings behind More.
 _ChatStatus _subagentStatus(
   BuildContext context, {
   required int? position,
@@ -234,13 +236,12 @@ _ChatStatus _subagentStatus(
   required Future<void> Function() onAll,
 }) {
   final l10n = _chatL10n(context);
-  final count = position != null && total != null
-      ? l10n.chatUiPositionOfTotal(position, total)
-      : l10n.chatUiDelegatedSession;
   return _ChatStatus(
     id: 'subagent',
     icon: AppIconography.nested,
-    message: l10n.chatUiSubagentCount(count),
+    message: position != null && total != null
+        ? l10n.chatUiSubagentCount(l10n.chatUiPositionOfTotal(position, total))
+        : l10n.chatUiDelegatedSession,
     action: KitAction(
       key: const ValueKey('subagent-parent-session'),
       label: l10n.chatUiOpenParentSession,
@@ -256,9 +257,9 @@ _ChatStatus _subagentStatus(
   );
 }
 
-/// The conversation is shared by link: the link itself (what other people
-/// can open), Stop sharing (asks first; also in the conversation menu), and
-/// Copy behind More.
+/// The conversation is shared by link, on one line: who can see it, Copy
+/// link (what other people open), and Stop sharing behind More (it asks
+/// first; also in the conversation menu).
 _ChatStatus _sharedStatus(
   BuildContext context, {
   required String url,
@@ -269,18 +270,16 @@ _ChatStatus _sharedStatus(
     id: 'shared',
     icon: AppIconography.globe,
     message: l10n.chatUiSharedAnyoneWithTheLinkCanView,
-    supporting: url,
-    supportingSemanticsLabel: l10n.chatUiSharedLink(url),
     action: KitAction(
-      key: const ValueKey('chat-status-stop-sharing'),
-      label: l10n.chatUiStopSharing,
-      onPressed: onStop,
+      key: const ValueKey('chat-status-copy-share-link'),
+      label: l10n.chatUiCopyShareLink,
+      onPressed: () => unawaited(KitCopy.copy(context, url, redact: false)),
     ),
     more: [
       KitAction(
-        key: const ValueKey('chat-status-copy-share-link'),
-        label: l10n.chatUiCopyShareLink,
-        onPressed: () => unawaited(Clipboard.setData(ClipboardData(text: url))),
+        key: const ValueKey('chat-status-stop-sharing'),
+        label: l10n.chatUiStopSharing,
+        onPressed: onStop,
       ),
     ],
   );
@@ -397,7 +396,8 @@ class _ChatStatusLine extends StatelessWidget {
       id: 'server',
       key: const ValueKey('connection-status-banner'),
       icon: AppIconography.cloudOff,
-      tone: AppStatusTone.attention,
+      // The Work tab's words and tone for the same condition.
+      tone: AppStatusTone.failure,
       message: server.onThisPhone
           ? l10n.workServerNotAnsweringPhone
           : l10n.workServerNotAnswering(controller.profile?.name ?? 'OpenCode'),

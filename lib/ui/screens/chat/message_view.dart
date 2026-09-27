@@ -1578,7 +1578,7 @@ class _AssistantErrorRow extends StatelessWidget {
             key: const Key('error-action-details'),
             label: strings.chatUiErrorDetails,
             onPressed: () => unawaited(
-              showKitTechnicalDetails(
+              _showChatErrorDetails(
                 context,
                 title: strings.chatUiErrorDetails,
                 text: raw.trim().isEmpty ? text : raw,

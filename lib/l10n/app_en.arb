@@ -976,11 +976,11 @@
   "@readAloudChooseVoice": {
     "description": "Picker of installed system voices marked offline"
   },
-  "readAloudConsentTitle": "Use the system speech engine?",
+  "readAloudConsentTitle": "Read replies aloud?",
   "@readAloudConsentTitle": {
     "description": "Consent before any system speech engine access"
   },
-  "readAloudConsentDetail": "The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.",
+  "readAloudConsentDetail": "Your phone's speech engine reads the reply aloud. Code and tool details are skipped.",
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
@@ -7769,9 +7769,9 @@
   "@chatUiTodoList": {
     "description": "Chat journey: Todo list"
   },
-  "chatUiTodos": "Todos",
+  "chatUiTodos": "Tasks",
   "@chatUiTodos": {
-    "description": "Chat journey: Todos"
+    "description": "Conversation menu entry that jumps to the agent's latest task list in the transcript (the Tasks step)."
   },
   "chatUiToggleCreationTimesBesideTranscriptEntries": "Toggle creation times beside transcript entries",
   "@chatUiToggleCreationTimesBesideTranscriptEntries": {
@@ -8240,9 +8240,9 @@
       }
     }
   },
-  "chatUiSubagentCount": "Subagent · {count}",
+  "chatUiSubagentCount": "Delegated conversation · {count}",
   "@chatUiSubagentCount": {
-    "description": "Chat journey: Subagent · {count}",
+    "description": "Status line of a conversation another agent delegated: its place among its siblings, such as 2 of 3.",
     "placeholders": {
       "count": {
         "type": "Object"
@@ -17501,7 +17501,7 @@
       }
     }
   },
-  "nudgeReviewChanges": "This run changed files: review what changed before you continue.",
+  "nudgeReviewChanges": "OpenCode changed files. Look them over before you go on.",
   "@nudgeReviewChanges": {
     "description": "One-time tip above the composer when a run that edited files finishes. Its button opens Review changes."
   },
@@ -30505,5 +30505,26 @@
   "searchArchivedConversations": "Archived conversations",
   "@searchArchivedConversations": {
     "description": "Search result that opens All conversations filtered to archived ones"
+  },
+  "readAloudConsentEngine": "Only offline voices are offered, but the speech engine is separate software with its own privacy terms.",
+  "@readAloudConsentEngine": {
+    "description": "Read-aloud consent: a caveat under the two-sentence body. The engine is not part of this app; no promise of network isolation."
+  },
+  "readAloudConsentHeard": "People near you may hear it. Reading stops when you leave this conversation or the app.",
+  "@readAloudConsentHeard": {
+    "description": "Read-aloud consent: a caveat under the two-sentence body about audible output and when playback stops."
+  },
+  "transcriptFindStopSearchingAll": "Stop searching older messages",
+  "@transcriptFindStopSearchingAll": {
+    "description": "Find in conversation: stops loading older history to search it; what is already loaded stays searched."
+  },
+  "nudgeReviewChangesCount": "{count, plural, =1{OpenCode changed 1 file. Look it over before you go on.} other{OpenCode changed {count} files. Look them over before you go on.}}",
+  "@nudgeReviewChangesCount": {
+    "description": "One-time tip above the composer when a turn that edited files finishes and the server counted them. Its button opens Review changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
