@@ -632,7 +632,7 @@ final dChatSheetsArea = CensusArea(
       await _chat(kit);
       await kit.present((context) => showVoiceModelSetupSheet(context, models));
       await kit.tapKey('voice-delete-base');
-      kit.expectText('Keep');
+      kit.expectText('Keep Balanced');
     }, note: 'Delete on the installed pack.'),
     CensusShot('voice-composer-sheet', state: 'listening', (kit) async {
       await _openVoice(kit, _voice());
@@ -668,7 +668,7 @@ final dChatSheetsArea = CensusArea(
         await _chat(kit);
         await kit.push(const VoiceNoticesPage());
         await kit.realWait(const Duration(seconds: 1));
-        kit.expectText('Voice licenses and provenance');
+        kit.expectText('Voice licenses');
         kit.expectTextContaining('ONNX Runtime');
       },
       note:
