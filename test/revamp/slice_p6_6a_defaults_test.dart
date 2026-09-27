@@ -172,9 +172,10 @@ void main() {
         find.text(_en.defaultReviewScopeNotice(_en.readerUiWorkingTree)),
         findsOneWidget,
       );
-      // The picker still offers every view, with Uncommitted chosen.
+      // The picker still offers every view, with Uncommitted chosen; its
+      // meaning is said only when a view is empty.
       expect(find.byKey(const Key('review-scope-picker')), findsOneWidget);
-      expect(find.text(_en.readerUiWorkingScopeHint), findsOneWidget);
+      expect(find.text(_en.readerUiWorkingScopeHint), findsNothing);
 
       // Opened again for the same server: the same default, not said again.
       ReviewWorkspace.clearCache();

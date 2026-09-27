@@ -6559,12 +6559,6 @@ abstract class AppLocalizations {
   /// **'Saved tasks'**
   String get a2aSavedTasks;
 
-  /// No description provided for @a2aReopenDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Reopening checks the existing task. It never sends your task again.'**
-  String get a2aReopenDetail;
-
   /// No description provided for @a2aDeliveryUnconfirmed.
   ///
   /// In en, this message translates to:
@@ -6612,12 +6606,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.'**
   String get a2aCancelDetail;
-
-  /// No description provided for @a2aRequestCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask to stop'**
-  String get a2aRequestCancel;
 
   /// No description provided for @a2aForgetTask.
   ///
@@ -15003,12 +14991,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{detail1} schema copied'**
   String e7LibrarySchemaCopied(String detail1);
-
-  /// Library and project tools UI: Parameter schema
-  ///
-  /// In en, this message translates to:
-  /// **'Parameter schema'**
-  String get e7LibraryParameterSchema;
 
   /// Library and project tools UI: No project selected
   ///
@@ -35529,12 +35511,6 @@ abstract class AppLocalizations {
   /// **'MCP servers'**
   String get integrationsMcpServersLabel;
 
-  /// Integrations page: count at the end of the Providers section label.
-  ///
-  /// In en, this message translates to:
-  /// **'{connected} of {total} connected'**
-  String integrationsProvidersSummary(int connected, int total);
-
   /// Integrations page: provider row supporting line, how many models the provider serves.
   ///
   /// In en, this message translates to:
@@ -35709,12 +35685,6 @@ abstract class AppLocalizations {
   /// **'Remove {name} until restart'**
   String integrationsMcpRemoveUntilRestart(String name);
 
-  /// Integrations page: why Remove is unavailable on this server.
-  ///
-  /// In en, this message translates to:
-  /// **'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.'**
-  String get integrationsMcpRemoveUnavailable;
-
   /// Integrations page: remove-MCP confirmation title.
   ///
   /// In en, this message translates to:
@@ -35822,6 +35792,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Their output goes away too. Running terminals stay.'**
   String get terminalScreenRemoveEndedBody;
+
+  /// Terminal list empty state title: this server has no terminals open.
+  ///
+  /// In en, this message translates to:
+  /// **'No terminals yet'**
+  String get terminalScreenEmptyTitle;
+
+  /// Terminal list empty state body, naming the project folder a new terminal opens in.
+  ///
+  /// In en, this message translates to:
+  /// **'Start one in {project}.'**
+  String terminalScreenEmptyBody(String project);
+
+  /// Terminal list empty state body when the project folder has no name to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Start one in this project.'**
+  String get terminalScreenEmptyBodyNoProject;
+
+  /// Explanation shown when the person taps the Providers section label on the integrations page.
+  ///
+  /// In en, this message translates to:
+  /// **'The model providers this server can use. Connect one to start chatting.'**
+  String get integrationsProvidersExplanation;
+
+  /// Explanation shown when the person taps the Resources section label on the integrations page.
+  ///
+  /// In en, this message translates to:
+  /// **'Files and data that connected MCP servers give the agent.'**
+  String get integrationsResourcesExplanation;
+
+  /// Question before asking an external agent to stop a task, naming the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop “{task}”?'**
+  String externalAgentsStopTaskTitle(String task);
+
+  /// Confirm button: ask the named external agent to stop the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agent} to stop'**
+  String externalAgentsStopTaskConfirm(String agent);
+
+  /// Dismiss button on the stop question: leave the external agent's task running.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get externalAgentsStopTaskKeep;
 
   /// Terminal page, server without terminals: switches to the shell on this phone.
   ///
@@ -37665,12 +37683,6 @@ abstract class AppLocalizations {
   /// **'What it says about itself'**
   String get externalAgentsAboutLabel;
 
-  /// screen-library-2: Add agent: row when the agent lists no skills.
-  ///
-  /// In en, this message translates to:
-  /// **'It lists no skills'**
-  String get externalAgentsNoSkills;
-
   /// screen-library-2: Add agent: note under the agent's description.
   ///
   /// In en, this message translates to:
@@ -37833,12 +37845,6 @@ abstract class AppLocalizations {
   /// **'Check with the agent first; pull down to refresh'**
   String get externalAgentsStopUnavailable;
 
-  /// screen-library-2: Stop question title.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop this task?'**
-  String get externalAgentsStopTitle;
-
   /// screen-library-2: Task page: menu item that removes the saved task from the phone.
   ///
   /// In en, this message translates to:
@@ -37994,6 +38000,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registered on this project · this model can’t call it'**
   String get toolsScreenRegisteredOnly;
+
+  /// Name of the menu on a tool's detail sheet (holds Copy parameter schema).
+  ///
+  /// In en, this message translates to:
+  /// **'{tool} actions'**
+  String toolsDetailMenu(String tool);
 
   /// Tool details sheet: label above the list of values the tool takes
   ///

@@ -2275,7 +2275,6 @@
   "a2aReviewTask": "Review task",
   "a2aUpdateCredential": "Update credential",
   "a2aSavedTasks": "Saved tasks",
-  "a2aReopenDetail": "Reopening checks the existing task. It never sends your task again.",
   "a2aDeliveryUnconfirmed": "Delivery unconfirmed",
   "a2aDraft": "Not sent",
   "a2aBack": "Back",
@@ -2284,7 +2283,6 @@
   "a2aSavedSnapshot": "Saved locally. Refresh a known task to check its current state.",
   "a2aCancelTask": "Stop task",
   "a2aCancelDetail": "Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.",
-  "a2aRequestCancel": "Ask to stop",
   "a2aForgetTask": "Forget saved task",
   "a2aForgetDetail": "Remove this saved task from the phone. Remote work may continue, including a send whose delivery is unconfirmed. This cannot delete the agent's copy.",
   "a2aYourReply": "Your reply",
@@ -8689,10 +8687,6 @@
         "description": "Server or project detail displayed verbatim in this message."
       }
     }
-  },
-  "e7LibraryParameterSchema": "Parameter schema",
-  "@e7LibraryParameterSchema": {
-    "description": "Library and project tools UI: Parameter schema"
   },
   "e7LibraryNoProjectSelected": "No project selected",
   "@e7LibraryNoProjectSelected": {
@@ -26014,18 +26008,6 @@
   "@integrationsMcpServersLabel": {
     "description": "Integrations page: section label above the MCP server rows; the term is explained in place."
   },
-  "integrationsProvidersSummary": "{connected} of {total} connected",
-  "@integrationsProvidersSummary": {
-    "description": "Integrations page: count at the end of the Providers section label.",
-    "placeholders": {
-      "connected": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "integrationsModelCount": "{count, plural, one{1 model} other{{count} models}}",
   "@integrationsModelCount": {
     "description": "Integrations page: provider row supporting line, how many models the provider serves.",
@@ -26212,10 +26194,6 @@
       }
     }
   },
-  "integrationsMcpRemoveUnavailable": "This server can't remove MCP servers from the app. Edit its configuration on the computer.",
-  "@integrationsMcpRemoveUnavailable": {
-    "description": "Integrations page: why Remove is unavailable on this server."
-  },
   "integrationsMcpRemoveTitle": "Remove {name} until restart?",
   "@integrationsMcpRemoveTitle": {
     "description": "Integrations page: remove-MCP confirmation title.",
@@ -26314,6 +26292,56 @@
   "terminalScreenRemoveEndedBody": "Their output goes away too. Running terminals stay.",
   "@terminalScreenRemoveEndedBody": {
     "description": "Remove ended terminals question: what is lost and what is kept."
+  },
+  "terminalScreenEmptyTitle": "No terminals yet",
+  "@terminalScreenEmptyTitle": {
+    "description": "Terminal list empty state title: this server has no terminals open."
+  },
+  "terminalScreenEmptyBody": "Start one in {project}.",
+  "@terminalScreenEmptyBody": {
+    "description": "Terminal list empty state body, naming the project folder a new terminal opens in.",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "oc_app"
+      }
+    }
+  },
+  "terminalScreenEmptyBodyNoProject": "Start one in this project.",
+  "@terminalScreenEmptyBodyNoProject": {
+    "description": "Terminal list empty state body when the project folder has no name to show."
+  },
+  "integrationsProvidersExplanation": "The model providers this server can use. Connect one to start chatting.",
+  "@integrationsProvidersExplanation": {
+    "description": "Explanation shown when the person taps the Providers section label on the integrations page."
+  },
+  "integrationsResourcesExplanation": "Files and data that connected MCP servers give the agent.",
+  "@integrationsResourcesExplanation": {
+    "description": "Explanation shown when the person taps the Resources section label on the integrations page."
+  },
+  "externalAgentsStopTaskTitle": "Stop “{task}”?",
+  "@externalAgentsStopTaskTitle": {
+    "description": "Question before asking an external agent to stop a task, naming the task.",
+    "placeholders": {
+      "task": {
+        "type": "String",
+        "example": "Summarise the report"
+      }
+    }
+  },
+  "externalAgentsStopTaskConfirm": "Ask {agent} to stop",
+  "@externalAgentsStopTaskConfirm": {
+    "description": "Confirm button: ask the named external agent to stop the task.",
+    "placeholders": {
+      "agent": {
+        "type": "String",
+        "example": "Color agent"
+      }
+    }
+  },
+  "externalAgentsStopTaskKeep": "Keep running",
+  "@externalAgentsStopTaskKeep": {
+    "description": "Dismiss button on the stop question: leave the external agent's task running."
   },
   "terminalScreenUsePhone": "Use this phone's terminal",
   "@terminalScreenUsePhone": {
@@ -27984,10 +28012,6 @@
   "@externalAgentsAboutLabel": {
     "description": "screen-library-2: Add agent and the agent's page: label above the agent's own description and skills."
   },
-  "externalAgentsNoSkills": "It lists no skills",
-  "@externalAgentsNoSkills": {
-    "description": "screen-library-2: Add agent: row when the agent lists no skills."
-  },
   "externalAgentsUnverified": "The agent describes itself. This app hasn't verified who runs it, what it can do or what it costs.",
   "@externalAgentsUnverified": {
     "description": "screen-library-2: Add agent: note under the agent's description."
@@ -28137,10 +28161,6 @@
   "externalAgentsStopUnavailable": "Check with the agent first; pull down to refresh",
   "@externalAgentsStopUnavailable": {
     "description": "screen-library-2: Task page: why stopping cannot be asked now."
-  },
-  "externalAgentsStopTitle": "Stop this task?",
-  "@externalAgentsStopTitle": {
-    "description": "screen-library-2: Stop question title."
   },
   "externalAgentsForgetMenu": "Forget this task on this phone",
   "@externalAgentsForgetMenu": {
@@ -28300,6 +28320,16 @@
   "toolsScreenRegisteredOnly": "Registered on this project · this model can’t call it",
   "@toolsScreenRegisteredOnly": {
     "description": "Tools page: the worded state of a tool the project registers but the chosen model is not offered"
+  },
+  "toolsDetailMenu": "{tool} actions",
+  "@toolsDetailMenu": {
+    "description": "Name of the menu on a tool's detail sheet (holds Copy parameter schema).",
+    "placeholders": {
+      "tool": {
+        "type": "String",
+        "example": "bash"
+      }
+    }
   },
   "toolsDetailTakes": "Takes",
   "@toolsDetailTakes": {

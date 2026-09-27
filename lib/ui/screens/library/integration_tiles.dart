@@ -63,9 +63,8 @@ class _McpServerRow extends StatelessWidget {
   final bool actionsAllowed;
 
   /// Remove is offered: the server supports runtime removal and the list
-  /// is current. [removalSupported] false explains the gate in the menu.
+  /// is current. Otherwise the menu leaves it out (no dead item).
   final bool canRemove;
-  final bool removalSupported;
   final VoidCallback onAct;
   final VoidCallback onRemove;
 
@@ -77,7 +76,6 @@ class _McpServerRow extends StatelessWidget {
     required this.authGated,
     required this.actionsAllowed,
     required this.canRemove,
-    required this.removalSupported,
     required this.onAct,
     required this.onRemove,
   });
@@ -185,16 +183,7 @@ class _McpServerRow extends StatelessWidget {
                   disabledReason: actionsAllowed ? null : l10n.mcpScopeChanged,
                   onSelected: onAct,
                 ),
-              if (!removalSupported)
-                KitMenuItem(
-                  key: ValueKey('mcp-remove-${server.name}'),
-                  label: l10n.integrationsMcpRemoveUntilRestart(server.name),
-                  icon: AppIconography.delete,
-                  enabled: false,
-                  disabledReason: l10n.integrationsMcpRemoveUnavailable,
-                  onSelected: () {},
-                )
-              else if (canRemove && !authorizing)
+              if (canRemove && !authorizing)
                 KitMenuItem(
                   key: ValueKey('mcp-remove-${server.name}'),
                   label: l10n.integrationsMcpRemoveUntilRestart(server.name),
