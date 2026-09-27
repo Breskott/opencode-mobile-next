@@ -2808,10 +2808,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageBudgetAmount => 'قيمة الميزانية';
 
   @override
-  String get usageBudgetInvalid =>
-      'أدخل قيمة موجبة ومحدودة. يجب أن تكون ميزانيات الرموز أعدادًا صحيحة.';
-
-  @override
   String get usageBudgetRemove => 'إزالة الميزانية';
 
   @override
@@ -5235,9 +5231,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SharedOtherContext => 'سياق آخر';
 
   @override
-  String get e7SharedMove => 'نقل';
-
-  @override
   String get e7SharedSessionLocationChangedCloseAndReopenThis =>
       'تغيّر مشروع المحادثة. أغلق هذه الورقة وأعد فتحها.';
 
@@ -5254,12 +5247,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get e7SharedTheAppCouldNotInspectWorkingChanges =>
       'تعذّر على التطبيق فحص تغييرات العمل. للسلامة، ستتم المتابعة دون نقل التغييرات.';
-
-  @override
-  String get e7SharedMoveWithChanges => 'نقل مع التغييرات';
-
-  @override
-  String get e7SharedCopyChangesAndMove => 'نسخ التغييرات ثم النقل';
 
   @override
   String get e7SharedMoveSession => 'نقل المحادثة';
@@ -5456,7 +5443,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7SharedDetail429 => 'نقل المحادثة؟';
+  String e7SharedDetail429(String destination) {
+    return 'Move conversation to $destination?';
+  }
 
   @override
   String e7SharedDetail430(int count, String action) {
@@ -5475,11 +5464,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'other': 'تُنسخ',
     });
     return '$_temp0 اختر ما إذا كانت تغييرات العمل تلك يجب أن $_temp1 مع المحادثة.';
-  }
-
-  @override
-  String e7SharedDetail432(String destination) {
-    return 'المتابعة إلى $destination؟';
   }
 
   @override
@@ -23748,7 +23732,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get sessionDestinationMoveWithout => 'Move without changes';
+  String sessionDestinationMoveWithout(String destination) {
+    return 'Move to $destination without changes';
+  }
 
   @override
   String get sessionDestinationMoveFailed => 'Couldn\'t move the conversation.';
@@ -26386,5 +26372,38 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String productErrorServer(int code) {
     return 'The server had a problem (error $code). Try again in a moment.';
+  }
+
+  @override
+  String get usageBudgetInvalidUsd => 'Enter an amount above 0, like 2.50';
+
+  @override
+  String get usageBudgetInvalidTokens =>
+      'Enter a whole number of tokens above 0';
+
+  @override
+  String get usageBudgetSaveUsd => 'Save USD budget';
+
+  @override
+  String get usageBudgetSaveTokens => 'Save token budget';
+
+  @override
+  String sessionDestinationMoveWithChanges(String destination) {
+    return 'Move to $destination with changes';
+  }
+
+  @override
+  String sessionDestinationWarpWithChanges(String destination) {
+    return 'Move to $destination with a copy of changes';
+  }
+
+  @override
+  String sessionDestinationMoveTo(String destination) {
+    return 'Move to $destination';
+  }
+
+  @override
+  String sessionDestinationNoChanges(String place) {
+    return 'No working changes in $place, so only the conversation moves.';
   }
 }
