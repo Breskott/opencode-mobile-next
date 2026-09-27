@@ -252,7 +252,13 @@ class KitScreen extends StatelessWidget {
     } else {
       framed = _PageFrame(topBar: panes ? null : topBar, child: slotted);
     }
-    return _KitScreenCheck(child: framed);
+    // A page with no Scaffold above it hosts one, so the screens that still
+    // call ScaffoldMessenger.showSnackBar (until they move to KitUndo) show
+    // their snack bar instead of queueing it with nowhere to draw.
+    final hostsSnackBars = topBar != null && Scaffold.maybeOf(context) == null;
+    return _KitScreenCheck(
+      child: hostsSnackBars ? _SnackBarHost(child: framed) : framed,
+    );
   }
 
   static bool _pageAllowedAt(BuildContext context) {
@@ -317,7 +323,17 @@ class KitScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ?bar,
-            if (search != null) centred(search),
+            // On the gutter rails like the rows below (KitSearchField.md
+            // "Where it sits").
+            if (search != null)
+              centred(
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                  ),
+                  child: search,
+                ),
+              ),
             for (final row in header) centred(row),
             KitLoadingBar(loading: loading, label: loadingLabel),
             Expanded(child: centred(inner, fill: true)),
@@ -431,6 +447,36 @@ class _PageFrame extends StatelessWidget {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A transparent [Scaffold] around a page so [ScaffoldMessenger] snack bars
+/// have a place to draw. The snack bar floats above whatever
+/// [KitBottomInset] publishes below the page (the floating dock, a pinned
+/// primary, the gesture inset, the keyboard): only the Scaffold sees that
+/// clearance as its bottom padding; the page below it keeps its own
+/// [MediaQuery]. The Scaffold resizes nothing and paints nothing.
+class _SnackBarHost extends StatelessWidget {
+  const _SnackBarHost({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final clearance = KitBottomInset.of(context).bottom;
+    final lifted = media.copyWith(
+      padding: media.padding.copyWith(bottom: clearance),
+      viewPadding: media.viewPadding.copyWith(bottom: clearance),
+    );
+    return MediaQuery(
+      data: lifted,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        resizeToAvoidBottomInset: false,
+        body: MediaQuery(data: media, child: child),
       ),
     );
   }

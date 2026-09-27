@@ -568,6 +568,49 @@ void main() {
     });
   });
 
+  testWidgets('a tab snack bar shows inside the shell, above the dock', (
+    tester,
+  ) async {
+    // The shell (HomeScreen) is a KitScreen page inside KitNav with no
+    // Scaffold; tabs that still call ScaffoldMessenger.showSnackBar must
+    // show their snack bar there, floating above the glass dock.
+    late BuildContext tabContext;
+    await _pump(
+      tester,
+      KitNav(
+        destinations: const [
+          KitNavDestination(label: 'Work', icon: AppIconography.workspace),
+          KitNavDestination(label: 'Settings', icon: AppIconography.activity),
+        ],
+        selected: 0,
+        onSelected: (_) {},
+        child: KitScreen(
+          topBar: _bar('Shell'),
+          body: Builder(
+            builder: (context) {
+              tabContext = context;
+              return _rows();
+            },
+          ),
+        ),
+      ),
+    );
+    ScaffoldMessenger.of(
+      tabContext,
+    ).showSnackBar(const SnackBar(content: Text('Copied')));
+    await tester.pumpAndSettle();
+
+    final snack = find.text('Copied');
+    expect(snack, findsOneWidget);
+    expect(tester.getRect(snack).height, greaterThan(0));
+    expect(
+      tester.getRect(find.byType(SnackBar)).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(KitNavBar)).top),
+    );
+    // The page itself keeps its own MediaQuery: its body is not lifted.
+    expect(tester.getRect(find.text('Row 0')).top, lessThan(200));
+  });
+
   testWidgets('no overflow across sizes and text scales', (tester) async {
     const sizes = [
       Size(320, 640),
