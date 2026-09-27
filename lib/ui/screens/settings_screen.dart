@@ -21,9 +21,9 @@ import '../early_l10n.dart';
 import '../kit/kit.dart';
 import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
-import '../widgets/confirm_sheet.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
+import '../widgets/safety_confirms.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
 import '../widgets/team_discover.dart';
@@ -268,19 +268,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final copy = _settingsCopy(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    _HubRow? row(
-      String id, {
-      String? subtitle,
-      WidgetBuilder? builder,
-      bool standalone = false,
-    }) {
+    _HubRow? row(String id, {String? subtitle, WidgetBuilder? builder}) {
       final entry = entries[id];
       if (entry == null) return null;
       return _HubRow(
         entry: entry,
         subtitle: subtitle,
         builder: builder,
-        standalone: standalone,
         onTap: () => _openEntry(entry, scope),
       );
     }
@@ -306,29 +300,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         row('settings-accounts', subtitle: copy.settingsHubAccountsSubtitle),
         row('settings-external-agents'),
         row('settings-tailscale'),
-        // Destructive rows come last in their group and stand apart from
-        // the doors above (plan 5.7).
-        row(
-          'settings-disconnect',
-          standalone: true,
-          // Error-coloured text, never a primary; the entry confirms first
-          // (design standard §2).
-          builder: (context) => Padding(
-            padding: EdgeInsetsDirectional.only(
-              top: KitTokens.of(context).space2,
-            ),
-            child: KitInset(
-              child: KitButton.tertiary(
-                key: const ValueKey('settings-disconnect'),
-                destructive: true,
-                onPressed: () =>
-                    _openEntry(entries['settings-disconnect']!, scope),
-                icon: AppIconography.unlink,
-                label: copy.e7SettingsUi8,
-              ),
-            ),
-          ),
-        ),
       ],
       SettingsGroup.conversation: [
         row(
@@ -497,41 +468,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SettingsGroup.help => AppIconography.support,
   };
 
-  /// One group: its rows on a panel under the group's name, then a
-  /// standalone row (Disconnect) set apart below the panel.
+  /// One group: its rows on a panel under the group's name.
   Widget _groupView(
     ({_HubGroup group, List<_HubRow> rows}) entry, {
     required bool scrollTarget,
   }) {
-    final tokens = KitTokens.of(context);
-    final panel = [
-      for (final row in entry.rows)
-        if (!row.standalone) row.build(context),
-    ];
-    final apart = [
-      for (final row in entry.rows)
-        if (row.standalone) row.build(context),
-    ];
-    final column = Column(
+    // Groups without a row are dropped before they get here.
+    final column = KitRowGroup(
       key: ValueKey('settings-group-${entry.group.group.slug}'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (panel.isNotEmpty)
-          KitRowGroup(label: entry.group.title, children: panel)
-        else
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
-            child: Semantics(
-              header: true,
-              child: KitText(entry.group.title, role: KitTextRole.label),
-            ),
-          ),
-        for (final row in apart)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
-            child: row,
-          ),
-      ],
+      label: entry.group.title,
+      children: [for (final row in entry.rows) row.build(context)],
     );
     return scrollTarget
         ? KeyedSubtree(key: _groupKeys[entry.group.group], child: column)
@@ -787,19 +733,15 @@ class _HubRow {
   final String? subtitle;
   final VoidCallback onTap;
 
-  /// A row that draws itself (live status, its own loading state, or the
-  /// separated Disconnect button) but is searched like any other.
+  /// A row that draws itself (live status or its own loading state) but is
+  /// searched like any other.
   final WidgetBuilder? builder;
-
-  /// Drawn below its group's panel, apart from the doors (Disconnect).
-  final bool standalone;
 
   const _HubRow({
     required this.entry,
     required this.onTap,
     this.subtitle,
     this.builder,
-    this.standalone = false,
   });
 
   Widget build(BuildContext context) =>
@@ -811,15 +753,6 @@ class _HubRow {
         subtitle: subtitle,
         onTap: onTap,
       );
-}
-
-/// The trailing mark of a row that opens another screen (kept for the
-/// sibling part files; the kit's chevron).
-class _Chevron extends StatelessWidget {
-  const _Chevron();
-
-  @override
-  Widget build(BuildContext context) => const KitChevron();
 }
 
 /// One settings row on the kit (design standard §6): an icon, the title, an

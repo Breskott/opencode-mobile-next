@@ -41,7 +41,6 @@ import '../screens/termux_storage_screen.dart';
 import '../screens/usage_hub_screen.dart';
 import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
-import '../widgets/safety_confirms.dart';
 import '../widgets/transcript_display_toggles.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_dialog.dart';
@@ -272,14 +271,6 @@ Future<void> _openVoice(BuildContext context, SearchScope scope) async {
   }
 }
 
-Future<void> _disconnect(BuildContext context, SearchScope scope) async {
-  final confirmed = await confirmDisconnectServer(context, scope.controller);
-  if (!confirmed || !context.mounted) return;
-  final navigator = Navigator.of(context);
-  await scope.controller.disconnect();
-  navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
-}
-
 bool _canImport(SearchScope scope) {
   final repository = scope.controller.repository;
   return scope.capabilities.sessionImportExport &&
@@ -376,16 +367,6 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['tailscale-setup'],
       gate: (scope) => scope.platform.supportsTailscaleHandoff,
       open: _screen((_) => const TailscaleSetupScreen()),
-    ),
-    SearchEntry(
-      id: 'settings-disconnect',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.connection,
-      icon: AppIconography.unlink,
-      title: l10n.e7SettingsUi8,
-      keywords: l10n.settingsHubSearchDisconnectAliases,
-      gate: (scope) => scope.controller.profile != null,
-      open: _disconnect,
     ),
     SearchEntry(
       id: 'settings-model-and-mode',
@@ -736,6 +717,24 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
 
     // ---- Inside second-level settings screens ------------------------
+    // Disconnect lives on the page of the server it disconnects from; the
+    // result opens that page at the row, which confirms before it acts.
+    SearchEntry(
+      id: 'inside-server-disconnect',
+      kind: SearchEntryKind.insideSettings,
+      icon: AppIconography.unlink,
+      title: l10n.e7SettingsUi8,
+      parent: l10n.settingsHubThisServer,
+      keywords: l10n.settingsHubSearchDisconnectAliases,
+      pages: const ['server-settings'],
+      gate: (scope) => scope.controller.profile != null,
+      open: _screen(
+        (scope) => ServerSettingsScreen(
+          controller: scope.controller,
+          initialSection: ServerSettingsScreen.disconnectSection,
+        ),
+      ),
+    ),
     SearchEntry(
       id: 'inside-notifications-what',
       kind: SearchEntryKind.insideSettings,
