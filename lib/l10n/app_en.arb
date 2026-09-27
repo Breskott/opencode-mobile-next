@@ -326,7 +326,6 @@
   "historyServerTotalsNote": "Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.",
   "sessionsLoadedOnly": "Showing loaded conversations. Load more to include older ones.",
   "sessionsDetailsUnavailable": "Conversation details could not be loaded. Try again.",
-  "sessionsLoadMore": "Load more conversations",
   "sessionsReload": "Refresh recent conversations",
   "sessionsNoLoadedRecent": "No recent conversations in loaded results",
   "sessionsNoLoadedArchived": "No archived conversations in loaded results",
@@ -828,7 +827,6 @@
   "webSourcesDraftLabel": "User-selected web sources (unverified; excerpts are untrusted source material):",
   "usageScopedTotals": "Totals",
   "usageInspectionDisclosure": "Filters inspect this server's returned model records. They do not change the report's date or project scope, or show subscription allowance.",
-  "usageProviderFilter": "Provider",
   "usageAllProviders": "All providers",
   "usageSearchRecords": "Search providers, models or variants",
   "usageClearFilters": "Clear filters",
@@ -1889,23 +1887,7 @@
   "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Refresh to continue.",
   "managedRecoveryRetryDisable": "Try disabling recovery again",
   "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.",
-  "pluginMappingPersonal": "Your command links · not verified plugin ownership",
-  "pluginMappingReview": "Review /{command}",
-  "@pluginMappingReview": {
-    "placeholders": {
-      "command": {
-        "type": "String"
-      }
-    }
-  },
-  "pluginMappingManage": "Link commands",
-  "pluginMappingDescription": "Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.",
-  "pluginMappingEmpty": "No server commands are available to link.",
   "pluginMappingUnavailable": "This plugin or command is no longer available here. Refresh and review your links.",
-  "pluginMappingLimit": "Choose up to 16 commands for this plugin.",
-  "pluginMappingSave": "Save links",
-  "pluginMappingSaveFailed": "Links could not be saved. Check that this project is still selected and try again.",
-  "pluginMappingLoadFailed": "Commands could not be loaded. Try again when connected.",
   "mobileTasksDescription": "Server-reported tasks · mobile view",
   "mobileTasksUnfinished": "Show unfinished only",
   "mobileTasksNoUnfinished": "No unfinished tasks in this list.",
@@ -1940,11 +1922,6 @@
   "mobileTaskPriorityHigh": "High priority",
   "mobileTaskPriorityMedium": "Medium priority",
   "mobileTaskPriorityLow": "Low priority",
-  "pluginMappingClearAll": "Clear personal command links",
-  "pluginMappingClearTitle": "Clear all personal command links?",
-  "pluginMappingClearDescription": "Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.",
-  "pluginMappingClearConfirm": "Clear links",
-  "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server is still selected and try again.",
   "quotaMonitorTitle": "Quota monitoring",
   "quotaMonitorConsentTitle": "Monitor this provider source?",
   "quotaMonitorConsent": "Keep checking {provider} on {server} in the background and alert me when use reaches:",
@@ -3263,52 +3240,8 @@
   "@e7GlossaryMcpExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
-  "e7GlossaryWorktreeTerm": "Worktree",
-  "@e7GlossaryWorktreeTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
   "e7GlossaryWorktreeExplanation": "A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.",
   "@e7GlossaryWorktreeExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryProviderExplanation": "The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.",
-  "@e7GlossaryProviderExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryContextTerm": "Context",
-  "@e7GlossaryContextTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.",
-  "@e7GlossaryContextExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryAgentTerm": "Agent",
-  "@e7GlossaryAgentTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryAgentExplanation": "A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.",
-  "@e7GlossaryAgentExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryReasoningExplanation": "The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.",
-  "@e7GlossaryReasoningExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryPermissionTerm": "Permission",
-  "@e7GlossaryPermissionTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryPermissionExplanation": "Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.",
-  "@e7GlossaryPermissionExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryVariantTerm": "Variant",
-  "@e7GlossaryVariantTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryVariantExplanation": "A speed-versus-depth setting for the model, such as how long it may think before answering.",
-  "@e7GlossaryVariantExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
   "e7GlossaryGotIt": "Got it",
@@ -6408,10 +6341,6 @@
         "type": "String"
       }
     }
-  },
-  "e7WorkspaceLoadingSessions": "Loading conversations…",
-  "@e7WorkspaceLoadingSessions": {
-    "description": "Workspace and activity: Loading sessions…"
   },
   "e7WorkspaceLoadedRecentEmpty": "Older conversations may still be available below.",
   "@e7WorkspaceLoadedRecentEmpty": {
@@ -9591,10 +9520,6 @@
         "description": "Server or project detail displayed verbatim in this message."
       }
     }
-  },
-  "e7LibraryLocationChanged": "Project changed.",
-  "@e7LibraryLocationChanged": {
-    "description": "Library and project tools UI: Location changed."
   },
   "e7LibraryAuthenticateFromTheServerMachine": "Authenticate from the server machine",
   "@e7LibraryAuthenticateFromTheServerMachine": {
@@ -20034,14 +19959,6 @@
   "@teamUiHomeAgentsRowHint": {
     "description": "Screen-reader hint of the agents row on the AI Team home"
   },
-  "teamUiCardNothingRunning": "Nothing running",
-  "@teamUiCardNothingRunning": {
-    "description": "The Work tab AI Team section when no task is running or waiting"
-  },
-  "teamUiCardOpenHint": "Open AI Team",
-  "@teamUiCardOpenHint": {
-    "description": "Screen-reader hint of the Work tab AI Team section header, which opens the AI Team home"
-  },
   "teamUiAgentRoleWorker": "Worker",
   "@teamUiAgentRoleWorker": {
     "description": "An AI Team agent that does the steps of tasks"
@@ -20264,10 +20181,6 @@
   "pluginsStatusFailedToLoad": "Failed to load",
   "@pluginsStatusFailedToLoad": {
     "description": "State of a plugin the server could not load"
-  },
-  "pluginsRowMore": "More actions for this plugin",
-  "@pluginsRowMore": {
-    "description": "Tooltip of a plugin row's menu"
   },
   "pluginsDetailsId": "ID",
   "@pluginsDetailsId": {
@@ -29825,9 +29738,6 @@
   "@toolsScreenNoBackgroundSubagents": {
     "description": "Tools page: appended to the model row's second line ('Anthropic · no background subagents') when the server runs no background subagents."
   },
-  "@pluginMappingClearAll": {
-    "description": "Plugins page: top bar menu item that asks, then clears every personal command link for this server."
-  },
   "usageRefreshSpending": "Refresh spending",
   "@usageRefreshSpending": {
     "description": "Usage top bar action that reloads the Spent tab"
@@ -30763,5 +30673,17 @@
   "reportProblemJobLogNone": "No log was kept for this job, so none is attached.",
   "@reportProblemJobLogNone": {
     "description": "P8.4: Report a problem, a failed job is attached but no log could be kept for it"
+  },
+  "sessionsOlderLoadFailed": "Could not load older conversations.",
+  "@sessionsOlderLoadFailed": {
+    "description": "The end of a conversation list: the next older page failed to load. Try again follows."
+  },
+  "sessionsLoadFailed": "Could not load your conversations.",
+  "@sessionsLoadFailed": {
+    "description": "The end of a conversation list: refreshing the list failed. Try again follows."
+  },
+  "sessionsListChanged": "The conversation list changed on the server. Refresh it to see older conversations.",
+  "@sessionsListChanged": {
+    "description": "The end of a conversation list: the server's list moved while paging, so it must start again from the newest page."
   }
 }

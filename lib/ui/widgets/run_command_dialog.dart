@@ -12,7 +12,7 @@ import '../kit/kit_row_parts.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_tokens.dart';
 import 'product_states.dart';
-import 'session_inventory_footer.dart';
+import 'older_sessions_pager.dart';
 import 'session_title.dart';
 
 /// Opens the review of one slash command (map page run-command-dialog):
@@ -263,8 +263,10 @@ class _RunCommandFormState extends State<_RunCommandForm> {
                   });
                 },
               ),
-              if (_sameLocation)
-                SessionInventoryFooter(controller: widget.controller),
+              // The choices page themselves (target-ia §1.4).
+              if (_sameLocation &&
+                  OlderSessionsPager.showsFor(widget.controller))
+                OlderSessionsPager(controller: widget.controller, inset: false),
             ],
           ),
           if (error != null) ...[

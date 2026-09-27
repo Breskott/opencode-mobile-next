@@ -452,30 +452,11 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Dark'), findsOneWidget);
-    await tester.tap(entry);
+    // Light or dark is chosen inline and applies at once (the separate
+    // light-or-dark sheet was removed by slice-P3.1).
+    await tester.tap(find.byKey(const ValueKey('appearance-mode-system')));
     await tester.pumpAndSettle();
-    final pickerScroll = find.descendant(
-      of: find.byKey(const Key('appearance-picker')),
-      matching: find.byType(Scrollable),
-    );
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('appearance-system')),
-      160,
-      scrollable: pickerScroll,
-    );
-    await tester.tap(find.byKey(const Key('appearance-system')));
-    await tester.pumpAndSettle();
-    expect(controller.appearance.value, AppAppearance.dark);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: pickerScroll,
-    );
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
     expect(controller.appearance.value, AppAppearance.system);
-    expect(find.text('Follow Android'), findsOneWidget);
   });
 
   testWidgets(

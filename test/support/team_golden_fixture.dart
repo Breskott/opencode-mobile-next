@@ -23,7 +23,6 @@ import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -352,13 +351,9 @@ enum TeamShot {
   // A merged task's Overview, the first time: its celebration (slice D).
   runMerged(TeamScene.loaded, 'team_run_merged'),
   startRun(TeamScene.loaded, 'team_start_run'),
-  card(TeamScene.loaded, 'team_card'),
   agentOutput(TeamScene.loaded, 'team_agent_output'),
   // The in-app AI Team: the same team hosted on this phone.
   homeLoadedPhone(TeamScene.loaded, 'team_home_loaded_phone', onPhone: true),
-  cardPhone(TeamScene.loaded, 'team_card_phone', onPhone: true),
-  // Nothing running: the card's one line with its small drawing.
-  cardIdle(TeamScene.empty, 'team_card_idle'),
   // The agents list the home's one agents row opens.
   agents(TeamScene.loaded, 'team_agents');
 
@@ -406,13 +401,6 @@ Future<OrchestrationController> pumpTeamShot(
       agentId: 'fox',
     ),
     TeamShot.agents => TeamAgentsScreen(controller: controller, now: now),
-    TeamShot.card || TeamShot.cardPhone || TeamShot.cardIdle => Scaffold(
-      body: SafeArea(
-        child: ListView(
-          children: [TeamCard(controller: controller, onOpen: () {})],
-        ),
-      ),
-    ),
     _ => TeamHomeScreen(controller: controller, now: now),
   };
   await tester.pumpWidget(
@@ -444,10 +432,7 @@ Future<OrchestrationController> pumpTeamShot(
         TeamShot.homeError ||
         TeamShot.homeStarting ||
         TeamShot.runMerged ||
-        TeamShot.cardIdle ||
         TeamShot.runOverview ||
-        TeamShot.card ||
-        TeamShot.cardPhone ||
         TeamShot.agentOutput ||
         TeamShot.agents:
       break;

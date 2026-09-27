@@ -569,18 +569,19 @@
         {
           "id": "workspace-inventory-footer",
           "type": "banner",
-          "label": "[session inventory footer: Load more sessions / Retry / Reload]",
+          "label": "[end of the list: older conversations load as it comes near; a failed page says so with Try again]",
           "key": null,
-          "file": "lib/ui/widgets/session_inventory_footer.dart",
-          "line": 765,
+          "file": "lib/ui/screens/workspace_screen.dart",
+          "line": 921,
           "action": "other",
           "target": null,
-          "targetWidget": "SessionInventoryFooter",
-          "effect": "Embeds SessionInventoryFooter(controller) under Recent sessions (and at line 1286 in the archived sheet); its buttons are listed on page embedded-session-inventory-footer.",
+          "targetWidget": "OlderSessionsPager",
+          "effect": "The list pages itself (target-ia §1.4): OlderSessionsPager asks for the next page as the end comes within reach, shows skeleton rows while it loads, and a failed page, a changed list or a failed refresh as one KitNotice.error with Try again or Refresh recent conversations. Replaces the session inventory footer (removed by slice-P3.1).",
           "gates": [
             "renders only when controller.hasMoreSessions || a sessions error || loading"
           ],
-          "destructive": false
+          "destructive": false,
+          "widgetFile": "lib/ui/widgets/older_sessions_pager.dart"
         },
         {
           "id": "workspace-nudge-pin-got-it",
@@ -2322,14 +2323,14 @@
         {
           "id": "worktrees-glossary-label",
           "type": "link",
-          "label": "Worktrees (info label)",
+          "label": "Worktrees (term)",
           "key": "worktrees-section-label",
-          "file": "lib/ui/widgets/info_label.dart",
-          "line": 623,
-          "action": "open-sheet",
-          "target": "info-label-sheet",
-          "targetWidget": "InfoLabel.show",
-          "effect": "InfoLabel with Glossary.worktree.explanation opens the explanation sheet (InfoLabel.show).",
+          "file": "lib/ui/screens/worktrees_screen.dart",
+          "line": 553,
+          "action": "other",
+          "target": null,
+          "targetWidget": "KitTerm",
+          "effect": "KitTerm: a tap, long-press or hover shows the worktree explanation in a bubble anchored to the word (the info-label sheet was removed by slice-P3.1).",
           "gates": [],
           "destructive": false
         },
@@ -3809,59 +3810,6 @@
           "targetWidget": null,
           "effect": "Pops with the seconds; _timeout calls controller.repository.setManagedShellTimeout(shell.id, Duration or null) and shows a snackbar.",
           "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "embedded-session-inventory-footer",
-      "title": "[Session inventory footer]",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/session_inventory_footer.dart",
-      "widget": "SessionInventoryFooter",
-      "presentedBy": [],
-      "line": 7,
-      "purpose": "Continuation controls under session lists when the inventory is partial, loading or failed.",
-      "reachedFrom": [],
-      "gates": [],
-      "embeddedIn": [
-        "WorkspaceScreen",
-        "WorkspaceScreen._showArchived",
-        "RunCommandDialog (lib/ui/widgets/run_command_dialog.dart:186)"
-      ],
-      "elements": [
-        {
-          "id": "embedded-session-inventory-footer-reload",
-          "type": "button",
-          "label": "Reload recent sessions",
-          "key": null,
-          "file": "lib/ui/widgets/session_inventory_footer.dart",
-          "line": 46,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "controller.refreshSessions().",
-          "gates": [
-            "(controller.sessionsError != null || controller.pinnedSessionsLoadFailed) && controller.hasMoreSessions",
-            "disabled while loading"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-session-inventory-footer-more",
-          "type": "button",
-          "label": "Load more sessions | Retry | Reload recent sessions",
-          "key": "session-inventory-more",
-          "file": "lib/ui/widgets/session_inventory_footer.dart",
-          "line": 51,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "controller.loadMoreSessions(), or controller.refreshSessions() when the inventory failed and there is nothing to continue.",
-          "gates": [
-            "footer shown when controller.hasMoreSessions || error != null || loading",
-            "disabled while loading"
-          ],
           "destructive": false
         }
       ]

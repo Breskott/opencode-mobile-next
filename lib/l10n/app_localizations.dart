@@ -1166,12 +1166,6 @@ abstract class AppLocalizations {
   /// **'Conversation details could not be loaded. Try again.'**
   String get sessionsDetailsUnavailable;
 
-  /// No description provided for @sessionsLoadMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Load more conversations'**
-  String get sessionsLoadMore;
-
   /// No description provided for @sessionsReload.
   ///
   /// In en, this message translates to:
@@ -2923,12 +2917,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filters inspect this server\'s returned model records. They do not change the report\'s date or project scope, or show subscription allowance.'**
   String get usageInspectionDisclosure;
-
-  /// No description provided for @usageProviderFilter.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider'**
-  String get usageProviderFilter;
 
   /// No description provided for @usageAllProviders.
   ///
@@ -5521,65 +5509,11 @@ abstract class AppLocalizations {
   /// **'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.'**
   String get managedRecoveryStoppedWithCleanupError;
 
-  /// No description provided for @pluginMappingPersonal.
-  ///
-  /// In en, this message translates to:
-  /// **'Your command links · not verified plugin ownership'**
-  String get pluginMappingPersonal;
-
-  /// No description provided for @pluginMappingReview.
-  ///
-  /// In en, this message translates to:
-  /// **'Review /{command}'**
-  String pluginMappingReview(String command);
-
-  /// No description provided for @pluginMappingManage.
-  ///
-  /// In en, this message translates to:
-  /// **'Link commands'**
-  String get pluginMappingManage;
-
-  /// No description provided for @pluginMappingDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.'**
-  String get pluginMappingDescription;
-
-  /// No description provided for @pluginMappingEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No server commands are available to link.'**
-  String get pluginMappingEmpty;
-
   /// No description provided for @pluginMappingUnavailable.
   ///
   /// In en, this message translates to:
   /// **'This plugin or command is no longer available here. Refresh and review your links.'**
   String get pluginMappingUnavailable;
-
-  /// No description provided for @pluginMappingLimit.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose up to 16 commands for this plugin.'**
-  String get pluginMappingLimit;
-
-  /// No description provided for @pluginMappingSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Save links'**
-  String get pluginMappingSave;
-
-  /// No description provided for @pluginMappingSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Links could not be saved. Check that this project is still selected and try again.'**
-  String get pluginMappingSaveFailed;
-
-  /// No description provided for @pluginMappingLoadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Commands could not be loaded. Try again when connected.'**
-  String get pluginMappingLoadFailed;
 
   /// No description provided for @mobileTasksDescription.
   ///
@@ -5664,36 +5598,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low priority'**
   String get mobileTaskPriorityLow;
-
-  /// Plugins page: top bar menu item that asks, then clears every personal command link for this server.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear personal command links'**
-  String get pluginMappingClearAll;
-
-  /// No description provided for @pluginMappingClearTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear all personal command links?'**
-  String get pluginMappingClearTitle;
-
-  /// No description provided for @pluginMappingClearDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.'**
-  String get pluginMappingClearDescription;
-
-  /// No description provided for @pluginMappingClearConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear links'**
-  String get pluginMappingClearConfirm;
-
-  /// No description provided for @pluginMappingClearFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal links could not be cleared. Check that this server is still selected and try again.'**
-  String get pluginMappingClearFailed;
 
   /// No description provided for @quotaMonitorTitle.
   ///
@@ -8992,74 +8896,8 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'Worktree'**
-  String get e7GlossaryWorktreeTerm;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
   /// **'A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.'**
   String get e7GlossaryWorktreeExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.'**
-  String get e7GlossaryProviderExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Context'**
-  String get e7GlossaryContextTerm;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.'**
-  String get e7GlossaryContextExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Agent'**
-  String get e7GlossaryAgentTerm;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.'**
-  String get e7GlossaryAgentExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.'**
-  String get e7GlossaryReasoningExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Permission'**
-  String get e7GlossaryPermissionTerm;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.'**
-  String get e7GlossaryPermissionExplanation;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'Variant'**
-  String get e7GlossaryVariantTerm;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'A speed-versus-depth setting for the model, such as how long it may think before answering.'**
-  String get e7GlossaryVariantExplanation;
 
   /// Localized shared connection or glossary interface
   ///
@@ -12696,12 +12534,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open {title}. {detail}'**
   String e7WorkspaceOpenSessionSemantics(String title, String detail);
-
-  /// Workspace and activity: Loading sessions…
-  ///
-  /// In en, this message translates to:
-  /// **'Loading conversations…'**
-  String get e7WorkspaceLoadingSessions;
 
   /// Workspace and activity: Older conversations may still be available below.
   ///
@@ -16458,12 +16290,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading {detail1}'**
   String e7LibraryLoading(String detail1);
-
-  /// Library and project tools UI: Location changed.
-  ///
-  /// In en, this message translates to:
-  /// **'Project changed.'**
-  String get e7LibraryLocationChanged;
 
   /// Library and project tools UI: Authenticate from the server machine
   ///
@@ -29291,18 +29117,6 @@ abstract class AppLocalizations {
   /// **'Open the agents list'**
   String get teamUiHomeAgentsRowHint;
 
-  /// The Work tab AI Team section when no task is running or waiting
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing running'**
-  String get teamUiCardNothingRunning;
-
-  /// Screen-reader hint of the Work tab AI Team section header, which opens the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'Open AI Team'**
-  String get teamUiCardOpenHint;
-
   /// An AI Team agent that does the steps of tasks
   ///
   /// In en, this message translates to:
@@ -29542,12 +29356,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load'**
   String get pluginsStatusFailedToLoad;
-
-  /// Tooltip of a plugin row's menu
-  ///
-  /// In en, this message translates to:
-  /// **'More actions for this plugin'**
-  String get pluginsRowMore;
 
   /// Label above a plugin's raw id in its details
   ///
@@ -41216,6 +41024,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No log was kept for this job, so none is attached.'**
   String get reportProblemJobLogNone;
+
+  /// The end of a conversation list: the next older page failed to load. Try again follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load older conversations.'**
+  String get sessionsOlderLoadFailed;
+
+  /// The end of a conversation list: refreshing the list failed. Try again follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your conversations.'**
+  String get sessionsLoadFailed;
+
+  /// The end of a conversation list: the server's list moved while paging, so it must start again from the newest page.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation list changed on the server. Refresh it to see older conversations.'**
+  String get sessionsListChanged;
 }
 
 class _AppLocalizationsDelegate

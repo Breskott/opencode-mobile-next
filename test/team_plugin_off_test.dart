@@ -28,7 +28,6 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
@@ -93,9 +92,8 @@ class _RecordingGateway implements ServerGateway {
 
   void _hit(String name) => calls.add(name);
 
-  // No project catalogue: the Workspace renders its session list (and the
-  // card slot above it) at once instead of asking for a folder first, as
-  // the TeamCard suites do.
+  // No project catalogue: the Workspace renders its session list at once
+  // instead of asking for a folder first, as the Work tab team suites do.
   @override
   ServerCapabilities get capabilities =>
       const ServerCapabilities(projectManagement: false);
@@ -391,7 +389,7 @@ void main() {
   }
 
   Future<void> expectNoPluginWidgets(WidgetTester tester) async {
-    expect(find.byType(TeamCard), findsNothing);
+    expect(find.byKey(const ValueKey('team-card')), findsNothing);
     final stray = _pluginKeys();
     expect(
       stray,

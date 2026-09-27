@@ -628,9 +628,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر تحميل تفاصيل المحادثة. حاول مجددًا.';
 
   @override
-  String get sessionsLoadMore => 'تحميل المزيد من المحادثات';
-
-  @override
   String get sessionsReload => 'تحديث المحادثات الأخيرة';
 
   @override
@@ -1723,9 +1720,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get usageInspectionDisclosure =>
       'تفحص المرشّحات سجلات النماذج التي أعادها هذا الخادم. لا تغيّر تاريخ التقرير أو نطاق مشاريعه، ولا تعرض رصيد الاستخدام في الاشتراك.';
-
-  @override
-  String get usageProviderFilter => 'مزوّد الخدمة';
 
   @override
   String get usageAllProviders => 'كل مزوّدي الخدمة';
@@ -3331,41 +3325,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'الخادم المحلي متوقف. تعذّر مسح إعدادات الاستعادة بالكامل؛ أوقف «إعادة التشغيل بعد التعطل» مرة أخرى قبل إزالة الخادم.';
 
   @override
-  String get pluginMappingPersonal =>
-      'روابط أوامرك · لا تؤكد تبعية الأوامر للإضافة';
-
-  @override
-  String pluginMappingReview(String command) {
-    return 'مراجعة /$command';
-  }
-
-  @override
-  String get pluginMappingManage => 'ربط الأوامر';
-
-  @override
-  String get pluginMappingDescription =>
-      'اختر الأوامر التي تربطها بهذه الإضافة. تنطبق هذه الروابط الشخصية على هذا المشروع في هذا الخادم فقط. يفتح كل إجراء مراجعة للمحادثة والمعاملات قبل تشغيله.';
-
-  @override
-  String get pluginMappingEmpty => 'لا تتوفر أوامر خادم لربطها.';
-
-  @override
   String get pluginMappingUnavailable =>
       'لم تعد هذه الإضافة أو هذا الأمر متاحًا هنا. حدّث وراجع روابطك.';
-
-  @override
-  String get pluginMappingLimit => 'اختر حتى 16 أمرًا لهذه الإضافة.';
-
-  @override
-  String get pluginMappingSave => 'حفظ الروابط';
-
-  @override
-  String get pluginMappingSaveFailed =>
-      'تعذّر حفظ الروابط. تأكّد من أن هذا المشروع ما زال محددًا وأعد المحاولة.';
-
-  @override
-  String get pluginMappingLoadFailed =>
-      'تعذّر تحميل الأوامر. أعد المحاولة عند الاتصال.';
 
   @override
   String get mobileTasksDescription => 'مهام أبلغ عنها الخادم · عرض الهاتف';
@@ -3410,23 +3371,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mobileTaskPriorityLow => 'أولوية منخفضة';
-
-  @override
-  String get pluginMappingClearAll => 'مسح الروابط الشخصية';
-
-  @override
-  String get pluginMappingClearTitle => 'مسح جميع روابط الأوامر الشخصية؟';
-
-  @override
-  String get pluginMappingClearDescription =>
-      'إزالة الروابط الشخصية بين الإضافات والأوامر لكل مشروع على هذا الخادم المحفوظ، بما في ذلك المشاريع السابقة. تظل إضافات الخادم وأوامره مثبّتة.';
-
-  @override
-  String get pluginMappingClearConfirm => 'مسح الروابط';
-
-  @override
-  String get pluginMappingClearFailed =>
-      'تعذّر مسح الروابط الشخصية. تأكّد من أن هذا الخادم ما زال محددًا وأعد المحاولة.';
 
   @override
   String get quotaMonitorTitle => 'مراقبة الحصص';
@@ -5417,47 +5361,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'بروتوكول سياق النموذج (Model Context Protocol). خوادم إضافية صغيرة تمنح الوكيل أدوات أخرى، مثل متصفح أو قاعدة بيانات أو أداة تصميم. تربطها مرة واحدة ويمكن لكل محادثة استخدامها.';
 
   @override
-  String get e7GlossaryWorktreeTerm => 'شجرة العمل';
-
-  @override
   String get e7GlossaryWorktreeExplanation =>
       'نسخة عمل منفصلة من المستودع نفسه. استخدمها عندما تريد أن يجرّب الوكيل شيئًا على فرع خاص به دون المساس بالشيفرة التي تعمل عليها.';
-
-  @override
-  String get e7GlossaryProviderExplanation =>
-      'الجهة التي تستضيف النموذج، مثل Anthropic أو OpenAI، أو بيئة تشغيل محلية. يحتاج كل منها إلى مفتاح API أو تسجيل دخول خاص به.';
-
-  @override
-  String get e7GlossaryContextTerm => 'السياق';
-
-  @override
-  String get e7GlossaryContextExplanation =>
-      'كل ما يستطيع النموذج الاطلاع عليه الآن: رسائلك، والملفات التي قرأها، ونتائج الأدوات. له حد للحجم. عند امتلائه، تُلخّص الأجزاء الأقدم كي تستمر المحادثة.';
-
-  @override
-  String get e7GlossaryAgentTerm => 'الوكيل';
-
-  @override
-  String get e7GlossaryAgentExplanation =>
-      'مجموعة مسمّاة من التعليمات والأذونات يعمل النموذج وفقًا لها. يستطيع الوكيل الافتراضي قراءة الشيفرة وتعديلها. قد يقتصر غيره على التخطيط أو المراجعة.';
-
-  @override
-  String get e7GlossaryReasoningExplanation =>
-      'ملاحظات عمل النموذج قبل أن يجيب. تساعدك على فهم سبب اختياره. تُخفى افتراضيًا لإبقاء المحادثة موجزة.';
-
-  @override
-  String get e7GlossaryPermissionTerm => 'الإذن';
-
-  @override
-  String get e7GlossaryPermissionExplanation =>
-      'يسألك الوكيل قبل تشغيل أمر أو تعديل ملف يتجاوز الإذن الممنوح له. يمكنك السماح مرة واحدة، أو دائمًا لما يطابق ذلك النمط.';
-
-  @override
-  String get e7GlossaryVariantTerm => 'نمط النموذج';
-
-  @override
-  String get e7GlossaryVariantExplanation =>
-      'إعداد يوازن بين سرعة النموذج وعمقه، مثل المدة التي يمكنه التفكير خلالها قبل الإجابة.';
 
   @override
   String get e7GlossaryGotIt => 'فهمت';
@@ -7823,9 +7728,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String e7WorkspaceOpenSessionSemantics(String title, String detail) {
     return 'فتح $title. $detail';
   }
-
-  @override
-  String get e7WorkspaceLoadingSessions => 'جارٍ تحميل المحادثات…';
 
   @override
   String get e7WorkspaceLoadedRecentEmpty => 'قد تتوفر محادثات أقدم أدناه.';
@@ -10342,9 +10244,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String e7LibraryLoading(String detail1) {
     return 'جارٍ تحميل $detail1';
   }
-
-  @override
-  String get e7LibraryLocationChanged => 'تغيّر المشروع.';
 
   @override
   String get e7LibraryAuthenticateFromTheServerMachine =>
@@ -18403,12 +18302,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeAgentsRowHint => 'فتح قائمة الوكلاء';
 
   @override
-  String get teamUiCardNothingRunning => 'لا شيء قيد التشغيل';
-
-  @override
-  String get teamUiCardOpenHint => 'فتح فريق الذكاء الاصطناعي';
-
-  @override
   String get teamUiAgentRoleWorker => 'عامل';
 
   @override
@@ -18551,9 +18444,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginsStatusFailedToLoad => 'تعذّر التحميل';
-
-  @override
-  String get pluginsRowMore => 'المزيد من إجراءات هذه الإضافة';
 
   @override
   String get pluginsDetailsId => 'المعرّف';
@@ -26409,4 +26299,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get reportProblemJobLogNone =>
       'No log was kept for this job, so none is attached.';
+
+  @override
+  String get sessionsOlderLoadFailed => 'Could not load older conversations.';
+
+  @override
+  String get sessionsLoadFailed => 'Could not load your conversations.';
+
+  @override
+  String get sessionsListChanged =>
+      'The conversation list changed on the server. Refresh it to see older conversations.';
 }

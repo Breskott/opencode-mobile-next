@@ -622,9 +622,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Conversation details could not be loaded. Try again.';
 
   @override
-  String get sessionsLoadMore => 'Load more conversations';
-
-  @override
   String get sessionsReload => 'Refresh recent conversations';
 
   @override
@@ -1697,9 +1694,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get usageInspectionDisclosure =>
       'Filters inspect this server\'s returned model records. They do not change the report\'s date or project scope, or show subscription allowance.';
-
-  @override
-  String get usageProviderFilter => 'Provider';
 
   @override
   String get usageAllProviders => 'All providers';
@@ -3290,41 +3284,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.';
 
   @override
-  String get pluginMappingPersonal =>
-      'Your command links · not verified plugin ownership';
-
-  @override
-  String pluginMappingReview(String command) {
-    return 'Review /$command';
-  }
-
-  @override
-  String get pluginMappingManage => 'Link commands';
-
-  @override
-  String get pluginMappingDescription =>
-      'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.';
-
-  @override
-  String get pluginMappingEmpty => 'No server commands are available to link.';
-
-  @override
   String get pluginMappingUnavailable =>
       'This plugin or command is no longer available here. Refresh and review your links.';
-
-  @override
-  String get pluginMappingLimit => 'Choose up to 16 commands for this plugin.';
-
-  @override
-  String get pluginMappingSave => 'Save links';
-
-  @override
-  String get pluginMappingSaveFailed =>
-      'Links could not be saved. Check that this project is still selected and try again.';
-
-  @override
-  String get pluginMappingLoadFailed =>
-      'Commands could not be loaded. Try again when connected.';
 
   @override
   String get mobileTasksDescription => 'Server-reported tasks · mobile view';
@@ -3369,23 +3330,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mobileTaskPriorityLow => 'Low priority';
-
-  @override
-  String get pluginMappingClearAll => 'Clear personal command links';
-
-  @override
-  String get pluginMappingClearTitle => 'Clear all personal command links?';
-
-  @override
-  String get pluginMappingClearDescription =>
-      'Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.';
-
-  @override
-  String get pluginMappingClearConfirm => 'Clear links';
-
-  @override
-  String get pluginMappingClearFailed =>
-      'Personal links could not be cleared. Check that this server is still selected and try again.';
 
   @override
   String get quotaMonitorTitle => 'Quota monitoring';
@@ -5380,47 +5324,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every conversation can use them.';
 
   @override
-  String get e7GlossaryWorktreeTerm => 'Worktree';
-
-  @override
   String get e7GlossaryWorktreeExplanation =>
       'A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.';
-
-  @override
-  String get e7GlossaryProviderExplanation =>
-      'The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.';
-
-  @override
-  String get e7GlossaryContextTerm => 'Context';
-
-  @override
-  String get e7GlossaryContextExplanation =>
-      'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.';
-
-  @override
-  String get e7GlossaryAgentTerm => 'Agent';
-
-  @override
-  String get e7GlossaryAgentExplanation =>
-      'A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.';
-
-  @override
-  String get e7GlossaryReasoningExplanation =>
-      'The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.';
-
-  @override
-  String get e7GlossaryPermissionTerm => 'Permission';
-
-  @override
-  String get e7GlossaryPermissionExplanation =>
-      'Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.';
-
-  @override
-  String get e7GlossaryVariantTerm => 'Variant';
-
-  @override
-  String get e7GlossaryVariantExplanation =>
-      'A speed-versus-depth setting for the model, such as how long it may think before answering.';
 
   @override
   String get e7GlossaryGotIt => 'Got it';
@@ -7725,9 +7630,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String e7WorkspaceOpenSessionSemantics(String title, String detail) {
     return 'Open $title. $detail';
   }
-
-  @override
-  String get e7WorkspaceLoadingSessions => 'Loading conversations…';
 
   @override
   String get e7WorkspaceLoadedRecentEmpty =>
@@ -10160,9 +10062,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String e7LibraryLoading(String detail1) {
     return 'Loading $detail1';
   }
-
-  @override
-  String get e7LibraryLocationChanged => 'Project changed.';
 
   @override
   String get e7LibraryAuthenticateFromTheServerMachine =>
@@ -18148,12 +18047,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeAgentsRowHint => 'Open the agents list';
 
   @override
-  String get teamUiCardNothingRunning => 'Nothing running';
-
-  @override
-  String get teamUiCardOpenHint => 'Open AI Team';
-
-  @override
   String get teamUiAgentRoleWorker => 'Worker';
 
   @override
@@ -18296,9 +18189,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsStatusFailedToLoad => 'Failed to load';
-
-  @override
-  String get pluginsRowMore => 'More actions for this plugin';
 
   @override
   String get pluginsDetailsId => 'ID';
@@ -26134,4 +26024,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reportProblemJobLogNone =>
       'No log was kept for this job, so none is attached.';
+
+  @override
+  String get sessionsOlderLoadFailed => 'Could not load older conversations.';
+
+  @override
+  String get sessionsLoadFailed => 'Could not load your conversations.';
+
+  @override
+  String get sessionsListChanged =>
+      'The conversation list changed on the server. Refresh it to see older conversations.';
 }

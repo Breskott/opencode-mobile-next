@@ -1,9 +1,10 @@
-/// The light-or-dark sheet (map page `appearance-picker-sheet`) and the
-/// theme preview sheet (map page `theme-pack-preview-sheet`), both on the
-/// kit sheet.
+/// The theme preview sheet (map page `theme-pack-preview-sheet`) on the
+/// kit sheet. Light or dark is chosen inline on the Appearance page; the
+/// separate light-or-dark sheet (map page `appearance-picker-sheet`) was
+/// removed by slice-P3.1 (target-ia §1.4).
 ///
 /// Browsing never changes the stored preference: the sheet previews the
-/// choice on the app's real parts ([KitThemePreview]) and only Apply saves
+/// theme on the app's real parts ([KitThemePreview]) and only Apply saves
 /// it. A save error stays in the sheet, keeping the draft to retry. A theme
 /// that is applied offers Undo; one already in use says so in words, never
 /// with a disabled button.
@@ -17,9 +18,7 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
-import '../kit/kit_choice_list.dart';
 import '../kit/kit_notice.dart';
-import '../kit/kit_row.dart';
 import '../kit/kit_segmented.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_swatch.dart';
@@ -46,35 +45,11 @@ String appearanceLabel(AppAppearance appearance, [BuildContext? context]) {
   };
 }
 
-String _appearanceDescription(BuildContext context, AppAppearance appearance) {
-  final copy = _copy(context);
-  return switch (appearance) {
-    AppAppearance.system =>
-      platformCapabilities.isAndroid
-          ? copy.e7AppearanceFollowPhoneDescription
-          : copy.e7AppearanceFollowDeviceDescription,
-    AppAppearance.light => copy.e7AppearanceLightDescription,
-    AppAppearance.dark => copy.e7AppearanceDarkDescription,
-  };
-}
-
 IconData _appearanceIcon(AppAppearance appearance) => switch (appearance) {
   AppAppearance.system => AppIconography.systemTheme,
   AppAppearance.light => AppIconography.lightMode,
   AppAppearance.dark => AppIconography.darkMode,
 };
-
-/// Opens the light-or-dark sheet. Browsing never mutates the stored
-/// preference.
-Future<void> showAppearancePicker(
-  BuildContext context, {
-  required ConnectionController controller,
-}) => showKitSheet<void>(
-  context,
-  title: _copy(context).e7AppearanceTitle,
-  sheetKey: const Key('appearance-picker'),
-  body: (_) => _AppearancePreviewSheet(controller: controller, host: context),
-);
 
 /// Opens the preview of [pack]; Apply makes it the app's theme and offers
 /// Undo.
@@ -93,13 +68,11 @@ Future<void> showThemePackPreview(
   ),
 );
 
-// revamp: remove (slice-P3.1) — for the light-or-dark use ([pack] null,
-// map page appearance-picker-sheet); the theme preview use is kept (fix).
 class _AppearancePreviewSheet extends StatefulWidget {
   const _AppearancePreviewSheet({
     required this.controller,
     required this.host,
-    this.pack,
+    required this.pack,
   });
 
   final ConnectionController controller;
@@ -107,7 +80,7 @@ class _AppearancePreviewSheet extends StatefulWidget {
   /// The context the sheet was opened from: the Undo bar shows there once
   /// the sheet has closed.
   final BuildContext host;
-  final ThemePackId? pack;
+  final ThemePackId pack;
 
   @override
   State<_AppearancePreviewSheet> createState() =>
@@ -128,11 +101,7 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
     final controller = widget.controller;
     final previous = controller.themePack.value;
     try {
-      if (widget.pack case final pack?) {
-        await controller.setThemePack(pack);
-      } else {
-        await controller.setAppearance(_appearance);
-      }
+      await controller.setThemePack(widget.pack);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -145,11 +114,13 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
     if (!mounted) return;
     final copy = _copy(context);
     KitSheet.close<void>(context);
-    if (widget.pack case final pack? when widget.host.mounted) {
+    if (widget.host.mounted) {
       showKitUndo(
         widget.host,
         key: const Key('appearance-theme-undo'),
-        message: copy.appearancePickerThemeApplied(themePackLabels[pack]!),
+        message: copy.appearancePickerThemeApplied(
+          themePackLabels[widget.pack]!,
+        ),
         onUndo: () => controller.setThemePack(previous),
       );
     }
@@ -159,8 +130,7 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
   Widget build(BuildContext context) {
     final copy = _copy(context);
     final tokens = KitTokens.of(context);
-    final pack = widget.pack;
-    final packId = pack ?? widget.controller.themePack.value;
+    final packId = widget.pack;
     final available =
         packId != ThemePackId.dynamic || harvestedDynamicPack.value != null;
     final brightness = switch (_appearance) {
@@ -168,12 +138,8 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
       AppAppearance.light => Brightness.light,
       AppAppearance.dark => Brightness.dark,
     };
-    final changed = pack == null
-        ? _appearance != widget.controller.appearance.value
-        : pack != widget.controller.themePack.value;
-    final previewed = pack == null
-        ? appearanceLabel(_appearance, context)
-        : themePackLabels[packId]!;
+    final changed = packId != widget.controller.themePack.value;
+    final previewed = themePackLabels[packId]!;
     return PopScope(
       canPop: !_saving,
       child: Column(
@@ -196,27 +162,7 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
               liveRegion: false,
             ),
           SizedBox(height: tokens.space4),
-          if (pack == null)
-            KitChoiceList<AppAppearance>.single(
-              semanticsLabel: copy.e7AppearanceTitle,
-              actsOnTap: false,
-              choices: [
-                for (final appearance in AppAppearance.values)
-                  KitChoice(
-                    value: appearance,
-                    key: ValueKey('appearance-${appearance.name}'),
-                    title: appearanceLabel(appearance, context),
-                    supporting: _appearanceDescription(context, appearance),
-                    leading: KitRow.icon(context, _appearanceIcon(appearance)),
-                  ),
-              ],
-              selected: _appearance,
-              onSelected: (appearance) {
-                if (_saving) return;
-                setState(() => _appearance = appearance);
-              },
-            )
-          else if (available) ...[
+          if (available) ...[
             KitSegmented<AppAppearance>(
               semanticsLabel: copy.appearancePickerPreviewIn,
               segments: [

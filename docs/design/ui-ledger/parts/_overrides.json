@@ -34,8 +34,6 @@
     "confirm-sheet": "misc",
     "external-link-dialog": "misc",
     "embedded-product-states": "misc",
-    "embedded-info-label": "misc",
-    "info-label-sheet": "misc",
     "servers-welcome": "onboarding",
     "guide": "onboarding"
   },

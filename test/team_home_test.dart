@@ -26,7 +26,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/gascity_recorded_city.dart';
@@ -44,7 +43,7 @@ Directory _findFixtureRoot() {
 }
 
 /// The `blocked` scenario's derived `/pending` entry (as in
-/// team_card_test).
+/// team_on_work_test).
 const _blockedPending = <String, Object?>{
   'session_id': 'bl-polecat-1',
   'request_id': 'req-fixture-choice-1',
@@ -383,7 +382,7 @@ void main() {
       ..gatesOverride = const [];
   }
 
-  /// The `blocked` shape of team_card_test: the fixture convoy over a
+  /// The `blocked` shape of the old team card test: the fixture convoy over a
   /// blocked `oc-loy` and a closed sibling, plus the pending choice.
   void blockedShape(_Gateway gateway) {
     final convoys = GcList<GcConvoy>.fromJson(
@@ -1343,7 +1342,7 @@ void main() {
         // conversations are a filter of All conversations.
         expect(find.text('recent conversation'), findsOneWidget);
         expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
-        expect(find.byType(TeamCard), findsNothing);
+        expect(find.byKey(const ValueKey('team-card')), findsNothing);
         expect(find.text('Archived conversations'), findsNothing);
         expect(find.text('Conversations'), findsNothing);
       },

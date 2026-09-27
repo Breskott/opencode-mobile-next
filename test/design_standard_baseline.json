@@ -167,13 +167,6 @@
     "lib/ui/widgets/saved_server_connection_card.dart": {},
     "lib/ui/widgets/setup_progress_view.dart": {},
     "lib/ui/widgets/team_agent_row.dart": {},
-    "lib/ui/widgets/team_card.dart": {
-      "G17 .colorScheme.": 1,
-      "G17 .textTheme.": 4,
-      "G21 EdgeInsets(<n>)": 4,
-      "G21 SizedBox(width|height: <n>)": 2,
-      "G21 withOpacity(|Opacity(": 1
-    },
     "lib/ui/widgets/team_discover.dart": {},
     "lib/ui/widgets/team_moments.dart": {},
     "lib/ui/widgets/termux_phone_tools.dart": {},

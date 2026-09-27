@@ -1247,80 +1247,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "info-label-sheet",
-      "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/info_label.dart",
-      "widget": "InfoLabel.show",
-      "presentedBy": [
-        "InfoLabel.show"
-      ],
-      "line": 150,
-      "purpose": "Short plain-language explanation of a glossary term.",
-      "reachedFrom": [
-        {
-          "page": "embedded-info-label",
-          "element": "embedded-info-label-term"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "InfoLabel.show call (Glossary.mcp)",
-          "file": "lib/ui/screens/mcp_setup_screen.dart",
-          "line": 274
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "info-label-sheet-got-it",
-          "type": "button",
-          "label": "Got it",
-          "key": null,
-          "line": 174,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.of(context).pop().",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "embedded-info-label",
-      "title": "[Info label: term with info glyph]",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/info_label.dart",
-      "widget": "InfoLabel",
-      "presentedBy": [],
-      "line": 110,
-      "embeddedIn": [
-        "lib/ui/screens/worktrees_screen.dart:623 (Glossary.worktree)",
-        "lib/ui/screens/library/integrations_screen.dart:896 (Glossary.mcp)",
-        "lib/ui/screens/chat/message_view.dart:2233 (Glossary.reasoning)"
-      ],
-      "purpose": "Inline term + info icon; tapping opens the explanation sheet.",
-      "reachedFrom": [],
-      "gates": [],
-      "elements": [
-        {
-          "id": "embedded-info-label-term",
-          "type": "link",
-          "label": "<term> [info icon] (semantics: '{term}. Tap for an explanation.')",
-          "key": null,
-          "file": "lib/ui/widgets/info_label.dart",
-          "line": 208,
-          "action": "open-sheet",
-          "target": "info-label-sheet",
-          "targetWidget": "InfoLabel.show",
-          "effect": "InkWell.onTap (and Semantics.onTap line 205) calls InfoLabel.show(context, term, explanation).",
-          "gates": [],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [
@@ -1345,7 +1271,6 @@
     "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _addContextCapsule:2920, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent.",
     "continue-on-computer-sheet: the copy button is inside AgentCommandBlock (lib/ui/widgets/agent_blocks.dart, not assigned to me); recorded as one element with file pointing there, line is the embed site session_handoff_sheets.dart:70.",
     "session-relations tiles pop the screen with the selected Session; actual navigation happens in the opener (chat _openRelatedSession chat_screen.dart:5714, global_sessions_screen.dart:419 onward).",
-    "embedded-info-label embeddedIn lists host files/lines rather than class names; host widget classes not resolved (worktrees_screen.dart:623, library/integrations_screen.dart:896, chat/message_view.dart:2233). chat_screen.dart:53 and library_screen.dart:23 import info_label.dart but do not use InfoLabel.",
     "Glossary entries provider/context/agent/permission/variant have no InfoLabel usage in lib/ (only mcp, worktree, reasoning are used).",
     "session_handoff.dart also defines SessionNavigationScope (non-UI guard). showSessionHandoff error paths use showProductError (no page).",
     "session_relations_screen.dart:498 _relativeTime uses hard-coded English strings ('Now', 'm ago') rather than relative_time.dart."

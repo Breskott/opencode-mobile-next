@@ -9,7 +9,6 @@ import '../../state/connection.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../navigation/chat_route.dart';
-import '../widgets/info_label.dart' show Glossary;
 import '../widgets/product_states.dart' show productErrorText;
 
 /// A message about the last act, said above the list until dismissed: a
@@ -553,7 +552,7 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                       alignment: AlignmentDirectional.centerStart,
                       child: KitTerm(
                         l10n.e7LibraryWorktrees,
-                        explanation: Glossary.worktree.explanation,
+                        explanation: l10n.e7GlossaryWorktreeExplanation,
                         role: KitTextRole.label,
                         termKey: const ValueKey('worktrees-section-label'),
                       ),

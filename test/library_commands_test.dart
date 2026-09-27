@@ -29,12 +29,18 @@ class _CommandsApi extends OpenCodeApi {
   Completer<void>? submission;
   Object? failure;
   Future<ServerPage<Session>> Function(String? cursor)? pageHandler;
+  final pages = <String?>[];
   @override
   Future<ServerPage<Session>> sessionPage({
     String? cursor,
     int limit = 100,
-  }) async =>
-      pageHandler == null ? const ServerPage(items: []) : pageHandler!(cursor);
+  }) async {
+    pages.add(cursor);
+    return pageHandler == null
+        ? const ServerPage(items: [])
+        : pageHandler!(cursor);
+  }
+
   @override
   Future<Map<String, String>> sessionStatuses() async => {};
   final calls =
@@ -105,16 +111,15 @@ void main() {
       await controller.refreshSessions();
       await _open(tester, controller);
       await tester.enterText(_arguments, 'keep my arguments');
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('session-inventory-more')),
-      );
-      await tester.tap(find.byKey(const ValueKey('session-inventory-more')));
+      // The choices page themselves: opening them loads the older page.
+      await tester.tap(find.byKey(const ValueKey('command-destination')));
       await tester.pumpAndSettle();
+      expect(api.pages, [null, 'older']);
       expect(
         tester.widget<TextField>(_arguments).controller!.text,
         'keep my arguments',
       );
-      await tester.tap(find.byKey(const ValueKey('command-destination')));
+      await tester.ensureVisible(find.text('Older chat'));
       await tester.pumpAndSettle();
       expect(find.text('Older chat').hitTestable(), findsOneWidget);
       await tester.tap(find.text('Older chat').hitTestable());

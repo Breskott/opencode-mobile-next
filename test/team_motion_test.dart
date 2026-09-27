@@ -24,7 +24,6 @@ import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamConversationScreen;
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -381,23 +380,5 @@ void main() {
     final drawings = _drawings(tester, _key('team-home-agents-empty'));
     expect(drawings.single.$1, isA<TeamRestScene>());
     expect(drawings.single.$2, isFalse);
-  });
-
-  testWidgets('the Work tab card with nothing running: two agents at ease', (
-    tester,
-  ) async {
-    await open(
-      tester,
-      TeamScene.empty,
-      () => Scaffold(
-        body: ListView(
-          children: [TeamCard(controller: controller, onOpen: () {})],
-        ),
-      ),
-    );
-    final drawings = _drawings(tester, _key('team-card-empty'));
-    expect(drawings.single.$1, isA<TeamIdleScene>());
-    expect(drawings.single.$2, isFalse);
-    expect(find.textContaining('Nothing running'), findsOneWidget);
   });
 }

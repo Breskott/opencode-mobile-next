@@ -331,11 +331,12 @@ void main() {
       );
       await _frames(tester);
 
-      expect(find.text('The server did not answer.'), findsOneWidget);
-      // The list footer owns the retry for a failed conversation load.
+      // The end of the list owns the retry for a failed conversation load,
+      // said in words (the raw error is under Details).
+      expect(find.text('Could not load your conversations.'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('session-inventory-more')),
+          of: find.byKey(const ValueKey('sessions-older-error')),
           matching: find.text('Try again'),
         ),
         findsOneWidget,

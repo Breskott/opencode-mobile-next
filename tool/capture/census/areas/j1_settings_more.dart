@@ -352,17 +352,6 @@ final j1SettingsMoreArea = CensusArea(
       kit.onDispose(done);
       kit.expectText('Appearance');
     }),
-    CensusShot('appearance-picker-sheet', (kit) async {
-      final done = await mountSettingsScene(
-        kit.tester,
-        SettingsScene.appearance,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      await kit.tapKey('appearance-settings-entry');
-      kit.expectVisible(find.byKey(const ValueKey('appearance-picker')));
-    }),
     CensusShot('theme-pack-preview-sheet', (kit) async {
       final done = await mountSettingsScene(
         kit.tester,
@@ -429,18 +418,6 @@ final j1SettingsMoreArea = CensusArea(
       await _pluginsController(kit);
       await kit.tapKey('plugins-ai-team-row');
       kit.expectVisible(find.byKey(const ValueKey('team-sheet-add-manually')));
-    }),
-    CensusShot('plugins-clear-mappings-sheet', (kit) async {
-      await _pluginsController(kit);
-      await kit.tapKey('plugins-section-menu');
-      await kit.tapKey('plugins-clear-links');
-      kit.expectText('Clear links');
-    }),
-    CensusShot('plugins-mapping-dialog', (kit) async {
-      await _pluginsController(kit);
-      await kit.tapKey('plugin-menu-code-review');
-      await kit.tapKey('plugin-link-code-review');
-      kit.expectText('Save links');
     }),
 
     // ---- About -------------------------------------------------------------

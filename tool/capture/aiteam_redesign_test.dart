@@ -3,7 +3,7 @@
 // test/support/team_golden_fixture.dart at 412x915 dp, dark theme, real
 // fonts.
 //
-// Only public screens (TeamHomeScreen, RunScreen, TeamCard) and the scene
+// Only public screens (TeamHomeScreen, RunScreen) and the scene
 // controller are used, and every tap is guarded by whether its key exists,
 // so the same file renders the old code and the new:
 //
@@ -17,7 +17,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 
 import '../../test/support/team_golden_fixture.dart';
 import 'fixtures.dart';
@@ -29,8 +28,6 @@ enum _Shot {
   homeLoaded('home-loaded', TeamScene.loaded),
   homeLoadedPhone('home-loaded-phone', TeamScene.loaded, onPhone: true),
   homeEmpty('home-empty', TeamScene.empty),
-  card('card', TeamScene.loaded),
-  cardPhone('card-phone', TeamScene.loaded, onPhone: true),
   runOverview('run-overview', TeamScene.loaded),
   runSteps('run-steps', TeamScene.loaded),
   agents('agents', TeamScene.loaded);
@@ -71,13 +68,6 @@ void main() {
           runId: teamSceneRunId,
           now: now,
         ),
-        _Shot.card || _Shot.cardPhone => Scaffold(
-          body: SafeArea(
-            child: ListView(
-              children: [TeamCard(controller: controller, onOpen: () {})],
-            ),
-          ),
-        ),
         _ => TeamHomeScreen(controller: controller, now: now),
       };
       try {
@@ -109,10 +99,7 @@ void main() {
             // Old: the Agents segment; new: the agents row opens the list.
             await _tapIfThere(tester, 'team-home-segment-agents');
             await _tapIfThere(tester, 'team-home-agents-row');
-          case _Shot.homeEmpty ||
-              _Shot.card ||
-              _Shot.cardPhone ||
-              _Shot.runOverview:
+          case _Shot.homeEmpty || _Shot.runOverview:
             break;
         }
         await tester.pump();
