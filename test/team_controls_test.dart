@@ -522,13 +522,13 @@ void main() {
       );
       expect(record?.status, MutationStatus.sent);
       expect(key('team-agent-receipt'), findsOneWidget);
-      expect(find.text('Nudge · Sent'), findsOneWidget);
+      expect(find.textContaining('Nudge · Sending…'), findsOneWidget);
 
       gateway.push(
         const RequestResult(requestId: 'corr-key-1', ok: true, seq: 10),
       );
       await settle(tester);
-      expect(find.text('Nudge · Confirmed'), findsOneWidget);
+      expect(find.textContaining('Nudge · Confirmed'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
     });
 
@@ -543,15 +543,17 @@ void main() {
       await scrollToControls(tester);
       await tester.tap(key('team-agent-control-nudge'));
       await settle(tester);
-      expect(find.text('Nudge · Sent'), findsOneWidget);
+      expect(find.textContaining('Nudge · Sending…'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 200));
       await settle(tester);
-      expect(find.text('Nudge · Unconfirmed'), findsOneWidget);
+      expect(find.textContaining('Not confirmed yet'), findsOneWidget);
       expect(key('team-receipt-retry'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
     });
 
-    testWidgets('the host refuses: Refused with the reason', (tester) async {
+    testWidgets('the host refuses: Not accepted with the reason', (
+      tester,
+    ) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot(
         configure: (g) =>
@@ -563,8 +565,12 @@ void main() {
       await tester.tap(key('team-agent-control-pause'));
       await settle(tester);
       expect(gateway.calls.single.arg, AgentControlAction.pause);
-      expect(find.text('Pause · Refused'), findsOneWidget);
-      expect(find.text('session is gone'), findsOneWidget);
+      // The one KitReceipt says the host's reason in its refusal words.
+      expect(
+        find.textContaining('Not accepted', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('session is gone'), findsOneWidget);
     });
   });
 
@@ -583,7 +589,7 @@ void main() {
       await tester.tap(key('team-agent-stop-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.arg, AgentControlAction.stop);
-      expect(find.text('Stop · Sent'), findsOneWidget);
+      expect(find.textContaining('Stop · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
@@ -617,7 +623,7 @@ void main() {
       await tester.tap(key('team-agent-restart-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.arg, AgentControlAction.restart);
-      expect(find.text('Restart · Sent'), findsOneWidget);
+      expect(find.textContaining('Restart · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
@@ -644,7 +650,7 @@ void main() {
       expect(gateway.calls.single.verb, 'cancelRun');
       expect(gateway.calls.single.target, 'oc-xru');
       expect(key('team-run-receipt'), findsOneWidget);
-      expect(find.text('Stop run · Sent'), findsOneWidget);
+      expect(find.textContaining('Stop run · Sending…'), findsOneWidget);
       // The chip sits under the status, before the four stages.
       final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
       expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
@@ -733,7 +739,7 @@ void main() {
       expect(gateway.calls.single.verb, 'message');
       expect(gateway.calls.single.target, 'fox');
       expect(gateway.calls.single.arg, 'Use the offline queue for the tests');
-      expect(find.text('Message · Sent'), findsOneWidget);
+      expect(find.textContaining('Message · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
@@ -757,7 +763,7 @@ void main() {
       expect(gateway.calls.single.target, 'w4');
       expect(gateway.calls.single.arg, 'fox');
       expect(key('team-agent-assign-receipt'), findsOneWidget);
-      expect(find.text('Reassign work… · Sent'), findsOneWidget);
+      expect(find.textContaining('Reassign work… · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
