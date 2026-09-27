@@ -1,23 +1,45 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
+import '../../state/consent_owners.dart';
 import '../../state/first_run.dart';
+import '../../state/in_flow_consent.dart';
 import '../app_theme.dart';
 import '../kit/kit_ask_line.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_notice.dart';
 
-/// "Get told when it's done?" — the one time the app asks for notifications
-/// (UX plan 5.6 step 6).
+/// What a yes to "Tell me when the agent needs me" turns on: notifications
+/// for requests, and the background connection that delivers them (which
+/// raises Android's notification permission). False when the background
+/// connection could not start; `backgroundLive.lastError` says why.
+Future<bool> turnOnNeedsYouNotifications(
+  ConnectionController controller,
+) async {
+  if (!controller.notificationPreferences.requests) {
+    await controller.setNotifyRequests(true);
+  }
+  return controller.setKeepLiveInBackground(true);
+}
+
+/// "Notify you when the agent needs you?" — the one time the app asks for
+/// notifications (UX plan 5.6 step 6), with the preset "Tell me when the
+/// agent needs me" (P6.7, consent once, in flow).
 ///
 /// It appears above the composer once the first reply of a new person's
 /// first run has completed: the moment they have watched the agent work and
-/// can see why they would rather leave than wait. Accepting turns on the
-/// background connection through the same call as Settings → Notifications,
-/// which is what raises Android's notification permission. Either answer is
-/// final; Settings stays the home for changing it.
+/// can see why they would rather leave than wait. The question is claimed
+/// for the current server ([ConsentOwners.inFlow]) before it shows, and the
+/// answer is saved there first, so What runs by itself shows it on that
+/// server's row (a "Not now" explains itself there). Accepting then turns
+/// on notifications for requests and the background connection through the
+/// same calls as Settings → Notifications, which is what raises Android's
+/// notification permission. Either answer is final; Settings stays the
+/// home for changing it.
 ///
 /// The card decides for itself whether it exists, so the conversation only
 /// tells it whether a reply has completed.
@@ -55,6 +77,12 @@ class FirstReplyNotifyCard extends StatefulWidget {
 class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
   bool _working = false;
 
+  /// This server's consents once the question was claimed for it; null
+  /// until then, and with a saved server the question shows only after the
+  /// claim was saved.
+  InFlowConsent? _claimed;
+  bool _claiming = false;
+
   /// Set on either answer so the card leaves at once, before the write to
   /// preferences has finished.
   bool _answered = false;
@@ -80,28 +108,75 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     return _firstRun.notifyAskPending;
   }
 
+  /// Claims the question for the current server before it shows. A server
+  /// that was already asked (or answered in Settings) is not asked again,
+  /// and the first-run question is then settled; storage that cannot be
+  /// read shows nothing, since no answer could be kept.
+  Future<void> _claim() async {
+    final profileId = widget.controller.profile?.id;
+    if (_claiming || profileId == null) return;
+    _claiming = true;
+    try {
+      final consent = await ConsentOwners.inFlow(
+        widget.controller.store.prefs,
+        profileId,
+      );
+      final owed = await consent.requestNeedsYouPreset();
+      if (!mounted) return;
+      if (owed) {
+        setState(() => _claimed = consent);
+      } else {
+        setState(() => _answered = true);
+        await _firstRun.answerNotifyAsk();
+      }
+    } catch (_) {
+      if (mounted) setState(() => _answered = true);
+    }
+  }
+
   Future<void> _accept() async {
+    final consent = _claimed;
     if (_working) return;
     setState(() => _working = true);
     final controller = widget.controller;
-    final failed = lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7SettingsUi22;
-    final prefs = controller.notificationPreferences;
-    if (!prefs.finishedRuns) await controller.setNotifyFinishedRuns(true);
-    if (!prefs.requests) await controller.setNotifyRequests(true);
-    final enabled = await controller.setKeepLiveInBackground(true);
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    try {
+      // Saved first: nothing is turned on without a kept yes.
+      await consent?.answer(
+        InFlowConsentKind.needsYouNotifications,
+        allow: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _working = false;
+        _answered = true;
+        _failure = copy.consentSaveFailed;
+      });
+      return;
+    }
+    final enabled = await turnOnNeedsYouNotifications(controller);
     // Asked once: a refusal at Android's own prompt is an answer too.
     await _firstRun.answerNotifyAsk();
     if (!mounted) return;
     setState(() {
       _answered = true;
-      if (!enabled) _failure = controller.backgroundLive.lastError ?? failed;
+      if (!enabled) {
+        _failure = controller.backgroundLive.lastError ?? copy.e7SettingsUi22;
+      }
     });
   }
 
   Future<void> _decline() async {
     setState(() => _answered = true);
+    try {
+      await _claimed?.answer(
+        InFlowConsentKind.needsYouNotifications,
+        allow: false,
+      );
+    } catch (_) {
+      // Unsaved, it stays "Not answered" on What runs by itself.
+    }
     await _firstRun.answerNotifyAsk();
   }
 
@@ -131,6 +206,14 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
       return const SizedBox.shrink();
     }
     if (widget.compact) return const SizedBox.shrink();
+    // Without a saved server there is nothing to keep the answer on, and
+    // the question stays the device's one-time question.
+    if (_claimed == null && widget.controller.profile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_claim());
+      });
+      return const SizedBox.shrink();
+    }
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     // One line, not a card: it sits above the composer, where every row is
     // taken from the transcript. The explanation is Android's own prompt.

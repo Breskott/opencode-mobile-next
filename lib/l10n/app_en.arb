@@ -17080,11 +17080,11 @@
   "@firstRunCommandsCodexUsb": {
     "description": "Connect screen, Codex: caption above the adb reverse command."
   },
-  "firstRunNotifyTitle": "Notify you when a reply is ready?",
+  "firstRunNotifyTitle": "Notify you when the agent needs you?",
   "@firstRunNotifyTitle": {
     "description": "Conversation, first run: title of the one card shown above the composer after the first reply completes."
   },
-  "firstRunNotifyBody": "Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.",
+  "firstRunNotifyBody": "Leave the app while the agent works. You get a notification when it needs your answer. Android shows a small ongoing notification while it stays connected.",
   "@firstRunNotifyBody": {
     "description": "Conversation, first run: what accepting the notification card turns on, including its visible cost."
   },
@@ -31129,5 +31129,150 @@
         "type": "int"
       }
     }
+  },
+  "consentBatteryTitle": "Keep OpenCode running on this phone?",
+  "@consentBatteryTitle": {
+    "description": "P6.7: asked once at the phone server's first start (and from its Settings row): the battery exemption."
+  },
+  "consentBatteryBody": "Android may stop the server on this phone while the app is closed. Allow background running and Android asks you to confirm.",
+  "@consentBatteryBody": {
+    "description": "P6.7: battery consent body."
+  },
+  "consentBatteryAllow": "Allow background running",
+  "@consentBatteryAllow": {
+    "description": "P6.7: battery consent confirm; Android's own prompt follows."
+  },
+  "consentMakerTitle": "Let the server start again by itself?",
+  "@consentMakerTitle": {
+    "description": "P6.7: asked once at the phone server's first start on phones whose maker blocks auto-start."
+  },
+  "consentMakerBody": "{maker} phones stop apps that aren't allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.",
+  "@consentMakerBody": {
+    "description": "P6.7: maker auto-start consent body.",
+    "placeholders": {
+      "maker": {
+        "type": "String",
+        "example": "Xiaomi"
+      }
+    }
+  },
+  "consentMakerBodyUnnamed": "Some phones stop apps that aren't allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.",
+  "@consentMakerBodyUnnamed": {
+    "description": "P6.7: maker auto-start consent body when the maker's name is unknown."
+  },
+  "consentMakerAllow": "Open auto-start settings",
+  "@consentMakerAllow": {
+    "description": "P6.7: maker consent confirm; opens the maker's auto-start screen."
+  },
+  "consentNotNow": "Not now",
+  "@consentNotNow": {
+    "description": "P6.7: declines a consent asked in flow; remembered and explained in Settings."
+  },
+  "consentSaveFailed": "Your answer couldn't be saved on this phone, so nothing was changed. Try again.",
+  "@consentSaveFailed": {
+    "description": "P6.7: a consent answer could not be stored."
+  },
+  "consentStorageFailed": "Your earlier answers on this server couldn't be read, so the app won't ask them again for now. Reopen this page to try again.",
+  "@consentStorageFailed": {
+    "description": "P6.7: What runs by itself, consent storage unreadable."
+  },
+  "consentGroupLabel": "Your answers",
+  "@consentGroupLabel": {
+    "description": "P6.7: What runs by itself, group of the questions the app asked once on this server."
+  },
+  "consentRowBattery": "Keep running in the background",
+  "@consentRowBattery": {
+    "description": "P6.7: Your answers row: the battery exemption."
+  },
+  "consentRowMaker": "Start again by itself",
+  "@consentRowMaker": {
+    "description": "P6.7: Your answers row: the maker's auto-start."
+  },
+  "consentRowNeedsYou": "Tell me when the agent needs me",
+  "@consentRowNeedsYou": {
+    "description": "P6.7: Your answers row: the notification preset."
+  },
+  "consentRowAlwaysAllow": "Always allow offers",
+  "@consentRowAlwaysAllow": {
+    "description": "P6.7: Your answers row: 'Always allow' offers turned down after three identical asks."
+  },
+  "consentWhyBattery": "Android may stop the server on this phone while the app is closed.",
+  "@consentWhyBattery": {
+    "description": "P6.7: why a declined battery consent matters."
+  },
+  "consentWhyMaker": "This phone may not start the server again after it stops.",
+  "@consentWhyMaker": {
+    "description": "P6.7: why a declined auto-start consent matters."
+  },
+  "consentWhyNeedsYou": "You won't get a notification when the agent waits for your answer.",
+  "@consentWhyNeedsYou": {
+    "description": "P6.7: why a declined needs-you preset matters."
+  },
+  "consentWhyUnfinished": "The question closed before you answered. Tap to answer now.",
+  "@consentWhyUnfinished": {
+    "description": "P6.7: a consent asked but left unanswered."
+  },
+  "consentAllowedSystem": "The phone's own setting decides. Tap to check it or turn it off.",
+  "@consentAllowedSystem": {
+    "description": "P6.7: an allowed phone consent; the OS setting is the truth."
+  },
+  "consentAllowedNeedsYou": "Tap to change it in Notifications.",
+  "@consentAllowedNeedsYou": {
+    "description": "P6.7: an allowed needs-you preset."
+  },
+  "consentWhyAlwaysAllow": "You chose to keep approving these each time they're asked. Tap to be offered Always allow again.",
+  "@consentWhyAlwaysAllow": {
+    "description": "P6.7: declined Always allow offers."
+  },
+  "consentValueAllowed": "Allowed",
+  "@consentValueAllowed": {
+    "description": "P6.7: Your answers value."
+  },
+  "consentValueDeclined": "Declined",
+  "@consentValueDeclined": {
+    "description": "P6.7: Your answers value."
+  },
+  "consentValueUnanswered": "Not answered",
+  "@consentValueUnanswered": {
+    "description": "P6.7: Your answers value."
+  },
+  "consentValueDeclinedCount": "{count, plural, =1{1 declined} other{{count} declined}}",
+  "@consentValueDeclinedCount": {
+    "description": "P6.7: how many Always allow offers were turned down.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "consentAlwaysAgainTitle": "Offer Always allow again?",
+  "@consentAlwaysAgainTitle": {
+    "description": "P6.7: confirm resetting declined Always allow offers."
+  },
+  "consentAlwaysAgainBody": "After 3 more identical asks, the app offers to always allow them again. Nothing is allowed until you say so.",
+  "@consentAlwaysAgainBody": {
+    "description": "P6.7: offer-again body."
+  },
+  "consentAlwaysAgainConfirm": "Offer again",
+  "@consentAlwaysAgainConfirm": {
+    "description": "P6.7: offer-again confirm."
+  },
+  "consentAlwaysAllowQuestion": "Asked 3 times. Always allow {what}?",
+  "@consentAlwaysAllowQuestion": {
+    "description": "P6.7: one line under a permission request on its third identical ask.",
+    "placeholders": {
+      "what": {
+        "type": "String",
+        "example": "git status"
+      }
+    }
+  },
+  "consentAlwaysAllowDecline": "Keep asking",
+  "@consentAlwaysAllowDecline": {
+    "description": "P6.7: declines the Always allow offer; the request is still answered as usual."
+  },
+  "consentAlwaysAllowFailed": "The server didn't save Always allow. The request is still waiting; try again or answer it once.",
+  "@consentAlwaysAllowFailed": {
+    "description": "P6.7: the always reply failed."
   }
 }

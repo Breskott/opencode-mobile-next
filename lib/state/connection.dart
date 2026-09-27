@@ -4,6 +4,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
 import 'automation_policy.dart';
+import 'consent_owners.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6093,6 +6094,11 @@ class ConnectionController extends ChangeNotifier {
       // Stop accepting edits and drain a write in flight, so the sweep below
       // removes `oc.automation.<id>` for good.
       await AutomationPolicyController.closeProfile(store.prefs, profileId);
+    } catch (_) {}
+    try {
+      // The in-flow consents (P6.7) drain the same way, so the sweep below
+      // removes `oc.inFlowConsent.<id>` and `oc.permissionConsent.<id>`.
+      await ConsentOwners.closeProfile(store.prefs, profileId);
     } catch (_) {}
     try {
       // The While you were away history closes and drains its writes (and
