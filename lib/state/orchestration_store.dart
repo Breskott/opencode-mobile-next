@@ -1,5 +1,5 @@
 /// Device-side persistence for the AI Team plugin, per profile: the last
-/// snapshot the host answered with (as the untouched provider JSON), the
+/// snapshot the host answered with (provider JSON with secrets redacted), the
 /// event-stream cursor, and when the data was last refreshed.
 ///
 /// Every key starts with `oc.orchestration.<profileId>.` so the profile
@@ -17,11 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../orchestration/events/cursor.dart';
 import 'mutation_store.dart';
+import 'team_storage_redaction.dart';
 
 export 'mutation_store.dart';
 
 /// The provider JSON behind one snapshot, as the store keeps it: raw lists
-/// per scope, never re-mapped here. Adapters rebuild models from these when
+/// per scope, redacted before storage but never re-mapped here. Adapters rebuild models from these when
 /// a cached view is shown before the host answers.
 class OrchestrationSnapshotCache {
   const OrchestrationSnapshotCache({
@@ -267,7 +268,7 @@ class OrchestrationStore {
   ) => _write(profileId, () async {
     final String encoded;
     try {
-      encoded = jsonEncode(snapshot.toJson());
+      encoded = jsonEncode(redactTeamStoredValue(snapshot.toJson()));
     } catch (_) {
       return;
     }

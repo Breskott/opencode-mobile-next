@@ -40,6 +40,26 @@ class GcUsageTotals {
   final Map<String, Object?> raw;
 }
 
+/// `UsageSessionRecent`: worker-attributed model usage in the recent window.
+class GcUsageSessionRecent {
+  const GcUsageSessionRecent({
+    required this.session,
+    required this.totals,
+    this.sessionId,
+  });
+
+  factory GcUsageSessionRecent.fromJson(Map<String, Object?> json) =>
+      GcUsageSessionRecent(
+        session: readText(json, 'session') ?? '',
+        sessionId: readText(json, 'session_id'),
+        totals: GcUsageTotals.fromJson(json),
+      );
+
+  final String session;
+  final String? sessionId;
+  final GcUsageTotals totals;
+}
+
 /// `GET /usage` (`UsageBody`): `{available, recording, source, today,
 /// recent, recent_window_secs, observed_from, updated_at}`. `source` is
 /// `local_estimate` or `unavailable`; every figure is an estimate.
@@ -50,6 +70,7 @@ class GcUsage {
     this.source,
     this.today,
     this.recent,
+    this.recentBySession,
     this.recentWindowSecs,
     this.observedFrom,
     this.updatedAt,
@@ -68,6 +89,11 @@ class GcUsage {
     recent: hasMap(json, 'recent')
         ? GcUsageTotals.fromJson(readMapField(json, 'recent'))
         : null,
+    recentBySession: json['recent_by_session'] is List
+        ? List.unmodifiable(
+            readList(json, 'recent_by_session', GcUsageSessionRecent.fromJson),
+          )
+        : null,
     recentWindowSecs: readInt(json, 'recent_window_secs'),
     observedFrom: readDateTime(json, 'observed_from'),
     updatedAt: readDateTime(json, 'updated_at'),
@@ -81,6 +107,7 @@ class GcUsage {
   final String? source;
   final GcUsageTotals? today;
   final GcUsageTotals? recent;
+  final List<GcUsageSessionRecent>? recentBySession;
   final int? recentWindowSecs;
   final DateTime? observedFrom;
   final DateTime? updatedAt;
