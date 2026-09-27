@@ -1,13 +1,13 @@
 // KitSegmented (lib/ui/kit/kit_segmented.dart), docs/ux-system/kit-api/
-// KitSegmented.md "Tests required". The stacked form (KIT-24) needs
-// kit-KitChoiceList, which has not merged, so item 5 (stacking) is not here
-// yet; see docs/qa/revamp-kit-KitSegmented-2026-09-26/README.md.
+// KitSegmented.md "Tests required", including item 5: the stacked form of
+// KitChoiceRows when the labels do not fit (KIT-24).
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
 import 'package:opencode_mobile/ui/kit/kit_segmented.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -225,6 +225,13 @@ void main() {
         build: () => _part(),
         act: (tester, stage) => stage.rebuild(_part(cDisabled: true)),
         shows: 'Chosen at install · reinstall to change',
+      ),
+      // The host changes the value (KIT-24's LayoutBuilder must not leave a
+      // frame callback behind when the Tab stop moves with it).
+      'the host moves the selection': KitMotionChange(
+        build: () => _part(),
+        act: (tester, stage) => stage.rebuild(_part(selected: 'c')),
+        shows: 'Charlie',
       ),
     },
   );
@@ -728,6 +735,295 @@ void main() {
     });
   });
 
+  group('stacking (KIT-24)', () {
+    const longLabels = [
+      'Only this conversation',
+      'Every conversation on this computer',
+    ];
+    KitSegmented<String> long({
+      String selected = 'a',
+      ValueChanged<String>? onChanged,
+    }) => KitSegmented<String>(
+      segments: [
+        KitSegment(value: 'a', label: longLabels[0]),
+        KitSegment(value: 'b', label: longLabels[1]),
+      ],
+      selected: selected,
+      onChanged: onChanged ?? (_) {},
+      semanticsLabel: 'Permission scope',
+    );
+
+    Future<void> at(WidgetTester tester, Size size) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+    }
+
+    Finder rows() => find.byWidgetPredicate((w) => w is KitChoiceRow);
+
+    testWidgets('at text 2.0 it renders full-width KitChoiceRows with the '
+        'same values, and no track', (tester) async {
+      await at(tester, const Size(412, 915));
+      await tester.pumpWidget(_host(_part(selected: 'b'), textScale: 2));
+      final found = tester.widgetList<KitChoiceRow<String>>(rows()).toList();
+      expect([for (final r in found) r.choice.value], ['a', 'b', 'c']);
+      expect([for (final r in found) r.choice.title], _labels);
+      expect([for (final r in found) r.selected], [false, true, false]);
+      final part = tester.getRect(find.byType(KitSegmented<String>));
+      final rects = [
+        for (final e in rows().evaluate())
+          tester.getRect(find.byElementPredicate((x) => x == e)),
+      ];
+      for (var i = 0; i < rects.length; i++) {
+        expect(rects[i].width, moreOrLessEquals(part.width));
+        if (i > 0) {
+          expect(rects[i].top, greaterThanOrEqualTo(rects[i - 1].bottom));
+        }
+      }
+      expect(_visibleChecks(tester), isEmpty, reason: 'the track is gone');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('at 320 dp, text 1.0, long labels stack', (tester) async {
+      await at(tester, const Size(320, 800));
+      await tester.pumpWidget(_host(long()));
+      expect(rows(), findsNWidgets(2));
+      for (final label in longLabels) {
+        expect(find.text(label), findsOneWidget, reason: 'never cut');
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('at 412 dp, text 1.0, short labels stay one row', (
+      tester,
+    ) async {
+      await at(tester, const Size(412, 915));
+      // The test font draws every glyph one em wide, so "short" here is
+      // shorter than on a phone's font.
+      const short = ['Day', 'Week', 'Year'];
+      await tester.pumpWidget(
+        _host(
+          KitSegmented<String>(
+            segments: [for (final l in short) KitSegment(value: l, label: l)],
+            selected: 'Day',
+            onChanged: (_) {},
+            semanticsLabel: 'Range',
+          ),
+        ),
+      );
+      expect(rows(), findsNothing);
+      expect(_visibleChecks(tester), hasLength(1));
+      final rects = [for (final l in short) tester.getRect(find.text(l))];
+      expect(rects[1].top, moreOrLessEquals(rects[0].top));
+      expect(rects[2].top, moreOrLessEquals(rects[0].top));
+    });
+
+    testWidgets('it stacks the moment a label would not fit, and returns to '
+        'one row when it fits again', (tester) async {
+      await at(tester, const Size(1280, 800));
+      await tester.pumpWidget(_host(long()));
+      expect(rows(), findsNothing, reason: 'room for both labels');
+      tester.view.physicalSize = const Size(320, 800);
+      await tester.pump();
+      expect(rows(), findsNWidgets(2));
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pump();
+      expect(rows(), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tapping a row calls onChanged once; the selected row and a '
+        'disabled row do not', (tester) async {
+      final calls = <String>[];
+      await tester.pumpWidget(
+        _host(
+          _part(selected: 'a', cDisabled: true, onChanged: calls.add),
+          textScale: 2,
+        ),
+      );
+      await tester.tap(find.text('Bravo'));
+      await tester.tap(find.text('Alpha'));
+      await tester.tap(find.text('Charlie'));
+      await tester.pump();
+      expect(calls, ['b']);
+    });
+
+    testWidgets('rows carry selected and radio-group semantics, the group '
+        'keeps its label', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(_host(_part(selected: 'b'), textScale: 2));
+      expect(
+        tester.getSemantics(find.text('Bravo')),
+        isSemantics(
+          label: 'Bravo',
+          isSelected: true,
+          isInMutuallyExclusiveGroup: true,
+          isEnabled: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.text('Alpha')),
+        isSemantics(
+          label: 'Alpha',
+          isSelected: false,
+          isInMutuallyExclusiveGroup: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(find.bySemanticsLabel('Choice'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets("a disabled segment's reason is on its own row, once", (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(_part(cDisabled: true), textScale: 2));
+      final reason = find.text('Chosen at install · reinstall to change');
+      expect(reason, findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (w) => w is KitChoiceRow && w.choice.value == 'c',
+          ),
+          matching: reason,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a disabled whole control keeps its one reason under the '
+        'stack', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          KitSegmented<String>(
+            segments: _segments(),
+            selected: 'a',
+            onChanged: null,
+            semanticsLabel: 'Choice',
+            disabledReason: 'Set by your admin',
+          ),
+          textScale: 2,
+        ),
+      );
+      expect(find.text('Set by your admin'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Set by your admin')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Charlie')).dy),
+      );
+    });
+
+    testWidgets('the count joins the row title', (tester) async {
+      await tester.pumpWidget(_host(_part(countB: 2), textScale: 2));
+      expect(find.text('Bravo · 2'), findsOneWidget);
+    });
+
+    group('keyboard', () {
+      late FocusNode before;
+      late FocusNode after;
+      setUp(() {
+        before = FocusNode(debugLabel: 'before');
+        after = FocusNode(debugLabel: 'after');
+      });
+      tearDown(() {
+        before.dispose();
+        after.dispose();
+      });
+
+      testWidgets('Tab lands on the selected row, and the stack is one Tab '
+          'stop', (tester) async {
+        await tester.pumpWidget(
+          _host(_between(_part(selected: 'b'), before, after), textScale: 2),
+        );
+        await tester.pump();
+        await _tab(tester);
+        expect(_focusedLabel(_labels), 'Bravo');
+        await _tab(tester);
+        expect(FocusManager.instance.primaryFocus, after);
+        await _tab(tester, shift: true);
+        expect(_focusedLabel(_labels), 'Bravo');
+      });
+
+      testWidgets('Arrow Down and Up move focus without selecting and skip a '
+          'disabled row; Space selects', (tester) async {
+        final calls = <String>[];
+        await tester.pumpWidget(
+          _host(
+            _between(
+              _part(selected: 'a', cDisabled: true, onChanged: calls.add),
+              before,
+              after,
+            ),
+            textScale: 2,
+          ),
+        );
+        await tester.pump();
+        await _tab(tester);
+        expect(_focusedLabel(_labels), 'Alpha');
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Bravo');
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Alpha', reason: 'skips Charlie');
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Bravo');
+        expect(calls, isEmpty, reason: 'arrows never select');
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pump();
+        expect(calls, ['b']);
+      });
+
+      testWidgets('in RTL, Arrow Down still moves to the next row', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            _between(_part(), before, after),
+            textScale: 2,
+            direction: TextDirection.rtl,
+          ),
+        );
+        await tester.pump();
+        await _tab(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Bravo');
+        // Left and Right still follow the reading direction when stacked.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Charlie');
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pump();
+        expect(_focusedLabel(_labels), 'Bravo');
+      });
+    });
+
+    testWidgets('under reduced motion one pump() settles after a row tap', (
+      tester,
+    ) async {
+      final calls = <String>[];
+      await tester.pumpWidget(
+        _host(_Chooser(calls: calls), reduced: true, textScale: 2),
+      );
+      await tester.tap(find.text('Bravo'));
+      await tester.pump();
+      expect(calls, ['b']);
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(
+        tester
+            .widget<KitChoiceRow<String>>(
+              find.byWidgetPredicate(
+                (w) => w is KitChoiceRow && w.choice.value == 'b',
+              ),
+            )
+            .selected,
+        isTrue,
+      );
+    });
+  });
+
   group('sizing and overflow (LAY-9, G6)', () {
     // LAY-4's overflow sizes: widths 320–1600 dp, plus 915×412 landscape.
     const sizes = [
@@ -774,7 +1070,10 @@ void main() {
                 reason: '$size',
               );
               for (final label in _labels) {
-                final target = tester.getSemantics(find.text(label)).rect;
+                // In the stacked form a count joins the row's title.
+                final target = tester
+                    .getSemantics(find.textContaining(label))
+                    .rect;
                 expect(target.height, greaterThanOrEqualTo(48));
                 expect(target.width, greaterThanOrEqualTo(48));
               }
