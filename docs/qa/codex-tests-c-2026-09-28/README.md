@@ -21,7 +21,7 @@ The host crash lost the original `/tmp` baseline logs, but completed before coun
 
 | File (`test/`) | Before pass / fail / skip | After pass / fail / skip | Evidence phase | Repair / retained behavior |
 |---|---:|---:|---|---|
-| `chat_live_events_test.dart` | 72 / 33 / 0 | 102 / 3 / 0 | `final` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
+| `chat_live_events_test.dart` | 72 / 33 / 0 | 103 / 2 / 0 | `final` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
 | `product_ui_regression_test.dart` | 5 / 22 / 0 | 23 / 4 / 0 | `round3` | Files/review/terminal kit routes, copy announcements, CSV and thinking menus; four product guards retained. |
 | `stable_chat_layout_test.dart` | 3 / 7 / 0 | 10 / 0 / 0 | `verified` | Kit editor/controls and actual viewport; focus, draft and geometry checks retained. |
 | `chat_reference_send_test.dart` | 2 / 4 / 0 | 6 / 0 / 0 | `after` | Kit editor and combined draft warning; references and exact send payloads retained. |

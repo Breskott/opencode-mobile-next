@@ -8,7 +8,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
-    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn, KitUndo;
+    show
+        KitBidi,
+        KitCodeBlock,
+        KitDiffView,
+        KitMarkdown,
+        KitMessage,
+        KitMotion,
+        KitRow,
+        KitSwitchRow,
+        KitTurn,
+        KitZoom,
+        KitUndo;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -28,7 +39,6 @@ import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
-import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -395,6 +405,12 @@ class _RelationsProductRepository extends _FakeProductRepository {
   Future<List<Session>> listSessionChildren(String id) async => children;
 }
 
+Finder _textField(Finder field) => find.descendant(
+  of: field,
+  matching: find.byType(TextField),
+  matchRoot: true,
+);
+
 Future<ConnectionController> _controller(
   _FakeOpenCodeApi api, {
   bool savedProfile = false,
@@ -501,8 +517,9 @@ Future<void> _dismissSheetIfOpen(WidgetTester tester) async {
   if (find.byKey(const Key('session-view-timestamps')).evaluate().isEmpty) {
     return;
   }
-  await tester.tapAt(const Offset(10, 10));
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
   await tester.pumpAndSettle();
+  expect(find.byKey(const Key('session-menu-sheet')), findsNothing);
 }
 
 EventEnvelope _event(String type, Map<String, dynamic> properties) =>
@@ -626,6 +643,8 @@ Future<void> _pumpEvent(WidgetTester tester) async {
 Future<void> _useComposerTool(WidgetTester tester, String tool) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(Key('composer-tool-$tool')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key('composer-tool-$tool')));
   // The sheet resolves its choice on dismissal, so the tool it launches
   // needs a second settle.
@@ -668,7 +687,7 @@ void main() {
       expect(find.byKey(const Key('running-work-indicator')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Results'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-results')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('work-agent-child')), findsOneWidget);
       await tester.tap(find.byKey(const Key('work-agent-child')));
@@ -718,7 +737,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('session-actions-button')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Results'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-results')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('work-agent-child')));
     await tester.pumpAndSettle();
@@ -888,8 +907,8 @@ void main() {
       conn.notifyListeners();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.byTooltip('Stop'), findsOneWidget);
-      await tester.tap(find.byTooltip('Stop'));
+      expect(find.byTooltip('Stop the reply'), findsOneWidget);
+      await tester.tap(find.byTooltip('Stop the reply'));
       await tester.pump();
       expect(api.abortCalls, 1);
       expect(find.text('Keep my draft'), findsOneWidget);
@@ -1003,18 +1022,24 @@ void main() {
       await tester.pump();
       expect(
         tester
-            .widget<IconButton>(find.byKey(const Key('chat-send-button')))
-            .onPressed,
-        isNotNull,
+            .widget<GestureDetector>(find.byKey(const Key('chat-send-button')))
+            .onTap,
+        isNull,
       );
-      await tester.tap(find.byKey(const Key('chat-send-button')));
-      await tester.pumpAndSettle();
       expect(api.promptCalls, 0);
       expect(
-        tester.widget<TextField>(field).controller!.text,
+        tester.widget<TextField>(_textField(field)).controller!.text,
         'My next change',
       );
-      expect(find.textContaining('Your draft is kept'), findsOneWidget);
+      expect(find.text('Revert staged'), findsOneWidget);
+      api.sessionResult = Session(id: 'session-1');
+      controller.handleEventForTesting(
+        _event('session.revert.cleared', {'sessionID': 'session-1'}),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pumpAndSettle();
+      expect(api.prompts.single.text, 'My next change');
     },
   );
 
@@ -1301,7 +1326,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Timeline'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('timeline-search')),
@@ -1328,7 +1353,9 @@ void main() {
       );
       expect(
         tester
-            .widget<TextField>(find.byKey(const ValueKey('timeline-search')))
+            .widget<TextField>(
+              _textField(find.byKey(const ValueKey('timeline-search'))),
+            )
             .controller!
             .text,
         'window',
@@ -1693,7 +1720,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('subagent-session-list')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent conversations'), findsOneWidget);
+    expect(find.text('Subagents'), findsOneWidget);
     expect(find.text('Review mobile flow'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -1807,16 +1834,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Changes'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
-    expect(find.text('+1'), findsOneWidget);
-    expect(find.text('-1'), findsOneWidget);
+    expect(find.text('+1 −1'), findsOneWidget);
 
-    expect(find.text('@@ -1 +1 @@'), findsOneWidget);
-    expect(find.text('-old line'), findsOneWidget);
-    expect(find.text('+new line'), findsOneWidget);
-    expect(find.text('Copy patch'), findsOneWidget);
-    expect(find.byKey(const Key('review-mode-split')), findsOneWidget);
+    expect(find.text('old line', findRichText: true), findsOneWidget);
+    expect(find.text('new line', findRichText: true), findsOneWidget);
+    expect(find.byType(KitDiffView), findsOneWidget);
+    expect(find.byKey(const Key('review-mode-split')), findsNothing);
+    final diff = tester.widget<KitDiffView>(find.byType(KitDiffView));
+    expect(diff.files.single.patch, '@@ -1 +1 @@\n-old line\n+new line');
   });
 
   testWidgets('stages a selected diff comment as a composer reference', (
@@ -1836,13 +1863,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Changes'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('review-line-2')));
+    // KitDiffView paints compact numbers under an expanded gutter hit area.
+    await tester.tapAt(
+      tester.getCenter(find.byKey(const ValueKey('review-line-0-current-8'))),
+    );
     await tester.pump();
     expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('review-comment-action')));
+    await tester.tap(find.text('Comment'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('review-comment-field')),
@@ -1855,7 +1885,7 @@ void main() {
     // UX-103: review stays open so a pass can stage several findings, and
     // says how many are waiting on the prompt.
     expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.byKey(const Key('review-staged-count')), findsOneWidget);
+    expect(find.textContaining('1 on prompt'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -1867,7 +1897,7 @@ void main() {
     expect(find.byKey(const Key('composer-reference-strip')), findsOneWidget);
     expect(find.textContaining('client.dart'), findsWidgets);
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, isEmpty);
 
@@ -1878,7 +1908,7 @@ void main() {
     expect(sent, contains('`lib/client.dart`'));
     expect(sent, contains('new line 8'));
     expect(sent, contains('Keep the retry behavior explicit.'));
-    expect(sent, contains('+new request'));
+    expect(sent, contains('```diff\nnew request\n```'));
     expect(find.byKey(const Key('composer-reference-strip')), findsNothing);
   });
 
@@ -1922,14 +1952,14 @@ void main() {
     final fieldFinder = find.byKey(const Key('chat-composer-field'));
     await tester.tap(fieldFinder);
     await tester.pump();
-    final before = tester.widget<TextField>(fieldFinder);
+    final before = tester.widget<TextField>(_textField(fieldFinder));
     expect(before.focusNode?.hasFocus, isTrue);
 
     tester.view.viewInsets = const FakeViewPadding(bottom: 400);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    final after = tester.widget<TextField>(fieldFinder);
+    final after = tester.widget<TextField>(_textField(fieldFinder));
     expect(after.focusNode, same(before.focusNode));
     expect(after.focusNode?.hasFocus, isTrue);
   });
@@ -1976,8 +2006,8 @@ void main() {
     expect(replacementApi.promptCalls, 0);
     expect(
       tester
-          .widget<IconButton>(find.byKey(const Key('chat-send-button')))
-          .onPressed,
+          .widget<GestureDetector>(find.byKey(const Key('chat-send-button')))
+          .onTap,
       isNull,
     );
 
@@ -2131,33 +2161,35 @@ void main() {
 
     expect(api.fileContentRequests, [path]);
     expect(find.byKey(const Key('tool-output-image')), findsOneWidget);
-    expect(find.text('captcha-r1.png'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Preview generated image captcha-r1.png'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('tool-output-image')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
     expect(find.byKey(const Key('file-preview-attach')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('file-preview-attach')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsNothing);
-    expect(
-      find.bySemanticsLabel('Remove attachment captcha-r1.png'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove captcha-r1.png'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'Please inspect this CAPTCHA.',
     );
     await tester.pump();
-    final sendButton = tester.widget<IconButton>(
-      find.byKey(const Key('chat-send-button')),
-    );
-    expect(sendButton.onPressed, isNotNull);
-    sendButton.onPressed!();
+    final send = find.byKey(const Key('chat-send-button'));
+    expect(send.hitTestable(), findsOneWidget);
+    await tester.tap(send);
     await tester.pumpAndSettle();
 
     expect(api.prompts.single.text, 'Please inspect this CAPTCHA.');
@@ -2251,16 +2283,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.fileContentRequests, [path]);
-    expect(find.byKey(const Key('file-preview-text')), findsOneWidget);
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(KitMarkdown), findsWidgets);
     expect(find.text('api.dart'), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
     expect(find.byKey(const Key('file-preview-attach')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('file-preview-raw-mode')));
-    await tester.pump();
-    expect(find.byType(DataTable), findsNothing);
-    expect(find.textContaining('| File | Status |'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-menu-source')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('| File | Status |', findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -2291,8 +2330,10 @@ void main() {
       await tester.tap(find.byKey(const Key('tool-output-file')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-      expect(find.text('Column 1'), findsOneWidget);
-      expect(find.text('=SUM(A1)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsOneWidget);
+      expect(find.text(KitBidi.auto('name')), findsOneWidget);
+      expect(find.text(KitBidi.auto('value')), findsOneWidget);
+      expect(find.text(KitBidi.auto('=SUM(A1)')), findsOneWidget);
       expect(api.prompts, isEmpty);
     },
   );
@@ -2661,7 +2702,10 @@ void main() {
     expect(find.textContaining('search'), findsOneWidget);
     await tester.tap(find.text('why this works'));
     await _pumpEvent(tester);
-    expect(find.textContaining('"query": "chat"'), findsOneWidget);
+    expect(
+      jsonDecode(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).text),
+      {'query': 'chat'},
+    );
     semantics.dispose();
   });
 
@@ -2745,7 +2789,16 @@ void main() {
     final controller = await _pumpChat(tester, api);
     await tester.pumpAndSettle();
     expect(find.text(reasoning), findsNothing);
-    expect(find.byKey(const Key('message-meta-user-display')), findsNothing);
+    expect(
+      tester
+          .widgetList<KitMessage>(find.byType(KitMessage))
+          .singleWhere(
+            (message) =>
+                message.bubbleKey == const ValueKey('user-prompt-user-display'),
+          )
+          .time,
+      isNull,
+    );
 
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
@@ -2771,9 +2824,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<SwitchListTile>(
-            find.byKey(const Key('session-view-thinking')),
-          )
+          .widget<KitSwitchRow>(find.byKey(const Key('session-view-thinking')))
           .value,
       isTrue,
     );
@@ -2781,7 +2832,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.transcriptTimestampsVisible, isTrue);
-    expect(find.byKey(const Key('message-meta-user-display')), findsOneWidget);
+    expect(
+      tester
+          .widgetList<KitMessage>(find.byType(KitMessage))
+          .singleWhere(
+            (message) =>
+                message.bubbleKey == const ValueKey('user-prompt-user-display'),
+          )
+          .time,
+      DateTime.fromMillisecondsSinceEpoch(created),
+    );
     expect(
       find.byKey(const Key('message-meta-assistant-display')),
       findsOneWidget,
@@ -2920,9 +2980,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.text('chat.dart'), findsOneWidget);
-    expect(find.text('+7'), findsOneWidget);
-    expect(find.text('-2'), findsOneWidget);
+    expect(find.text('\u2066chat.dart\u2069'), findsOneWidget);
+    expect(find.text('+7 −2'), findsOneWidget);
   });
 
   testWidgets('command launcher maps context to the native usage surface', (
@@ -2958,7 +3017,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SessionContextScreen), findsOneWidget);
-    expect(find.text('1,000 tokens · limit unavailable'), findsOneWidget);
+    expect(
+      find.text('1,000 tokens · limit unavailable'),
+      findsOneWidget,
+      reason: tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(SessionContextScreen),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((w) => w.data ?? w.textSpan?.toPlainText())
+          .join(' | '),
+    );
   });
 
   testWidgets('debug command opens native app diagnostics', (tester) async {
@@ -2974,7 +3045,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDiagnosticsScreen), findsOneWidget);
-    expect(find.text('Private until you send it'), findsOneWidget);
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(
+      find.text(
+        'Say what went wrong. You see the whole report before anything leaves this phone.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('health command opens native project health', (tester) async {
@@ -3127,7 +3204,7 @@ void main() {
     await tester.pumpAndSettle();
     // The step in the transcript and the menu's entry share one name; the
     // menu's is the one on top.
-    await tester.tap(find.text('Tasks').last);
+    await tester.tap(find.byKey(const ValueKey('session-menu-todos')));
     await tester.pumpAndSettle();
 
     // No sheet: the transcript's own checklist, opened in place.
@@ -3189,7 +3266,7 @@ void main() {
     await tester.tap(find.byKey(const Key('command-server-review')));
     await tester.pumpAndSettle();
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, '/review ');
   });
@@ -3219,6 +3296,8 @@ void main() {
     expect(find.text('review.md'), findsOneWidget);
     await tester.tap(find.text('review.md'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('project-file-attach')), findsOneWidget);
     expect(find.byKey(const Key('project-file-download')), findsOneWidget);
 
@@ -3231,16 +3310,11 @@ void main() {
       findsOneWidget,
     );
 
-    Navigator.of(
-      tester.element(find.byKey(const Key('project-file-attach'))),
-    ).pop();
-    await tester.pumpAndSettle();
+    // Attaching closes the viewer and returns to the file tree.
+    expect(find.byKey(const ValueKey('files-viewer')), findsNothing);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(
-      find.bySemanticsLabel('Remove attachment review.md'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove review.md'), findsOneWidget);
   });
 
   testWidgets('move, warp, and org commands preserve their server semantics', (
@@ -3403,7 +3477,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     final composerFinder = find.byKey(const Key('chat-composer-field'));
-    final composer = tester.widget<TextField>(composerFinder).controller!;
+    final composer = tester
+        .widget<TextField>(_textField(composerFinder))
+        .controller!;
     composer.value = const TextEditingValue(
       text: 'Original prompt draft',
       selection: TextSelection(baseOffset: 2, extentOffset: 10),
@@ -3423,7 +3499,9 @@ void main() {
 
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
     final editor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     expect(editor.text, 'Original prompt draft');
     expect(
@@ -3431,7 +3509,7 @@ void main() {
       const TextSelection(baseOffset: 2, extentOffset: 10),
     );
     editor.selection = const TextSelection.collapsed(offset: 4);
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Discard prompt changes?'), findsNothing);
     expect(
@@ -3442,45 +3520,49 @@ void main() {
     await tester.tap(find.byKey(const Key('prompt-editor-button')));
     await tester.pumpAndSettle();
     final discardEditor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     discardEditor.value = const TextEditingValue(
       text: 'Discarded edit',
       selection: TextSelection.collapsed(offset: 5),
     );
-    await tester.tap(find.byTooltip('Remove attachment notes.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove notes.txt'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Discard prompt changes?'), findsOneWidget);
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Discard'));
+    await tester.tap(find.text('Discard changes'));
     await tester.pumpAndSettle();
     expect(composer.text, 'Original prompt draft');
-    expect(find.byTooltip('Remove attachment notes.txt'), findsOneWidget);
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('prompt-editor-button')));
     await tester.pumpAndSettle();
     final savedEditor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     savedEditor.value = const TextEditingValue(
       text: 'Final edited prompt',
       selection: TextSelection.collapsed(offset: 7),
     );
-    await tester.tap(find.byTooltip('Remove attachment notes.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove notes.txt'));
     await tester.pump();
     await tester.tap(find.byKey(const Key('prompt-editor-done')));
     await tester.pumpAndSettle();
 
     expect(composer.text, 'Final edited prompt');
     expect(composer.selection, const TextSelection.collapsed(offset: 7));
-    expect(find.byTooltip('Remove attachment notes.txt'), findsNothing);
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsNothing);
     expect(api.promptCalls, 0);
   });
 
@@ -3507,9 +3589,11 @@ void main() {
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the chip stays reachable.
-    await tester.ensureVisible(find.text('Timeline'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('session-menu-timeline')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('timeline-search')),
@@ -3594,7 +3678,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('timeline-fork-user-restore')));
     await tester.pumpAndSettle();
@@ -3602,10 +3686,10 @@ void main() {
     expect(repository.forkCalls, 1);
     expect(repository.forkMessageID, 'user-restore');
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, 'Review this design');
-    expect(find.byTooltip('Remove attachment design.png'), findsOneWidget);
+    expect(find.bySemanticsLabel('Remove design.png'), findsOneWidget);
   });
 
   testWidgets('session repository actions wait for the wake-time replacement', (
@@ -3639,7 +3723,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('timeline-fork-user-after-wake')));
     await tester.pump();
@@ -3701,7 +3785,7 @@ void main() {
 
     expect(repository.forkMessageID, 'user-fork-command');
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, 'Try another implementation');
   });
@@ -3727,13 +3811,16 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: ChatScreen(sessionID: 'session-1'),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
           ),
+          home: const ChatScreen(sessionID: 'session-1'),
         ),
       ),
     );
@@ -3757,9 +3844,11 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Timeline'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('session-menu-timeline')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('timeline-search')), findsOneWidget);
@@ -3801,11 +3890,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final composer = tester.widget<TextField>(
-        find.byKey(const Key('chat-composer-field')),
+        _textField(find.byKey(const Key('chat-composer-field'))),
       );
       expect(composer.controller?.text, '@docs');
-      expect(find.bySemanticsLabel('Reference @docs'), findsOneWidget);
-      expect(find.byTooltip('Remove reference @docs'), findsOneWidget);
+      expect(find.bySemanticsLabel('Folder, @docs'), findsOneWidget);
+      expect(find.bySemanticsLabel('Remove @docs'), findsOneWidget);
       expect(find.bySemanticsLabel('Preview attachment docs'), findsNothing);
 
       await tester.tap(find.byTooltip('Send'));
@@ -3904,7 +3993,7 @@ void main() {
       final controller = await _pumpChat(tester, api);
       await tester.pumpAndSettle();
       final horizontal = find.descendant(
-        of: find.byType(CodeBlock),
+        of: find.byType(KitCodeBlock),
         matching: find.byWidgetPredicate(
           (w) =>
               w is SingleChildScrollView &&
@@ -3914,13 +4003,19 @@ void main() {
       expect(horizontal, findsOneWidget);
       await tester.drag(horizontal, const Offset(-650, 0));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('jump-to-latest')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('jump-to-latest')).hitTestable(),
+        findsNothing,
+      );
       await tester.drag(
         find.byType(ScrollablePositionedList),
         const Offset(0, 900),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('jump-to-latest')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('jump-to-latest')).hitTestable(),
+        findsOneWidget,
+      );
       controller.handleEventForTesting(
         _event('message.updated', {
           'info': {
@@ -4033,7 +4128,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Timeline'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
       await tester.pumpAndSettle();
 
       // The sheet no longer opts out of the theme drag handle.
@@ -4113,8 +4208,9 @@ void main() {
   testWidgets('composer tools delegates only to visible server subagents', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final controller = _StaticCatalogController(ProfileStore(prefs: prefs))
@@ -4138,13 +4234,16 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: ChatScreen(sessionID: 'session-1'),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
           ),
+          home: const ChatScreen(sessionID: 'session-1'),
         ),
       ),
     );
@@ -4152,20 +4251,48 @@ void main() {
 
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
-    expect(find.text('Composer tools'), findsOneWidget);
+    expect(find.byKey(const Key('composer-tools-sheet')), findsNothing);
+    expect(find.byKey(const Key('command-launcher-sheet')), findsOneWidget);
+    expect(find.text('Commands and agents'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // At 200% text the sheet header scrolls with the body. Reveal the
+    // delegate tab before choosing it on this narrow phone viewport.
+    final sheetScroll = find
+        .descendant(
+          of: find.byKey(const Key('command-launcher-sheet')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('composer-tools-agents-tab')),
+      100,
+      scrollable: sheetScroll,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('composer-tools-agents-tab')));
     await tester.pumpAndSettle();
 
-    expect(find.text('@explore'), findsOneWidget);
-    expect(find.text('@build'), findsNothing);
-    expect(find.text('@internal'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('composer-agent-explore')),
+      100,
+      scrollable: sheetScroll,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('@${KitBidi.auto('explore')}'), findsOneWidget);
+    expect(
+      find.byKey(const Key('composer-agent-build'), skipOffstage: false),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('composer-agent-internal'), skipOffstage: false),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('composer-agent-explore')));
     await tester.pumpAndSettle();
 
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, '@explore ');
     expect(tester.takeException(), isNull);
@@ -4539,7 +4666,7 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    expect(find.byKey(const ValueKey('composer-activity')), findsOneWidget);
+    expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
 
     controller.handleEventForTesting(
       _event('session.error', {
@@ -4552,12 +4679,9 @@ void main() {
     );
     await _pumpEvent(tester);
 
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
-    expect(
-      find.text('Sign in to the selected model provider.'),
-      findsOneWidget,
-    );
+    expect(find.text('The agent stopped because of an error.'), findsOneWidget);
   });
 
   testWidgets('an error a reply carries is not repeated in a banner', (
@@ -4734,27 +4858,20 @@ void main() {
     await _pumpChat(tester, api);
 
     expect(find.text('report.pdf'), findsOneWidget);
-    expect(find.text('PDF · prompt attachment'), findsOneWidget);
+    expect(find.bySemanticsLabel('Preview report.pdf'), findsOneWidget);
     expect(find.text('Review this image'), findsOneWidget);
     expect(find.text('diagram.png'), findsOneWidget);
-    expect(find.text('PNG · prompt attachment'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Preview attachment report.pdf'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('Preview attachment diagram.png'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Preview diagram.png'), findsOneWidget);
 
-    final diagram = find.text('diagram.png');
+    final diagram = find.bySemanticsLabel('Preview diagram.png');
     await tester.ensureVisible(diagram);
     await tester.pumpAndSettle();
     await tester.tap(diagram);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.text('Pinch to zoom'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
+    expect(find.byType(KitZoom), findsOneWidget);
+    expect(find.byTooltip('Zoom in'), findsOneWidget);
   });
 
   testWidgets('retry preserves mixed and attachment-only file parts', (
@@ -4922,21 +5039,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final remove = find.byTooltip('Remove attachment notes.txt');
+    final remove = find.bySemanticsLabel('Remove notes.txt');
     expect(remove, findsOneWidget);
     final size = tester.getSize(remove);
     expect(size.width, greaterThanOrEqualTo(48));
     expect(size.height, greaterThanOrEqualTo(48));
-    expect(
-      find.bySemanticsLabel('Remove attachment notes.txt'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsOneWidget);
 
-    final preview = find.bySemanticsLabel('Preview attachment notes.txt');
+    final preview = find.bySemanticsLabel('Preview notes.txt');
     expect(
       tester.getSemantics(preview),
       matchesSemantics(
-        label: 'Preview attachment notes.txt',
+        label: 'Preview notes.txt',
         isButton: true,
         hasTapAction: true,
       ),
@@ -4944,9 +5058,9 @@ void main() {
     await tester.tap(preview);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-text')), findsOneWidget);
+    expect(find.byType(KitCodeBlock), findsWidgets);
     expect(find.text('notes'), findsOneWidget);
-    await tester.tap(find.byTooltip('Close preview'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     await tester.tap(remove);
@@ -4962,7 +5076,7 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Server folder'), findsOneWidget);
+    expect(find.text(KitBidi.auto('Server folder')), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-start-tip')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('chat-starter-What changed recently?')),
@@ -4993,7 +5107,7 @@ void main() {
     await _pumpChat(tester, api, controller: controller);
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('oc_app'), findsOneWidget);
+    expect(find.text(KitBidi.auto('oc_app')), findsOneWidget);
     expect(find.text('1 item'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('chat-starter-Explain this project')),
@@ -5068,7 +5182,7 @@ void main() {
 
     expect(find.text('Delete this message?'), findsOneWidget);
     expect(find.textContaining('File changes it made'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
+    await tester.tap(find.text('Delete message'));
     await tester.pumpAndSettle();
 
     expect(repository.deleted, [('session-1', 'user-1')]);
@@ -5092,7 +5206,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
+    await tester.tap(find.text('Delete message'));
     await tester.pumpAndSettle();
 
     expect(repository.deleted, isEmpty);
@@ -5141,30 +5255,18 @@ void main() {
           agents: [],
         );
         await _pumpChat(tester, api, controller: controller);
-        expect(
-          find.byKey(const ValueKey('composer-context-meter')),
-          percent >= 70 ? findsOneWidget : findsNothing,
-        );
-        expect(
-          find.text('$percent%'),
-          percent >= 70 ? findsOneWidget : findsNothing,
-        );
         await tester.pumpAndSettle();
+        // The kit composer discloses high usage on the model chip; the
+        // separate meter was retired in chat-3.
+        final contextPercent = find.byKey(
+          const Key('composer-context-percent'),
+        );
+        expect(contextPercent, percent >= 70 ? findsOneWidget : findsNothing);
         if (percent >= 70) {
+          expect(find.text('· $percent %'), findsOneWidget);
           expect(
-            find.bySemanticsLabel('Context window $percent percent used'),
+            find.bySemanticsLabel(RegExp('Context.*$percent')),
             findsOneWidget,
-          );
-          final fill = tester.getSize(
-            find.byKey(const ValueKey('composer-context-meter-fill')),
-          );
-          final track = tester.getSize(
-            find.byKey(const ValueKey('composer-context-meter')),
-          );
-          expect(fill.height, track.height);
-          expect(
-            fill.width / track.width,
-            moreOrLessEquals(percent / 100, epsilon: .01),
           );
         }
         // Routine usage is still reachable, with the exact value, through
@@ -5174,24 +5276,41 @@ void main() {
         await tester.ensureVisible(find.text('Display and context'));
         await tester.tap(find.text('Display and context'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Context usage'));
-        expect(find.text('Context usage').hitTestable(), findsOneWidget);
-        await tester.tap(find.text('Context usage'));
+        final contextRow = find.ancestor(
+          of: find.text('Context usage'),
+          matching: find.byType(KitRow),
+        );
+        await tester.ensureVisible(contextRow);
+        await tester.pumpAndSettle();
+        expect(contextRow.hitTestable(), findsOneWidget);
+        await tester.tap(contextRow);
         await tester.pumpAndSettle();
         expect(find.byType(SessionContextScreen), findsOneWidget);
-        expect(find.text('$percent%'), findsOneWidget);
+        expect(
+          find.text(
+            percent < 50 ? '$percent% used · plenty left' : '$percent% used',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('$percent,000 of 100,000 tokens'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            'Model, $percent percent, $percent,000 of 100,000 tokens',
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
   }
 
-  testWidgets('composer hides the context meter without a known limit', (
+  testWidgets('composer hides the context percentage without a known limit', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi();
     await _pumpChat(tester, api);
 
-    expect(find.byKey(const ValueKey('composer-context-meter')), findsNothing);
+    expect(find.byKey(const Key('composer-context-percent')), findsNothing);
   });
 
   testWidgets('Ctrl+Enter sends the drafted prompt', (tester) async {
@@ -5249,12 +5368,20 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
+    await _dismissSheetIfOpen(tester);
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Conversation actions'));
+    await tester.scrollUntilVisible(
+      find.text('Conversation actions'),
+      180,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('session-menu-sheet')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
