@@ -21,7 +21,7 @@ The host crash lost the original `/tmp` baseline logs, but completed before coun
 
 | File (`test/`) | Before pass / fail / skip | After pass / fail / skip | Evidence phase | Repair / retained behavior |
 |---|---:|---:|---|---|
-| `chat_live_events_test.dart` | 72 / 33 / 0 | 100 / 5 / 0 | `round3` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
+| `chat_live_events_test.dart` | 72 / 33 / 0 | 102 / 3 / 0 | `round4` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
 | `product_ui_regression_test.dart` | 5 / 22 / 0 | 23 / 4 / 0 | `round3` | Files/review/terminal kit routes, copy announcements, CSV and thinking menus; four product guards retained. |
 | `stable_chat_layout_test.dart` | 3 / 7 / 0 | 10 / 0 / 0 | `verified` | Kit editor/controls and actual viewport; focus, draft and geometry checks retained. |
 | `chat_reference_send_test.dart` | 2 / 4 / 0 | 6 / 0 / 0 | `after` | Kit editor and combined draft warning; references and exact send payloads retained. |
@@ -41,7 +41,7 @@ The host crash lost the original `/tmp` baseline logs, but completed before coun
 | `voice_model_localization_test.dart` | 7 / 2 / 0 | 9 / 0 / 0 | `after` | Current kit controls, settled scrolling and localization delegates; Arabic reachability retained. |
 | `voice_reply_pipeline_test.dart` | 0 / 20 / 3 | 19 / 1 / 3 | `round4` | Current consent/switch and scrollable reply controls; speech dispatch, stale reply and opt-in assertions retained; three existing optional capture skips unchanged. |
 | `pending_sends_strip_test.dart` | 11 / 5 / 0 | 16 / 0 / 0 | `verified` | Actual queue menu and fresh draft for long press; explicit delivery default, remembered choice and queue safety retained. |
-| `model_picker_test.dart` | 3 / 23 / 0 | 20 / 6 / 0 | `round4` | Retired options dialog migrated to P3.3 model sheet, Thinking menu, reload-provider row and secure-storage mock; persistence and race guards retained. |
+| `model_picker_test.dart` | 3 / 23 / 0 | 22 / 4 / 0 | `final` | Retired options dialog migrated to P3.3 model sheet, Thinking menu, reload-provider row and secure-storage mock; persistence and race guards retained. |
 | `transcript_search_test.dart` | 7 / 2 / 0 | 9 / 0 / 0 | `after` | Kit text selection/highlighting; search and no-reparse assertions retained. |
 | `team_agent_chat_test.dart` | 5 / 0 / 0 | 5 / 0 / 0 | `after` | Unchanged; current worker-conversation tests already pass. |
 
