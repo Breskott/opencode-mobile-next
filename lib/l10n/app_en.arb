@@ -24067,5 +24067,130 @@
   "kitToolOpenConversation": "Open its conversation",
   "@kitToolOpenConversation": {
     "description": "KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation"
+  },
+  "kitViewerFind": "Find in file",
+  "@kitViewerFind": {
+    "description": "KitViewer: the More menu item and the search field label that find text in the open file"
+  },
+  "kitViewerFindCount": "{index} of {count}",
+  "@kitViewerFindCount": {
+    "description": "KitViewer: which find match is current and how many there are, e.g. 3 of 12",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitViewerFindNone": "No matches",
+  "@kitViewerFindNone": {
+    "description": "KitViewer: the find count when the typed text is not in the file"
+  },
+  "kitViewerFindPrevious": "Previous match",
+  "@kitViewerFindPrevious": {
+    "description": "KitViewer: the button that moves find to the previous match"
+  },
+  "kitViewerFindNext": "Next match",
+  "@kitViewerFindNext": {
+    "description": "KitViewer: the button that moves find to the next match"
+  },
+  "kitViewerFindClose": "Close find",
+  "@kitViewerFindClose": {
+    "description": "KitViewer: the button that closes the find field"
+  },
+  "kitViewerCopyContents": "Copy contents",
+  "@kitViewerCopyContents": {
+    "description": "KitViewer: the More menu item that copies the whole file's text"
+  },
+  "kitViewerShowSource": "Show source",
+  "@kitViewerShowSource": {
+    "description": "KitViewer: the checkable More menu item that shows a Markdown, SVG or table file as its raw text"
+  },
+  "kitViewerEmpty": "This file is empty",
+  "@kitViewerEmpty": {
+    "description": "KitViewer: shown instead of the body when the file has no text"
+  },
+  "kitViewerTruncated": "Showing the first {shown} of {total} lines",
+  "@kitViewerTruncated": {
+    "description": "KitViewer: the notice above a file that is only partly shown",
+    "placeholders": {
+      "shown": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitViewerPartial": "Showing part of this file",
+  "@kitViewerPartial": {
+    "description": "KitViewer: the notice above a file that is only partly shown when its full length is unknown"
+  },
+  "kitViewerOpenAll": "Open all",
+  "@kitViewerOpenAll": {
+    "description": "KitViewer: the action on the truncation notice that opens the whole file"
+  },
+  "kitViewerCantShow": "Can't show this file",
+  "@kitViewerCantShow": {
+    "description": "KitViewer: the title shown for a file the app cannot display (a binary file)"
+  },
+  "kitViewerCantShowBody": "{type} · {size}",
+  "@kitViewerCantShowBody": {
+    "description": "KitViewer: the file's type and size under 'Can't show this file', e.g. application/zip · 2.4 MB",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "kitViewerUnknownType": "Unknown type",
+  "@kitViewerUnknownType": {
+    "description": "KitViewer: stands in for the file type when it is not known"
+  },
+  "kitViewerUnknownSize": "size unknown",
+  "@kitViewerUnknownSize": {
+    "description": "KitViewer: stands in for the file size when it is not known"
+  },
+  "kitViewerLoadFailed": "Couldn't open {name}",
+  "@kitViewerLoadFailed": {
+    "description": "KitViewer: the title when the file failed to load; name is the file name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kitViewerPage": "Page {page} of {count}",
+  "@kitViewerPage": {
+    "description": "KitViewer: a PDF page's caption and spoken label",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitViewerPageFailed": "Couldn't show page {page}",
+  "@kitViewerPageFailed": {
+    "description": "KitViewer: shown in place of one PDF page that failed to render",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }

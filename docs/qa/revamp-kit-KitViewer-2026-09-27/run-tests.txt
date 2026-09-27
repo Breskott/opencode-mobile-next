@@ -1,0 +1,130 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading test/kit/kit_viewer_test.dart
+00:00 +0: test/kit/kit_viewer_test.dart: 1. frame: name, path, one primary, More and Close
+00:00 +1: test/kit/kit_viewer_test.dart: 2. More: kit items first, caller items after, destructive last
+00:01 +2: test/kit/kit_viewer_test.dart: 3. loading, error with Try again, then the content
+00:01 +3: test/kit/kit_viewer_test.dart: 4. empty text says so and Copy contents is disabled
+00:01 +4: test/kit/kit_viewer_test.dart: 5. truncated: counts, and Open all only with a handler
+00:01 +5: test/kit/kit_viewer_test.dart: 6. links go through openExternalLink; inert when not interactive
+00:01 +6: test/kit/kit_viewer_test.dart: 7. Find counts, moves, wraps; Esc closes Find, then the viewer
+00:02 +7: test/kit/kit_viewer_test.dart: 8. Show source swaps prose for source and reports it
+00:02 +8: test/kit/kit_viewer_test.dart: 9. Wrap: the menu reports it; the window picks the default
+00:02 +9: test/kit/kit_viewer_test.dart: 10. PDF: only visible pages render; cancel on scroll-away; a failed page has its own Try again
+00:02 +10: test/kit/kit_viewer_test.dart: 11. delimited: virtualised rows, sticky header, isolated cells
+00:02 +11: test/kit/kit_viewer_test.dart: 12. binary: type and size in words, with the caller action
+00:02 +12: test/kit/kit_viewer_test.dart: 13. adaptive: sheet on a phone, page on a PC, asPage forces
+00:02 +13: test/kit/kit_viewer_test.dart: 14. keyboard on a PC Esc closes, Ctrl+F finds, Tab reaches primary, More, Close
+00:02 +14: test/kit/kit_viewer_test.dart: 15. redaction: shown masked, copied verbatim (SEC-13)
+00:03 +15: test/kit/kit_viewer_test.dart: 17. reduced motion: open and Find settle in one pump
+00:03 +16: test/kit/kit_viewer_test.dart: 18. overflow 320 dp at text 1.0
+00:03 +17: test/kit/kit_viewer_test.dart: 18. overflow 320 dp at text 1.3
+00:03 +18: test/kit/kit_viewer_test.dart: 18. overflow 320 dp at text 2.0
+00:03 +19: test/kit/kit_viewer_test.dart: 18. overflow 412 dp at text 1.0
+00:03 +20: test/kit/kit_viewer_test.dart: 18. overflow 412 dp at text 1.3
+00:03 +21: test/kit/kit_viewer_test.dart: 18. overflow 412 dp at text 2.0
+00:03 +22: loading test/goldens/kit/kit_viewer_golden_test.dart
+00:04 +22: test/goldens/kit/kit_viewer_golden_test.dart: (setUpAll)
+00:04 +22: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer code · 412x915 · dark
+00:05 +23: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer markdown · 412x915 · dark
+00:05 +24: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer image · 412x915 · dark
+00:05 +25: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer pdf · 412x915 · dark
+00:05 +26: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer svg · 412x915 · dark
+00:06 +27: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer delimited · 412x915 · dark
+00:06 +28: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer binary · 412x915 · dark
+00:06 +29: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer loading · 412x915 · dark
+00:06 +30: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer error · 412x915 · dark
+00:06 +31: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer truncated · 412x915 · dark
+00:07 +32: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer finding · 412x915 · dark
+00:07 +33: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer code · 1280x800 · dark
+00:07 +34: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer markdown · 1280x800 · dark
+00:08 +35: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer image · 1280x800 · dark
+00:08 +36: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer pdf · 1280x800 · dark
+00:08 +37: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer svg · 1280x800 · dark
+00:08 +38: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer delimited · 1280x800 · dark
+00:08 +39: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer binary · 1280x800 · dark
+00:08 +40: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer loading · 1280x800 · dark
+00:08 +41: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer error · 1280x800 · dark
+00:09 +42: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer truncated · 1280x800 · dark
+00:09 +43: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer finding · 1280x800 · dark
+00:09 +44: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer code · 412x915 · light
+00:09 +45: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer markdown · 412x915 · light
+00:09 +46: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer image · 412x915 · light
+00:09 +47: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer pdf · 412x915 · light
+00:10 +48: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer svg · 412x915 · light
+00:10 +49: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer delimited · 412x915 · light
+00:10 +50: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer binary · 412x915 · light
+00:10 +51: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer loading · 412x915 · light
+00:10 +52: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer error · 412x915 · light
+00:10 +53: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer truncated · 412x915 · light
+00:10 +54: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer finding · 412x915 · light
+00:10 +55: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer code · 1280x800 · light
+00:11 +56: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer markdown · 1280x800 · light
+00:11 +57: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer image · 1280x800 · light
+00:11 +58: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer pdf · 1280x800 · light
+00:11 +59: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer svg · 1280x800 · light
+00:11 +60: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer delimited · 1280x800 · light
+00:11 +61: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer binary · 1280x800 · light
+00:11 +62: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer loading · 1280x800 · light
+00:11 +63: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer error · 1280x800 · light
+00:12 +64: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer truncated · 1280x800 · light
+00:12 +65: test/goldens/kit/kit_viewer_golden_test.dart: kit_viewer finding · 1280x800 · light
+00:12 +66: test/goldens/kit/kit_viewer_golden_test.dart: (tearDownAll)
+00:12 +66: All tests passed!
