@@ -22,6 +22,7 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import 'file_preview.dart';
 import 'mobile_task_view.dart';
+import 'product_states.dart' show productErrorText;
 
 // The host adapter for one tool call (embedded-tool-card; chat-2). It maps a
 // server `ToolState` to a KitToolRow — kind, words, status, +/− and time —
@@ -583,7 +584,7 @@ class _ToolCardState extends State<ToolCard> {
       return FilePreviewData(
         name: file.displayName,
         mimeType: file.mimeType,
-        error: _chatL10n(context).chatUiFileLoadFailed(error),
+        error: _chatL10n(context).chatUiFileLoadFailed(productErrorText(error)),
       );
     }
   }
@@ -1564,7 +1565,10 @@ class _ImagePreview extends StatelessWidget {
           );
         }
         final data = snapshot.data;
-        final error = snapshot.error?.toString() ?? data?.error;
+        final failure = snapshot.error;
+        final error = failure != null
+            ? productErrorText(failure, l10n: l10n)
+            : data?.error;
         if (error != null || data?.bytes?.isNotEmpty != true) {
           return KitNotice(
             key: const Key('tool-output-image-error'),

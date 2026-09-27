@@ -40,7 +40,10 @@ enum _Form { plain, missing, error }
 ///    (§10) where the moment deserves one;
 /// 2. [title]: one line that says the state now, never contradicting the
 ///    progress ("Starting OpenCode…", not "stopped" while it starts);
-/// 3. [body]: at most two short sentences;
+/// 3. [body]: at most two short sentences, words for people in the app's
+///    voice, never exception or transport text (`'$error'`,
+///    `error.toString()`, an `ApiException` or `PlatformException`
+///    message, an HTTP body): that goes to [details];
 /// 4. [progress] (§4);
 /// 5. actions in the one hierarchy (§2);
 /// 6. the details fold ([KitDetailsFold]): [detailNotes], [detailValues],
@@ -227,6 +230,9 @@ class KitStateView extends StatefulWidget {
   final IconData icon;
   final AppStatusTone tone;
   final String title;
+
+  /// Words, not exception text (see the class notes): the raw failure goes
+  /// to [details], folded and redacted.
   final String? body;
   final KitProgress? progress;
   final KitAction? primary;

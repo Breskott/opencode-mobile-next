@@ -166,7 +166,7 @@ void main() {
     );
   });
 
-  testWidgets('the tabs switch the document; Open source lists licenses', (
+  testWidgets('one page: Open source lists licenses, no privacy tab', (
     tester,
   ) async {
     // Tall, so the document under the identity is laid out.
@@ -177,30 +177,19 @@ void main() {
     await tester.pumpWidget(_app(const AboutScreen()));
     await _settle(tester);
 
+    // No tabs: the privacy policy lives in Settings › Privacy and data
+    // (P3.10), so Open source is on the page itself.
+    expect(find.byKey(const ValueKey('about-tabs')), findsNothing);
+    expect(find.byKey(const ValueKey('about-privacy-document')), findsNothing);
     expect(
-      find.byKey(const ValueKey('about-privacy-document')),
+      find.byKey(const ValueKey('about-notices-document')),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('about-all-licences')), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('about-tab-open-source')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('about-privacy-document')), findsNothing);
     expect(find.byKey(const ValueKey('about-all-licences')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('about-all-licences')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('about-licences-viewer')), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('initialTab 1 opens on Open source', (tester) async {
-    tester.view
-      ..physicalSize = const Size(412, 2400)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(_app(const AboutScreen(initialTab: 1)));
-    await _settle(tester);
-    expect(find.byKey(const ValueKey('about-all-licences')), findsOneWidget);
   });
 
   test(

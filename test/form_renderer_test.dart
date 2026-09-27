@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart' show ApiException;
 import 'package:opencode_mobile/api2/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
@@ -708,7 +709,12 @@ void main() {
       ]),
       onSubmit: (answer) async {
         attempts++;
-        if (attempts == 1) throw Exception('server rejected the answer');
+        if (attempts == 1) {
+          throw ApiException(
+            'Answer form failed (HTTP 400): server rejected the answer',
+            statusCode: 400,
+          );
+        }
         sent = answer;
       },
       onClose: () => closed = true,
@@ -717,7 +723,12 @@ void main() {
     expect(find.byKey(const Key('form-error-banner')), findsNothing);
     await submit(tester);
     expect(find.byKey(const Key('form-error-banner')), findsOneWidget);
-    expect(find.text('server rejected the answer'), findsOneWidget);
+    // The server's reason in words; the transport text is details only.
+    expect(
+      find.text("The server didn't accept it: server rejected the answer"),
+      findsOneWidget,
+    );
+    expect(find.textContaining('HTTP 400'), findsNothing);
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(closed, isFalse);
 

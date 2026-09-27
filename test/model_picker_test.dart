@@ -432,13 +432,12 @@ void main() {
     () {
       expect(
         unloadedProvidersNotice(['OpenAI']),
-        contains(
-          'signed in to OpenAI but has not loaded it yet, so its models',
-        ),
+        'Signed in to OpenAI, but the server has not loaded it yet, so its '
+        'models cannot answer.',
       );
       expect(
         unloadedProvidersNotice(['OpenAI', 'Anthropic']),
-        contains('Anthropic and OpenAI but has not loaded them yet, so their'),
+        contains('Anthropic and OpenAI, but the server has not loaded them'),
       );
     },
   );

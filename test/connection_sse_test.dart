@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -11,6 +11,8 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/background/live_background.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
+import 'package:opencode_mobile/state/automatic_activity.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -328,6 +330,58 @@ void main() {
       expect(controller.hasConnectedServer, isFalse);
     },
   );
+
+  testWidgets('a reconnect the stream made by itself is filed for While you '
+      'were away; the first connect is not', (tester) async {
+    AutomaticActivityController.resetShared();
+    addTearDown(AutomaticActivityController.resetShared);
+    const secure = MethodChannel(
+      'plugins.it_nomads.com/flutter_secure_storage',
+    );
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(secure, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {
+          'id': 'laptop',
+          'name': 'Laptop',
+          'baseUrl': 'http://127.0.0.1:1',
+          'username': '',
+        },
+      ]),
+      'oc.activeProfile': 'laptop',
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    await store.load();
+    final api = _ControlledApi('laptop');
+    final streams = <_FakeEventStream>[];
+    final controller = ConnectionController(
+      store,
+      apiFactory: (_) => api,
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory(streams),
+    );
+    addTearDown(controller.dispose);
+    final connecting = controller.connect(store.profiles.single);
+    await tester.pump();
+    api.healthResult.complete(Health(healthy: true));
+    await connecting;
+    streams.single.emitStatus(StreamStatus.connected);
+    await tester.pump();
+    expect(controller.automaticActsHere, isEmpty);
+
+    streams.single.emitStatus(StreamStatus.reconnecting);
+    streams.single.emitStatus(StreamStatus.connected);
+    await tester.pump();
+    final acts = controller.automaticActsHere;
+    expect(acts, hasLength(1));
+    expect(acts.single.kind, AutomaticActKind.reconnect);
+    expect(acts.single.summary, 'Laptop');
+    expect(store.prefs.getString('oc.automaticActivity.laptop'), isNotNull);
+    await controller.disconnect();
+  });
 
   testWidgets('latest overlapping connect owns all commits and transport', (
     tester,

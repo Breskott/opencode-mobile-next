@@ -10,6 +10,7 @@ import '../../state/local_server_controls.dart';
 import '../../termux/bridge.dart';
 import '../app_iconography.dart';
 import '../kit/kit_dialog.dart';
+import 'product_states.dart' show productErrorText;
 
 /// Whether the connected server is this phone's own, and how to restart it.
 ///
@@ -66,7 +67,8 @@ import '../kit/kit_dialog.dart';
             connection: connection,
           ).restart();
         } on LocalServerControlFailure catch (failure) {
-          fail(failure.message);
+          // The manager's sentence, or its output said in words.
+          fail(failure.message.trim().isEmpty ? '' : productErrorText(failure));
           return;
         }
         await connection.retryConnection();

@@ -586,11 +586,7 @@ void main() {
         // These are copy/layout checks, not warm-cache/bootstrap evidence.
         rootBundle.evict('PRIVACY.md');
         rootBundle.evict('THIRD_PARTY_NOTICES.md');
-        await _pumpNarrowCopy(
-          tester,
-          const AboutScreen(initialTab: 1),
-          brightness,
-        );
+        await _pumpNarrowCopy(tester, const AboutScreen(), brightness);
         await tester.pumpAndSettle();
         final title = find.text(l10n.iosAppTitle);
         final summary = find.text(l10n.iosRemoteSummary);

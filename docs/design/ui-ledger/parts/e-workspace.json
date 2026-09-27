@@ -560,7 +560,7 @@
           "action": "navigate",
           "target": "chat",
           "targetWidget": "/chat/<sessionId>",
-          "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB. In Team mode (workspace-new-mode on), onTap is _createTeamTask instead: TeamConversation.start (team-conversation) when the team is on, else openTeamIntro (team-intro).",
+          "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB. In Team mode (workspace-new-mode on), onTap is _createTeamTask instead: TeamConversation.start (team-conversation) when the team is on, else openTeamPage, whose off state is team-intro.",
           "gates": [
             "disabled while _creating"
           ],
@@ -3709,7 +3709,7 @@
           "action": "navigate",
           "target": "team-conversation",
           "targetWidget": "TeamConversation.start",
-          "effect": "Team on: TeamConversation.start. Team off: openTeamIntro (the team's off state).",
+          "effect": "Team on: TeamConversation.start. Team off: openTeamPage (the team page's off state, team-intro).",
           "gates": [
             "teamPossibleOn(profile) or a team controller exists"
           ],

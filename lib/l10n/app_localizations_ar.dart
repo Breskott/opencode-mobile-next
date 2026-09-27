@@ -212,9 +212,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get modelThinkingMode => 'وضع التفكير';
 
   @override
-  String get modelDefaultMode => 'الوضع الافتراضي';
-
-  @override
   String get modelSessionScopeNote =>
       'يسري على الرسائل التالية في هذه المحادثة.';
 
@@ -3690,36 +3687,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get isolatedTaskClose => 'إغلاق';
 
   @override
-  String get returnBriefTitle => 'عمل لم يُراجع';
-
-  @override
-  String get returnBriefDescription =>
-      'لهذا المشروع على هذا الجهاز. يبقي التجاهل المحادثات غير مقروءة والطلبات معلّقة.';
-
-  @override
-  String get returnBriefUntitled => 'محادثة بلا عنوان';
-
-  @override
-  String get returnBriefStale =>
-      'آخر حالة مرصودة. أعد الاتصال أو حدّث للتحقق من العمل والطلبات الحالية.';
-
-  @override
   String get returnBriefStatusUnknown => 'حالة المراجعة غير معروفة';
-
-  @override
-  String get returnBriefUnknown =>
-      'لا يبلّغ هذا الخادم عن حالة القراءة. النتائج التي لم تُراجع غير معروفة.';
-
-  @override
-  String get returnBriefPartial =>
-      'المحادثات المحمّلة فقط. قائمة المحادثات لم تكتمل بعد.';
-
-  @override
-  String get returnBriefAnswer => 'إجابة';
-
-  @override
-  String get returnBriefUnreviewed =>
-      'محادثة لم تُراجع. افتح النتائج للتحقق من المحصلة.';
 
   @override
   String get returnBriefReview => 'مراجعة النتائج';
@@ -3728,88 +3696,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get returnBriefContinue => 'متابعة';
 
   @override
-  String returnBriefMore(int count) {
-    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع المحادثات أدناه أو «الوارد».';
-  }
-
-  @override
-  String get returnBriefSaveFailed =>
-      'لم يُحفظ التجاهل. ما زالت هذه العناصر غير مراجعة. أعد المحاولة.';
-
-  @override
-  String get returnBriefSaving => 'جارٍ حفظ التجاهل…';
-
-  @override
-  String get returnBriefDismiss => 'تجاهل العناصر المعروضة';
-
-  @override
-  String get capsuleTitle => 'حزمة السياق';
-
-  @override
-  String get capsuleEntry =>
-      'اجمع الملاحظات والأخطاء ولقطات الشاشة لهذه المحادثة';
-
-  @override
-  String get capsuleDescription =>
-      'أنشئ حزمة لهذه المحادثة. تضيفها إلى مسودتك الحالية دون إرسال أي شيء. تُحفظ التعديلات غير المطبّقة ما دامت هذه الشاشة مفتوحة فقط.';
-
-  @override
-  String get capsuleNote => 'ملاحظة';
-
-  @override
   String get capsuleError => 'خطأ';
 
   @override
-  String get capsuleCode => 'شيفرة';
-
-  @override
-  String get capsuleLabel => 'تسمية';
-
-  @override
-  String get capsuleExcerpt => 'مقتطف';
-
-  @override
-  String get capsulePaste => 'لصق';
-
-  @override
   String get capsuleRemove => 'إزالة';
-
-  @override
-  String get capsuleAddImage => 'إضافة لقطة شاشة أو صورة';
-
-  @override
-  String get capsulePreview => 'اضغط للمعاينة';
-
-  @override
-  String get capsuleApply => 'إضافة إلى المسودة';
-
-  @override
-  String get capsuleApplied =>
-      'أُضيف السياق إلى مسودتك المحفوظة. راجعه قبل الإرسال.';
-
-  @override
-  String get capsuleScopeChanged =>
-      'تغيّرت المحادثة أو الخادم أو المسودة. أغلق حزمة السياق هذه وافتحها مجددًا من المحادثة المقصودة.';
-
-  @override
-  String get capsuleTextOnly =>
-      'يقبل هذا الخادم النص فقط. لا يزال بإمكانك جمع الملاحظات والأخطاء والشيفرة.';
-
-  @override
-  String get capsuleImagesOnly =>
-      'اختر صورة PNG أو JPEG أو GIF أو WebP. الصق النص في مقتطف بدلًا من ذلك.';
-
-  @override
-  String get capsuleImageFailed =>
-      'تعذّرت إضافة تلك الصورة. استخدم حتى 5 مرفقات، بحد أقصى 10 MB لكل منها و20 MB إجمالًا، بما فيها مسودتك الحالية.';
-
-  @override
-  String get capsulePasteFailed =>
-      'نص الحافظة غير متاح. يمكنك الكتابة أو اللصق في المقتطف.';
-
-  @override
-  String get capsuleTextLimit =>
-      'اجعل كل مقتطف أقل من 16,000 حرف، والحزمة أقل من 32,000 حرف.';
 
   @override
   String get markdownCopyCode => 'نسخ الشيفرة';
@@ -4746,31 +4636,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reviewTitle => 'مراجعة';
 
   @override
-  String get modelChoiceProvidersTitle => 'مزوّدو خدمة لم يُحمّلوا';
-
-  @override
-  String modelChoiceProvidersSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'لم يُحمّل $count مزوّد خدمة مسجّل الدخول. عرض التفاصيل',
-      many: 'لم يُحمّل $count مزوّد خدمة مسجّل الدخول. عرض التفاصيل',
-      few: 'لم يُحمّل $count مزوّدي خدمة مسجّلي الدخول. عرض التفاصيل',
-      two: 'لم يُحمّل مزوّدا خدمة مسجّلان الدخول. عرض التفاصيل',
-      one: 'لم يُحمّل مزوّد خدمة واحد مسجّل الدخول. عرض التفاصيل',
-      zero: 'لا يوجد مزوّد خدمة مسجّل الدخول بانتظار التحميل. عرض التفاصيل',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get modelChoiceReloadProviders => 'إعادة تحميل مزوّدي الخدمة';
-
-  @override
-  String get modelChoiceStagedAgentHint => 'يُطبّق مع اختيارك للنموذج';
-
-  @override
-  String get modelChoiceAgentTitle => 'اختيار وكيل';
 
   @override
   String get modelChoiceDone => 'تم';
@@ -6163,9 +6029,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SettingsUi88 => 'تشخيص التطبيق';
-
-  @override
-  String get e7SettingsUi91 => 'اتصل بحاسوب أو شغّل OpenCode على هذا الهاتف';
 
   @override
   String get e7SettingsUi92 => 'الخصوصية واستخدام البيانات';
@@ -11723,9 +11586,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ModelUiAgent => 'الوكيل';
 
   @override
-  String get e7ModelUiNoAgents => 'لا توجد وكلاء متاحة';
-
-  @override
   String get e7ModelUiServerDefault => 'إعداد الخادم الافتراضي';
 
   @override
@@ -15726,9 +15586,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get capabilityScreenTitle => 'المتاح على هذا الخادم';
 
   @override
-  String get capabilityScreenSubtitle => 'ما يستطيعه هذا الخادم وما لا يستطيعه';
-
-  @override
   String get capabilityScreenAliases =>
       'available supported missing feature capabilities المتاح مدعوم غير متاح ميزة مفقودة مخفية لماذا إمكانات الخادم';
 
@@ -17642,9 +17499,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiteamComponentStart => 'بدء الفريق الذكي';
-
-  @override
-  String get aiteamComponentStop => 'إيقاف الفريق الذكي';
 
   @override
   String aiteamComponentFailed(String reason) {
@@ -21802,17 +21656,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'This phone forgets the server: its password, chosen model and agent, project and widget conversations.';
 
   @override
-  String serversRemoveQueued(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count queued prompts will be deleted',
-      one: '1 queued prompt will be deleted',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String serversRemoveDrafts(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -22395,41 +22238,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.';
 
   @override
-  String get modelPickerYourChoice => 'Your choice';
-
-  @override
-  String get modelPickerNoneChosen => 'No model chosen';
-
-  @override
-  String get modelPickerNoneChosenHint => 'Pick one from the list below.';
-
-  @override
   String get modelPickerChooseFirst => 'Choose a model first.';
 
   @override
   String get modelPickerThinking => 'Thinking';
 
   @override
-  String get modelPickerThinkingExplain =>
-      'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.';
-
-  @override
-  String get modelPickerThinkingOneLevel => 'This model has one thinking level';
-
-  @override
-  String get modelPickerAgentExplain =>
-      'The agent decides what the model may do, such as edit files or only read and plan.';
-
-  @override
   String get modelPickerAgentBuild => 'Edits files and runs commands';
 
   @override
   String get modelPickerAgentPlan => 'Reads and plans; does not change files';
-
-  @override
-  String modelPickerDetailsContext(String count) {
-    return '$count tokens of context';
-  }
 
   @override
   String modelPickerDetailsOutput(String count) {
@@ -22450,9 +22268,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get modelPickerCanReadAttachments =>
       'Reads images and files you attach';
-
-  @override
-  String get modelPickerModelId => 'Model id';
 
   @override
   String get modelPickerCopyId => 'Copy model id';
@@ -23618,9 +23433,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aboutReportBugOnGithub => 'Report a bug on GitHub';
-
-  @override
-  String get aboutDocuments => 'Documents';
 
   @override
   String get aboutAllLicences => 'All package licenses';
@@ -24831,9 +24643,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get composerToolsMore => 'More tools';
 
   @override
-  String get composerToolNotesTitle => 'Notes for this conversation';
-
-  @override
   String get composerReturnedToDraft => 'Returned to your draft';
 
   @override
@@ -24995,16 +24804,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get serverSettingsUpdateHint =>
       'Uses OpenCode\'s official installer; restart the server afterwards.';
-
-  @override
-  String get settingsHubThisPhone => 'This phone';
-
-  @override
-  String get settingsHubHelpRow => 'Help';
-
-  @override
-  String get settingsHubHelpSubtitle =>
-      'Guide, tips, shortcuts and diagnostics';
 
   @override
   String get settingsHubModelRow => 'Model';
@@ -25277,12 +25076,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String removeFromPhoneKeepBody(String size) {
-    return 'OpenCode and its tools are removed and $size comes back. Your projects stay on this phone and come back when you set up again.';
+    return 'OpenCode and its tools are removed and $size comes back.';
   }
 
   @override
   String get removeFromPhoneKeepBodyUnmeasured =>
-      'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.';
+      'OpenCode and its tools are removed.';
 
   @override
   String get removeFromPhoneKeepConfirm => 'Remove OpenCode, keep my projects';
@@ -26238,4 +26037,363 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginsTeamOpenPage => 'See the team’s tasks';
+
+  @override
+  String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
+
+  @override
+  String get chatErrorContextOverflow =>
+      'This conversation is too long for the model.';
+
+  @override
+  String get chatErrorProviderAuth =>
+      'The model provider needs you to sign in again.';
+
+  @override
+  String get chatErrorOutputLength =>
+      'The reply reached the model\'s length limit.';
+
+  @override
+  String get chatErrorContentFilter =>
+      'The provider\'s safety filter stopped this reply.';
+
+  @override
+  String get chatErrorUnknown => 'The agent stopped because of an error.';
+
+  @override
+  String modelPickerThinkingChip(String level) {
+    return 'Thinking: $level';
+  }
+
+  @override
+  String modelPickerAgentChip(String agent) {
+    return 'Agent: $agent';
+  }
+
+  @override
+  String serversRemoveQueuedKept(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count queued prompts move to Saved prompts',
+      one: '1 queued prompt moves to Saved prompts',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveQueuedUncertain(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count of them may already have been sent',
+      one: '1 of them may already have been sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveDeleteQueued(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove and delete $count queued prompts',
+      one: 'Remove and delete the queued prompt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveQueuedChanged(String name) {
+    return 'The queued prompts for $name changed, so nothing was removed. Remove it again to see the new count.';
+  }
+
+  @override
+  String serversRemoveQueuedNotKept(String name) {
+    return 'Could not move the queued prompts for $name to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.';
+  }
+
+  @override
+  String get settingsHubGroupAgent => 'Agent';
+
+  @override
+  String get settingsHubGroupConversations => 'Conversations';
+
+  @override
+  String get settingsHubGroupThisApp => 'This app';
+
+  @override
+  String get settingsHubProvidersRow => 'Providers and accounts';
+
+  @override
+  String get settingsHubToolsRow => 'Tools';
+
+  @override
+  String get settingsHubShowReasoning => 'Show reasoning';
+
+  @override
+  String get settingsHubShowTimestamps => 'Show timestamps and usage';
+
+  @override
+  String settingsHubUnavailableCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count settings aren\'t available on this server',
+      one: '1 setting isn\'t available on this server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHubUnavailableWhy => 'Why';
+
+  @override
+  String get toolsHubMcpSubtitle => 'Servers that give the agent more tools';
+
+  @override
+  String get toolsHubCatalogSubtitle =>
+      'Slash commands, skills, the model\'s tools and references';
+
+  @override
+  String get toolsHubPluginsSubtitle => 'Add-ons on the server and in this app';
+
+  @override
+  String get toolsHubExternalAgentsSubtitle =>
+      'Agents on other services you can hand work to';
+
+  @override
+  String get privacyPolicyTitle => 'Privacy policy';
+
+  @override
+  String get aboutHelpSection => 'Tips and shortcuts';
+
+  @override
+  String get settingsHubSearchToolsAliases =>
+      'tools mcp integrations commands skills references slash capabilities plugins external agents a2a';
+
+  @override
+  String get whileAwayActReconnected => 'Reconnected by itself';
+
+  @override
+  String get whileAwayActRestarted => 'Restarted by itself';
+
+  @override
+  String get whileAwayActHeatPaused => 'AI Team paused while the phone was hot';
+
+  @override
+  String get whileAwayActHeatStopped =>
+      'AI Team stopped while the phone was hot';
+
+  @override
+  String get whileAwayActHeatResumed => 'AI Team resumed once the phone cooled';
+
+  @override
+  String get whileAwayActUpdated => 'Update downloaded by itself';
+
+  @override
+  String get whileAwayActAllowed => 'Allowed a request by itself';
+
+  @override
+  String get whileAwayActQueuedSent => 'Sent your queued message by itself';
+
+  @override
+  String get whileAwayActOther => 'Done automatically';
+
+  @override
+  String whileAwayUndoFailed(String act) {
+    return '$act · Undo didn\'t go through';
+  }
+
+  @override
+  String get whileAwayDismiss => 'Dismiss';
+
+  @override
+  String get whileAwayHistoryUnreadable =>
+      'The list of what ran by itself couldn\'t be read, so earlier automatic actions aren\'t shown.';
+
+  @override
+  String get whileAwayHistoryUnsaved =>
+      'An automatic action couldn\'t be saved to this list. It happened, but it may not be listed.';
+
+  @override
+  String whileAwayActUndone(String act) {
+    return '$act · Undone';
+  }
+
+  @override
+  String whileAwayUndoUnconfirmed(String act) {
+    return '$act · Undo not confirmed';
+  }
+
+  @override
+  String whileAwayDismissed(String what) {
+    return 'Dismissed “$what”';
+  }
+
+  @override
+  String get whileAwayMark => 'Done by itself';
+
+  @override
+  String get aiteamComponentTurnOff => 'Turn off AI Team';
+
+  @override
+  String get aiteamComponentTurnOffTitle => 'Turn off AI Team?';
+
+  @override
+  String get aiteamComponentTurnOffBody =>
+      'The team stops and stays off until you turn it on again.';
+
+  @override
+  String get aiteamComponentTurnOffKept =>
+      'Its tasks and settings, and your projects, stay';
+
+  @override
+  String get aiteamComponentTurnOffFailed =>
+      'AI Team could not be turned off. Try again, or restart the app.';
+
+  @override
+  String thisPhoneRemoveTool(String tool) {
+    return 'Remove $tool';
+  }
+
+  @override
+  String thisPhoneRemoveToolTitle(String tool) {
+    return 'Remove $tool from this phone?';
+  }
+
+  @override
+  String thisPhoneRemoveToolBody(String size) {
+    return 'About $size comes back. You can add it again from Add tools.';
+  }
+
+  @override
+  String get thisPhoneRemoveToolBodyUnmeasured =>
+      'You can add it again from Add tools.';
+
+  @override
+  String thisPhoneRemoveToolNeededBy(String tools) {
+    return 'Needed by $tools';
+  }
+
+  @override
+  String get thisPhoneRemoveToolDetail =>
+      'Deletes it from this phone. Your projects stay.';
+
+  @override
+  String get thisPhoneRemovePythonDetail =>
+      'Deletes pip and venv. Python and your projects stay.';
+
+  @override
+  String get thisPhoneRemovePythonLost =>
+      'pip and venv are deleted, with the packages only they used';
+
+  @override
+  String get thisPhoneRemovePythonKept =>
+      'Python itself and your projects stay';
+
+  @override
+  String get thisPhoneRemoveTeamDetail =>
+      'Deletes the team\'s programs, tasks and settings. Projects stay.';
+
+  @override
+  String get thisPhoneRemoveTeamLost =>
+      'The team\'s programs, tasks and settings are deleted';
+
+  @override
+  String get thisPhoneRemoveTeamLostWork =>
+      'Team work not yet brought into your projects is lost';
+
+  @override
+  String get thisPhoneRemoveTeamKept =>
+      'Your project files and their git history stay';
+
+  @override
+  String get thisPhoneRemoveVoiceDetail =>
+      'Deletes the speech model. Voice typing stops until you add it again.';
+
+  @override
+  String get thisPhoneRemoveVoiceLost =>
+      'Voice typing stops until you add it again';
+
+  @override
+  String get thisPhoneRemoveToolKept => 'Your projects stay';
+
+  @override
+  String get removeFromPhoneKeepLost =>
+      'Conversations and settings inside OpenCode are deleted';
+
+  @override
+  String get removeFromPhoneKeepKept =>
+      'Your projects stay and come back when you set up again';
+
+  @override
+  String removeFromPhoneKeepKeptSize(String size) {
+    return 'Your projects ($size) stay and come back when you set up again';
+  }
+
+  @override
+  String get removeFromPhoneDeleteLost =>
+      'Project files not saved anywhere else are lost for good';
+
+  @override
+  String get productErrorTimedOut =>
+      'The server took too long to answer. Try again.';
+
+  @override
+  String get productErrorCertificate =>
+      'The server\'s security certificate isn\'t trusted, so the app stopped. Check the server address.';
+
+  @override
+  String get productErrorSignIn =>
+      'The server didn\'t accept the sign-in. Check the password in the server\'s settings.';
+
+  @override
+  String get productErrorNotFound =>
+      'The server couldn\'t find it. It may have been moved or deleted.';
+
+  @override
+  String get productErrorConflict =>
+      'It changed on the server in the meantime. Refresh, then try again.';
+
+  @override
+  String get productErrorBusy =>
+      'The server is busy. Wait a moment, then try again.';
+
+  @override
+  String get productErrorRejected =>
+      'The server didn\'t accept the request. Try again, or report the problem.';
+
+  @override
+  String get productErrorUnexpected =>
+      'The server\'s answer didn\'t make sense to the app. Try again, or report the problem.';
+
+  @override
+  String get productErrorDevice =>
+      'Something on this device didn\'t work. Try again.';
+
+  @override
+  String get productErrorStorage =>
+      'The app couldn\'t read or save a file on this device.';
+
+  @override
+  String get productErrorTermux =>
+      'Termux didn\'t finish that. Check that Termux is installed and open, then try again.';
+
+  @override
+  String get productErrorDetailsLabel => 'Error details';
+
+  @override
+  String productErrorRejectedBecause(String reason) {
+    return 'The server didn\'t accept it: $reason';
+  }
+
+  @override
+  String productErrorServer(int code) {
+    return 'The server had a problem (error $code). Try again in a moment.';
+  }
+
+  @override
+  String get teamPhoneStartAgainFailed =>
+      'The team didn’t start. Try again, or open its controls from the page’s menu.';
 }

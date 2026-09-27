@@ -1101,7 +1101,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
     await tester.pumpAndSettle();
-    expect(find.text('Older request failed'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('Older request failed'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('message-newest')), findsOneWidget);
     fail = false;
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
@@ -2045,7 +2053,15 @@ void main() {
     }
 
     expect(api.abortCalls, 1);
-    expect(find.text('server refused to stop'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('server refused to stop'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
   });
 
   test(
@@ -4677,12 +4693,9 @@ void main() {
     );
     await _pumpEvent(tester);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
-    expect(
-      find.text(
-        'Model not found: openai/gpt-5.6. Did you mean: gpt-5.6, gpt-5.6-pro?',
-      ),
-      findsOneWidget,
-    );
+    // Words on the line; the server's text only under Details.
+    expect(find.text("The server doesn't have this model."), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsNothing);
     expect(find.textContaining('at <anonymous>'), findsNothing);
     expect(
       find.byKey(const ValueKey('prompt-error-choose-model')),
@@ -4696,6 +4709,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('at <anonymous>'), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsOneWidget);
   });
 
   testWidgets('renders attachment-only and mixed user prompts accessibly', (

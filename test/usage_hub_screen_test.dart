@@ -247,9 +247,9 @@ void main() {
       final row = _key('settings-category-usage');
       expect(row, findsOneWidget);
       expect(_key('settings-category-quota'), findsNothing);
-      // One Usage row, inside "This phone".
+      // One Usage row, inside "This app".
       expect(
-        find.descendant(of: _key('settings-group-this-phone'), matching: row),
+        find.descendant(of: _key('settings-group-this-app'), matching: row),
         findsOneWidget,
       );
       expect(

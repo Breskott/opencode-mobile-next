@@ -11,7 +11,7 @@ import '../../state/shell_output.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart' show productErrorDetails;
 import '../widgets/running_agents_strip.dart';
 
 AppLocalizations _strings(BuildContext context) =>
@@ -505,7 +505,7 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
           KitNotice.error(
             message: l10n.runningWorkAgentsFailed,
             error: error,
-            details: productErrorText(error),
+            details: productErrorDetails(error),
             retry: KitAction(label: l10n.workRetry, onPressed: _refresh),
           ),
         );
@@ -515,7 +515,7 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
           KitNotice.error(
             message: l10n.runningWorkCommandsFailed,
             error: error,
-            details: productErrorText(error),
+            details: productErrorDetails(error),
             retry: KitAction(label: l10n.workRetry, onPressed: _refresh),
           ),
         );
@@ -878,7 +878,7 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
         KitNotice.error(
           message: l10n.shellOutputReadFailed,
           error: error,
-          details: productErrorText(error),
+          details: productErrorDetails(error),
           retry: KitAction(
             label: l10n.workRetry,
             onPressed: () => _refresh(reconcile: true),
@@ -889,7 +889,7 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
           key: const Key('shell-output-limit-failed'),
           message: l10n.shellOutputLimitFailed,
           error: error,
-          details: productErrorText(error),
+          details: productErrorDetails(error),
           retry: KitAction(
             label: l10n.workRetry,
             onPressed: _canMutate ? () => _applyLimit(_failedLimit!) : null,

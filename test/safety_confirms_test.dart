@@ -194,6 +194,9 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
+      // Wholly in view, whatever the length of the words above it.
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
       await tester.tap(button);
       await tester.pumpAndSettle();
     }

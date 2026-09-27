@@ -494,24 +494,8 @@
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "ExpansionTile: expands the Context capsule / Add web source / Voice conversation rows.",
+          "effect": "ExpansionTile: expands the Add web source / Voice conversation rows.",
           "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "prompt-tools-sheet-context-capsule",
-          "type": "list-tile",
-          "label": "Notes for this conversation",
-          "key": null,
-          "line": 939,
-          "action": "navigate",
-          "target": "context-capsule",
-          "targetWidget": "ContextCapsuleScreen",
-          "effect": "Pops _PromptTool.contextCapsule; onContextCapsule -> ChatScreen._addContextCapsule() (chat_screen.dart:2920) pushes ContextCapsuleScreen and appends the result to the draft.",
-          "gates": [
-            "inside Advanced",
-            "disabled when voiceBlocked (busy || sending)"
-          ],
           "destructive": false
         },
         {

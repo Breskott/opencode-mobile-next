@@ -15,6 +15,7 @@ import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../kit/terminal_key_bar.dart';
+import '../widgets/product_states.dart' show productErrorDetails;
 import 'phone_setup/phone_setup_routes.dart';
 
 /// Test seam for leaving to phone setup.
@@ -85,7 +86,9 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
     try {
       status = await _linux.status();
     } catch (error) {
-      if (mounted) setState(() => _statusFailure = '$error');
+      if (mounted) {
+        setState(() => _statusFailure = productErrorDetails(error) ?? '');
+      }
       return;
     }
     if (!mounted) return;
@@ -307,7 +310,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
           label: l10n.localTerminalTryAgain,
           onPressed: () => unawaited(_open()),
         ),
-        details: _statusFailure,
+        details: _statusFailure!.isEmpty ? null : _statusFailure,
       );
     }
     if (status == null) return const SizedBox.shrink();

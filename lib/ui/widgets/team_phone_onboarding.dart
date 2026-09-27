@@ -730,10 +730,10 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
       } else {
         setState(() => _error = teamPhoneFailureText(l10n, status));
       }
-    } on TermuxBridgeException catch (error) {
-      if (mounted) {
-        setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
-      }
+    } on TermuxBridgeException {
+      // Termux's own words stay out of the copy: what failed, and the way
+      // forward (the button stays for another try).
+      if (mounted) setState(() => _error = l10n.teamPhoneStartAgainFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

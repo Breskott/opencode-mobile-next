@@ -273,7 +273,12 @@ void main() {
         find.byKey(const Key('error-card-context-overflow')),
         findsOneWidget,
       );
-      expect(find.text('Context window exceeded'), findsOneWidget);
+      // Words, not the server's text (that is under Error details).
+      expect(
+        find.text('This conversation is too long for the model.'),
+        findsOneWidget,
+      );
+      expect(find.text('Context window exceeded'), findsNothing);
       await tester.tap(find.byKey(const Key('error-action-compact')));
       await tester.pump();
       // No model is selected in this harness, so the existing compaction
@@ -367,17 +372,14 @@ void main() {
         find.byKey(const Key('error-card-model-not-found')),
         findsOneWidget,
       );
-      expect(
-        find.text(
-          'Model not found: openai/gpt-5.6-sol. Did you mean: gpt-5.6-sol, '
-          'gpt-5.6-sol-pro?',
-        ),
-        findsOneWidget,
-      );
+      // One line in words; the server's text only under Details.
+      expect(find.text("The server doesn't have this model."), findsOneWidget);
+      expect(find.textContaining('Did you mean'), findsNothing);
       expect(find.textContaining('at <anonymous>'), findsNothing);
       await tester.tap(find.byKey(const Key('error-action-details')));
       await tester.pumpAndSettle();
       expect(find.textContaining('at <anonymous>'), findsOneWidget);
+      expect(find.textContaining('Did you mean'), findsOneWidget);
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(
@@ -412,7 +414,13 @@ void main() {
           ];
         await _pumpChat(tester, api);
         await tester.pumpAndSettle();
-        expect(find.text('Something odd'), findsOneWidget);
+        // An error the app does not know reads in plain words; the
+        // server's text is under Error details.
+        expect(
+          find.text('The agent stopped because of an error.'),
+          findsOneWidget,
+        );
+        expect(find.text('Something odd'), findsNothing);
         expect(find.byKey(const Key('message-length-footer')), findsOneWidget);
         expect(
           find.text('Answer was cut off by the length limit'),

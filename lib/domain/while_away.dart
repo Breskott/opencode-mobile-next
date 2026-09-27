@@ -6,6 +6,7 @@ enum AutomaticActKind {
   reconnect,
   restart,
   heatPause,
+  heatStop,
   heatResume,
   update,
   permissionApproval,

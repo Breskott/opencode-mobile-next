@@ -252,6 +252,7 @@ class ThermalGuard extends ChangeNotifier {
     AppLocalizations Function()? strings,
     this.diagnostics,
     this.onReading,
+    this.onAct,
   }) : policy = policy ?? ThermalPolicy(),
        _clock = clock ?? DateTime.now,
        _inBackground = inBackground ?? _appInBackground,
@@ -269,6 +270,17 @@ class ThermalGuard extends ChangeNotifier {
   /// Sees every reading the guard acts on, e.g. the persisted problem
   /// report's thermal history. Reuses the guard's one native listener.
   final void Function(ThermalReading reading)? onReading;
+
+  /// Told once per team after the guard CONFIRMED a pause, a stop or a
+  /// resume ([kind]), with the episode's start ([since]) and the act's time:
+  /// the app files it in that server's While you were away (P6.2).
+  final void Function(
+    ThermalNoticeKind kind,
+    ThermalTeam team,
+    DateTime since,
+    DateTime at,
+  )?
+  onAct;
   final DateTime Function() _clock;
   final bool Function() _inBackground;
   final AppLocalizations Function() _strings;
@@ -357,11 +369,15 @@ class ThermalGuard extends ChangeNotifier {
 
   Future<void> _pause(DateTime now, {required bool alsoStop}) async {
     final escalating = policy.hold == ThermalHold.paused;
+    final paused = <ThermalTeamHold>[];
     if (!escalating) {
       for (final team in await port.runningHere()) {
         if (_holds.containsKey(team.id)) continue;
         final held = await port.pause(team, now: now);
-        if (held != null) _holds[team.id] = held.copyWith(status: _last.status);
+        if (held != null) {
+          _holds[team.id] = held.copyWith(status: _last.status);
+          paused.add(held);
+        }
       }
       if (_holds.isEmpty) return; // no team working on this phone
     }
@@ -397,6 +413,12 @@ class ThermalGuard extends ChangeNotifier {
     final kind = alsoStop
         ? ThermalNoticeKind.stopped
         : ThermalNoticeKind.paused;
+    final act = onAct;
+    if (act != null) {
+      for (final held in alsoStop ? _holds.values : paused) {
+        act(kind, held.team, held.since, now);
+      }
+    }
     _notice = ThermalNotice(kind, now);
     _notify();
     // Once per episode: the pause, or a stop that came without one. A
@@ -415,6 +437,12 @@ class ThermalGuard extends ChangeNotifier {
       if (await port.resume(entry.value)) {
         _holds.remove(entry.key);
         await _dropHold(entry.key);
+        onAct?.call(
+          ThermalNoticeKind.resumed,
+          entry.value.team,
+          entry.value.since,
+          now,
+        );
       } else {
         allBack = false;
       }

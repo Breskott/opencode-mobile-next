@@ -26,6 +26,7 @@ import '../../termux/bridge.dart';
 import '../../termux/local_agent_runtime.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import 'product_states.dart' show productErrorText;
 import 'safety_confirms.dart';
 import 'setup_terminal.dart';
 
@@ -168,7 +169,11 @@ String localAgentFailureText(
     case LocalAgentFailureKind.bridge:
     case LocalAgentFailureKind.notInstalled:
     case LocalAgentFailureKind.other:
-      return l10n.localAgentFailedReason(message);
+      // The script's own sentence when it is one; its output or a native
+      // message is said in words (the raw text is for Details only).
+      return l10n.localAgentFailedReason(
+        productErrorText(LocalAgentFailure(kind, message), l10n: l10n),
+      );
   }
 }
 
@@ -542,7 +547,7 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     try {
       opened = await _runtime.openSignIn();
     } on LocalAgentFailure catch (failure) {
-      problem = failure.message;
+      problem = productErrorText(failure, l10n: l10n);
     }
     if (!mounted) return;
     setState(() {
@@ -611,13 +616,17 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       }
       setState(() {
         _connecting = false;
-        _notice = l10n.localAgentConnectFailed(connection.lastError ?? '');
+        _notice = l10n.localAgentConnectFailed(
+          productErrorText(connection.lastError ?? '', l10n: l10n),
+        );
       });
     } on LocalAgentFailure catch (failure) {
       if (!mounted) return;
       setState(() {
         _connecting = false;
-        _notice = l10n.localAgentConnectFailed(failure.message);
+        _notice = l10n.localAgentConnectFailed(
+          productErrorText(failure, l10n: l10n),
+        );
       });
     }
   }
@@ -1288,7 +1297,7 @@ class _LocalAgentProjectSheetState extends State<LocalAgentProjectSheet> {
       if (mounted) {
         setState(() {
           _working = false;
-          _problem = failure.message;
+          _problem = productErrorText(failure, l10n: _copy(context));
         });
       }
     }

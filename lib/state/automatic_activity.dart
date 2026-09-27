@@ -35,6 +35,63 @@ class AutomaticActivityController extends ChangeNotifier {
 
   static const maxEntries = 200;
   static const _maxBlobLength = 512000;
+
+  static final _shared =
+      Map<
+        SharedPreferences,
+        Map<String, AutomaticActivityController>
+      >.identity();
+
+  /// The one shared history of [profileId] on [preferences], so every
+  /// connection (the app's and an isolated task's) and the Inbox read and
+  /// write the same instance: never a second writer for one key. Null for
+  /// an ID that is not an opaque app-authored profile ID.
+  static AutomaticActivityController? forProfile(
+    SharedPreferences preferences,
+    String profileId, {
+    required bool Function() isProfilePresent,
+  }) {
+    final byProfile = _shared[preferences] ??= {};
+    final existing = byProfile[profileId];
+    if (existing != null) return existing;
+    try {
+      return byProfile[profileId] = AutomaticActivityController(
+        preferences: preferences,
+        profileId: profileId,
+        isProfilePresent: isProfilePresent,
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  /// Closes the shared history of [profileId], drains its writes and
+  /// removes its key, BEFORE the profile deletion sweep. False when the
+  /// platform refused the removal (the sweep then tries the key again).
+  static Future<bool> closeProfile(
+    SharedPreferences preferences,
+    String profileId,
+  ) async {
+    final controller = _shared[preferences]?.remove(profileId);
+    if (controller == null) return true;
+    try {
+      return await controller.deleteProfileData();
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  /// Forgets every shared history; tests only.
+  @visibleForTesting
+  static void resetShared() {
+    for (final byProfile in _shared.values) {
+      for (final controller in byProfile.values) {
+        controller.dispose();
+      }
+    }
+    _shared.clear();
+  }
+
   final SharedPreferences preferences;
   final String profileId;
   final bool Function() isProfilePresent;

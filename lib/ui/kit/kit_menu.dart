@@ -36,6 +36,7 @@ class KitMenuItem {
     this.group,
     this.disabledReason,
     this.shortcut,
+    this.supporting,
   }) : copyText = null,
        redact = true;
 
@@ -57,7 +58,8 @@ class KitMenuItem {
        destructive = false,
        enabled = true,
        checked = null,
-       disabledReason = null;
+       disabledReason = null,
+       supporting = null;
 
   /// A verb that names what happens: "Archive conversation".
   final String label;
@@ -92,6 +94,12 @@ class KitMenuItem {
 
   /// "Ctrl+Shift+C", shown at the end on a fine pointer (display only).
   final String? shortcut;
+
+  /// One muted line under the label that says what choosing it means
+  /// ("Edits files and runs commands"), for a menu of choices whose names
+  /// alone do not say it. A disabled item shows its [disabledReason] there
+  /// instead.
+  final String? supporting;
 
   /// Set only by [KitMenuItem.copy].
   final String Function()? copyText;
@@ -590,11 +598,12 @@ class _KitMenuItemTile extends StatelessWidget {
                   role: KitTextRole.rowTitle,
                   tone: labelTone,
                 ),
-                if (!enabled && item.disabledReason != null)
+                if ((!enabled ? item.disabledReason : item.supporting)
+                    case final line?)
                   Padding(
                     padding: EdgeInsetsDirectional.only(top: tokens.space1),
                     child: KitText(
-                      item.disabledReason!,
+                      line,
                       role: KitTextRole.secondary,
                       tone: KitTextTone.secondary,
                     ),

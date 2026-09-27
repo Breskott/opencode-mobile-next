@@ -22,6 +22,7 @@ import '../../termux/bridge.dart';
 import '../../termux/storage.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import 'termux_processes_screen.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -133,7 +134,7 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.message;
+        _error = productErrorText(error);
         _loading = false;
       });
     }
@@ -166,7 +167,7 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
       });
       _schedulePoll();
     } on TermuxBridgeException catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) setState(() => _error = productErrorText(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -177,7 +178,7 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
     try {
       await TermuxStorage.cancelScan();
     } on TermuxBridgeException catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) setState(() => _error = productErrorText(error));
     }
     if (mounted) await _refresh();
   }

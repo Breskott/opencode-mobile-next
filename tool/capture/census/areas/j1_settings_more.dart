@@ -32,8 +32,8 @@ import '../census_core.dart';
 /// About reads PRIVACY.md and THIRD_PARTY_NOTICES.md from the asset bundle,
 /// which is real file IO: load them outside the fake clock first so the
 /// screen's own loads resolve from the bundle's cache.
-Future<void> _pumpAbout(CensusKit kit, {int tab = 0}) async {
-  const documents = ['PRIVACY.md', 'THIRD_PARTY_NOTICES.md'];
+Future<void> _pumpAbout(CensusKit kit) async {
+  const documents = ['THIRD_PARTY_NOTICES.md'];
   // An earlier shot may have left a load pending in the bundle's cache (one
   // started on the fake clock never finishes): drop it and load afresh.
   for (final key in documents) {
@@ -45,7 +45,7 @@ Future<void> _pumpAbout(CensusKit kit, {int tab = 0}) async {
     ]).timeout(const Duration(seconds: 20)),
   );
   await kit.pumpApp(
-    AboutScreen(initialTab: tab),
+    const AboutScreen(),
     controller: await kit.connected(),
   );
   await kit.realWait();
@@ -269,17 +269,6 @@ final j1SettingsMoreArea = CensusArea(
       },
       note: 'The same hub embedded as tab 3 of HomeScreen (bottom nav shown).',
     ),
-    CensusShot('settings-transcript-display-sheet', (kit) async {
-      final done = await mountSettingsScene(
-        kit.tester,
-        SettingsScene.hub,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      await kit.tapKey('settings-transcript-display');
-      kit.expectText('Transcript display');
-    }),
     CensusShot('settings-disconnect-sheet', (kit) async {
       final done = await mountSettingsScene(
         kit.tester,
@@ -420,16 +409,16 @@ final j1SettingsMoreArea = CensusArea(
     // ---- About -------------------------------------------------------------
     CensusShot('about', (kit) async {
       await _pumpAbout(kit);
-      kit.expectTextContaining('Privacy');
-    }, note: 'top of the screen: build identity, then the Privacy document'),
-    CensusShot('about-privacy-tab', (kit) async {
-      await _pumpAbout(kit);
-      await kit.tester.drag(find.text('Privacy Policy'), const Offset(0, -800));
-      await kit.settle();
-    }, note: 'the Privacy tab scrolled into the document'),
+      kit.expectTextContaining('Open source');
+    }, note: 'top of the screen: build identity, then Open source'),
     CensusShot('about-open-source-tab', (kit) async {
-      await _pumpAbout(kit, tab: 1);
-    }),
+      await _pumpAbout(kit);
+      await kit.tester.drag(
+        find.byKey(const ValueKey('about-page')),
+        const Offset(0, -600),
+      );
+      await kit.settle();
+    }, note: "About's Open source section (no tabs since slice-P3.10)"),
 
     // ---- Guide, diagnostics, misc -------------------------------------------
     CensusShot('guide', (kit) async {

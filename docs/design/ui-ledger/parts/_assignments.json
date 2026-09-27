@@ -160,6 +160,7 @@
   "j1-settings-more": [
     "lib/ui/screens/library_screen.dart",
     "lib/ui/screens/settings_screen.dart",
+    "lib/ui/screens/tools_hub_screen.dart",
     "lib/ui/screens/settings/notifications_settings_screen.dart",
     "lib/ui/screens/settings/default_shell_row.dart",
     "lib/ui/screens/settings/personal_settings_screens.dart",
@@ -197,7 +198,6 @@
     "lib/ui/screens/session_export_screen.dart",
     "lib/ui/screens/session_import_screen.dart",
     "lib/ui/screens/session_note_screen.dart",
-    "lib/ui/screens/context_capsule_screen.dart",
     "lib/ui/screens/active_context_screen.dart",
     "lib/ui/screens/run_result_screen.dart",
     "lib/ui/widgets/run_result_view.dart",

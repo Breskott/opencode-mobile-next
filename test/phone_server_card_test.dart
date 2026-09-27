@@ -20,6 +20,7 @@ import 'package:opencode_mobile/ui/screens/local_terminal_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
+import 'package:opencode_mobile/state/queued_prompt_removal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_local_terminal.dart';
@@ -69,8 +70,10 @@ class _Connection extends ConnectionController {
 
   @override
   Future<DeleteProfileResult> deleteProfileAndLocalData(
-    String profileId,
-  ) async {
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) async {
     deleted.add(profileId);
     final store = this.store as _Store;
     store.saved.removeWhere((profile) => profile.id == profileId);
@@ -535,9 +538,17 @@ void main() {
       // What survives is said first: the default keeps the projects.
       expect(
         find.text(
-          'OpenCode and its tools are removed and 700.0 MB comes back. Your '
-          'projects stay on this phone and come back when you set up again.',
+          'OpenCode and its tools are removed and 700.0 MB comes back.',
         ),
+        findsOneWidget,
+      );
+      // What goes and what stays, line by line, with the projects' size.
+      expect(
+        find.text('Conversations and settings inside OpenCode are deleted'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phone-server-remove-kept')),
         findsOneWidget,
       );
       expect(

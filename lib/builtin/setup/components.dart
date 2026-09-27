@@ -78,6 +78,7 @@ List<SetupComponent> setupComponents(
       installScript: SetupScripts.pythonInstall,
       removeScript: SetupScripts.pythonRemove,
       presenceScript: SetupScripts.pythonPresence,
+      sizeScript: SetupScripts.pythonSize,
     ),
     SetupComponent(
       id: SetupComponentIds.node,
@@ -135,6 +136,7 @@ List<SetupComponent> setupComponents(
         preparing: l10n.aiteamComponentStagePreparing,
       ),
       removeScript: AiTeamScripts.removeScript,
+      sizeScript: AiTeamScripts.sizeScript,
       presenceScript:
           '[ -e /opt/aiteam ] || [ -L /opt/aiteam ] || '
           '[ -e /root/aiteam ] || [ -e /root/.gc ] || '
@@ -233,6 +235,14 @@ oc_version "\$(python3 --version | cut -d ' ' -f 2)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get remove -y python3-venv python3-pip
 apt-get autoremove -y
+''';
+
+  /// What [pythonRemove] would delete, in kilobytes: the packages apt
+  /// plans to remove with it (a dry run), by their installed size.
+  static const pythonSize = r'''set -eu
+packages=$(apt-get -s --auto-remove remove python3-venv python3-pip 2>/dev/null | awk '/^Remv /{print $2}')
+[ -n "$packages" ] || { echo 0; exit 0; }
+dpkg-query -W -f='${Installed-Size}\n' $packages 2>/dev/null | awk '{s+=$1} END {print s+0}'
 ''';
 
   // Python itself belongs to Ubuntu and survives pythonRemove. Inventory

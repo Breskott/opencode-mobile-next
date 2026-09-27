@@ -464,12 +464,6 @@ abstract class AppLocalizations {
   /// **'Thinking mode'**
   String get modelThinkingMode;
 
-  /// No description provided for @modelDefaultMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Default mode'**
-  String get modelDefaultMode;
-
   /// No description provided for @modelSessionScopeNote.
   ///
   /// In en, this message translates to:
@@ -6151,59 +6145,11 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get isolatedTaskClose;
 
-  /// No description provided for @returnBriefTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Unreviewed work'**
-  String get returnBriefTitle;
-
-  /// No description provided for @returnBriefDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'For this project on this device. Dismissing keeps conversations unread and requests pending.'**
-  String get returnBriefDescription;
-
-  /// No description provided for @returnBriefUntitled.
-  ///
-  /// In en, this message translates to:
-  /// **'Untitled conversation'**
-  String get returnBriefUntitled;
-
-  /// No description provided for @returnBriefStale.
-  ///
-  /// In en, this message translates to:
-  /// **'Last observed state. Reconnect or refresh to check current work and requests.'**
-  String get returnBriefStale;
-
   /// No description provided for @returnBriefStatusUnknown.
   ///
   /// In en, this message translates to:
   /// **'Review status unknown'**
   String get returnBriefStatusUnknown;
-
-  /// No description provided for @returnBriefUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'This server does not report read state. Unreviewed results are unknown.'**
-  String get returnBriefUnknown;
-
-  /// No description provided for @returnBriefPartial.
-  ///
-  /// In en, this message translates to:
-  /// **'Loaded conversations only. The conversation list is still incomplete.'**
-  String get returnBriefPartial;
-
-  /// No description provided for @returnBriefAnswer.
-  ///
-  /// In en, this message translates to:
-  /// **'Answer'**
-  String get returnBriefAnswer;
-
-  /// No description provided for @returnBriefUnreviewed.
-  ///
-  /// In en, this message translates to:
-  /// **'Unreviewed conversation. Open results to check the outcome.'**
-  String get returnBriefUnreviewed;
 
   /// No description provided for @returnBriefReview.
   ///
@@ -6217,149 +6163,17 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get returnBriefContinue;
 
-  /// No description provided for @returnBriefMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.'**
-  String returnBriefMore(int count);
-
-  /// No description provided for @returnBriefSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismissal was not saved. These items are still unreviewed. Try again.'**
-  String get returnBriefSaveFailed;
-
-  /// No description provided for @returnBriefSaving.
-  ///
-  /// In en, this message translates to:
-  /// **'Saving dismissal...'**
-  String get returnBriefSaving;
-
-  /// No description provided for @returnBriefDismiss.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss shown items'**
-  String get returnBriefDismiss;
-
-  /// No description provided for @capsuleTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Context capsule'**
-  String get capsuleTitle;
-
-  /// No description provided for @capsuleEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Collect notes, errors and screenshots for this conversation'**
-  String get capsuleEntry;
-
-  /// No description provided for @capsuleDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.'**
-  String get capsuleDescription;
-
-  /// No description provided for @capsuleNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get capsuleNote;
-
   /// No description provided for @capsuleError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get capsuleError;
 
-  /// No description provided for @capsuleCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Code'**
-  String get capsuleCode;
-
-  /// No description provided for @capsuleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Label'**
-  String get capsuleLabel;
-
-  /// No description provided for @capsuleExcerpt.
-  ///
-  /// In en, this message translates to:
-  /// **'Excerpt'**
-  String get capsuleExcerpt;
-
-  /// No description provided for @capsulePaste.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste'**
-  String get capsulePaste;
-
   /// No description provided for @capsuleRemove.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get capsuleRemove;
-
-  /// No description provided for @capsuleAddImage.
-  ///
-  /// In en, this message translates to:
-  /// **'Add screenshot or image'**
-  String get capsuleAddImage;
-
-  /// No description provided for @capsulePreview.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to preview'**
-  String get capsulePreview;
-
-  /// No description provided for @capsuleApply.
-  ///
-  /// In en, this message translates to:
-  /// **'Apply to draft'**
-  String get capsuleApply;
-
-  /// No description provided for @capsuleApplied.
-  ///
-  /// In en, this message translates to:
-  /// **'Context added to your saved draft. Review it before sending.'**
-  String get capsuleApplied;
-
-  /// No description provided for @capsuleScopeChanged.
-  ///
-  /// In en, this message translates to:
-  /// **'The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.'**
-  String get capsuleScopeChanged;
-
-  /// No description provided for @capsuleTextOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'This server accepts text only. You can still collect notes, errors and code.'**
-  String get capsuleTextOnly;
-
-  /// No description provided for @capsuleImagesOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.'**
-  String get capsuleImagesOnly;
-
-  /// No description provided for @capsuleImageFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.'**
-  String get capsuleImageFailed;
-
-  /// No description provided for @capsulePasteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Clipboard text is unavailable. You can type or paste into the excerpt.'**
-  String get capsulePasteFailed;
-
-  /// No description provided for @capsuleTextLimit.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep each excerpt under 16,000 characters and the bundle under 32,000.'**
-  String get capsuleTextLimit;
 
   /// No description provided for @markdownCopyCode.
   ///
@@ -7969,35 +7783,11 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get reviewTitle;
 
-  /// No description provided for @modelChoiceProvidersTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Providers not loaded'**
-  String get modelChoiceProvidersTitle;
-
-  /// No description provided for @modelChoiceProvidersSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}'**
-  String modelChoiceProvidersSummary(int count);
-
   /// No description provided for @modelChoiceReloadProviders.
   ///
   /// In en, this message translates to:
   /// **'Reload providers'**
   String get modelChoiceReloadProviders;
-
-  /// No description provided for @modelChoiceStagedAgentHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Applied with your model choice'**
-  String get modelChoiceStagedAgentHint;
-
-  /// No description provided for @modelChoiceAgentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose an agent'**
-  String get modelChoiceAgentTitle;
 
   /// No description provided for @modelChoiceDone.
   ///
@@ -10290,12 +10080,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App diagnostics'**
   String get e7SettingsUi88;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect a computer or run OpenCode on this phone'**
-  String get e7SettingsUi91;
 
   /// Settings and appearance user interface.
   ///
@@ -18759,12 +18543,6 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get e7ModelUiAgent;
 
-  /// Shared voice or model selection UI: e7ModelUiNoAgents
-  ///
-  /// In en, this message translates to:
-  /// **'No agents available'**
-  String get e7ModelUiNoAgents;
-
   /// Shared voice or model selection UI: e7ModelUiServerDefault
   ///
   /// In en, this message translates to:
@@ -19463,7 +19241,7 @@ abstract class AppLocalizations {
   /// Voice/model presentation: e7ModelUiUnloadedProviders
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{OpenCode is signed in to {providers} but has not loaded it yet, so its models fail with “Model not found”. Reload to pick up the sign-in.} other{OpenCode is signed in to {providers} but has not loaded them yet, so their models fail with “Model not found”. Reload to pick up the sign-in.}}'**
+  /// **'{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}'**
   String e7ModelUiUnloadedProviders(int count, String providers);
 
   /// Fallback product error when a platform exception carries no message.
@@ -24416,7 +24194,7 @@ abstract class AppLocalizations {
   /// Settings hub row and screen title: read-state sync and unsent work held on this device.
   ///
   /// In en, this message translates to:
-  /// **'Privacy and local data'**
+  /// **'Privacy and data'**
   String get settingsHubPrivacyRow;
 
   /// Shown when the settings search has no matching rows.
@@ -25024,12 +24802,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available on this server'**
   String get capabilityScreenTitle;
-
-  /// No description provided for @capabilityScreenSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What this server can and cannot do'**
-  String get capabilityScreenSubtitle;
 
   /// No description provided for @capabilityScreenAliases.
   ///
@@ -28156,12 +27928,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start AI Team'**
   String get aiteamComponentStart;
-
-  /// Button that stops the in-app team
-  ///
-  /// In en, this message translates to:
-  /// **'Stop AI Team'**
-  String get aiteamComponentStop;
 
   /// A failed turn-on or start, with the reason
   ///
@@ -34175,12 +33941,6 @@ abstract class AppLocalizations {
   /// **'This phone forgets the server: its password, chosen model and agent, project and widget conversations.'**
   String get serversRemoveBody;
 
-  /// Servers › Remove server sheet: unsent queued prompts lost with the server.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 queued prompt will be deleted} other{{count} queued prompts will be deleted}}'**
-  String serversRemoveQueued(int count);
-
   /// Servers › Remove server sheet: unsent drafts lost with the server.
   ///
   /// In en, this message translates to:
@@ -35121,24 +34881,6 @@ abstract class AppLocalizations {
   /// **'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.'**
   String get handoffSheetPhoneServerNote;
 
-  /// Model picker: section label above the chosen model, thinking level and agent
-  ///
-  /// In en, this message translates to:
-  /// **'Your choice'**
-  String get modelPickerYourChoice;
-
-  /// Model picker: the choice row when no model is chosen
-  ///
-  /// In en, this message translates to:
-  /// **'No model chosen'**
-  String get modelPickerNoneChosen;
-
-  /// Model picker: supporting line when no model is chosen
-  ///
-  /// In en, this message translates to:
-  /// **'Pick one from the list below.'**
-  String get modelPickerNoneChosenHint;
-
   /// Model picker: why the apply action cannot run
   ///
   /// In en, this message translates to:
@@ -35151,24 +34893,6 @@ abstract class AppLocalizations {
   /// **'Thinking'**
   String get modelPickerThinking;
 
-  /// Model picker: what the thinking level means
-  ///
-  /// In en, this message translates to:
-  /// **'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.'**
-  String get modelPickerThinkingExplain;
-
-  /// Model picker: the model offers no thinking levels to choose from
-  ///
-  /// In en, this message translates to:
-  /// **'This model has one thinking level'**
-  String get modelPickerThinkingOneLevel;
-
-  /// Model picker: what the agent choice means
-  ///
-  /// In en, this message translates to:
-  /// **'The agent decides what the model may do, such as edit files or only read and plan.'**
-  String get modelPickerAgentExplain;
-
   /// Model picker: what the built-in build agent does
   ///
   /// In en, this message translates to:
@@ -35180,12 +34904,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reads and plans; does not change files'**
   String get modelPickerAgentPlan;
-
-  /// Model picker details: context window in words
-  ///
-  /// In en, this message translates to:
-  /// **'{count} tokens of context'**
-  String modelPickerDetailsContext(String count);
 
   /// Model picker details: output limit in words
   ///
@@ -35216,12 +34934,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reads images and files you attach'**
   String get modelPickerCanReadAttachments;
-
-  /// Model picker details: label of the provider/model id
-  ///
-  /// In en, this message translates to:
-  /// **'Model id'**
-  String get modelPickerModelId;
 
   /// Model picker: row menu item that copies the provider/model id
   ///
@@ -36956,12 +36668,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report a bug on GitHub'**
   String get aboutReportBugOnGithub;
-
-  /// screen-system-1: About: accessible name of the Privacy / Open source tab strip.
-  ///
-  /// In en, this message translates to:
-  /// **'Documents'**
-  String get aboutDocuments;
 
   /// screen-system-1: About › Open source: row that opens every bundled package license.
   ///
@@ -38829,12 +38535,6 @@ abstract class AppLocalizations {
   /// **'More tools'**
   String get composerToolsMore;
 
-  /// Composer + sheet: the context capsule, in plain words.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes for this conversation'**
-  String get composerToolNotesTitle;
-
   /// Undo bar after a waiting message was taken back into the draft.
   ///
   /// In en, this message translates to:
@@ -39092,24 +38792,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uses OpenCode\'s official installer; restart the server afterwards.'**
   String get serverSettingsUpdateHint;
-
-  /// Settings hub: the group of settings that belong to this phone and app.
-  ///
-  /// In en, this message translates to:
-  /// **'This phone'**
-  String get settingsHubThisPhone;
-
-  /// Settings hub: the row that opens help, tips, shortcuts and diagnostics.
-  ///
-  /// In en, this message translates to:
-  /// **'Help'**
-  String get settingsHubHelpRow;
-
-  /// Settings hub: what the Help page holds.
-  ///
-  /// In en, this message translates to:
-  /// **'Guide, tips, shortcuts and diagnostics'**
-  String get settingsHubHelpSubtitle;
 
   /// Settings hub: the default model row.
   ///
@@ -39534,13 +39216,13 @@ abstract class AppLocalizations {
   /// Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.'**
+  /// **'OpenCode and its tools are removed and {size} comes back.'**
   String removeFromPhoneKeepBody(String size);
 
   /// Remove from this phone: the default choice's body when the space could not be measured
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.'**
+  /// **'OpenCode and its tools are removed.'**
   String get removeFromPhoneKeepBodyUnmeasured;
 
   /// Remove from this phone: the default confirm button
@@ -40910,6 +40592,522 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'See the team’s tasks'**
   String get pluginsTeamOpenPage;
+
+  /// Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The server doesn\'t have this model.'**
+  String get chatErrorModelNotFound;
+
+  /// Chat: an agent error of the context-overflow kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is too long for the model.'**
+  String get chatErrorContextOverflow;
+
+  /// Chat: an agent error of the provider-sign-in kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The model provider needs you to sign in again.'**
+  String get chatErrorProviderAuth;
+
+  /// Chat: an agent error of the output-length kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The reply reached the model\'s length limit.'**
+  String get chatErrorOutputLength;
+
+  /// Chat: an agent error of the content-filter kind; the server's text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The provider\'s safety filter stopped this reply.'**
+  String get chatErrorContentFilter;
+
+  /// Chat: an agent or prompt error the app does not recognise; the server's text is under Details, never shown as the headline
+  ///
+  /// In en, this message translates to:
+  /// **'The agent stopped because of an error.'**
+  String get chatErrorUnknown;
+
+  /// Model picker footer: the chip that opens the thinking level menu, with the level chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking: {level}'**
+  String modelPickerThinkingChip(String level);
+
+  /// Model picker footer: the chip that opens the agent menu, with the agent chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Agent: {agent}'**
+  String modelPickerAgentChip(String agent);
+
+  /// Remove server / remove from this phone sheets: the server's unsent queued prompts are kept as drafts in Saved prompts, shown under every server, instead of being deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 queued prompt moves to Saved prompts} other{{count} queued prompts move to Saved prompts}}'**
+  String serversRemoveQueuedKept(int count);
+
+  /// Servers › Remove server sheet: queued prompts whose send started but was never confirmed; check before sending them again.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 of them may already have been sent} other{{count} of them may already have been sent}}'**
+  String serversRemoveQueuedUncertain(int count);
+
+  /// Servers › Remove server sheet: the other answer, which removes the server and deletes its queued prompts instead of keeping them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Remove and delete the queued prompt} other{Remove and delete {count} queued prompts}}'**
+  String serversRemoveDeleteQueued(int count);
+
+  /// Removing a server stopped because its queued prompts changed after the person confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'The queued prompts for {name} changed, so nothing was removed. Remove it again to see the new count.'**
+  String serversRemoveQueuedChanged(String name);
+
+  /// Removing a server stopped because its queued prompts could not be kept in Saved prompts (full or storage refused).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move the queued prompts for {name} to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.'**
+  String serversRemoveQueuedNotKept(String name);
+
+  /// Settings hub group label: the agent's model, providers, tools and AI Team.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get settingsHubGroupAgent;
+
+  /// Settings hub group label: how conversations run and show.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get settingsHubGroupConversations;
+
+  /// Settings hub group label: notifications, keep running, appearance, privacy and usage of this app.
+  ///
+  /// In en, this message translates to:
+  /// **'This app'**
+  String get settingsHubGroupThisApp;
+
+  /// Settings hub row: model providers and their keys, or the Codex account on Codex.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers and accounts'**
+  String get settingsHubProvidersRow;
+
+  /// Settings hub row: MCP servers, commands, skills, tools, plugins and external agents.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get settingsHubToolsRow;
+
+  /// Settings hub switch: open the model's reasoning under each answer in every conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reasoning'**
+  String get settingsHubShowReasoning;
+
+  /// Settings hub switch: show each message's time, tokens and cost in every conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show timestamps and usage'**
+  String get settingsHubShowTimestamps;
+
+  /// Muted line under a Settings hub group: how many of its rows the connected server cannot serve.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 setting isn\'t available on this server} other{{count} settings aren\'t available on this server}}'**
+  String settingsHubUnavailableCount(int count);
+
+  /// Action on the Settings hub's unavailable line: opens Available on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get settingsHubUnavailableWhy;
+
+  /// Tools page: the MCP row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers that give the agent more tools'**
+  String get toolsHubMcpSubtitle;
+
+  /// Tools page: the commands and tools row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Slash commands, skills, the model\'s tools and references'**
+  String get toolsHubCatalogSubtitle;
+
+  /// Tools page: the Plugins row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Add-ons on the server and in this app'**
+  String get toolsHubPluginsSubtitle;
+
+  /// Tools page: the External agents row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on other services you can hand work to'**
+  String get toolsHubExternalAgentsSubtitle;
+
+  /// Privacy and data: the row that opens the privacy policy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get privacyPolicyTitle;
+
+  /// About: label of the group with Show tips again and keyboard shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips and shortcuts'**
+  String get aboutHelpSection;
+
+  /// Search aliases for the Tools row; preserve English terms to allow either language.
+  ///
+  /// In en, this message translates to:
+  /// **'tools mcp integrations commands skills references slash capabilities plugins external agents a2a'**
+  String get settingsHubSearchToolsAliases;
+
+  /// Inbox, While you were away: what the app did to the server named in the row's title (the event stream found the server again by itself).
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnected by itself'**
+  String get whileAwayActReconnected;
+
+  /// Inbox, While you were away: the server named in the title was restarted automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Restarted by itself'**
+  String get whileAwayActRestarted;
+
+  /// Inbox, While you were away: the heat guard paused the AI Team on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team paused while the phone was hot'**
+  String get whileAwayActHeatPaused;
+
+  /// Inbox, While you were away: the heat guard stopped the AI Team on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team stopped while the phone was hot'**
+  String get whileAwayActHeatStopped;
+
+  /// Inbox, While you were away: the heat guard gave the AI Team back on the server named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team resumed once the phone cooled'**
+  String get whileAwayActHeatResumed;
+
+  /// Inbox, While you were away: an app update was downloaded automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Update downloaded by itself'**
+  String get whileAwayActUpdated;
+
+  /// Inbox, While you were away: a permission request in the conversation named in the title was allowed automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed a request by itself'**
+  String get whileAwayActAllowed;
+
+  /// Inbox, While you were away: a message queued while offline was sent to the conversation named in the title once the server was back.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent your queued message by itself'**
+  String get whileAwayActQueuedSent;
+
+  /// Inbox, While you were away: another automatic act on the thing named in the title.
+  ///
+  /// In en, this message translates to:
+  /// **'Done automatically'**
+  String get whileAwayActOther;
+
+  /// Inbox, While you were away: undoing the automatic act failed; the act stays as it was.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undo didn\'t go through'**
+  String whileAwayUndoFailed(String act);
+
+  /// Inbox, While you were away: swipe and menu action that removes one automatic act from the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get whileAwayDismiss;
+
+  /// Inbox, While you were away: the saved history of automatic acts was unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'The list of what ran by itself couldn\'t be read, so earlier automatic actions aren\'t shown.'**
+  String get whileAwayHistoryUnreadable;
+
+  /// Inbox, While you were away: the device refused to save an automatic act to the history.
+  ///
+  /// In en, this message translates to:
+  /// **'An automatic action couldn\'t be saved to this list. It happened, but it may not be listed.'**
+  String get whileAwayHistoryUnsaved;
+
+  /// Inbox, While you were away: an automatic act that was undone.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undone'**
+  String whileAwayActUndone(String act);
+
+  /// Inbox, While you were away: Undo was sent but the app could not confirm it.
+  ///
+  /// In en, this message translates to:
+  /// **'{act} · Undo not confirmed'**
+  String whileAwayUndoUnconfirmed(String act);
+
+  /// Inbox, While you were away: undo message after dismissing one automatic act, naming what it was done to.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed “{what}”'**
+  String whileAwayDismissed(String what);
+
+  /// Inbox, While you were away: what the done mark of an automatic act says to a screen reader.
+  ///
+  /// In en, this message translates to:
+  /// **'Done by itself'**
+  String get whileAwayMark;
+
+  /// In-app AI Team section: the quiet action that stops the team for good, until it is turned on again (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team'**
+  String get aiteamComponentTurnOff;
+
+  /// In-app AI Team section: the turn-off question's title
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team?'**
+  String get aiteamComponentTurnOffTitle;
+
+  /// In-app AI Team section: the turn-off question's body
+  ///
+  /// In en, this message translates to:
+  /// **'The team stops and stays off until you turn it on again.'**
+  String get aiteamComponentTurnOffBody;
+
+  /// In-app AI Team section: the turn-off question's line saying what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Its tasks and settings, and your projects, stay'**
+  String get aiteamComponentTurnOffKept;
+
+  /// In-app AI Team section: turning the team off failed; the technical text is folded under Details
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team could not be turned off. Try again, or restart the app.'**
+  String get aiteamComponentTurnOffFailed;
+
+  /// This phone: the destructive row, and its question's confirm button, that removes one installed tool, e.g. 'Remove Python'
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {tool}'**
+  String thisPhoneRemoveTool(String tool);
+
+  /// This phone: the title of the question before one tool is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {tool} from this phone?'**
+  String thisPhoneRemoveToolTitle(String tool);
+
+  /// This phone: the remove-a-tool question's body with the measured space it frees, e.g. '180.2 MB'. The title names the tool.
+  ///
+  /// In en, this message translates to:
+  /// **'About {size} comes back. You can add it again from Add tools.'**
+  String thisPhoneRemoveToolBody(String size);
+
+  /// This phone: the remove-a-tool question's body when the space could not be measured. The title names the tool.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add it again from Add tools.'**
+  String get thisPhoneRemoveToolBodyUnmeasured;
+
+  /// This phone: why a tool cannot be removed now: what still uses it, e.g. 'Needed by AI Team'
+  ///
+  /// In en, this message translates to:
+  /// **'Needed by {tools}'**
+  String thisPhoneRemoveToolNeededBy(String tools);
+
+  /// This phone: under 'Remove <tool>' for a tool with no line of its own: what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes it from this phone. Your projects stay.'**
+  String get thisPhoneRemoveToolDetail;
+
+  /// This phone: under 'Remove Python': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes pip and venv. Python and your projects stay.'**
+  String get thisPhoneRemovePythonDetail;
+
+  /// Remove Python question: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'pip and venv are deleted, with the packages only they used'**
+  String get thisPhoneRemovePythonLost;
+
+  /// Remove Python question: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Python itself and your projects stay'**
+  String get thisPhoneRemovePythonKept;
+
+  /// This phone: under 'Remove AI Team': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the team\'s programs, tasks and settings. Projects stay.'**
+  String get thisPhoneRemoveTeamDetail;
+
+  /// Remove AI Team question: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s programs, tasks and settings are deleted'**
+  String get thisPhoneRemoveTeamLost;
+
+  /// Remove AI Team question: the team's own copies of the projects on this phone go too
+  ///
+  /// In en, this message translates to:
+  /// **'Team work not yet brought into your projects is lost'**
+  String get thisPhoneRemoveTeamLostWork;
+
+  /// Remove AI Team question: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Your project files and their git history stay'**
+  String get thisPhoneRemoveTeamKept;
+
+  /// This phone: under 'Remove Voice typing': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the speech model. Voice typing stops until you add it again.'**
+  String get thisPhoneRemoveVoiceDetail;
+
+  /// Remove Voice typing question: what goes with the model
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing stops until you add it again'**
+  String get thisPhoneRemoveVoiceLost;
+
+  /// Remove a tool question: what stays, for a tool with no line of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects stay'**
+  String get thisPhoneRemoveToolKept;
+
+  /// Remove from this phone: the default choice's line saying what it deletes
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations and settings inside OpenCode are deleted'**
+  String get removeFromPhoneKeepLost;
+
+  /// Remove from this phone: the default choice's line saying what stays, before the projects were measured
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects stay and come back when you set up again'**
+  String get removeFromPhoneKeepKept;
+
+  /// Remove from this phone: the default choice's line saying what stays, with the projects' measured size, e.g. '1.2 GB'
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects ({size}) stay and come back when you set up again'**
+  String removeFromPhoneKeepKeptSize(String size);
+
+  /// Remove from this phone: the heavy delete's line naming the loss
+  ///
+  /// In en, this message translates to:
+  /// **'Project files not saved anywhere else are lost for good'**
+  String get removeFromPhoneDeleteLost;
+
+  /// Error words: a request timed out.
+  ///
+  /// In en, this message translates to:
+  /// **'The server took too long to answer. Try again.'**
+  String get productErrorTimedOut;
+
+  /// Error words: the TLS handshake or certificate check failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s security certificate isn\'t trusted, so the app stopped. Check the server address.'**
+  String get productErrorCertificate;
+
+  /// Error words: the server answered 401 or 403.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept the sign-in. Check the password in the server\'s settings.'**
+  String get productErrorSignIn;
+
+  /// Error words: the server answered 404.
+  ///
+  /// In en, this message translates to:
+  /// **'The server couldn\'t find it. It may have been moved or deleted.'**
+  String get productErrorNotFound;
+
+  /// Error words: the server answered 409 (conflict).
+  ///
+  /// In en, this message translates to:
+  /// **'It changed on the server in the meantime. Refresh, then try again.'**
+  String get productErrorConflict;
+
+  /// Error words: the server answered 429 (too many requests).
+  ///
+  /// In en, this message translates to:
+  /// **'The server is busy. Wait a moment, then try again.'**
+  String get productErrorBusy;
+
+  /// Error words: the server answered another 4xx status.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept the request. Try again, or report the problem.'**
+  String get productErrorRejected;
+
+  /// Error words: the server answered with something the app could not read.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s answer didn\'t make sense to the app. Try again, or report the problem.'**
+  String get productErrorUnexpected;
+
+  /// Error words: a native (platform) call on the phone failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something on this device didn\'t work. Try again.'**
+  String get productErrorDevice;
+
+  /// Error words: a local file read or write failed (storage unavailable, full, or denied).
+  ///
+  /// In en, this message translates to:
+  /// **'The app couldn\'t read or save a file on this device.'**
+  String get productErrorStorage;
+
+  /// Error words: a command the app sent to Termux failed (its output goes to details).
+  ///
+  /// In en, this message translates to:
+  /// **'Termux didn\'t finish that. Check that Termux is installed and open, then try again.'**
+  String get productErrorTermux;
+
+  /// Label of the folded technical text under an error alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details'**
+  String get productErrorDetailsLabel;
+
+  /// Error words: the server refused a request (400/422) and gave a short reason for people.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept it: {reason}'**
+  String productErrorRejectedBecause(String reason);
+
+  /// Error words: the server answered a 5xx status such as 502 or 503.
+  ///
+  /// In en, this message translates to:
+  /// **'The server had a problem (error {code}). Try again in a moment.'**
+  String productErrorServer(int code);
+
+  /// AI Team page: 'Start the team again' after Android stopped the phone's Termux team did not work; Termux's own error text is not shown.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn’t start. Try again, or open its controls from the page’s menu.'**
+  String get teamPhoneStartAgainFailed;
 }
 
 class _AppLocalizationsDelegate
