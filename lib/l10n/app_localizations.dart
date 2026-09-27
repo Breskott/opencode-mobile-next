@@ -41612,6 +41612,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review the staged revert before sending this queued prompt.'**
   String get productErrorStagedRevert;
+
+  /// No description provided for @bootstrapStartFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Start fresh'**
+  String get bootstrapStartFresh;
+
+  /// No description provided for @bootstrapStartFreshTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins?'**
+  String get bootstrapStartFreshTitle;
+
+  /// No description provided for @bootstrapStartFreshBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.'**
+  String get bootstrapStartFreshBody;
+
+  /// No description provided for @bootstrapStartFreshConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins'**
+  String get bootstrapStartFreshConfirm;
+
+  /// No description provided for @bootstrapResettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing saved sign-ins…'**
+  String get bootstrapResettingTitle;
+
+  /// No description provided for @bootstrapResettingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the app open while this finishes.'**
+  String get bootstrapResettingBody;
+
+  /// No description provided for @bootstrapResetFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in reset failed'**
+  String get bootstrapResetFailedTitle;
+
+  /// No description provided for @bootstrapResetFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some saved sign-ins could not be removed. Try again.'**
+  String get bootstrapResetFailedBody;
 }
 
 class _AppLocalizationsDelegate

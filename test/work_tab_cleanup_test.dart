@@ -17,9 +17,12 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -207,10 +210,30 @@ Future<void> _pumpShell(
   double scale = 1,
 }) async {
   _mockSecureStorage(tester);
+  final phone = TermuxBridge.managesServerUrl(controller.profile?.baseUrl);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
-      child: _app(const HomeScreen(initialTab: 0), scale: scale),
+      child: _app(
+        Builder(
+          builder: (context) => ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) => AppConditionsScope(
+              conditions: [
+                connectionKitStatus(
+                  context,
+                  controller,
+                  serverOnThisPhone: phone,
+                  onRestartServer: phone ? () async {} : null,
+                  actionContext: () => context,
+                ),
+              ],
+              child: const HomeScreen(initialTab: 0),
+            ),
+          ),
+        ),
+        scale: scale,
+      ),
     ),
   );
   await tester.pump();
@@ -332,8 +355,8 @@ void main() {
       await _dispose(tester, controller);
     });
 
-    testWidgets('a reconnect on the Work tab shows the one bar, not the '
-        'shell banner', (tester) async {
+    testWidgets('a reconnect on the Work tab shows one shared status line '
+        'and the loading bar', (tester) async {
       _viewport(tester);
       final controller = await _controller(
         status: StreamStatus.reconnecting,
@@ -342,7 +365,11 @@ void main() {
       await _pumpShell(tester, controller);
       expect(
         find.byKey(const ValueKey('connection-status-banner')),
-        findsNothing,
+        findsOneWidget,
+      );
+      expect(
+        find.text('Reconnecting to This device (Termux)…'),
+        findsOneWidget,
       );
       final work = find.byType(WorkspaceScreen);
       expect(
@@ -522,7 +549,7 @@ void main() {
   });
 
   group('item 10: a server that does not answer', () {
-    testWidgets('the Work tab says so after 8 s, with Try again and Restart', (
+    testWidgets('the Work tab says so after 8 s, with Reconnect and Restart', (
       tester,
     ) async {
       _viewport(tester);
@@ -540,13 +567,13 @@ void main() {
         find.text("OpenCode on this phone isn't answering"),
         findsOneWidget,
       );
-      // Restart is the way out the app cannot take alone; Try again is one
+      // Restart is the way out the app cannot take alone; Reconnect is one
       // tap further, in the line's menu.
       expect(find.text('Restart'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('kit-status-more')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Reconnect to This phone · Termux'), findsOneWidget);
       await tester.tapAt(const Offset(4, 4));
       await tester.pump(const Duration(milliseconds: 300));
       // Never a claim the app cannot back up.
@@ -555,7 +582,7 @@ void main() {
       controller
         ..status = StreamStatus.connected
         ..notifyListeners();
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text("OpenCode on this phone isn't answering"), findsNothing);
       await _dispose(tester, controller);
     });

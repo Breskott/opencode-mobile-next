@@ -31581,5 +31581,13 @@
   "productErrorStagedRevert": "Review the staged revert before sending this queued prompt.",
   "@productErrorStagedRevert": {
     "description": "Safe app-authored explanation when a queued prompt needs staged revert review."
-  }
+  },
+  "bootstrapStartFresh": "Start fresh",
+  "bootstrapStartFreshTitle": "Remove saved sign-ins?",
+  "bootstrapStartFreshBody": "This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.",
+  "bootstrapStartFreshConfirm": "Remove saved sign-ins",
+  "bootstrapResettingTitle": "Removing saved sign-ins…",
+  "bootstrapResettingBody": "Keep the app open while this finishes.",
+  "bootstrapResetFailedTitle": "Sign-in reset failed",
+  "bootstrapResetFailedBody": "Some saved sign-ins could not be removed. Try again."
 }

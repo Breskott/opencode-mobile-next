@@ -2,32 +2,148 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../../api/sse.dart';
+import '../../domain/connection_status.dart';
 import '../../state/connection.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
-import '../kit/kit_buttons.dart';
-import '../kit/kit_details_fold.dart';
-import '../kit/kit_sheet.dart';
-import '../kit/kit_status_line.dart';
-import '../kit/kit_text.dart';
-import '../kit/kit_tokens.dart';
+import '../kit/kit.dart';
 import 'phone_server_card.dart' show serverDisplayName;
 import 'work_status_line.dart' show confirmPhoneServerRestart;
 
-/// The shell's connection line on the tabs that do not say it themselves
-/// (design standard §5): one [KitStatusLine] with an icon, one line of words
-/// and one action. The raw error and Change server live behind Details, in
-/// the line's menu, so it never grows into a paragraph over the content it
-/// sits on.
-///
-/// Kit only (shared-shell-1, map embedded-connection-status-banner "fix"):
-/// the line's tones follow LOOK-4 (a lost server or a rejected password is a
-/// failure, not "needs you"); Change server is in the line's menu, and when
-/// the host says the server is this phone's own and hands over
-/// [onRestartServer], the line offers Restart first, as the Work tab's line
-/// does. The fixed "Reconnecting…, then isn't answering" stages belong to
-/// slice-P4.4 (one connection status).
+/// The single presentation of the controller's connection snapshot. The
+/// controller owns escalation; this adapter never starts a clock.
+KitStatus? connectionKitStatus(
+  BuildContext context,
+  ConnectionController controller, {
+  bool showChangeServer = true,
+  String? note,
+  bool serverOnThisPhone = false,
+  Future<void> Function()? onRestartServer,
+  BuildContext? Function()? actionContext,
+}) {
+  final snapshot = controller.connectionStatus;
+  if (!snapshot.visible) return null;
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  BuildContext? target() => actionContext == null ? context : actionContext();
+  void editServer() {
+    final current = target();
+    if (current != null && current.mounted) {
+      unawaited(
+        Navigator.of(current).pushNamed('/servers', arguments: 'edit-active'),
+      );
+    }
+  }
+
+  final server = snapshot.serverName.isEmpty ? 'OpenCode' : snapshot.serverName;
+  if (snapshot.phase == ConnectionStatusPhase.credentialsRequired) {
+    return KitStatus(
+      kind: KitStatusKind.connection,
+      id: 'connection:${snapshot.profileId}',
+      key: const ValueKey('connection-status-banner'),
+      icon: AppIconography.locked,
+      tone: AppStatusTone.failure,
+      message: snapshot.usesToken
+          ? l10n.connectionTokenRejected
+          : l10n.e7BannerReconnectPassword,
+      supporting: note,
+      action: KitAction(
+        key: ValueKey(
+          snapshot.usesToken ? 'banner-update-token' : 'banner-update-password',
+        ),
+        label: snapshot.usesToken
+            ? l10n.updateConnectionToken
+            : l10n.e7BannerUpdatePassword,
+        onPressed: editServer,
+      ),
+    );
+  }
+  final message = switch (snapshot.phase) {
+    ConnectionStatusPhase.connecting => l10n.e7SetupConnectingProfile(server),
+    ConnectionStatusPhase.reconnecting => l10n.e7BannerReconnectingServer(
+      server,
+    ),
+    _ =>
+      serverOnThisPhone
+          ? l10n.workServerNotAnsweringPhone
+          : l10n.workServerNotAnswering(server),
+  };
+  final retry = snapshot.retrying
+      ? null
+      : KitAction(
+          key: const ValueKey('connection-banner-retry'),
+          label: l10n.connectionReconnectTo(
+            serverDisplayName(
+              controller.profile,
+              l10n,
+              among: controller.store.profiles,
+            ),
+          ),
+          onPressed: () => unawaited(controller.retryConnection()),
+        );
+  final restart = serverOnThisPhone ? onRestartServer : null;
+  final restartAction = restart == null || snapshot.retrying || snapshot.waiting
+      ? null
+      : KitAction(
+          key: const ValueKey('connection-banner-restart'),
+          label: l10n.workServerRestart,
+          onPressed: () => unawaited(() async {
+            final current = target();
+            if (current == null ||
+                !current.mounted ||
+                !await confirmPhoneServerRestart(current)) {
+              return;
+            }
+            await restart();
+          }()),
+        );
+  final supporting = [
+    if (snapshot.usesToken) l10n.codexDraftReconnectNotice,
+    if (note != null && note.isNotEmpty) note,
+  ];
+  return KitStatus(
+    kind: KitStatusKind.connection,
+    id: 'connection:${snapshot.profileId}',
+    key: const ValueKey('connection-status-banner'),
+    icon: snapshot.waiting ? AppIconography.sync : AppIconography.cloudOff,
+    tone: snapshot.waiting ? AppStatusTone.progress : AppStatusTone.failure,
+    message: message,
+    supporting: supporting.isEmpty ? null : supporting.join(' '),
+    action: restartAction ?? retry,
+    more: [
+      if (restartAction != null && retry != null) retry,
+      KitAction(
+        key: const ValueKey('connection-banner-details'),
+        label: l10n.e7BannerDetails,
+        onPressed: () {
+          final current = target();
+          if (current != null && current.mounted) {
+            unawaited(
+              showConnectionDetailsSheet(
+                current,
+                controller,
+                showChangeServer: showChangeServer,
+              ),
+            );
+          }
+        },
+      ),
+      if (showChangeServer)
+        KitAction(
+          key: const ValueKey('connection-banner-change-server'),
+          label: l10n.e7BannerChangeServer,
+          onPressed: () {
+            final current = target();
+            if (current != null && current.mounted) {
+              unawaited(Navigator.of(current).pushNamed('/servers'));
+            }
+          },
+        ),
+    ],
+  );
+}
+
+/// Compatibility host for embedded consumers. In a KitScreen it contributes
+/// to the existing slot and never adds another row.
 class ConnectionStatusBanner extends StatelessWidget {
   const ConnectionStatusBanner({
     super.key,
@@ -37,163 +153,52 @@ class ConnectionStatusBanner extends StatelessWidget {
     this.serverOnThisPhone = false,
     this.onRestartServer,
   });
-
   final ConnectionController controller;
   final bool showChangeServer;
-
-  /// One optional extra line, e.g. how many drafts are queued for delivery.
   final String? note;
-
-  /// The server is the phone's own (Termux or in the app): it is named
-  /// "OpenCode on this phone".
   final bool serverOnThisPhone;
-
-  /// Restarts the phone's server; null when this server cannot be restarted
-  /// from here. With [serverOnThisPhone], Restart becomes the line's action
-  /// (after a confirmation) and Try again moves into its menu.
   final Future<void> Function()? onRestartServer;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    if (controller.status == StreamStatus.connected) {
-      return const SizedBox.shrink();
-    }
-    void editServer() =>
-        Navigator.of(context).pushNamed('/servers', arguments: 'edit-active');
-
-    // A rejected Codex token cannot self-heal through retries: surface the
-    // one action that fixes it and keep it a line, never a modal.
-    if (controller.passwordRejected && controller.usesConnectionToken) {
-      return KitStatusLine(
-        key: const ValueKey('connection-status-banner'),
-        icon: AppIconography.locked,
-        tone: AppStatusTone.failure,
-        message: l10n.connectionTokenRejected,
-        action: KitAction(
-          key: const ValueKey('banner-update-token'),
-          label: l10n.updateConnectionToken,
-          onPressed: editServer,
-        ),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: controller,
+    builder: (context, _) {
+      final status = connectionKitStatus(
+        context,
+        controller,
+        showChangeServer: showChangeServer,
+        note: note,
+        serverOnThisPhone: serverOnThisPhone,
+        onRestartServer: onRestartServer,
       );
-    }
-
-    // A rotated v2 serve password cannot self-heal through retries: surface
-    // the one action that fixes it and keep it a line, never a modal.
-    if (controller.passwordRejected) {
-      return KitStatusLine(
-        key: const ValueKey('connection-status-banner'),
-        icon: AppIconography.locked,
-        tone: AppStatusTone.failure,
-        message: note == null || note!.isEmpty
-            ? l10n.e7BannerReconnectPassword
-            : l10n.e7BannerReconnectPasswordNote(note!),
-        action: KitAction(
-          key: const ValueKey('banner-update-password'),
-          label: l10n.e7BannerUpdatePassword,
-          onPressed: editServer,
-        ),
-      );
-    }
-
-    final manualRetry = controller.manualReconnectInProgress;
-    final reconnecting = controller.connectionLoading || manualRetry;
-    final restart = serverOnThisPhone ? onRestartServer : null;
-    final server = controller.profile?.name ?? 'OpenCode';
-    final message = reconnecting
-        ? l10n.e7BannerReconnectingServer(server)
-        : restart != null
-        ? l10n.workServerNotAnsweringPhone
-        : l10n.e7BannerLost;
-    final codexReconnect = controller.usesConnectionToken && reconnecting;
-    final content = codexReconnect
-        ? '$message\n${l10n.codexDraftReconnectNotice}${note == null || note!.isEmpty ? '' : '\n${note!}'}'
-        : note == null || note!.isEmpty
-        ? message
-        : '$message\n${note!}';
-
-    // While a Try again of the person's own is in flight the words say so;
-    // a disabled "Retrying" button would be a status display (§2).
-    // It names what it retries (R2): "Reconnect to This phone". The line
-    // is the one place with this act; the tab under it only says what the
-    // lost connection means there (R3).
-    final retry = manualRetry
-        ? null
-        : KitAction(
-            key: const ValueKey('connection-banner-retry'),
-            label: l10n.connectionReconnectTo(
-              serverDisplayName(
-                controller.profile,
-                l10n,
-                among: controller.store.profiles,
-              ),
-            ),
-            onPressed: () => unawaited(controller.retryConnection()),
-          );
-    // The phone's own server: the way out the app cannot take alone is a
-    // restart, so it comes first (as on the Work tab's line).
-    final restartAction = restart == null || manualRetry
-        ? null
-        : KitAction(
-            key: const ValueKey('connection-banner-restart'),
-            label: l10n.workServerRestart,
-            onPressed: () => unawaited(_restart(context, restart)),
-          );
-
-    return KitStatusLine(
-      key: const ValueKey('connection-status-banner'),
-      // No spinner: the words say it is reconnecting; a spinner would run
-      // silently for as long as the server is away (§4).
-      icon: reconnecting ? AppIconography.sync : AppIconography.cloudOff,
-      tone: reconnecting ? AppStatusTone.progress : AppStatusTone.failure,
-      message: content,
-      action: restartAction ?? retry,
-      more: [
-        if (restartAction != null && retry != null) retry,
-        KitAction(
-          key: const ValueKey('connection-banner-details'),
-          label: l10n.e7BannerDetails,
-          onPressed: () => showConnectionDetailsSheet(
-            context,
-            controller,
-            showChangeServer: showChangeServer,
-          ),
-        ),
-        if (showChangeServer)
-          KitAction(
-            key: const ValueKey('connection-banner-change-server'),
-            label: l10n.e7BannerChangeServer,
-            onPressed: () => Navigator.of(context).pushNamed('/servers'),
-          ),
-      ],
-    );
-  }
-
-  static Future<void> _restart(
-    BuildContext context,
-    Future<void> Function() restart,
-  ) async {
-    if (!await confirmPhoneServerRestart(context)) return;
-    await restart();
-  }
+      if (KitStatusLineSlot.existsAbove(context)) {
+        return KitStatusContribution(
+          status: status,
+          child: const SizedBox.shrink(),
+        );
+      }
+      return status == null
+          ? const SizedBox.shrink()
+          : KitStatusLine.of(status);
+    },
+  );
 }
 
-// revamp: merge-into:root-connecting (slice-P4.4)
 /// The connection's details: what is going on, the raw error, Try again and
 /// (optionally) Change server. Shared by the shell banner and the Work tab's
 /// status line.
 ///
-/// Kit only with the least change (MAP-1: this sheet merges into the
-/// diagnosed connection card in slice-P4.4): the kit sheet frame, the words
-/// as [KitText], and the raw error in a [KitDetailsFold] (KIT-33), open and
-/// copyable there.
+/// The shared status line opens this kit sheet for technical details. Its
+/// phase comes from the same controller snapshot; the raw error stays in
+/// a [KitDetailsFold] (KIT-33), open and copyable here.
 Future<void> showConnectionDetailsSheet(
   BuildContext context,
   ConnectionController controller, {
   bool showChangeServer = true,
 }) {
-  final manualRetry = controller.manualReconnectInProgress;
-  final reconnecting = controller.connectionLoading || manualRetry;
+  final snapshot = controller.connectionStatus;
+  final manualRetry = snapshot.retrying;
+  final reconnecting = snapshot.waiting;
   final error = controller.connectionError?.trim();
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final navigator = Navigator.of(context);

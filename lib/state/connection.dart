@@ -65,6 +65,7 @@ import 'queued_prompt_removal.dart';
 import 'session_read_state.dart';
 import 'automatic_activity.dart';
 import 'return_brief_state.dart';
+import '../domain/connection_status.dart';
 import '../domain/return_brief.dart';
 import '../domain/while_away.dart';
 import '../domain/workspace_paths.dart';
@@ -165,6 +166,13 @@ CatalogModel _mergeCatalogModel(CatalogModel detailed, CatalogModel base) {
 class AppBootstrap {
   final ProfileStore store;
   AppBootstrap(this.store);
+
+  /// Bootstrap recovery intentionally works even when profile loading fails.
+  /// The gate must drain outstanding loads before invoking this operation.
+  static Future<void> resetSavedSignIns() async {
+    final prefs = await SharedPreferences.getInstance();
+    await ProfileStore(prefs: prefs).resetSavedSignIns();
+  }
 
   static Future<AppBootstrap> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -658,7 +666,81 @@ class ConnectionController extends ChangeNotifier {
   final Map<String, String> sessionRevertErrors = {};
   final Map<String, String> sessionSelectionErrors = {};
 
-  StreamStatus status = StreamStatus.disconnected;
+  StreamStatus _status = StreamStatus.disconnected;
+  StreamStatus get status => _status;
+  set status(StreamStatus value) {
+    _status = value;
+    _syncConnectionStatusClock();
+  }
+
+  Timer? _connectionStatusTimer;
+  String? _connectionStatusOwner;
+  int? _connectionStatusAttempt;
+  DateTime? _connectionStatusSince;
+  bool _connectionStatusExpired = false;
+
+  /// One eight-second grace period per attempt, independent of route lifetime.
+  /// Stream reconnect churn preserves the period; an explicit retry resets it.
+  void _syncConnectionStatusClock() {
+    final owner = _connectedProfile ?? profile;
+    if (_disposed ||
+        isIsolated ||
+        owner == null ||
+        status == StreamStatus.connected) {
+      _resetConnectionStatusClock();
+      return;
+    }
+    if (_connectionStatusOwner != owner.id ||
+        _connectionStatusAttempt != connectionAttemptRevision) {
+      _resetConnectionStatusClock();
+      _connectionStatusOwner = owner.id;
+      _connectionStatusAttempt = connectionAttemptRevision;
+    }
+    if (!connectionLoading || _connectionStatusSince != null) return;
+    _connectionStatusSince = DateTime.now();
+    _connectionStatusTimer = Timer(const Duration(seconds: 8), () {
+      _connectionStatusTimer = null;
+      if (_disposed) return;
+      _connectionStatusExpired = true;
+      notifyListeners();
+    });
+  }
+
+  void _resetConnectionStatusClock() {
+    _connectionStatusTimer?.cancel();
+    _connectionStatusTimer = null;
+    _connectionStatusOwner = null;
+    _connectionStatusAttempt = null;
+    _connectionStatusSince = null;
+    _connectionStatusExpired = false;
+  }
+
+  /// Consumers localize this snapshot; they never infer their own grace period
+  /// or promote a disconnected transport to a healthy status.
+  ConnectionStatusSnapshot get connectionStatus {
+    final owner = _connectedProfile ?? profile;
+    final phase = isIsolated || owner == null
+        ? ConnectionStatusPhase.hidden
+        : passwordRejected
+        ? ConnectionStatusPhase.credentialsRequired
+        : status == StreamStatus.connected
+        ? ConnectionStatusPhase.connected
+        : !connectionLoading || _connectionStatusExpired
+        ? ConnectionStatusPhase.notAnswering
+        : status == StreamStatus.connecting
+        ? ConnectionStatusPhase.connecting
+        : ConnectionStatusPhase.reconnecting;
+    return ConnectionStatusSnapshot(
+      phase: phase,
+      profileId: owner?.id,
+      serverName: owner?.name ?? '',
+      since: _connectionStatusSince,
+      usesToken: owner?.usesAgentSocket ?? false,
+      retrying: manualReconnectInProgress,
+      attemptRevision: connectionAttemptRevision,
+    );
+  }
+
   String? version;
   bool _transportReady = false;
 
@@ -5582,6 +5664,7 @@ class ConnectionController extends ChangeNotifier {
           }
         });
     _manualReconnect = tracked;
+    notifyListeners();
     return tracked;
   }
 
@@ -7930,6 +8013,7 @@ class ConnectionController extends ChangeNotifier {
     repository = currentRepository;
     status = StreamStatus.connecting;
     lastError = null;
+    passwordRejected = false;
     notifyListeners();
     enablePollingFallback();
     try {
@@ -7966,6 +8050,7 @@ class ConnectionController extends ChangeNotifier {
 
   @override
   void notifyListeners() {
+    _syncConnectionStatusClock();
     super.notifyListeners();
     // Keep the Android home-screen widget's snapshot in step with session
     // truth; the writer itself skips unchanged payloads. Profile deletion
@@ -9764,6 +9849,7 @@ class ConnectionController extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _resetConnectionStatusClock();
     _savedPrompts?.dispose();
     _savedPrompts = null;
     store.changes.removeListener(_profilesSaved);

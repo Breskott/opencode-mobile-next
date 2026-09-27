@@ -16,6 +16,8 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart';
@@ -97,10 +99,27 @@ Future<CaptureController> _chat(
     await tester.pump(const Duration(seconds: 1));
     controller.dispose();
   });
+  final navigatorKey = GlobalKey<NavigatorState>();
   await tester.pumpWidget(
     captureApp(
-      home: const ChatScreen(sessionID: checkoutSessionID),
+      home: Builder(
+        builder: (context) => ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => AppConditionsScope(
+            conditions: [
+              connectionKitStatus(
+                context,
+                controller,
+                actionContext: () =>
+                    navigatorKey.currentState?.overlay?.context,
+              ),
+            ],
+            child: const ChatScreen(sessionID: checkoutSessionID),
+          ),
+        ),
+      ),
       boundaryKey: GlobalKey(),
+      navigatorKey: navigatorKey,
       controller: controller,
     ),
   );
@@ -152,7 +171,7 @@ void main() {
     expect(find.text("Couldn't open this conversation"), findsOneWidget);
     expect(find.textContaining('192.168.1.20'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('kit-state-details')));
-    await tester.pump();
+    await _frames(tester);
     expect(find.textContaining('192.168.1.20'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('chat-load-retry')));
@@ -180,7 +199,10 @@ void main() {
 
     expect(find.text("Your message wasn't sent"), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
-    expect(tester.widget<TextField>(field).controller!.text, contains('suite'));
+    final composer = tester.widget<EditableText>(
+      find.descendant(of: field, matching: find.byType(EditableText)),
+    );
+    expect(composer.controller.text, contains('suite'));
     // It does not leave on its own while the person reads it.
     await tester.pump(const Duration(seconds: 10));
     expect(find.text("Your message wasn't sent"), findsOneWidget);
@@ -202,8 +224,8 @@ void main() {
     expect(api.prompts, ['Run the full test suite']);
   });
 
-  testWidgets('reconnecting: the loading bar at once, "isn\'t answering" only '
-      'after 8 s, both gone once connected', (tester) async {
+  testWidgets('reconnecting: progress at once, "isn\'t answering" after 8 s, '
+      'and no stale progress once connected', (tester) async {
     final controller = await _chat(
       tester,
       _Api()
@@ -214,19 +236,23 @@ void main() {
     controller.notifyListeners();
     await tester.pump();
     expect(_bar, findsOneWidget);
-    expect(_connectionLine, findsNothing);
+    expect(_connectionLine, findsOneWidget);
+    expect(find.text('Reconnecting to Laptop…'), findsOneWidget);
+    expect(find.text("Laptop isn't answering"), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
     await tester.pump(const Duration(seconds: 7));
-    expect(_connectionLine, findsNothing);
+    expect(find.text('Reconnecting to Laptop…'), findsOneWidget);
+    expect(find.text("Laptop isn't answering"), findsNothing);
     await tester.pump(const Duration(seconds: 2));
     expect(_connectionLine, findsOneWidget);
+    expect(_bar, findsNothing);
     expect(find.text("Laptop isn't answering"), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text('Reconnect to Laptop'), findsOneWidget);
 
     controller.status = StreamStatus.connected;
     controller.notifyListeners();
-    await tester.pump();
+    await _frames(tester);
     expect(_bar, findsNothing);
     expect(_connectionLine, findsNothing);
   });

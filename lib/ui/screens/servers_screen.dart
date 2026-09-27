@@ -109,10 +109,12 @@ class ServersRouteRequest {
     String this.profileID, {
     this.detectedRunning = false,
   }) : kind = ServersRouteRequestKind.connect,
+       backend = null,
        openCode2 = false;
 
-  /// Open the editor for a new server.
-  const ServersRouteRequest.add()
+  /// Open a new server editor, optionally starting with the requested kind.
+  /// This is an editable choice, never permission to connect or save.
+  const ServersRouteRequest.add({this.backend})
     : kind = ServersRouteRequestKind.add,
       profileID = null,
       detectedRunning = false,
@@ -123,15 +125,18 @@ class ServersRouteRequest {
     this.profileID,
     required this.openCode2,
   }) : kind = ServersRouteRequestKind.enterPhoneCredentials,
+       backend = null,
        detectedRunning = true;
 
   /// Confirm and forget the saved server [profileID].
   const ServersRouteRequest.forget(String this.profileID)
     : kind = ServersRouteRequestKind.forget,
+      backend = null,
       detectedRunning = false,
       openCode2 = false;
 
   final ServersRouteRequestKind kind;
+  final ServerBackend? backend;
   final String? profileID;
   final bool detectedRunning;
   final bool openCode2;
@@ -211,7 +216,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
     switch (request.kind) {
       case ServersRouteRequestKind.add:
-        await _edit();
+        await _edit(initialBackend: request.backend);
       case ServersRouteRequestKind.connect:
         if (target != null) {
           await _connect(target, detectedRunning: request.detectedRunning);
@@ -436,6 +441,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// computer", the server switcher's Add or phone setup: one path.
   Future<bool> _edit({
     ServerProfile? existing,
+    ServerBackend? initialBackend,
     bool focusPassword = false,
     String? initialUrl,
     bool openCode2Intent = false,
@@ -457,6 +463,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       KitPageRoute<ServerProfile>(
         builder: (_) => _ProfileEditorScreen(
           existing: existing,
+          initialBackend: initialBackend,
           reconnectOnSave:
               connectOnSave ||
               existing?.id == ref.read(bootstrapProvider).store.activeId,
@@ -1378,6 +1385,7 @@ class _PhoneSetupEntry extends StatelessWidget {
 
 class _ProfileEditorScreen extends StatefulWidget {
   final ServerProfile? existing;
+  final ServerBackend? initialBackend;
   final bool tailscale;
   final bool reconnectOnSave;
   final bool openCode2Intent;
@@ -1409,6 +1417,7 @@ class _ProfileEditorScreen extends StatefulWidget {
   final Future<String?> Function()? secureStorageProbe;
   const _ProfileEditorScreen({
     this.existing,
+    this.initialBackend,
     this.tailscale = false,
     this.reconnectOnSave = false,
     this.openCode2Intent = false,
@@ -1433,7 +1442,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       widget.existing?.orchestration != null;
 
   late ServerBackend _backend =
-      widget.existing?.backend ?? ServerBackend.openCode;
+      widget.existing?.backend ??
+      widget.initialBackend ??
+      ServerBackend.openCode;
 
   /// A new server with nothing preset is added in steps (P3.9): what runs
   /// there, then Tailscale when that is the way, then the address or the
@@ -1445,7 +1456,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       widget.initialUrl == null &&
       !widget.focusPassword;
 
-  late _AddStep _step = _stepped ? _AddStep.kind : _AddStep.connect;
+  // An explicit entry point already answered the first question. Keep the
+  // stepped flow so Back can change that answer without saving anything.
+  late _AddStep _step = _stepped && widget.initialBackend == null
+      ? _AddStep.kind
+      : _AddStep.connect;
 
   /// The server is reached through Tailscale: the address must be a
   /// tailnet one, and the save remembers the way for the next edit.
