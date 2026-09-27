@@ -24815,15 +24815,6 @@
   "@serversRemoveBody": {
     "description": "Servers › Remove server sheet: what removing a saved server deletes on this device, in one sentence."
   },
-  "serversRemoveQueued": "{count, plural, =1{1 queued prompt will be deleted} other{{count} queued prompts will be deleted}}",
-  "@serversRemoveQueued": {
-    "description": "Servers › Remove server sheet: unsent queued prompts lost with the server.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "serversRemoveDrafts": "{count, plural, =1{1 unsent draft will be deleted} other{{count} unsent drafts will be deleted}}",
   "@serversRemoveDrafts": {
     "description": "Servers › Remove server sheet: unsent drafts lost with the server.",
@@ -30782,6 +30773,51 @@
     "description": "Model picker footer: the chip that opens the agent menu, with the agent chosen",
     "placeholders": {
       "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "serversRemoveQueuedKept": "{count, plural, =1{1 queued prompt moves to Saved prompts} other{{count} queued prompts move to Saved prompts}}",
+  "@serversRemoveQueuedKept": {
+    "description": "Remove server / remove from this phone sheets: the server's unsent queued prompts are kept as drafts in Saved prompts, shown under every server, instead of being deleted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversRemoveQueuedUncertain": "{count, plural, =1{1 of them may already have been sent} other{{count} of them may already have been sent}}",
+  "@serversRemoveQueuedUncertain": {
+    "description": "Servers › Remove server sheet: queued prompts whose send started but was never confirmed; check before sending them again.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversRemoveDeleteQueued": "{count, plural, =1{Remove and delete the queued prompt} other{Remove and delete {count} queued prompts}}",
+  "@serversRemoveDeleteQueued": {
+    "description": "Servers › Remove server sheet: the other answer, which removes the server and deletes its queued prompts instead of keeping them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serversRemoveQueuedChanged": "The queued prompts for {name} changed, so nothing was removed. Remove it again to see the new count.",
+  "@serversRemoveQueuedChanged": {
+    "description": "Removing a server stopped because its queued prompts changed after the person confirmed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "serversRemoveQueuedNotKept": "Could not move the queued prompts for {name} to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.",
+  "@serversRemoveQueuedNotKept": {
+    "description": "Removing a server stopped because its queued prompts could not be kept in Saved prompts (full or storage refused).",
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }

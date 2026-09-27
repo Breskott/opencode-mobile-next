@@ -23,6 +23,10 @@ abstract interface class SavedPromptComposer {
 /// removal instead of overwriting newer work. A storage failure can be retried.
 class SavedPromptUndo {
   SavedPromptUndo._(this._action);
+
+  /// An Undo for a saved prompt kept outside a profile shelf (a removed
+  /// server's queued prompts), with the same one-use rules.
+  SavedPromptUndo.kept(Future<void> Function() action) : this._(action);
   final Future<void> Function() _action;
   bool _used = false;
   bool _running = false;

@@ -11,6 +11,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
+import '../../state/queued_prompt_removal.dart'
+    show QueuedPromptRemovalException, QueuedPromptRemovalPlan;
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_iconography.dart';
 import '../kit/kit.dart';
@@ -266,6 +268,13 @@ Future<bool> _removePhoneServer(
     storage = null;
   }
   if (!context.mounted) return false;
+  // Queued prompts for this phone's server are kept in Saved prompts (P7.2).
+  var queued = 0;
+  for (final profile in connection.store.profiles) {
+    if (looksLikeInAppServer(profile)) {
+      queued += connection.queuedPromptCountForProfile(profile.id);
+    }
+  }
   var deleteEverything = false;
   final keep = await showKitConfirm(
     context,
@@ -278,6 +287,14 @@ Future<bool> _removePhoneServer(
     confirmLabel: l10n.removeFromPhoneKeepConfirm,
     kind: KitConfirmKind.destructive,
     icon: AppIconography.delete,
+    consequenceItems: queued > 0
+        ? [
+            KitConsequence(
+              l10n.serversRemoveQueuedKept(queued),
+              mark: KitConsequenceMark.kept,
+            ),
+          ]
+        : null,
     alternative: KitAction(
       key: const ValueKey('phone-server-remove-everything'),
       label: l10n.removeFromPhoneDeleteAll,
@@ -333,9 +350,27 @@ Future<bool> _removePhoneServer(
   final problems = <String>[];
   for (final profile in saved) {
     try {
-      final result = await connection.deleteProfileAndLocalData(profile.id);
+      // Counted at the last moment, so every prompt still queued is kept.
+      // An unreadable queue has nothing to keep; removal goes on as before.
+      QueuedPromptRemovalPlan? plan;
+      try {
+        plan = connection.inspectQueuedPromptsForRemoval(profile.id);
+      } catch (_) {
+        plan = null;
+      }
+      final result = await connection.deleteProfileAndLocalData(
+        profile.id,
+        queuedPrompts: plan,
+        keepQueuedPrompts: true,
+      );
       final partial = result.partialDeletionMessage;
       if (partial != null) problems.add(partial);
+    } on QueuedPromptRemovalException catch (error) {
+      problems.add(
+        error.changed
+            ? l10n.serversRemoveQueuedChanged(profile.name)
+            : l10n.serversRemoveQueuedNotKept(profile.name),
+      );
     } catch (error) {
       problems.add(l10n.phoneServerCardActionFailed(productErrorText(error)));
     }
