@@ -81,3 +81,9 @@ Offline queue **57/57**, pending sends **16/16**, stable chat layout **10/10**, 
 ### Verified repair checkpoint 4
 
 Voice composer **6/6**, read-aloud **8/8**, nudges **18 pass / 2 product failures**. The compact voice fixtures now set the actual logical view size, check radio semantics at the merged accessible label, follow primary-first action layout, and open each bundled license viewer with localization delegates. Nudges still assert both reachable actions at 2.5× and preserve no-overflow checks. No consent, speech dispatch or background-revocation expectation was removed.
+
+### Product UI handoff (final 23 pass / 4 fail)
+
+- `lib/ui/kit/kit_undo.dart:229` inserts the Undo bar in the root overlay. `lib/ui/screens/files_screen.dart:1034` shows it after staging a file; reopening the changed-files sheet leaves that bar above the row. The actual hit-test path for `changed-file-lib/main.dart` reaches `files-staged-notice` / `_KitUndoBar` instead. “changes card opens the changed set…” retains its hit-testable assertion; waiting out Undo would conceal the obstruction.
+- `lib/ui/kit/kit_search_field.dart:174` schedules the debounce; `:292` forwards IME submission without cancelling it. Both call `FilesScreen._onSearchChanged` at `lib/ui/screens/files_screen.dart:1209`, so typing `ProjectHealth` then submitting immediately issues the same query twice. “symbol search opens the exact source line…” keeps the single-request expectation.
+- `lib/ui/screens/terminal_screen.dart:546` and `:555` reload after rename/remove completes without checking the captured location. The two stale-callback tests change workspace/repository while the operation is pending and observe an unwanted extra reload of the new location. Both original call-count guards remain.
