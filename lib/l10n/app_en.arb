@@ -23984,5 +23984,22 @@
         "type": "String"
       }
     }
+  },
+  "kitMarkdownOpenLink": "Open link",
+  "@kitMarkdownOpenLink": {
+    "description": "KitMarkdown: the screen-reader hint on a link in an agent's reply"
+  },
+  "kitMarkdownOpenFile": "Open file",
+  "@kitMarkdownOpenFile": {
+    "description": "KitMarkdown: the screen-reader hint on a file path in an agent's reply that the server confirmed it can open"
+  },
+  "kitMarkdownTable": "{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}",
+  "@kitMarkdownTable": {
+    "description": "KitMarkdown: what a screen reader says for a table in an agent's reply; rows counts the body rows (the header row is not counted)",
+    "placeholders": {
+      "rows": {
+        "type": "int"
+      }
+    }
   }
 }

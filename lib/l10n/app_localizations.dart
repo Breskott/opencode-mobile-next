@@ -33424,6 +33424,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name your first project'**
   String get folderBrowserFirstProject;
+
+  /// KitMarkdown: the screen-reader hint on a link in an agent's reply
+  ///
+  /// In en, this message translates to:
+  /// **'Open link'**
+  String get kitMarkdownOpenLink;
+
+  /// KitMarkdown: the screen-reader hint on a file path in an agent's reply that the server confirmed it can open
+  ///
+  /// In en, this message translates to:
+  /// **'Open file'**
+  String get kitMarkdownOpenFile;
+
+  /// KitMarkdown: what a screen reader says for a table in an agent's reply; rows counts the body rows (the header row is not counted)
+  ///
+  /// In en, this message translates to:
+  /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
+  String kitMarkdownTable(int rows);
 }
 
 class _AppLocalizationsDelegate
