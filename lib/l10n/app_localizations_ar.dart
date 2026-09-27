@@ -8469,10 +8469,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiMessageTimestampsShown => 'أُظهرت الطوابع الزمنية للرسائل';
 
   @override
-  String get chatUiMessagesAndFileChangesAfterTheMost =>
-      'سيُتراجع عن الرسائل وتغييرات الملفات التي تلت أحدث طلب.';
-
-  @override
   String get chatUiMobileActionsAndCommandsFromThisServer =>
       'إجراءات الهاتف وأوامر هذا الخادم';
 
@@ -8679,13 +8675,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiRetryServerCommands => 'إعادة المحاولة';
 
   @override
-  String get chatUiRevert => 'تراجع';
-
-  @override
-  String get chatUiRevertFromThisPrompt =>
-      'هل تريد التراجع بدءًا من هذا الطلب؟';
-
-  @override
   String get chatUiRevertLastPrompt => 'التراجع عن الطلب الأخير';
 
   @override
@@ -8699,10 +8688,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get chatUiReviewTheActualDiffForThisSession =>
       'مراجعة الفروق الفعلية لهذه المحادثة';
-
-  @override
-  String get chatUiRollBackMessagesAndFileChangesAfter =>
-      'التراجع عن الرسائل وتغييرات الملفات التي تلت الطلب';
 
   @override
   String get chatUiRunOnYourComputer => 'التشغيل على حاسوبك';
@@ -26397,4 +26382,66 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get phoneSetupTermuxOtherRuntime =>
       'Termux already runs the other OpenCode. Switch it on This phone, then continue setup.';
+
+  @override
+  String get undoFromHereNowAction => 'Undo now';
+
+  @override
+  String undoFromHereBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      one:
+          'This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      zero:
+          'This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get undoFromHereBodyUnknown =>
+      'This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.';
+
+  @override
+  String get undoFromHereFilesLabel => 'Files the agent edited after it';
+
+  @override
+  String get undoFromHereNoEdits =>
+      'The agent reported no file edits after this prompt.';
+
+  @override
+  String get undoneStatus => 'Undone from a prompt';
+
+  @override
+  String get undonePutBack => 'Put back';
+
+  @override
+  String reviewRevertScreenIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are hidden. Nothing is final until you choose below.',
+      one:
+          'This prompt and the message after it are hidden. Nothing is final until you choose below.',
+      zero:
+          'This prompt is hidden; nothing came after it. Nothing is final until you choose below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reviewRevertKeepConsequenceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The hidden prompt and the $count messages after it are deleted',
+      one: 'The hidden prompt and the message after it are deleted',
+      zero: 'The hidden prompt is deleted',
+    );
+    return '$_temp0';
+  }
 }

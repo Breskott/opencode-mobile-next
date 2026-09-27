@@ -1337,13 +1337,13 @@ abstract class AppLocalizations {
   /// No description provided for @revertFromHere.
   ///
   /// In en, this message translates to:
-  /// **'Revert from this prompt'**
+  /// **'Undo from here'**
   String get revertFromHere;
 
   /// No description provided for @revertUndoDescription.
   ///
   /// In en, this message translates to:
-  /// **'Stage a revert and review the affected files'**
+  /// **'Undo the last prompt and everything after it'**
   String get revertUndoDescription;
 
   /// No description provided for @revertClearShortDescription.
@@ -13825,12 +13825,6 @@ abstract class AppLocalizations {
   /// **'Message timestamps shown'**
   String get chatUiMessageTimestampsShown;
 
-  /// Chat journey: Messages and file changes after the most recent prompt will be rolled back.
-  ///
-  /// In en, this message translates to:
-  /// **'Messages and file changes after the most recent prompt will be rolled back.'**
-  String get chatUiMessagesAndFileChangesAfterTheMost;
-
   /// Chat journey: Mobile actions and commands from this server
   ///
   /// In en, this message translates to:
@@ -14209,22 +14203,10 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get chatUiRetryServerCommands;
 
-  /// Chat journey: Revert
+  /// Conversation menu and /undo command: opens the one "Undo from this prompt?" sheet for the newest prompt.
   ///
   /// In en, this message translates to:
-  /// **'Revert'**
-  String get chatUiRevert;
-
-  /// Chat journey: Revert from this prompt?
-  ///
-  /// In en, this message translates to:
-  /// **'Revert from this prompt?'**
-  String get chatUiRevertFromThisPrompt;
-
-  /// Chat journey: Revert last prompt
-  ///
-  /// In en, this message translates to:
-  /// **'Revert last prompt'**
+  /// **'Undo last prompt'**
   String get chatUiRevertLastPrompt;
 
   /// Chat journey: Review comment added to the prompt
@@ -14244,12 +14226,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review the actual diff for this conversation'**
   String get chatUiReviewTheActualDiffForThisSession;
-
-  /// Chat journey: Roll back messages and file changes after the prompt
-  ///
-  /// In en, this message translates to:
-  /// **'Roll back messages and file changes after the prompt'**
-  String get chatUiRollBackMessagesAndFileChangesAfter;
 
   /// Chat journey: Run on your computer
   ///
@@ -41246,6 +41222,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Termux already runs the other OpenCode. Switch it on This phone, then continue setup.'**
   String get phoneSetupTermuxOtherRuntime;
+
+  /// "Undo from this prompt?" sheet on a server that undoes at once (no review step): the primary button that undoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo now'**
+  String get undoFromHereNowAction;
+
+  /// "Undo from this prompt?" sheet on a server that undoes at once: what happens, with the number of messages after the prompt, and the way back.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.} =1{This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.} other{This prompt and the {count} messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.}}'**
+  String undoFromHereBody(int count);
+
+  /// "Undo from this prompt?" sheet on a server that undoes at once, when the number of messages is not known.
+  ///
+  /// In en, this message translates to:
+  /// **'This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.'**
+  String get undoFromHereBodyUnknown;
+
+  /// "Undo from this prompt?" sheet on a server that undoes at once: label above the files the agent reported editing after the prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Files the agent edited after it'**
+  String get undoFromHereFilesLabel;
+
+  /// "Undo from this prompt?" sheet on a server that undoes at once: the files list when the agent reported no edits.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent reported no file edits after this prompt.'**
+  String get undoFromHereNoEdits;
+
+  /// Conversation status line on a server that undoes at once: the conversation was undone from a prompt and can still be put back.
+  ///
+  /// In en, this message translates to:
+  /// **'Undone from a prompt'**
+  String get undoneStatus;
+
+  /// Conversation status line after an undo: brings the removed messages and files back.
+  ///
+  /// In en, this message translates to:
+  /// **'Put back'**
+  String get undonePutBack;
+
+  /// Review the undo page: first line with the number of messages after the hidden prompt, as the server counted them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{This prompt is hidden; nothing came after it. Nothing is final until you choose below.} =1{This prompt and the message after it are hidden. Nothing is final until you choose below.} other{This prompt and the {count} messages after it are hidden. Nothing is final until you choose below.}}'**
+  String reviewRevertScreenIntroCount(int count);
+
+  /// Review the undo page: consequence line (lost) in the delete-hidden-messages question, with the number of messages the server counted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{The hidden prompt is deleted} =1{The hidden prompt and the message after it are deleted} other{The hidden prompt and the {count} messages after it are deleted}}'**
+  String reviewRevertKeepConsequenceCount(int count);
 }
 
 class _AppLocalizationsDelegate
