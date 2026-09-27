@@ -7693,6 +7693,42 @@ abstract class AppLocalizations {
   /// **'Only part of this file is shown. Copy and Save keep the original content.'**
   String get filePreviewPartialSource;
 
+  /// No description provided for @filePreviewPdfIsolated.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.'**
+  String get filePreviewPdfIsolated;
+
+  /// No description provided for @filePreviewCopyOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy original file'**
+  String get filePreviewCopyOriginal;
+
+  /// No description provided for @filePreviewOpenInFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Files'**
+  String get filePreviewOpenInFiles;
+
+  /// No description provided for @filePreviewViewMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Show file as'**
+  String get filePreviewViewMode;
+
+  /// No description provided for @filePreviewAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t attach file'**
+  String get filePreviewAttachFailed;
+
+  /// No description provided for @filePreviewSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save file'**
+  String get filePreviewSaveFailed;
+
   /// No description provided for @fileLineOutsidePreview.
   ///
   /// In en, this message translates to:

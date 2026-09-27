@@ -1,19 +1,32 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../domain/delimited_text.dart';
 import '../../l10n/app_localizations.dart';
+import '../app_iconography.dart';
+import '../kit/chat/kit_markdown.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_code_block.dart';
+import '../kit/kit_copy.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_menu.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_segmented.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_viewer.dart';
 import 'delimited_file_preview.dart';
-import 'svg_file_preview.dart';
+import 'markdown.dart' show MarkdownInteractionScope;
 import 'pdf_file_preview.dart';
-import 'markdown.dart';
+import 'product_states.dart' show productErrorText;
 import 'reader_preferences.dart';
-import 'product_states.dart';
-import '../app_theme.dart';
+import 'svg_file_preview.dart';
 
 /// Normalized file content that can be rendered by [FilePreviewBody].
 class FilePreviewData {
@@ -105,12 +118,83 @@ class FilePreviewData {
     _ => false,
   };
 
+  /// A PDF this device may render page by page.
+  bool get isPdf => mimeType == 'application/pdf' && bytes?.isNotEmpty == true;
+
   int? get byteLength => bytes?.length;
 
   Uint8List? get exportBytes {
     if (bytes != null) return bytes;
     if (copyText != null) return Uint8List.fromList(utf8.encode(copyText!));
     return null;
+  }
+
+  /// Markdown by type or name, or text that plainly is Markdown (headings,
+  /// fences or a table).
+  bool get isMarkdown {
+    final lower = name.toLowerCase();
+    if (mimeType == 'text/markdown' ||
+        lower.endsWith('.md') ||
+        lower.endsWith('.mdx')) {
+      return true;
+    }
+    return RegExp(
+      r'(^|\n)#{1,6}\s+|(^|\n)```|(^|\n)\|[^\n]+\|\s*\n\|?\s*:?-{3,}',
+      multiLine: true,
+    ).hasMatch(text ?? '');
+  }
+
+  /// The syntax colour for [name]'s extension, or null for plain text.
+  String? get language {
+    final lower = name.toLowerCase().split('?').first;
+    final dot = lower.lastIndexOf('.');
+    final extension = dot < 0 ? '' : lower.substring(dot + 1);
+    return switch (extension) {
+      'dart' => 'dart',
+      'js' || 'mjs' || 'cjs' => 'javascript',
+      'ts' => 'typescript',
+      'tsx' => 'tsx',
+      'jsx' => 'jsx',
+      'py' => 'python',
+      'go' => 'go',
+      'rs' => 'rust',
+      'java' => 'java',
+      'kt' || 'kts' => 'kotlin',
+      'swift' => 'swift',
+      'c' || 'h' => 'c',
+      'cc' || 'cpp' || 'cxx' || 'hpp' => 'cpp',
+      'cs' => 'csharp',
+      'sh' || 'bash' || 'zsh' => 'shell',
+      'html' || 'htm' => 'html',
+      'css' => 'css',
+      'scss' => 'scss',
+      'xml' || 'svg' => 'xml',
+      'yaml' || 'yml' => 'yaml',
+      'toml' => 'toml',
+      'sql' => 'sql',
+      'gradle' => 'gradle',
+      'diff' || 'patch' => 'diff',
+      'json' => 'json',
+      _ => null,
+    };
+  }
+
+  /// JSON laid out two spaces deep, or null when the text is not JSON.
+  String? get prettyJson {
+    final value = text ?? '';
+    final lower = name.toLowerCase();
+    final trimmed = value.trim();
+    final candidate =
+        mimeType == 'application/json' ||
+        lower.endsWith('.json') ||
+        ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']')));
+    if (!candidate || trimmed.isEmpty) return null;
+    try {
+      return const JsonEncoder.withIndent('  ').convert(jsonDecode(trimmed));
+    } on FormatException {
+      return null;
+    }
   }
 
   static String? _normalizedMime(String? value) {
@@ -158,587 +242,569 @@ class FilePreviewData {
       mime == 'image/svg+xml';
 }
 
+/// A preview that cannot show its file, in the person's words.
+class FilePreviewUnavailable implements Exception {
+  const FilePreviewUnavailable(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// The most source text a preview lays out; Copy and Save keep the whole
+/// file.
+const int filePreviewMaxSourceChars = 200000;
+
+/// [text] cut to [filePreviewMaxSourceChars] without splitting a surrogate
+/// pair; [cut] says whether anything was left out.
+({String text, bool cut}) capPreviewSource(String text) {
+  if (text.length <= filePreviewMaxSourceChars) return (text: text, cut: false);
+  var end = filePreviewMaxSourceChars;
+  final unit = text.codeUnitAt(end - 1);
+  if (unit >= 0xD800 && unit <= 0xDBFF) end--;
+  return (text: text.substring(0, end), cut: true);
+}
+
+/// The person's words for a [FilePreviewData.error].
+String _errorText(AppLocalizations l10n, String error) => switch (error) {
+  'The attachment content is not included in this message.' =>
+    l10n.readerUiAttachmentMissing,
+  'Remote attachment previews are not available.' =>
+    l10n.readerUiRemoteAttachment,
+  'The attachment data could not be decoded.' => l10n.readerUiAttachmentInvalid,
+  final message => message,
+};
+
+/// What the viewer shows for one [FilePreviewData], worked out once.
+class _Plan {
+  _Plan(this.content, {this.notices = const [], this.renderedLabel})
+    : source = KitViewerSource(content);
+
+  final KitViewerContent content;
+  final KitViewerSource source;
+
+  /// Why the body is not what the file's type suggests.
+  final List<String Function(AppLocalizations l10n)> notices;
+
+  /// The rendered view's name beside Source ("Table", "Image",
+  /// "Rendered"), when the content has both.
+  final String Function(AppLocalizations l10n)? renderedLabel;
+}
+
+/// The plan for everything but an error and a PDF.
+_Plan _planFor(FilePreviewData data, {int? initialLine}) {
+  final bytes = data.bytes;
+  if (data.isRasterImage && bytes != null && bytes.isNotEmpty) {
+    return _Plan(KitViewerContent.image(bytes, semanticsLabel: data.name));
+  }
+  final text = data.text;
+  if (text == null) {
+    return _Plan(
+      KitViewerContent.binary(
+        mimeType: data.mimeType,
+        byteLength: data.byteLength,
+      ),
+    );
+  }
+  if (initialLine != null) {
+    final shown = capPreviewSource(text);
+    final lineCount = '\n'.allMatches(shown.text).length + 1;
+    final inside = initialLine >= 1 && initialLine <= lineCount;
+    return _Plan(
+      KitViewerContent.code(
+        shown.text,
+        language: data.language,
+        truncated: data.truncated || shown.cut,
+        initialLine: inside ? initialLine : null,
+      ),
+      notices: [
+        if (!inside) (l10n) => l10n.fileLineOutsidePreview(initialLine),
+      ],
+    );
+  }
+  final separator = data.separator;
+  if (separator != null) {
+    final table = delimitedViewerContent(
+      text,
+      original: data.copyText ?? text,
+      separator: separator,
+      truncated: data.truncated,
+    );
+    final notice = table.notice;
+    return _Plan(
+      table.content,
+      notices: [
+        if (notice != null) (l10n) => delimitedNoticeText(l10n, notice),
+      ],
+      renderedLabel: table.content.kind == KitViewerKind.delimited
+          ? (l10n) => l10n.fileTable
+          : null,
+    );
+  }
+  if (data.mimeType == 'image/svg+xml') {
+    final svg = svgViewerContent(
+      text,
+      original: data.copyText,
+      truncated: data.truncated,
+    );
+    return _Plan(
+      svg.content,
+      notices: [if (svg.unsupported) (l10n) => l10n.fileSvgUnsupported],
+      renderedLabel: svg.content.kind == KitViewerKind.svg
+          ? (l10n) => l10n.fileImage
+          : null,
+    );
+  }
+  if (data.isMarkdown) {
+    return _Plan(
+      KitViewerContent.markdown(text, truncated: data.truncated),
+      renderedLabel: (l10n) => l10n.readerUiRendered,
+    );
+  }
+  final pretty = data.truncated ? null : data.prettyJson;
+  if (pretty != null) {
+    return _Plan(KitViewerContent.code(pretty, language: 'json'));
+  }
+  final shown = capPreviewSource(text);
+  final truncated = data.truncated || shown.cut;
+  final language = data.language;
+  return _Plan(
+    language == null
+        ? KitViewerContent.text(shown.text, truncated: truncated)
+        : KitViewerContent.code(
+            shown.text,
+            language: language,
+            truncated: truncated,
+          ),
+  );
+}
+
+/// Opens [data] in the kit viewer: the file's name (and [path] when known),
+/// Attach to prompt as the one labelled action when [onAttach] is given,
+/// and More with Find, Copy, Wrap, Show source, Save to device, Copy path,
+/// Open in Files and Open in Review where they apply.
+///
+/// [onDownload] replaces the system save picker. [initialLine] opens the
+/// source at that line. Returns when the viewer closes.
 Future<void> showFilePreviewSheet(
   BuildContext context,
   FilePreviewData data, {
   Future<void> Function()? onAttach,
   Future<void> Function()? onDownload,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: true,
-  // Feedback and Retry must sit above this modal, not on the obscured page.
-  builder: (context) => SizedBox(
-    height: MediaQuery.sizeOf(context).height * .86,
-    child: ScaffoldMessenger(
-      child: Scaffold(
-        backgroundColor:
-            Theme.of(context).bottomSheetTheme.backgroundColor ??
-            Theme.of(context).colorScheme.surface,
-        body: _FilePreviewSheet(
-          data: data,
-          onAttach: onAttach,
-          onDownload: onDownload,
-        ),
-      ),
-    ),
-  ),
-);
-
-class _FilePreviewSheet extends StatefulWidget {
-  const _FilePreviewSheet({required this.data, this.onAttach, this.onDownload});
-
-  final FilePreviewData data;
-  final Future<void> Function()? onAttach;
-  final Future<void> Function()? onDownload;
-
-  @override
-  State<_FilePreviewSheet> createState() => _FilePreviewSheetState();
-}
-
-class _FilePreviewSheetState extends State<_FilePreviewSheet> {
-  bool _attaching = false;
-  bool _downloading = false;
-
-  Future<void> _copy(String original) async {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    try {
-      await Clipboard.setData(ClipboardData(text: original));
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.fileCopied)));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.fileCopyFailed),
-          action: SnackBarAction(
-            label: l10n.markdownCopyRetry,
-            onPressed: () => _copy(original),
-          ),
+  String? path,
+  int? initialLine,
+  VoidCallback? onOpenInFiles,
+  VoidCallback? onOpenInReview,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final error = data.error;
+  LocalPdfPages? pages;
+  final KitViewerSource source;
+  String? shownCopy;
+  if (error != null) {
+    final message = _errorText(l10n, error);
+    source = KitViewerSource.load(
+      () => Future<KitViewerContent>.error(FilePreviewUnavailable(message)),
+    );
+  } else if (data.isPdf) {
+    if (MarkdownInteractionScope.enabledOf(context)) {
+      pages = LocalPdfPages(data.bytes!);
+      source = pages.source(l10n);
+    } else {
+      source = KitViewerSource(
+        KitViewerContent.binary(
+          mimeType: data.mimeType,
+          byteLength: data.byteLength,
         ),
       );
     }
+  } else {
+    final plan = _planFor(data, initialLine: initialLine);
+    source = plan.source;
+    shownCopy = plan.content.copyText;
+  }
+  return _openFileViewer(
+    context,
+    name: data.name,
+    path: path,
+    source: source,
+    data: () => data,
+    shownCopy: shownCopy,
+    onAttach: onAttach,
+    onDownload: onDownload,
+    onOpenInFiles: onOpenInFiles,
+    onOpenInReview: onOpenInReview,
+  ).whenComplete(() => pages?.dispose());
+}
+
+/// Like [showFilePreviewSheet] for a file still to be fetched (a path on
+/// the server, a tool's output): the viewer opens at once with its name,
+/// shows loading, and a failed fetch says so with Try again, which runs
+/// [load] again.
+Future<void> showFilePreviewSheetLoading(
+  BuildContext context, {
+  required String name,
+  required Future<FilePreviewData> Function() load,
+  Future<void> Function(FilePreviewData data)? onAttach,
+  String? path,
+  int? initialLine,
+  VoidCallback? onOpenInFiles,
+  VoidCallback? onOpenInReview,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final interactive = MarkdownInteractionScope.enabledOf(context);
+  FilePreviewData? loaded;
+  LocalPdfPages? pages;
+  Future<KitViewerContent> open() async {
+    final data = await load();
+    loaded = data;
+    final error = data.error;
+    if (error != null) throw FilePreviewUnavailable(_errorText(l10n, error));
+    if (data.isPdf && interactive) {
+      pages?.dispose();
+      final opened = pages = LocalPdfPages(data.bytes!);
+      return opened.open(l10n);
+    }
+    if (data.isPdf) {
+      return KitViewerContent.binary(
+        mimeType: data.mimeType,
+        byteLength: data.byteLength,
+      );
+    }
+    return _planFor(data, initialLine: initialLine).content;
   }
 
-  Future<void> _attach() async {
-    final action = widget.onAttach;
-    if (action == null || _attaching) return;
-    setState(() => _attaching = true);
+  final attach = onAttach;
+  return _openFileViewer(
+    context,
+    name: name,
+    path: path,
+    source: KitViewerSource.load(open),
+    data: () => loaded,
+    onAttach: attach == null
+        ? null
+        : () async {
+            final data = loaded;
+            if (data != null) await attach(data);
+          },
+    onOpenInFiles: onOpenInFiles,
+    onOpenInReview: onOpenInReview,
+  ).whenComplete(() => pages?.dispose());
+}
+
+/// The one viewer frame both entry points share.
+Future<void> _openFileViewer(
+  BuildContext context, {
+  required String name,
+  required String? path,
+  required KitViewerSource source,
+  required FilePreviewData? Function() data,
+  String? shownCopy,
+  Future<void> Function()? onAttach,
+  Future<void> Function()? onDownload,
+  VoidCallback? onOpenInFiles,
+  VoidCallback? onOpenInReview,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final navigator = Navigator.of(context);
+  final store = ReaderPreferencesScope.maybeOf(context);
+  var open = true;
+  var attaching = false;
+  var saving = false;
+
+  BuildContext host() => navigator.context;
+
+  void closeViewer() {
+    if (open && navigator.mounted) navigator.pop();
+  }
+
+  Future<void> failed(String title, Object error) async {
+    final context = host();
+    if (!context.mounted) return;
+    await showKitAlert(
+      context,
+      title: title,
+      body: productErrorText(error, l10n: l10n),
+      icon: AppIconography.error,
+    );
+  }
+
+  Future<void> attach() async {
+    final action = onAttach;
+    if (action == null || attaching) return;
+    attaching = true;
     try {
       await action();
-      if (mounted) Navigator.of(context).pop();
+      closeViewer();
     } catch (error) {
-      if (!mounted) return;
-      showProductError(context, error);
-      setState(() => _attaching = false);
+      await failed(l10n.filePreviewAttachFailed, error);
+    } finally {
+      attaching = false;
     }
   }
 
-  Future<void> _download() async {
-    if (_downloading) return;
-    final bytes = widget.data.exportBytes;
-    if (bytes == null) return;
-    setState(() => _downloading = true);
+  Future<void> save() async {
+    final file = data();
+    final bytes = file?.exportBytes;
+    if (file == null || bytes == null || saving) return;
+    saving = true;
     try {
-      final action = widget.onDownload;
-      if (action != null) {
-        await action();
-      } else {
-        final savedPath = await FilePicker.saveFile(
-          dialogTitle: readerL10n(context).readerUiSaveNamed(widget.data.name),
-          fileName: widget.data.name,
-          bytes: bytes,
-        );
-        if (mounted && savedPath != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                readerL10n(context).readerUiSaved(widget.data.name),
-              ),
+      if (onDownload != null) {
+        await onDownload();
+        return;
+      }
+      final savedPath = await FilePicker.saveFile(
+        dialogTitle: l10n.readerUiSaveNamed(file.name),
+        fileName: file.name,
+        bytes: bytes,
+      );
+      final context = host();
+      if (savedPath != null && context.mounted) {
+        final view = View.maybeOf(context);
+        if (view != null) {
+          unawaited(
+            SemanticsService.sendAnnouncement(
+              view,
+              l10n.readerUiSaved(file.name),
+              Directionality.of(context),
             ),
           );
         }
       }
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      await failed(l10n.filePreviewSaveFailed, error);
     } finally {
-      if (mounted) setState(() => _downloading = false);
+      saving = false;
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final data = widget.data;
-    return SizedBox(
-      key: const Key('file-preview-sheet'),
-      height: MediaQuery.sizeOf(context).height * .86,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
-            child: Row(
-              children: [
-                Icon(
-                  data.isRasterImage
-                      ? AppIconography.image
-                      : AppIconography.fileText,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        _metadata(context, data),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (data.copyText != null)
-                  IconButton(
-                    tooltip: readerL10n(context).readerUiCopyContents,
-                    onPressed: () => _copy(data.copyText!),
-                    icon: const Icon(AppIcons.copy, size: 19),
-                  ),
-                if (widget.onAttach != null)
-                  IconButton(
-                    key: const Key('file-preview-attach'),
-                    tooltip: readerL10n(context).readerUiAttachPrompt,
-                    onPressed: _attaching ? null : _attach,
-                    icon: _attaching
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(AppIconography.attach, size: 20),
-                  ),
-                if (data.exportBytes != null)
-                  IconButton(
-                    key: const Key('file-preview-download'),
-                    tooltip: readerL10n(context).readerUiSaveDevice,
-                    onPressed: _downloading ? null : _download,
-                    icon: _downloading
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(AppIconography.download, size: 20),
-                  ),
-                IconButton(
-                  tooltip: readerL10n(context).readerUiClosePreview,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(AppIconography.close),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(child: FilePreviewBody(data: data)),
-        ],
+  final current = data();
+  final whole = current?.copyText;
+  final more = <KitMenuItem>[
+    if (whole != null && shownCopy != null && whole != shownCopy)
+      KitMenuItem(
+        key: const ValueKey('file-preview-copy-original'),
+        label: l10n.filePreviewCopyOriginal,
+        icon: AppIconography.copy,
+        // SEC-13: the person's own file is copied verbatim.
+        onSelected: () {
+          final context = host();
+          if (context.mounted) {
+            unawaited(KitCopy.copy(context, whole, redact: false));
+          }
+        },
       ),
-    );
-  }
+    if (current == null || current.exportBytes != null)
+      KitMenuItem(
+        key: const ValueKey('file-preview-download'),
+        label: l10n.readerUiSaveDevice,
+        icon: AppIconography.download,
+        onSelected: () => unawaited(save()),
+      ),
+    if (path != null)
+      KitMenuItem.copy(
+        key: const ValueKey('file-preview-copy-path'),
+        label: l10n.readerUiCopyPath,
+        text: () => path,
+      ),
+    if (onOpenInFiles != null)
+      KitMenuItem(
+        key: const ValueKey('file-preview-open-files'),
+        label: l10n.filePreviewOpenInFiles,
+        icon: AppIconography.folderOpen,
+        onSelected: () {
+          closeViewer();
+          onOpenInFiles();
+        },
+      ),
+    if (onOpenInReview != null)
+      KitMenuItem(
+        key: const ValueKey('file-preview-open-review'),
+        label: l10n.readerUiOpenReview,
+        icon: AppIconography.review,
+        onSelected: () {
+          closeViewer();
+          onOpenInReview();
+        },
+      ),
+  ];
+
+  return showKitViewer(
+    context,
+    name: name,
+    path: path,
+    source: source,
+    viewerKey: const ValueKey('file-preview-sheet'),
+    interactive: MarkdownInteractionScope.enabledOf(context),
+    primary: onAttach == null
+        ? null
+        : KitAction(
+            key: const ValueKey('file-preview-attach'),
+            label: l10n.readerUiAttachPrompt,
+            icon: AppIconography.attach,
+            onPressed: () => unawaited(attach()),
+          ),
+    more: more,
+    wrap: store?.value.wrapCode,
+    onWrapChanged: store == null
+        ? null
+        : (wrap) => unawaited(store.update(wrapCode: wrap)),
+  ).whenComplete(() => open = false);
 }
 
-/// Renders supported file content without sending it to another application.
-class FilePreviewBody extends StatelessWidget {
+/// A file's body inside a host that has its own header (the Files viewer,
+/// a skill's SKILL.md): full width, no frame of its own. Above it, when
+/// they apply, the reasons the body is not what the type suggests, the
+/// rendered/Source switch and Wrap lines; More (right-click) and Ctrl+F
+/// come from the kit viewer.
+class FilePreviewBody extends StatefulWidget {
   const FilePreviewBody({super.key, required this.data, this.initialLine});
 
   final FilePreviewData data;
+
+  /// Opens the source at this line (1-based) and marks it.
   final int? initialLine;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (data.error != null) {
-      return _PreviewNotice(
-        icon: AppIconography.hidden,
-        title: readerL10n(context).readerUiPreviewUnavailable,
-        message: switch (data.error!) {
-          'The attachment content is not included in this message.' =>
-            readerL10n(context).readerUiAttachmentMissing,
-          'Remote attachment previews are not available.' => readerL10n(
-            context,
-          ).readerUiRemoteAttachment,
-          'The attachment data could not be decoded.' => readerL10n(
-            context,
-          ).readerUiAttachmentInvalid,
-          final message => message,
-        },
-      );
-    }
-    if (data.isRasterImage && data.bytes?.isNotEmpty == true) {
-      return ColoredBox(
-        color: theme.colorScheme.surfaceContainerLowest,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: InteractiveViewer(
-                minScale: .75,
-                maxScale: 5,
-                boundaryMargin: const EdgeInsets.all(48),
-                child: Center(
-                  child: Image.memory(
-                    data.bytes!,
-                    key: const Key('file-preview-image'),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => _PreviewNotice(
-                      icon: AppIconography.imageBroken,
-                      title: readerL10n(context).readerUiImageFailed,
-                      message: readerL10n(context).readerUiImageUnsupported,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              bottom: 12,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: .88),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Text(
-                    readerL10n(context).readerUiPinchZoom,
-                    style: TextStyle(fontSize: AppTheme.captionFontSize),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    if (data.text != null) {
-      if (initialLine != null) {
-        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-        final lineCount = '\n'.allMatches(data.text!).length + 1;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (data.truncated)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(l10n.filePreviewPartialSource),
-              ),
-            if (initialLine! < 1 || initialLine! > lineCount)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(l10n.fileLineOutsidePreview(initialLine!)),
-              ),
-            Expanded(
-              child: _FocusedSourcePreview(
-                text: data.text!,
-                initialLine: initialLine!,
-              ),
-            ),
-          ],
-        );
-      }
-      if (data.separator != null) {
-        return DelimitedFilePreview(
-          text: data.text!,
-          original: data.copyText!,
-          separator: data.separator!,
-          truncated: data.truncated,
-        );
-      }
-      if (data.mimeType == 'image/svg+xml') {
-        return SvgFilePreview(
-          source: data.text!,
-          original: data.copyText!,
-          truncated: data.truncated,
-        );
-      }
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (data.truncated)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).filePreviewPartialSource,
-                ),
-              ),
-            SmartTextPreview(key: const Key('file-preview-text'), data: data),
-          ],
-        ),
-      );
-    }
-    if (data.mimeType == 'application/pdf' && data.bytes?.isNotEmpty == true) {
-      return PdfFilePreview(bytes: data.bytes!);
-    }
-    return _PreviewNotice(
-      icon: AppIconography.file,
-      title: readerL10n(context).readerUiPreviewUnavailable,
-      message: [
-        data.mimeType ?? readerL10n(context).readerUiUnknownType,
-        if (data.byteLength != null)
-          readerL10n(context).readerUiBytes(data.byteLength!),
-        readerL10n(context).readerUiFormatUnsupported,
-      ].join('\n'),
-    );
-  }
+  State<FilePreviewBody> createState() => _FilePreviewBodyState();
 }
 
-class _FocusedSourcePreview extends StatefulWidget {
-  final String text;
-  final int initialLine;
+enum _View { rendered, source }
 
-  const _FocusedSourcePreview({required this.text, required this.initialLine});
+class _FilePreviewBodyState extends State<FilePreviewBody> {
+  _Plan? _plan;
+  bool _source = false;
+  bool? _wrap;
 
-  @override
-  State<_FocusedSourcePreview> createState() => _FocusedSourcePreviewState();
-}
-
-class _FocusedSourcePreviewState extends State<_FocusedSourcePreview> {
-  static const _lineHeight = 24.0;
-
-  /// Gutter (line numbers), gap, and a little breathing room after the
-  /// longest line.
-  static const _trailingPadding = 24.0;
-
-  late List<String> _lines = widget.text.split('\n');
-  int get _targetLine =>
-      widget.initialLine >= 1 && widget.initialLine <= _lines.length
-      ? widget.initialLine
-      : 0;
-  late final ScrollController _vertical = ScrollController(
-    initialScrollOffset: ((_targetLine - 1) * _lineHeight - _lineHeight * 2)
-        .clamp(0, (_lines.length - 1) * _lineHeight),
-  );
-  final ScrollController _horizontal = ScrollController();
-
-  /// The measured width of the widest line, cached until the content, the
-  /// text style, or the text scale changes — never guessed per character.
-  bool _positioned = false;
-  double? _widestLineWidth;
-  TextStyle? _measuredStyle;
-  TextScaler? _measuredScaler;
+  _Plan get _currentPlan =>
+      _plan ??= _planFor(widget.data, initialLine: widget.initialLine);
 
   @override
-  void didUpdateWidget(covariant _FocusedSourcePreview oldWidget) {
+  void didUpdateWidget(FilePreviewBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
-      _lines = widget.text.split('\n');
-      _widestLineWidth = null;
-      _positioned = false;
+    if (!identical(oldWidget.data, widget.data) ||
+        oldWidget.initialLine != widget.initialLine) {
+      _plan = null;
     }
   }
 
-  double _widestLine(TextStyle style, TextScaler scaler) {
-    final cached = _widestLineWidth;
-    if (cached != null &&
-        _measuredStyle == style &&
-        _measuredScaler == scaler) {
-      return cached;
+  bool _effectiveWrap(BuildContext context) =>
+      _wrap ??
+      ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ??
+      KitCodeBlock.defaultWrap(context, KitCodeKind.code);
+
+  void _setWrap(bool wrap) {
+    setState(() => _wrap = wrap);
+    if (ReaderPreferencesScope.maybeOf(context) != null) {
+      unawaited(saveReaderPreferences(context, wrapCode: wrap));
     }
-    // Monospace: the longest line is the widest, so one layout pass measures
-    // the whole file.
-    var longest = '';
-    for (final line in _lines) {
-      if (line.length > longest.length) longest = line;
-    }
-    final painter = TextPainter(
-      text: TextSpan(text: longest, style: style),
-      textDirection: TextDirection.ltr,
-      textScaler: scaler,
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    _widestLineWidth = width;
-    _measuredStyle = style;
-    _measuredScaler = scaler;
-    return width;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final codeStyle = theme.textTheme.bodySmall?.copyWith(
-      fontFamily: AppTheme.monoFamily,
-      height: 1.35,
+    final l10n = AppLocalizations.of(context);
+    final tokens = KitTokens.of(context);
+    final data = widget.data;
+    final error = data.error;
+    if (error != null) {
+      return Center(
+        child: KitStateView(
+          icon: AppIconography.hidden,
+          title: l10n.readerUiPreviewUnavailable,
+          body: _errorText(l10n, error),
+          size: KitStateSize.inline,
+        ),
+      );
+    }
+    if (data.isPdf) return PdfFilePreview(bytes: data.bytes!, name: data.name);
+    final plan = _currentPlan;
+    final kind = plan.content.kind;
+    final rendered = plan.renderedLabel;
+    final showsCode =
+        kind == KitViewerKind.text ||
+        kind == KitViewerKind.code ||
+        (rendered != null && _source);
+    final wrap = _effectiveWrap(context);
+    final bar = <Widget>[
+      if (rendered != null)
+        Flexible(
+          child: KitSegmented<_View>(
+            semanticsLabel: l10n.filePreviewViewMode,
+            selected: _source ? _View.source : _View.rendered,
+            onChanged: (view) => setState(() => _source = view == _View.source),
+            segments: [
+              KitSegment(
+                key: const ValueKey('file-preview-rendered-mode'),
+                value: _View.rendered,
+                label: rendered(l10n),
+              ),
+              KitSegment(
+                key: const ValueKey('file-preview-raw-mode'),
+                value: _View.source,
+                label: l10n.fileSource,
+              ),
+            ],
+          ),
+        ),
+      const Spacer(),
+      if (showsCode)
+        KitIconButton(
+          key: const ValueKey('file-preview-wrap'),
+          icon: AppIconography.wrapText,
+          tooltip: l10n.kitWrapLines,
+          selected: wrap,
+          onPressed: () => _setWrap(!wrap),
+        ),
+    ];
+    final hasBar = rendered != null || showsCode;
+    final viewer = KitViewer(
+      name: data.name,
+      source: plan.source,
+      showHeader: false,
+      interactive: MarkdownInteractionScope.enabledOf(context),
+      showSource: _source,
+      onShowSourceChanged: (source) => setState(() => _source = source),
+      wrap: wrap,
+      onWrapChanged: _setWrap,
+      viewerKey: ValueKey(switch (kind) {
+        KitViewerKind.image => 'file-preview-image',
+        KitViewerKind.delimited => 'file-preview-table',
+        _ => 'file-preview-text',
+      }),
     );
-    final scaler = MediaQuery.textScalerOf(context);
-    final widest = codeStyle == null ? 0.0 : _widestLine(codeStyle, scaler);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wrap =
-            ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ?? false;
-        final lineHeight = scaler.scale(14) * 1.35 + 8;
-        final gutterPainter = TextPainter(
-          text: TextSpan(
-            text: '${_lines.length}',
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontFamily: AppTheme.monoFamily,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final notice in plan.notices)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              top: tokens.space2,
+              end: tokens.gutter,
             ),
+            child: KitNotice(message: notice(l10n), liveRegion: false),
           ),
-          textDirection: TextDirection.ltr,
-          textScaler: scaler,
-        )..layout();
-        final gutter = gutterPainter.width + 20;
-        gutterPainter.dispose();
-        final contentWidth = wrap
-            ? constraints.maxWidth
-            : (widest + gutter + _trailingPadding).clamp(
-                constraints.maxWidth,
-                double.infinity,
-              );
-        final codeWidth = (contentWidth - gutter - 12).clamp(
-          1.0,
-          double.infinity,
-        );
-        final heights = <double>[];
-        for (final line in _lines) {
-          if (!wrap) {
-            heights.add(lineHeight);
-            continue;
-          }
-          final painter = TextPainter(
-            text: TextSpan(text: line.isEmpty ? ' ' : line, style: codeStyle),
-            textDirection: TextDirection.ltr,
-            textScaler: scaler,
-          )..layout(maxWidth: codeWidth);
-          heights.add((painter.height + 8).clamp(lineHeight, double.infinity));
-          painter.dispose();
-        }
-        if (!_positioned) {
-          _positioned = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || !_vertical.hasClients || _targetLine == 0) return;
-            double sum(Iterable<double> values) =>
-                values.fold<double>(0, (a, b) => a + b);
-            final targetTop = sum(heights.take(_targetLine - 1));
-            final targetHeight = heights[_targetLine - 1];
-            final context = sum(
-              heights.skip((_targetLine - 3).clamp(0, heights.length)).take(2),
-            );
-            // Show two rows of context above the target, but never at the
-            // cost of pushing the target itself out of the viewport: wrapped
-            // rows at large text scales can each fill most of the screen.
-            final position = _vertical.position;
-            final offset = math.max(
-              targetTop - context,
-              targetTop + targetHeight - position.viewportDimension,
-            );
-            _vertical.jumpTo(
-              offset.clamp(0.0, math.min(targetTop, position.maxScrollExtent)),
-            );
-          });
-        }
-        final list = SelectionArea(
-          child: ListView.builder(
-            key: const Key('file-preview-focused-source'),
-            controller: _vertical,
-            itemExtentBuilder: (index, _) => heights[index],
-            itemCount: _lines.length,
-            itemBuilder: (context, index) {
-              final selected = index + 1 == _targetLine;
-              return ColoredBox(
-                key: selected ? const Key('file-preview-target-line') : null,
-                color: selected
-                    ? theme.colorScheme.primaryContainer.withValues(alpha: .45)
-                    : Colors.transparent,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: gutter,
-                      child: SelectionContainer.disabled(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            '${index + 1}',
-                            textAlign: TextAlign.right,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontFamily: AppTheme.monoFamily,
-                              color: selected
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          _lines[index].isEmpty ? ' ' : _lines[index],
-                          softWrap: wrap,
-                          maxLines: wrap ? null : 1,
-                          textDirection: TextDirection.ltr,
-                          style: codeStyle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+        if (hasBar)
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.gutter,
+              tokens.space2,
+              tokens.space2,
+              tokens.space1,
+            ),
+            child: Row(children: bar),
           ),
-        );
-        return Directionality(
-          textDirection: TextDirection.ltr,
-          child: wrap
-              ? list
-              : Scrollbar(
-                  controller: _horizontal,
-                  child: SingleChildScrollView(
-                    controller: _horizontal,
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: contentWidth,
-                      height: constraints.maxHeight,
-                      child: list,
-                    ),
-                  ),
-                ),
-        );
-      },
+        Expanded(child: viewer),
+      ],
     );
-  }
-
-  @override
-  void dispose() {
-    _vertical.dispose();
-    _horizontal.dispose();
-    super.dispose();
   }
 }
 
-/// Renders textual artifacts according to their actual content while keeping
-/// a selectable raw representation available for Markdown.
+/// A short textual result inside a card (a tool's output, a subagent's
+/// answer): Markdown as prose with a Rendered/Source switch, JSON laid out,
+/// code coloured, plain text as text. The code block's own Copy copies the
+/// original text, and "Show all" opens the whole thing in the viewer.
 class SmartTextPreview extends StatefulWidget {
   const SmartTextPreview({super.key, required this.data});
 
@@ -749,178 +815,66 @@ class SmartTextPreview extends StatefulWidget {
 }
 
 class _SmartTextPreviewState extends State<SmartTextPreview> {
-  bool _rawMarkdown = false;
+  bool _source = false;
 
-  String get _text => widget.data.text ?? '';
-
-  bool get _isMarkdown {
-    final mime = widget.data.mimeType;
-    final name = widget.data.name.toLowerCase();
-    if (mime == 'text/markdown' ||
-        name.endsWith('.md') ||
-        name.endsWith('.mdx')) {
-      return true;
-    }
-    return RegExp(
-      r'(^|\n)#{1,6}\s+|(^|\n)```|(^|\n)\|[^\n]+\|\s*\n\|?\s*:?-{3,}',
-      multiLine: true,
-    ).hasMatch(_text);
-  }
-
-  String? get _language {
-    final name = widget.data.name.toLowerCase().split('?').first;
-    final dot = name.lastIndexOf('.');
-    final extension = dot < 0 ? '' : name.substring(dot + 1);
-    return switch (extension) {
-      'dart' => 'dart',
-      'js' || 'mjs' || 'cjs' => 'javascript',
-      'ts' => 'typescript',
-      'tsx' => 'tsx',
-      'jsx' => 'jsx',
-      'py' => 'python',
-      'go' => 'go',
-      'rs' => 'rust',
-      'java' => 'java',
-      'kt' || 'kts' => 'kotlin',
-      'swift' => 'swift',
-      'c' || 'h' => 'c',
-      'cc' || 'cpp' || 'cxx' || 'hpp' => 'cpp',
-      'cs' => 'csharp',
-      'sh' || 'bash' || 'zsh' => 'shell',
-      'html' || 'htm' => 'html',
-      'css' => 'css',
-      'scss' => 'scss',
-      'xml' || 'svg' => 'xml',
-      'yaml' || 'yml' => 'yaml',
-      'toml' => 'toml',
-      'sql' => 'sql',
-      'gradle' => 'gradle',
-      'diff' || 'patch' => 'diff',
-      _ => null,
-    };
-  }
-
-  String? get _prettyJson {
-    final mime = widget.data.mimeType;
-    final name = widget.data.name.toLowerCase();
-    final trimmed = _text.trim();
-    final candidate =
-        mime == 'application/json' ||
-        name.endsWith('.json') ||
-        ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-            (trimmed.startsWith('[') && trimmed.endsWith(']')));
-    if (!candidate) return null;
-    try {
-      return const JsonEncoder.withIndent('  ').convert(jsonDecode(trimmed));
-    } on FormatException {
-      return null;
-    }
-  }
+  void _openFull() => unawaited(showFilePreviewSheet(context, widget.data));
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final prettyJson = _prettyJson;
-    final language = _language;
-    if (_isMarkdown) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = KitTokens.of(context);
+    final data = widget.data;
+    final text = data.text ?? '';
+    final original = data.copyText;
+    if (data.isMarkdown) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8),
+          KitSegmented<_View>(
+            semanticsLabel: l10n.filePreviewViewMode,
+            selected: _source ? _View.source : _View.rendered,
+            onChanged: (view) => setState(() => _source = view == _View.source),
+            segments: [
+              KitSegment(
+                key: const ValueKey('file-preview-rendered-mode'),
+                value: _View.rendered,
+                label: l10n.readerUiRendered,
               ),
-              child: Wrap(
-                alignment: WrapAlignment.end,
-                children: [
-                  TextButton(
-                    key: const Key('file-preview-rendered-mode'),
-                    onPressed: _rawMarkdown
-                        ? () => setState(() => _rawMarkdown = false)
-                        : null,
-                    child: Text(readerL10n(context).readerUiRendered),
-                  ),
-                  TextButton(
-                    key: const Key('file-preview-raw-mode'),
-                    onPressed: _rawMarkdown
-                        ? null
-                        : () => setState(() => _rawMarkdown = true),
-                    child: Text(readerL10n(context).readerUiRaw),
-                  ),
-                ],
+              KitSegment(
+                key: const ValueKey('file-preview-raw-mode'),
+                value: _View.source,
+                label: l10n.fileSource,
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          if (_rawMarkdown)
-            CodeBlock(
-              code: _text,
-              originalSource: widget.data.copyText,
+          SizedBox(height: tokens.space2),
+          if (_source)
+            KitCodeBlock(
+              text: text,
               language: 'markdown',
+              copyText: original,
+              onOpenFull: _openFull,
             )
           else
-            MarkdownText(_text),
+            KitMarkdown(
+              text,
+              interactive: MarkdownInteractionScope.enabledOf(context),
+            ),
         ],
       );
     }
-    if (prettyJson != null) {
-      return CodeBlock(
-        code: prettyJson,
-        originalSource: widget.data.copyText,
-        language: 'json',
-      );
-    }
-    if (language != null) {
-      return CodeBlock(
-        code: _text,
-        originalSource: widget.data.copyText,
-        language: language,
-      );
-    }
-    return SelectableText(
-      _text,
-      style: theme.textTheme.bodySmall?.copyWith(height: 1.45),
+    final pretty = data.prettyJson;
+    final language = pretty != null ? 'json' : data.language;
+    return KitCodeBlock(
+      text: pretty ?? text,
+      kind: language == null ? KitCodeKind.output : KitCodeKind.code,
+      language: language,
+      copyText: original,
+      onOpenFull: _openFull,
     );
   }
 }
-
-class _PreviewNotice extends StatelessWidget {
-  const _PreviewNotice({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 42),
-          const SizedBox(height: 12),
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
-        ],
-      ),
-    ),
-  );
-}
-
-String _metadata(BuildContext context, FilePreviewData data) => [
-  data.mimeType ?? readerL10n(context).readerUiUnknownType,
-  if (data.byteLength != null)
-    readerL10n(context).readerUiBytes(data.byteLength!),
-].join(' · ');
 
 AppLocalizations readerL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));

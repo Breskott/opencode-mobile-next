@@ -25735,5 +25735,11 @@
   "formRendererUseTime": "Use time",
   "@formRendererUseTime": {
     "description": "Form sheet time picker: confirms the picked time"
-  }
+  },
+  "filePreviewPdfIsolated": "PDF pages don't render in this isolated view. Save the file to read it in a PDF app.",
+  "filePreviewCopyOriginal": "Copy original file",
+  "filePreviewOpenInFiles": "Open in Files",
+  "filePreviewViewMode": "Show file as",
+  "filePreviewAttachFailed": "Couldn't attach file",
+  "filePreviewSaveFailed": "Couldn't save file"
 }
