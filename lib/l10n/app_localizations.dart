@@ -41126,6 +41126,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Android did not turn background mode off.'**
   String get settingsBackgroundOffFailed;
+
+  /// Work tab: said once per server when the app opened the server's only project by itself instead of asking which one.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {project}, the only project on this server.'**
+  String defaultProjectOnlyNotice(String project);
+
+  /// Work tab: said once per server when the app opened the most recently used project by itself instead of asking which one.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {project}, the project worked on most recently.'**
+  String defaultProjectLastUsedNotice(String project);
+
+  /// Work tab: the action on the notice about the project opened by itself; opens the projects list.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another project'**
+  String get defaultProjectChange;
+
+  /// Review changes: said once when the page opened a view other than this conversation's because only that view has changes. {scope} is the view's name as the picker above shows it.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {scope}: it is the view with changes.'**
+  String defaultReviewScopeNotice(String scope);
+
+  /// Conversation: said once per server when the app picked the server's default model by itself instead of asking which model to use.
+  ///
+  /// In en, this message translates to:
+  /// **'Using {model}, this server\'s default model.'**
+  String defaultModelNotice(String model);
+
+  /// Conversation: the action on the notice about the model picked by itself; opens the model sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another model'**
+  String get defaultModelChange;
 }
 
 class _AppLocalizationsDelegate
