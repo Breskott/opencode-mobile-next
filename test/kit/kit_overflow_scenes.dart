@@ -158,62 +158,6 @@ Future<void> _confirm(
 
 /// Every scene in the matrix, one block per part, appended at the end.
 final kitOverflowScenes = <KitOverflowScene>[
-  // product_states.dart (re-exported by kit.dart)
-  KitOverflowScene(
-    const ['LoadingList'],
-    'loading',
-    host: KitOverflowHost.fill,
-    build: (_, _) => const LoadingList(),
-  ),
-  KitOverflowScene(
-    const ['ProductEmptyState'],
-    'empty',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductEmptyState(
-      icon: AppIconography.search,
-      title: c.t('No conversations yet', 'لا محادثات بعد'),
-      message: c.t(
-        'Start one from the composer below, or open a project first.',
-        'ابدأ واحدة من خانة الكتابة، أو افتح مشروعاً أولاً.',
-      ),
-      actionLabel: c.t('Open a project', 'فتح مشروع'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductErrorState'],
-    'error',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductErrorState(
-      message: c.t(
-        'The server did not answer. Check that it is running.',
-        'لم يرد الخادم. تأكد أنه يعمل.',
-      ),
-      onRetry: () async {},
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductInlineEmpty'],
-    'empty',
-    build: (_, c) => ProductInlineEmpty(
-      icon: AppIconography.info,
-      title: c.t('Nothing is waiting for you', 'لا شيء بانتظارك'),
-      message: c.t(
-        'Requests from your agents appear here.',
-        'تظهر طلبات الوكلاء هنا.',
-      ),
-      actionLabel: c.t('Open activity', 'فتح النشاط'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['SectionLabel'],
-    'default',
-    build: (_, c) => SectionLabel(
-      c.t('Servers on this network', 'الخوادم على هذه الشبكة'),
-      trailing: const KitChevron(),
-    ),
-  ),
   // kit_action_stack.dart
   KitOverflowScene(
     const ['KitActionStack'],
@@ -619,7 +563,7 @@ final kitOverflowScenes = <KitOverflowScene>[
     'default',
     host: KitOverflowHost.fill,
     build: (_, c) => KitScreen(
-      header: [SectionLabel(c.t('Servers', 'الخوادم'))],
+      header: [KitText(c.t('Servers', 'الخوادم'), role: KitTextRole.label)],
       body: ListView(children: [_row(c), _row(c), _row(c)]),
       bottom: KitActionBlock(
         primary: KitAction(
@@ -638,32 +582,6 @@ final kitOverflowScenes = <KitOverflowScene>[
       loading: true,
       loadingLabel: c.t('Loading servers', 'جارٍ تحميل الخوادم'),
       body: const KitSkeletonRows(),
-    ),
-  ),
-  // kit_secret_field.dart
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'default',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(text: 'sk-test-not-a-real-key'),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      hint: c.t(
-        'Paste the key from your account page',
-        'الصق المفتاح من صفحة حسابك',
-      ),
-    ),
-  ),
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'disabled',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      enabled: false,
     ),
   ),
   // kit_sheet.dart (KitSheet, showKitSheet)

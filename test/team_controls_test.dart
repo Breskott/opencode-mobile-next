@@ -4,7 +4,8 @@
 // and present with `gascityFront`; Nudge is one tap with a receipt chip
 // that follows the record (Sent → Confirmed / Unconfirmed); Stop, Restart
 // and Cancel run are two-step (the first tap opens the confirmation, the
-// second sends, backing out sends nothing); Message sends the text;
+// second sends, backing out sends nothing); messaging the worker is its
+// conversation's composer (slice-P3.6), which sends the text;
 // Reassign picks a ready item and sends assignWork; Start a run sends the
 // objective and the supervision line to the Mayor, shows "Planning…
 // (Mayor)" on the home, resolves when a run carrying the objective
@@ -26,11 +27,10 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamConversationScreen;
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One recorded control call.
@@ -386,10 +386,6 @@ void main() {
         matching: find.byType(Scrollable),
       ),
     );
-    // The block opens with the primary (Open conversation or Live
-    // output); bring its controls into view too.
-    final message = key('team-agent-control-message');
-    if (message.evaluate().isNotEmpty) await tester.ensureVisible(message);
     await tester.pump();
   }
 
@@ -423,11 +419,12 @@ void main() {
         capabilities: OrchestrationCapabilities.gascityRead,
       );
       await pumpAgent(tester, controller);
-      // Only the way to its work (Live output here) remains.
+      // Only the way to its work (its conversation) remains.
       expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-control-nudge'), findsNothing);
       expect(key('team-agent-control-pause'), findsNothing);
-      expect(key('team-agent-open-output'), findsOneWidget);
+      expect(key('team-agent-open-conversation'), findsOneWidget);
+      expect(key('team-agent-open-output'), findsNothing);
       expect(find.text('Open session'), findsNothing);
 
       await tester.pumpWidget(
@@ -454,20 +451,14 @@ void main() {
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
       await openMore(tester);
-      for (final id in [
-        'message',
-        'nudge',
-        'pause',
-        'stop',
-        'restart',
-        'reassign',
-      ]) {
+      // Messaging is the conversation's composer, not a control here.
+      expect(key('team-agent-control-message'), findsNothing);
+      for (final id in ['nudge', 'pause', 'stop', 'restart', 'reassign']) {
         expect(key('team-agent-control-$id'), findsOneWidget, reason: id);
       }
       expect(key('team-agent-control-resume'), findsNothing);
       expect(find.text('Open session'), findsNothing);
       expect(find.text('Open worktree'), findsNothing);
-      expect(find.text('Message'), findsOneWidget);
       expect(find.text('Reassign work…'), findsOneWidget);
     });
 
@@ -482,8 +473,9 @@ void main() {
         ),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      expect(key('team-agent-control-message'), findsOneWidget);
+      // Messaging lives in the conversation; the page offers it.
+      expect(key('team-agent-open-conversation'), findsOneWidget);
+      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-control-nudge'), findsNothing);
       expect(key('team-agent-control-stop'), findsNothing);
       expect(key('team-agent-control-reassign'), findsNothing);
@@ -697,31 +689,47 @@ void main() {
   });
 
   group('message and reassign', () {
-    testWidgets('Message: the sheet sends the text', (tester) async {
+    testWidgets('Message: the conversation composer sends the text', (
+      tester,
+    ) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await tester.tap(key('team-agent-control-message'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-message-sheet'), findsOneWidget);
-      expect(find.text('Message fox'), findsOneWidget);
-      // Empty text cannot be sent.
-      expect(
-        tester.widget<IconButton>(key('team-agent-message-send')).onPressed,
-        isNull,
+      await tester.pumpWidget(
+        app(TeamWatchLiveScreen(team: controller, agentId: 'fox')),
       );
+      await settle(tester);
+      // The composer addresses the worker; empty text cannot be sent.
+      expect(key('chat-watching-composer'), findsOneWidget);
+      expect(find.text('Message fox…'), findsWidgets);
+      await tester.tap(key('chat-watching-message-send'));
+      await tester.pump();
+      expect(gateway.calls, isEmpty);
       await tester.enterText(
-        key('team-agent-message-field'),
+        key('chat-watching-message-field'),
         'Use the offline queue for the tests',
       );
       await tester.pump();
-      await tester.tap(key('team-agent-message-send'));
-      await tester.pumpAndSettle();
+      await tester.tap(key('chat-watching-message-send'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(gateway.calls.single.verb, 'message');
       expect(gateway.calls.single.target, 'fox');
       expect(gateway.calls.single.arg, 'Use the offline queue for the tests');
-      expect(find.textContaining('Message · Sending…'), findsOneWidget);
+      // Taken: the field is cleared and the receipt is above the composer.
+      expect(key('chat-watching-message-receipt'), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: key('chat-watching-message-field'),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        isEmpty,
+      );
+      await tester.pumpWidget(const SizedBox());
       await drain(tester);
     });
 
@@ -879,7 +887,8 @@ void main() {
         );
         await tester.tap(key('team-planning-output'));
         await tester.pumpAndSettle();
-        expect(find.byType(AgentOutputScreen), findsOneWidget);
+        // The planner's conversation, from the team's live output.
+        expect(find.byType(TeamWatchLiveScreen), findsOneWidget);
         await tester.pageBack();
         await tester.pumpAndSettle();
 
@@ -1257,12 +1266,6 @@ void main() {
           // Buttons are at least 48dp tall.
           final nudge = tester.getSize(key('team-agent-control-nudge'));
           expect(nudge.height, greaterThanOrEqualTo(48));
-          await tester.tap(key('team-agent-control-message'));
-          await tester.pumpAndSettle();
-          expect(key('team-agent-message-sheet'), findsOneWidget);
-          expect(tester.takeException(), isNull);
-          await tester.tapAt(const Offset(160, 10));
-          await tester.pumpAndSettle();
 
           await tester.pumpWidget(
             app(

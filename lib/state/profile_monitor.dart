@@ -550,7 +550,7 @@ class ProfileMonitor extends ChangeNotifier {
   }
 
   /// Synchronously closes admission. Deletion drains writes before key sweep.
-  void removeProfile(String id) {
+  void removeProfile(String id, {bool retainIdentity = false}) {
     if (_activeProfileID == id) _activeGateway?.close();
     _blocked.add(id);
     _epochs[id] = (_epochs[id] ?? 0) + 1;
@@ -558,10 +558,16 @@ class ProfileMonitor extends ChangeNotifier {
     _snapshots.remove(id);
     _next.remove(id);
     _failures.remove(id);
-    _sources.remove(id);
+    if (!retainIdentity) _sources.remove(id);
     _busy.remove(id);
     unawaited(_dismissProfile(id));
     if (!_disposed) notifyListeners();
+  }
+
+  /// Reopens admission after an aborted removal; old callbacks stay invalid.
+  void cancelDeletion(String id) {
+    if (_disposed || !_blocked.remove(id)) return;
+    _schedule();
   }
 
   Future<void> drain(String id) async {

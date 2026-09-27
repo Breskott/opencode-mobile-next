@@ -131,3 +131,27 @@ the target phone, separating remote and managed-local startup. Profile giant
 chat replies after Claude's changes. Capture heap/live-image measurements before
 changing image budgets; a line-count cap still cannot bound one giant log line.
 See each slice for precise limitations and owner acceptance cases.
+
+### Integration merge: Start fresh recovery
+
+Merged `feat/phone-setup-v2` at `c9504b565c81693f06eb1f6bc40bd0fa67f9249f`
+into the perf commit `fb2b7c44`. The only conflicted file was `lib/main.dart`.
+`_load(initial: true)` still starts after first paint, but now enters the policy
+owner's reset admission guard and `_loads` tracking. `_runLoad(initial: true)`
+skips the redundant opening-state rebuild; retries reset `_resetFailed` and the
+other loading fields normally. Both `resetSavedSignIns` and `controllerFactory`
+remain injectable. Generation invalidation, drain-before-reset and pending
+controller disposal are preserved.
+
+The merged candidate passed **110 tests** with the pinned Flutter, serially
+through the machine lock (`/tmp/oc-perf-merge-tests.log`): all five performance
+files (**19 probes**), `bootstrap_start_fresh_test`, `app_diagnostics_test`,
+`profile_sign_in_reset_test`, and all four required gates (`kit_ratchet`,
+`redaction`, `ui_glossary`, `no_raw_error_text`). The first loader still observes
+one completed paint in `postFrameCallbacks`; scripted first frame / health /
+connected remains 0 / 40 / 120 ms. Commands retain `--no-pub --concurrency=1
+--reporter expanded`; test names have the usual `test/` prefix and `.dart`
+suffix. Formatting with Dart language version 3.10 made no further changes.
+Pinned `flutter analyze --no-pub` passed with no issues in 32.3 seconds
+(`/tmp/oc-perf-merge-analyze.log`). Conflict-marker, staged-diff and whitespace
+checks passed. No full-suite or device measurement claim is added by this merge.

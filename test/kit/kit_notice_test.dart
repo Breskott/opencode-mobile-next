@@ -1,5 +1,5 @@
 // KitNotice v2 (docs/ux-system/kit-api/KitNotice.md): the cost line, the
-// one-sentence offer (and the NudgeCard wrapper over it), the error with
+// one-sentence offer, the error with
 // its defaults (Copy details, Report a problem or the network fix), the
 // KitReportHook seam, the error classifier, the tone colours, the one live
 // region and reduced motion.
@@ -10,14 +10,12 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_notice.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/nudge_card.dart';
 
 import 'kit_motion_still.dart';
 
@@ -241,45 +239,6 @@ void main() {
         },
       );
     }
-  });
-
-  group('NudgeCard wrapper', () {
-    testWidgets('keeps its keys, and each control calls once', (tester) async {
-      var actions = 0;
-      var dismissals = 0;
-      await _pump(
-        tester,
-        NudgeCard(
-          id: NudgeId.compact,
-          message: 'This conversation is nearly full. Compact it?',
-          actionLabel: 'Compact',
-          dismissTooltip: 'Dismiss tip',
-          onAction: () => actions += 1,
-          onDismiss: () => dismissals += 1,
-        ),
-      );
-      expect(find.byKey(const ValueKey('nudge-compact')), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('nudge-compact')),
-          matching: find.byKey(const ValueKey('nudge-compact-action')),
-        ),
-        findsOneWidget,
-      );
-      expect(find.byTooltip('Dismiss tip'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('nudge-compact-action')));
-      expect((actions, dismissals), (1, 0));
-      await tester.tap(find.byKey(const ValueKey('nudge-compact-dismiss')));
-      expect((actions, dismissals), (1, 1));
-      // It is the offer, one live region.
-      expect(
-        find.descendant(
-          of: find.byType(NudgeCard),
-          matching: find.byType(KitNotice),
-        ),
-        findsOneWidget,
-      );
-    });
   });
 
   group('error', () {

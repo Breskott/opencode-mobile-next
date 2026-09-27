@@ -8,8 +8,7 @@
 ///
 /// 1. The top bar ([KitTopBar]) names the agent by role and name ("Worker ·
 ///    fox") with what it works on and what holds it up as the subtitle
-///    ("On “Sync engine” · nothing blocking it"). Refresh is its one icon;
-///    Live output joins the overflow when it is not the primary.
+///    ("On “Sync engine” · nothing blocking it"). Refresh is its one icon.
 /// 2. A question waiting on the person, as the pointing [KitNeedsYou.row]
 ///    that opens the Gate sheet, when there is one.
 /// 3. What went wrong, when something did: the worker didn't start, it
@@ -24,11 +23,11 @@
 /// 6. Technical details, one [KitDetailsFold], last and collapsed: the raw
 ///    last command among them.
 ///
-/// Why the primary is Live output (no conversation matched on the
-/// connected server) is the one-line note under the pinned actions.
-///
-/// The pinned actions ([KitActionBlock]): **Open conversation** (or **Live
-/// output**) is the primary, **Message fox** the secondary. The fallbacks
+/// The pinned action ([KitActionBlock]) is **Open conversation**: the
+/// worker's session in watching mode, or, when the connected server has no
+/// conversation of it, the same watching page drawn from the team's live
+/// output; the one-line note under it says so. Messaging the worker
+/// happens in that conversation's composer (slice-P3.6). The fallbacks
 /// (the team restarts, wakes and routes work itself) sit in the top bar's
 /// overflow: Pause fox, Nudge fox, Restart fox and Stop fox (last, in the
 /// destructive tone). Pause is undone with [showKitUndo]; Stop and Restart
@@ -57,17 +56,11 @@ import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_now.dart';
 import '../../widgets/team_vocabulary.dart';
 import '../team_conversation/team_conversation.dart';
-import 'agent_output_screen.dart';
 import 'gate_sheet.dart' show showGateSheet;
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
-
-/// Where the message typed to [agentId] is kept across dismissal
-/// (P7.1, DATA-1): `oc.draft.team-agent-message.<agentId>.<profileId>`.
-String teamAgentMessageDraftTarget(String agentId) =>
-    'team-agent-message.$agentId';
 
 class AgentScreen extends StatefulWidget {
   const AgentScreen({
@@ -117,8 +110,8 @@ class _AgentScreenState extends State<AgentScreen> {
 
   void _changed() {
     if (!mounted) return;
-    // Live output opening on top notifies the shared tail from its own
-    // initState, mid-build: redraw after that frame instead.
+    // The live watching page opening on top notifies the shared tail from
+    // its own initState, mid-build: redraw after that frame instead.
     if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -337,87 +330,17 @@ class _AgentScreenState extends State<AgentScreen> {
     await _control(agent.id, AgentControlAction.restart);
   }
 
-  // revamp: merge-into:team-conversation (slice-P3.6) for
-  // team-agent-message-sheet: messaging a worker moves to the conversation
-  // composer; until then this sheet keeps the draft (P7.1).
-  Future<void> _message(OrchestrationAgent agent) async {
-    final l10n = _copy(context);
-    final text = TextEditingController();
-    final send = ValueNotifier<KitAction?>(null);
-    late final KitDraft draft;
-    void update() {
-      final value = text.text.trim();
-      send.value = KitAction(
-        key: const ValueKey('team-agent-message-send'),
-        label: l10n.teamUiControlMessageSend,
-        icon: AppIconography.send,
-        onPressed: value.isEmpty
-            ? null
-            : () => Navigator.of(context).pop(value),
-        disabledReason: value.isEmpty ? l10n.teamAgentScreenMessageFirst : null,
-      );
-    }
-
-    draft = KitDraft(
-      target: teamAgentMessageDraftTarget(agent.id),
-      profileId: _controller.profileId,
-      controller: text,
-    );
-    text.addListener(update);
-    update();
-    try {
-      final result = await showKitSheet<String>(
-        context,
-        title: l10n.teamUiControlMessageTitle(agent.name),
-        icon: AppIconography.chat,
-        sheetKey: const ValueKey('team-agent-message-sheet'),
-        draft: draft,
-        primaryListenable: send,
-        body: (_) => KitField(
-          label: l10n.teamAgentScreenMessageLabel,
-          hint: l10n.teamUiControlMessageHint,
-          kind: KitFieldKind.multiline,
-          draft: draft,
-          controller: text,
-          autofocus: true,
-          fieldKey: const ValueKey('team-agent-message-field'),
-        ),
-      );
-      if (result == null || result.isEmpty || !mounted) return;
-      await _run(() => _controller.messageAgent(agent.id, result));
-      await draft.clear();
-    } finally {
-      text.removeListener(update);
-      send.dispose();
-      // The field may still read the controller while the sheet leaves.
-      WidgetsBinding.instance.addPostFrameCallback((_) => text.dispose());
-    }
-  }
-
+  /// The worker's conversation; Back returns here, so it offers no way
+  /// back to this page.
   void _openConversation(OrchestrationAgent agent) => unawaited(
     openTeamAgentConversation(
       context,
       agent,
       team: _controller,
       lookup: _lookup,
+      details: false,
     ),
   );
-
-  void _openOutput() {
-    final miss = _lookup?.miss;
-    unawaited(
-      pushKitPage<void>(
-        context,
-        (context) => AgentOutputScreen(
-          controller: _controller,
-          agentId: widget.agentId,
-          note: miss == null
-              ? null
-              : teamAgentConversationMissNote(context, miss),
-        ),
-      ),
-    );
-  }
 
   // -------------------------------------------------------------------------
   // Build
@@ -461,16 +384,7 @@ class _AgentScreenState extends State<AgentScreen> {
               onPressed: onRetry,
             ),
           ],
-          menu: [
-            if (ready && miss == null)
-              KitMenuItem(
-                key: const ValueKey('team-agent-menu-output'),
-                label: l10n.teamUiAgentOutputTitle,
-                icon: AppIconography.terminal,
-                onSelected: _openOutput,
-              ),
-            if (ready) ..._controls(context, agent, work),
-          ],
+          menu: [if (ready) ..._controls(context, agent, work)],
           menuKey: const ValueKey('team-agent-more'),
         ),
         header: [
@@ -503,8 +417,9 @@ class _AgentScreenState extends State<AgentScreen> {
     },
   );
 
-  /// The pinned actions, and under them, when the primary is Live output,
-  /// why: no conversation matched on the connected server.
+  /// The pinned action, and under it, when the conversation opens from the
+  /// team's live output, why: no conversation matched on the connected
+  /// server.
   Widget _bottom(
     BuildContext context,
     OrchestrationAgent agent,
@@ -530,36 +445,17 @@ class _AgentScreenState extends State<AgentScreen> {
     );
   }
 
-  /// The pinned block: the conversation (or Live output), then Message.
-  /// Absent controls are absent; the list explains why when the host takes
-  /// none.
+  /// The pinned block: the worker's conversation, where it is also
+  /// messaged.
   KitActionBlock _actions(BuildContext context, OrchestrationAgent agent) {
     final l10n = _copy(context);
-    final caps = _controller.capabilities;
-    VoidCallback? idle(VoidCallback action) => _busy ? null : action;
-    final primary = _lookup?.miss == null
-        ? KitAction(
-            key: const ValueKey('team-agent-open-conversation'),
-            label: l10n.teamOpenConversation,
-            icon: AppIconography.chat,
-            onPressed: () => _openConversation(agent),
-          )
-        : KitAction(
-            key: const ValueKey('team-agent-open-output'),
-            label: l10n.teamUiAgentOutputTitle,
-            icon: AppIconography.terminal,
-            onPressed: _openOutput,
-          );
     return KitActionBlock(
-      primary: primary,
-      secondary: caps.controlMessage
-          ? KitAction(
-              key: const ValueKey('team-agent-control-message'),
-              label: l10n.teamUiControlMessageTitle(agent.name),
-              icon: AppIconography.chat,
-              onPressed: idle(() => unawaited(_message(agent))),
-            )
-          : null,
+      primary: KitAction(
+        key: const ValueKey('team-agent-open-conversation'),
+        label: l10n.teamOpenConversation,
+        icon: AppIconography.chat,
+        onPressed: () => _openConversation(agent),
+      ),
     );
   }
 

@@ -14,6 +14,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/reader_preferences.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/widgets/diff_view.dart';
@@ -132,18 +133,19 @@ Finder _horizontal() => find.byWidgetPredicate(
 );
 
 Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
-  await tester.tap(find.byTooltip('Code options').first);
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find
-        .ancestor(
-          of: find.text(label),
-          matching: find.byWidgetPredicate(
-            (widget) => widget is PopupMenuEntry,
-          ),
-        )
-        .first,
+  final action = find.byKey(
+    ValueKey(label == 'Full screen' ? 'kit-code-open-full' : 'kit-code-wrap'),
   );
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _chooseFileFilter(WidgetTester tester, String key) async {
+  await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(ValueKey(key)));
   await tester.pumpAndSettle();
 }
 
@@ -220,11 +222,13 @@ void main() {
     await _pump(
       tester,
       _RefusingPreferences(),
-      const Scaffold(body: CodeBlock(code: 'code')),
+      Scaffold(body: MarkdownText('```\n${'long_value_' * 20}\n```')),
     );
+    // Compact readers wrap by default; a refused save must keep that state.
+    expect(_horizontal(), findsNothing);
     await _chooseCodeAction(tester, 'Wrap lines');
     await tester.pumpAndSettle();
-    expect(_horizontal(), findsOneWidget);
+    expect(_horizontal(), findsNothing);
     expect(
       find.text('Could not save reader preferences. Try again.'),
       findsOneWidget,
@@ -246,41 +250,20 @@ void main() {
       await _pump(tester, prefs, screen());
       double top(String name) => tester.getTopLeft(find.text(name)).dy;
       expect(top('build'), lessThan(top('main.dart')));
-      await tester.tap(find.byTooltip('File order'));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find
-            .ancestor(
-              of: find.text('Source first'),
-              matching: find.byWidgetPredicate(
-                (widget) => widget is PopupMenuEntry,
-              ),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
+      await _chooseFileFilter(tester, 'files-show-hidden');
+      await _chooseFileFilter(tester, 'files-order-source-first');
       expect(top('main.dart'), lessThan(top('build')));
       for (final name in ['build', '.git', 'main.dart', 'README.md']) {
         expect(find.text(name), findsOneWidget);
       }
       await tester.pumpWidget(const SizedBox.shrink());
       await _pump(tester, prefs, screen(), rtl: true, scale: 2.5);
+      expect(find.text('.git'), findsNothing);
+      await _chooseFileFilter(tester, 'files-show-hidden');
       expect(top('main.dart'), lessThan(top('build')));
       expect(tester.takeException(), isNull);
       await _capture(tester, 'files-source-first-rtl-320-250');
-      await tester.tap(find.byTooltip('File order'));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find
-            .ancestor(
-              of: find.text('Default order'),
-              matching: find.byWidgetPredicate(
-                (widget) => widget is PopupMenuEntry,
-              ),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
+      await _chooseFileFilter(tester, 'files-order-server');
       expect(top('build'), lessThan(top('main.dart')));
     },
   );
@@ -288,7 +271,9 @@ void main() {
   testWidgets(
     'wrap selection follows code into snapshot and a different reader',
     (tester) async {
-      final prefs = await _prefs();
+      final prefs = await _prefs({
+        ReaderPreferencesStore.keyFor('a'): jsonEncode({'wrapCode': false}),
+      });
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final code = 'final result = ${'long_value_' * 20};';
@@ -296,7 +281,11 @@ void main() {
         tester,
         prefs,
         Scaffold(
-          body: SingleChildScrollView(child: CodeBlock(code: code)),
+          body: SingleChildScrollView(
+            child: MarkdownText(
+              '```dart\n${List.filled(16, code).join('\n')}\n```',
+            ),
+          ),
         ),
         rtl: true,
         scale: 2.5,
@@ -342,10 +331,11 @@ void main() {
     (tester) async {
       final prefs = await _prefs({
         ReaderPreferencesStore.keyFor('a'): jsonEncode({'wrapCode': true}),
+        ReaderPreferencesStore.keyFor('b'): jsonEncode({'wrapCode': false}),
       });
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      const home = Scaffold(body: CodeBlock(code: 'code'));
+      const home = Scaffold(body: MarkdownText('```\ncode\n```'));
       await _pump(tester, prefs, home);
       expect(_horizontal(), findsNothing);
       await _pump(tester, prefs, home, profile: 'b');
@@ -376,14 +366,44 @@ void main() {
       scale: 2.5,
     );
     expect(tester.takeException(), isNull);
+    // The enlarged kit file header scrolls with the diff. Reach the source
+    // before asserting its direction and selecting its line-number gutter.
+    await tester.scrollUntilVisible(
+      find.text('after'),
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byType(KitDiffView),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+            ),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
     expect(
-      tester.widget<Text>(find.text('+after')).textDirection,
+      Directionality.of(tester.element(find.text('after'))),
       TextDirection.ltr,
     );
-    await tester.tap(find.text('+after'));
+    // The kit's expanded gutter hit area handles taps over the line number.
+    await tester.tapAt(
+      tester.getCenter(find.byKey(const ValueKey('review-line-0-current-1'))),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
     expect(tester.takeException(), isNull);
+    for (final label in ['Comment', 'Copy lines']) {
+      final action = find.descendant(
+        of: find.byKey(const Key('review-selection-bar')),
+        matching: find.text(label),
+      );
+      await Scrollable.ensureVisible(tester.element(action), alignment: .5);
+      await tester.pumpAndSettle();
+      expect(action.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
     await _capture(tester, 'review-selection-rtl-320-250');
   });
 
@@ -414,7 +434,11 @@ void main() {
       scale: 2.5,
     );
     expect(_horizontal(), findsNothing);
-    expect(find.byKey(const Key('file-preview-target-line')), findsOneWidget);
+    expect(find.byKey(const Key('file-preview-text')), findsOneWidget);
+    expect(
+      tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).initialLine,
+      12,
+    );
     expect(tester.takeException(), isNull);
     await _capture(tester, 'focused-source-rtl-320-250');
   });

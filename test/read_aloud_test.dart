@@ -103,8 +103,8 @@ Future<ConnectionController> _pumpChat(
 }
 
 Future<void> _openReadReply(WidgetTester tester) async {
-  // Assistant prose is selectable; use its explicit message action target.
-  await tester.tap(find.byTooltip('Message actions'));
+  // Assistant prose is selectable; use the reply footer's More.
+  await tester.tap(find.byKey(const ValueKey('message-actions-reply')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Read reply prose'));
   await tester.pumpAndSettle();
@@ -285,11 +285,11 @@ void main() {
       expect(calls, isEmpty);
 
       await _openReadReply(tester);
-      await tester.tap(find.text('Choose voice'));
+      await tester.tap(find.text('Read aloud'));
       await tester.pumpAndSettle();
-      expect(calls.map((call) => call.method), ['voices']);
-      await tester.tap(find.text('Installed voice'));
-      await tester.pumpAndSettle();
+      // The installed voice speaks the app's language (en-US for en): it
+      // reads at once, with no voice sheet (P10.4).
+      expect(find.byKey(const ValueKey('read-aloud-voices')), findsNothing);
       expect(calls.map((call) => call.method), ['voices', 'speak']);
       expect((calls.last.arguments as Map)['text'], _reply);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -299,8 +299,35 @@ void main() {
   );
 
   testWidgets(
+    'no installed voice speaks the app\'s language: the voice sheet asks',
+    (tester) async {
+      binding.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (
+        call,
+      ) async {
+        calls.add(call);
+        if (call.method == 'voices') {
+          return [
+            {'id': 'french', 'label': 'Voix française', 'locale': 'fr-FR'},
+          ];
+        }
+        return null;
+      });
+      await _pumpChat(tester, _Api());
+      await _openReadReply(tester);
+      await tester.tap(find.text('Read aloud'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('read-aloud-voices')), findsOneWidget);
+      expect(calls.map((call) => call.method), ['voices']);
+    },
+  );
+
+  testWidgets(
     'unsent voice conversation is never persisted or sent and is cleared on background',
     (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final voice = _Voice(models: await readyVoiceModelManager());
       addTearDown(voice.dispose);
       final api = _Api();

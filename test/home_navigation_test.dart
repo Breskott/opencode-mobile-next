@@ -16,9 +16,12 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
@@ -117,6 +120,23 @@ Future<ConnectionController> _controller({
     ..directory = directory;
 }
 
+Widget _shellHome(ConnectionController controller, {int? initialTab}) =>
+    Builder(
+      builder: (context) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => AppConditionsScope(
+          conditions: [
+            connectionKitStatus(
+              context,
+              controller,
+              actionContext: () => context,
+            ),
+          ],
+          child: HomeScreen(initialTab: initialTab),
+        ),
+      ),
+    );
+
 Future<void> _pumpShell(
   WidgetTester tester,
   ConnectionController controller, {
@@ -134,7 +154,7 @@ Future<void> _pumpShell(
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: _shellHome(controller),
       ),
     ),
   );
@@ -172,12 +192,12 @@ void main() {
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const HomeScreen(),
+            home: _shellHome(controller),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      final dock = tester.getRect(find.byType(GlassSurface));
+      final dock = tester.getRect(find.byType(KitNavBar));
       final icon = tester.getRect(
         find.byIcon(AppIconography.workspaceSelected),
       );
@@ -491,11 +511,11 @@ void main() {
       await tester.pump();
       expect(
         tester.getRect(last).bottom,
-        lessThanOrEqualTo(tester.getRect(find.byType(GlassSurface)).top),
+        lessThanOrEqualTo(tester.getRect(find.byType(KitNavBar)).top),
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsNothing);
+      expect(find.byType(KitNavBar), findsNothing);
       expect(
         tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
         isFalse,
@@ -504,7 +524,7 @@ void main() {
       expect(tester.getRect(search).bottom, lessThanOrEqualTo(544));
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsOneWidget);
+      expect(find.byType(KitNavBar), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -520,8 +540,8 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(GlassSurface), findsOneWidget);
-    final dock = tester.getRect(find.byType(GlassSurface));
+    expect(find.byType(KitNavBar), findsOneWidget);
+    final dock = tester.getRect(find.byType(KitNavBar));
     expect(dock.left, 16);
     expect(dock.right, 374);
     expect(dock.height, 60);
@@ -533,13 +553,13 @@ void main() {
     ]) {
       expect(
         navigation.labelTextStyle!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
       expect(
         NavigationBarTheme.of(
           navigationContext,
         ).iconTheme!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
     }
     for (final glyph in [
@@ -550,7 +570,7 @@ void main() {
       expect(tester.widget<Icon>(iconFinder).color, isNull);
       expect(
         IconTheme.of(tester.element(iconFinder)).color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
     }
     final icon = tester.getRect(find.byIcon(AppIconography.workspaceSelected));
@@ -719,7 +739,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: HomeScreen(initialTab: initialTab),
+            home: _shellHome(controller, initialTab: initialTab),
           ),
         ),
       );
@@ -932,14 +952,9 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
-    // On Work, the failed attempt is the one status line, at once (no
-    // grace: nothing is in flight), not the shell banner.
-    expect(
-      find.byKey(const ValueKey('connection-status-banner')),
-      findsNothing,
-    );
-    final line = find.byKey(const ValueKey('work-status-server'));
+    expect(find.byType(KitNav), findsOneWidget);
+    // A completed failure occupies the one shared status slot immediately.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
     expect(line, findsOneWidget);
     expect(
       find.descendant(
@@ -949,14 +964,17 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: line, matching: find.text('Try again')),
+      find.descendant(
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
+      ),
       findsOneWidget,
     );
     // The raw error and the secondary action live behind Details.
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.byKey(const ValueKey('work-status-details')));
+    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
@@ -991,7 +1009,7 @@ void main() {
               data: MediaQuery.of(
                 context,
               ).copyWith(textScaler: const TextScaler.linear(2)),
-              child: const HomeScreen(),
+              child: _shellHome(controller),
             ),
           ),
         ),
@@ -999,9 +1017,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final line = find.byKey(const ValueKey('work-status-server'));
+    final line = find.byKey(const ValueKey('connection-status-banner'));
     expect(
-      find.descendant(of: line, matching: find.text('Try again')),
+      find.descendant(
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
+      ),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('kit-status-more')), findsOneWidget);
@@ -1020,28 +1041,33 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomeScreen(),
+          home: _shellHome(controller),
         ),
       ),
     );
     await tester.pump();
-    // Quiet while the automatic reconnect has its grace time, then the one
-    // status line offers a manual retry.
-    expect(find.byKey(const ValueKey('work-status-server')), findsNothing);
-    await tester.pump(const Duration(seconds: 9));
+    // The shared line reports reconnection immediately, then escalates after
+    // the controller's eight-second grace period without adding another slot.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
+    expect(line, findsOneWidget);
+    expect(find.text('Reconnecting to This device (Termux)…'), findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsNothing);
+    await tester.pump(const Duration(seconds: 8));
     await tester.pump(const Duration(milliseconds: 300));
+    expect(line, findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsOneWidget);
 
     final retry = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Try again'),
+      find.widgetWithText(TextButton, 'Reconnect to This device (Termux)'),
     );
     expect(retry.onPressed, isNotNull);
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.byKey(const ValueKey('work-status-details')));
+    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Change server'), findsOneWidget);

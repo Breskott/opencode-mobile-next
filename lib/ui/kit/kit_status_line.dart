@@ -50,6 +50,10 @@ class KitStatus {
     required this.icon,
     required this.message,
     this.id,
+    this.key,
+    this.messageKey,
+    this.supportingKey,
+    this.dismissTooltip,
     this.tone = AppStatusTone.neutral,
     this.supporting,
     this.next,
@@ -68,6 +72,10 @@ class KitStatus {
 
   /// Stable identity for dedupe and announcements: `connection:<profileId>`.
   final String? id;
+  final Key? key;
+  final Key? messageKey;
+  final Key? supportingKey;
+  final String? dismissTooltip;
   final IconData icon;
 
   /// "Reconnecting to laptop…"
@@ -165,14 +173,19 @@ class KitStatusLine extends StatelessWidget {
   /// a new line (and a new announcement).
   factory KitStatusLine.of(KitStatus status, {Key? key, Key? messageKey}) =>
       KitStatusLine(
-        key: key ?? ValueKey('kit-status-${status.id ?? status.kind.name}'),
+        key:
+            key ??
+            status.key ??
+            ValueKey('kit-status-${status.id ?? status.kind.name}'),
         icon: status.icon,
         message: status.message,
         tone: status.tone,
         action: status.action,
         more: status.more,
         onDismiss: status.onDismiss,
-        messageKey: messageKey,
+        messageKey: messageKey ?? status.messageKey,
+        supportingKey: status.supportingKey,
+        dismissTooltip: status.dismissTooltip,
         supporting: status.supporting,
         next: status.next,
         since: status.since,

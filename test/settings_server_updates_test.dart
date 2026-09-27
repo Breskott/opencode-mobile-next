@@ -145,6 +145,21 @@ Future<void> _openCategory(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
+Finder get _verticalScroll => find
+    .byWidgetPredicate(
+      (widget) =>
+          widget is Scrollable &&
+          axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+    )
+    .first;
+
+Future<void> _tapVisible(WidgetTester tester, Finder target) async {
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  expect(target.hitTestable(), findsOneWidget);
+  await tester.tap(target);
+}
+
 void main() {
   testWidgets('Settings has one Report a problem row with an error badge', (
     tester,
@@ -174,7 +189,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('library-report-bug')),
       320,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
     final badge = find.descendant(
       of: find.byKey(const Key('library-report-bug')),
@@ -326,7 +341,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('server-updates-tile')),
       120,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
     tester
         .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
@@ -381,7 +396,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('server-updates-tile')),
       120,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
     tester
         .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
@@ -422,7 +437,7 @@ void main() {
     );
     await tester.ensureVisible(entry);
     await tester.pumpAndSettle();
-    await tester.tap(entry);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     final inside = find.byKey(const ValueKey('automation-saved-permissions'));
     expect(find.text('Always allowed actions'), findsOneWidget);
@@ -450,11 +465,7 @@ void main() {
     await _openCategory(tester, 'settings-category-appearance');
 
     final entry = find.byKey(const ValueKey('appearance-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
     expect(find.text('Dark'), findsOneWidget);
     // Light or dark is chosen inline and applies at once (the separate
     // light-or-dark sheet was removed by slice-P3.1).
@@ -483,13 +494,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-      await tester.scrollUntilVisible(
-        entry,
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
       expect(find.text('bash'), findsOneWidget);
-      await tester.tap(entry);
+      await _tapVisible(tester, entry);
       await tester.pumpAndSettle();
 
       expect(find.text('Automatic (server default)'), findsOneWidget);
@@ -510,7 +517,7 @@ void main() {
       expect(initial.shellSelectCalls, 0);
       expect(replacement.shellSelectCalls, 1);
       expect(replacement.selectedShell, 'fish');
-      expect(find.text('Default shell updated'), findsOneWidget);
+      // The selected value on the row is the save confirmation.
       expect(find.text('fish'), findsOneWidget);
     },
   );
@@ -535,11 +542,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
 
     expect(find.textContaining('Shell endpoint unavailable'), findsOneWidget);
     // Scoped: the neighbouring default still renders.
@@ -548,7 +551,7 @@ void main() {
       findsOneWidget,
     );
     repository.shellError = null;
-    await tester.tap(entry);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
 
     expect(repository.shellLoadCalls, 2);
@@ -572,7 +575,7 @@ void main() {
     expect(find.textContaining('Shell refresh unavailable'), findsOneWidget);
     final loadsBeforeRetry = repository.shellLoadCalls;
     repository.shellError = null;
-    await tester.tap(entry);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     expect(repository.shellLoadCalls, loadsBeforeRetry + 1);
     expect(find.byKey(const ValueKey('server-shell-/bin/bash')), findsNothing);
@@ -599,12 +602,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(entry);
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('server-shell-/usr/bin/fish')));
     await tester.pumpAndSettle();
@@ -612,7 +611,27 @@ void main() {
     expect(repository.shellSelectCalls, 1);
     expect(repository.shellSettings.selected, 'bash');
     expect(find.textContaining('Config write failed'), findsOneWidget);
+    // The failed-save reason occupies the row; reopening still marks the
+    // server-reported choice, never the attempted fish selection.
+    await _tapVisible(tester, entry);
+    await tester.pumpAndSettle();
     expect(find.text('bash'), findsOneWidget);
+    expect(
+      tester
+          .widget<KitChoiceRow<String>>(
+            find.byKey(const ValueKey('server-shell-/bin/bash')),
+          )
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<KitChoiceRow<String>>(
+            find.byKey(const ValueKey('server-shell-/usr/bin/fish')),
+          )
+          .selected,
+      isFalse,
+    );
   });
 
   testWidgets('default shell picker fits a compact large-text phone', (
@@ -644,11 +663,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
     expect(tester.takeException(), isNull);
     tester.widget<KitRow>(entry).onTap!();
     await tester.pumpAndSettle();
@@ -728,7 +743,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(ValueKey(key)),
         240,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: _verticalScroll,
       );
       expect(find.byKey(ValueKey(key)), findsOneWidget);
     }
@@ -767,11 +782,7 @@ void main() {
     // The readout names both stores and the expiry, so "where did my draft
     // go" has an answer before it happens.
     final usage = find.byKey(const ValueKey('local-storage-usage'));
-    await tester.scrollUntilVisible(
-      usage,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(usage, 200, scrollable: _verticalScroll);
     expect(find.textContaining('1 queued prompt'), findsOneWidget);
     expect(find.textContaining('1 draft'), findsOneWidget);
     expect(find.textContaining('discarded after 14 days'), findsOneWidget);
@@ -784,7 +795,9 @@ void main() {
       find.textContaining('Nothing on the server is affected'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Delete 1 queued prompt'),
+    );
     await tester.pumpAndSettle();
 
     expect(controller.totalQueuedPromptCount, 0);
@@ -795,7 +808,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('clear-session-drafts')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete 1 draft'));
     await tester.pumpAndSettle();
 
     expect(controller.totalSessionDraftCount, 0);
@@ -823,11 +836,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openCategory(tester, 'settings-category-privacy');
       final clear = find.byKey(const ValueKey('clear-queued-prompts'));
-      await tester.scrollUntilVisible(
-        clear,
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.scrollUntilVisible(clear, 200, scrollable: _verticalScroll);
       expect(tester.widget<KitRow>(clear).enabled, isTrue);
       expect(
         find.textContaining('number of queued prompts is unknown'),
@@ -876,7 +885,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('clear-queued-prompts')),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
 
     expect(
@@ -936,7 +945,7 @@ void main() {
     );
     expect(
       tester
-          .widget<SwitchListTile>(
+          .widget<KitSwitchRow>(
             find.byKey(const ValueKey('background-live-switch')),
           )
           .value,
@@ -954,7 +963,7 @@ void main() {
     expect(find.text('Android stopped the live connection'), findsOneWidget);
     expect(
       tester
-          .widget<SwitchListTile>(
+          .widget<KitSwitchRow>(
             find.byKey(const ValueKey('background-live-switch')),
           )
           .value,

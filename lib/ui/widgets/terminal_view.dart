@@ -48,8 +48,3 @@ class TerminalView extends StatelessWidget {
     ),
   );
 }
-
-/// [text] with its ANSI escape sequences removed.
-///
-/// Retired by kit-KitTerminalView: use KitTerminalText.strip.
-String stripAnsi(String text) => KitTerminalText.strip(text);

@@ -98,12 +98,6 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
-  /// No description provided for @setupCancelConnection.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel connection'**
-  String get setupCancelConnection;
-
   /// No description provided for @servicesTitle.
   ///
   /// In en, this message translates to:
@@ -169,12 +163,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save service'**
   String get servicesSave;
-
-  /// No description provided for @servicesInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a name, a foreground command, and an optional HTTP or HTTPS URL without credentials.'**
-  String get servicesInvalid;
 
   /// No description provided for @servicesUnavailable.
   ///
@@ -254,18 +242,6 @@ abstract class AppLocalizations {
   /// **'Remove configuration'**
   String get servicesRemove;
 
-  /// No description provided for @servicesRemoveHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this saved service and its local ownership record? This does not stop its command on the server. Stop it first if needed.'**
-  String get servicesRemoveHint;
-
-  /// No description provided for @servicesStartHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Run this saved command in the project shown below? It uses the server\'s environment. Keep it in the foreground; this panel cannot manage detached processes.'**
-  String get servicesStartHint;
-
   /// No description provided for @servicesStopHint.
   ///
   /// In en, this message translates to:
@@ -302,12 +278,6 @@ abstract class AppLocalizations {
   /// **'No captured output is available yet.'**
   String get servicesLogEmpty;
 
-  /// No description provided for @servicesLogTail.
-  ///
-  /// In en, this message translates to:
-  /// **'Bounded log tail. Earlier output may be omitted. Logs are kept on the server, not saved on this phone.'**
-  String get servicesLogTail;
-
   /// No description provided for @servicesWorking.
   ///
   /// In en, this message translates to:
@@ -337,12 +307,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode Mobile'**
   String get appTitle;
-
-  /// Section label above the More hub's manage destination grid
-  ///
-  /// In en, this message translates to:
-  /// **'Manage'**
-  String get libraryManageSection;
 
   /// More hub card: model and agent catalog
   ///
@@ -397,18 +361,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch model for this conversation'**
   String get modelSwitchSession;
-
-  /// Cycle forward through recent models
-  ///
-  /// In en, this message translates to:
-  /// **'Next recent model · F2'**
-  String get modelNextRecent;
-
-  /// Cycle backward through recent models
-  ///
-  /// In en, this message translates to:
-  /// **'Previous recent model · Shift+F2'**
-  String get modelPreviousRecent;
 
   /// Cycle through the server profile's favorite models
   ///
@@ -488,12 +440,6 @@ abstract class AppLocalizations {
   /// **'Saving conversation selection…'**
   String get modelSelectionSaving;
 
-  /// No description provided for @modelAgentSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not save the agent. Try again.'**
-  String get modelAgentSaveFailed;
-
   /// No description provided for @modelUnavailableSelection.
   ///
   /// In en, this message translates to:
@@ -518,47 +464,11 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get workTitle;
 
-  /// No description provided for @workDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Agents and commands related to this conversation.'**
-  String get workDescription;
-
-  /// No description provided for @workAgents.
-  ///
-  /// In en, this message translates to:
-  /// **'Agents'**
-  String get workAgents;
-
-  /// No description provided for @workCommands.
-  ///
-  /// In en, this message translates to:
-  /// **'Commands'**
-  String get workCommands;
-
-  /// No description provided for @workEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No tasks yet'**
-  String get workEmpty;
-
-  /// No description provided for @workEmptyDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Related agents and commands will appear here when this conversation starts them.'**
-  String get workEmptyDescription;
-
   /// No description provided for @workRefresh.
   ///
   /// In en, this message translates to:
   /// **'Refresh'**
   String get workRefresh;
-
-  /// No description provided for @workClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get workClose;
 
   /// No description provided for @workRetry.
   ///
@@ -608,12 +518,6 @@ abstract class AppLocalizations {
   /// **'Command output'**
   String get workOutput;
 
-  /// No description provided for @workViewOutput.
-  ///
-  /// In en, this message translates to:
-  /// **'View output'**
-  String get workViewOutput;
-
   /// No description provided for @workNoOutput.
   ///
   /// In en, this message translates to:
@@ -626,23 +530,11 @@ abstract class AppLocalizations {
   /// **'This command produced no output.'**
   String get workNoFinalOutput;
 
-  /// No description provided for @workCopyOutput.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy output'**
-  String get workCopyOutput;
-
   /// No description provided for @workCopied.
   ///
   /// In en, this message translates to:
   /// **'Output copied'**
   String get workCopied;
-
-  /// No description provided for @workFollow.
-  ///
-  /// In en, this message translates to:
-  /// **'Follow output'**
-  String get workFollow;
 
   /// No description provided for @workMoreOutput.
   ///
@@ -680,12 +572,6 @@ abstract class AppLocalizations {
   /// **'Change timeout'**
   String get workTimeout;
 
-  /// No description provided for @workTimeoutTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Time remaining'**
-  String get workTimeoutTitle;
-
   /// No description provided for @workTimeoutDescription.
   ///
   /// In en, this message translates to:
@@ -721,12 +607,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No timeout'**
   String get workTimeoutNone;
-
-  /// No description provided for @workTimeoutSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Timeout updated'**
-  String get workTimeoutSaved;
 
   /// No description provided for @workUnavailable.
   ///
@@ -800,12 +680,6 @@ abstract class AppLocalizations {
   /// **'Could not save the queued draft on this device. Your text is still here. Check available storage and try again.'**
   String get queueSaveFailed;
 
-  /// No description provided for @fileCopy.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy'**
-  String get fileCopy;
-
   /// No description provided for @fileSave.
   ///
   /// In en, this message translates to:
@@ -830,12 +704,6 @@ abstract class AppLocalizations {
   /// **'Reuse text from this conversation and recent sends'**
   String get composerReuseSubtitle;
 
-  /// No description provided for @composerReuseDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Text from loaded prompts in this conversation and recent sends on this server. Selecting one appends it to your draft. Attachments are not copied. With a keyboard, use Up at the start or Down at the end to browse and restore your draft.'**
-  String get composerReuseDescription;
-
   /// No description provided for @composerReuseSearch.
   ///
   /// In en, this message translates to:
@@ -847,12 +715,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching prompts'**
   String get composerReuseEmpty;
-
-  /// No description provided for @backgroundSubagentsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Background subagents'**
-  String get backgroundSubagentsTitle;
 
   /// No description provided for @backgroundWorkTitle.
   ///
@@ -884,12 +746,6 @@ abstract class AppLocalizations {
   /// **'Find settings, tools, and help'**
   String get librarySearchHint;
 
-  /// No description provided for @libraryDefaultModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Default for new conversations'**
-  String get libraryDefaultModel;
-
   /// No description provided for @libraryNoModel.
   ///
   /// In en, this message translates to:
@@ -907,12 +763,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Images, PDFs, text files, and Excel or Word files (.xlsx, .docx) can be attached.'**
   String get chatAttachmentUnsupported;
-
-  /// Action that restarts the app-managed OpenCode server running in Termux
-  ///
-  /// In en, this message translates to:
-  /// **'Restart local server'**
-  String get termuxRestartServer;
 
   /// Confirmation title before restarting the managed Termux server
   ///
@@ -937,30 +787,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restart'**
   String get termuxRestartConfirm;
-
-  /// Progress label while the managed Termux server restarts
-  ///
-  /// In en, this message translates to:
-  /// **'Restarting local server...'**
-  String get termuxRestarting;
-
-  /// Progress explanation while the managed Termux server restarts
-  ///
-  /// In en, this message translates to:
-  /// **'The installed OpenCode version and saved credential are unchanged. The app will reconnect when the server is ready.'**
-  String get termuxRestartProgress;
-
-  /// Success message after a managed Termux server restart
-  ///
-  /// In en, this message translates to:
-  /// **'Local server restarted and reconnected.'**
-  String get termuxRestartSucceeded;
-
-  /// Message after restart preflight fails while the existing managed server remains healthy
-  ///
-  /// In en, this message translates to:
-  /// **'Restart was not performed. The existing local server is still running.'**
-  String get termuxRestartNotPerformed;
 
   /// No description provided for @chatCopyCompleteReply.
   ///
@@ -1040,18 +866,6 @@ abstract class AppLocalizations {
   /// **'Project root'**
   String get filesProjectRoot;
 
-  /// No description provided for @filesOpenFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'Open folder {folder}'**
-  String filesOpenFolder(String folder);
-
-  /// No description provided for @filesCurrentFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'Current folder: {folder}'**
-  String filesCurrentFolder(String folder);
-
   /// No description provided for @globalSessionsLoadMore.
   ///
   /// In en, this message translates to:
@@ -1075,12 +889,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project list unavailable'**
   String get workspaceProjectListUnavailable;
-
-  /// No description provided for @workspaceProjectListFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'Your conversations can still be available. Search all conversations to find previous work.'**
-  String get workspaceProjectListFallback;
 
   /// No description provided for @workspaceRetryProjects.
   ///
@@ -1148,12 +956,6 @@ abstract class AppLocalizations {
   /// **'Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.'**
   String get historyServerTotalsNote;
 
-  /// No description provided for @sessionsLoadedOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing loaded conversations. Load more to include older ones.'**
-  String get sessionsLoadedOnly;
-
   /// No description provided for @sessionsDetailsUnavailable.
   ///
   /// In en, this message translates to:
@@ -1165,54 +967,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh recent conversations'**
   String get sessionsReload;
-
-  /// No description provided for @sessionsNoLoadedRecent.
-  ///
-  /// In en, this message translates to:
-  /// **'No recent conversations in loaded results'**
-  String get sessionsNoLoadedRecent;
-
-  /// No description provided for @sessionsNoLoadedArchived.
-  ///
-  /// In en, this message translates to:
-  /// **'No archived conversations in loaded results'**
-  String get sessionsNoLoadedArchived;
-
-  /// No description provided for @sessionsLoadedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} loaded'**
-  String sessionsLoadedCount(int count);
-
-  /// No description provided for @revertStageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stage a revert from this prompt?'**
-  String get revertStageTitle;
-
-  /// No description provided for @revertStageDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'This prompt and the conversation after it will be hidden while the revert is staged. Review the result before making it permanent.'**
-  String get revertStageDescription;
-
-  /// No description provided for @revertApplyFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Revert file changes too'**
-  String get revertApplyFiles;
-
-  /// No description provided for @revertApplyFilesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Applies file changes immediately when staging. Clear can restore the staged files from the saved snapshot.'**
-  String get revertApplyFilesHint;
-
-  /// No description provided for @revertStageAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Stage and review'**
-  String get revertStageAction;
 
   /// No description provided for @revertReviewTitle.
   ///
@@ -1238,77 +992,17 @@ abstract class AppLocalizations {
   /// **'Wait for the current conversation action to finish.'**
   String get revertBusy;
 
-  /// No description provided for @revertCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get revertCancel;
-
-  /// No description provided for @revertCommitTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Make this revert permanent?'**
-  String get revertCommitTitle;
-
-  /// No description provided for @revertCommitDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Removes the staged conversation history permanently. File changes already applied during staging will remain. You cannot clear this revert afterward.'**
-  String get revertCommitDescription;
-
-  /// No description provided for @revertCommitAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Make revert permanent'**
-  String get revertCommitAction;
-
-  /// No description provided for @revertClearTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear this staged revert?'**
-  String get revertClearTitle;
-
-  /// No description provided for @revertClearDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Restores the hidden conversation and the files included in this stage from the saved snapshot. Changes made to those files since staging may be replaced. Queued work may resume.'**
-  String get revertClearDescription;
-
   /// No description provided for @revertClearAction.
   ///
   /// In en, this message translates to:
   /// **'Clear staged revert'**
   String get revertClearAction;
 
-  /// No description provided for @revertNoStage.
-  ///
-  /// In en, this message translates to:
-  /// **'There is no staged revert to review.'**
-  String get revertNoStage;
-
-  /// No description provided for @revertBoundaryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Staged from prompt'**
-  String get revertBoundaryLabel;
-
-  /// No description provided for @revertPreviewDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'These are the file changes reported for this stage. Staging may already have applied them.'**
-  String get revertPreviewDescription;
-
   /// No description provided for @revertPreviewUnavailable.
   ///
   /// In en, this message translates to:
   /// **'The server did not provide a file preview. This does not establish whether files changed.'**
   String get revertPreviewUnavailable;
-
-  /// No description provided for @revertPreviewEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No file changes were reported for this stage.'**
-  String get revertPreviewEmpty;
 
   /// No description provided for @revertStaged.
   ///
@@ -1724,12 +1418,6 @@ abstract class AppLocalizations {
   /// **'No model usage was recorded in this range.'**
   String get usageNoModels;
 
-  /// No description provided for @usageCostShare.
-  ///
-  /// In en, this message translates to:
-  /// **'Share of reported cost'**
-  String get usageCostShare;
-
   /// No description provided for @usageToolReliability.
   ///
   /// In en, this message translates to:
@@ -1826,18 +1514,6 @@ abstract class AppLocalizations {
   /// **'Until server restart'**
   String get mcpRuntimeTitle;
 
-  /// No description provided for @mcpRuntimeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Adds this MCP server to the selected project and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.'**
-  String get mcpRuntimeDescription;
-
-  /// No description provided for @mcpCurrentLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Current project'**
-  String get mcpCurrentLocation;
-
   /// No description provided for @mcpDefaultLocation.
   ///
   /// In en, this message translates to:
@@ -1891,18 +1567,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Header value'**
   String get mcpHeaderValue;
-
-  /// MCP setup: reveals one header row's obscured value.
-  ///
-  /// In en, this message translates to:
-  /// **'Show header value'**
-  String get mcpShowHeaderValue;
-
-  /// MCP setup: hides a revealed header row's value again.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide header value'**
-  String get mcpHideHeaderValue;
 
   /// MCP setup: adds another blank HTTP header row.
   ///
@@ -1988,23 +1652,11 @@ abstract class AppLocalizations {
   /// **'Redact sensitive data'**
   String get exportRedact;
 
-  /// No description provided for @exportRedactDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Replaces conversation text and sensitive fields with placeholders. Turn this off to back up the original text. Review any export before sharing.'**
-  String get exportRedactDescription;
-
   /// No description provided for @exportUnredacted.
   ///
   /// In en, this message translates to:
   /// **'The unredacted file may contain secrets, local paths, and private tool output.'**
   String get exportUnredacted;
-
-  /// No description provided for @exportSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Save file'**
-  String get exportSave;
 
   /// No description provided for @exportCancel.
   ///
@@ -2096,12 +1748,6 @@ abstract class AppLocalizations {
   /// **'Untitled conversation'**
   String get importUntitled;
 
-  /// No description provided for @importMessageCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} message records'**
-  String importMessageCount(int count);
-
   /// No description provided for @importRedacted.
   ///
   /// In en, this message translates to:
@@ -2131,12 +1777,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a project on this server'**
   String get importChooseDestination;
-
-  /// No description provided for @importChangeDestination.
-  ///
-  /// In en, this message translates to:
-  /// **'Change destination'**
-  String get importChangeDestination;
 
   /// No description provided for @importNoDestinations.
   ///
@@ -2240,12 +1880,6 @@ abstract class AppLocalizations {
   /// **'Import could not be confirmed. Check All conversations before retrying: the server may have received it. Your source file is unchanged.'**
   String get importUnconfirmed;
 
-  /// No description provided for @sessionsNoOtherRecent.
-  ///
-  /// In en, this message translates to:
-  /// **'No other recent conversations'**
-  String get sessionsNoOtherRecent;
-
   /// No description provided for @sessionPin.
   ///
   /// In en, this message translates to:
@@ -2257,12 +1891,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unpin'**
   String get sessionUnpin;
-
-  /// No description provided for @sessionPinned.
-  ///
-  /// In en, this message translates to:
-  /// **'Pinned'**
-  String get sessionPinned;
 
   /// No description provided for @sessionPinFailed.
   ///
@@ -2389,66 +2017,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User-provided text, not verified page content.'**
   String get webSourcesExcerptHint;
-
-  /// No description provided for @webSourcesAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to review'**
-  String get webSourcesAdd;
-
-  /// No description provided for @webSourcesReviewCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Review sources ({count}/10)'**
-  String webSourcesReviewCount(int count);
-
-  /// No description provided for @webSourcesReviewHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Only checked sources will be returned to your draft.'**
-  String get webSourcesReviewHint;
-
-  /// No description provided for @webSourcesEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No sources added yet.'**
-  String get webSourcesEmpty;
-
-  /// No description provided for @webSourcesOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open in browser'**
-  String get webSourcesOpen;
-
-  /// No description provided for @webSourcesUseCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Use selected sources ({count})'**
-  String webSourcesUseCount(int count);
-
-  /// No description provided for @digestTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Completion digests'**
-  String get digestTitle;
-
-  /// No description provided for @digestSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On demand · cached metadata, not AI summaries'**
-  String get digestSubtitle;
-
-  /// No description provided for @digestEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No ended-run metadata available in this project. Idle alone does not establish successful completion.'**
-  String get digestEmpty;
-
-  /// No description provided for @digestIdle.
-  ///
-  /// In en, this message translates to:
-  /// **'Server idle recorded · outcome unverified'**
-  String get digestIdle;
 
   /// Completion digest status; idle does not prove a successful run
   ///
@@ -2744,18 +2312,6 @@ abstract class AppLocalizations {
   /// **'Open conversation'**
   String get runResultsOpenConversation;
 
-  /// No description provided for @attentionDisclosure.
-  ///
-  /// In en, this message translates to:
-  /// **'A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.'**
-  String get attentionDisclosure;
-
-  /// No description provided for @attentionNavigationUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.'**
-  String get attentionNavigationUnavailable;
-
   /// No description provided for @sessionOpenRelated.
   ///
   /// In en, this message translates to:
@@ -2767,12 +2323,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue on computer'**
   String get sessionCopyHandoff;
-
-  /// No description provided for @sessionActions.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation actions'**
-  String get sessionActions;
 
   /// No description provided for @attentionTitle.
   ///
@@ -2816,23 +2366,11 @@ abstract class AppLocalizations {
   /// **'Filters inspect this server\'s returned model records. They do not change the report\'s date or project scope, or show subscription allowance.'**
   String get usageInspectionDisclosure;
 
-  /// No description provided for @usageAllProviders.
-  ///
-  /// In en, this message translates to:
-  /// **'All providers'**
-  String get usageAllProviders;
-
   /// No description provided for @usageSearchRecords.
   ///
   /// In en, this message translates to:
   /// **'Search providers, models or variants'**
   String get usageSearchRecords;
-
-  /// No description provided for @usageClearFilters.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear filters'**
-  String get usageClearFilters;
 
   /// No description provided for @usageScopedProviderTotals.
   ///
@@ -2840,23 +2378,11 @@ abstract class AppLocalizations {
   /// **'Provider cards show their totals for the selected report scope, not just matching model rows.'**
   String get usageScopedProviderTotals;
 
-  /// No description provided for @usageMatchingSubtotal.
-  ///
-  /// In en, this message translates to:
-  /// **'Matching model subtotal'**
-  String get usageMatchingSubtotal;
-
   /// Count of matched model/variant records, not distinct models
   ///
   /// In en, this message translates to:
   /// **'{count} matching records'**
   String usageMatchingRecords(String count);
-
-  /// No description provided for @usageNoMatchingRecords.
-  ///
-  /// In en, this message translates to:
-  /// **'No records match these filters. Clear or change the filters to see more.'**
-  String get usageNoMatchingRecords;
 
   /// Sign-in sheet: what to do with a sign-in this phone saved.
   ///
@@ -2912,12 +2438,6 @@ abstract class AppLocalizations {
   /// **'Forget this sign-in'**
   String get pendingAuthForget;
 
-  /// No description provided for @pendingAuthForgetDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.'**
-  String get pendingAuthForgetDetail;
-
   /// No description provided for @pendingAuthUnsupported.
   ///
   /// In en, this message translates to:
@@ -2971,12 +2491,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speaking the reply'**
   String get voiceConversationSpeakingReply;
-
-  /// No description provided for @voiceConversationStopReply.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get voiceConversationStopReply;
 
   /// No description provided for @voiceConversationReadReply.
   ///
@@ -3044,12 +2558,6 @@ abstract class AppLocalizations {
   /// **'Use the typed composer for slash commands.'**
   String get voiceConversationCommandsOnly;
 
-  /// No description provided for @voiceConversationInterrupted.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice conversation was interrupted. Review before sending again.'**
-  String get voiceConversationInterrupted;
-
   /// No description provided for @voiceReviewExplicitAction.
   ///
   /// In en, this message translates to:
@@ -3091,18 +2599,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check the attachments already added before trying again. You can also use the keyboard to open Add, then Attach file.'**
   String get desktopDropFailedRecovery;
-
-  /// No description provided for @desktopContextMenuShortcutKeys.
-  ///
-  /// In en, this message translates to:
-  /// **'Right click / Shift + F10 / Menu'**
-  String get desktopContextMenuShortcutKeys;
-
-  /// Open or resume server-side command sign-in even when the provider already has a connection
-  ///
-  /// In en, this message translates to:
-  /// **'Server sign-in'**
-  String get commandAuthManage;
 
   /// Command authentication runs server-side; do not imply an app shell or browser flow
   ///
@@ -3194,10 +2690,10 @@ abstract class AppLocalizations {
   /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.'**
   String get readAloudConsentDetail;
 
-  /// Accept speech disclosure and request installed voice metadata
+  /// Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)
   ///
   /// In en, this message translates to:
-  /// **'Choose voice'**
+  /// **'Read aloud'**
   String get readAloudContinue;
 
   /// Unsupported platform, without native calls
@@ -3236,12 +2732,6 @@ abstract class AppLocalizations {
   /// **'There is no reply prose to read. Code and tool details are not spoken.'**
   String get readAloudNoProse;
 
-  /// Open individual saved provider credential management
-  ///
-  /// In en, this message translates to:
-  /// **'Manage accounts'**
-  String get credentialManage;
-
   /// Describes the metadata-only credential list
   ///
   /// In en, this message translates to:
@@ -3266,12 +2756,6 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get credentialActive;
 
-  /// Request activation of one saved provider credential
-  ///
-  /// In en, this message translates to:
-  /// **'Set active'**
-  String get credentialSetActive;
-
   /// Edit a saved credential label, not its secret
   ///
   /// In en, this message translates to:
@@ -3289,12 +2773,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save label'**
   String get credentialSave;
-
-  /// Discloses server-wide credential removal and avoids promising successor activation
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this saved sign-in from the server. Other projects using it may be affected. This does not edit environment configuration; the server determines which account, if any, becomes active afterward.'**
-  String get credentialRemoveDetail;
 
   /// Blocks operations from a previous credential-management scope
   ///
@@ -3344,24 +2822,6 @@ abstract class AppLocalizations {
   /// **'Saved account {index}'**
   String credentialUnnamed(int index);
 
-  /// Remove an MCP server from the current runtime location
-  ///
-  /// In en, this message translates to:
-  /// **'Remove'**
-  String get mcpRemove;
-
-  /// Confirmation title naming the selected MCP server
-  ///
-  /// In en, this message translates to:
-  /// **'Remove {name}?'**
-  String mcpRemoveTitle(String name);
-
-  /// Distinguishes runtime MCP removal from persistent configuration changes
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this MCP server from the current project’s runtime. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.'**
-  String get mcpRemoveRuntimeDetail;
-
   /// Safe feedback for an uncertain removal outcome without raw configuration or server errors
   ///
   /// In en, this message translates to:
@@ -3379,12 +2839,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved in OpenCode'**
   String get mcpSavedStatus;
-
-  /// No description provided for @mcpConnectionUnconfirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'App connection not confirmed'**
-  String get mcpConnectionUnconfirmed;
 
   /// No description provided for @mcpRetryReconnect.
   ///
@@ -3482,12 +2936,6 @@ abstract class AppLocalizations {
   /// **'Search conversation'**
   String get transcriptFindHint;
 
-  /// No description provided for @transcriptFindScope.
-  ///
-  /// In en, this message translates to:
-  /// **'Messages, reasoning and tool data'**
-  String get transcriptFindScope;
-
   /// No description provided for @transcriptFindClose.
   ///
   /// In en, this message translates to:
@@ -3518,23 +2966,11 @@ abstract class AppLocalizations {
   /// **'{total, plural, =1{1 match} other{{current} of {total} matches}}'**
   String transcriptFindCount(int current, int total);
 
-  /// No description provided for @transcriptFindTotal.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 match in message text} other{{count} matches in message text}}'**
-  String transcriptFindTotal(int count);
-
   /// No description provided for @transcriptFindPartial.
   ///
   /// In en, this message translates to:
   /// **'Loaded messages only. Load older messages to search further.'**
   String get transcriptFindPartial;
-
-  /// No description provided for @transcriptFindComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'All available message content searched.'**
-  String get transcriptFindComplete;
 
   /// No description provided for @transcriptFindReasoning.
   ///
@@ -3644,12 +3080,6 @@ abstract class AppLocalizations {
   /// **'Inspect messages after compaction'**
   String get activeContextSubtitle;
 
-  /// No description provided for @activeContextHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Active messages returned by the server after its latest compaction. Message counts are not token counts.'**
-  String get activeContextHelp;
-
   /// No description provided for @activeContextRefresh.
   ///
   /// In en, this message translates to:
@@ -3662,29 +3092,11 @@ abstract class AppLocalizations {
   /// **'Search active messages'**
   String get activeContextSearch;
 
-  /// No description provided for @activeContextAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get activeContextAll;
-
-  /// No description provided for @activeContextCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{shown} of {total} messages'**
-  String activeContextCount(int shown, int total);
-
   /// No description provided for @activeContextEmpty.
   ///
   /// In en, this message translates to:
   /// **'The server returned no active context messages.'**
   String get activeContextEmpty;
-
-  /// No description provided for @activeContextNoMatches.
-  ///
-  /// In en, this message translates to:
-  /// **'No active messages match these filters.'**
-  String get activeContextNoMatches;
 
   /// No description provided for @activeContextNoText.
   ///
@@ -4178,12 +3590,6 @@ abstract class AppLocalizations {
   /// **'{percent} remaining'**
   String quotaRemaining(String percent);
 
-  /// Progress-bar semantics label; its numeric value is expressed separately
-  ///
-  /// In en, this message translates to:
-  /// **'{window}: remaining percentage'**
-  String quotaWindowRemainingLabel(String window);
-
   /// Provider-reported percentage used within one window
   ///
   /// In en, this message translates to:
@@ -4298,65 +3704,11 @@ abstract class AppLocalizations {
   /// **'Waiting for Termux output…'**
   String get setupOutputWaiting;
 
-  /// No description provided for @setupOutputWaitingDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup messages will appear here when Termux responds.'**
-  String get setupOutputWaitingDetail;
-
-  /// No description provided for @setupStartInstalled.
-  ///
-  /// In en, this message translates to:
-  /// **'Start installed OpenCode'**
-  String get setupStartInstalled;
-
-  /// No description provided for @setupMissingCredential.
-  ///
-  /// In en, this message translates to:
-  /// **'This app has no saved credential for that installation. Connect with its server address, or run setup to configure it.'**
-  String get setupMissingCredential;
-
-  /// No description provided for @setupUbuntuOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Managed Ubuntu installation'**
-  String get setupUbuntuOption;
-
-  /// No description provided for @setupOwnOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Use your own setup'**
-  String get setupOwnOption;
-
-  /// No description provided for @setupOwnDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect an existing OpenCode 1 or OpenCode 2 server by address. A native musl installation needs a compatible Linux environment and is not managed by this app.'**
-  String get setupOwnDescription;
-
   /// No description provided for @setupConnectExisting.
   ///
   /// In en, this message translates to:
   /// **'Connect existing server'**
   String get setupConnectExisting;
-
-  /// No description provided for @setupScreenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get setupScreenTitle;
-
-  /// No description provided for @setupInstallStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Install & start'**
-  String get setupInstallStart;
-
-  /// No description provided for @setupCheckAgain.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get setupCheckAgain;
 
   /// Sign-in sheet: a start the server may have taken without confirming it.
   ///
@@ -4369,12 +3721,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.'**
   String get uncertainAuthCloseHint;
-
-  /// No description provided for @pluginsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.'**
-  String get pluginsDescription;
 
   /// No description provided for @pluginsUnsupported.
   ///
@@ -4423,12 +3769,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Active'**
   String get pluginsStatusActive;
-
-  /// No description provided for @pluginsStatusFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed'**
-  String get pluginsStatusFailed;
 
   /// No description provided for @pluginsStatusUnknown.
   ///
@@ -4514,113 +3854,11 @@ abstract class AppLocalizations {
   /// **'Tied to the collector\'s configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.'**
   String get quotaMiniMaxSourceBound;
 
-  /// No description provided for @managedHealthTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On-device server'**
-  String get managedHealthTitle;
-
-  /// No description provided for @managedHealthUnchecked.
-  ///
-  /// In en, this message translates to:
-  /// **'Check the server managed by this app in Termux.'**
-  String get managedHealthUnchecked;
-
-  /// No description provided for @managedHealthCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get managedHealthCheck;
-
-  /// No description provided for @managedHealthChecking.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking Termux…'**
-  String get managedHealthChecking;
-
-  /// No description provided for @managedHealthFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not check Termux. Open setup to check permissions or try again.'**
-  String get managedHealthFailed;
-
-  /// No description provided for @managedHealthReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Server process running'**
-  String get managedHealthReady;
-
-  /// No description provided for @managedHealthWorking.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup is in progress'**
-  String get managedHealthWorking;
-
-  /// No description provided for @managedHealthStopped.
-  ///
-  /// In en, this message translates to:
-  /// **'Server stopped'**
-  String get managedHealthStopped;
-
-  /// No description provided for @managedHealthNeedsSetup.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup needs attention'**
-  String get managedHealthNeedsSetup;
-
-  /// No description provided for @managedHealthAbsent.
-  ///
-  /// In en, this message translates to:
-  /// **'No managed setup found'**
-  String get managedHealthAbsent;
-
-  /// No description provided for @managedHealthUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Server state unavailable'**
-  String get managedHealthUnknown;
-
-  /// No description provided for @managedHealthManage.
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get managedHealthManage;
-
-  /// No description provided for @managedHealthObserved.
-  ///
-  /// In en, this message translates to:
-  /// **'Last checked at {time}. Check again for the current state.'**
-  String managedHealthObserved(String time);
-
-  /// No description provided for @managedHealthVersion.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode {version}'**
-  String managedHealthVersion(String version);
-
-  /// No description provided for @managedHealthUbuntu.
-  ///
-  /// In en, this message translates to:
-  /// **'Runner: Ubuntu'**
-  String get managedHealthUbuntu;
-
   /// No description provided for @managedHealthLifetime.
   ///
   /// In en, this message translates to:
   /// **'Android may stop either app. Keeping the mobile connection alive does not guarantee the Termux server will keep running overnight.'**
   String get managedHealthLifetime;
-
-  /// No description provided for @quotaBudgetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal alert threshold'**
-  String get quotaBudgetTitle;
-
-  /// No description provided for @quotaBudgetDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a percentage used for this source, account and window. This does not change provider limits.'**
-  String get quotaBudgetDescription;
 
   /// No description provided for @quotaBudgetOff.
   ///
@@ -4634,29 +3872,11 @@ abstract class AppLocalizations {
   /// **'{percent}% used'**
   String quotaBudgetPercent(String percent);
 
-  /// No description provided for @quotaBudgetOptIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Show threshold attention'**
-  String get quotaBudgetOptIn;
-
-  /// No description provided for @quotaBudgetAttentionScope.
-  ///
-  /// In en, this message translates to:
-  /// **'Only after a fresh read on this page. No background polling or device notifications. A window without a reset time alerts once until you change this rule.'**
-  String get quotaBudgetAttentionScope;
-
   /// No description provided for @quotaBudgetSaveFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not save this budget change. Your last saved settings remain in effect.'**
   String get quotaBudgetSaveFailed;
-
-  /// No description provided for @quotaBudgetAttention.
-  ///
-  /// In en, this message translates to:
-  /// **'A personal threshold was reached in the latest provider reading. Review the reported windows below.'**
-  String get quotaBudgetAttention;
 
   /// No description provided for @quotaGlm.
   ///
@@ -4778,12 +3998,6 @@ abstract class AppLocalizations {
   /// **'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.'**
   String get monitorDisclosure;
 
-  /// No description provided for @monitorConfigure.
-  ///
-  /// In en, this message translates to:
-  /// **'Monitoring settings'**
-  String get monitorConfigure;
-
   /// No description provided for @monitorRefresh.
   ///
   /// In en, this message translates to:
@@ -4898,24 +4112,6 @@ abstract class AppLocalizations {
   /// **'This request or its project changed. Refresh the inbox and try again.'**
   String get monitorOpenFailed;
 
-  /// No description provided for @monitorSwitchTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch server to review?'**
-  String get monitorSwitchTitle;
-
-  /// No description provided for @monitorSwitchDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'A run is active on the selected server. Switching changes the server shown in this app; it does not stop that server’s run.'**
-  String get monitorSwitchDetail;
-
-  /// No description provided for @monitorSwitch.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch server'**
-  String get monitorSwitch;
-
   /// No description provided for @monitorSession.
   ///
   /// In en, this message translates to:
@@ -4958,24 +4154,6 @@ abstract class AppLocalizations {
   /// **'Next check'**
   String get monitorNextCheck;
 
-  /// No description provided for @monitorPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Current pending requests'**
-  String get monitorPending;
-
-  /// No description provided for @monitorUnknownServers.
-  ///
-  /// In en, this message translates to:
-  /// **'Servers with unknown attention'**
-  String get monitorUnknownServers;
-
-  /// Saved-server attention counts in the current inbox
-  ///
-  /// In en, this message translates to:
-  /// **'Current pending requests: {pendingCount}\nServers with unknown attention: {unknownCount}'**
-  String monitorPendingSummary(int pendingCount, int unknownCount);
-
   /// Saved-server request row summary
   ///
   /// In en, this message translates to:
@@ -4992,12 +4170,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label}: {time}'**
   String monitorLabeledTime(String label, String time);
-
-  /// No description provided for @monitorSelected.
-  ///
-  /// In en, this message translates to:
-  /// **'Selected project'**
-  String get monitorSelected;
 
   /// No description provided for @monitorCheckIn.
   ///
@@ -5046,42 +4218,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear saved provider thresholds'**
   String get quotaBudgetClearAll;
-
-  /// No description provided for @quotaBudgetClearDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove all provider thresholds and attention settings for this saved server, including previous accounts? Consumption budgets are kept.'**
-  String get quotaBudgetClearDescription;
-
-  /// No description provided for @quotaBudgetClearTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear provider thresholds?'**
-  String get quotaBudgetClearTitle;
-
-  /// No description provided for @managedStorageSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Termux storage: {available} GiB free of {total} GiB'**
-  String managedStorageSummary(String available, String total);
-
-  /// No description provided for @managedStorageFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Termux storage could not be checked. Refresh to try again.'**
-  String get managedStorageFailed;
-
-  /// No description provided for @managedRecoveryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recover a crashed managed server'**
-  String get managedRecoveryTitle;
-
-  /// No description provided for @managedRecoveryPolicy.
-  ///
-  /// In en, this message translates to:
-  /// **'Opt in to at most 3 restart attempts, with delays of at least 5, 15 and 45 seconds. Only while this app is in the foreground. No install or update.'**
-  String get managedRecoveryPolicy;
 
   /// No description provided for @managedRecoveryAttempts.
   ///
@@ -5167,23 +4303,11 @@ abstract class AppLocalizations {
   /// **'Try disabling recovery again'**
   String get managedRecoveryRetryDisable;
 
-  /// No description provided for @managedRecoveryStoppedWithCleanupError.
-  ///
-  /// In en, this message translates to:
-  /// **'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.'**
-  String get managedRecoveryStoppedWithCleanupError;
-
   /// No description provided for @pluginMappingUnavailable.
   ///
   /// In en, this message translates to:
   /// **'This plugin or command is no longer available here. Refresh and review your links.'**
   String get pluginMappingUnavailable;
-
-  /// No description provided for @mobileTasksDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Server-reported tasks · mobile view'**
-  String get mobileTasksDescription;
 
   /// No description provided for @mobileTasksUnfinished.
   ///
@@ -5232,18 +4356,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy all tasks'**
   String get mobileTasksCopyAll;
-
-  /// Snackbar after the task list was placed on the clipboard
-  ///
-  /// In en, this message translates to:
-  /// **'All tasks copied'**
-  String get mobileTasksCopied;
-
-  /// Snackbar when the clipboard write fails
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy the task list.'**
-  String get mobileTasksCopyFailed;
 
   /// No description provided for @mobileTaskPriorityHigh.
   ///
@@ -5335,36 +4447,6 @@ abstract class AppLocalizations {
   /// **'Stop monitoring {provider} on {server}'**
   String quotaMonitorDisable(String provider, String server);
 
-  /// No description provided for @setupChooseServerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose your server setup'**
-  String get setupChooseServerTitle;
-
-  /// No description provided for @setupChooseServerDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect an existing server, or use Termux to run OpenCode on this phone.'**
-  String get setupChooseServerDescription;
-
-  /// No description provided for @setupUncheckedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue without an installation check?'**
-  String get setupUncheckedTitle;
-
-  /// No description provided for @setupUncheckedDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The current installation could not be checked. Continuing may install or update OpenCode 1 in the app-managed Ubuntu environment. Existing Ubuntu files are kept. You can check again or connect by address instead.'**
-  String get setupUncheckedDescription;
-
-  /// No description provided for @setupUncheckedContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with Ubuntu'**
-  String get setupUncheckedContinue;
-
   /// No description provided for @webSearchDisclosure.
   ///
   /// In en, this message translates to:
@@ -5437,36 +4519,6 @@ abstract class AppLocalizations {
   /// **'Some results were omitted because their links or excerpts exceeded the review limits.'**
   String get webSearchOmitted;
 
-  /// No description provided for @setupReinstallStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Reinstall & start'**
-  String get setupReinstallStart;
-
-  /// No description provided for @setupInstallVersionStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Install {version} & start'**
-  String setupInstallVersionStart(String version);
-
-  /// No description provided for @setupReplaceTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace installed OpenCode?'**
-  String get setupReplaceTitle;
-
-  /// No description provided for @setupReplaceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace OpenCode {installedVersion} with {targetVersion} in the managed Ubuntu environment and restart the local server. Existing Ubuntu files are kept.'**
-  String setupReplaceDescription(String installedVersion, String targetVersion);
-
-  /// No description provided for @setupInstallRestart.
-  ///
-  /// In en, this message translates to:
-  /// **'Install & restart'**
-  String get setupInstallRestart;
-
   /// No description provided for @queueStorageUnreadable.
   ///
   /// In en, this message translates to:
@@ -5484,12 +4536,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server changed. Close and reopen this file.'**
   String get filesViewerScopeChanged;
-
-  /// No description provided for @filesViewerPathChanged.
-  ///
-  /// In en, this message translates to:
-  /// **'File context changed. Close and reopen this file.'**
-  String get filesViewerPathChanged;
 
   /// No description provided for @queueStorageCountUnknown.
   ///
@@ -5545,23 +4591,11 @@ abstract class AppLocalizations {
   /// **'Reconnect before sending.'**
   String get codexReconnectBeforeSending;
 
-  /// No description provided for @connectionTypeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection type'**
-  String get connectionTypeLabel;
-
   /// No description provided for @openCodeConnectionLabel.
   ///
   /// In en, this message translates to:
   /// **'OpenCode'**
   String get openCodeConnectionLabel;
-
-  /// No description provided for @paseoExperimentalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Paseo: Claude Code, Pi (experimental)'**
-  String get paseoExperimentalLabel;
 
   /// No description provided for @paseoAddressHint.
   ///
@@ -5592,12 +4626,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run \"paseo start --no-relay\" on the computer that has Claude Code or Pi installed. This app never uses the Paseo relay: connect on this device or over your own private network.'**
   String get paseoSetupNotice;
-
-  /// No description provided for @codexExperimentalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Codex (experimental)'**
-  String get codexExperimentalLabel;
 
   /// No description provided for @connectionDisplayName.
   ///
@@ -5653,41 +4681,11 @@ abstract class AppLocalizations {
   /// **'Stored securely on this device and sent only to this Codex server.'**
   String get codexTokenStorageHelp;
 
-  /// No description provided for @codexShowToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Show connection token'**
-  String get codexShowToken;
-
-  /// No description provided for @codexHideToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide connection token'**
-  String get codexHideToken;
-
-  /// No description provided for @codexPasteToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste connection token'**
-  String get codexPasteToken;
-
-  /// No description provided for @connectionCloseEditor.
-  ///
-  /// In en, this message translates to:
-  /// **'Close server editor'**
-  String get connectionCloseEditor;
-
   /// No description provided for @connectionCredentialUnavailable.
   ///
   /// In en, this message translates to:
   /// **'A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.'**
   String get connectionCredentialUnavailable;
-
-  /// No description provided for @projectContextTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Project context'**
-  String get projectContextTitle;
 
   /// No description provided for @projectConfiguredFolder.
   ///
@@ -5700,90 +4698,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect Termux once'**
   String get termuxGuideTitle;
-
-  /// No description provided for @termuxGuideIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'We copy the command for you. Here is what to do when Termux opens.'**
-  String get termuxGuideIntro;
-
-  /// No description provided for @termuxGuideAutomaticCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'When you return, we will check the connection automatically.'**
-  String get termuxGuideAutomaticCheck;
-
-  /// No description provided for @termuxGuideShowCommand.
-  ///
-  /// In en, this message translates to:
-  /// **'Show command'**
-  String get termuxGuideShowCommand;
-
-  /// No description provided for @termuxGuideOpening.
-  ///
-  /// In en, this message translates to:
-  /// **'Opening Termux...'**
-  String get termuxGuideOpening;
-
-  /// No description provided for @termuxGuideCopyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'1. Copy & open'**
-  String get termuxGuideCopyTitle;
-
-  /// No description provided for @termuxGuideCopyDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap Copy & open Termux above. Allow Android\'s permission request if shown.'**
-  String get termuxGuideCopyDescription;
-
-  /// No description provided for @termuxGuidePasteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'2. Press and hold, then Paste'**
-  String get termuxGuidePasteTitle;
-
-  /// No description provided for @termuxGuidePasteDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'In Termux, press and hold near the blinking cursor. Tap Paste in the menu.'**
-  String get termuxGuidePasteDescription;
-
-  /// No description provided for @termuxGuideEnterTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'3. Enter, then return'**
-  String get termuxGuideEnterTitle;
-
-  /// Keep bridge-unlocked unchanged: it is the literal terminal command output.
-  ///
-  /// In en, this message translates to:
-  /// **'Press the keyboard Enter or return key. When Termux shows bridge-unlocked, switch back to this app.'**
-  String get termuxGuideEnterDescription;
-
-  /// No description provided for @termuxGuideCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Command copied'**
-  String get termuxGuideCopied;
-
-  /// No description provided for @termuxGuidePaste.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste'**
-  String get termuxGuidePaste;
-
-  /// No description provided for @termuxGuideEnterKey.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter'**
-  String get termuxGuideEnterKey;
-
-  /// No description provided for @termuxGuideIllustrationNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Illustrations only. Your keyboard and Paste menu may look different.'**
-  String get termuxGuideIllustrationNote;
 
   /// No description provided for @termuxGuideOpenFailed.
   ///
@@ -5869,24 +4783,6 @@ abstract class AppLocalizations {
   /// **'Choose a server to see what needs your attention.'**
   String get launchUiActivityNoServer;
 
-  /// Queued draft bubble label for a send that left the device without a confirmed outcome; never resent automatically
-  ///
-  /// In en, this message translates to:
-  /// **'Delivery unconfirmed — review before resending'**
-  String get queuedDeliveryUnconfirmed;
-
-  /// Queued draft bubble label for an unconfirmed send that also recorded a transport error
-  ///
-  /// In en, this message translates to:
-  /// **'Delivery unconfirmed: {error}'**
-  String queuedDeliveryUnconfirmedWithError(String error);
-
-  /// Tooltip on the queued draft bubble's explicit resend action
-  ///
-  /// In en, this message translates to:
-  /// **'Send again'**
-  String get queuedResendTooltip;
-
   /// Confirmation dialog title before resending an unconfirmed queued draft
   ///
   /// In en, this message translates to:
@@ -5917,41 +4813,17 @@ abstract class AppLocalizations {
   /// **'Its earlier send was never confirmed; it may already be in the conversation.'**
   String get queuedDiscardUnconfirmedMessage;
 
-  /// First-time on-device server runtime selection
-  ///
-  /// In en, this message translates to:
-  /// **'Which OpenCode would you like to use?'**
-  String get setupRuntimeTitle;
-
   /// Existing OpenCode server generation
   ///
   /// In en, this message translates to:
   /// **'OpenCode 1'**
   String get setupRuntimeOne;
 
-  /// Description of the default first-run runtime
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended for the widest feature support in this app.'**
-  String get setupRuntimeOneDetail;
-
   /// Experimental new OpenCode server generation
   ///
   /// In en, this message translates to:
   /// **'OpenCode 2'**
   String get setupRuntimeTwo;
-
-  /// Honest support note for the optional beta runtime
-  ///
-  /// In en, this message translates to:
-  /// **'The newer server. A few features from OpenCode 1 are not available on it yet.'**
-  String get setupRuntimeTwoDetail;
-
-  /// Names the exact runtime and pinned version before installation
-  ///
-  /// In en, this message translates to:
-  /// **'Install {runtime} ({version}) in an app-managed Ubuntu environment. Existing Ubuntu files are reused.'**
-  String setupRuntimeInstallDetail(String runtime, String version);
 
   /// Names the selected runtime and pinned version in the update confirmation
   ///
@@ -5964,12 +4836,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 draft with an unconfirmed send to review.} other{{count} drafts with an unconfirmed send to review.}}'**
   String queuedBannerReview(int count);
-
-  /// Tooltip and accessibility label of the workspace action that opens the fresh-worktree task sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Start a task in a fresh worktree'**
-  String get isolatedTaskAction;
 
   /// Title of the fresh-worktree task sheet
   ///
@@ -6157,30 +5023,6 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get capsuleRemove;
 
-  /// No description provided for @markdownCopyCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy code'**
-  String get markdownCopyCode;
-
-  /// No description provided for @markdownCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Code copied'**
-  String get markdownCopied;
-
-  /// No description provided for @markdownCopyFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy code. Try again.'**
-  String get markdownCopyFailed;
-
-  /// No description provided for @markdownCopyRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get markdownCopyRetry;
-
   /// No description provided for @markdownWrapCode.
   ///
   /// In en, this message translates to:
@@ -6193,35 +5035,17 @@ abstract class AppLocalizations {
   /// **'Scroll lines'**
   String get markdownScrollCode;
 
-  /// No description provided for @markdownExpandCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Full screen'**
-  String get markdownExpandCode;
-
   /// No description provided for @markdownReaderTitle.
   ///
   /// In en, this message translates to:
   /// **'Code reader'**
   String get markdownReaderTitle;
 
-  /// No description provided for @markdownSnapshot.
-  ///
-  /// In en, this message translates to:
-  /// **'Snapshot of the code when opened. Close and reopen to read later updates.'**
-  String get markdownSnapshot;
-
   /// No description provided for @tailscaleTitle.
   ///
   /// In en, this message translates to:
   /// **'Connect with Tailscale'**
   String get tailscaleTitle;
-
-  /// No description provided for @tailscaleQuickAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Use your private network and an HTTPS server address'**
-  String get tailscaleQuickAdd;
 
   /// No description provided for @tailscaleIntro.
   ///
@@ -6277,23 +5101,11 @@ abstract class AppLocalizations {
   /// **'Welcome back. App presence was checked again; use Test connection on the next screen to check your server.'**
   String get tailscaleReturned;
 
-  /// No description provided for @tailscaleOpenFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Tailscale could not open. Open it from your launcher, then return here. Your address stays in this form.'**
-  String get tailscaleOpenFailed;
-
   /// No description provided for @tailscaleOpen.
   ///
   /// In en, this message translates to:
   /// **'Open Tailscale'**
   String get tailscaleOpen;
-
-  /// No description provided for @tailscaleInstall.
-  ///
-  /// In en, this message translates to:
-  /// **'Get official Android app'**
-  String get tailscaleInstall;
 
   /// No description provided for @tailscaleCheckAgain.
   ///
@@ -6391,12 +5203,6 @@ abstract class AppLocalizations {
   /// **'Saving draft changes…'**
   String get a2aSavingDraft;
 
-  /// No description provided for @a2aCardVersion.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent version: {version}'**
-  String a2aCardVersion(String version);
-
   /// No description provided for @a2aSupportedConnection.
   ///
   /// In en, this message translates to:
@@ -6409,41 +5215,11 @@ abstract class AppLocalizations {
   /// **'External agents'**
   String get a2aTitle;
 
-  /// No description provided for @a2aIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'Bring an agent you trust.'**
-  String get a2aIntro;
-
-  /// No description provided for @a2aBoundary.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to an A2A agent and send a task you choose. Only the text you submit is shared. Your projects, files and other conversations stay on this phone.'**
-  String get a2aBoundary;
-
   /// No description provided for @a2aAdd.
   ///
   /// In en, this message translates to:
   /// **'Add agent'**
   String get a2aAdd;
-
-  /// No description provided for @a2aEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No external agents yet. Start with an agent\'s HTTPS address or public Agent Card URL.'**
-  String get a2aEmpty;
-
-  /// No description provided for @a2aDeleteAgent.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove agent'**
-  String get a2aDeleteAgent;
-
-  /// No description provided for @a2aDeleteAgentDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this agent, its saved tasks and its credential from this phone. This does not stop remote work or delete data held by the agent.'**
-  String get a2aDeleteAgentDetail;
 
   /// No description provided for @a2aDeleteLocal.
   ///
@@ -6451,35 +5227,11 @@ abstract class AppLocalizations {
   /// **'Remove from this phone'**
   String get a2aDeleteLocal;
 
-  /// No description provided for @a2aDeletionPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Removal from this phone is incomplete. This agent is unavailable until its remaining data is removed.'**
-  String get a2aDeletionPending;
-
-  /// No description provided for @a2aRetryDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Try removing again'**
-  String get a2aRetryDelete;
-
-  /// No description provided for @a2aInspectIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspect before you connect'**
-  String get a2aInspectIntro;
-
   /// No description provided for @a2aAddress.
   ///
   /// In en, this message translates to:
   /// **'Agent address'**
   String get a2aAddress;
-
-  /// No description provided for @a2aInspect.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspect Agent Card'**
-  String get a2aInspect;
 
   /// No description provided for @a2aUnsupported.
   ///
@@ -6487,35 +5239,11 @@ abstract class AppLocalizations {
   /// **'Unavailable: this card does not advertise the supported A2A 1.0 JSON-RPC, text and authentication combination on the same origin, or requires an unsupported extension. No task can be sent.'**
   String get a2aUnsupported;
 
-  /// No description provided for @a2aBearerDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Supply an HTTP bearer credential issued for this agent. It is stored in the phone\'s secure storage and sent only to the inspected origin. No sign-in or credential sharing with other agents is performed.'**
-  String get a2aBearerDetail;
-
-  /// No description provided for @a2aNoAuthDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'This card requests no authentication. Do not send private information unless you trust this agent.'**
-  String get a2aNoAuthDetail;
-
   /// No description provided for @a2aBearer.
   ///
   /// In en, this message translates to:
   /// **'Agent bearer credential'**
   String get a2aBearer;
-
-  /// No description provided for @a2aSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Save agent'**
-  String get a2aSave;
-
-  /// No description provided for @a2aCardClaim.
-  ///
-  /// In en, this message translates to:
-  /// **'Self-reported Agent Card. This app has not verified the agent\'s identity, skills or billing terms.'**
-  String get a2aCardClaim;
 
   /// No description provided for @a2aSkills.
   ///
@@ -6523,41 +5251,11 @@ abstract class AppLocalizations {
   /// **'Advertised skills'**
   String get a2aSkills;
 
-  /// No description provided for @a2aNewTask.
-  ///
-  /// In en, this message translates to:
-  /// **'New task'**
-  String get a2aNewTask;
-
   /// No description provided for @a2aTaskPrompt.
   ///
   /// In en, this message translates to:
   /// **'Task text'**
   String get a2aTaskPrompt;
-
-  /// No description provided for @a2aSendDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Review the text and destination before sending. The agent may use its own compute or services; check its terms. This app cannot estimate or limit that usage.'**
-  String get a2aSendDetail;
-
-  /// No description provided for @a2aReviewTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Review task'**
-  String get a2aReviewTask;
-
-  /// No description provided for @a2aUpdateCredential.
-  ///
-  /// In en, this message translates to:
-  /// **'Update credential'**
-  String get a2aUpdateCredential;
-
-  /// No description provided for @a2aSavedTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved tasks'**
-  String get a2aSavedTasks;
 
   /// No description provided for @a2aDeliveryUnconfirmed.
   ///
@@ -6571,71 +5269,17 @@ abstract class AppLocalizations {
   /// **'Not sent'**
   String get a2aDraft;
 
-  /// No description provided for @a2aBack.
-  ///
-  /// In en, this message translates to:
-  /// **'Back'**
-  String get a2aBack;
-
-  /// No description provided for @a2aTaskTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent task'**
-  String get a2aTaskTitle;
-
-  /// No description provided for @a2aFresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Checked with the agent this visit.'**
-  String get a2aFresh;
-
-  /// No description provided for @a2aSavedSnapshot.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved locally. Refresh a known task to check its current state.'**
-  String get a2aSavedSnapshot;
-
-  /// No description provided for @a2aCancelTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop task'**
-  String get a2aCancelTask;
-
   /// No description provided for @a2aCancelDetail.
   ///
   /// In en, this message translates to:
   /// **'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.'**
   String get a2aCancelDetail;
 
-  /// No description provided for @a2aForgetTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Forget saved task'**
-  String get a2aForgetTask;
-
-  /// No description provided for @a2aForgetDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove this saved task from the phone. Remote work may continue, including a send whose delivery is unconfirmed. This cannot delete the agent\'s copy.'**
-  String get a2aForgetDetail;
-
   /// No description provided for @a2aYourReply.
   ///
   /// In en, this message translates to:
   /// **'Your reply'**
   String get a2aYourReply;
-
-  /// No description provided for @a2aSend.
-  ///
-  /// In en, this message translates to:
-  /// **'Send to agent'**
-  String get a2aSend;
-
-  /// No description provided for @a2aReplySameTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Reply to this task'**
-  String get a2aReplySameTask;
 
   /// No description provided for @a2aAgentOutput.
   ///
@@ -6660,12 +5304,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some output is omitted. This view shows bounded text and links; binary or structured artifacts are not downloaded or executed.'**
   String get a2aOmittedContent;
-
-  /// No description provided for @a2aRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh task'**
-  String get a2aRefresh;
 
   /// No description provided for @a2aSubmitted.
   ///
@@ -6793,18 +5431,6 @@ abstract class AppLocalizations {
   /// **'Source'**
   String get fileSource;
 
-  /// No description provided for @fileSourceExcerpt.
-  ///
-  /// In en, this message translates to:
-  /// **'Up to the first 200,000 characters are displayed. Copy and Save keep the original content.'**
-  String get fileSourceExcerpt;
-
-  /// No description provided for @filePreviewPartialSource.
-  ///
-  /// In en, this message translates to:
-  /// **'Only part of this file is shown. Copy and Save keep the original content.'**
-  String get filePreviewPartialSource;
-
   /// No description provided for @fileLineOutsidePreview.
   ///
   /// In en, this message translates to:
@@ -6834,42 +5460,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A cell exceeds 4,096 characters. Read the source or save the original file.'**
   String get fileTableFieldTooLong;
-
-  /// No description provided for @fileTableMoreRows.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing the first 200 rows. More data remains in the original file.'**
-  String get fileTableMoreRows;
-
-  /// No description provided for @fileTableRows.
-  ///
-  /// In en, this message translates to:
-  /// **'{rows} rows shown · {columns} columns'**
-  String fileTableRows(int rows, int columns);
-
-  /// No description provided for @fileTableColumn.
-  ///
-  /// In en, this message translates to:
-  /// **'Column {number}'**
-  String fileTableColumn(int number);
-
-  /// No description provided for @fileTableEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'This file has no rows.'**
-  String get fileTableEmpty;
-
-  /// No description provided for @fileCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'File contents copied'**
-  String get fileCopied;
-
-  /// No description provided for @fileCopyFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy file contents. Try again.'**
-  String get fileCopyFailed;
 
   /// No description provided for @fileImage.
   ///
@@ -6912,36 +5502,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This PDF page could not be displayed. Retry or save the original file.'**
   String get filePdfFailed;
-
-  /// No description provided for @filePdfPageLimit.
-  ///
-  /// In en, this message translates to:
-  /// **'Only the first 200 pages can be previewed. Save the original to read the full document.'**
-  String get filePdfPageLimit;
-
-  /// No description provided for @filePdfPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Page {page} of {count}'**
-  String filePdfPage(int page, int count);
-
-  /// No description provided for @filePrevious.
-  ///
-  /// In en, this message translates to:
-  /// **'Previous'**
-  String get filePrevious;
-
-  /// No description provided for @fileNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get fileNext;
-
-  /// No description provided for @fileCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get fileCancel;
 
   /// No description provided for @agentAccountTitle.
   ///
@@ -7026,12 +5586,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Host authentication'**
   String get agentAccountHostAuth;
-
-  /// No description provided for @agentAccountPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan: {plan}'**
-  String agentAccountPlan(String plan);
 
   /// No description provided for @agentAccountHostNote.
   ///
@@ -7213,23 +5767,11 @@ abstract class AppLocalizations {
   /// **'Reset time unavailable'**
   String get agentAccountResetUnknown;
 
-  /// No description provided for @agentAccountReset.
-  ///
-  /// In en, this message translates to:
-  /// **'Resets {time}'**
-  String agentAccountReset(String time);
-
   /// No description provided for @projectFolderChooserTitle.
   ///
   /// In en, this message translates to:
   /// **'Choose a project folder'**
   String get projectFolderChooserTitle;
-
-  /// No description provided for @projectFolderChooserMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start conversations.'**
-  String get projectFolderChooserMessage;
 
   /// No description provided for @projectFolderCreate.
   ///
@@ -7243,23 +5785,11 @@ abstract class AppLocalizations {
   /// **'Open a project folder'**
   String get projectFolderOpen;
 
-  /// No description provided for @projectFolderBrowse.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose from opened projects'**
-  String get projectFolderBrowse;
-
   /// No description provided for @projectFolderNoCreateHint.
   ///
   /// In en, this message translates to:
   /// **'This server cannot create folders from the app. Create the folder on that machine, then open it here by its path.'**
   String get projectFolderNoCreateHint;
-
-  /// No description provided for @projectFolderCreateMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The folder is created in {directory} on this device and opened as the project.'**
-  String projectFolderCreateMessage(String directory);
 
   /// No description provided for @projectFolderNameLabel.
   ///
@@ -7333,53 +5863,17 @@ abstract class AppLocalizations {
   /// **'Search conversation titles'**
   String get globalSessionsSearchLabel;
 
-  /// No description provided for @globalSessionsSearchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Across every project on this server'**
-  String get globalSessionsSearchHint;
-
-  /// No description provided for @globalSessionsIncludeArchived.
-  ///
-  /// In en, this message translates to:
-  /// **'Include archived'**
-  String get globalSessionsIncludeArchived;
-
   /// No description provided for @globalSessionsArchivedShort.
   ///
   /// In en, this message translates to:
   /// **'Archived'**
   String get globalSessionsArchivedShort;
 
-  /// No description provided for @globalSessionsAllFolders.
-  ///
-  /// In en, this message translates to:
-  /// **'All projects'**
-  String get globalSessionsAllFolders;
-
   /// No description provided for @globalSessionsUnknownLocation.
   ///
   /// In en, this message translates to:
   /// **'Unknown project'**
   String get globalSessionsUnknownLocation;
-
-  /// No description provided for @globalSessionsSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} conversations in {folders} projects'**
-  String globalSessionsSummary(String count, int folders);
-
-  /// No description provided for @globalSessionsSummaryOneFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} conversations in one project'**
-  String globalSessionsSummaryOneFolder(String count);
-
-  /// No description provided for @globalSessionsFilteredSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} of {total} conversations shown'**
-  String globalSessionsFilteredSummary(int count, String total);
 
   /// No description provided for @globalSessionsEmptyTitle.
   ///
@@ -7453,18 +5947,6 @@ abstract class AppLocalizations {
   /// **'New conversation'**
   String get workspaceNewSession;
 
-  /// No description provided for @workspaceIsolatedTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Isolated task'**
-  String get workspaceIsolatedTask;
-
-  /// No description provided for @workspaceAllSessions.
-  ///
-  /// In en, this message translates to:
-  /// **'All conversations'**
-  String get workspaceAllSessions;
-
   /// No description provided for @workspaceDismissNotice.
   ///
   /// In en, this message translates to:
@@ -7476,30 +5958,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch project, where it runs, and its folder'**
   String get workspaceManageProjectHint;
-
-  /// No description provided for @workspaceManage.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage'**
-  String get workspaceManage;
-
-  /// No description provided for @reviewCopiedFile.
-  ///
-  /// In en, this message translates to:
-  /// **'Updated file copied'**
-  String get reviewCopiedFile;
-
-  /// No description provided for @reviewCopiedPatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Patch copied'**
-  String get reviewCopiedPatch;
-
-  /// No description provided for @reviewCopyFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy. Try again.'**
-  String get reviewCopyFailed;
 
   /// No description provided for @reviewCopyFile.
   ///
@@ -7513,90 +5971,6 @@ abstract class AppLocalizations {
   /// **'Copy patch'**
   String get reviewCopyPatch;
 
-  /// No description provided for @reviewNoChanges.
-  ///
-  /// In en, this message translates to:
-  /// **'No changes'**
-  String get reviewNoChanges;
-
-  /// No description provided for @reviewEmptyDiff.
-  ///
-  /// In en, this message translates to:
-  /// **'No diff content'**
-  String get reviewEmptyDiff;
-
-  /// No description provided for @reviewHideContext.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide revealed context'**
-  String get reviewHideContext;
-
-  /// No description provided for @reviewAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Added'**
-  String get reviewAdded;
-
-  /// No description provided for @reviewRemoved.
-  ///
-  /// In en, this message translates to:
-  /// **'Removed'**
-  String get reviewRemoved;
-
-  /// No description provided for @reviewUnchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Unchanged'**
-  String get reviewUnchanged;
-
-  /// No description provided for @reviewPatchNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Patch note'**
-  String get reviewPatchNote;
-
-  /// No description provided for @reviewShowNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Show next {count} lines'**
-  String reviewShowNext(int count);
-
-  /// No description provided for @reviewShowPrevious.
-  ///
-  /// In en, this message translates to:
-  /// **'Show {count} previous lines ({remaining} hidden)'**
-  String reviewShowPrevious(int count, int remaining);
-
-  /// No description provided for @reviewMissingContext.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} unchanged lines not included in patch'**
-  String reviewMissingContext(int count);
-
-  /// No description provided for @reviewCounts.
-  ///
-  /// In en, this message translates to:
-  /// **'{added} added, {removed} removed'**
-  String reviewCounts(int added, int removed);
-
-  /// No description provided for @reviewLineDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'{kind}, line {number}: {text}'**
-  String reviewLineDescription(String kind, int number, String text);
-
-  /// No description provided for @reviewNoteDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'{kind}: {text}'**
-  String reviewNoteDescription(String kind, String text);
-
-  /// More destination summary showing the model used by new chats, not an existing session.
-  ///
-  /// In en, this message translates to:
-  /// **'New conversations: {model}'**
-  String settingsDiscoveryNewChatsModel(String model);
-
   /// No description provided for @onboardingValueTitle.
   ///
   /// In en, this message translates to:
@@ -7609,41 +5983,17 @@ abstract class AppLocalizations {
   /// **'Ask your coding agent for a change, review the result, and pick up where you left off.'**
   String get onboardingValueBody;
 
-  /// No description provided for @onboardingConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to a server'**
-  String get onboardingConnect;
-
   /// No description provided for @onboardingDemoNote.
   ///
   /// In en, this message translates to:
   /// **'A simulated conversation. No server needed.'**
   String get onboardingDemoNote;
 
-  /// No description provided for @onboardingMoreSetup.
-  ///
-  /// In en, this message translates to:
-  /// **'More setup options'**
-  String get onboardingMoreSetup;
-
   /// No description provided for @onboardingPrivateNetwork.
   ///
   /// In en, this message translates to:
   /// **'Reach a server over your private network'**
   String get onboardingPrivateNetwork;
-
-  /// No description provided for @onboardingRunOnPhone.
-  ///
-  /// In en, this message translates to:
-  /// **'Run OpenCode here with Termux'**
-  String get onboardingRunOnPhone;
-
-  /// No description provided for @onboardingTermuxNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Guided Termux setup'**
-  String get onboardingTermuxNote;
 
   /// No description provided for @onboardingSetupGuide.
   ///
@@ -7681,12 +6031,6 @@ abstract class AppLocalizations {
   /// **'Status incomplete'**
   String get activityStatusIncomplete;
 
-  /// No description provided for @activityCheckedLocationsClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing needs you in the checked projects.'**
-  String get activityCheckedLocationsClear;
-
   /// No description provided for @activityUnknownStatusDetail.
   ///
   /// In en, this message translates to:
@@ -7704,36 +6048,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved servers'**
   String get activitySavedServers;
-
-  /// No description provided for @activitySelectedLocationsOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Watched in each server\'s current project'**
-  String get activitySelectedLocationsOnly;
-
-  /// No description provided for @activityBackgroundUpdates.
-  ///
-  /// In en, this message translates to:
-  /// **'Background updates'**
-  String get activityBackgroundUpdates;
-
-  /// No description provided for @activityBackgroundOffDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Off · choose when to stay connected'**
-  String get activityBackgroundOffDetail;
-
-  /// No description provided for @activityPendingCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} pending'**
-  String activityPendingCount(int count);
-
-  /// No description provided for @activityUnknownCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} unknown'**
-  String activityUnknownCount(int count);
 
   /// No description provided for @demoTaskTitle.
   ///
@@ -7789,12 +6103,6 @@ abstract class AppLocalizations {
   /// **'Started in background'**
   String get workStartedInBackground;
 
-  /// No description provided for @workRunInBackground.
-  ///
-  /// In en, this message translates to:
-  /// **'Run in background'**
-  String get workRunInBackground;
-
   /// No description provided for @workBackgroundPending.
   ///
   /// In en, this message translates to:
@@ -7807,53 +6115,11 @@ abstract class AppLocalizations {
   /// **'Background work requested. Status will update when the server reports it.'**
   String get workBackgroundRequested;
 
-  /// No description provided for @workBackgroundUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'This server has not confirmed support for moving work to the background.'**
-  String get workBackgroundUnavailable;
-
-  /// No description provided for @workBackgroundEligible.
-  ///
-  /// In en, this message translates to:
-  /// **'Run in background is available while a supported agent task or command is blocking this conversation.'**
-  String get workBackgroundEligible;
-
-  /// No description provided for @workBackgroundAutomatic.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask your agent to delegate work in the background. Results return to this conversation automatically.'**
-  String get workBackgroundAutomatic;
-
   /// No description provided for @oc2DiscoveryEditorTitle.
   ///
   /// In en, this message translates to:
   /// **'OpenCode 2'**
   String get oc2DiscoveryEditorTitle;
-
-  /// No description provided for @oc2DiscoveryExisting.
-  ///
-  /// In en, this message translates to:
-  /// **'Use a server that is already running.'**
-  String get oc2DiscoveryExisting;
-
-  /// No description provided for @oc2DiscoveryTypes.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode 1 or 2'**
-  String get oc2DiscoveryTypes;
-
-  /// No description provided for @oc2DiscoveryPhone.
-  ///
-  /// In en, this message translates to:
-  /// **'Set up OpenCode 1 or 2 here with Termux.'**
-  String get oc2DiscoveryPhone;
-
-  /// No description provided for @setupSwitchUse.
-  ///
-  /// In en, this message translates to:
-  /// **'Try {runtime}'**
-  String setupSwitchUse(String runtime);
 
   /// No description provided for @setupSwitchConfirmTitle.
   ///
@@ -7873,12 +6139,6 @@ abstract class AppLocalizations {
   /// **'Switch version'**
   String get setupSwitchConfirm;
 
-  /// No description provided for @setupSwitchInstalled.
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone: {runtime}'**
-  String setupSwitchInstalled(String runtime);
-
   /// No description provided for @setupSwitchPending.
   ///
   /// In en, this message translates to:
@@ -7897,29 +6157,11 @@ abstract class AppLocalizations {
   /// **'Try {runtime} again'**
   String setupSwitchRetry(String runtime);
 
-  /// No description provided for @setupSwitchInProgressHint.
-  ///
-  /// In en, this message translates to:
-  /// **'You can leave this screen and return to check progress.'**
-  String get setupSwitchInProgressHint;
-
-  /// No description provided for @setupSwitchPreparing.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing the runtime switch…'**
-  String get setupSwitchPreparing;
-
   /// No description provided for @setupSwitchFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not finish switching runtimes. Check the setup output, then retry or return to the previous runtime.'**
   String get setupSwitchFailed;
-
-  /// No description provided for @setupSwitchConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to {runtime}'**
-  String setupSwitchConnect(String runtime);
 
   /// No description provided for @setupSwitchLegacyTwo.
   ///
@@ -7933,65 +6175,17 @@ abstract class AppLocalizations {
   /// **'This phone · {runtime}'**
   String setupSwitchProfileName(String runtime);
 
-  /// No description provided for @setupSwitchReady.
-  ///
-  /// In en, this message translates to:
-  /// **'The local runtime is ready. Your current remote connection is unchanged.'**
-  String get setupSwitchReady;
-
   /// No description provided for @setupSwitchMissingCredential.
   ///
   /// In en, this message translates to:
   /// **'The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved server before returning.'**
   String get setupSwitchMissingCredential;
 
-  /// No description provided for @setupSwitchOwnDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect an existing OpenCode 1 or OpenCode 2 server by address.'**
-  String get setupSwitchOwnDescription;
-
   /// No description provided for @setupSwitchProgressTitle.
   ///
   /// In en, this message translates to:
   /// **'Switching to {runtime}'**
   String setupSwitchProgressTitle(String runtime);
-
-  /// No description provided for @setupSwitchDataNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Each version keeps its own conversations and provider settings. Project files and project configuration are shared.'**
-  String get setupSwitchDataNotice;
-
-  /// No description provided for @setupSwitchHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup help'**
-  String get setupSwitchHelp;
-
-  /// No description provided for @setupSwitchReadyToConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Ready to connect'**
-  String get setupSwitchReadyToConnect;
-
-  /// No description provided for @setupSwitchStopped.
-  ///
-  /// In en, this message translates to:
-  /// **'Ready to start'**
-  String get setupSwitchStopped;
-
-  /// No description provided for @setupSwitchAttention.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs attention'**
-  String get setupSwitchAttention;
-
-  /// No description provided for @setupSwitchLocalRuntime.
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get setupSwitchLocalRuntime;
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
@@ -8290,24 +6484,6 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'{term}. Tap for an explanation.'**
-  String e7GlossaryExplain(String term);
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'The connection token was rejected'**
-  String get e7BannerTokenRejected;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
-  /// **'The server password changed'**
-  String get e7BannerPasswordChanged;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
   /// **'Server password changed — reconnect.'**
   String get e7BannerReconnectPassword;
 
@@ -8412,18 +6588,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste the code in this app'**
   String get e7SharedPasteTheCodeInThisApp;
-
-  /// Shared app interface: Open Servers, tap Scan and point the camera at the QR — or copy the code and tap Paste pairing code. The address, username and password fill in together.
-  ///
-  /// In en, this message translates to:
-  /// **'Open Servers, tap Scan and point the camera at the QR — or copy the code and tap Paste pairing code. The address, username and password fill in together.'**
-  String get e7SharedOpenServersTapScanAndPointThe;
-
-  /// Shared app interface: Copy the printed code, open Servers and tap Paste pairing code. The address, username and password fill in together.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy the printed code, open Servers and tap Paste pairing code. The address, username and password fill in together.'**
-  String get e7SharedCopyThePrintedCodeOpenServersAnd;
 
   /// Shared app interface: Start talking
   ///
@@ -8539,12 +6703,6 @@ abstract class AppLocalizations {
   /// **'The server can execute commands on its host — treat access like SSH access.'**
   String get e7SharedTheServerCanExecuteCommandsOnIts;
 
-  /// Shared app interface: Copied
-  ///
-  /// In en, this message translates to:
-  /// **'Copied'**
-  String get e7SharedCopied;
-
   /// Shared app interface: OpenCode is reconnecting. Try again.
   ///
   /// In en, this message translates to:
@@ -8574,12 +6732,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this conversation.'**
   String get e7SharedSendAPromptAndWaitForAn;
-
-  /// Shared app interface: Current model request
-  ///
-  /// In en, this message translates to:
-  /// **'Current model request'**
-  String get e7SharedCurrentModelRequest;
 
   /// Shared app interface: Estimated input makeup
   ///
@@ -8634,12 +6786,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Messages'**
   String get e7SharedMessages;
-
-  /// Shared app interface: User / assistant
-  ///
-  /// In en, this message translates to:
-  /// **'User / assistant'**
-  String get e7SharedUserAssistant;
 
   /// Shared app interface: Accumulated cost · reported by server
   ///
@@ -8737,18 +6883,6 @@ abstract class AppLocalizations {
   /// **'Filter destinations'**
   String get e7SharedFilterDestinations;
 
-  /// Shared app interface: No other destinations are available.
-  ///
-  /// In en, this message translates to:
-  /// **'No other destinations are available.'**
-  String get e7SharedNoOtherDestinationsAreAvailable;
-
-  /// Shared app interface: No destinations match this filter.
-  ///
-  /// In en, this message translates to:
-  /// **'No destinations match this filter.'**
-  String get e7SharedNoDestinationsMatchThisFilter;
-
   /// Shared app interface: Current
   ///
   /// In en, this message translates to:
@@ -8760,12 +6894,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch organization?'**
   String get e7SharedSwitchOrganization;
-
-  /// Shared app interface: Switch
-  ///
-  /// In en, this message translates to:
-  /// **'Switch'**
-  String get e7SharedSwitch;
 
   /// Shared app interface: Switch organization
   ///
@@ -8821,12 +6949,6 @@ abstract class AppLocalizations {
   /// **'Parent conversation'**
   String get e7SharedParentSession;
 
-  /// Shared app interface: Subagents
-  ///
-  /// In en, this message translates to:
-  /// **'Subagents'**
-  String get e7SharedSubagents;
-
   /// Shared app interface: No subagent sessions yet
   ///
   /// In en, this message translates to:
@@ -8839,30 +6961,6 @@ abstract class AppLocalizations {
   /// **'Delegated work will appear here without mixing subagent conversations into your main list.'**
   String get e7SharedDelegatedWorkWillAppearHereWithoutMixing;
 
-  /// Shared app interface: OpenCode has not delegated work from this session.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode has not delegated work from this conversation.'**
-  String get e7SharedOpenCodeHasNotDelegatedWorkFromThis;
-
-  /// Shared app interface: Unpin session
-  ///
-  /// In en, this message translates to:
-  /// **'Unpin conversation'**
-  String get e7SharedUnpinSession;
-
-  /// Shared app interface: Pin session
-  ///
-  /// In en, this message translates to:
-  /// **'Pin conversation'**
-  String get e7SharedPinSession;
-
-  /// Shared app interface: Link blocked. This app may open only https:// URLs, or confirmed http:// URLs.
-  ///
-  /// In en, this message translates to:
-  /// **'Link blocked. This app may open only https:// URLs, or confirmed http:// URLs.'**
-  String get e7SharedLinkBlockedThisAppMayOpenOnly;
-
   /// Shared app interface: Open insecure HTTP link?
   ///
   /// In en, this message translates to:
@@ -8874,12 +6972,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open external link?'**
   String get e7SharedOpenExternalLink;
-
-  /// Shared app interface: Host
-  ///
-  /// In en, this message translates to:
-  /// **'Host'**
-  String get e7SharedHost;
 
   /// Shared app interface: HTTP is not encrypted. Other devices on the network may read or change what you send and receive.
   ///
@@ -8995,23 +7087,11 @@ abstract class AppLocalizations {
   /// **'Send answers'**
   String get e7SharedSendAnswers;
 
-  /// Shared app interface: Recommended
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended'**
-  String get e7SharedRecommended;
-
   /// Shared journey: lib/ui/screens/guide_screen.dart
   ///
   /// In en, this message translates to:
   /// **'Step {step} of 3'**
   String e7SharedDetail307(int step);
-
-  /// Shared journey: lib/ui/screens/session_context_screen.dart
-  ///
-  /// In en, this message translates to:
-  /// **'{percent} percent context used'**
-  String e7SharedDetail381(String percent);
 
   /// Shared journey: lib/ui/screens/session_context_screen.dart
   ///
@@ -9025,71 +7105,17 @@ abstract class AppLocalizations {
   /// **'{count} tokens · limit unavailable'**
   String e7SharedDetail386(String count);
 
-  /// Shared journey: lib/ui/screens/session_context_screen.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Could not refresh: {error}'**
-  String e7SharedDetail409(String error);
-
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Moved to {destination}'**
-  String e7SharedDetail428(String destination);
-
   /// Move conversation confirmation title: names the folder or cloud machine it goes to.
   ///
   /// In en, this message translates to:
   /// **'Move conversation to {destination}?'**
   String e7SharedDetail429(String destination);
 
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the conversation.'**
-  String e7SharedDetail430(int count, String action);
-
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Move only'**
-  String get e7SharedDetail435;
-
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Models and providers will reload using {organization}.'**
-  String e7SharedDetail456(String organization);
-
-  /// Shared journey: lib/ui/screens/session_destination_sheet.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Switched to {organization}'**
-  String e7SharedDetail460(String organization);
-
   /// Shared journey: lib/ui/screens/session_relations_screen.dart
   ///
   /// In en, this message translates to:
   /// **'Refresh failed: {error}'**
   String e7SharedDetail514(String error);
-
-  /// Shared journey: lib/ui/screens/session_relations_screen.dart
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 delegated conversation · open any transcript directly.} other {{count} delegated conversations · open any transcript directly.}}'**
-  String e7SharedDetail517(int count);
-
-  /// Shared journey: lib/ui/screens/session_relations_screen.dart
-  ///
-  /// In en, this message translates to:
-  /// **'{position} of {total}'**
-  String e7SharedDetail518(int position, int total);
-
-  /// Shared journey: lib/ui/widgets/external_link.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Could not open link: {error}'**
-  String e7SharedDetail699(String error);
 
   /// Shared journey: lib/ui/widgets/form_renderer.dart
   ///
@@ -9120,12 +7146,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Must be at most {maximum}'**
   String e7SharedDetail723(String maximum);
-
-  /// Shared journey: lib/ui/widgets/form_renderer.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Pick at least {count}'**
-  String e7SharedDetail725(int count);
 
   /// Shared journey: lib/ui/widgets/form_renderer.dart
   ///
@@ -9367,18 +7387,6 @@ abstract class AppLocalizations {
   /// **'Message, file, and conversation actions'**
   String get e7LocaleUiContextActions;
 
-  /// App shell command menu or routing: TypeCommand
-  ///
-  /// In en, this message translates to:
-  /// **'Type a command…'**
-  String get e7LocaleUiTypeCommand;
-
-  /// App shell command menu or routing: NoCommand
-  ///
-  /// In en, this message translates to:
-  /// **'No matching command'**
-  String get e7LocaleUiNoCommand;
-
   /// App shell command menu or routing: ContextKeys
   ///
   /// In en, this message translates to:
@@ -9592,18 +7600,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Live updates stop and you return to the server list. The server keeps running; nothing on it is changed.'**
-  String get e7SettingsUi20;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing is waiting to send.'**
-  String get e7SettingsUi21;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Android did not enable background mode.'**
   String get e7SettingsUi22;
 
@@ -9694,32 +7690,14 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Default shell updated'**
-  String get e7SettingsUi38;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Automatic (server default)'**
   String get e7SettingsUi39;
 
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Shell selection isn\'t available on OpenCode 2 servers'**
-  String get e7SettingsUi40;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Loading shells from OpenCode…'**
   String get e7SettingsUi41;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Server update commands copied'**
-  String get e7SettingsUi45;
 
   /// Settings and appearance user interface.
   ///
@@ -9796,20 +7774,8 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Authentication'**
-  String get e7SettingsUi61;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'No server password saved'**
   String get e7SettingsUi62;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add, edit, or switch OpenCode servers'**
-  String get e7SettingsUi64;
 
   /// Settings and appearance user interface.
   ///
@@ -9850,26 +7816,8 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Needs Android 12 or newer'**
-  String get e7SettingsUi71;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'This phone’s Material You colors'**
-  String get e7SettingsUi72;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Always allowed actions'**
   String get e7SettingsUi74;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Review or revoke durable OpenCode permissions for this project'**
-  String get e7SettingsUi75;
 
   /// Settings and appearance user interface.
   ///
@@ -9982,18 +7930,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'App details, components, and license notices'**
-  String get e7SettingsUi97;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Live updates stop and you return to the server list. The server keeps running; nothing on it is changed.\n\n{queued, plural, =0{No queued prompts.} =1{1 queued prompt.} other{{queued} queued prompts.}} {drafts, plural, =0{No unsent drafts.} =1{1 unsent draft.} other{{drafts} unsent drafts.}} They stay on this device until you connect to this server again.'**
-  String e7SettingsDisconnectBody(int queued, int drafts);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Disconnect from {server}?'**
   String e7SettingsDisconnectTitle(String server);
 
@@ -10091,12 +8027,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Install OpenCode {target} on {server} using the server’s detected installation method. The current process is running {current}.\n\nThe install keeps server data in place, but the OpenCode process must be restarted on its host before the new version takes effect.'**
-  String e7SettingsUpgradeBody(String target, String server, String current);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Install {version}'**
   String e7SettingsInstallVersion(String version);
 
@@ -10121,74 +8051,8 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'{version} is installed. The current process is still {current}.'**
-  String e7SettingsInstalledCurrent(String version, String current);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Update OpenCode to {version}'**
   String e7SettingsUpdateVersion(String version);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Current server: {version}. Uses OpenCode’s official installer; host restart required.'**
-  String e7SettingsCurrentServer(String version);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic authentication enabled as {user}'**
-  String e7SettingsAuthenticationUser(String user);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Diagnostics sent to OpenCode'**
-  String get e7SettingsDetailUi2;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear diagnostics?'**
-  String get e7SettingsDetailUi3;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'This removes every captured error from process memory.'**
-  String get e7SettingsDetailUi4;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear'**
-  String get e7SettingsDetailUi5;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get e7SettingsDetailUi10;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'This server doesn\'t accept client logs'**
-  String get e7SettingsDetailUi12;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Handled Flutter, platform, and startup errors will appear here for this app run.'**
-  String get e7SettingsDetailUi14;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Report a bug'**
-  String get e7SettingsDetailUi16;
 
   /// Settings and appearance user interface.
   ///
@@ -10207,18 +8071,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About this build'**
   String get e7SettingsDetailUi19;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode for Android'**
-  String get e7SettingsDetailUi20;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode for desktop'**
-  String get e7SettingsDetailUi21;
 
   /// Settings and appearance user interface.
   ///
@@ -10280,12 +8132,6 @@ abstract class AppLocalizations {
   /// **'OpenCode is reconnecting. Try again shortly.'**
   String get e7ProjectProjectsReconnect;
 
-  /// Project rename confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Project renamed to {name}'**
-  String e7ProjectProjectRenamed(String name);
-
   /// Project rename failure preserving server error
   ///
   /// In en, this message translates to:
@@ -10297,12 +8143,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server’s default directory'**
   String get e7ProjectProjectDefaultDirectory;
-
-  /// Project management unavailable heading
-  ///
-  /// In en, this message translates to:
-  /// **'Project switching is unavailable'**
-  String get e7ProjectProjectSwitchUnavailable;
 
   /// Project management unavailable explanation
   ///
@@ -10328,23 +8168,11 @@ abstract class AppLocalizations {
   /// **'Search projects or paths'**
   String get e7ProjectProjectsSearch;
 
-  /// Clear project search action
-  ///
-  /// In en, this message translates to:
-  /// **'Clear project search'**
-  String get e7ProjectProjectsClearSearch;
-
   /// Opened project section heading
   ///
   /// In en, this message translates to:
   /// **'Open projects'**
   String get e7ProjectProjectsOpened;
-
-  /// Filtered project count
-  ///
-  /// In en, this message translates to:
-  /// **'{shown} of {total}'**
-  String e7ProjectProjectsCount(int shown, int total);
 
   /// Empty project catalog heading
   ///
@@ -10357,18 +8185,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Projects opened by this server appear here; choose one for conversations, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.'**
   String get e7ProjectProjectsEmptyDetail;
-
-  /// No project search results heading
-  ///
-  /// In en, this message translates to:
-  /// **'No matching projects'**
-  String get e7ProjectProjectsNoMatch;
-
-  /// Project search empty guidance
-  ///
-  /// In en, this message translates to:
-  /// **'Try a project name or a directory from the server.'**
-  String get e7ProjectProjectsNoMatchDetail;
 
   /// Cached project catalog refresh error heading
   ///
@@ -10412,96 +8228,6 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get e7ProjectProjectSave;
 
-  /// Attention overview empty heading
-  ///
-  /// In en, this message translates to:
-  /// **'No saved servers'**
-  String get e7ProjectAttentionNoServers;
-
-  /// Attention overview empty guidance
-  ///
-  /// In en, this message translates to:
-  /// **'Add a server from the server list to see it here.'**
-  String get e7ProjectAttentionNoServersDetail;
-
-  /// Unnamed saved server fallback
-  ///
-  /// In en, this message translates to:
-  /// **'Saved server'**
-  String get e7ProjectAttentionSavedServer;
-
-  /// Attention selected server status
-  ///
-  /// In en, this message translates to:
-  /// **'Selected server'**
-  String get e7ProjectAttentionSelected;
-
-  /// Attention inactive server status
-  ///
-  /// In en, this message translates to:
-  /// **'Inactive server'**
-  String get e7ProjectAttentionInactive;
-
-  /// Attention cached observation scope and freshness disclosure
-  ///
-  /// In en, this message translates to:
-  /// **'Source: selected server’s local cache. Scope: currently loaded project and conversations. Last refreshed: unknown.'**
-  String get e7ProjectAttentionCacheSource;
-
-  /// Attention inactive profile scope and unknown state disclosure
-  ///
-  /// In en, this message translates to:
-  /// **'Source: saved server only. Attention status: unknown. Last checked: unknown.'**
-  String get e7ProjectAttentionProfileSource;
-
-  /// Unknown pending attention count
-  ///
-  /// In en, this message translates to:
-  /// **'Pending requests: unknown'**
-  String get e7ProjectAttentionPendingUnknown;
-
-  /// Positive cached pending request count
-  ///
-  /// In en, this message translates to:
-  /// **'Last-known pending requests: {count}'**
-  String e7ProjectAttentionPendingKnown(int count);
-
-  /// Unknown active session count
-  ///
-  /// In en, this message translates to:
-  /// **'Running conversations: unknown'**
-  String get e7ProjectAttentionRunningUnknown;
-
-  /// Positive cached active or retrying session count
-  ///
-  /// In en, this message translates to:
-  /// **'Last-known running or retrying conversations: {count}'**
-  String e7ProjectAttentionRunningKnown(int count);
-
-  /// Unknown unread count
-  ///
-  /// In en, this message translates to:
-  /// **'Unread conversations: unknown'**
-  String get e7ProjectAttentionUnreadUnknown;
-
-  /// Positive cached unread session count
-  ///
-  /// In en, this message translates to:
-  /// **'Last-known unread conversations: {count}'**
-  String e7ProjectAttentionUnreadKnown(int count);
-
-  /// Open selected server attention action
-  ///
-  /// In en, this message translates to:
-  /// **'Open server'**
-  String get e7ProjectAttentionOpen;
-
-  /// Choose inactive saved server action
-  ///
-  /// In en, this message translates to:
-  /// **'Choose server…'**
-  String get e7ProjectAttentionChoose;
-
   /// Unsupported connection background attention explanation
   ///
   /// In en, this message translates to:
@@ -10513,12 +8239,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server is not connected.'**
   String get readerUiDisconnected;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode is reconnecting. Try again shortly.'**
-  String get readerUiReconnectingRetry;
 
   /// Reader, Files and review user interface.
   ///
@@ -10565,18 +8285,6 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Clear symbol search'**
-  String get readerUiClearSymbolSearch;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear file search'**
-  String get readerUiClearFileSearch;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Select a file to preview'**
   String get readerUiSelectFile;
 
@@ -10603,24 +8311,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try a different file name.'**
   String get readerUiTryFileName;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Open folder'**
-  String get readerUiOpenFolder;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get readerUiOpen;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Expand'**
-  String get readerUiExpand;
 
   /// Reader, Files and review user interface.
   ///
@@ -10679,12 +8369,6 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Copied'**
-  String get readerUiCopied;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Files'**
   String get readerUiFiles;
 
@@ -10709,20 +8393,8 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Copied from review'**
-  String get readerUiCopiedReview;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Entire file change'**
   String get readerUiEntireChange;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Selected change'**
-  String get readerUiSelectedChange;
 
   /// Reader, Files and review user interface.
   ///
@@ -10751,176 +8423,14 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Unified'**
-  String get readerUiUnified;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Split'**
-  String get readerUiSplit;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Previous hunk'**
-  String get readerUiPreviousHunk;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Next hunk'**
-  String get readerUiNextHunk;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask'**
-  String get readerUiAsk;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add file'**
-  String get readerUiAddFile;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add file to prompt'**
-  String get readerUiAddFilePrompt;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask about file'**
-  String get readerUiAskFile;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'File review actions'**
-  String get readerUiFileActions;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Start of file'**
-  String get readerUiStartFile;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'No gap'**
-  String get readerUiNoGap;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear selection'**
-  String get readerUiClearSelection;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy selection'**
-  String get readerUiCopySelection;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add hunk to prompt'**
-  String get readerUiAddHunk;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add selection to prompt'**
-  String get readerUiAddSelection;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Comment'**
-  String get readerUiComment;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Comment on change'**
-  String get readerUiCommentChange;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'What should OpenCode inspect or change?'**
-  String get readerUiCommentHint;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to prompt'**
-  String get readerUiAddPrompt;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'No changes to review'**
-  String get readerUiNoChanges;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode has not changed any files in this conversation.'**
-  String get readerUiNoChangesHint;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Diff content unavailable'**
-  String get readerUiDiffUnavailable;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'The server reported this file but did not include a patch or file contents.'**
-  String get readerUiDiffUnavailableHint;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy file contents'**
-  String get readerUiCopyContents;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Save to device'**
   String get readerUiSaveDevice;
 
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Close preview'**
-  String get readerUiClosePreview;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Preview unavailable'**
   String get readerUiPreviewUnavailable;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Image could not be displayed'**
-  String get readerUiImageFailed;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'The file data is not a supported image.'**
-  String get readerUiImageUnsupported;
 
   /// Reader, Files and review user interface.
   ///
@@ -10943,12 +8453,6 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'File order'**
-  String get readerUiFileOrder;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Source first'**
   String get readerUiSourceFirst;
 
@@ -10957,12 +8461,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default order'**
   String get readerUiServerOrder;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorders entries; no files are hidden.'**
-  String get readerUiOrderHint;
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
@@ -10993,12 +8491,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} attached.'**
   String readerUiAttached(String name);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied {path}'**
-  String readerUiCopiedPath(String path);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
@@ -11051,12 +8543,6 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'old {oldLabel} · new {newLabel}'**
-  String readerUiOldNew(String oldLabel, String newLabel);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
   /// **'new {label}'**
   String readerUiNewLines(String label);
 
@@ -11065,12 +8551,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'old {label}'**
   String readerUiOldLines(String label);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} selected line} other{{count} selected lines}}'**
-  String readerUiSelectedLines(int count);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
@@ -11093,56 +8573,8 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{{count} hunk} other{{count} hunks}}'**
-  String readerUiHunkCount(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Reviewing {path}'**
-  String readerUiReviewing(String path);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{+{count} line} other{+{count} lines}}'**
-  String readerUiHiddenLines(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} unchanged lines hidden. {text}'**
-  String readerUiHiddenDescription(int count, String text);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Expand. {count} unchanged lines hidden below'**
-  String readerUiExpandDescription(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} more'**
-  String readerUiMoreCount(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Hunk selected · {count, plural, one{{count} line} other{{count} lines}}'**
-  String readerUiHunkSelected(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
   /// **'{name} saved.'**
   String readerUiSaved(String name);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} bytes'**
-  String readerUiBytes(int count);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
@@ -11303,53 +8735,6 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'Removed'**
-  String get readerUiRemoved;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Unchanged'**
-  String get readerUiUnchanged;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Hunk'**
-  String get readerUiHunk;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Metadata'**
-  String get readerUiMetadata;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{path}, {status}, {added} additions, {removed} deletions'**
-  String readerUiFileDescription(
-    String path,
-    String status,
-    int added,
-    int removed,
-  );
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown file type'**
-  String get readerUiUnknownType;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'This format cannot be rendered in the app yet.'**
-  String get readerUiFormatUnsupported;
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
   /// **'The attachment content is not included in this message.'**
   String get readerUiAttachmentMissing;
 
@@ -11365,36 +8750,6 @@ abstract class AppLocalizations {
   /// **'The attachment data could not be decoded.'**
   String get readerUiAttachmentInvalid;
 
-  /// Image preview gesture hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Pinch to zoom'**
-  String get readerUiPinchZoom;
-
-  /// Git file status shown next to a path.
-  ///
-  /// In en, this message translates to:
-  /// **'added'**
-  String get readerUiStatusAdded;
-
-  /// Git file status shown next to a path.
-  ///
-  /// In en, this message translates to:
-  /// **'deleted'**
-  String get readerUiStatusDeleted;
-
-  /// Git file status shown next to a path.
-  ///
-  /// In en, this message translates to:
-  /// **'modified'**
-  String get readerUiStatusModified;
-
-  /// Review selection bar line count.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} line selected} other{{count} lines selected}}'**
-  String readerUiSelectionCount(int count);
-
   /// Workspace and activity: The server is not connected.
   ///
   /// In en, this message translates to:
@@ -11406,12 +8761,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No project folder chosen'**
   String get e7WorkspaceNoFolder;
-
-  /// Workspace and activity: Loading projects
-  ///
-  /// In en, this message translates to:
-  /// **'Loading projects'**
-  String get e7WorkspaceLoadingProjects;
 
   /// Workspace and activity: No projects opened
   ///
@@ -11437,12 +8786,6 @@ abstract class AppLocalizations {
   /// **'Needs you'**
   String get e7WorkspaceNeedsYou;
 
-  /// Workspace and activity: Recent sessions
-  ///
-  /// In en, this message translates to:
-  /// **'Recent conversations'**
-  String get e7WorkspaceRecentSessions;
-
   /// Workspace and activity: No recent sessions
   ///
   /// In en, this message translates to:
@@ -11461,12 +8804,6 @@ abstract class AppLocalizations {
   /// **'Start a conversation in the selected project.'**
   String get e7WorkspaceStartInWorkspace;
 
-  /// Workspace and activity: Archived sessions
-  ///
-  /// In en, this message translates to:
-  /// **'Archived conversations'**
-  String get e7WorkspaceArchivedSessions;
-
   /// Workspace and activity: No project selected
   ///
   /// In en, this message translates to:
@@ -11478,12 +8815,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch project'**
   String get e7WorkspaceSwitchProject;
-
-  /// Workspace and activity: Workspace
-  ///
-  /// In en, this message translates to:
-  /// **'Workspace'**
-  String get e7WorkspaceWorkspace;
 
   /// Workspace and activity: This computer
   ///
@@ -11503,12 +8834,6 @@ abstract class AppLocalizations {
   /// **'Share link copied'**
   String get e7WorkspaceShareCopied;
 
-  /// Workspace and activity: Session is no longer shared
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation is no longer shared'**
-  String get e7WorkspaceUnshared;
-
   /// Workspace and activity: OpenCode is reconnecting. Try again shortly.
   ///
   /// In en, this message translates to:
@@ -11526,12 +8851,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Title'**
   String get e7WorkspaceTitle;
-
-  /// Workspace and activity: Archive session?
-  ///
-  /// In en, this message translates to:
-  /// **'Archive conversation?'**
-  String get e7WorkspaceArchiveConfirm;
 
   /// Workspace and activity: Share this session?
   ///
@@ -11556,12 +8875,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share conversation'**
   String get e7WorkspaceShareSession;
-
-  /// Workspace and activity: Archived session actions
-  ///
-  /// In en, this message translates to:
-  /// **'Archived conversation actions'**
-  String get e7WorkspaceArchivedActions;
 
   /// Workspace and activity: Rename
   ///
@@ -11628,12 +8941,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not refresh'**
   String get e7WorkspaceRefreshFailed;
-
-  /// Workspace and activity: Server requests
-  ///
-  /// In en, this message translates to:
-  /// **'Server requests'**
-  String get e7WorkspaceServerRequests;
 
   /// Workspace and activity: Permission required
   ///
@@ -11719,12 +9026,6 @@ abstract class AppLocalizations {
   /// **'Conversation pagination could not advance. Refresh the list to continue.'**
   String get e7WorkspacePaginationStuck;
 
-  /// Workspace and activity: Continue this session here?
-  ///
-  /// In en, this message translates to:
-  /// **'Continue this conversation here?'**
-  String get e7WorkspaceContinueHereConfirm;
-
   /// Workspace and activity: Could not create a session: {error}
   ///
   /// In en, this message translates to:
@@ -11743,12 +9044,6 @@ abstract class AppLocalizations {
   /// **'Active conversation’s project · {directory}'**
   String e7WorkspaceActiveDirectory(String directory);
 
-  /// Workspace and activity: {count, plural, one {1 archived session} other {{count} archived sessions}}
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 archived conversation} other {{count} archived conversations}}'**
-  String e7WorkspaceArchivedCount(int count);
-
   /// Workspace and activity: {count, plural, one {1 open on this server} other {{count} open on this server}}
   ///
   /// In en, this message translates to:
@@ -11761,12 +9056,6 @@ abstract class AppLocalizations {
   /// **'Archived “{title}”'**
   String e7WorkspaceArchivedToast(String title);
 
-  /// Workspace and activity: “{title}” will be hidden from recent sessions.
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” will be hidden from recent conversations.'**
-  String e7WorkspaceArchiveDetail(String title);
-
   /// Workspace and activity: “{title}” and its history will be permanently removed.
   ///
   /// In en, this message translates to:
@@ -11778,30 +9067,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Anyone with the link can view “{title}”, including its conversation and shared context. Do not share secrets, credentials, or private files.'**
   String e7WorkspaceShareDetail(String title);
-
-  /// Workspace and activity: Shared: {url}
-  ///
-  /// In en, this message translates to:
-  /// **'Shared: {url}'**
-  String e7WorkspaceSharedUrl(String url);
-
-  /// Workspace and activity: {count, plural, one {1 item needs attention} other {{count} items need attention}}
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 item needs attention} other {{count} items need attention}}'**
-  String e7WorkspaceAttentionCount(int count);
-
-  /// Workspace and activity: Server: {name}
-  ///
-  /// In en, this message translates to:
-  /// **'Server: {name}'**
-  String e7WorkspaceServerName(String name);
-
-  /// Workspace and activity: Server {status}
-  ///
-  /// In en, this message translates to:
-  /// **'Server {status}'**
-  String e7WorkspaceServerStatus(String status);
 
   /// Workspace and activity: for {title}
   ///
@@ -11826,36 +9091,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversation {id}'**
   String e7WorkspaceSessionId(String id);
-
-  /// Workspace and activity: “{title}” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” will belong to your current project through the server’s sync system. It stops belonging to the project it runs in now.'**
-  String e7WorkspaceContinueHereDetail(String title);
-
-  /// Workspace and activity: “{title}” now belongs to this workspace
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” now belongs to this project'**
-  String e7WorkspaceMovedHere(String title);
-
-  /// Workspace and activity: Open {title}. {detail}
-  ///
-  /// In en, this message translates to:
-  /// **'Open {title}. {detail}'**
-  String e7WorkspaceOpenSessionSemantics(String title, String detail);
-
-  /// Workspace and activity: Older conversations may still be available below.
-  ///
-  /// In en, this message translates to:
-  /// **'Older conversations may still be available below.'**
-  String get e7WorkspaceLoadedRecentEmpty;
-
-  /// Workspace and activity: Search session titles across every project on this server
-  ///
-  /// In en, this message translates to:
-  /// **'Search conversation titles across every project on this server'**
-  String get e7WorkspaceSearchServer;
 
   /// Workspace and activity: Unknown project
   ///
@@ -11893,30 +9128,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, one {1 file} other {{count} files}}'**
   String e7WorkspaceFileCount(int count);
 
-  /// Workspace background connection state
-  ///
-  /// In en, this message translates to:
-  /// **'Stays connected in the background'**
-  String get e7WorkspaceBackgroundOn;
-
-  /// Workspace background connection state
-  ///
-  /// In en, this message translates to:
-  /// **'Background updates off'**
-  String get e7WorkspaceBackgroundOff;
-
-  /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
-  ///
-  /// In en, this message translates to:
-  /// **'Loaded projects'**
-  String get e7WorkspaceLoadedFolders;
-
-  /// Chat journey:  under a message for actions
-  ///
-  /// In en, this message translates to:
-  /// **' under a message for actions'**
-  String get chatUiUnderAMessageForActions;
-
   /// Chat journey: (all matching requests)
   ///
   /// In en, this message translates to:
@@ -11935,23 +9146,11 @@ abstract class AppLocalizations {
   /// **'(no result)'**
   String get chatUiNoResult;
 
-  /// Chat journey: (tap to expand)
-  ///
-  /// In en, this message translates to:
-  /// **'(tap to expand)'**
-  String get chatUiTapToExpand;
-
   /// Chat journey: 1 reference is added as text when you send. Not saved with your draft.
   ///
   /// In en, this message translates to:
   /// **'1 reference is added as text when you send. Not saved with your draft.'**
   String get chatUi1ReferenceIsAddedAsTextWhen;
-
-  /// Chat journey: Actions
-  ///
-  /// In en, this message translates to:
-  /// **'Actions'**
-  String get chatUiActions;
 
   /// Chat journey: Add an OpenCode project reference to this prompt
   ///
@@ -11964,12 +9163,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add an image or file to the prompt'**
   String get chatUiAddAnImageOrFileToThe;
-
-  /// Chat journey: Add. Hold to attach a file
-  ///
-  /// In en, this message translates to:
-  /// **'Add. Hold to attach a file'**
-  String get chatUiAddHoldToAttachAFile;
 
   /// Chat journey: Agent
   ///
@@ -12000,12 +9193,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Always allow'**
   String get chatUiAlwaysAllow;
-
-  /// Chat journey: Always allow patterns:
-  ///
-  /// In en, this message translates to:
-  /// **'Always allow patterns:'**
-  String get chatUiAlwaysAllowPatterns;
 
   /// Chat journey: Always allow would also cover
   ///
@@ -12048,12 +9235,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask OpenCode…'**
   String get chatUiAskOpenCode;
-
-  /// Chat journey: Assistant is working
-  ///
-  /// In en, this message translates to:
-  /// **'Assistant is working'**
-  String get chatUiAssistantIsWorking;
 
   /// Chat journey: Attach file
   ///
@@ -12193,41 +9374,11 @@ abstract class AppLocalizations {
   /// **'Choose the current model variant or reasoning effort'**
   String get chatUiChooseTheCurrentModelVariantOrReasoning;
 
-  /// Chat journey: Close composer tools
-  ///
-  /// In en, this message translates to:
-  /// **'Close composer tools'**
-  String get chatUiCloseComposerTools;
-
-  /// Chat journey: Close prompt editor
-  ///
-  /// In en, this message translates to:
-  /// **'Close prompt editor'**
-  String get chatUiClosePromptEditor;
-
-  /// Chat journey: Close timeline
-  ///
-  /// In en, this message translates to:
-  /// **'Close timeline'**
-  String get chatUiCloseTimeline;
-
   /// Chat journey: Collapse reasoning
   ///
   /// In en, this message translates to:
   /// **'Collapse reasoning'**
   String get chatUiCollapseReasoning;
-
-  /// Chat journey: Collapse reasoning details
-  ///
-  /// In en, this message translates to:
-  /// **'Collapse reasoning details'**
-  String get chatUiCollapseReasoningDetails;
-
-  /// Chat journey: Collapsed until you tap it
-  ///
-  /// In en, this message translates to:
-  /// **'Collapsed until you tap it'**
-  String get chatUiCollapsedUntilYouTapIt;
 
   /// Chat journey: Command map
   ///
@@ -12271,24 +9422,6 @@ abstract class AppLocalizations {
   /// **'Compose'**
   String get chatUiCompose;
 
-  /// Chat journey: Composer tools
-  ///
-  /// In en, this message translates to:
-  /// **'Composer tools'**
-  String get chatUiComposerTools;
-
-  /// Chat journey: Confirm always allow
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm always allow'**
-  String get chatUiConfirmAlwaysAllow;
-
-  /// Chat journey: Confirm broader access
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm broader access'**
-  String get chatUiConfirmBroaderAccess;
-
   /// Chat journey: Connect provider
   ///
   /// In en, this message translates to:
@@ -12301,12 +9434,6 @@ abstract class AppLocalizations {
   /// **'Connection health, server version, and live mode'**
   String get chatUiConnectionHealthServerVersionAndLiveMode;
 
-  /// Chat journey: Consequence: future matching actions can run without asking again for the lifetime of this OpenCode server. Allow once is safer.
-  ///
-  /// In en, this message translates to:
-  /// **'Consequence: future matching actions can run without asking again for the lifetime of this OpenCode server. Allow once is safer.'**
-  String get chatUiConsequenceFutureMatchingActionsCanRunWithout;
-
   /// Chat journey: Context added
   ///
   /// In en, this message translates to:
@@ -12318,12 +9445,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Context compacted'**
   String get chatUiContextCompacted;
-
-  /// Chat journey: Context update pending
-  ///
-  /// In en, this message translates to:
-  /// **'Context update pending'**
-  String get chatUiContextUpdatePending;
 
   /// Chat journey: Context usage
   ///
@@ -12409,12 +9530,6 @@ abstract class AppLocalizations {
   /// **'Delete this message?'**
   String get chatUiDeleteThisMessage;
 
-  /// Chat journey: Describe a change, ask about this project, or paste an error.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe a change, ask about this project, or paste an error.'**
-  String get chatUiDescribeAChangeAskAboutThisProject;
-
   /// Chat journey: Details
   ///
   /// In en, this message translates to:
@@ -12432,12 +9547,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disable the current public conversation link'**
   String get chatUiDisableTheCurrentPublicSessionLink;
-
-  /// Chat journey: Discard
-  ///
-  /// In en, this message translates to:
-  /// **'Discard'**
-  String get chatUiDiscard;
 
   /// Chat journey: Discard draft
   ///
@@ -12499,36 +9608,6 @@ abstract class AppLocalizations {
   /// **'Expand reasoning'**
   String get chatUiExpandReasoning;
 
-  /// Chat journey: Expand reasoning details
-  ///
-  /// In en, this message translates to:
-  /// **'Expand reasoning details'**
-  String get chatUiExpandReasoningDetails;
-
-  /// Chat journey: Expanded under each answer
-  ///
-  /// In en, this message translates to:
-  /// **'Expanded under each answer'**
-  String get chatUiExpandedUnderEachAnswer;
-
-  /// Chat journey: Explain this project
-  ///
-  /// In en, this message translates to:
-  /// **'Explain this project'**
-  String get chatUiExplainThisProject;
-
-  /// Chat journey: Explored
-  ///
-  /// In en, this message translates to:
-  /// **'Explored'**
-  String get chatUiExplored;
-
-  /// Chat journey: Exploring
-  ///
-  /// In en, this message translates to:
-  /// **'Exploring'**
-  String get chatUiExploring;
-
   /// Chat journey: Export session transcript
   ///
   /// In en, this message translates to:
@@ -12540,12 +9619,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export transcript'**
   String get chatUiExportTranscript;
-
-  /// Chat journey: FILE
-  ///
-  /// In en, this message translates to:
-  /// **'FILE'**
-  String get chatUiFILE;
 
   /// Chat journey: Fetch page
   ///
@@ -12583,12 +9656,6 @@ abstract class AppLocalizations {
   /// **'Find a subagent'**
   String get chatUiFindASubagent;
 
-  /// Chat journey: Find and fix a bug
-  ///
-  /// In en, this message translates to:
-  /// **'Find and fix a bug'**
-  String get chatUiFindAndFixABug;
-
   /// Chat journey: Find files
   ///
   /// In en, this message translates to:
@@ -12625,23 +9692,11 @@ abstract class AppLocalizations {
   /// **'Fork conversation'**
   String get chatUiForkSession;
 
-  /// Chat journey: From tool call
-  ///
-  /// In en, this message translates to:
-  /// **'From tool call'**
-  String get chatUiFromToolCall;
-
   /// Chat journey: Generated file
   ///
   /// In en, this message translates to:
   /// **'Generated file'**
   String get chatUiGeneratedFile;
-
-  /// Chat journey: Hidden to keep the transcript quiet
-  ///
-  /// In en, this message translates to:
-  /// **'Hidden to keep the transcript quiet'**
-  String get chatUiHiddenToKeepTheTranscriptQuiet;
 
   /// Chat journey: Hide timestamps
   ///
@@ -12691,29 +9746,11 @@ abstract class AppLocalizations {
   /// **'Its text returns to the composer as a draft.'**
   String get chatUiItsTextReturnsToTheComposerAs;
 
-  /// Chat journey: Jump anywhere in this conversation.
-  ///
-  /// In en, this message translates to:
-  /// **'Jump anywhere in this conversation.'**
-  String get chatUiJumpAnywhereInThisConversation;
-
   /// Chat journey: Jump anywhere. Fork restores a prompt for editing.
   ///
   /// In en, this message translates to:
   /// **'Jump anywhere. Fork restores a prompt for editing.'**
   String get chatUiJumpAnywhereForkRestoresAPromptFor;
-
-  /// Chat journey: Jump to latest
-  ///
-  /// In en, this message translates to:
-  /// **'Jump to latest'**
-  String get chatUiJumpToLatest;
-
-  /// Chat journey: Keep asking
-  ///
-  /// In en, this message translates to:
-  /// **'Keep asking'**
-  String get chatUiKeepAsking;
 
   /// Chat journey: Keep it pending
   ///
@@ -12739,12 +9776,6 @@ abstract class AppLocalizations {
   /// **'List'**
   String get chatUiList;
 
-  /// Chat journey: List what's in this directory
-  ///
-  /// In en, this message translates to:
-  /// **'List what\'s in this directory'**
-  String get chatUiListWhatSInThisDirectory;
-
   /// Chat journey: Loading subagents…
   ///
   /// In en, this message translates to:
@@ -12769,23 +9800,11 @@ abstract class AppLocalizations {
   /// **'Manage provider and integration authentication'**
   String get chatUiManageProviderAndIntegrationAuthentication;
 
-  /// Chat journey: Manage saved grants in Settings → Saved permissions.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage saved grants in Settings → Saved permissions.'**
-  String get chatUiManageSavedGrantsInSettingsSavedPermissions;
-
   /// Chat journey: Message
   ///
   /// In en, this message translates to:
   /// **'Message'**
   String get chatUiMessage;
-
-  /// Chat journey: Message actions
-  ///
-  /// In en, this message translates to:
-  /// **'Message actions'**
-  String get chatUiMessageActions;
 
   /// Chat journey: Message timeline
   ///
@@ -12805,12 +9824,6 @@ abstract class AppLocalizations {
   /// **'Message timestamps shown'**
   String get chatUiMessageTimestampsShown;
 
-  /// Chat journey: Mobile actions and commands from this server
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile actions and commands from this server'**
-  String get chatUiMobileActionsAndCommandsFromThisServer;
-
   /// Chat journey: Model
   ///
   /// In en, this message translates to:
@@ -12822,12 +9835,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model and agent'**
   String get chatUiModelAndAgent;
-
-  /// Chat journey: More
-  ///
-  /// In en, this message translates to:
-  /// **'More'**
-  String get chatUiMore;
 
   /// Chat journey: Move session
   ///
@@ -12883,29 +9890,11 @@ abstract class AppLocalizations {
   /// **'No subagents available from this server'**
   String get chatUiNoSubagentsAvailableFromThisServer;
 
-  /// Chat journey: No todos in this session
-  ///
-  /// In en, this message translates to:
-  /// **'No todos in this conversation'**
-  String get chatUiNoTodosInThisSession;
-
   /// Chat journey: Not connected to the server right now.
   ///
   /// In en, this message translates to:
   /// **'Not connected to the server right now.'**
   String get chatUiNotConnectedToTheServerRightNow;
-
-  /// Chat journey: Not run
-  ///
-  /// In en, this message translates to:
-  /// **'Not run'**
-  String get chatUiNotRun;
-
-  /// Chat journey: Open full-screen prompt editor
-  ///
-  /// In en, this message translates to:
-  /// **'Open full-screen prompt editor'**
-  String get chatUiOpenFullScreenPromptEditor;
 
   /// Chat journey: Open parent session
   ///
@@ -12991,12 +9980,6 @@ abstract class AppLocalizations {
   /// **'Pending change'**
   String get chatUiPendingChange;
 
-  /// Chat journey: Preview attachment
-  ///
-  /// In en, this message translates to:
-  /// **'Preview attachment'**
-  String get chatUiPreviewAttachment;
-
   /// Chat journey: Project files
   ///
   /// In en, this message translates to:
@@ -13057,18 +10040,6 @@ abstract class AppLocalizations {
   /// **'Questions'**
   String get chatUiQuestions;
 
-  /// Chat journey: Queue
-  ///
-  /// In en, this message translates to:
-  /// **'Queue'**
-  String get chatUiQueue;
-
-  /// Chat journey: Queue after this run
-  ///
-  /// In en, this message translates to:
-  /// **'Queue after this run'**
-  String get chatUiQueueAfterThisRun;
-
   /// Chat journey: Queued · runs after this turn
   ///
   /// In en, this message translates to:
@@ -13117,12 +10088,6 @@ abstract class AppLocalizations {
   /// **'Reject'**
   String get chatUiReject;
 
-  /// Chat journey: Reject…
-  ///
-  /// In en, this message translates to:
-  /// **'Reject…'**
-  String get chatUiReject1;
-
   /// Chat journey: Reload messages
   ///
   /// In en, this message translates to:
@@ -13158,18 +10123,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore the currently reverted conversation state'**
   String get chatUiRestoreTheCurrentlyRevertedSessionState;
-
-  /// Chat journey: Result
-  ///
-  /// In en, this message translates to:
-  /// **'Result'**
-  String get chatUiResult;
-
-  /// Chat journey: Retry image preview
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get chatUiRetryImagePreview;
 
   /// Chat journey: Retry last prompt
   ///
@@ -13249,12 +10202,6 @@ abstract class AppLocalizations {
   /// **'Type a title.'**
   String get chatRenameEmpty;
 
-  /// Chat journey: Running tools
-  ///
-  /// In en, this message translates to:
-  /// **'Running tools'**
-  String get chatUiRunningTools;
-
   /// Chat journey: Save the conversation as a Markdown file
   ///
   /// In en, this message translates to:
@@ -13285,71 +10232,17 @@ abstract class AppLocalizations {
   /// **'Search text'**
   String get chatUiSearchText;
 
-  /// Chat journey: See full diff
-  ///
-  /// In en, this message translates to:
-  /// **'See full diff'**
-  String get chatUiSeeFullDiff;
-
   /// Chat journey: Select a model before compacting this session.
   ///
   /// In en, this message translates to:
   /// **'Select a model before compacting this conversation.'**
   String get chatUiSelectAModelBeforeCompactingThisSession;
 
-  /// Chat journey: Send
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get chatUiSend;
-
-  /// Chat journey: Send after this run
-  ///
-  /// In en, this message translates to:
-  /// **'Send after this run'**
-  String get chatUiSendAfterThisRun;
-
   /// Chat journey: Send now and steer instead
   ///
   /// In en, this message translates to:
   /// **'Send now and steer instead'**
   String get chatUiSendNowAndSteerInstead;
-
-  /// Chat journey: Send now and steer the current run
-  ///
-  /// In en, this message translates to:
-  /// **'Send now and steer the current run'**
-  String get chatUiSendNowAndSteerTheCurrentRun;
-
-  /// Chat journey: Send now and steer this run
-  ///
-  /// In en, this message translates to:
-  /// **'Send now and steer this run'**
-  String get chatUiSendNowAndSteerThisRun;
-
-  /// Chat journey: Send rejection
-  ///
-  /// In en, this message translates to:
-  /// **'Send rejection'**
-  String get chatUiSendRejection;
-
-  /// Chat journey: Send steers the current run
-  ///
-  /// In en, this message translates to:
-  /// **'Send steers the current run'**
-  String get chatUiSendSteersTheCurrentRun;
-
-  /// Chat journey: Send waits for this run to finish
-  ///
-  /// In en, this message translates to:
-  /// **'Send waits for this run to finish'**
-  String get chatUiSendWaitsForThisRunToFinish;
-
-  /// Chat journey: Sends after this run finishes
-  ///
-  /// In en, this message translates to:
-  /// **'Sends after this run finishes'**
-  String get chatUiSendsAfterThisRunFinishes;
 
   /// Chat journey: Server commands
   ///
@@ -13423,35 +10316,11 @@ abstract class AppLocalizations {
   /// **'Shared: anyone with the link can view'**
   String get chatUiSharedAnyoneWithTheLinkCanView;
 
-  /// Chat journey: Show all commands
-  ///
-  /// In en, this message translates to:
-  /// **'Show all commands'**
-  String get chatUiShowAllCommands;
-
   /// Chat journey: Show all subagent sessions
   ///
   /// In en, this message translates to:
   /// **'Show all subagent conversations'**
   String get chatUiShowAllSubagentSessions;
-
-  /// Chat journey: Show all subagents
-  ///
-  /// In en, this message translates to:
-  /// **'Show all subagents'**
-  String get chatUiShowAllSubagents;
-
-  /// Chat journey: Show full prompt
-  ///
-  /// In en, this message translates to:
-  /// **'Show full prompt'**
-  String get chatUiShowFullPrompt;
-
-  /// Chat journey: Show less
-  ///
-  /// In en, this message translates to:
-  /// **'Show less'**
-  String get chatUiShowLess;
 
   /// Chat journey: Show timestamps
   ///
@@ -13482,24 +10351,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a clean conversation in this project'**
   String get chatUiStartACleanSessionInThisWorkspace;
-
-  /// Chat journey: Start coding
-  ///
-  /// In en, this message translates to:
-  /// **'Start coding'**
-  String get chatUiStartCoding;
-
-  /// Chat journey: Steer
-  ///
-  /// In en, this message translates to:
-  /// **'Steer'**
-  String get chatUiSteer;
-
-  /// Chat journey: Steering at the next step
-  ///
-  /// In en, this message translates to:
-  /// **'Steering at the next step'**
-  String get chatUiSteeringAtTheNextStep;
 
   /// Chat journey: Stop sharing
   ///
@@ -13627,12 +10478,6 @@ abstract class AppLocalizations {
   /// **'This prompt cannot be retried because an attachment is unavailable.'**
   String get chatUiThisPromptCannotBeRetriedBecauseAn;
 
-  /// Chat journey: Time, tokens and cost under each message
-  ///
-  /// In en, this message translates to:
-  /// **'Time, tokens and cost under each message'**
-  String get chatUiTimeTokensAndCostUnderEachMessage;
-
   /// Chat journey: Timeline
   ///
   /// In en, this message translates to:
@@ -13645,23 +10490,11 @@ abstract class AppLocalizations {
   /// **'Timestamps & usage'**
   String get chatUiTimestampsUsage;
 
-  /// Chat journey: Tip: type / for commands · tap
-  ///
-  /// In en, this message translates to:
-  /// **'Tip: type / for commands · '**
-  String get chatUiTipTypeForCommandsTap;
-
   /// Chat journey: Title
   ///
   /// In en, this message translates to:
   /// **'Title'**
   String get chatUiTitle;
-
-  /// Chat journey: Todo list
-  ///
-  /// In en, this message translates to:
-  /// **'Todo list'**
-  String get chatUiTodoList;
 
   /// Conversation menu entry that jumps to the agent's latest task list in the transcript (the Tasks step).
   ///
@@ -13687,23 +10520,11 @@ abstract class AppLocalizations {
   /// **'Tool failed.'**
   String get chatUiToolFailed;
 
-  /// Chat journey: Tools
-  ///
-  /// In en, this message translates to:
-  /// **'Tools'**
-  String get chatUiTools;
-
   /// Chat journey: Tools and capabilities
   ///
   /// In en, this message translates to:
   /// **'Tools and capabilities'**
   String get chatUiToolsAndCapabilities;
-
-  /// Chat journey: Transcript
-  ///
-  /// In en, this message translates to:
-  /// **'Transcript'**
-  String get chatUiTranscript;
 
   /// Chat journey: Transcript copied as Markdown
   ///
@@ -13723,12 +10544,6 @@ abstract class AppLocalizations {
   /// **'Transcript saved'**
   String get chatUiTranscriptSaved;
 
-  /// Chat journey: Views
-  ///
-  /// In en, this message translates to:
-  /// **'Views'**
-  String get chatUiViews;
-
   /// Chat journey: Voice conversation was interrupted.
   ///
   /// In en, this message translates to:
@@ -13747,41 +10562,17 @@ abstract class AppLocalizations {
   /// **'Voice input is unavailable.'**
   String get chatUiVoiceInputIsUnavailable;
 
-  /// Chat journey: Wait for the current run to finish, then send
-  ///
-  /// In en, this message translates to:
-  /// **'Wait for the current run to finish, then send'**
-  String get chatUiWaitForTheCurrentRunToFinish;
-
   /// Chat journey: Wait for this run instead
   ///
   /// In en, this message translates to:
   /// **'Wait for this run instead'**
   String get chatUiWaitForThisRunInstead;
 
-  /// Chat journey: Waiting for this run to finish
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for this run to finish'**
-  String get chatUiWaitingForThisRunToFinish;
-
   /// Chat journey: Web search
   ///
   /// In en, this message translates to:
   /// **'Web search'**
   String get chatUiWebSearch;
-
-  /// Chat journey: What changed recently?
-  ///
-  /// In en, this message translates to:
-  /// **'What changed recently?'**
-  String get chatUiWhatChangedRecently;
-
-  /// Chat journey: When the assistant plans work as a todo list, the items appear here.
-  ///
-  /// In en, this message translates to:
-  /// **'When the assistant plans work as a todo list, the items appear here.'**
-  String get chatUiWhenTheAssistantPlansWorkAsA;
 
   /// Chat journey: Write
   ///
@@ -13813,35 +10604,11 @@ abstract class AppLocalizations {
   /// **'in this conversation'**
   String get chatUiInThisChat;
 
-  /// Chat journey: includes steps not run
-  ///
-  /// In en, this message translates to:
-  /// **'includes steps not run'**
-  String get chatUiIncludesStepsNotRun;
-
   /// Chat journey: new file
   ///
   /// In en, this message translates to:
   /// **'new file'**
   String get chatUiNewFile;
-
-  /// Chat journey: opencode assistant
-  ///
-  /// In en, this message translates to:
-  /// **'opencode assistant'**
-  String get chatUiOpencodeAssistant;
-
-  /// Chat journey: searched once
-  ///
-  /// In en, this message translates to:
-  /// **'searched once'**
-  String get chatUiSearchedOnce;
-
-  /// Chat journey: you user
-  ///
-  /// In en, this message translates to:
-  /// **'you user'**
-  String get chatUiYouUser;
 
   /// Chat journey: Queued — will send when reconnected. {detail}
   ///
@@ -13963,101 +10730,17 @@ abstract class AppLocalizations {
   /// **'{count} attached'**
   String chatUiAttachedCount(Object count);
 
-  /// Chat journey: Model and agent: {model}. Tap to change.{cost}
-  ///
-  /// In en, this message translates to:
-  /// **'Model and agent: {model}. Tap to change.{cost}'**
-  String chatUiModelAndAgentHint(Object model, Object cost);
-
-  /// Chat journey: Context {percent}% full
-  ///
-  /// In en, this message translates to:
-  /// **'Context {percent}% full'**
-  String chatUiContextPercentFull(Object percent);
-
-  /// Chat journey: Remove reference @{name}
-  ///
-  /// In en, this message translates to:
-  /// **'Remove reference @{name}'**
-  String chatUiRemoveReferenceName(Object name);
-
-  /// Chat journey: Remove attachment {name}
-  ///
-  /// In en, this message translates to:
-  /// **'Remove attachment {name}'**
-  String chatUiRemoveAttachmentName(Object name);
-
-  /// Chat journey: Reference @{name}
-  ///
-  /// In en, this message translates to:
-  /// **'Reference @{name}'**
-  String chatUiReferenceName(Object name);
-
-  /// Chat journey: Preview attachment {name}
-  ///
-  /// In en, this message translates to:
-  /// **'Preview attachment {name}'**
-  String chatUiPreviewAttachmentName(Object name);
-
-  /// Chat journey: Project reference @{name}
-  ///
-  /// In en, this message translates to:
-  /// **'Project reference @{name}'**
-  String chatUiProjectReferenceName(Object name);
-
-  /// Chat journey: Preview {name}
-  ///
-  /// In en, this message translates to:
-  /// **'Preview {name}'**
-  String chatUiPreviewName(Object name);
-
-  /// Chat journey: Remove reference {name}
-  ///
-  /// In en, this message translates to:
-  /// **'Remove reference {name}'**
-  String chatUiRemoveContextReference(Object name);
-
-  /// Chat journey: Context window {percent} percent used
-  ///
-  /// In en, this message translates to:
-  /// **'Context window {percent} percent used'**
-  String chatUiContextPercentUsed(Object percent);
-
-  /// Chat journey: Explain the {name} project
-  ///
-  /// In en, this message translates to:
-  /// **'Explain the {name} project'**
-  String chatUiExplainProject(Object name);
-
   /// Chat journey: {count, plural, one{1 earlier message} other{{count} earlier messages}}
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 earlier message} other{{count} earlier messages}}'**
   String chatUiEarlierMessageCount(num count);
 
-  /// Chat journey: Previously {value}
-  ///
-  /// In en, this message translates to:
-  /// **'Previously {value}'**
-  String chatUiPreviouslyValue(Object value);
-
-  /// Chat journey: {title}, {count, plural, one{1 step} other{{count} steps}}, {status}
-  ///
-  /// In en, this message translates to:
-  /// **'{title}, {count, plural, one{1 step} other{{count} steps}}, {status}'**
-  String chatUiToolGroupSemantics(Object title, num count, Object status);
-
   /// Chat journey: {count} tok
   ///
   /// In en, this message translates to:
   /// **'{count} tok'**
   String chatUiTokenCount(Object count);
-
-  /// Chat journey: {type} · prompt attachment
-  ///
-  /// In en, this message translates to:
-  /// **'{type} · prompt attachment'**
-  String chatUiAttachmentType(Object type);
 
   /// Chat journey: {position} of {total}
   ///
@@ -14070,66 +10753,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delegated conversation · {count}'**
   String chatUiSubagentCount(Object count);
-
-  /// Chat journey: Shared session link {url}
-  ///
-  /// In en, this message translates to:
-  /// **'Shared conversation link {url}'**
-  String chatUiSharedLink(Object url);
-
-  /// Chat journey: {count, plural, one{1 attachment} other{{count} attachments}}
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 attachment} other{{count} attachments}}'**
-  String chatUiAttachmentCount(num count);
-
-  /// Chat journey: Failed: {error}
-  ///
-  /// In en, this message translates to:
-  /// **'Failed: {error}'**
-  String chatUiFailedDetail(Object error);
-
-  /// Chat journey: Queued draft. {label}
-  ///
-  /// In en, this message translates to:
-  /// **'Queued draft. {label}'**
-  String chatUiQueuedDraftLabel(Object label);
-
-  /// Chat journey: Pending send. {label}
-  ///
-  /// In en, this message translates to:
-  /// **'Pending send. {label}'**
-  String chatUiPendingSendLabel(Object label);
-
-  /// Chat journey: Context: {permission} {context}
-  ///
-  /// In en, this message translates to:
-  /// **'Context: {permission} {context}'**
-  String chatUiPermissionContext(Object permission, Object context);
-
-  /// Chat journey: The agent wants to use {permission}.
-  ///
-  /// In en, this message translates to:
-  /// **'The agent wants to use {permission}.'**
-  String chatUiPermissionRequested(Object permission);
-
-  /// Chat journey: Reply failed: {error}
-  ///
-  /// In en, this message translates to:
-  /// **'Reply failed: {error}'**
-  String chatUiReplyFailed(Object error);
-
-  /// Chat journey: Copy {resource}
-  ///
-  /// In en, this message translates to:
-  /// **'Copy {resource}'**
-  String chatUiCopyResource(Object resource);
-
-  /// Chat journey: {priority} priority
-  ///
-  /// In en, this message translates to:
-  /// **'{priority} priority'**
-  String chatUiPriorityLabel(Object priority);
 
   /// Chat journey: Tools: {tools}
   ///
@@ -14172,12 +10795,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 match} other{{count} matches}}'**
   String chatUiMatchCount(num count);
-
-  /// Chat journey: exit {code}
-  ///
-  /// In en, this message translates to:
-  /// **'exit {code}'**
-  String chatUiExitCode(Object code);
 
   /// Chat journey: {count, plural, one{1 file} other{{count} files}}
   ///
@@ -14245,12 +10862,6 @@ abstract class AppLocalizations {
   /// **'{total} entries'**
   String chatUiEntryTotal(Object total);
 
-  /// Chat journey: See all · {count, plural, one{1 line} other{{count} lines}}
-  ///
-  /// In en, this message translates to:
-  /// **'See all · {count, plural, one{1 line} other{{count} lines}}'**
-  String chatUiSeeAllLines(num count);
-
   /// Chat journey: Answered: {answer}
   ///
   /// In en, this message translates to:
@@ -14268,12 +10879,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview generated image {filename}'**
   String chatUiPreviewGeneratedImage(Object filename);
-
-  /// Chat journey: Open generated file {filename}
-  ///
-  /// In en, this message translates to:
-  /// **'Open generated file {filename}'**
-  String chatUiOpenGeneratedFile(Object filename);
 
   /// Chat journey: Parent · {title}
   ///
@@ -14311,12 +10916,6 @@ abstract class AppLocalizations {
   /// **'Results'**
   String get chatUiResults;
 
-  /// Chat journey: a permission
-  ///
-  /// In en, this message translates to:
-  /// **'a permission'**
-  String get chatUiPermissionFallback;
-
   /// Chat journey: Main session
   ///
   /// In en, this message translates to:
@@ -14353,12 +10952,6 @@ abstract class AppLocalizations {
   /// **'Cancelled'**
   String get chatUiBackgroundCancelled;
 
-  /// Chat journey: Result details
-  ///
-  /// In en, this message translates to:
-  /// **'Result details'**
-  String get chatUiResultDetails;
-
   /// Chat journey: Server message details
   ///
   /// In en, this message translates to:
@@ -14376,12 +10969,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server returned no result text.'**
   String get chatUiNoResultText;
-
-  /// Chat journey: Background
-  ///
-  /// In en, this message translates to:
-  /// **'Background'**
-  String get chatUiBackground;
 
   /// Chat journey: Timed out
   ///
@@ -14407,35 +10994,11 @@ abstract class AppLocalizations {
   /// **'Updated'**
   String get chatUiUpdated;
 
-  /// Chat journey: Pending
-  ///
-  /// In en, this message translates to:
-  /// **'Pending'**
-  String get chatUiPending;
-
-  /// Chat journey: Running
-  ///
-  /// In en, this message translates to:
-  /// **'Running'**
-  String get chatUiRunning;
-
-  /// Chat journey: Completed
-  ///
-  /// In en, this message translates to:
-  /// **'Completed'**
-  String get chatUiCompleted;
-
   /// Chat journey: Error
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get chatUiError;
-
-  /// Chat journey: Unknown status
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown status'**
-  String get chatUiUnknownStatus;
 
   /// Chat journey: Assistant
   ///
@@ -14467,66 +11030,6 @@ abstract class AppLocalizations {
   /// **'file'**
   String get chatUiFile;
 
-  /// Chat journey: ,
-  ///
-  /// In en, this message translates to:
-  /// **', '**
-  String get chatUiSeparator;
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{read 1 file} other{read {count} files}}'**
-  String chatUiReadFiles(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{searched once} other{searched {count} times}}'**
-  String chatUiSearched(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{listed 1 folder} other{listed {count} folders}}'**
-  String chatUiListedFolders(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{edited 1 file} other{edited {count} files}}'**
-  String chatUiEditedFiles(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{ran 1 command} other{ran {count} commands}}'**
-  String chatUiRanCommands(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{fetched 1 page} other{fetched {count} pages}}'**
-  String chatUiFetchedPages(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{delegated 1 task} other{delegated {count} tasks}}'**
-  String chatUiDelegatedTasks(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{made 1 other call} other{made {count} other calls}}'**
-  String chatUiOtherCalls(num count);
-
-  /// Completed tool group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 step was not run} other{{count} steps were not run}}'**
-  String chatUiStepsNotRun(num count);
-
   /// Library and project tools UI: Report a bug
   ///
   /// In en, this message translates to:
@@ -14557,12 +11060,6 @@ abstract class AppLocalizations {
   /// **'OpenCode is reconnecting. Try again shortly.'**
   String get e7LibraryOpenCodeIsReconnectingTryAgainShortly;
 
-  /// Library and project tools UI: {detail1}, but the app could not reconnect. {detail2}
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1}, but the app could not reconnect. {detail2}'**
-  String e7LibraryButTheAppCouldNotReconnect(String detail1, String detail2);
-
   /// Library and project tools UI: What is MCP?
   ///
   /// In en, this message translates to:
@@ -14580,18 +11077,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save MCP server'**
   String get e7LibrarySaveMCPServer;
-
-  /// Library and project tools UI: Persisted configuration
-  ///
-  /// In en, this message translates to:
-  /// **'Persisted configuration'**
-  String get e7LibraryPersistedConfiguration;
-
-  /// Library and project tools UI: Saved by OpenCode on the server. It remains available after the app or server restarts.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved by OpenCode on the server. It remains available after the app or server restarts.'**
-  String get e7LibrarySavedByOpenCodeOnTheServerIt;
 
   /// Library and project tools UI: This project
   ///
@@ -14683,12 +11168,6 @@ abstract class AppLocalizations {
   /// **'Enter a valid HTTP or HTTPS URL without credentials'**
   String get e7LibraryEnterAValidHTTPOrHTTPSURL;
 
-  /// Library and project tools UI: HTTP headers
-  ///
-  /// In en, this message translates to:
-  /// **'HTTP headers'**
-  String get e7LibraryHTTPHeaders;
-
   /// Library and project tools UI: Optional. Enter one KEY=VALUE pair per line.
   ///
   /// In en, this message translates to:
@@ -14773,12 +11252,6 @@ abstract class AppLocalizations {
   /// **'Revoke access?'**
   String get e7LibraryRevokeAlwaysAllowedAction;
 
-  /// Library and project tools UI: OpenCode will ask again before a future action matching this grant.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode will ask again before a future action matching this grant.'**
-  String get e7LibraryOpenCodeWillAskAgainBeforeAFuture;
-
   /// Library and project tools UI: Action
   ///
   /// In en, this message translates to:
@@ -14790,24 +11263,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resource'**
   String get e7LibraryResource;
-
-  /// Library and project tools UI: (all matching resources)
-  ///
-  /// In en, this message translates to:
-  /// **'(all matching resources)'**
-  String get e7LibraryAllMatchingResources;
-
-  /// Library and project tools UI: This does not stop an action that is already running.
-  ///
-  /// In en, this message translates to:
-  /// **'This does not stop an action that is already running.'**
-  String get e7LibraryThisDoesNotStopAnActionThat;
-
-  /// Library and project tools UI: Keep access
-  ///
-  /// In en, this message translates to:
-  /// **'Keep access'**
-  String get e7LibraryKeepAccess;
 
   /// Library and project tools UI: Revoke access
   ///
@@ -14832,12 +11287,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No always allowed actions'**
   String get e7LibraryNoAlwaysAllowedActions;
-
-  /// Library and project tools UI: Grants created with Always allow for this project will appear here.
-  ///
-  /// In en, this message translates to:
-  /// **'Grants created with Always allow for this project will appear here.'**
-  String get e7LibraryGrantsCreatedWithAlwaysAllowForThis;
 
   /// Library and project tools UI: The last action failed
   ///
@@ -14875,12 +11324,6 @@ abstract class AppLocalizations {
   /// **'Choose model'**
   String get e7LibraryChooseModel;
 
-  /// Library and project tools UI: Search tools
-  ///
-  /// In en, this message translates to:
-  /// **'Search tools'**
-  String get e7LibrarySearchTools;
-
   /// Library and project tools UI: Search {detail1} tools
   ///
   /// In en, this message translates to:
@@ -14905,62 +11348,17 @@ abstract class AppLocalizations {
   /// **'No tools for this model'**
   String get e7LibraryNoToolsForThisModel;
 
-  /// Library and project tools UI: No matching tools
-  ///
-  /// In en, this message translates to:
-  /// **'No matching tools'**
-  String get e7LibraryNoMatchingTools;
-
-  /// Library and project tools UI: OpenCode returned no callable tools for this provider and model.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode returned no callable tools for this provider and model.'**
-  String get e7LibraryOpenCodeReturnedNoCallableToolsForThis;
-
-  /// Library and project tools UI: Try a tool ID or a word from its description.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a tool ID or a word from its description.'**
-  String get e7LibraryTryAToolIDOrAWord;
-
-  /// Library and project tools UI: Callable by this model
-  ///
-  /// In en, this message translates to:
-  /// **'Callable by this model'**
-  String get e7LibraryCallableByThisModel;
-
-  /// Library and project tools UI: Registered, not callable
-  ///
-  /// In en, this message translates to:
-  /// **'Registered, not callable'**
-  String get e7LibraryRegisteredNotCallable;
-
   /// Library and project tools UI: No description returned by OpenCode
   ///
   /// In en, this message translates to:
   /// **'No description returned by OpenCode'**
   String get e7LibraryNoDescriptionReturnedByOpenCode;
 
-  /// Library and project tools UI: Registered on this project but not returned for {detail1}/{detail2}.
-  ///
-  /// In en, this message translates to:
-  /// **'Registered on this project but not returned for {detail1}/{detail2}.'**
-  String e7LibraryRegisteredOnThisProjectButNotReturned(
-    String detail1,
-    String detail2,
-  );
-
   /// Library and project tools UI: Copy parameter schema
   ///
   /// In en, this message translates to:
   /// **'Copy parameter schema'**
   String get e7LibraryCopyParameterSchema;
-
-  /// Library and project tools UI: {detail1} schema copied
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} schema copied'**
-  String e7LibrarySchemaCopied(String detail1);
 
   /// Library and project tools UI: No project selected
   ///
@@ -15004,36 +11402,6 @@ abstract class AppLocalizations {
   /// **'OpenCode is reconnecting.'**
   String get e7LibraryOpenCodeIsReconnecting;
 
-  /// Library and project tools UI: Workspace discovery finished
-  ///
-  /// In en, this message translates to:
-  /// **'Environment discovery finished'**
-  String get e7LibraryWorkspaceDiscoveryFinished;
-
-  /// Library and project tools UI: Could not discover workspaces: {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Could not discover environments: {detail1}'**
-  String e7LibraryCouldNotDiscoverWorkspaces(String detail1);
-
-  /// Library and project tools UI: Could not create workspace: {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Could not create environment: {detail1}'**
-  String e7LibraryCouldNotCreateWorkspace(String detail1);
-
-  /// Library and project tools UI: {detail1} was removed
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} was deleted'**
-  String e7LibraryWasRemoved(String detail1);
-
-  /// Library and project tools UI: Could not remove workspace: {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Could not delete environment: {detail1}'**
-  String e7LibraryCouldNotRemoveWorkspace(String detail1);
-
   /// Library and project tools UI: Cloud environments
   ///
   /// In en, this message translates to:
@@ -15045,12 +11413,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discover existing environments'**
   String get e7LibraryDiscoverExistingEnvironments;
-
-  /// Library and project tools UI: Refresh cloud environments
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh cloud environments'**
-  String get e7LibraryRefreshCloudEnvironments;
 
   /// Library and project tools UI: New environment
   ///
@@ -15070,12 +11432,6 @@ abstract class AppLocalizations {
   /// **'No cloud environments'**
   String get e7LibraryNoCloudEnvironments;
 
-  /// Library and project tools UI: Adapter-backed environments for {detail1} appear here. Create one from a server adapter, or use Discover to register environments the adapter already knows.
-  ///
-  /// In en, this message translates to:
-  /// **'Adapter-backed environments for {detail1} appear here. Create one from a server adapter, or use Discover to register environments the adapter already knows.'**
-  String e7LibraryAdapterBackedEnvironmentsForAppearHereCreate(String detail1);
-
   /// Library and project tools UI: Environment refresh failed
   ///
   /// In en, this message translates to:
@@ -15087,36 +11443,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get e7LibraryRetryCloudEnvironments;
-
-  /// Library and project tools UI: Adapters
-  ///
-  /// In en, this message translates to:
-  /// **'Adapters'**
-  String get e7LibraryAdapters;
-
-  /// Library and project tools UI: Adapters unavailable
-  ///
-  /// In en, this message translates to:
-  /// **'Adapters unavailable'**
-  String get e7LibraryAdaptersUnavailable;
-
-  /// Library and project tools UI: Retry workspace adapters
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get e7LibraryRetryWorkspaceAdapters;
-
-  /// Library and project tools UI: No workspace adapters
-  ///
-  /// In en, this message translates to:
-  /// **'No environment adapters'**
-  String get e7LibraryNoWorkspaceAdapters;
-
-  /// Library and project tools UI: This OpenCode project does not expose managed workspace creation.
-  ///
-  /// In en, this message translates to:
-  /// **'This OpenCode project does not expose cloud environment creation.'**
-  String get e7LibraryThisOpenCodeProjectDoesNotExposeManaged;
 
   /// Library and project tools UI: Adapter refresh failed
   ///
@@ -15160,30 +11486,6 @@ abstract class AppLocalizations {
   /// **'New cloud environment'**
   String get e7LibraryNewManagedWorkspace;
 
-  /// Library and project tools UI: Adapter
-  ///
-  /// In en, this message translates to:
-  /// **'Adapter'**
-  String get e7LibraryAdapter;
-
-  /// Library and project tools UI: Branch (optional)
-  ///
-  /// In en, this message translates to:
-  /// **'Branch (optional)'**
-  String get e7LibraryBranchOptional;
-
-  /// Library and project tools UI: Use the adapter default
-  ///
-  /// In en, this message translates to:
-  /// **'Use the adapter default'**
-  String get e7LibraryUseTheAdapterDefault;
-
-  /// Library and project tools UI: OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode configures adapter-specific details on the server. The new environment opens here after it is ready.'**
-  String get e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe;
-
   /// Library and project tools UI: Create and open
   ///
   /// In en, this message translates to:
@@ -15195,18 +11497,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {detail1}?'**
   String e7LibraryRemove(String detail1);
-
-  /// Library and project tools UI: The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.
-  ///
-  /// In en, this message translates to:
-  /// **'The server adapter may permanently delete the remote environment or worktree. Existing conversations remain in history, but the environment may no longer be reachable.'**
-  String get e7LibraryTheServerAdapterMayPermanentlyDeleteThe;
-
-  /// Library and project tools UI: Type {detail1} to confirm
-  ///
-  /// In en, this message translates to:
-  /// **'Type {detail1} to confirm'**
-  String e7LibraryTypeToConfirm(String detail1);
 
   /// Library and project tools UI: Remove permanently
   ///
@@ -15231,12 +11521,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{detail1} was created. Its setup status is not yet confirmed.'**
   String e7LibraryWasCreatedItsSetupStatusIsNot(String detail1);
-
-  /// Library and project tools UI: {detail1} created. OpenCode is preparing it.
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} created. OpenCode is preparing it.'**
-  String e7LibraryCreatedOpenCodeIsPreparingIt(String detail1);
 
   /// Library and project tools UI: Wait for OpenCode to finish preparing this worktree.
   ///
@@ -15301,35 +11585,11 @@ abstract class AppLocalizations {
   /// **'New worktree'**
   String get e7LibraryNewWorktree;
 
-  /// Library and project tools UI: Primary
-  ///
-  /// In en, this message translates to:
-  /// **'Primary'**
-  String get e7LibraryPrimary;
-
   /// Library and project tools UI: No isolated worktrees yet
   ///
   /// In en, this message translates to:
   /// **'No isolated worktrees yet'**
   String get e7LibraryNoIsolatedWorktreesYet;
-
-  /// Library and project tools UI: Use isolated branches for parallel coding without mixing changes. Create one when you want OpenCode to work on a separate branch.
-  ///
-  /// In en, this message translates to:
-  /// **'Use isolated branches for parallel coding without mixing changes. Create one when you want OpenCode to work on a separate branch.'**
-  String get e7LibraryUseIsolatedBranchesForParallelCodingWithout;
-
-  /// Library and project tools UI: Default project · {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Default project · {detail1}'**
-  String e7LibraryDefaultProject(String detail1);
-
-  /// Library and project tools UI: Setup failed · {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Setup failed · {detail1}'**
-  String e7LibrarySetupFailed(String detail1);
 
   /// Library and project tools UI: Preparing files and project tasks…
   ///
@@ -15349,29 +11609,11 @@ abstract class AppLocalizations {
   /// **'Reset'**
   String get e7LibraryReset2;
 
-  /// Library and project tools UI: No changed files were detected.
-  ///
-  /// In en, this message translates to:
-  /// **'No changed files were detected.'**
-  String get e7LibraryNoChangedFilesWereDetected;
-
-  /// Library and project tools UI: OpenCode will create an isolated Git branch and working directory. Project startup tasks run automatically.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode will create an isolated Git branch and working directory. Project startup tasks run automatically.'**
-  String get e7LibraryOpenCodeWillCreateAnIsolatedGitBranch;
-
   /// Library and project tools UI: Name (optional)
   ///
   /// In en, this message translates to:
   /// **'Name (optional)'**
   String get e7LibraryNameOptional;
-
-  /// Library and project tools UI: OpenCode makes the name URL-safe and unique.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode makes the name URL-safe and unique.'**
-  String get e7LibraryOpenCodeMakesTheNameURLSafeAnd;
 
   /// Library and project tools UI: The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.
   ///
@@ -15420,12 +11662,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Formatters'**
   String get e7LibraryFormatters;
-
-  /// Library and project tools UI: version control
-  ///
-  /// In en, this message translates to:
-  /// **'version control'**
-  String get e7LibraryVersionControl2;
 
   /// Library and project tools UI: Git is not initialized
   ///
@@ -15481,12 +11717,6 @@ abstract class AppLocalizations {
   /// **'No uncommitted changes'**
   String get e7LibraryNoUncommittedChanges;
 
-  /// Library and project tools UI: language services
-  ///
-  /// In en, this message translates to:
-  /// **'language services'**
-  String get e7LibraryLanguageServices2;
-
   /// Library and project tools UI: No active language services
   ///
   /// In en, this message translates to:
@@ -15523,24 +11753,6 @@ abstract class AppLocalizations {
   /// **'Loading {detail1}'**
   String e7LibraryLoading(String detail1);
 
-  /// Library and project tools UI: Authenticate from the server machine
-  ///
-  /// In en, this message translates to:
-  /// **'Authenticate from the server machine'**
-  String get e7LibraryAuthenticateFromTheServerMachine;
-
-  /// Library and project tools UI: MCP authorization pending for {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'MCP authorization pending for {detail1}'**
-  String e7LibraryMCPAuthorizationPendingFor(String detail1);
-
-  /// Library and project tools UI: Waiting for browser authorization
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for browser authorization'**
-  String get e7LibraryWaitingForBrowserAuthorization;
-
   /// Library and project tools UI: Automatic callback capture is unavailable. Paste the callback URL or authorization code.
   ///
   /// In en, this message translates to:
@@ -15553,29 +11765,11 @@ abstract class AppLocalizations {
   /// **'The phone is securely listening for this authorization callback. You can also enter it manually.'**
   String get e7LibraryThePhoneIsSecurelyListeningForThis;
 
-  /// Library and project tools UI: Complete MCP authorization
-  ///
-  /// In en, this message translates to:
-  /// **'Complete MCP authorization'**
-  String get e7LibraryCompleteMCPAuthorization;
-
   /// Library and project tools UI: Callback URL or code
   ///
   /// In en, this message translates to:
   /// **'Callback URL or code'**
   String get e7LibraryCallbackURLOrCode;
-
-  /// Library and project tools UI: Paste the complete callback URL when available so its security state can be verified.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste the complete callback URL when available so its security state can be verified.'**
-  String get e7LibraryPasteTheCompleteCallbackURLWhenAvailable;
-
-  /// Library and project tools UI: Complete
-  ///
-  /// In en, this message translates to:
-  /// **'Complete'**
-  String get e7LibraryComplete;
 
   /// Library and project tools UI: Updating…
   ///
@@ -15588,12 +11782,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not connected'**
   String get e7LibraryNotConnected;
-
-  /// Library and project tools UI: Disconnect
-  ///
-  /// In en, this message translates to:
-  /// **'Disconnect'**
-  String get e7LibraryDisconnect;
 
   /// Library and project tools UI: Server environment
   ///
@@ -15643,35 +11831,11 @@ abstract class AppLocalizations {
   /// **'Finish authentication in the browser, then check its status.'**
   String get e7LibraryFinishAuthenticationInTheBrowserThenCheck;
 
-  /// Library and project tools UI: Authentication options
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication options'**
-  String get e7LibraryAuthenticationOptions;
-
-  /// Library and project tools UI: Cancel attempt
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel attempt'**
-  String get e7LibraryCancelAttempt;
-
-  /// Library and project tools UI: Finish {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Finish {detail1}'**
-  String e7LibraryFinish2(String detail1);
-
   /// Library and project tools UI: Authorization code
   ///
   /// In en, this message translates to:
   /// **'Authorization code'**
   String get e7LibraryAuthorizationCode;
-
-  /// Library and project tools UI: Not yet
-  ///
-  /// In en, this message translates to:
-  /// **'Not yet'**
-  String get e7LibraryNotYet;
 
   /// Library and project tools UI: Select an option
   ///
@@ -15697,12 +11861,6 @@ abstract class AppLocalizations {
   /// **'Could not load this section'**
   String get e7LibraryCouldNotLoadThisSection;
 
-  /// Library and project tools UI: {detail1} connected · {detail2} available
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} connected · {detail2} available'**
-  String e7LibraryConnectedAvailable(String detail1, String detail2);
-
   /// Library and project tools UI: Skills
   ///
   /// In en, this message translates to:
@@ -15714,24 +11872,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No skills available'**
   String get e7LibraryNoSkillsAvailable;
-
-  /// Library and project tools UI: Project and global OpenCode skills appear here.
-  ///
-  /// In en, this message translates to:
-  /// **'Project and global OpenCode skills appear here.'**
-  String get e7LibraryProjectAndGlobalOpenCodeSkillsAppearHere;
-
-  /// Library and project tools UI: Deprecated
-  ///
-  /// In en, this message translates to:
-  /// **'Deprecated'**
-  String get e7LibraryDeprecated;
-
-  /// Library and project tools UI: Preview
-  ///
-  /// In en, this message translates to:
-  /// **'Preview'**
-  String get e7LibraryPreview;
 
   /// Library and project tools UI: Models and agents
   ///
@@ -15793,12 +11933,6 @@ abstract class AppLocalizations {
   /// **'Could not save sign-in recovery.'**
   String get e7LibraryCouldNotSaveSignInRecovery;
 
-  /// Library and project tools UI: Loading providers
-  ///
-  /// In en, this message translates to:
-  /// **'Loading providers'**
-  String get e7LibraryLoadingProviders;
-
   /// Library and project tools UI: No provider connections available
   ///
   /// In en, this message translates to:
@@ -15811,47 +11945,11 @@ abstract class AppLocalizations {
   /// **'This server did not return any provider integrations.'**
   String get e7LibraryThisServerDidNotReturnAnyProvider;
 
-  /// Library and project tools UI: No providers match “{detail1}”
-  ///
-  /// In en, this message translates to:
-  /// **'No providers match “{detail1}”'**
-  String e7LibraryNoProvidersMatch(String detail1);
-
-  /// Library and project tools UI: Try a provider name, its id, or one of its models.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a provider name, its id, or one of its models.'**
-  String get e7LibraryTryAProviderNameItsIdOr;
-
   /// Library and project tools UI: Search providers or models
   ///
   /// In en, this message translates to:
   /// **'Search providers or models'**
   String get e7LibrarySearchProvidersOrModels;
-
-  /// Library and project tools UI: Clear provider search
-  ///
-  /// In en, this message translates to:
-  /// **'Clear provider search'**
-  String get e7LibraryClearProviderSearch;
-
-  /// Library and project tools UI:  SERVERS
-  ///
-  /// In en, this message translates to:
-  /// **' SERVERS'**
-  String get e7LibrarySERVERS;
-
-  /// Library and project tools UI: Add-on servers that give the agent extra tools, like a browser or a database.
-  ///
-  /// In en, this message translates to:
-  /// **'Add-on servers that give the agent extra tools, like a browser or a database.'**
-  String get e7LibraryAddOnServersThatGiveTheAgent;
-
-  /// Library and project tools UI: Loading MCP servers
-  ///
-  /// In en, this message translates to:
-  /// **'Loading MCP servers'**
-  String get e7LibraryLoadingMCPServers;
 
   /// Library and project tools UI: No MCP servers configured
   ///
@@ -15883,12 +11981,6 @@ abstract class AppLocalizations {
   /// **'Resources'**
   String get e7LibraryResources;
 
-  /// Library and project tools UI: Loading available resources
-  ///
-  /// In en, this message translates to:
-  /// **'Loading available resources'**
-  String get e7LibraryLoadingAvailableResources;
-
   /// Library and project tools UI: No resources available
   ///
   /// In en, this message translates to:
@@ -15900,30 +11992,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connected MCP servers have not exposed any resources.'**
   String get e7LibraryConnectedMCPServersHaveNotExposedAny;
-
-  /// Library and project tools UI: Open authorization page?
-  ///
-  /// In en, this message translates to:
-  /// **'Open authorization page?'**
-  String get e7LibraryOpenAuthorizationPage;
-
-  /// Library and project tools UI: You are leaving this app to authenticate in your browser.
-  ///
-  /// In en, this message translates to:
-  /// **'You are leaving this app to authenticate in your browser.'**
-  String get e7LibraryYouAreLeavingThisAppToAuthenticate;
-
-  /// Library and project tools UI: Destination host
-  ///
-  /// In en, this message translates to:
-  /// **'Destination host'**
-  String get e7LibraryDestinationHost;
-
-  /// Library and project tools UI: OpenCode instructions
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode instructions'**
-  String get e7LibraryOpenCodeInstructions;
 
   /// Library and project tools UI: Open browser
   ///
@@ -15955,12 +12023,6 @@ abstract class AppLocalizations {
   /// **'Client registration required'**
   String get e7LibraryClientRegistrationRequired;
 
-  /// Library and project tools UI: Authenticate
-  ///
-  /// In en, this message translates to:
-  /// **'Authenticate'**
-  String get e7LibraryAuthenticate;
-
   /// Library and project tools UI: Stored credential: {detail1}
   ///
   /// In en, this message translates to:
@@ -15990,18 +12052,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disconnect {detail1}?'**
   String e7LibraryDisconnect2(String detail1);
-
-  /// Library and project tools UI: The stored credential will be removed from this OpenCode server. New prompts will stop using it after the provider runtime refreshes. An active response is not stopped.{detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'The stored credential will be removed from this OpenCode server. New prompts will stop using it after the provider runtime refreshes. An active response is not stopped.{detail1}'**
-  String e7LibraryTheStoredCredentialWillBeRemovedFrom(String detail1);
-
-  /// Library and project tools UI: Disconnect provider
-  ///
-  /// In en, this message translates to:
-  /// **'Disconnect provider'**
-  String get e7LibraryDisconnectProvider;
 
   /// Library and project tools UI: {detail1} credential removed; server environment remains active
   ///
@@ -16094,30 +12144,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No references configured'**
   String get e7LibraryNoReferencesConfigured;
-
-  /// Library and project tools UI: References attached to this project appear here.
-  ///
-  /// In en, this message translates to:
-  /// **'References attached to this project appear here.'**
-  String get e7LibraryReferencesAttachedToThisProjectAppearHere;
-
-  /// Library and project tools UI: @{detail1} copied
-  ///
-  /// In en, this message translates to:
-  /// **'@{detail1} copied'**
-  String e7LibraryCopied(String detail1);
-
-  /// Library and project tools confirmation or count.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 grant} other{{count} grants}}'**
-  String e7LibraryGrantCount(int count);
-
-  /// Library and project tools confirmation or count.
-  ///
-  /// In en, this message translates to:
-  /// **' · {count, plural, one{1 model} other{{count} models}}'**
-  String e7LibraryModelCount(int count);
 
   /// Library and project tools confirmation or count.
   ///
@@ -16227,18 +12253,6 @@ abstract class AppLocalizations {
   /// **'Open the setup guide'**
   String get e7SetupOpenSetupGuide;
 
-  /// Setup journey: scan.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan'**
-  String get e7SetupScan;
-
-  /// Setup journey: last output.
-  ///
-  /// In en, this message translates to:
-  /// **'LAST OUTPUT'**
-  String get e7SetupLastOutput;
-
   /// Setup journey: down key.
   ///
   /// In en, this message translates to:
@@ -16256,12 +12270,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use accessible transcript and input'**
   String get e7SetupAccessibleTerminal;
-
-  /// Setup journey: update open code.
-  ///
-  /// In en, this message translates to:
-  /// **'Update OpenCode'**
-  String get e7SetupUpdateOpenCode;
 
   /// Setup journey: camera failed detail.
   ///
@@ -16292,12 +12300,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit'**
   String get e7SetupEdit;
-
-  /// Setup journey: update.
-  ///
-  /// In en, this message translates to:
-  /// **'Update'**
-  String get e7SetupUpdate;
 
   /// Setup journey: server password.
   ///
@@ -16383,12 +12385,6 @@ abstract class AppLocalizations {
   /// **'Terminal control keys. Swipe horizontally for more.'**
   String get e7SetupControlKeys;
 
-  /// Setup journey: setup failed.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup failed.'**
-  String get e7SetupSetupFailed;
-
   /// Setup journey: end input key.
   ///
   /// In en, this message translates to:
@@ -16467,12 +12463,6 @@ abstract class AppLocalizations {
   /// **'Install OpenCode as a background service'**
   String get e7SetupInstallService;
 
-  /// Setup journey: paused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get e7SetupPaused;
-
   /// Setup journey: save to finish.
   ///
   /// In en, this message translates to:
@@ -16509,12 +12499,6 @@ abstract class AppLocalizations {
   /// **'Add server'**
   String get e7SetupAddServer;
 
-  /// Setup journey: step todo.
-  ///
-  /// In en, this message translates to:
-  /// **'to do'**
-  String get e7SetupStepTodo;
-
   /// Setup journey: interactive terminal.
   ///
   /// In en, this message translates to:
@@ -16538,12 +12522,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server URL'**
   String get e7SetupServerUrl;
-
-  /// Setup journey: stop terminal.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop terminal?'**
-  String get e7SetupStopTerminal;
 
   /// Setup journey: usb access.
   ///
@@ -16611,12 +12589,6 @@ abstract class AppLocalizations {
   /// **'Camera access is turned off'**
   String get e7SetupCameraDisabled;
 
-  /// Setup journey: rename.
-  ///
-  /// In en, this message translates to:
-  /// **'Rename'**
-  String get e7SetupRename;
-
   /// Setup journey: paste pairing.
   ///
   /// In en, this message translates to:
@@ -16640,12 +12612,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Termux opened but the setup did not start. Retry once; if it happens again, copy the failure report.'**
   String get e7SetupSetupNotStarted;
-
-  /// Setup journey: connecting.
-  ///
-  /// In en, this message translates to:
-  /// **'Connecting'**
-  String get e7SetupConnecting;
 
   /// Setup journey: this device.
   ///
@@ -16773,12 +12739,6 @@ abstract class AppLocalizations {
   /// **'This terminal record will be removed.'**
   String get e7SetupRemoveTerminalDetail;
 
-  /// Setup journey: authentication.
-  ///
-  /// In en, this message translates to:
-  /// **'AUTHENTICATION'**
-  String get e7SetupAuthentication;
-
   /// Setup journey: input disconnected.
   ///
   /// In en, this message translates to:
@@ -16832,12 +12792,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This version of Termux is too old for the app to control it. Install the current F-Droid or GitHub build of Termux, then check again.'**
   String get e7SetupTermuxOutdated;
-
-  /// Setup journey: continue app.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue to app'**
-  String get e7SetupContinueApp;
 
   /// Setup journey: camera needed.
   ///
@@ -16893,12 +12847,6 @@ abstract class AppLocalizations {
   /// **'Saving…'**
   String get e7SetupSaving;
 
-  /// Setup journey: not yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Not yet'**
-  String get e7SetupNotYet;
-
   /// Setup journey: linux service.
   ///
   /// In en, this message translates to:
@@ -16923,41 +12871,17 @@ abstract class AppLocalizations {
   /// **'Lost track of the setup running in Termux'**
   String get e7SetupSetupLost;
 
-  /// Setup journey: verifying.
-  ///
-  /// In en, this message translates to:
-  /// **'Verifying...'**
-  String get e7SetupVerifying;
-
   /// Setup journey: report copied.
   ///
   /// In en, this message translates to:
   /// **'Failure report copied.'**
   String get e7SetupReportCopied;
 
-  /// Setup journey: preparing setup.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing setup'**
-  String get e7SetupPreparingSetup;
-
   /// Setup journey: app settings.
   ///
   /// In en, this message translates to:
   /// **'App settings'**
   String get e7SetupAppSettings;
-
-  /// Setup journey: unavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Unavailable'**
-  String get e7SetupUnavailable;
-
-  /// Setup journey: step done.
-  ///
-  /// In en, this message translates to:
-  /// **'done'**
-  String get e7SetupStepDone;
 
   /// Setup journey: no camera.
   ///
@@ -16970,12 +12894,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server is not connected.'**
   String get e7SetupServerDisconnected;
-
-  /// Setup journey: title.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get e7SetupTitle;
 
   /// Setup journey: empty password hint.
   ///
@@ -17049,12 +12967,6 @@ abstract class AppLocalizations {
   /// **'Could not check the installed environment.'**
   String get e7SetupCheckInstallFailed;
 
-  /// Setup journey: live output.
-  ///
-  /// In en, this message translates to:
-  /// **'LIVE OUTPUT'**
-  String get e7SetupLiveOutput;
-
   /// Setup journey: connection failed.
   ///
   /// In en, this message translates to:
@@ -17096,18 +13008,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No server there yet? The setup guide shows how to start one.'**
   String get e7SetupNoServerGuide;
-
-  /// Setup journey: exited.
-  ///
-  /// In en, this message translates to:
-  /// **'Exited'**
-  String get e7SetupExited;
-
-  /// Setup journey: download page.
-  ///
-  /// In en, this message translates to:
-  /// **'Download page'**
-  String get e7SetupDownloadPage;
 
   /// Setup journey: starting local.
   ///
@@ -17187,12 +13087,6 @@ abstract class AppLocalizations {
   /// **'Termux bridge verification failed.'**
   String get e7SetupVerifyTermuxFailed;
 
-  /// Setup journey: start connect.
-  ///
-  /// In en, this message translates to:
-  /// **'Start & connect'**
-  String get e7SetupStartConnect;
-
   /// Setup journey: ubuntu only.
   ///
   /// In en, this message translates to:
@@ -17241,18 +13135,6 @@ abstract class AppLocalizations {
   /// **'Send command to terminal'**
   String get e7SetupSendCommand;
 
-  /// Setup journey: step running.
-  ///
-  /// In en, this message translates to:
-  /// **'in progress'**
-  String get e7SetupStepRunning;
-
-  /// Setup journey: stopping.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopping...'**
-  String get e7SetupStopping;
-
   /// Setup journey: unsupported setup.
   ///
   /// In en, this message translates to:
@@ -17271,41 +13153,11 @@ abstract class AppLocalizations {
   /// **'Remove terminal?'**
   String get e7SetupRemoveTerminal;
 
-  /// Setup journey: step failed.
-  ///
-  /// In en, this message translates to:
-  /// **'failed'**
-  String get e7SetupStepFailed;
-
   /// Setup journey: terminal number.
   ///
   /// In en, this message translates to:
   /// **'Terminal {number}'**
   String e7SetupTerminalNumber(int number);
-
-  /// Setup journey: process running.
-  ///
-  /// In en, this message translates to:
-  /// **'{command} - PID {pid}'**
-  String e7SetupProcessRunning(String command, int pid);
-
-  /// Setup journey: process exited.
-  ///
-  /// In en, this message translates to:
-  /// **'{command} - exited {code}'**
-  String e7SetupProcessExited(String command, String code);
-
-  /// Setup journey: connected pid.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected - PID {pid}'**
-  String e7SetupConnectedPid(int pid);
-
-  /// Setup journey: terminal status.
-  ///
-  /// In en, this message translates to:
-  /// **'Terminal status: {status}'**
-  String e7SetupTerminalStatus(String status);
 
   /// Setup journey: copy command label.
   ///
@@ -17367,12 +13219,6 @@ abstract class AppLocalizations {
   /// **'Could not save or start the local setup: {detail}'**
   String e7SetupStartFailed(String detail);
 
-  /// Setup journey: installed version.
-  ///
-  /// In en, this message translates to:
-  /// **'Installed version: {version}.'**
-  String e7SetupInstalledVersion(String version);
-
   /// Setup journey: restart failed.
   ///
   /// In en, this message translates to:
@@ -17385,36 +13231,6 @@ abstract class AppLocalizations {
   /// **'Could not stop the local server: {detail}'**
   String e7SetupStopFailed(String detail);
 
-  /// Setup journey: stop disconnect failed.
-  ///
-  /// In en, this message translates to:
-  /// **'The server stopped, but the app could not disconnect: {detail}'**
-  String e7SetupStopDisconnectFailed(String detail);
-
-  /// Setup journey: version address.
-  ///
-  /// In en, this message translates to:
-  /// **'Version {version} · {address}'**
-  String e7SetupVersionAddress(String version, String address);
-
-  /// Setup journey: version.
-  ///
-  /// In en, this message translates to:
-  /// **'Version {version}'**
-  String e7SetupVersion(String version);
-
-  /// Setup journey: start installed detail.
-  ///
-  /// In en, this message translates to:
-  /// **'Start OpenCode {version} using the existing installation and connect to it. Only this app’s local server restarts; no packages are downloaded or updated.'**
-  String e7SetupStartInstalledDetail(String version);
-
-  /// Setup journey: found installed.
-  ///
-  /// In en, this message translates to:
-  /// **'Found OpenCode {version} in Ubuntu'**
-  String e7SetupFoundInstalled(String version);
-
   /// Setup journey: elapsed seconds.
   ///
   /// In en, this message translates to:
@@ -17426,12 +13242,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes}m {seconds}s elapsed'**
   String e7SetupElapsedMinutes(int minutes, int seconds);
-
-  /// Setup journey: step semantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Step {number} of 3, {state}. {title}'**
-  String e7SetupStepSemantics(int number, String state, String title);
 
   /// Setup journey: delete disclosure.
   ///
@@ -17564,12 +13374,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That pairing code contains an unusable server address.'**
   String get e7SetupPairAddressUnusable;
-
-  /// Setup journey: no answer.
-  ///
-  /// In en, this message translates to:
-  /// **'Did not answer.'**
-  String get e7SetupNoAnswer;
 
   /// Setup journey: invalid address.
   ///
@@ -18063,24 +13867,6 @@ abstract class AppLocalizations {
   /// **'What to check'**
   String get e7SetupWhatToCheck;
 
-  /// Setup journey: HideDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide details'**
-  String get e7SetupHideDetails;
-
-  /// Setup journey: Details.
-  ///
-  /// In en, this message translates to:
-  /// **'Details'**
-  String get e7SetupDetails;
-
-  /// Setup journey: ChangeServer.
-  ///
-  /// In en, this message translates to:
-  /// **'Change server'**
-  String get e7SetupChangeServer;
-
   /// Setup journey: UpdatePassword.
   ///
   /// In en, this message translates to:
@@ -18176,24 +13962,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Authentication failed'**
   String get e7SetupAuthenticationFailed;
-
-  /// Simplified on-device setup guidance.
-  ///
-  /// In en, this message translates to:
-  /// **'Install {runtime} ({version}) on this phone using Ubuntu. The app manages this installation and reuses existing Ubuntu files.'**
-  String e7SetupRuntimeInstallDetail(String runtime, String version);
-
-  /// Simplified on-device setup guidance.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace OpenCode {installedVersion} with {targetVersion} and restart this app’s local server. Existing Ubuntu files are kept.'**
-  String e7SetupReplaceDetail(String installedVersion, String targetVersion);
-
-  /// Simplified on-device setup guidance.
-  ///
-  /// In en, this message translates to:
-  /// **'The current installation could not be checked. Continuing may install or update OpenCode 1 on this phone. Existing Ubuntu files are kept. You can check again or connect by address instead.'**
-  String get e7SetupUncheckedDetail;
 
   /// Displayed when a server did not report its version.
   ///
@@ -19052,23 +14820,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}'**
   String e7ModelUiUnloadedProviders(int count, String providers);
 
-  /// Fallback product error when a platform exception carries no message.
-  ///
-  /// In en, this message translates to:
-  /// **'This device reported an error ({code}).'**
-  String e7SharedDeviceReportedError(String code);
-
   /// Generic connectivity failure line used for unknown errors.
   ///
   /// In en, this message translates to:
   /// **'OpenCode is unreachable. Try again.'**
   String get e7SharedOpenCodeUnreachableTryAgain;
-
-  /// Composer hint on OpenCode 1 while a run is active and text is typed: the send queues; steering is only available on OpenCode 2.
-  ///
-  /// In en, this message translates to:
-  /// **'Sends after this run finishes. Steering mid-run needs OpenCode 2.'**
-  String get chatUiQueueOnlySteeringNeedsOpenCode2;
 
   /// Session actions row that opens the per-session approval settings sheet
   ///
@@ -19081,12 +14837,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approvals for this conversation'**
   String get approvalsUiTitle;
-
-  /// Default approval choice: every permission request waits for the user
-  ///
-  /// In en, this message translates to:
-  /// **'Ask each time'**
-  String get approvalsUiAskTitle;
 
   /// Explanation under the Ask each time choice
   ///
@@ -19190,12 +14940,6 @@ abstract class AppLocalizations {
   /// **'Auto-approval paused'**
   String get approvalsUiIndicatorPaused;
 
-  /// Second line of the paused indicator
-  ///
-  /// In en, this message translates to:
-  /// **'Not connected'**
-  String get approvalsUiIndicatorPausedDetail;
-
   /// Heading of the list of permissions the app approved automatically in this session since connecting
   ///
   /// In en, this message translates to:
@@ -19244,18 +14988,6 @@ abstract class AppLocalizations {
   /// **'This conversation’s reference cannot be placed in a command safely.'**
   String get handoffUiUnavailableReference;
 
-  /// Sheet paragraph pointing at the existing export/import feature for cross-server moves
-  ///
-  /// In en, this message translates to:
-  /// **'Moving to a different server? Export this conversation as a file and import it there. That carries the transcript itself, not just a pointer to it.'**
-  String get handoffUiExportHint;
-
-  /// Button in the handoff sheet that opens the existing session export screen
-  ///
-  /// In en, this message translates to:
-  /// **'Export conversation'**
-  String get handoffUiExportAction;
-
   /// Session menu row and sheet title: show a QR code that opens this session in the app on another phone
   ///
   /// In en, this message translates to:
@@ -19285,12 +15017,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy link'**
   String get handoffUiPhoneCopyLink;
-
-  /// Snackbar after the session link was copied
-  ///
-  /// In en, this message translates to:
-  /// **'Link copied'**
-  String get handoffUiPhoneLinkCopied;
 
   /// QR sheet state when the session or server reference fails validation
   ///
@@ -19352,12 +15078,6 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get teamUiAddAddressLabel;
 
-  /// Label of the Gas City city field in the manual add form
-  ///
-  /// In en, this message translates to:
-  /// **'City (optional)'**
-  String get teamUiAddCityLabel;
-
   /// Action opening the manual add form for an AI Team host
   ///
   /// In en, this message translates to:
@@ -19393,18 +15113,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change'**
   String get teamUiChange;
-
-  /// Snackbar after a technical value was copied
-  ///
-  /// In en, this message translates to:
-  /// **'Copied'**
-  String get teamUiCopied;
-
-  /// Tooltip of the copy button next to a technical value
-  ///
-  /// In en, this message translates to:
-  /// **'Copy'**
-  String get teamUiCopy;
 
   /// Performance disclaimer for a team hosted on a computer
   ///
@@ -19562,12 +15270,6 @@ abstract class AppLocalizations {
   /// **'Connect to a server to use plugins.'**
   String get teamUiNoServer;
 
-  /// Subtitle of the Plugins entry in the Settings hub
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team · Gas City'**
-  String get teamUiPluginsHubSubtitle;
-
   /// Title of the Plugins settings page and its Settings hub entry
   ///
   /// In en, this message translates to:
@@ -19622,12 +15324,6 @@ abstract class AppLocalizations {
   /// **'On · connecting…'**
   String get teamUiRowConnecting;
 
-  /// AI Team row subtitle when the server host advertises a team that is not turned on yet
-  ///
-  /// In en, this message translates to:
-  /// **'Found on {server} · Gas City {version}'**
-  String teamUiRowFound(String server, String version);
-
   /// AI Team row subtitle when the configured host cannot be used
   ///
   /// In en, this message translates to:
@@ -19645,12 +15341,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off'**
   String get teamUiRowOff;
-
-  /// AI Team row subtitle when the plugin is off and discovery found nothing
-  ///
-  /// In en, this message translates to:
-  /// **'Off · Add manually'**
-  String get teamUiRowOffAddManually;
 
   /// AI Team row subtitle when the plugin is on and healthy
   ///
@@ -19808,18 +15498,6 @@ abstract class AppLocalizations {
     int stopped,
   );
 
-  /// Workspace AI Team card header: how many agents are working right now
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{No agents working} =1{1 agent working} other{{count} agents working}}'**
-  String teamUiCardAgentsWorking(int count);
-
-  /// Collapsed row on the Workspace AI Team card for runs that finished
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 completed run} other{{count} completed runs}}'**
-  String teamUiCardCompletedRuns(int count);
-
   /// Workspace AI Team card empty state, second line (Sprint A: no start-a-run on the phone)
   ///
   /// In en, this message translates to:
@@ -19886,58 +15564,11 @@ abstract class AppLocalizations {
   /// **'The team isn’t answering'**
   String get teamUiStateNotAnsweringTitle;
 
-  /// Workspace AI Team card header: the team host runs on the computer
-  ///
-  /// In en, this message translates to:
-  /// **'On the computer'**
-  String get teamUiCardHostComputer;
-
-  /// Workspace AI Team card header: the team host runs on this phone (Termux)
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get teamUiCardHostPhone;
-
   /// Workspace AI Team card loading state (skeleton) label
   ///
   /// In en, this message translates to:
   /// **'Connecting to the team host…'**
   String get teamUiCardLoading;
-
-  /// Workspace AI Team card: runs beyond the three shown, opens the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 more run} other{{count} more runs}}'**
-  String teamUiCardMoreRuns(int count);
-
-  /// Workspace AI Team card header pill: items waiting on the person
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 needs you} other{{count} need you}}'**
-  String teamUiCardNeedsYou(int count);
-
-  /// Workspace AI Team card primary action: opens the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get teamUiCardOpen;
-
-  /// Workspace AI Team card hero number: progress of the headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{percent}% done.'**
-  String teamUiCardPercentDone(int percent);
-
-  /// Accessibility label of the segmented progress bar on the Workspace AI Team card
-  ///
-  /// In en, this message translates to:
-  /// **'{done} done, {working} working, {blocked} blocked of {total}'**
-  String teamUiCardProgressSummary(
-    int done,
-    int working,
-    int blocked,
-    int total,
-  );
 
   /// Workspace AI Team card secondary action: refetch every scope from the host
   ///
@@ -20017,66 +15648,6 @@ abstract class AppLocalizations {
   /// **'Done · merged'**
   String get teamUiCardRunStateMerged;
 
-  /// Workspace AI Team card one-sentence status for a blocked headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is blocked.'**
-  String teamUiCardSentenceBlocked(String title);
-
-  /// Workspace AI Team card one-sentence status for a cancelled headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} was cancelled.'**
-  String teamUiCardSentenceCancelled(String title);
-
-  /// Workspace AI Team card one-sentence status for a completed headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is done.'**
-  String teamUiCardSentenceCompleted(String title);
-
-  /// Workspace AI Team card one-sentence status for a failed headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} failed.'**
-  String teamUiCardSentenceFailed(String title);
-
-  /// Workspace AI Team card one-sentence status when the headline run has an open gate
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is waiting for your decision.'**
-  String teamUiCardSentenceNeedsYou(String title);
-
-  /// Workspace AI Team card one-sentence status for a headline run still planning
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is being planned.'**
-  String teamUiCardSentencePlanning(String title);
-
-  /// Workspace AI Team card one-sentence status when the host reported an unrecognised run state
-  ///
-  /// In en, this message translates to:
-  /// **'{title} has no reported state.'**
-  String teamUiCardSentenceUnknown(String title);
-
-  /// Workspace AI Team card one-sentence status for a waiting headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is waiting for an agent.'**
-  String teamUiCardSentenceWaiting(String title);
-
-  /// Workspace AI Team card one-sentence status for a headline run whose open work is all in the merge agent's hands (TEAM-117)
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is waiting for the merge agent.'**
-  String teamUiCardSentenceWaitingMerge(String title);
-
-  /// Workspace AI Team card one-sentence status for a working headline run
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is being worked on.'**
-  String teamUiCardSentenceWorking(String title);
-
   /// Workspace AI Team card stale banner; time is HH:MM of the last successful refresh
   ///
   /// In en, this message translates to:
@@ -20143,30 +15714,6 @@ abstract class AppLocalizations {
   /// **'Agents appear here once the host starts them.'**
   String get teamUiHomeAgentsEmptyHint;
 
-  /// AI Team home host chip access word when the phone can answer gates
-  ///
-  /// In en, this message translates to:
-  /// **'controls'**
-  String get teamUiHomeChipControls;
-
-  /// AI Team home host chip access word when the phone can only watch
-  ///
-  /// In en, this message translates to:
-  /// **'read-only'**
-  String get teamUiHomeChipReadOnly;
-
-  /// AI Team home collapsed group of completed runs not all from today
-  ///
-  /// In en, this message translates to:
-  /// **'Completed ({count})'**
-  String teamUiHomeCompletedGroup(int count);
-
-  /// AI Team home collapsed group of runs completed today
-  ///
-  /// In en, this message translates to:
-  /// **'Completed today ({count})'**
-  String teamUiHomeCompletedToday(int count);
-
   /// AI Team home Runs filter chip: planning and working runs
   ///
   /// In en, this message translates to:
@@ -20202,12 +15749,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer this in the host on this phone. The app can only watch for now.'**
   String get teamUiHomeGateAnswerOnPhone;
-
-  /// AI Team home read-only gate sheet dismiss button
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get teamUiHomeGateClose;
 
   /// AI Team home Needs you kind label for a choice interaction
   ///
@@ -20281,29 +15822,11 @@ abstract class AppLocalizations {
   /// **'Raw values'**
   String get teamUiHomeHostRawHeading;
 
-  /// AI Team home Needs you segment empty title
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing needs you right now.'**
-  String get teamUiHomeNeedsYouEmpty;
-
-  /// AI Team home Needs you segment empty hint
-  ///
-  /// In en, this message translates to:
-  /// **'Decisions, failed runs and blocked agents show up here.'**
-  String get teamUiHomeNeedsYouEmptyHint;
-
   /// AI Team home run row marker when a gate waits on the person for this run
   ///
   /// In en, this message translates to:
   /// **'Needs you'**
   String get teamUiHomeRunNeedsYou;
-
-  /// AI Team home run row subtitle part for a finished run; when is a relative age such as '5h ago' or a date
-  ///
-  /// In en, this message translates to:
-  /// **'Finished {when}'**
-  String teamUiHomeRunFinished(String when);
 
   /// AI Team home run row progress from steps or work items
   ///
@@ -20323,35 +15846,11 @@ abstract class AppLocalizations {
   /// **'Try another filter or clear the search.'**
   String get teamUiHomeRunsEmptyHint;
 
-  /// AI Team home Runs search field clear button tooltip
-  ///
-  /// In en, this message translates to:
-  /// **'Clear search'**
-  String get teamUiHomeSearchClear;
-
   /// AI Team home Runs search field hint
   ///
   /// In en, this message translates to:
   /// **'Search tasks'**
   String get teamUiHomeSearchHint;
-
-  /// AI Team home segment label with the fleet size
-  ///
-  /// In en, this message translates to:
-  /// **'Agents ({count})'**
-  String teamUiHomeSegmentAgents(int count);
-
-  /// AI Team home segment label with the count of items waiting on the person
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you ({count})'**
-  String teamUiHomeSegmentNeedsYou(int count);
-
-  /// AI Team home segment label with the run count
-  ///
-  /// In en, this message translates to:
-  /// **'Runs ({count})'**
-  String teamUiHomeSegmentRuns(int count);
 
   /// AI Team home app bar title
   ///
@@ -20365,35 +15864,11 @@ abstract class AppLocalizations {
   /// **'Back'**
   String get teamUiRunBack;
 
-  /// Run detail Overview line for a convoy run instead of stages
-  ///
-  /// In en, this message translates to:
-  /// **'Batch of {total} · {done} done'**
-  String teamUiRunBatchOf(int total, int done);
-
   /// Run detail blocked cause derived from open dependencies
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{waiting on one other step} other{waiting on {count} other steps}}'**
   String teamUiRunBlockedByDeps(int count);
-
-  /// Run detail blocked line; title is the work item, cause is the server text
-  ///
-  /// In en, this message translates to:
-  /// **'{title}: {cause}'**
-  String teamUiRunBlockedCause(String title, String cause);
-
-  /// Run detail count chip of blocked work
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked {count}'**
-  String teamUiRunChipBlocked(int count);
-
-  /// Run detail count chip of work in progress
-  ///
-  /// In en, this message translates to:
-  /// **'Working {count}'**
-  String teamUiRunChipWorking(int count);
 
   /// Run detail elapsed time in days
   ///
@@ -20485,46 +15960,11 @@ abstract class AppLocalizations {
   /// **'This task is no longer on the host'**
   String get teamUiRunMissingTitle;
 
-  /// Run detail inline card label; name is the agent
-  ///
-  /// In en, this message translates to:
-  /// **'{name} needs you'**
-  String teamUiRunNeedsYouFrom(String name);
-
-  /// Run detail progress line when the host counted no work
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing counted yet'**
-  String get teamUiRunProgressNone;
-
-  /// Run detail progress bar accessibility label
-  ///
-  /// In en, this message translates to:
-  /// **'{done} done, {working} working, {blocked} blocked, of {total}'**
-  String teamUiRunProgressSemantics(
-    int done,
-    int working,
-    int blocked,
-    int total,
-  );
-
-  /// Run detail Overview heading over the stage list
-  ///
-  /// In en, this message translates to:
-  /// **'Stages'**
-  String get teamUiRunStagesHeading;
-
   /// Run detail tab
   ///
   /// In en, this message translates to:
   /// **'Agents'**
   String get teamUiRunTabAgents;
-
-  /// Run detail placeholder for the Work and Agents tabs
-  ///
-  /// In en, this message translates to:
-  /// **'Coming with the next update'**
-  String get teamUiRunTabComingSoon;
 
   /// Run detail app bar term for a batch run; convoy is the Gas City term
   ///
@@ -20592,18 +16032,6 @@ abstract class AppLocalizations {
   /// **'{title} updated'**
   String teamUiRunTimelineWorkUpdated(String title);
 
-  /// Agent detail Activity section empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'No activity captured yet'**
-  String get teamUiAgentActivityEmpty;
-
-  /// Agent detail Activity section empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Tool calls and commands appear here as the session\'s output arrives.'**
-  String get teamUiAgentActivityEmptyHint;
-
   /// Screen reader label of the context-use number
   ///
   /// In en, this message translates to:
@@ -20622,12 +16050,6 @@ abstract class AppLocalizations {
   /// **'Branch'**
   String get teamUiAgentLabelBranch;
 
-  /// Agent Runtime row label
-  ///
-  /// In en, this message translates to:
-  /// **'Context use'**
-  String get teamUiAgentLabelContext;
-
   /// Agent Identity row label: the coding harness the agent runs in (OpenCode)
   ///
   /// In en, this message translates to:
@@ -20640,12 +16062,6 @@ abstract class AppLocalizations {
   /// **'Model'**
   String get teamUiAgentLabelModel;
 
-  /// Agent Identity row label
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get teamUiAgentLabelName;
-
   /// Agent Technical details label (Gas City pack)
   ///
   /// In en, this message translates to:
@@ -20657,12 +16073,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pool'**
   String get teamUiAgentLabelPool;
-
-  /// Agent Identity row label
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get teamUiAgentLabelRole;
 
   /// Agent Runtime row label
   ///
@@ -20718,23 +16128,11 @@ abstract class AppLocalizations {
   /// **'Copy output'**
   String get teamUiAgentOutputCopy;
 
-  /// Live output body when the session has produced no text
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing yet'**
-  String get teamUiAgentOutputEmpty;
-
   /// Live output status line once the host stopped serving the session; cached text stays below
   ///
   /// In en, this message translates to:
   /// **'Session ended · output no longer on the host'**
   String get teamUiAgentOutputEnded;
-
-  /// Live output switch: keep the newest output in view
-  ///
-  /// In en, this message translates to:
-  /// **'Follow'**
-  String get teamUiAgentOutputFollow;
 
   /// Live output pill shown while not following; tapping resumes following
   ///
@@ -20766,101 +16164,11 @@ abstract class AppLocalizations {
   /// **'Recycling soon · context nearly full'**
   String get teamUiAgentRecyclingSoon;
 
-  /// Agent detail section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Activity'**
-  String get teamUiAgentSectionActivity;
-
-  /// Agent detail section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Current work'**
-  String get teamUiAgentSectionCurrentWork;
-
-  /// Agent detail section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Identity'**
-  String get teamUiAgentSectionIdentity;
-
-  /// Agent detail section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Output'**
-  String get teamUiAgentSectionOutput;
-
-  /// Agent detail section heading
-  ///
-  /// In en, this message translates to:
-  /// **'Runtime'**
-  String get teamUiAgentSectionRuntime;
-
   /// Agent header: how long the session has existed; age is a short span like "3 h 14 min"
   ///
   /// In en, this message translates to:
   /// **'Session {age}'**
   String teamUiAgentSessionAge(String age);
-
-  /// Step log: lines of a tool output not shown
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 more line} other{{count} more lines}}'**
-  String teamUiAgentStepMoreLines(int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{ran 1 command} other{ran {count} commands}}'**
-  String teamUiAgentStepsCommands(int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{edited 1 file} other{edited {count} files}}'**
-  String teamUiAgentStepsEdits(int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 other tool call} other{{count} other tool calls}}'**
-  String teamUiAgentStepsOther(int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{read 1 file} other{read {count} files}}'**
-  String teamUiAgentStepsReads(int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{searched once} other{searched {count} times}}'**
-  String teamUiAgentStepsSearches(int count);
-
-  /// Screen reader label of a collapsed step group
-  ///
-  /// In en, this message translates to:
-  /// **'{summary}, {count, plural, =1{1 step} other{{count} steps}}'**
-  String teamUiAgentStepsSemantics(String summary, int count);
-
-  /// Step log group summary segment
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{ran 1 test run} other{ran {count} test runs}}'**
-  String teamUiAgentStepsTests(int count);
-
-  /// Step log group header title
-  ///
-  /// In en, this message translates to:
-  /// **'Tools'**
-  String get teamUiAgentStepsTitle;
-
-  /// Agent app bar secondary line when the agent has no session
-  ///
-  /// In en, this message translates to:
-  /// **'Agent'**
-  String get teamUiAgentTermNoSession;
 
   /// Agent app bar secondary line carrying the Gas City term; id is the session id
   ///
@@ -20873,30 +16181,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not reported'**
   String get teamUiAgentValueUnknown;
-
-  /// Agent Current work dependency line when the item is blocked
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked'**
-  String get teamUiAgentWorkBlocked;
-
-  /// Agent Current work dependency line when the item is free to proceed
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing blocking it'**
-  String get teamUiAgentWorkUnblocked;
-
-  /// Tooltip of the graph button that brings the whole graph into view
-  ///
-  /// In en, this message translates to:
-  /// **'Fit'**
-  String get teamUiWorkGraphFit;
-
-  /// Screen reader label of one graph node: the work title and its state word
-  ///
-  /// In en, this message translates to:
-  /// **'{title}, {state}'**
-  String teamUiWorkGraphNodeSemantics(String title, String state);
 
   /// Work technical details label
   ///
@@ -20993,12 +16277,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Closed'**
   String get teamUiWorkSheetClosed;
-
-  /// Work sheet heading over the branch and worktree
-  ///
-  /// In en, this message translates to:
-  /// **'Code'**
-  String get teamUiWorkSheetCode;
 
   /// Work sheet timestamp label
   ///
@@ -21162,29 +16440,11 @@ abstract class AppLocalizations {
   /// **'Working'**
   String get teamUiWorkStateWorking;
 
-  /// Work sheet term row: the product word with its Gas City term and id
-  ///
-  /// In en, this message translates to:
-  /// **'Work · bead {id}'**
-  String teamUiWorkTerm(String id);
-
   /// A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)
   ///
   /// In en, this message translates to:
   /// **'{cost} est.'**
   String teamUiUsageCostEstimated(String cost);
-
-  /// Agent Runtime: under the tokens / context / cost line, says the figures are city-level estimates
-  ///
-  /// In en, this message translates to:
-  /// **'Tokens and cost are the whole team\'s today, estimated.'**
-  String get teamUiUsageRuntimeHint;
-
-  /// Agent Runtime row label of the usage line
-  ///
-  /// In en, this message translates to:
-  /// **'Tokens / context / cost'**
-  String get teamUiUsageRuntimeLabel;
 
   /// Compact token count ("12.4k tokens"); {count} is already formatted
   ///
@@ -21216,23 +16476,11 @@ abstract class AppLocalizations {
   /// **'Close this in the host on this phone. The app can only watch for now.'**
   String get teamUiGateCloseOnHostPhone;
 
-  /// Gate sheet heading: the gate bead's description
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get teamUiGateDescription;
-
   /// Gate sheet marker on a confirmation that would delete or overwrite something
   ///
   /// In en, this message translates to:
   /// **'Destructive'**
   String get teamUiGateDestructive;
-
-  /// Failed-run sheet heading
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended action'**
-  String get teamUiGateFailureAction;
 
   /// Failed-run sheet recommended action for an agent failure
   ///
@@ -21360,41 +16608,11 @@ abstract class AppLocalizations {
   /// **'What went wrong'**
   String get teamUiGateFailureClassification;
 
-  /// Failed-run sheet heading: the host's error text
-  ///
-  /// In en, this message translates to:
-  /// **'Error'**
-  String get teamUiGateFailureError;
-
   /// Failed-run sheet when the run has no last error
   ///
   /// In en, this message translates to:
   /// **'The host sent no error text.'**
   String get teamUiGateFailureErrorNone;
-
-  /// Failed-run sheet heading
-  ///
-  /// In en, this message translates to:
-  /// **'Recoverable'**
-  String get teamUiGateFailureRecoverable;
-
-  /// Failed-run sheet: a retry alone will not recover it
-  ///
-  /// In en, this message translates to:
-  /// **'No — something needs changing first'**
-  String get teamUiGateFailureRecoverableNo;
-
-  /// Failed-run sheet: cannot tell from the error text
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown'**
-  String get teamUiGateFailureRecoverableUnknown;
-
-  /// Failed-run sheet: a retry can recover it
-  ///
-  /// In en, this message translates to:
-  /// **'Yes — a retry from the host can recover it'**
-  String get teamUiGateFailureRecoverableYes;
 
   /// Gate sheet when the gate left the snapshot while the sheet was open
   ///
@@ -21455,24 +16673,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review this in the host on this phone. The app can only watch for now.'**
   String get teamUiGateReviewOnHostPhone;
-
-  /// Gate sheet term row: the product word with its Gas City term and id
-  ///
-  /// In en, this message translates to:
-  /// **'{kind} · bead {id}'**
-  String teamUiGateTermBead(String kind, String id);
-
-  /// Gate sheet term row: the product word with its Gas City term and request id
-  ///
-  /// In en, this message translates to:
-  /// **'{kind} · interaction {id}'**
-  String teamUiGateTermInteraction(String kind, String id);
-
-  /// Gate sheet term row: the product word with its Gas City term and run id
-  ///
-  /// In en, this message translates to:
-  /// **'{kind} · run {id}'**
-  String teamUiGateTermRun(String kind, String id);
 
   /// Gate sheet heading: the work items waiting on this gate bead
   ///
@@ -21576,34 +16776,16 @@ abstract class AppLocalizations {
   /// **'Type your answer'**
   String get teamUiGateAnswerHint;
 
-  /// Helper under the option list of a choice decision before anything is selected
-  ///
-  /// In en, this message translates to:
-  /// **'Choose one option, then send.'**
-  String get teamUiGateAnswerOptionsHint;
-
   /// Gate sheet (failed task): sends the stuck work to its agent again; names the work and the agent
   ///
   /// In en, this message translates to:
   /// **'Send {work} to {agent} again'**
   String teamUiGateAnswerRunRetry(String work, String agent);
 
-  /// Helper under the failed-run Retry action naming the work item and agent
+  /// Failed-run sheet action opening the agent's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Sends {work} to {agent} again.'**
-  String teamUiGateAnswerRunRetryDetail(String work, String agent);
-
-  /// Failed-run sheet action opening the agent screen where restart and reassign live
-  ///
-  /// In en, this message translates to:
-  /// **'Restart or reassign'**
-  String get teamUiGateAnswerRunAgent;
-
-  /// Failed-run sheet action opening the agent output page
-  ///
-  /// In en, this message translates to:
-  /// **'View logs'**
+  /// **'Watch the agent'**
   String get teamUiGateAnswerRunLogs;
 
   /// Failed-run sheet action cancelling the run; two-step in the error tone
@@ -21611,18 +16793,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop work'**
   String get teamUiGateAnswerRunCancel;
-
-  /// Receipt action on an unconfirmed answer: sends it again under a new key
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get teamUiGateAnswerRetry;
-
-  /// Receipt action on an answer the host refused
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get teamUiGateAnswerTryAgain;
 
   /// Receipt line when the host refused the answer, with its reason
   ///
@@ -21665,30 +16835,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The run stops and its open work stays as it is.'**
   String get teamUiGateAnswerConfirmCancelRunBody;
-
-  /// Two-step sheet dismiss label: nothing is sent
-  ///
-  /// In en, this message translates to:
-  /// **'Keep'**
-  String get teamUiGateAnswerConfirmKeep;
-
-  /// Notice while a notification or link waits for the plugin to load before the gate sheet opens
-  ///
-  /// In en, this message translates to:
-  /// **'Opening the decision once the AI Team connects…'**
-  String get teamUiGateAnswerNotificationOpening;
-
-  /// Notice when a run-completed notification names a run the snapshot no longer has
-  ///
-  /// In en, this message translates to:
-  /// **'This run is no longer on the host.'**
-  String get teamUiGateAnswerRunGone;
-
-  /// Title of the controls section at the end of the Agent detail (02-ux §5.2, §5.3)
-  ///
-  /// In en, this message translates to:
-  /// **'Controls'**
-  String get teamUiControlSectionTitle;
 
   /// Button: open the composer sheet to message the agent
   ///
@@ -21738,24 +16884,6 @@ abstract class AppLocalizations {
   /// **'Task sent to an agent'**
   String get teamUiControlCreateWork;
 
-  /// Title of the message sheet; {agent} is the agent name
-  ///
-  /// In en, this message translates to:
-  /// **'Message {agent}'**
-  String teamUiControlMessageTitle(String agent);
-
-  /// Hint in the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Tell the agent what to do next'**
-  String get teamUiControlMessageHint;
-
-  /// Send button of the message composer
-  ///
-  /// In en, this message translates to:
-  /// **'Send'**
-  String get teamUiControlMessageSend;
-
   /// Title of the two-step Stop confirmation; {agent} is the agent name
   ///
   /// In en, this message translates to:
@@ -21786,35 +16914,11 @@ abstract class AppLocalizations {
   /// **'Its session stops and starts again. The agent loses what it had in context and picks its work up from the host.'**
   String get teamUiControlRestartConfirmBody;
 
-  /// Confirming button of the Restart confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Restart agent'**
-  String get teamUiControlRestartConfirmAction;
-
   /// Back-out button of every two-step control confirmation; nothing is sent
   ///
   /// In en, this message translates to:
   /// **'Keep going'**
   String get teamUiControlKeep;
-
-  /// Title of the reassign picker; {agent} is the agent name
-  ///
-  /// In en, this message translates to:
-  /// **'Reassign work to {agent}'**
-  String teamUiControlReassignTitle(String agent);
-
-  /// Helper line of the reassign picker
-  ///
-  /// In en, this message translates to:
-  /// **'Ready work on this host. The item you pick moves onto this agent.'**
-  String get teamUiControlReassignHint;
-
-  /// Empty state of the reassign picker
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing is ready to assign.'**
-  String get teamUiControlReassignEmpty;
 
   /// Receipt chip: the control was sent, the host has not confirmed yet
   ///
@@ -21845,18 +16949,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{control} · {state}'**
   String teamUiControlReceiptLine(String control, String state);
-
-  /// Button on a refused or unconfirmed receipt chip: send again under a new key
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get teamUiControlReceiptRetry;
-
-  /// Tooltip of the run app bar's overflow menu
-  ///
-  /// In en, this message translates to:
-  /// **'More actions'**
-  String get teamUiControlMoreActions;
 
   /// Overflow item and control name: cancel a formula run (two-step)
   ///
@@ -21959,12 +17051,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mayor'**
   String get teamUiStartRunPlannerMayor;
-
-  /// Helper line under the planner row
-  ///
-  /// In en, this message translates to:
-  /// **'Set on the host; the phone shows it and does not choose it.'**
-  String get teamUiStartRunPlannerHint;
 
   /// Give the team a task: primary, names the planner it sends to
   ///
@@ -22080,10 +17166,10 @@ abstract class AppLocalizations {
   /// **'The host refused the objective: {reason}'**
   String teamUiStartRunRefused(String reason);
 
-  /// Button on the pending card opening the planner's live output page
+  /// Button on the pending card opening the planner's conversation (watching), or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Planner output'**
+  /// **'Watch the planner'**
   String get teamUiStartRunPlannerOutput;
 
   /// Button on the pending card hiding it for good
@@ -22176,18 +17262,6 @@ abstract class AppLocalizations {
   /// **'Approve request'**
   String get teamUiMergeApprove;
 
-  /// Title of the one-step Approve confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Approve this merge request?'**
-  String get teamUiMergeApproveTitle;
-
-  /// Body of the Approve confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Your approval is recorded on the host. Merging is a separate step.'**
-  String get teamUiMergeApproveMessage;
-
   /// Line under the buttons once the host recorded an approval
   ///
   /// In en, this message translates to:
@@ -22199,18 +17273,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Merge'**
   String get teamUiMergeMerge;
-
-  /// The Merge button once armed by the first tap (second step opens the confirmation)
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm merge'**
-  String get teamUiMergeConfirmStep;
-
-  /// Helper text while the Merge button is armed
-  ///
-  /// In en, this message translates to:
-  /// **'Tap again to continue'**
-  String get teamUiMergeArmedHint;
 
   /// Title of the Merge confirmation sheet, naming the target branch
   ///
@@ -22302,12 +17364,6 @@ abstract class AppLocalizations {
   /// **'Work items'**
   String get teamUiMergeChangesWork;
 
-  /// Per-file added and removed line counts in the Review changes sheet
-  ///
-  /// In en, this message translates to:
-  /// **'+{additions} / −{deletions}'**
-  String teamUiMergeChangeCounts(int additions, int deletions);
-
   /// Receipt state of an approval or merge in flight
   ///
   /// In en, this message translates to:
@@ -22355,24 +17411,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supervision {level}. Boundaries: {boundaries}'**
   String teamUiPolicySemantics(String level, String boundaries);
-
-  /// AI Team home Agents list: the collapsed group of agents switched off (suspended or stopped) on the host; count is how many
-  ///
-  /// In en, this message translates to:
-  /// **'Suspended on the host ({count})'**
-  String teamUiHomeSuspendedGroup(int count);
-
-  /// Agents segment label when some agents are switched off on the host: count is the live agents, off the suspended or stopped ones
-  ///
-  /// In en, this message translates to:
-  /// **'Agents ({count} · {off} off)'**
-  String teamUiHomeSegmentAgentsOff(int count, int off);
-
-  /// The host part of the AI Team home chip: the host's name or address from the team URL, then the kind of computer word (Desktop computer, Laptop, Windows (WSL), This phone)
-  ///
-  /// In en, this message translates to:
-  /// **'{host} · {kind}'**
-  String teamUiHomeHostChipHost(String host, String kind);
 
   /// Run Technical details: the host's own title of the run (a convoy's sling-<id> name) when the product shows the work's title instead
   ///
@@ -22434,12 +17472,6 @@ abstract class AppLocalizations {
   /// **'{step} · since {time}'**
   String teamUiCycleCurrent(String step, String time);
 
-  /// Dispatch cycle: under the current step, the HH:MM the wait began
-  ///
-  /// In en, this message translates to:
-  /// **'since {time}'**
-  String teamUiCycleSince(String time);
-
   /// Screen-reader label of the dispatch cycle strip: one-based position of the current step, the number of steps (6), the step word, the HH:MM the wait began
   ///
   /// In en, this message translates to:
@@ -22499,10 +17531,10 @@ abstract class AppLocalizations {
   /// **'How the host dispatches'**
   String get teamUiCycleActionHow;
 
-  /// Dispatch cycle action: opens the agent output screen for the agent on the item
+  /// Dispatch cycle action: opens the conversation (watching) of the agent on the item, or its live output when the conversation cannot be read
   ///
   /// In en, this message translates to:
-  /// **'Open agent output'**
+  /// **'Watch the agent'**
   String get teamUiCycleActionOpenOutput;
 
   /// Dispatch cycle action: nudges the rig's merge agent (Gas City refinery); refinery is the Gas City term
@@ -22733,24 +17765,6 @@ abstract class AppLocalizations {
   /// **'Nothing here'**
   String get termuxStorageNothingHere;
 
-  /// Storage category that cannot be cleaned
-  ///
-  /// In en, this message translates to:
-  /// **'Not removed from here'**
-  String get termuxStorageNotDeletable;
-
-  /// Button that cleans one category
-  ///
-  /// In en, this message translates to:
-  /// **'Clean'**
-  String get termuxStorageClean;
-
-  /// Accessibility label of the Clean button
-  ///
-  /// In en, this message translates to:
-  /// **'Clean {category}, {size}'**
-  String termuxStorageCleanSemantics(String category, String size);
-
   /// Two-step confirmation title for cleaning over a gigabyte
   ///
   /// In en, this message translates to:
@@ -22841,18 +17855,6 @@ abstract class AppLocalizations {
   /// **'{value} B'**
   String termuxStorageBytesB(String value);
 
-  /// Settings section label above the Storage and Running now rows
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get termuxStorageOnThisPhone;
-
-  /// Error when the scan status cannot be read
-  ///
-  /// In en, this message translates to:
-  /// **'Could not read the storage scan.'**
-  String get termuxStorageReadFailed;
-
   /// This phone › Running on this phone (P5.3): the processes tool's title and its row on This phone
   ///
   /// In en, this message translates to:
@@ -22865,53 +17867,11 @@ abstract class AppLocalizations {
   /// **'Checking…'**
   String get termuxProcsRowLoading;
 
-  /// Refresh action
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get termuxProcsRefresh;
-
   /// Line under the headline
   ///
   /// In en, this message translates to:
   /// **'Refreshes every 10 seconds while open'**
   String get termuxProcsAutoRefresh;
-
-  /// Under the OpenCode server group instead of a Stop all button
-  ///
-  /// In en, this message translates to:
-  /// **'Managed from On this phone'**
-  String get termuxProcsGroupOpenCodeHint;
-
-  /// Under the Orphans group heading
-  ///
-  /// In en, this message translates to:
-  /// **'Helpers whose parent is gone, or that keep burning CPU with nothing waiting on them. Stopping them is safe.'**
-  String get termuxProcsOrphansHint;
-
-  /// Button that stops every process in a group
-  ///
-  /// In en, this message translates to:
-  /// **'Stop all'**
-  String get termuxProcsStopGroup;
-
-  /// Two-step confirmation title for a group stop
-  ///
-  /// In en, this message translates to:
-  /// **'Stop every process in {group}?'**
-  String termuxProcsStopGroupTitle(String group);
-
-  /// Two-step confirmation body for a group stop
-  ///
-  /// In en, this message translates to:
-  /// **'{count} processes get a polite stop, then a forced one after 5 seconds.'**
-  String termuxProcsStopGroupBody(int count);
-
-  /// Two-step confirmation button for a group stop
-  ///
-  /// In en, this message translates to:
-  /// **'Stop {count}'**
-  String termuxProcsStopConfirm(int count);
 
   /// Accessibility label of a row's Stop button
   ///
@@ -22984,18 +17944,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing is running in the phone server'**
   String get termuxProcsEmpty;
-
-  /// Workspace line when an orphan has burned over ten minutes of CPU
-  ///
-  /// In en, this message translates to:
-  /// **'Something is still running on this phone'**
-  String get termuxProcsAttentionLine;
-
-  /// Workspace line detail
-  ///
-  /// In en, this message translates to:
-  /// **'{name} has used {cpu} of CPU with nothing waiting on it'**
-  String termuxProcsAttentionDetail(String name, String cpu);
 
   /// Process detail sheet: command label
   ///
@@ -23255,18 +18203,6 @@ abstract class AppLocalizations {
   /// **'gc {gc} · bd {bd} · dolt {dolt}'**
   String teamUiPhoneVersions(String gc, String bd, String dolt);
 
-  /// On this phone: start action
-  ///
-  /// In en, this message translates to:
-  /// **'Start'**
-  String get teamUiPhoneStart;
-
-  /// On this phone: stop action
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get teamUiPhoneStop;
-
   /// On this phone: stop confirmation title
   ///
   /// In en, this message translates to:
@@ -23278,12 +18214,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Running agents stop where they are. Nothing is lost; runs resume when you start it again.'**
   String get teamUiPhoneStopBody;
-
-  /// On this phone: stop confirmation action
-  ///
-  /// In en, this message translates to:
-  /// **'Stop team'**
-  String get teamUiPhoneStopConfirm;
 
   /// On this phone: killed by Android line (03-onboarding §5)
   ///
@@ -23333,41 +18263,11 @@ abstract class AppLocalizations {
   /// **'Copy commands'**
   String get teamUiPhoneTipsCopy;
 
-  /// Keep it running sheet: copied confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Commands copied'**
-  String get teamUiPhoneTipsCopied;
-
-  /// On this phone: remove action
-  ///
-  /// In en, this message translates to:
-  /// **'Delete from this phone'**
-  String get teamUiPhoneRemove;
-
   /// On this phone: remove confirmation title
   ///
   /// In en, this message translates to:
   /// **'Delete AI Team from this phone?'**
   String get teamUiPhoneRemoveTitle;
-
-  /// On this phone: remove confirmation body
-  ///
-  /// In en, this message translates to:
-  /// **'Stops the supervisor and deletes gc, the city and its store. Your project files and their git history stay. The plugin is turned off for this server.'**
-  String get teamUiPhoneRemoveBody;
-
-  /// On this phone: remove confirmation action
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get teamUiPhoneRemoveConfirm;
-
-  /// On this phone: removed confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team was deleted from this phone.'**
-  String get teamUiPhoneRemoved;
 
   /// On this phone: a verb failed
   ///
@@ -23386,12 +18286,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.'**
   String teamUiPhoneFailedNoSpace(String detail);
-
-  /// No description provided for @calmCodeOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'Code options'**
-  String get calmCodeOptions;
 
   /// No description provided for @phoneServerConnect.
   ///
@@ -23417,47 +18311,11 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get phoneServerStop;
 
-  /// No description provided for @phoneServerConnected.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected to the server on this phone'**
-  String get phoneServerConnected;
-
-  /// No description provided for @phoneServerStopped.
-  ///
-  /// In en, this message translates to:
-  /// **'Server on this phone is stopped'**
-  String get phoneServerStopped;
-
-  /// No description provided for @phoneServerStarting.
-  ///
-  /// In en, this message translates to:
-  /// **'Starting the server on this phone…'**
-  String get phoneServerStarting;
-
-  /// No description provided for @phoneServerRestarting.
-  ///
-  /// In en, this message translates to:
-  /// **'Restarting the server on this phone…'**
-  String get phoneServerRestarting;
-
-  /// No description provided for @phoneServerStopping.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopping the server on this phone…'**
-  String get phoneServerStopping;
-
   /// No description provided for @phoneServerMore.
   ///
   /// In en, this message translates to:
   /// **'More server actions'**
   String get phoneServerMore;
-
-  /// No description provided for @phoneServerManage.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage setup'**
-  String get phoneServerManage;
 
   /// No description provided for @phoneServerForget.
   ///
@@ -23482,24 +18340,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server could not be stopped. Try again.'**
   String get phoneServerStopFailed;
-
-  /// No description provided for @termuxRunningDetected.
-  ///
-  /// In en, this message translates to:
-  /// **'Server found on this phone'**
-  String get termuxRunningDetected;
-
-  /// No description provided for @termuxRunningConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to running server'**
-  String get termuxRunningConnect;
-
-  /// No description provided for @termuxRunningDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Server details'**
-  String get termuxRunningDetails;
 
   /// No description provided for @termuxRunningPermission.
   ///
@@ -23591,41 +18431,17 @@ abstract class AppLocalizations {
   /// **'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.'**
   String get safetyStopOrphanBody;
 
-  /// Settings hub group header: the server connection.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection'**
-  String get settingsHubGroupConnection;
-
-  /// Settings hub group header: defaults for new conversations.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation defaults'**
-  String get settingsHubGroupConversation;
-
   /// Settings hub group header.
   ///
   /// In en, this message translates to:
   /// **'Notifications'**
   String get settingsHubGroupNotifications;
 
-  /// Settings hub group header: models, providers, MCP, plugins.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent setup'**
-  String get settingsHubGroupAgentSetup;
-
   /// Settings hub group header and title of the combined usage screen.
   ///
   /// In en, this message translates to:
   /// **'Usage'**
   String get settingsHubGroupUsage;
-
-  /// Settings hub group header.
-  ///
-  /// In en, this message translates to:
-  /// **'Privacy'**
-  String get settingsHubGroupPrivacy;
 
   /// Settings hub group header.
   ///
@@ -23639,23 +18455,11 @@ abstract class AppLocalizations {
   /// **'This server'**
   String get settingsHubThisServer;
 
-  /// Subtitle of the This server row: server name and its health line.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} · {status}'**
-  String settingsHubThisServerStatus(String name, String status);
-
   /// Settings hub row: the agent account on the connected server.
   ///
   /// In en, this message translates to:
   /// **'Accounts'**
   String get settingsHubAccounts;
-
-  /// Subtitle of the Accounts row.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign-in used by the agent on this server'**
-  String get settingsHubAccountsSubtitle;
 
   /// Settings hub row: default model and agent mode for new conversations.
   ///
@@ -23663,35 +18467,17 @@ abstract class AppLocalizations {
   /// **'Model and mode'**
   String get settingsHubModelAndMode;
 
-  /// Subtitle of the Transcript display row.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasoning, timestamps and usage'**
-  String get settingsHubTranscriptSubtitle;
-
   /// Settings hub row: on-device voice input models.
   ///
   /// In en, this message translates to:
   /// **'Voice'**
   String get settingsHubVoice;
 
-  /// Subtitle of the Voice row.
-  ///
-  /// In en, this message translates to:
-  /// **'Speech models stored on this phone'**
-  String get settingsHubVoiceSubtitle;
-
   /// Settings hub row and screen title: read-state sync and unsent work held on this device.
   ///
   /// In en, this message translates to:
   /// **'Privacy and data'**
   String get settingsHubPrivacyRow;
-
-  /// Shown when the settings search has no matching rows.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing matches “{query}”.'**
-  String settingsHubNoResults(String query);
 
   /// Search aliases for the This server row; preserve English terms to allow either language.
   ///
@@ -23908,12 +18694,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Android is not letting OpenCode notify you, so finished runs, approvals and quota alerts cannot arrive until this is fixed.'**
   String get notifyBlockedMessage;
-
-  /// Action on the blocked-notifications notice: opens this app's Android notification settings.
-  ///
-  /// In en, this message translates to:
-  /// **'Open Android settings'**
-  String get notifyOpenAndroidSettings;
 
   /// Row on the Notifications screen: posts one real notification to prove whether Android is letting this app notify.
   ///
@@ -24304,24 +19084,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.'**
   String capabilityScreenIntro(String server);
-
-  /// No description provided for @capabilityGroupAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Available here'**
-  String get capabilityGroupAvailable;
-
-  /// No description provided for @capabilityGroupUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Not available on this server'**
-  String get capabilityGroupUnavailable;
-
-  /// No description provided for @capabilityGroupDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'Not available on this device'**
-  String get capabilityGroupDevice;
 
   /// No description provided for @capabilityAllAvailable.
   ///
@@ -25121,42 +19883,6 @@ abstract class AppLocalizations {
   /// **'Could not connect to Claude Code on this phone. {detail}'**
   String localAgentConnectFailed(String detail);
 
-  /// Servers card: the daemon is installed and not running.
-  ///
-  /// In en, this message translates to:
-  /// **'Claude Code on this phone is stopped'**
-  String get localAgentCardStopped;
-
-  /// Servers card: this app is connected through the daemon.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected to Claude Code on this phone'**
-  String get localAgentCardConnected;
-
-  /// Servers card: start in progress.
-  ///
-  /// In en, this message translates to:
-  /// **'Starting Claude Code…'**
-  String get localAgentCardStarting;
-
-  /// Servers card: restart in progress.
-  ///
-  /// In en, this message translates to:
-  /// **'Restarting Claude Code…'**
-  String get localAgentCardRestarting;
-
-  /// Servers card: stop in progress.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopping Claude Code…'**
-  String get localAgentCardStopping;
-
-  /// Servers card: what runtime this card is.
-  ///
-  /// In en, this message translates to:
-  /// **'Claude Code through Paseo'**
-  String get localAgentCardSubtitle;
-
   /// Servers card: a control failed.
   ///
   /// In en, this message translates to:
@@ -25217,12 +19943,6 @@ abstract class AppLocalizations {
   /// **'More Claude Code actions'**
   String get localAgentMore;
 
-  /// On this phone setup, runtime choice: what picking Claude Code does.
-  ///
-  /// In en, this message translates to:
-  /// **'Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.'**
-  String get localAgentRuntimeChoiceDetail;
-
   /// No description provided for @firstRunAgentsSideBySide.
   ///
   /// In en, this message translates to:
@@ -25247,23 +19967,11 @@ abstract class AppLocalizations {
   /// **'Dangerous. Every conversation on this server, new ones and subagents included, is approved automatically while this app is connected. A conversation set to “Ask each time” still asks.'**
   String get approvalsUiEverythingDetail;
 
-  /// Title of the confirmation before turning on Approve everything
-  ///
-  /// In en, this message translates to:
-  /// **'Approve everything?'**
-  String get approvalsUiEverythingConfirmTitle;
-
   /// Body of the confirmation before turning on Approve everything
   ///
   /// In en, this message translates to:
   /// **'Agents on this server will run commands and change files without asking you, in every conversation. Turn this on only for a server and projects you can afford to break.'**
   String get approvalsUiEverythingConfirmBody;
-
-  /// Confirm button that turns on Approve everything
-  ///
-  /// In en, this message translates to:
-  /// **'Approve everything'**
-  String get approvalsUiEverythingConfirmAction;
 
   /// Note shown when a conversation approves automatically because of the server-wide switch
   ///
@@ -25463,12 +20171,6 @@ abstract class AppLocalizations {
   /// **'{name} attached as text · {sheets, plural, =1{1 sheet} other{{sheets} sheets}}, {rows, plural, =1{1 row} other{{rows} rows}}'**
   String chatAttachmentSheetAttached(String name, int sheets, int rows);
 
-  /// Work tab section listing conversations in projects other than the current one
-  ///
-  /// In en, this message translates to:
-  /// **'In other projects'**
-  String get otherProjectsTitle;
-
   /// Menu item on a recent-project chip; the project itself is not deleted
   ///
   /// In en, this message translates to:
@@ -25480,12 +20182,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled conversation'**
   String get otherProjectsUntitled;
-
-  /// Marks a project or a conversation in another project that is stopped on a permission or a question
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get otherProjectsNeedsYou;
 
   /// Menu item: reinstall Paseo and Claude Code at their current versions, keeping sign-in
   ///
@@ -25559,12 +20255,6 @@ abstract class AppLocalizations {
   /// **'The phone restarted, so the local server stopped. Start it again when you need it.'**
   String get setupStoppedByRestart;
 
-  /// No description provided for @chatUiTipLongPressForActions.
-  ///
-  /// In en, this message translates to:
-  /// **'long-press a message for its actions'**
-  String get chatUiTipLongPressForActions;
-
   /// Title when the app-managed phone server is not running
   ///
   /// In en, this message translates to:
@@ -25583,29 +20273,11 @@ abstract class AppLocalizations {
   /// **'Start and connect'**
   String get phoneServerStartAndConnect;
 
-  /// Folded section on the On this phone screen for switching between OpenCode 1 and 2
-  ///
-  /// In en, this message translates to:
-  /// **'Other OpenCode versions'**
-  String get setupOtherVersions;
-
-  /// No description provided for @settingsHubThisApp.
-  ///
-  /// In en, this message translates to:
-  /// **'This app'**
-  String get settingsHubThisApp;
-
   /// Work tab section naming other saved servers (e.g. Claude Code on this phone) that are working or waiting for the person
   ///
   /// In en, this message translates to:
   /// **'On your other servers'**
   String get otherServersTitle;
-
-  /// Status of another server that has an approval or question waiting
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get otherServerNeedsYou;
 
   /// How many conversations are running on another server
   ///
@@ -25745,47 +20417,11 @@ abstract class AppLocalizations {
   /// **'Stop setup'**
   String get setupProgressViewCancel;
 
-  /// Expands the live setup log
-  ///
-  /// In en, this message translates to:
-  /// **'Show details'**
-  String get setupProgressViewShowDetails;
-
-  /// Collapses the live setup log
-  ///
-  /// In en, this message translates to:
-  /// **'Hide details'**
-  String get setupProgressViewHideDetails;
-
   /// Shown in the setup details when the log is still empty
   ///
   /// In en, this message translates to:
   /// **'Nothing logged yet.'**
   String get setupProgressViewNoLog;
-
-  /// Accessibility state of a finished setup component
-  ///
-  /// In en, this message translates to:
-  /// **'installed'**
-  String get setupProgressViewStateDone;
-
-  /// Accessibility state of the setup component being installed
-  ///
-  /// In en, this message translates to:
-  /// **'in progress'**
-  String get setupProgressViewStateRunning;
-
-  /// Accessibility state of a setup component not started yet
-  ///
-  /// In en, this message translates to:
-  /// **'waiting'**
-  String get setupProgressViewStatePending;
-
-  /// Accessibility state of a setup component that failed
-  ///
-  /// In en, this message translates to:
-  /// **'failed'**
-  String get setupProgressViewStateFailed;
 
   /// Title of the screen showing phone setup in progress
   ///
@@ -25823,161 +20459,11 @@ abstract class AppLocalizations {
   /// **'Keep going'**
   String get phoneSetupProgressKeepGoing;
 
-  /// Title of the built-in (no Termux) server screen
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode inside the app'**
-  String get builtinServerTitle;
-
-  /// Entry point to the built-in server setup
-  ///
-  /// In en, this message translates to:
-  /// **'Run OpenCode inside the app — no Termux'**
-  String get builtinServerEntryTitle;
-
-  /// Subtitle of the built-in server entry point
-  ///
-  /// In en, this message translates to:
-  /// **'Experimental. The app downloads Ubuntu into its own storage and runs OpenCode there. Nothing else to install.'**
-  String get builtinServerEntryDetail;
-
-  /// Badge marking the built-in server as experimental
-  ///
-  /// In en, this message translates to:
-  /// **'Experimental'**
-  String get builtinServerExperimental;
-
-  /// OpenCode inside the app: the one intro line
-  ///
-  /// In en, this message translates to:
-  /// **'The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.'**
-  String get builtinServerIntro;
-
-  /// Shown when the built-in server screen is opened off Android
-  ///
-  /// In en, this message translates to:
-  /// **'The built-in server runs on Android only.'**
-  String get builtinServerAndroidOnly;
-
-  /// OpenCode inside the app: title of the Ubuntu step
-  ///
-  /// In en, this message translates to:
-  /// **'Ubuntu'**
-  String get builtinServerStepUbuntu;
-
-  /// Step 2 title
-  ///
-  /// In en, this message translates to:
-  /// **'Install OpenCode'**
-  String get builtinServerStepOpenCode;
-
-  /// Step 3 title
-  ///
-  /// In en, this message translates to:
-  /// **'Start the server'**
-  String get builtinServerStepStart;
-
-  /// OpenCode inside the app: title of the last step (connect to the server)
-  ///
-  /// In en, this message translates to:
-  /// **'Use it'**
-  String get builtinServerStepConnect;
-
-  /// Screen reader label of one setup step
-  ///
-  /// In en, this message translates to:
-  /// **'Step {number} of 4, {state}. {title}'**
-  String builtinServerStepSemantics(int number, String state, String title);
-
-  /// Explains the Ubuntu download
-  ///
-  /// In en, this message translates to:
-  /// **'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.'**
-  String get builtinServerUbuntuHint;
-
-  /// OpenCode inside the app: downloads Ubuntu, with its size
-  ///
-  /// In en, this message translates to:
-  /// **'Download Ubuntu (30 MB)'**
-  String get builtinServerUbuntuAction;
-
-  /// Progress while Ubuntu installs
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading and unpacking Ubuntu…'**
-  String get builtinServerUbuntuWorking;
-
-  /// Ubuntu step done
-  ///
-  /// In en, this message translates to:
-  /// **'Ubuntu is ready.'**
-  String get builtinServerUbuntuDone;
-
-  /// Ubuntu install failed with a reason
-  ///
-  /// In en, this message translates to:
-  /// **'Ubuntu did not install: {reason}'**
-  String builtinServerUbuntuFailed(String reason);
-
-  /// Explains the OpenCode install
-  ///
-  /// In en, this message translates to:
-  /// **'Takes a few minutes and needs internet: Node.js, Git and OpenCode {version} are downloaded into Ubuntu.'**
-  String builtinServerOpenCodeHint(String version);
-
-  /// Button starting the OpenCode install
-  ///
-  /// In en, this message translates to:
-  /// **'Install OpenCode'**
-  String get builtinServerOpenCodeAction;
-
-  /// Progress while OpenCode installs
-  ///
-  /// In en, this message translates to:
-  /// **'Installing OpenCode. This takes a few minutes; keep the app open.'**
-  String get builtinServerOpenCodeWorking;
-
-  /// OpenCode step done
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode {version} is installed.'**
-  String builtinServerOpenCodeInstalled(String version);
-
-  /// OpenCode install failed
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode did not install (exit code {code}). The end of its output is below.'**
-  String builtinServerOpenCodeFailed(int code);
-
   /// Label above the OpenCode 1 / OpenCode 2 choice
   ///
   /// In en, this message translates to:
   /// **'Which OpenCode'**
   String get builtinServerChooseRuntime;
-
-  /// OpenCode inside the app: starts the server (also at the end of the server log)
-  ///
-  /// In en, this message translates to:
-  /// **'Start the server'**
-  String get builtinServerStartAction;
-
-  /// OpenCode inside the app: stops the server
-  ///
-  /// In en, this message translates to:
-  /// **'Stop the server'**
-  String get builtinServerStopAction;
-
-  /// Progress while the server starts
-  ///
-  /// In en, this message translates to:
-  /// **'Starting OpenCode and waiting for it to answer…'**
-  String get builtinServerStarting;
-
-  /// Server is running
-  ///
-  /// In en, this message translates to:
-  /// **'Running on this phone at 127.0.0.1:{port}.'**
-  String builtinServerRunning(int port);
 
   /// Server is not running
   ///
@@ -26002,30 +20488,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'no answer within {seconds} seconds'**
   String builtinServerTimedOut(int seconds);
-
-  /// OpenCode inside the app: connects the app to the server inside it
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to this phone'**
-  String get builtinServerConnectAction;
-
-  /// Explains the connect step
-  ///
-  /// In en, this message translates to:
-  /// **'Saves this server as \"{name}\" and opens it.'**
-  String builtinServerConnectHint(String name);
-
-  /// Progress while connecting
-  ///
-  /// In en, this message translates to:
-  /// **'Connecting…'**
-  String get builtinServerConnecting;
-
-  /// Connect step done
-  ///
-  /// In en, this message translates to:
-  /// **'Connected.'**
-  String get builtinServerConnected;
 
   /// Connect failed
   ///
@@ -26189,65 +20651,17 @@ abstract class AppLocalizations {
   /// **'OpenCode is installed, but the app could not start it here.'**
   String get phoneSetupErrorCannotStart;
 
-  /// Storage used by the built-in Ubuntu
-  ///
-  /// In en, this message translates to:
-  /// **'Using {size} of storage'**
-  String builtinServerBytesUsed(String size);
-
-  /// OpenCode inside the app: opens the server log
-  ///
-  /// In en, this message translates to:
-  /// **'Show server log'**
-  String get builtinServerShowLog;
-
   /// Title of the server log sheet
   ///
   /// In en, this message translates to:
   /// **'Server log'**
   String get builtinServerLogTitle;
 
-  /// Server log has no lines
-  ///
-  /// In en, this message translates to:
-  /// **'The log is empty.'**
-  String get builtinServerLogEmpty;
-
-  /// Button removing the built-in Ubuntu
-  ///
-  /// In en, this message translates to:
-  /// **'Remove Ubuntu'**
-  String get builtinServerRemove;
-
-  /// Remove confirmation title
-  ///
-  /// In en, this message translates to:
-  /// **'Remove the built-in Ubuntu?'**
-  String get builtinServerRemoveTitle;
-
   /// Remove confirmation body
   ///
   /// In en, this message translates to:
   /// **'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.'**
   String get builtinServerRemoveBody;
-
-  /// Shown after removal
-  ///
-  /// In en, this message translates to:
-  /// **'Ubuntu was removed.'**
-  String get builtinServerRemoved;
-
-  /// Retry button
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get builtinServerRetry;
-
-  /// Status read failed
-  ///
-  /// In en, this message translates to:
-  /// **'Could not read the built-in Linux status: {reason}'**
-  String builtinServerStatusFailed(String reason);
 
   /// Screen C heading once phone setup finished
   ///
@@ -26273,29 +20687,11 @@ abstract class AppLocalizations {
   /// **'Letters, numbers, - _ .'**
   String get phoneSetupReadyNameHelp;
 
-  /// Creates the first project and opens a new conversation in it
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get phoneSetupReadyCreate;
-
   /// Spoken label of the progress shown while the first project is made
   ///
   /// In en, this message translates to:
   /// **'Creating the project'**
   String get phoneSetupReadyCreating;
-
-  /// Word before the link to open an existing folder
-  ///
-  /// In en, this message translates to:
-  /// **'or'**
-  String get phoneSetupReadyOr;
-
-  /// Link on screen C that opens the in-app folder sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Open an existing folder'**
-  String get phoneSetupReadyOpenExisting;
 
   /// Screen C's one primary button: makes the named project and opens its first conversation
   ///
@@ -26399,24 +20795,6 @@ abstract class AppLocalizations {
   /// **'OpenCode {version}'**
   String phoneServerCardVersion(String version);
 
-  /// Starts the server on this phone
-  ///
-  /// In en, this message translates to:
-  /// **'Start'**
-  String get phoneServerCardStart;
-
-  /// Stops the server on this phone
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get phoneServerCardStop;
-
-  /// Connects to the server on this phone
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get phoneServerCardOpen;
-
   /// Opens phone setup when OpenCode is not installed
   ///
   /// In en, this message translates to:
@@ -26434,12 +20812,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue setup'**
   String get phoneServerCardContinueSetup;
-
-  /// Opens the server log
-  ///
-  /// In en, this message translates to:
-  /// **'Show log'**
-  String get phoneServerCardShowLog;
 
   /// Title of the server log sheet
   ///
@@ -26500,18 +20872,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.'**
   String get phoneServerCardRemoveBodyUnmeasured;
-
-  /// Confirms removing OpenCode from the phone
-  ///
-  /// In en, this message translates to:
-  /// **'Remove'**
-  String get phoneServerCardRemoveConfirm;
-
-  /// Shown after OpenCode was removed from the phone
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode was removed from this phone.'**
-  String get phoneServerCardRemoved;
 
   /// A phone card action failed
   ///
@@ -26584,18 +20944,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open a project'**
   String get projectFolderInAppTitle;
-
-  /// Shown when the in-app Ubuntu has no project folders
-  ///
-  /// In en, this message translates to:
-  /// **'No projects yet. Name one below to create it.'**
-  String get projectFolderInAppEmpty;
-
-  /// Shown when listing in-app project folders failed
-  ///
-  /// In en, this message translates to:
-  /// **'The projects could not be listed: {reason}'**
-  String projectFolderInAppListFailed(String reason);
 
   /// Heading of the new-project name field
   ///
@@ -26765,12 +21113,6 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get folderBrowserRetry;
 
-  /// Button that opens the steps for running OpenCode inside the app
-  ///
-  /// In en, this message translates to:
-  /// **'Set it up'**
-  String get builtinServerEntryAction;
-
   /// App bar title of the phone setup start screen
   ///
   /// In en, this message translates to:
@@ -26854,12 +21196,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Termux instead'**
   String get phoneSetupStartUseTermux;
-
-  /// Muted tag next to the Termux option
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced'**
-  String get phoneSetupStartAdvanced;
 
   /// Opens the form for connecting to an agent running elsewhere
   ///
@@ -27227,12 +21563,6 @@ abstract class AppLocalizations {
   /// **'Copy timing report'**
   String get perfTraceCopy;
 
-  /// Empties the performance trace
-  ///
-  /// In en, this message translates to:
-  /// **'Clear'**
-  String get perfTraceClear;
-
   /// Snackbar after copying the performance report
   ///
   /// In en, this message translates to:
@@ -27563,12 +21893,6 @@ abstract class AppLocalizations {
   /// **'Your conversations are kept. This can take a minute.'**
   String get connectStartingBody;
 
-  /// Label of the About screen loading bar while its documents load
-  ///
-  /// In en, this message translates to:
-  /// **'Loading the notices…'**
-  String get settingsAboutLoading;
-
   /// Title of the About screen state when its documents could not be read
   ///
   /// In en, this message translates to:
@@ -27658,24 +21982,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancelled {when}'**
   String teamUiTaskCancelledAgo(String when);
-
-  /// Section heading of the open tasks on the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'Tasks'**
-  String get teamUiHomeTasksHeading;
-
-  /// Section heading of the tasks finished today on the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'Done today'**
-  String get teamUiHomeDoneToday;
-
-  /// Section heading of finished tasks on the AI Team home when some finished before today
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get teamUiHomeDoneEarlier;
 
   /// Row under the first three finished tasks that shows the rest
   ///
@@ -27803,12 +22109,6 @@ abstract class AppLocalizations {
   /// **'Usage'**
   String get teamUiRunDetailsUsage;
 
-  /// Label of how long the task has run, under the Details row
-  ///
-  /// In en, this message translates to:
-  /// **'Time'**
-  String get teamUiRunDetailsElapsed;
-
   /// Leads the supporting line of the server row the app is connected to (the current-server mark)
   ///
   /// In en, this message translates to:
@@ -27844,42 +22144,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Details'**
   String get phoneServerRowDetails;
-
-  /// Title of the running OpenCode server on the On this phone page
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode on this phone'**
-  String get termuxPhoneTitle;
-
-  /// One status line under the title, e.g. 'Running · OpenCode 2 · version 2.0.10'
-  ///
-  /// In en, this message translates to:
-  /// **'{state} · {detail}'**
-  String termuxPhoneStatus(String state, String detail);
-
-  /// Which OpenCode and its version, e.g. 'OpenCode 2 · version 2.0.10'
-  ///
-  /// In en, this message translates to:
-  /// **'{runtime} · version {version}'**
-  String termuxPhoneRuntimeVersion(String runtime, String version);
-
-  /// Title of the On this phone page when the installed server is not running
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode is stopped'**
-  String get termuxPhoneStoppedTitle;
-
-  /// Title of the On this phone page when setup failed or a version switch is half done
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode needs attention'**
-  String get termuxPhoneAttentionTitle;
-
-  /// Section of rarer settings on the On this phone page
-  ///
-  /// In en, this message translates to:
-  /// **'Options'**
-  String get termuxPhoneOptions;
 
   /// Supporting line of the Claude Code row on the On this phone page
   ///
@@ -27983,24 +22247,6 @@ abstract class AppLocalizations {
   /// **'New shell'**
   String get localTerminalNewShell;
 
-  /// Menu item that pastes the clipboard into the shell
-  ///
-  /// In en, this message translates to:
-  /// **'Paste'**
-  String get localTerminalPaste;
-
-  /// Top bar action that copies the selected terminal text
-  ///
-  /// In en, this message translates to:
-  /// **'Copy'**
-  String get localTerminalCopy;
-
-  /// Tooltip of the terminal's overflow menu
-  ///
-  /// In en, this message translates to:
-  /// **'Shells and more'**
-  String get localTerminalMenu;
-
   /// Menu item that stops the current shell
   ///
   /// In en, this message translates to:
@@ -28012,12 +22258,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close this shell'**
   String get localTerminalCloseShell;
-
-  /// Confirmation title before stopping a shell
-  ///
-  /// In en, this message translates to:
-  /// **'Stop this shell?'**
-  String get localTerminalStopTitle;
 
   /// Confirmation body before stopping a shell
   ///
@@ -28048,12 +22288,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The terminal runs in the Linux that phone setup installs.'**
   String get localTerminalNotSetUpBody;
-
-  /// Button that opens phone setup
-  ///
-  /// In en, this message translates to:
-  /// **'Set up'**
-  String get localTerminalSetUp;
 
   /// State title after the shell exits
   ///
@@ -28121,18 +22355,6 @@ abstract class AppLocalizations {
   /// **'Alt'**
   String get localTerminalKeyAlt;
 
-  /// Accessibility label of the Home key
-  ///
-  /// In en, this message translates to:
-  /// **'Home'**
-  String get localTerminalKeyHome;
-
-  /// Accessibility label of the End key
-  ///
-  /// In en, this message translates to:
-  /// **'End'**
-  String get localTerminalKeyEnd;
-
   /// Accessibility label of the Page up key
   ///
   /// In en, this message translates to:
@@ -28144,12 +22366,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page down'**
   String get localTerminalKeyPageDown;
-
-  /// Menu item that opens a shell in this phone's Linux
-  ///
-  /// In en, this message translates to:
-  /// **'Terminal'**
-  String get phoneServerCardTerminal;
 
   /// Accessibility label of the local terminal's screen
   ///
@@ -28403,18 +22619,6 @@ abstract class AppLocalizations {
   /// **'Give a bigger job to a team'**
   String get teamDiscoverEntryTitle;
 
-  /// Work tab: the AI Team entry's supporting line while it is off
-  ///
-  /// In en, this message translates to:
-  /// **'Agents plan it, work on it, check it and merge it. You step in when they ask.'**
-  String get teamDiscoverEntryBody;
-
-  /// Work tab: the folded AI Team row's supporting line, after the person has seen the entry
-  ///
-  /// In en, this message translates to:
-  /// **'Off · A team of agents for bigger jobs'**
-  String get teamDiscoverRowLine;
-
   /// AI Team intro: what the team does, in one or two sentences
   ///
   /// In en, this message translates to:
@@ -28571,12 +22775,6 @@ abstract class AppLocalizations {
   /// **'It is ready to turn on.'**
   String get teamDiscoverFoundBody;
 
-  /// AI Team intro: the primary action that goes to the set-up for this kind of server
-  ///
-  /// In en, this message translates to:
-  /// **'Set it up'**
-  String get teamDiscoverSetUp;
-
   /// AI Team intro, a computer: the secondary action that adds the team by its address
   ///
   /// In en, this message translates to:
@@ -28636,12 +22834,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'a worker starts at the team\'s next check'**
   String get teamNowNextCheck;
-
-  /// AI Team: how long a task has waited for a worker; {age} is like '6 min'
-  ///
-  /// In en, this message translates to:
-  /// **'waiting {age}'**
-  String teamNowWaitingAge(String age);
 
   /// AI Team: a task has waited longer than the team's checks allow and no worker started
   ///
@@ -28751,12 +22943,6 @@ abstract class AppLocalizations {
   /// **'Team'**
   String get teamNewModeTeam;
 
-  /// Work tab: what the Solo · Team choice is about, for screen readers
-  ///
-  /// In en, this message translates to:
-  /// **'New conversation with'**
-  String get teamNewModeLabel;
-
   /// Work tab: the primary button while Team is chosen
   ///
   /// In en, this message translates to:
@@ -28781,41 +22967,17 @@ abstract class AppLocalizations {
   /// **'This conversation fills in as the agent works.'**
   String get chatWatchEmptyBody;
 
-  /// Chat status line in watching mode: the agent's name, its role in plain words (Worker, Reviewer), and that it belongs to the AI Team
+  /// Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)
   ///
   /// In en, this message translates to:
-  /// **'Watching {name} · {role} · AI Team'**
-  String teamWatchBanner(String name, String role);
+  /// **'Watching {name} · {role} · {state}'**
+  String teamWatchBanner(String name, String role, String state);
 
-  /// Chat status line in watching mode when the agent has no name of its own: its role in plain words
+  /// Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it
   ///
   /// In en, this message translates to:
-  /// **'Watching the {role} · AI Team'**
-  String teamWatchBannerRole(String role);
-
-  /// Where the chat composer was, in watching mode: why there is no text field
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re watching. Your message goes to it through the AI Team, never into this conversation.'**
-  String get teamWatchNote;
-
-  /// Where the chat composer was, in watching mode, when the team takes no messages from the phone
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re watching. This team can\'t be messaged from here.'**
-  String get teamWatchNoteNoMessage;
-
-  /// Watching mode: the one action in place of the composer, for a worker
-  ///
-  /// In en, this message translates to:
-  /// **'Message the worker'**
-  String get teamWatchMessageWorker;
-
-  /// Watching mode: the one action in place of the composer, for an agent that is not a worker (reviewer, planner)
-  ///
-  /// In en, this message translates to:
-  /// **'Message this agent'**
-  String get teamWatchMessageAgent;
+  /// **'Watching the {role} · {state}'**
+  String teamWatchBannerRole(String role, String state);
 
   /// Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder
   ///
@@ -29069,30 +23231,6 @@ abstract class AppLocalizations {
   /// **'Waiting for review · {elapsed}'**
   String teamChatNowReview(String elapsed);
 
-  /// Team conversation family strip, screen reader: an agent is running
-  ///
-  /// In en, this message translates to:
-  /// **'running'**
-  String get teamChatFamilyRunning;
-
-  /// Team conversation family strip, screen reader: an agent is waiting
-  ///
-  /// In en, this message translates to:
-  /// **'waiting'**
-  String get teamChatFamilyWaiting;
-
-  /// Team conversation family strip, screen reader: an agent is done
-  ///
-  /// In en, this message translates to:
-  /// **'done'**
-  String get teamChatFamilyDone;
-
-  /// Team conversation family strip, screen reader: an agent failed
-  ///
-  /// In en, this message translates to:
-  /// **'failed'**
-  String get teamChatFamilyFailed;
-
   /// Team conversation: the folded steps line
   ///
   /// In en, this message translates to:
@@ -29135,18 +23273,6 @@ abstract class AppLocalizations {
   /// **'Board'**
   String get teamBoardOpenTooltip;
 
-  /// AI Team page: row that opens the board
-  ///
-  /// In en, this message translates to:
-  /// **'View board'**
-  String get teamBoardViewRow;
-
-  /// AI Team page: the board row's supporting line
-  ///
-  /// In en, this message translates to:
-  /// **'Every task by where it stands'**
-  String get teamBoardViewRowSupporting;
-
   /// Board column: tasks nobody has been given yet
   ///
   /// In en, this message translates to:
@@ -29176,18 +23302,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get teamBoardColumnDone;
-
-  /// Board: screen reader label of a column tab
-  ///
-  /// In en, this message translates to:
-  /// **'{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}'**
-  String teamBoardColumnSemantics(String column, int count);
-
-  /// Board: added to a column tab's label when a card in it needs the person
-  ///
-  /// In en, this message translates to:
-  /// **'something here needs you'**
-  String get teamBoardColumnNeedsYouSemantics;
 
   /// Board: empty Backlog column title
   ///
@@ -29536,12 +23650,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose project'**
   String get teamBoardProjectTooltip;
-
-  /// Board: screen reader hint on a card that has moves
-  ///
-  /// In en, this message translates to:
-  /// **'long press for moves'**
-  String get teamBoardCardHint;
 
   /// After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'
   ///
@@ -30113,12 +24221,6 @@ abstract class AppLocalizations {
   /// **'final ready = true;'**
   String get kitThemePreviewCode;
 
-  /// KitThemePreview: the whole picture's semantic label, filled in by the host with the theme's name
-  ///
-  /// In en, this message translates to:
-  /// **'Preview of {theme}'**
-  String kitThemePreviewLabel(String theme);
-
   /// Spoken name of the terminal key bar's / key
   ///
   /// In en, this message translates to:
@@ -30197,23 +24299,11 @@ abstract class AppLocalizations {
   /// **'Close explanation'**
   String get kitTermClose;
 
-  /// KitField secret kind: the reveal button while the value is masked; the field's label follows it in the tooltip and semantic name (see kitFieldShowNamed)
-  ///
-  /// In en, this message translates to:
-  /// **'Show'**
-  String get kitFieldShow;
-
   /// KitField secret kind: tooltip and semantic name of the reveal button while masked, e.g. 'Show API key'
   ///
   /// In en, this message translates to:
   /// **'Show {label}'**
   String kitFieldShowNamed(String label);
-
-  /// KitField secret kind: the reveal button while the value is shown (see kitFieldHideNamed)
-  ///
-  /// In en, this message translates to:
-  /// **'Hide'**
-  String get kitFieldHide;
 
   /// KitField secret kind: tooltip and semantic name of the reveal button while the value is shown, e.g. 'Hide API key'
   ///
@@ -30688,12 +24778,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recommended'**
   String get kitChoiceRecommended;
-
-  /// Kit choice list: the row under the options that opens a free answer field
-  ///
-  /// In en, this message translates to:
-  /// **'Something else'**
-  String get kitChoiceOther;
 
   /// Kit choice list: the button that sends the typed free answer
   ///
@@ -31564,12 +25648,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading {column}'**
   String kitBoardLaneLoading(String column);
-
-  /// KitMarkdown: the screen-reader hint on a link in an agent's reply
-  ///
-  /// In en, this message translates to:
-  /// **'Open link'**
-  String get kitMarkdownOpenLink;
 
   /// KitMarkdown: the screen-reader hint on a file path in an agent's reply that the server confirmed it can open
   ///
@@ -32531,12 +26609,6 @@ abstract class AppLocalizations {
   /// **'Open servers'**
   String get searchClaudeCodeGateServers;
 
-  /// Inbox: the section of conversations that finished while the person was away (completion digests)
-  ///
-  /// In en, this message translates to:
-  /// **'Finished while you were away'**
-  String get activityFinishedAway;
-
   /// Inbox: the undo message after hiding one finished conversation's digest
   ///
   /// In en, this message translates to:
@@ -32662,12 +26734,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{server} has no project tools.'**
   String homeShellProjectUnavailableShort(String server);
-
-  /// Work: the Archived conversations row opens All conversations, where archived ones are a filter
-  ///
-  /// In en, this message translates to:
-  /// **'In All conversations'**
-  String get workspaceArchivedInAll;
 
   /// Work on a wide window: title of the empty detail pane beside the list
   ///
@@ -33323,12 +27389,6 @@ abstract class AppLocalizations {
   /// **'Send answers'**
   String get kitRequestSendAnswers;
 
-  /// Servers: section label above the rows that add a server another way (OpenCode 2, this phone, more setup options).
-  ///
-  /// In en, this message translates to:
-  /// **'Other ways to connect'**
-  String get serversOtherWays;
-
   /// Servers › Remove server sheet: what removing a saved server deletes on this device, in one sentence.
   ///
   /// In en, this message translates to:
@@ -33453,23 +27513,11 @@ abstract class AppLocalizations {
   /// **'Copy update commands for {server}'**
   String serverSettingsCopyUpdateCommands(String server);
 
-  /// Server settings authentication row: where the password is set
-  ///
-  /// In en, this message translates to:
-  /// **'Add or change it in Servers'**
-  String get serverSettingsPasswordInServers;
-
   /// Server settings Details: the server address label
   ///
   /// In en, this message translates to:
   /// **'Address'**
   String get serverSettingsAddressLabel;
-
-  /// Server settings Details: the running OpenCode version label
-  ///
-  /// In en, this message translates to:
-  /// **'Running version'**
-  String get serverSettingsRunningVersionLabel;
 
   /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
   ///
@@ -33716,12 +27764,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reply actions'**
   String get kitTurnActions;
-
-  /// Work tab: the one header over this project's conversations, ordered with those that need you first, then running, then the rest newest first
-  ///
-  /// In en, this message translates to:
-  /// **'Conversations'**
-  String get workspaceConversations;
 
   /// Server settings: the destructive last row that disconnects the app from this server; opens a confirmation first
   ///
@@ -34071,18 +28113,6 @@ abstract class AppLocalizations {
   /// **'Cloud environment ID'**
   String get importEnvironmentId;
 
-  /// Built-in server, step 2: why the OpenCode 1 / OpenCode 2 choice is off while a step runs or the server is running.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop the server and wait for the current step to switch.'**
-  String get builtinServerRuntimeLocked;
-
-  /// Built-in server log sheet: the log could not be read; the raw reason is under Details.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t read the server log.'**
-  String get builtinServerLogReadFailed;
-
   /// Phone setup screen A, Other ways, when OpenCode is ready in the app and also set up in Termux: connect to the Termux one instead.
   ///
   /// In en, this message translates to:
@@ -34112,12 +28142,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Required'**
   String get phoneSetupCustomizeIncluded;
-
-  /// Running now: loading label while the process list is read
-  ///
-  /// In en, this message translates to:
-  /// **'Reading what runs on this phone'**
-  String get termuxProcsLoading;
 
   /// Running now: title when the process list could not be read
   ///
@@ -34383,12 +28407,6 @@ abstract class AppLocalizations {
   /// **'Disconnect from {server}'**
   String phoneServerCardDisconnect(String server);
 
-  /// This phone card primary action: connects to the running phone server
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to {server}'**
-  String phoneServerCardConnect(String server);
-
   /// This phone card: starts the stopped OpenCode server inside the app
   ///
   /// In en, this message translates to:
@@ -34491,29 +28509,11 @@ abstract class AppLocalizations {
   /// **'Couldn\'t finish that'**
   String get productStatesActionFailedTitle;
 
-  /// Shared product states: default title of a page that failed to load
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t load this'**
-  String get productStatesErrorTitle;
-
-  /// Shared product states: title of a page that failed to load because the server could not be reached
-  ///
-  /// In en, this message translates to:
-  /// **'Can\'t reach the server'**
-  String get productStatesNetworkErrorTitle;
-
   /// Shared product states: action on a network error that opens the server list
   ///
   /// In en, this message translates to:
   /// **'Switch server'**
   String get productStatesSwitchServer;
-
-  /// Shared product states: spoken hint on a dimmed settings row naming the server generation the feature needs
-  ///
-  /// In en, this message translates to:
-  /// **'Needs an OpenCode {generation} server'**
-  String productStatesRequiresServer(int generation);
 
   /// External link gate: title of the alert shown when a link was refused
   ///
@@ -34580,12 +28580,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t run /{command}'**
   String runCommandFailedTitle(String command);
-
-  /// Why an agent's message field is turned off (shared-team-1).
-  ///
-  /// In en, this message translates to:
-  /// **'The team can\'t take words from this phone right now.'**
-  String get teamControlsFieldUnavailable;
 
   /// Shown when the team host refused to wake an agent without a reason (shared-team-1).
   ///
@@ -34731,12 +28725,6 @@ abstract class AppLocalizations {
   /// **'This phone can\'t pause, stop or message {agent} on this host yet. Run the team\'s host front on the computer to control it from here.'**
   String teamAgentScreenControlsElsewhere(String agent);
 
-  /// Message-an-agent sheet: the field's label.
-  ///
-  /// In en, this message translates to:
-  /// **'Your message'**
-  String get teamAgentScreenMessageLabel;
-
   /// Gate sheet: notice on a destructive confirmation.
   ///
   /// In en, this message translates to:
@@ -34820,12 +28808,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agent id'**
   String get teamAgentScreenLabelId;
-
-  /// Message-an-agent sheet: why Send is off while the field is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'Type a message first'**
-  String get teamAgentScreenMessageFirst;
 
   /// Gate sheet free-text question: why Send is off while the field is empty.
   ///
@@ -35102,42 +29084,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kept if you close this, until you add it.'**
   String get reviewWorkspaceCommentHelper;
-
-  /// Models page (catalog): top bar title. Agents live under the picker's Options.
-  ///
-  /// In en, this message translates to:
-  /// **'Models'**
-  String get catalogScreenTitle;
-
-  /// Models page: the loading bar's accessible label while the catalog loads.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading models'**
-  String get catalogScreenLoading;
-
-  /// Models page: notice while the server is unreachable and no catalog has loaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Can\'t reach the server right now. Models appear once it answers.'**
-  String get catalogScreenOffline;
-
-  /// Models page: notice while the server is unreachable; the shown list is the last one received.
-  ///
-  /// In en, this message translates to:
-  /// **'Can\'t reach the server right now. This is the list it last sent.'**
-  String get catalogScreenOfflineStale;
-
-  /// Models page: body under 'No models yet'.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect a provider to choose a model.'**
-  String get catalogScreenNoProviderBody;
-
-  /// Models page: the no-models state's primary; opens the Providers page.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect a provider'**
-  String get catalogScreenConnectProvider;
 
   /// Integrations page in MCP mode: top bar title.
   ///
@@ -35877,18 +29823,6 @@ abstract class AppLocalizations {
   /// **'Clear timings'**
   String get perfTraceClearTimings;
 
-  /// screen-system-1: App diagnostics secondary: copies the redacted error report.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy errors'**
-  String get appDiagnosticsCopyErrors;
-
-  /// screen-system-1: App diagnostics tertiary (destructive, confirmed): clears the captured errors.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear errors'**
-  String get appDiagnosticsClearErrors;
-
   /// screen-system-1: Confirmation title before clearing the captured errors.
   ///
   /// In en, this message translates to:
@@ -36033,12 +29967,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t check for updates. Check your connection and try again.'**
   String get aboutUpdateFailed;
 
-  /// screen-system-1: About: opens the prefilled GitHub bug form.
-  ///
-  /// In en, this message translates to:
-  /// **'Report a bug on GitHub'**
-  String get aboutReportBugOnGithub;
-
   /// screen-system-1: About › Open source: row that opens every bundled package license.
   ///
   /// In en, this message translates to:
@@ -36068,12 +29996,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collector route'**
   String get providerQuotaRouteLabel;
-
-  /// Remaining usage: why a window's alert threshold cannot be changed while the shown reading is out of date.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh remaining usage to change this threshold.'**
-  String get providerQuotaThresholdStale;
 
   /// Usage screen, when neither Spent nor Remaining applies to the current connection: the state's title.
   ///
@@ -36699,12 +30621,6 @@ abstract class AppLocalizations {
   /// **'active context'**
   String get activeContextWhat;
 
-  /// Active context: count line above the rows when nothing is filtered.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 message} other{{count} messages}}'**
-  String activeContextTotal(int count);
-
   /// Active context: accessible name of a row menu.
   ///
   /// In en, this message translates to:
@@ -36986,12 +30902,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A public address, with an optional excerpt'**
   String get webSourcesPasteDetail;
-
-  /// Add web source: label above the added sources.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{Added to prompt · 1 of 10} other{Added to prompt · {count} of 10}}'**
-  String webSourcesAddedCount(int count);
 
   /// Add web source: removes an added source.
   ///
@@ -38022,7 +31932,7 @@ abstract class AppLocalizations {
   /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
   ///
   /// In en, this message translates to:
-  /// **'The team didn\'t take this task'**
+  /// **'Task not taken'**
   String get teamChatRefusedTitle;
 
   /// Team conversation: button on the refused-task notice that sends the same task to the team again.
@@ -38034,7 +31944,7 @@ abstract class AppLocalizations {
   /// Team conversation: page state when the task this page shows is no longer listed by the team.
   ///
   /// In en, this message translates to:
-  /// **'This task is no longer on the team'**
+  /// **'Task no longer listed'**
   String get teamChatGoneTitle;
 
   /// Team conversation: body under the removed-task title.
@@ -38066,12 +31976,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reconnect to {server}'**
   String connectionReconnectTo(String server);
-
-  /// Work project sheet: start a task on a separate Git worktree of the named project.
-  ///
-  /// In en, this message translates to:
-  /// **'New task in a fresh worktree of {project}'**
-  String workspaceIsolatedTaskRow(String project);
 
   /// Work project sheet: what the fresh-worktree task does.
   ///
@@ -38174,12 +32078,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import a conversation'**
   String get libraryImportAConversation;
-
-  /// Models page: title of the one state shown when no provider is signed in.
-  ///
-  /// In en, this message translates to:
-  /// **'No models yet'**
-  String get catalogScreenNoProviderTitle;
 
   /// Run results: step count in the facts line under the outcome ('2 steps · 5 min · gpt-5').
   ///
@@ -38646,7 +32544,7 @@ abstract class AppLocalizations {
   /// Permission request sheet: the risky switch that saves an always-allow rule.
   ///
   /// In en, this message translates to:
-  /// **'Always allow requests like this'**
+  /// **'Always allow these requests'**
   String get chatRequestAlwaysTitle;
 
   /// Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.
@@ -40449,12 +34347,6 @@ abstract class AppLocalizations {
   /// **'Error details'**
   String get productErrorDetailsLabel;
 
-  /// Error words: the server refused a request (400/422) and gave a short reason for people.
-  ///
-  /// In en, this message translates to:
-  /// **'The server didn\'t accept it: {reason}'**
-  String productErrorRejectedBecause(String reason);
-
   /// Error words: the server answered a 5xx status such as 502 or 503.
   ///
   /// In en, this message translates to:
@@ -41538,7 +35430,7 @@ abstract class AppLocalizations {
   /// Report a problem: the attached problem's title for a stalled team task
   ///
   /// In en, this message translates to:
-  /// **'Task made no progress'**
+  /// **'No progress for {elapsed}'**
   String teamChatNoProgressReportTitle(String elapsed);
 
   /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
@@ -41612,6 +35504,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review the staged revert before sending this queued prompt.'**
   String get productErrorStagedRevert;
+
+  /// Composer hint while watching an AI Team agent's conversation: the words go to the agent through the AI Team. name is the agent's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'Message {name}…'**
+  String teamWatchComposerHint(String name);
+
+  /// Composer hint while watching an AI Team worker that has no name of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the worker…'**
+  String get teamWatchComposerHintWorker;
+
+  /// Composer hint while watching an AI Team agent (not a worker) that has no name of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Message this agent…'**
+  String get teamWatchComposerHintAgent;
+
+  /// Top bar action while watching an AI Team agent's conversation: opens the agent's own page (its state, controls and technical details). name is the agent's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'About {name}'**
+  String teamWatchAbout(String name);
+
+  /// Top bar action while watching an AI Team agent with no name of its own: opens its own page. role is its role in plain words (Worker).
+  ///
+  /// In en, this message translates to:
+  /// **'About the {role}'**
+  String teamWatchAboutRole(String role);
+
+  /// Removing a server stopped because its queued prompts could not be inspected. The server and source data remain available; technical information is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'The queued prompts for {name} cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.'**
+  String serversRemoveQueuedUnreadable(String name);
+
+  /// No description provided for @bootstrapStartFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Start fresh'**
+  String get bootstrapStartFresh;
+
+  /// No description provided for @bootstrapStartFreshTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins?'**
+  String get bootstrapStartFreshTitle;
+
+  /// No description provided for @bootstrapStartFreshBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes saved passwords and connection tokens from this phone and clears the selected server. Your saved servers, queued prompts and drafts are kept.'**
+  String get bootstrapStartFreshBody;
+
+  /// No description provided for @bootstrapStartFreshConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sign-ins'**
+  String get bootstrapStartFreshConfirm;
+
+  /// No description provided for @bootstrapResettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing saved sign-ins…'**
+  String get bootstrapResettingTitle;
+
+  /// No description provided for @bootstrapResettingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the app open while this finishes.'**
+  String get bootstrapResettingBody;
+
+  /// No description provided for @bootstrapResetFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in reset failed'**
+  String get bootstrapResetFailedTitle;
+
+  /// No description provided for @bootstrapResetFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some saved sign-ins could not be removed. Try again.'**
+  String get bootstrapResetFailedBody;
 }
 
 class _AppLocalizationsDelegate

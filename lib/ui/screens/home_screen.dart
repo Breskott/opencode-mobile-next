@@ -8,6 +8,7 @@ import '../../api/sse.dart';
 import '../../builtin/builtin_server.dart'
     show builtinLinuxProvider, builtinServerStarterProvider;
 import '../../domain/server_gateway.dart' show ServerCapabilities;
+import '../../domain/connection_status.dart';
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
@@ -29,12 +30,9 @@ import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../kit/motion/kit_tab_switcher.dart';
 import '../navigation/chat_route.dart';
-import '../widgets/app_exit_notice.dart';
-import '../widgets/connection_status_banner.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
-import '../widgets/thermal_notice.dart';
 import 'activity_screen.dart';
 import 'servers_screen.dart' show ServersRouteRequest;
 import 'project_hub_screen.dart';
@@ -380,7 +378,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final selected = destinations.indexWhere((entry) => entry.id == activeTab);
 
     final perform = AppShortcutScope.performOf(context);
-    final (statusWord, statusTone) = _serverStatus(conn.status, l10n);
+    final (statusWord, statusTone) = _serverStatus(
+      conn.connectionStatus.phase,
+      l10n,
+    );
     final controls = KitShellControls(
       server: _serverName(conn),
       serverStatus: statusWord,
@@ -414,23 +415,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               message: l10n.e7WorkspaceBackExit,
             ),
       header: [
-        // Work says it itself, in its one status line and only once
-        // reconnecting has taken a while (work-tab cleanup item 3); a
-        // rejected password keeps the banner and its fix. It unfolds and
-        // folds (§10) rather than pushing the tab down in one frame.
-        KitReveal(
-          child:
-              conn.status != StreamStatus.connected &&
-                  (activeTab != _workTab || conn.passwordRejected)
-              ? ConnectionStatusBanner(controller: conn)
-              : null,
-        ),
-        // Once after Android closed the app while the phone's OpenCode ran
-        // in it (force stop, memory): what stopped and that it is coming
-        // back.
-        const AppExitNoticeLine(),
-        // The phone is hot: the AI Team paused, then resumed.
-        const ThermalNoticeLine(),
         KitReveal(
           child: _projectWentAway && !hasProjectTools
               ? KitRowGroup(
@@ -470,19 +454,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// The status word beside the server name, always visible (STATE-9), and
   /// its tone.
   static (String, AppStatusTone) _serverStatus(
-    StreamStatus status,
+    ConnectionStatusPhase status,
     AppLocalizations l10n,
   ) => switch (status) {
-    StreamStatus.connected => (l10n.e7WorkspaceConnected, AppStatusTone.ok),
-    StreamStatus.connecting => (
+    ConnectionStatusPhase.connected => (
+      l10n.e7WorkspaceConnected,
+      AppStatusTone.ok,
+    ),
+    ConnectionStatusPhase.connecting => (
       l10n.e7WorkspaceConnecting,
       AppStatusTone.progress,
     ),
-    StreamStatus.reconnecting => (l10n.mcpReconnecting, AppStatusTone.progress),
-    StreamStatus.disconnected => (
-      l10n.e7WorkspaceOffline,
-      AppStatusTone.failure,
+    ConnectionStatusPhase.reconnecting => (
+      l10n.mcpReconnecting,
+      AppStatusTone.progress,
     ),
+    _ => (l10n.e7WorkspaceOffline, AppStatusTone.failure),
   };
 
   /// Why Project is missing on this server, with the flow that brings it

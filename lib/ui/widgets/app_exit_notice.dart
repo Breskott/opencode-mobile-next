@@ -88,3 +88,40 @@ class AppExitNoticeLine extends ConsumerWidget {
     );
   }
 }
+
+/// App-wide condition: the same notice survives route and tab changes.
+KitStatus? appExitKitStatus(
+  BuildContext context,
+  AppExitRecovery recovery, {
+  DateTime? now,
+  BuildContext? Function()? actionContext,
+}) {
+  final notice = recovery.notice;
+  if (notice == null) return null;
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return KitStatus(
+    kind: KitStatusKind.appStopped,
+    id: 'app-stopped',
+    key: const ValueKey('app-exit-notice'),
+    icon: AppIconography.restart,
+    tone: AppStatusTone.neutral,
+    message: appExitMessage(
+      l10n,
+      notice,
+      appExitTimeText(context, l10n, notice.at, now: now),
+    ),
+    action: notice.offersKeepAlive
+        ? KitAction(
+            key: const ValueKey('app-exit-keep-running'),
+            label: l10n.appExitKeepRunning,
+            onPressed: () {
+              final current = actionContext == null ? context : actionContext();
+              if (current != null && current.mounted) {
+                openKeepRunningScreen(current);
+              }
+            },
+          )
+        : null,
+    onDismiss: recovery.dismiss,
+  );
+}

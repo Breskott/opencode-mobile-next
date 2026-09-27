@@ -19,6 +19,8 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,6 +134,20 @@ class _Gateway implements OrchestrationGateway {
     projectId: projectId,
     requestId: requestId,
   );
+}
+
+/// The Graph view's geometry for [nodes], as `KitWorkGraph`'s layers form
+/// lays it out (ids deduplicated, first kept, as the Work tab passes them).
+KitWorkGraphGeometry _layout(
+  List<WorkGraphNode> nodes, {
+  Size nodeSize = const Size(KitTokens.graphNodeWidth, 44),
+}) {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final seen = <String>{};
+  return KitWorkGraphGeometry.layers([
+    for (final node in nodes)
+      if (seen.add(node.id)) node.toKit(l10n),
+  ], nodeSize: nodeSize);
 }
 
 void main() {
@@ -411,10 +427,7 @@ void main() {
       for (final item in controller.snapshot.work)
         if (item.runId == 'oc-xru') WorkGraphNode.of(item),
     ];
-    final layout = WorkGraphLayout.compute(
-      nodes,
-      nodeSize: const Size(156, 58),
-    );
+    final layout = _layout(nodes, nodeSize: const Size(156, 58));
     expect(layout.blockedChain, {
       'w-work-a',
       'w-blocked',

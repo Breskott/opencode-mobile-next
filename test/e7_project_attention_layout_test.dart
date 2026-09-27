@@ -143,13 +143,21 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'mobile-app');
       await tester.pumpAndSettle();
-      final rename = find.byKey(const ValueKey('rename-project-mobile'));
-      await _reveal(tester, rename);
+      final project = find.byKey(const ValueKey('project-mobile'));
+      await _reveal(tester, project);
+      // The path shares a supporting line with Current/worktrees. Its
+      // Unicode isolate keeps the path left-to-right in either direction.
       expect(
-        tester.widget<Text>(find.text('/work/mobile-app')).textDirection,
-        TextDirection.ltr,
+        find.descendant(
+          of: project,
+          matching: find.textContaining(KitBidi.ltr('/work/mobile-app')),
+        ),
+        findsOneWidget,
       );
       await _captureScreen(tester, 'projects-${direction.name}');
+      await tester.longPress(project.hitTestable());
+      await tester.pumpAndSettle();
+      final rename = find.byKey(const ValueKey('rename-project-mobile'));
       await tester.tap(rename.hitTestable());
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -158,6 +166,7 @@ void main() {
       );
       await _captureScreen(tester, 'rename-${direction.name}');
       final save = find.byKey(const ValueKey('confirm-rename-project'));
+      await tester.pump();
       await tester.ensureVisible(save);
       await tester.tap(save);
       await tester.pumpAndSettle();

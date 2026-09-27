@@ -65,18 +65,22 @@ class AutomaticActivityController extends ChangeNotifier {
     }
   }
 
-  /// Closes the shared history of [profileId], drains its writes and
-  /// removes its key, BEFORE the profile deletion sweep. False when the
-  /// platform refused the removal (the sweep then tries the key again).
+  /// Permanently closes and erases the shared history after profile removal
+  /// commits. Use prepareForDeletion to drain without losing history first.
+  /// False when the platform refused the removal.
   static Future<bool> closeProfile(
     SharedPreferences preferences,
     String profileId,
   ) async {
-    final controller = _shared[preferences]?.remove(profileId);
+    final byProfile = _shared[preferences];
+    final controller = byProfile?[profileId];
     if (controller == null) return true;
     try {
       return await controller.deleteProfileData();
     } finally {
+      if (identical(byProfile?[profileId], controller)) {
+        byProfile!.remove(profileId);
+      }
       controller.dispose();
     }
   }
@@ -102,6 +106,7 @@ class AutomaticActivityController extends ChangeNotifier {
   Future<bool>? _deletion;
   bool _disposed = false;
   bool _closed = false;
+  bool _preparingDeletion = false;
   bool _persistenceFailed = false;
   bool _corruptHistory = false;
 
@@ -110,6 +115,7 @@ class AutomaticActivityController extends ChangeNotifier {
   bool get persistenceFailed => _persistenceFailed;
   bool get corruptHistory => _corruptHistory;
   bool get _available => !_disposed && !_closed && isProfilePresent();
+  bool get _accepting => _available && !_preparingDeletion;
 
   /// Avoids persisting directory names or URLs (which can carry credentials).
   String locationKey(String location) => _hash(location);
@@ -191,7 +197,7 @@ class AutomaticActivityController extends ChangeNotifier {
   }
 
   bool canUndo(String id) =>
-      _available &&
+      _accepting &&
       !_pendingUndo.contains(id) &&
       _inverses.containsKey(id) &&
       _acts.any((act) => act.id == id && !act.undoAttempted);
@@ -237,7 +243,7 @@ class AutomaticActivityController extends ChangeNotifier {
   }
 
   Future<T> _enqueue<T>(T unavailable, Future<T> Function() action) {
-    if (!_available) return Future.value(unavailable);
+    if (!_accepting) return Future.value(unavailable);
     final operation = _tail.then<T>((_) async {
       if (!_available) return unavailable;
       return action();
@@ -353,8 +359,28 @@ class AutomaticActivityController extends ChangeNotifier {
     }
   }
 
+  /// Pauses new records, acknowledgements and Undo immediately, then drains
+  /// already admitted writes and inverses without erasing history or callbacks.
+  /// The shared owner stays registered, so another caller cannot replace it.
+  /// Await this before validating deletion; use [cancelDeletion] if it aborts.
+  Future<void> prepareForDeletion() {
+    if (!_preparingDeletion && !_closed && !_disposed) {
+      _preparingDeletion = true;
+      _notify();
+    }
+    return _tail;
+  }
+
+  /// Resumes the same owner after reversible deletion preparation. Permanent
+  /// erasure or disposal cannot be cancelled.
+  void cancelDeletion() {
+    if (!_preparingDeletion || _closed || _disposed) return;
+    _preparingDeletion = false;
+    _notify();
+  }
+
   /// Close first, then drain in-flight writes/inverses, then remove the key.
-  /// Await true before the profile deletion sweep. False is retryable; this
+  /// Call only in committed deletion. False is retryable; this
   /// controller remains closed even when the platform refuses removal.
   Future<bool> deleteProfileData() {
     if (_deletion case final pending?) return pending;

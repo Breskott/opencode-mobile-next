@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show compute, listEquals;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,7 +54,7 @@ import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
-import '../widgets/connection_status_banner.dart';
+import '../widgets/always_allow_invitation.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/diff_view.dart';
@@ -75,7 +76,6 @@ import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
 import '../widgets/transcript_display_toggles.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
-import '../../builtin/builtin_server.dart' show builtinServerStarterProvider;
 import '../../feedback/bug_report.dart' show openBugReport;
 import '../kit/kit.dart';
 import '../../domain/orchestration_gateway.dart';
@@ -86,13 +86,15 @@ import '../../state/team_planning.dart'
     show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
 import '../widgets/team_controls.dart' show teamControlReceipt;
 import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
+import '../widgets/team_now.dart' show teamUnstickAction;
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';
-import 'team/agent_output_screen.dart' show AgentOutputScreen;
+import 'team/agent_screen.dart' show AgentScreen;
 import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
 import 'team/task_details_sheet.dart' show showTeamTaskDetails;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
+import 'team/team_page.dart' show openTeamPage;
 import 'team/work_sheet.dart' show showWorkSheet;
 import '../widgets/team_moments.dart' show TeamMergedCelebration;
 import 'team/team_needs_you.dart'
@@ -100,8 +102,6 @@ import 'team/team_needs_you.dart'
 import 'team_conversation/team_conversation.dart' show TeamConversation;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/grace_timer.dart';
-import '../widgets/phone_server_restart.dart';
-import '../widgets/work_status_line.dart' show confirmPhoneServerRestart;
 import '../permission_presentation.dart';
 import 'activity_screen.dart' show showQuestionSheet;
 import 'app_diagnostics_screen.dart';
@@ -143,6 +143,7 @@ part 'chat/empty_chat.dart';
 part 'chat/chat_states.dart';
 part 'chat/watching.dart';
 part 'chat/team_conversation_view.dart';
+part 'chat/team_watch_live.dart';
 
 const _maxAttachmentCount = 5;
 const _maxAttachmentBytes = 10 * 1024 * 1024;
@@ -3031,7 +3032,7 @@ class _ChatScreenState extends State<ChatScreen>
         return;
       }
       if (!voice.models.isReady) {
-        final ready = await showVoiceModelSetupSheet(context, voice.models);
+        final ready = await showVoiceAutomaticSetupSheet(context, voice);
         if (!mounted ||
             !ready ||
             !current() ||
@@ -6588,20 +6589,6 @@ class _ChatScreenState extends State<ChatScreen>
     _showComposerNote(_chatL10n(context).chatUiFileSaved(file.displayName));
   }
 
-  /// The offline banner's queue line: drafts the next flush will send,
-  /// plus drafts a flush will deliberately skip for other servers.
-  String? _queuedNote() {
-    final review = _conn.queuedPromptReviewCount;
-    final mine = _conn.queuedPromptCount - review;
-    final others = _conn.queuedPromptCountForOtherProfiles;
-    final parts = <String>[
-      if (mine > 0) _chatL10n(context).chatUiDraftsQueued(mine),
-      if (review > 0) _chatL10n(context).queuedBannerReview(review),
-      if (others > 0) _chatL10n(context).chatUiOtherDraftsWaiting(others),
-    ];
-    return parts.isEmpty ? null : parts.join(' ');
-  }
-
   /// A picker opened from an open chat applies to this session only. Other
   /// sessions keep the profile default; on OpenCode 2 the server also treats
   /// the model as session state.
@@ -6689,12 +6676,28 @@ class _ChatScreenState extends State<ChatScreen>
     // ([_composerStatusStrip]), not in this slot.
     return KitReveal(
       child: permission != null
-          ? _PermissionAttentionCard(
-              key: ValueKey('permission-card-${permission.id}'),
-              permission: permission,
-              autoApprovalFailed:
-                  _conn.autoApprovalFailure(permission.id) != null,
-              onReview: () => unawaited(_showPermissionDialog(permission)),
+          ? Column(
+              key: ValueKey('permission-region-${permission.id}'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PermissionAttentionCard(
+                  key: ValueKey('permission-card-${permission.id}'),
+                  permission: permission,
+                  autoApprovalFailed:
+                      _conn.autoApprovalFailure(permission.id) != null,
+                  onReview: () => unawaited(_showPermissionDialog(permission)),
+                ),
+                // P6.7: the third identical ask offers "Always allow"
+                // once, directly under its card.
+                if (!_conn.isIsolated)
+                  AlwaysAllowInvitation(
+                    key: ValueKey('always-allow-${permission.id}'),
+                    controller: _conn,
+                    sessionID: permission.sessionID,
+                    requestID: permission.id,
+                  ),
+              ],
             )
           : question != null
           ? _QuestionAttentionCard(
@@ -6763,6 +6766,8 @@ class _ChatScreenState extends State<ChatScreen>
             label: l10n.demoReviewChanges,
             onPressed: _showDiff,
           ),
+        // Watching: the worker's own page (its state and controls).
+        if (widget.watch case final watch?) ?_watchDetailsAction(watch),
         // Watching: the conversation is the worker's; nothing in the menu
         // (share, fork, revert, rename, delete) is ours.
         if (!_conn.isIsolated && !_watching)
@@ -6782,10 +6787,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// The transcript: the newest turn at the bottom, clear of the floating
-  /// composer ([floating]: under [KitComposer.layer]), with the two jump
-  /// pills over it.
+  /// composer (under [KitComposer.layer]), with the two jump pills over it.
   Widget _transcript({
-    required bool floating,
     required int queuedAfterIndex,
     required List<List<Part>> displayParts,
     required Set<String> waitingLocalIDs,
@@ -6794,7 +6797,7 @@ class _ChatScreenState extends State<ChatScreen>
     final Widget list = Builder(
       builder: (context) {
         final tokens = KitTokens.of(context);
-        final clearance = floating ? KitBottomInset.of(context).bottom : 0.0;
+        final clearance = KitBottomInset.of(context).bottom;
         return Center(
           child: ConstrainedBox(
             // The conversation's cap (VL §5, LAY-5), its gutters inside.
@@ -6833,7 +6836,6 @@ class _ChatScreenState extends State<ChatScreen>
       },
     );
     final latest = KitJumpPillLayer(
-      clearBottomInset: floating,
       pill: KitJumpPill(
         pillKey: const ValueKey('jump-to-latest'),
         label: KitJumpPill.latestLabel(context),
@@ -7416,7 +7418,7 @@ class _ChatScreenState extends State<ChatScreen>
             // the line must say which one this conversation is on.
             among: _conn.store.profiles,
           );
-    final reconnecting = _ChatStatusLine.reconnecting(_conn);
+    final reconnecting = _conn.connectionStatus.waiting;
 
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop || _watching,
@@ -7443,68 +7445,55 @@ class _ChatScreenState extends State<ChatScreen>
                 _conn.profile?.name ?? 'OpenCode',
               )
             : _chatL10n(context).chatLoadingConversation,
+        status: _chatStatus([
+          if (widget.watch case final watch?) _watchingStatus(watch),
+          if (!_watching) ...[
+            if (_sendError case final error?)
+              _sendErrorStatus(
+                context,
+                error: error,
+                onDismiss: () => setState(() => _sendError = null),
+              ),
+            if (_promptError case final promptError?
+                when !_messages.any(
+                  (message) => _sameError(message.info.errorText, promptError),
+                ))
+              _promptErrorStatus(
+                context,
+                message: promptError,
+                onDismiss: () => setState(() => _promptError = null),
+                onChooseModel: _conn.isIsolated
+                    ? null
+                    : () => showModelPicker(
+                        context,
+                        applyScope: _modelApplyScope,
+                        sessionID: widget.sessionID,
+                      ),
+              ),
+            if (!_conn.isIsolated &&
+                _conn.supportsStagedRevert &&
+                session?.reverted == true)
+              _stagedRevertStatus(
+                context,
+                onReview: () => unawaited(_reviewStagedRevert()),
+              )
+            else if (!_conn.isIsolated &&
+                _conn.capabilities.sessionRevert &&
+                session?.reverted == true)
+              _undoneStatus(context, onPutBack: () => unawaited(_restore())),
+            if (!_conn.isIsolated && parentID != null)
+              _subagentStatus(
+                context,
+                position: siblingIndex < 0 ? null : siblingIndex + 1,
+                total: siblings.isEmpty ? null : siblings.length,
+                onParent: _openParentSession,
+                onAll: _showSubagents,
+              ),
+            if (!_conn.isIsolated && shareUrl != null)
+              _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+          ],
+        ]),
         header: [
-          // One status line (design standard §5), most urgent first: the
-          // connection, a message that was not sent, a prompt error with no
-          // home in the transcript (one a reply already carries is shown
-          // there, once, with its actions), a staged revert, the subagent
-          // context, sharing (also in the conversation menu).
-          _ChatStatusLine(
-            controller: _conn,
-            queuedNote: _queuedNote(),
-            others: [
-              if (widget.watch case final watch?) _watchingStatus(watch),
-              if (!_watching) ...[
-                if (_sendError case final error?)
-                  _sendErrorStatus(
-                    context,
-                    error: error,
-                    onDismiss: () => setState(() => _sendError = null),
-                  ),
-                if (_promptError case final promptError?
-                    when !_messages.any(
-                      (message) =>
-                          _sameError(message.info.errorText, promptError),
-                    ))
-                  _promptErrorStatus(
-                    context,
-                    message: promptError,
-                    onDismiss: () => setState(() => _promptError = null),
-                    onChooseModel: _conn.isIsolated
-                        ? null
-                        : () => showModelPicker(
-                            context,
-                            applyScope: _modelApplyScope,
-                            sessionID: widget.sessionID,
-                          ),
-                  ),
-                if (!_conn.isIsolated &&
-                    _conn.supportsStagedRevert &&
-                    session?.reverted == true)
-                  _stagedRevertStatus(
-                    context,
-                    onReview: () => unawaited(_reviewStagedRevert()),
-                  )
-                else if (!_conn.isIsolated &&
-                    _conn.capabilities.sessionRevert &&
-                    session?.reverted == true)
-                  _undoneStatus(
-                    context,
-                    onPutBack: () => unawaited(_restore()),
-                  ),
-                if (!_conn.isIsolated && parentID != null)
-                  _subagentStatus(
-                    context,
-                    position: siblingIndex < 0 ? null : siblingIndex + 1,
-                    total: siblings.isEmpty ? null : siblings.length,
-                    onParent: _openParentSession,
-                    onAll: _showSubagents,
-                  ),
-                if (!_conn.isIsolated && shareUrl != null)
-                  _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
-              ],
-            ],
-          ),
           // The demo has no bar of its own here; its one extra action sits
           // under the host's bar.
           if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
@@ -7555,17 +7544,15 @@ class _ChatScreenState extends State<ChatScreen>
                   if (startEmpty) _requestStartFacts();
                   final showStarters = startEmpty && !_voiceConversation;
                   final watch = widget.watch;
-                  final floating = watch == null;
                   final Widget conversation =
                       _visibleHistory.isEmpty && _olderCursor == null
                       ? Builder(
-                          // Clear of the floating composer.
+                          // Clear of the floating composer (watching
+                          // floats one too: it writes to the worker).
                           builder: (context) => Padding(
-                            padding: floating
-                                ? EdgeInsetsDirectional.only(
-                                    bottom: KitBottomInset.of(context).bottom,
-                                  )
-                                : EdgeInsets.zero,
+                            padding: EdgeInsetsDirectional.only(
+                              bottom: KitBottomInset.of(context).bottom,
+                            ),
                             child:
                                 widget.emptyState ??
                                 (watch != null
@@ -7594,7 +7581,6 @@ class _ChatScreenState extends State<ChatScreen>
                             child: NotificationListener<ScrollNotification>(
                               onNotification: _onTranscriptScroll,
                               child: _transcript(
-                                floating: floating,
                                 queuedAfterIndex: queuedAfterIndex,
                                 displayParts: displayParts,
                                 waitingLocalIDs: waitingLocalIDs,
@@ -7603,17 +7589,11 @@ class _ChatScreenState extends State<ChatScreen>
                             ),
                           ),
                         );
-                  // Watching: the one action where the composer was;
-                  // nothing above it asks the person to act on the
-                  // worker's session.
+                  // Watching: the composer writes to the worker through
+                  // the team; nothing above it asks the person to act on
+                  // the worker's session.
                   if (watch != null) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(child: conversation),
-                        _WatchingComposer(watch: watch),
-                      ],
-                    );
+                    return _watchLayer(watch: watch, body: conversation);
                   }
                   // The floating layer (VL §6): the transcript scrolls under
                   // the glass composer, the only glass on the page.

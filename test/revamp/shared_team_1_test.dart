@@ -130,35 +130,6 @@ void main() {
     });
   });
 
-  group('TeamComposerField forwards to KitField', () {
-    testWidgets('send works only once there are words', (tester) async {
-      final text = TextEditingController();
-      addTearDown(text.dispose);
-      var sent = 0;
-      await tester.pumpWidget(
-        _app(
-          TeamComposerField(
-            controller: text,
-            hint: 'Message the agent',
-            sendLabel: 'Send message',
-            onSend: () => sent++,
-            autofocus: false,
-            fieldKey: const ValueKey('field'),
-            sendKey: const ValueKey('send'),
-          ),
-        ),
-      );
-      // The hint is the visible label above the field (KIT-20).
-      expect(find.text('Message the agent'), findsWidgets);
-      await tester.tap(_key('send'), warnIfMissed: false);
-      expect(sent, 0);
-      await tester.enterText(_key('field'), 'Look at the checkout test');
-      await tester.pump();
-      await tester.tap(_key('send'));
-      expect(sent, 1);
-    });
-  });
-
   group('confirmTeamControl', () {
     testWidgets('true only on the confirming button', (tester) async {
       final results = await _open<bool>(

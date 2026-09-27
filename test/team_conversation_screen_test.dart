@@ -233,9 +233,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatScreen), findsOneWidget);
-    expect(find.text('Watching furiosa · Worker · AI Team'), findsOneWidget);
+    // Who, and its state from its session (P3.6).
+    expect(find.text('Watching furiosa · Worker · Working'), findsOneWidget);
     expect(find.text('Claimed ma-1.'), findsOneWidget);
-    expect(find.text('Message the worker'), findsOneWidget);
+    // Messaging it is this conversation's composer.
+    expect(_key('chat-watching-message-field'), findsOneWidget);
+    expect(find.text('Message furiosa…'), findsWidgets);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(_key('team-conversation'), findsOneWidget);
@@ -536,7 +539,7 @@ void main() {
     ) async {
       await pump(tester, runs: const [], work: const []);
       expect(_key('team-conversation-gone'), findsOneWidget);
-      expect(find.text('This task is no longer on the team'), findsOneWidget);
+      expect(find.text('Task no longer listed'), findsOneWidget);
       expect(_key('team-conversation-gone-team-page'), findsOneWidget);
       // No composer for a task that is gone.
       expect(_key('team-conversation-field'), findsNothing);
@@ -572,7 +575,7 @@ void main() {
         ),
       );
       expect(_key('team-conversation-refused'), findsOneWidget);
-      expect(find.text("The team didn't take this task"), findsOneWidget);
+      expect(find.text('Task not taken'), findsOneWidget);
       expect(
         find.textContaining('The planner is off', findRichText: true),
         findsWidgets,

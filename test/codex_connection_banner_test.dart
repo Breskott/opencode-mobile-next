@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
@@ -30,7 +34,32 @@ Future<ConnectionController> _controller({required bool codex}) async {
     prefs: await SharedPreferences.getInstance(),
     server: server,
   );
-  return ConnectionController(store, isIsolated: true);
+  return ConnectionController(store);
+}
+
+Widget _app(ConnectionController controller, {RouteFactory? onGenerateRoute}) {
+  final navigator = GlobalKey<NavigatorState>();
+  return MaterialApp(
+    navigatorKey: navigator,
+    theme: AppTheme.dark(),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    onGenerateRoute: onGenerateRoute,
+    builder: (context, child) => ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => AppConditionsScope(
+        conditions: [
+          connectionKitStatus(
+            context,
+            controller,
+            actionContext: () => navigator.currentState?.overlay?.context,
+          ),
+        ],
+        child: child!,
+      ),
+    ),
+    home: const KitScreen(body: SizedBox()),
+  );
 }
 
 void main() {
@@ -40,57 +69,57 @@ void main() {
     tester,
   ) async {
     final controller = await _controller(codex: true);
-    addTearDown(controller.dispose);
-    controller.passwordRejected = true;
-
-    Object? pushedArguments;
-    await tester.pumpWidget(
-      MaterialApp(
-        onGenerateRoute: (settings) {
-          if (settings.name == '/servers') {
-            pushedArguments = settings.arguments;
-            return MaterialPageRoute<void>(
-              builder: (_) => const Scaffold(body: Text('servers-route')),
-            );
-          }
-          return null;
-        },
-        home: Scaffold(body: ConnectionStatusBanner(controller: controller)),
-      ),
-    );
-
-    expect(
-      find.text('The connection token was rejected. Update it to reconnect.'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('banner-update-token')), findsOneWidget);
-    expect(find.text('Update password'), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('banner-update-token')));
-    await tester.pumpAndSettle();
-    expect(find.text('servers-route'), findsOneWidget);
-    expect(pushedArguments, 'edit-active');
+    try {
+      controller.passwordRejected = true;
+      Object? pushedArguments;
+      await tester.pumpWidget(
+        _app(
+          controller,
+          onGenerateRoute: (settings) {
+            if (settings.name == '/servers') {
+              pushedArguments = settings.arguments;
+              return MaterialPageRoute<void>(
+                builder: (_) => const KitScreen(body: Text('servers-route')),
+              );
+            }
+            return null;
+          },
+        ),
+      );
+      expect(
+        find.text('The connection token was rejected. Update it to reconnect.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('banner-update-token')), findsOneWidget);
+      expect(find.text('Update password'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('banner-update-token')));
+      await tester.pumpAndSettle();
+      expect(find.text('servers-route'), findsOneWidget);
+      expect(pushedArguments, 'edit-active');
+    } finally {
+      await tester.pumpWidget(const SizedBox());
+      controller.dispose();
+    }
   });
 
   testWidgets('Codex reconnect keeps the review draft without auto-resend', (
     tester,
   ) async {
     final controller = await _controller(codex: true);
-    addTearDown(controller.dispose);
-    controller.status = StreamStatus.reconnecting;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ConnectionStatusBanner(controller: controller)),
-      ),
-    );
-
-    expect(find.textContaining('Review draft stays here'), findsOneWidget);
-    expect(
-      find.textContaining('nothing is sent automatically'),
-      findsOneWidget,
-    );
-    // The retry names the server it reconnects to (R2).
-    expect(find.textContaining('Reconnect to '), findsOneWidget);
+    try {
+      controller
+        ..status = StreamStatus.reconnecting
+        ..notifyListeners();
+      await tester.pumpWidget(_app(controller));
+      expect(find.textContaining('Review draft stays here'), findsOneWidget);
+      expect(
+        find.textContaining('nothing is sent automatically'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Reconnect to '), findsOneWidget);
+    } finally {
+      await tester.pumpWidget(const SizedBox());
+      controller.dispose();
+    }
   });
 }

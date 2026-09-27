@@ -965,7 +965,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Show 1 earlier line'), findsOneWidget);
-      expect(stripAnsi('\x1b[32mok\x1b[0m'), 'ok');
+      expect(KitTerminalText.strip('\x1b[32mok\x1b[0m'), 'ok');
       expect(TerminalView.inlineLineCap, 2000);
     });
   });

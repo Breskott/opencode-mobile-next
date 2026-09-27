@@ -7,7 +7,7 @@ part of '../chat_screen.dart';
 // - First load: the loading bar under the top bar (in the screen) and
 //   placeholder turns ([_ChatLoadingBody]), never an empty-state text.
 // - A conversation that could not load: [_ChatLoadError], a page state.
-// - At most one status line under the top bar ([_ChatStatusLine]), most
+// - At most one status line under the top bar ([_chatStatus]), most
 //   urgent first: the connection, then what the screen passes in (a message
 //   that was not sent, a prompt the server refused, a staged revert, the
 //   subagent context, sharing).
@@ -54,7 +54,7 @@ class _ChatLoadError extends StatelessWidget {
           onPressed: () => unawaited(openBugReport(context)),
         ),
       ],
-      details: productErrorText(error, l10n: l10n),
+      details: error.toString(),
     );
   }
 }
@@ -90,7 +90,9 @@ class _ChatStatus {
   final Key? messageKey;
   final Key? supportingKey;
 
-  Widget line() => KitStatusLine(
+  KitStatus get status => KitStatus(
+    kind: KitStatusKind.work,
+    id: 'chat:$id',
     key: key ?? ValueKey('chat-status-$id'),
     icon: icon,
     tone: tone,
@@ -323,166 +325,10 @@ _ChatStatus _sharedStatus(
   );
 }
 
-/// The chat's one status line (design standard §5), under the top bar.
-///
-/// The connection comes first, with the Work tab's words and 8 s rule
-/// ([notAnsweringGrace]): while the app reconnects, only the loading bar
-/// shows; after 8 s without an answer, or at once when the last attempt
-/// failed or nothing is reconnecting (no bar would say anything),
-/// "`server` isn't answering" with the way out (Restart for the phone's own
-/// server, Try again otherwise) and the drafts waiting for it. A rejected
-/// password or token says so at once, with its fix. Otherwise the first of
-/// [others].
-///
-/// It is always in the tree (drawing nothing when there is nothing to say)
-/// so the 8 s clock survives the screen's rebuilds. It adds no listener of
-/// its own: the screen already rebuilds on every connection change.
-class _ChatStatusLine extends StatelessWidget {
-  const _ChatStatusLine({
-    required this.controller,
-    this.queuedNote,
-    this.others = const [],
-  });
-
-  final ConnectionController controller;
-
-  /// Drafts waiting for the connection, said under the connection line.
-  final String? queuedNote;
-
-  /// Lower-priority statuses, most urgent first; nulls are skipped.
-  final List<_ChatStatus?> others;
-
-  /// Not connected, for a reason the app may get over by itself.
-  static bool serverLost(ConnectionController controller) =>
-      !controller.isIsolated &&
-      controller.status != StreamStatus.connected &&
-      !controller.passwordRejected;
-
-  /// Reconnecting right now: the screen's loading bar shows it.
-  static bool reconnecting(ConnectionController controller) =>
-      serverLost(controller) &&
-      (controller.connectionLoading || controller.manualReconnectInProgress);
-
-  _ChatStatus? _credentials(BuildContext context) {
-    if (controller.isIsolated ||
-        controller.status == StreamStatus.connected ||
-        !controller.passwordRejected) {
-      return null;
-    }
-    final l10n = _chatL10n(context);
-    void edit() => unawaited(
-      Navigator.of(context).pushNamed('/servers', arguments: 'edit-active'),
-    );
-    final token = controller.usesConnectionToken;
-    return _ChatStatus(
-      id: 'credentials',
-      key: const ValueKey('connection-status-banner'),
-      icon: AppIconography.locked,
-      tone: AppStatusTone.failure,
-      message: token
-          ? l10n.connectionTokenRejected
-          : l10n.e7BannerReconnectPassword,
-      supporting: queuedNote,
-      action: KitAction(
-        key: ValueKey(token ? 'banner-update-token' : 'banner-update-password'),
-        label: token ? l10n.updateConnectionToken : l10n.e7BannerUpdatePassword,
-        onPressed: edit,
-      ),
-    );
+/// Local chat actions join the shared slot below app-wide conditions.
+KitStatus? _chatStatus(Iterable<_ChatStatus?> statuses) {
+  for (final status in statuses) {
+    if (status != null) return status.status;
   }
-
-  /// The phone's own server (named "OpenCode on this phone", restartable)
-  /// or another one. Only asked when the line is about to say so.
-  ({bool onThisPhone, Future<void> Function()? restart}) _server(
-    BuildContext context,
-  ) {
-    if (controller.profile == null) return (onThisPhone: false, restart: null);
-    return phoneServerRestartFor(
-      connection: controller,
-      builtin: ProviderScope.containerOf(
-        context,
-        listen: false,
-      ).read(builtinServerStarterProvider),
-      context: context,
-    );
-  }
-
-  _ChatStatus _notAnswering(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final server = _server(context);
-    final retrying = controller.manualReconnectInProgress;
-    final retry = KitAction(
-      key: const ValueKey('connection-banner-retry'),
-      label: retrying ? l10n.e7BannerRetrying : l10n.commonRetry,
-      onPressed: retrying
-          ? null
-          : () => unawaited(controller.retryConnection()),
-    );
-    final details = KitAction(
-      key: const ValueKey('connection-banner-details'),
-      label: l10n.e7BannerDetails,
-      onPressed: () =>
-          unawaited(showConnectionDetailsSheet(context, controller)),
-    );
-    final notes = [
-      if (controller.usesConnectionToken) l10n.codexDraftReconnectNotice,
-      ?queuedNote,
-    ];
-    final restart = server.restart;
-    final phone = server.onThisPhone && restart != null;
-    return _ChatStatus(
-      id: 'server',
-      key: const ValueKey('connection-status-banner'),
-      icon: AppIconography.cloudOff,
-      // The Work tab's words and tone for the same condition.
-      tone: AppStatusTone.failure,
-      message: server.onThisPhone
-          ? l10n.workServerNotAnsweringPhone
-          : l10n.workServerNotAnswering(controller.profile?.name ?? 'OpenCode'),
-      supporting: notes.isEmpty ? null : notes.join(' '),
-      // The app keeps retrying by itself; for the phone's own server the
-      // way out it cannot take alone is a restart, so that comes first.
-      action: phone
-          ? KitAction(
-              key: const ValueKey('connection-banner-restart'),
-              label: l10n.workServerRestart,
-              onPressed: () => unawaited(() async {
-                if (!await confirmPhoneServerRestart(context)) return;
-                await restart();
-              }()),
-            )
-          : retry,
-      more: phone ? [retry, details] : [details],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final lost = serverLost(controller);
-    return GraceTimer(
-      waiting: lost,
-      restartKey: controller.connectionAttemptRevision,
-      builder: (context, overdue) {
-        _ChatStatus? status = _credentials(context);
-        if (status == null &&
-            lost &&
-            // Nothing in flight (the last attempt ended): say so at once.
-            (overdue || !reconnecting(controller))) {
-          status = _notAnswering(context);
-        }
-        if (status == null) {
-          for (final other in others) {
-            if (other != null) {
-              status = other;
-              break;
-            }
-          }
-        }
-        // The one status line comes and goes smoothly (design standard
-        // §10): it unfolds over the transcript's foot and folds away once
-        // the server answers again; a change of status shows in place.
-        return KitReveal(child: status?.line());
-      },
-    );
-  }
+  return null;
 }
