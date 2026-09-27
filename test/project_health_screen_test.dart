@@ -6,6 +6,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -464,5 +465,111 @@ void main() {
     expect(controller.locations, [
       (directory: '/tmp/runtime-probe', workspace: null),
     ]);
+  });
+  group('slice-R13', () {
+    testWidgets('no refresh in the top bar and no counts beside the labels; '
+        'pulling down reloads every section', (tester) async {
+      final repository = _HealthRepository();
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('refresh-project-health')),
+        findsNothing,
+      );
+      expect(find.text('1 changed'), findsNothing);
+      expect(find.text('1 of 2 running'), findsNothing);
+      expect(find.text('1 of 1 on'), findsNothing);
+      // The rows still say each state in words.
+      expect(find.textContaining('Not running'), findsOneWidget);
+
+      final before = repository.versionControlCalls;
+      await tester.fling(
+        find.byKey(const ValueKey('project-health-list')),
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(repository.versionControlCalls, greaterThan(before));
+    });
+
+    testWidgets('every section label starts on the gutter, one section gap '
+        'under the section above', (tester) async {
+      final repository = _HealthRepository();
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      Rect group(String text) => tester.getRect(
+        find
+            .ancestor(of: find.text(text), matching: find.byType(KitRowGroup))
+            .first,
+      );
+      final vcs = group('feature/mobile');
+      final services = group('Dart analysis server');
+      // The words start where the panel does: the one inset (R4).
+      final panel = tester
+          .getTopLeft(
+            find
+                .descendant(
+                  of: find
+                      .ancestor(
+                        of: find.text('feature/mobile'),
+                        matching: find.byType(KitRowGroup),
+                      )
+                      .first,
+                  matching: find.byType(Material),
+                )
+                .first,
+          )
+          .dx;
+      for (final label in ['Version control', 'Language services']) {
+        expect(tester.getTopLeft(find.text(label)).dx, panel);
+      }
+      expect(
+        tester.getTopLeft(find.text('Language services')).dy - vcs.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+      expect(
+        tester.getTopLeft(find.text('Formatters')).dy - services.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+    });
+
+    testWidgets('a section that cannot be read keeps its label and a section '
+        'gap', (tester) async {
+      final repository = _HealthRepository()
+        ..versionControlError = const ProductException('Unavailable here');
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(KitSectionLabel, 'Version control'),
+        findsOneWidget,
+      );
+      final notice = find.ancestor(
+        of: find.text('Unavailable here'),
+        matching: find.byType(KitNotice),
+      );
+      expect(
+        tester.getTopLeft(find.text('Version control')).dx,
+        tester.getTopLeft(notice.first).dx,
+      );
+      final services = find.ancestor(
+        of: find.text('Dart analysis server'),
+        matching: find.byType(KitRowGroup),
+      );
+      expect(
+        tester.getTopLeft(find.text('Language services')).dy -
+            tester.getRect(notice.first).bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+      expect(services, findsOneWidget);
+    });
   });
 }

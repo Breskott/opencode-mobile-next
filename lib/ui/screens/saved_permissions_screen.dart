@@ -226,7 +226,6 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final permissions = _permissions;
     final error = _error;
-    final busy = _loading || _removing.isNotEmpty;
     final Widget body;
     if (permissions == null && error == null) {
       body = ListView(
@@ -261,6 +260,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
       );
     } else {
       final tokens = KitTokens.of(context);
+      final rails = EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter);
       body = KitRefresh(
         onRefresh: _load,
         child: ListView(
@@ -278,11 +278,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
               children: [
                 // What the page is for, in one line (map infoMissing).
                 Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: tokens.gutter,
-                    end: tokens.gutter,
-                    bottom: tokens.sectionGap,
-                  ),
+                  padding: rails,
                   child: KitText(
                     l10n.savedPermissionsIntro,
                     role: KitTextRole.secondary,
@@ -290,10 +286,8 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                 ),
                 if (error != null)
                   Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: tokens.gutter,
-                      end: tokens.gutter,
-                      bottom: tokens.sectionGap,
+                    padding: rails.add(
+                      EdgeInsetsDirectional.only(top: tokens.space3),
                     ),
                     child: KitNotice.error(
                       key: const ValueKey('saved-permissions-action-error'),
@@ -307,21 +301,16 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                   ),
                 if (_revoked case final revoked?)
                   Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: tokens.gutter,
-                      end: tokens.gutter,
-                      bottom: tokens.sectionGap,
+                    padding: rails.add(
+                      EdgeInsetsDirectional.only(top: tokens.space3),
                     ),
                     child: _revokedNotice(l10n, revoked),
                   ),
+                // The label keeps the section gap from what is above; each
+                // row is one action, so no count is repeated beside it.
                 KitRowGroup(
                   key: const ValueKey('saved-permissions-group'),
                   label: l10n.usageCurrentProject,
-                  labelTrailing: KitText(
-                    l10n.savedPermissionsCount(permissions.length),
-                    role: KitTextRole.caption,
-                    tabular: true,
-                  ),
                   children: [
                     for (final permission in permissions)
                       _permissionRow(l10n, permission),
@@ -334,18 +323,9 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
       );
     }
     return KitScreen(
-      topBar: KitTopBar(
-        title: l10n.e7LibraryAlwaysAllowedActions,
-        actions: [
-          KitAction(
-            key: const ValueKey('saved-permissions-refresh'),
-            label: l10n.e7LibraryRefreshAlwaysAllowedActions,
-            icon: AppIconography.retry,
-            onPressed: busy ? null : _load,
-            disabledReason: busy ? l10n.savedPermissionsBusy : null,
-          ),
-        ],
-      ),
+      // Pull to refresh reloads the list; Try again lives in the error
+      // states, so the top bar carries no refresh of its own.
+      topBar: KitTopBar(title: l10n.e7LibraryAlwaysAllowedActions),
       width: KitScreenWidth.reading,
       loading: _loading && permissions != null,
       loadingLabel: l10n.savedPermissionsLoading,

@@ -52,7 +52,8 @@ void main() {
 
       expect(find.textContaining('In use · Connected'), findsOneWidget);
       expect(find.textContaining('Error · Daytona'), findsOneWidget);
-      expect(find.text('Providers'), findsOneWidget);
+      // The provider is chosen in the New environment sheet only (R13).
+      expect(find.text('Providers'), findsNothing);
     });
 
     testWidgets('a list that cannot be read says why and tries again', (
@@ -171,17 +172,18 @@ void main() {
   });
 
   group('Project health', () {
-    testWidgets('sections count in words; a stopped server says so', (
+    testWidgets('rows say their state; a stopped server says so', (
       tester,
     ) async {
       final controller = await sw3Controller();
       addTearDown(controller.dispose);
       await _open(tester, ProjectHealthScreen(repository: controller.fake));
 
-      expect(find.text('2 changed'), findsOneWidget);
-      expect(find.text('1 of 2 running'), findsOneWidget);
+      // No counts beside the section labels (R13): the rows say it.
+      expect(find.text('2 changed'), findsNothing);
+      expect(find.text('1 of 2 running'), findsNothing);
+      expect(find.text('1 of 2 on'), findsNothing);
       expect(find.textContaining('Not running · error'), findsOneWidget);
-      expect(find.text('1 of 2 on'), findsOneWidget);
       // Added lines carry their sign, not only a colour (STATE-9).
       expect(find.text('+24'), findsWidgets);
       expect(find.text('-3'), findsWidgets);

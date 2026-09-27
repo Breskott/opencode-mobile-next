@@ -62,7 +62,13 @@ class _WorktreeRepository implements ProductRepository {
   Future<List<WorktreeInfo>> listWorktrees({
     required String projectDirectory,
     String? projectID,
-  }) async => List.of(worktrees);
+  }) async {
+    listCalls++;
+    return List.of(worktrees);
+  }
+
+  /// How many times the list was read.
+  int listCalls = 0;
 
   @override
   Future<WorktreeInfo> createWorktree({
@@ -176,27 +182,69 @@ Widget _app(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('the Worktrees label explains itself: a labelled term whose '
-      'bubble says what a worktree is (slice-P3.1)', (tester) async {
-    final semantics = tester.ensureSemantics();
-    final controller = await _controller(_WorktreeRepository());
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    final term = find.byKey(const ValueKey('worktrees-section-label'));
-    expect(term, findsOneWidget);
-    // A screen reader hears the word as a button with a hint.
-    final node = tester.getSemantics(term);
-    expect(node.label, startsWith('Worktrees'));
-    expect(node.hint, isNotEmpty);
-    expect(node.flagsCollection.isButton, isTrue);
-    await tester.tap(term);
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('A separate checkout of the same repository'),
-      findsOneWidget,
-    );
-    semantics.dispose();
+  group('slice-R13', () {
+    testWidgets('the title names the list: no group label, no count and no '
+        'refresh in the top bar; pulling down reloads', (tester) async {
+      final repository = _WorktreeRepository();
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      // "Worktrees" is said once, by the title.
+      expect(find.text('Worktrees'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('worktrees-section-label')),
+        findsNothing,
+      );
+      expect(find.text('1'), findsNothing);
+      expect(find.byTooltip('Refresh worktrees'), findsNothing);
+
+      final before = repository.listCalls;
+      await tester.fling(
+        find.byKey(const ValueKey('worktrees-list')),
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(repository.listCalls, greaterThan(before));
+    });
+
+    testWidgets('the main copy and the worktrees are one list', (tester) async {
+      final controller = await _controller(_WorktreeRepository());
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      final group = find.byKey(const ValueKey('worktrees-group'));
+      expect(
+        find.descendant(
+          of: group,
+          matching: find.byKey(const ValueKey('primary-worktree')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: group, matching: find.byKey(const ValueKey(_row))),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('with none yet, the empty state says what a worktree is', (
+      tester,
+    ) async {
+      final repository = _WorktreeRepository()..worktrees = const [];
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('no-worktrees')), findsOneWidget);
+      expect(
+        find.textContaining('A worktree is a separate copy'),
+        findsOneWidget,
+      );
+    });
   });
 
   testWidgets('compact worktree creation grows into global ready state', (

@@ -6107,30 +6107,6 @@
   "@e7WorkspaceBackgroundOff": {
     "description": "Workspace background connection state"
   },
-  "e7WorkspaceFilteredLoaded": "{count} shown from {total} loaded conversations",
-  "@e7WorkspaceFilteredLoaded": {
-    "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "e7WorkspaceLoadedSummary": "{count, plural, one {1 loaded conversation} other {{count} loaded conversations}} · {folders, plural, one {1 project} other {{folders} projects}}",
-  "@e7WorkspaceLoadedSummary": {
-    "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "folders": {
-        "type": "int"
-      }
-    }
-  },
   "e7WorkspaceLoadedFolders": "Loaded projects",
   "@e7WorkspaceLoadedFolders": {
     "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search."
@@ -8570,10 +8546,6 @@
   "@e7LibraryAlwaysAllowedActions": {
     "description": "Library and project tools UI: Always allowed actions"
   },
-  "e7LibraryRefreshAlwaysAllowedActions": "Refresh always allowed actions",
-  "@e7LibraryRefreshAlwaysAllowedActions": {
-    "description": "Library and project tools UI: Refresh always allowed actions"
-  },
   "e7LibraryNoAlwaysAllowedActions": "No always allowed actions",
   "@e7LibraryNoAlwaysAllowedActions": {
     "description": "Library and project tools UI: No always allowed actions"
@@ -9086,23 +9058,9 @@
   "@e7LibraryGitRepositoryInitialized": {
     "description": "Library and project tools UI: Git repository initialized"
   },
-  "e7LibraryRefreshProjectHealth": "Refresh project health",
-  "@e7LibraryRefreshProjectHealth": {
-    "description": "Library and project tools UI: Refresh project health"
-  },
   "e7LibraryVersionControl": "Version control",
   "@e7LibraryVersionControl": {
     "description": "Library and project tools UI: Version control"
-  },
-  "e7LibraryChanged": "{detail1} changed",
-  "@e7LibraryChanged": {
-    "description": "Library and project tools UI: {detail1} changed",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
   },
   "e7LibraryLanguageServices": "Language services",
   "@e7LibraryLanguageServices": {
@@ -24009,10 +23967,6 @@
       }
     }
   },
-  "managedWorkspacesProviders": "Providers",
-  "@managedWorkspacesProviders": {
-    "description": "Cloud environments: section of the server providers that can make environments."
-  },
   "managedWorkspacesProvider": "Provider",
   "@managedWorkspacesProvider": {
     "description": "Cloud environments create sheet: label above the provider choice."
@@ -24077,30 +24031,6 @@
   "projectHealthSetUp": "Set up",
   "@projectHealthSetUp": {
     "description": "Project health: the Initialize Git row action."
-  },
-  "projectHealthRunningOf": "{running} of {total} running",
-  "@projectHealthRunningOf": {
-    "description": "Project health: language servers running out of all.",
-    "placeholders": {
-      "running": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthOnOf": "{on} of {total} on",
-  "@projectHealthOnOf": {
-    "description": "Project health: formatters turned on out of all.",
-    "placeholders": {
-      "on": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
   },
   "projectHealthRunning": "Running",
   "@projectHealthRunning": {
@@ -24264,15 +24194,6 @@
   "savedPermissionsIntro": "Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.",
   "@savedPermissionsIntro": {
     "description": "Always allowed actions: one line under the bar saying what the page is for."
-  },
-  "savedPermissionsCount": "{count, plural, one{1 action} other{{count} actions}}",
-  "@savedPermissionsCount": {
-    "description": "Always allowed actions: how many actions are allowed in the current project.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "savedPermissionsLoadFailed": "Could not load the always allowed actions",
   "@savedPermissionsLoadFailed": {
@@ -25068,18 +24989,6 @@
   "importEnvironmentId": "Cloud environment ID",
   "@importEnvironmentId": {
     "description": "Import conversation: label of the destination environment id under Details."
-  },
-  "globalSessionsSummaryCount": "{count, plural, one {1 conversation} other {{count} conversations}} in {folders, plural, one {one project} other {{folders} projects}}",
-  "@globalSessionsSummaryCount": {
-    "description": "All conversations: how many conversations are loaded and in how many projects, once every page is in.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "folders": {
-        "type": "int"
-      }
-    }
   },
   "builtinServerRuntimeLocked": "Stop the server and wait for the current step to switch.",
   "@builtinServerRuntimeLocked": {
@@ -31546,5 +31455,14 @@
   "managedWorkspacesRemoveConfirm": "Remove environment",
   "@managedWorkspacesRemoveConfirm": {
     "description": "Cloud environments: confirm button of the Remove {name}? sheet."
+  },
+  "managedWorkspacesCreateIn": "In {provider}",
+  "@managedWorkspacesCreateIn": {
+    "description": "Cloud environments create sheet subtitle when the server has one provider: where the new environment is made, e.g. 'In Daytona'.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
   }
 }

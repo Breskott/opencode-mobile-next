@@ -15,10 +15,11 @@ import '../widgets/product_states.dart' show productErrorText;
 /// -remove-dialog; revamp unit screen-work-3): the project's environments
 /// that a server provider (an OpenCode workspace adapter) runs elsewhere.
 ///
-/// Built from kit parts only: a [KitScreen] page with its top bar (Refresh,
-/// and Discover existing in the overflow), the environments and the
-/// providers each on one [KitRowGroup], and "New environment" pinned at the
-/// bottom only while a provider can make one.
+/// Built from kit parts only: a [KitScreen] page with its top bar
+/// (Discover existing in the overflow; pull to refresh reloads), the
+/// environments on one [KitRowGroup], and "New environment" pinned at the
+/// bottom only while a provider can make one. Which provider makes it is
+/// chosen in the New environment sheet, never listed on the page.
 ///
 /// States: loading (the screen's one bar), error with no data (a page
 /// [KitStateView.error] with Try again), empty (says what appears here and
@@ -167,6 +168,10 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     final draft = await showKitSheet<_WorkspaceDraft>(
       context,
       title: l10n.e7LibraryNewManagedWorkspace,
+      // One provider leaves nothing to choose: the subtitle names it.
+      subtitle: adapters.length == 1
+          ? l10n.managedWorkspacesCreateIn(adapters.single.name)
+          : null,
       icon: AppIconography.cloud,
       sheetKey: const ValueKey('managed-workspaces-create-sheet'),
       body: (_) => _CreateWorkspaceBody(adapters: adapters, form: form),
@@ -339,16 +344,6 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
       topBar: KitTopBar(
         title: l10n.e7LibraryCloudEnvironments,
         subtitle: widget.project.name,
-        actions: [
-          KitAction(
-            key: const ValueKey('refresh-managed-workspaces'),
-            label: l10n.managedWorkspacesRefresh,
-            icon: AppIconography.retry,
-            working: _loading && workspaces != null,
-            onPressed: _busy || _loading ? null : () => unawaited(_load()),
-            disabledReason: _busy || _loading ? l10n.kitWorking : null,
-          ),
-        ],
         menu: [
           KitMenuItem(
             key: const ValueKey('sync-managed-workspaces'),
@@ -417,8 +412,13 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
                         onDismiss: () => setState(() => _outcome = null),
                       ),
               ),
-            ..._environments(l10n, gutter, noProvider),
-            ..._providers(l10n, gutter),
+            ..._environments(
+              l10n,
+              gutter,
+              noProvider,
+              below: creatingSince != null || outcome != null,
+            ),
+            ?_providerProblem(l10n, gutter),
           ],
         ),
       ),
@@ -428,8 +428,9 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
   List<Widget> _environments(
     AppLocalizations l10n,
     EdgeInsetsGeometry gutter,
-    bool noProvider,
-  ) {
+    bool noProvider, {
+    required bool below,
+  }) {
     final workspaces = _workspaces;
     final error = _workspaceError;
     if (error != null && workspaces == null) {
@@ -480,15 +481,11 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
         if (error != null) _refreshFailed(l10n, gutter, error),
       ];
     }
+    // The page title names the list, so it carries no label or count.
     return [
       KitRowGroup(
-        label: l10n.e7LibraryEnvironments,
-        labelTrailing: KitText(
-          '${workspaces.length}',
-          role: KitTextRole.label,
-          tone: KitTextTone.tertiary,
-          tabular: true,
-        ),
+        key: const ValueKey('managed-workspaces-group'),
+        gapBefore: below ? KitTokens.of(context).space3 : null,
         children: [
           for (final workspace in workspaces)
             _WorkspaceRow(
@@ -521,71 +518,44 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     ),
   );
 
-  List<Widget> _providers(AppLocalizations l10n, EdgeInsetsGeometry gutter) {
+  /// Why New environment is missing while environments are listed: the
+  /// providers could not be read, or the server has none. With no
+  /// environments either, the page's own state says so instead.
+  Widget? _providerProblem(AppLocalizations l10n, EdgeInsetsGeometry gutter) {
     final adapters = _adapters;
     final error = _adapterError;
-    if (error != null && adapters == null) {
-      return [
-        SectionLabel(l10n.managedWorkspacesProviders),
-        Padding(
-          padding: EdgeInsetsDirectional.symmetric(
-            horizontal: KitTokens.of(context).gutter,
-          ),
-          child: KitNotice.error(
-            key: const ValueKey('workspace-adapter-error'),
-            title: l10n.managedWorkspacesProvidersFailed,
-            message: error,
-            retry: KitAction(
-              label: l10n.kitTryAgain,
-              onPressed: () => unawaited(_load()),
-            ),
+    final workspaces = _workspaces;
+    // An unreadable list already has the page's error, which covers this.
+    if (workspaces == null) return null;
+    if (error != null) {
+      return Padding(
+        padding: gutter,
+        child: KitNotice.error(
+          key: const ValueKey('workspace-adapter-error'),
+          title: adapters == null
+              ? l10n.managedWorkspacesProvidersFailed
+              : l10n.e7LibraryAdapterRefreshFailed,
+          message: error,
+          retry: KitAction(
+            label: l10n.kitTryAgain,
+            onPressed: () => unawaited(_load()),
           ),
         ),
-      ];
+      );
     }
-    // No provider and no environments: the page's own state says so.
-    if (adapters == null ||
-        (adapters.isEmpty && _workspaces?.isEmpty == true)) {
-      return const [];
-    }
-    return [
-      if (adapters.isEmpty) ...[
-        SectionLabel(l10n.managedWorkspacesProviders),
-        KitStateView(
+    // With no environments, the empty state says there is no provider.
+    if (adapters != null && adapters.isEmpty && workspaces.isNotEmpty) {
+      return Padding(
+        padding: gutter,
+        child: KitNotice(
           key: const ValueKey('workspace-adapters-empty'),
-          size: KitStateSize.inline,
           icon: AppIconography.cloudOff,
           title: l10n.managedWorkspacesNoProviderTitle,
-          body: l10n.managedWorkspacesNoProviderBody,
+          message: l10n.managedWorkspacesNoProviderBody,
         ),
-      ] else
-        KitRowGroup(
-          label: l10n.managedWorkspacesProviders,
-          children: [
-            for (final adapter in adapters)
-              KitRow(
-                leading: KitRowIcon(AppIconography.extensions),
-                title: adapter.name,
-                supporting: adapter.description.isEmpty
-                    ? null
-                    : TextSpan(text: adapter.description),
-                supportingMaxLines: 2,
-              ),
-          ],
-        ),
-      if (error != null)
-        Padding(
-          padding: gutter,
-          child: KitNotice.error(
-            title: l10n.e7LibraryAdapterRefreshFailed,
-            message: error,
-            retry: KitAction(
-              label: l10n.kitTryAgain,
-              onPressed: () => unawaited(_load()),
-            ),
-          ),
-        ),
-    ];
+      );
+    }
+    return null;
   }
 }
 
@@ -679,8 +649,9 @@ class _CreateForm {
   }
 }
 
-/// The create sheet's body: the provider (already chosen when there is
-/// one), the branch, and how long it usually takes.
+/// The create sheet's body: the provider (a choice only when there are
+/// several; one is named in the sheet's subtitle), the branch, and how long
+/// it usually takes.
 class _CreateWorkspaceBody extends StatefulWidget {
   const _CreateWorkspaceBody({required this.adapters, required this.form});
 
@@ -710,24 +681,29 @@ class _CreateWorkspaceBodyState extends State<_CreateWorkspaceBody> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionLabel.inline(l10n.managedWorkspacesProvider),
-        KitChoiceList<String>.single(
-          key: const ValueKey('workspace-adapter-picker'),
-          choices: [
-            for (final adapter in widget.adapters)
-              KitChoice(
-                value: adapter.type,
-                title: adapter.name,
-                supporting: adapter.description.isEmpty
-                    ? null
-                    : adapter.description,
-              ),
-          ],
-          selected: widget.form.type,
-          actsOnTap: false,
-          onSelected: (value) => setState(() => widget.form.type = value),
-        ),
-        SizedBox(height: tokens.space4),
+        if (widget.adapters.length > 1) ...[
+          KitSectionLabel(
+            l10n.managedWorkspacesProvider,
+            margin: EdgeInsets.zero,
+          ),
+          KitChoiceList<String>.single(
+            key: const ValueKey('workspace-adapter-picker'),
+            choices: [
+              for (final adapter in widget.adapters)
+                KitChoice(
+                  value: adapter.type,
+                  title: adapter.name,
+                  supporting: adapter.description.isEmpty
+                      ? null
+                      : adapter.description,
+                ),
+            ],
+            selected: widget.form.type,
+            actsOnTap: false,
+            onSelected: (value) => setState(() => widget.form.type = value),
+          ),
+          SizedBox(height: tokens.space4),
+        ],
         KitField(
           label: l10n.managedWorkspacesBranchLabel,
           controller: _branch,

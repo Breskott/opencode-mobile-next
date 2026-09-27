@@ -20,7 +20,6 @@ import '../kit/kit_screen.dart';
 import '../kit/kit_search_field.dart';
 import '../kit/kit_state_view.dart';
 import '../kit/kit_text.dart';
-import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_refresh.dart';
 import '../widgets/product_states.dart' show productErrorText;
@@ -251,16 +250,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final busy = _loading || _busyProjectID != null;
     return KitScreen(
       width: KitScreenWidth.list,
-      topBar: KitTopBar(
-        title: l10n.e7ProjectProjectsTitle,
-        actions: [
-          KitAction(
-            label: l10n.e7ProjectProjectsRefresh,
-            icon: AppIconography.retry,
-            onPressed: busy ? null : _load,
-          ),
-        ],
-      ),
+      // Pull to refresh reloads the list; Try again lives with a failed
+      // read, so the top bar carries no refresh of its own.
+      topBar: KitTopBar(title: l10n.e7ProjectProjectsTitle),
       search: KitSearchField(
         label: l10n.e7ProjectProjectsSearch,
         controller: _search,
@@ -339,10 +331,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             else if (visible.isEmpty && query.isNotEmpty)
               KitSearchNoMatch(query: query, onClear: _search.clear)
             else if (visible.isNotEmpty)
+              // The label keeps the section gap from the folder actions.
               KitRowGroup(
-                margin: EdgeInsetsDirectional.only(
-                  top: KitTokens.of(context).sectionGap,
-                ),
+                key: const ValueKey('projects-open-group'),
+                margin: EdgeInsets.zero,
                 label: l10n.e7ProjectProjectsOpened,
                 children: [
                   for (final project in visible)

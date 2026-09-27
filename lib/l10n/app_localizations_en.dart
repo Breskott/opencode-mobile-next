@@ -7246,28 +7246,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceBackgroundOff => 'Background updates off';
 
   @override
-  String e7WorkspaceFilteredLoaded(int count, int total) {
-    return '$count shown from $total loaded conversations';
-  }
-
-  @override
-  String e7WorkspaceLoadedSummary(int count, int folders) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count loaded conversations',
-      one: '1 loaded conversation',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      folders,
-      locale: localeName,
-      other: '$folders projects',
-      one: '1 project',
-    );
-    return '$_temp0 · $_temp1';
-  }
-
-  @override
   String get e7WorkspaceLoadedFolders => 'Loaded projects';
 
   @override
@@ -9168,10 +9146,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryAlwaysAllowedActions => 'Always allowed actions';
 
   @override
-  String get e7LibraryRefreshAlwaysAllowedActions =>
-      'Refresh always allowed actions';
-
-  @override
   String get e7LibraryNoAlwaysAllowedActions => 'No always allowed actions';
 
   @override
@@ -9530,15 +9504,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryGitRepositoryInitialized => 'Git repository initialized';
 
   @override
-  String get e7LibraryRefreshProjectHealth => 'Refresh project health';
-
-  @override
   String get e7LibraryVersionControl => 'Version control';
-
-  @override
-  String e7LibraryChanged(String detail1) {
-    return '$detail1 changed';
-  }
 
   @override
   String get e7LibraryLanguageServices => 'Language services';
@@ -20894,9 +20860,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get managedWorkspacesProviders => 'Providers';
-
-  @override
   String get managedWorkspacesProvider => 'Provider';
 
   @override
@@ -20947,16 +20910,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectHealthSetUp => 'Set up';
-
-  @override
-  String projectHealthRunningOf(int running, int total) {
-    return '$running of $total running';
-  }
-
-  @override
-  String projectHealthOnOf(int on, int total) {
-    return '$on of $total on';
-  }
 
   @override
   String get projectHealthRunning => 'Running';
@@ -21068,17 +21021,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get savedPermissionsIntro =>
       'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.';
-
-  @override
-  String savedPermissionsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count actions',
-      one: '1 action',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get savedPermissionsLoadFailed =>
@@ -21686,23 +21628,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importEnvironmentId => 'Cloud environment ID';
-
-  @override
-  String globalSessionsSummaryCount(int count, int folders) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count conversations',
-      one: '1 conversation',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      folders,
-      locale: localeName,
-      other: '$folders projects',
-      one: 'one project',
-    );
-    return '$_temp0 in $_temp1';
-  }
 
   @override
   String get builtinServerRuntimeLocked =>
@@ -26465,4 +26390,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedWorkspacesRemoveConfirm => 'Remove environment';
+
+  @override
+  String managedWorkspacesCreateIn(String provider) {
+    return 'In $provider';
+  }
 }

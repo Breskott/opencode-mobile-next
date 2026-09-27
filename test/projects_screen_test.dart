@@ -372,6 +372,40 @@ void main() {
     expect(find.byKey(const ValueKey('project-team-origin')), findsNothing);
   });
 
+  testWidgets('R13: no refresh in the top bar, and Open projects sits one '
+      'section gap under the folder actions', (tester) async {
+    var loads = 0;
+    final repository = _ProjectsRepository()
+      ..projectsLoader = () async {
+        loads += 1;
+        return const [
+          WorkspaceProject(
+            id: 'my-app',
+            name: 'my-app',
+            directory: '/root/projects/my-app',
+            worktrees: [],
+            updatedAt: 1,
+          ),
+        ];
+      };
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _direct(ProjectsScreen(controller: controller, selectedProjectID: null)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Refresh projects'), findsNothing);
+    final actions = tester.getRect(
+      find.byKey(const ValueKey('projects-open-folder')),
+    );
+    expect(
+      tester.getTopLeft(find.text('Open projects')).dy - actions.bottom,
+      moreOrLessEquals(22, epsilon: 0.01),
+    );
+    expect(loads, 1);
+  });
+
   testWidgets('project search and reset-name use server project truth', (
     tester,
   ) async {

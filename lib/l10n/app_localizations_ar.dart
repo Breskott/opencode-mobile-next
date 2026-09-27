@@ -7335,16 +7335,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceBackgroundOff => 'تحديثات الخلفية متوقفة';
 
   @override
-  String e7WorkspaceFilteredLoaded(int count, int total) {
-    return 'المحادثات المحمّلة: $total · الظاهرة: $count';
-  }
-
-  @override
-  String e7WorkspaceLoadedSummary(int count, int folders) {
-    return 'المحادثات المحمّلة: $count · المشاريع: $folders';
-  }
-
-  @override
   String get e7WorkspaceLoadedFolders => 'المشاريع المحمّلة';
 
   @override
@@ -9342,10 +9332,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryAlwaysAllowedActions => 'الإجراءات المسموح بها دائمًا';
 
   @override
-  String get e7LibraryRefreshAlwaysAllowedActions =>
-      'تحديث الإجراءات المسموح بها دائمًا';
-
-  @override
   String get e7LibraryNoAlwaysAllowedActions =>
       'لا توجد إجراءات مسموح بها دائمًا';
 
@@ -9701,15 +9687,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryGitRepositoryInitialized => 'تمت تهيئة مستودع Git';
 
   @override
-  String get e7LibraryRefreshProjectHealth => 'تحديث حالة المشروع';
-
-  @override
   String get e7LibraryVersionControl => 'التحكم بالإصدارات';
-
-  @override
-  String e7LibraryChanged(String detail1) {
-    return 'متغيّر: $detail1';
-  }
 
   @override
   String get e7LibraryLanguageServices => 'خدمات اللغات';
@@ -21155,9 +21133,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get managedWorkspacesProviders => 'Providers';
-
-  @override
   String get managedWorkspacesProvider => 'Provider';
 
   @override
@@ -21208,16 +21183,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get projectHealthSetUp => 'Set up';
-
-  @override
-  String projectHealthRunningOf(int running, int total) {
-    return '$running of $total running';
-  }
-
-  @override
-  String projectHealthOnOf(int on, int total) {
-    return '$on of $total on';
-  }
 
   @override
   String get projectHealthRunning => 'Running';
@@ -21329,17 +21294,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get savedPermissionsIntro =>
       'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.';
-
-  @override
-  String savedPermissionsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count actions',
-      one: '1 action',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get savedPermissionsLoadFailed =>
@@ -21947,23 +21901,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get importEnvironmentId => 'Cloud environment ID';
-
-  @override
-  String globalSessionsSummaryCount(int count, int folders) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count conversations',
-      one: '1 conversation',
-    );
-    String _temp1 = intl.Intl.pluralLogic(
-      folders,
-      locale: localeName,
-      other: '$folders projects',
-      one: 'one project',
-    );
-    return '$_temp0 in $_temp1';
-  }
 
   @override
   String get builtinServerRuntimeLocked =>
@@ -26726,4 +26663,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedWorkspacesRemoveConfirm => 'Remove environment';
+
+  @override
+  String managedWorkspacesCreateIn(String provider) {
+    return 'In $provider';
+  }
 }
