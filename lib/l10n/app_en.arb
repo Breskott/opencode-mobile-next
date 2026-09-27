@@ -31514,7 +31514,7 @@
       }
     }
   },
-  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This host can't nudge or restart it from here; report the problem or check the team's computer.",
+  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This server can't nudge or restart it from here; report the problem or check the team's computer.",
   "@teamChatNoProgressBodyNoControls": {
     "description": "Team conversation: under a stalled task on a host without agent controls, what happened and the way forward",
     "placeholders": {
@@ -31530,7 +31530,7 @@
   "@teamChatNoProgressReport": {
     "description": "Team conversation, a stalled task: opens Report a problem with the stall attached"
   },
-  "teamChatNoProgressReportTitle": "An AI Team task made no progress for {elapsed}",
+  "teamChatNoProgressReportTitle": "Task made no progress",
   "@teamChatNoProgressReportTitle": {
     "description": "Report a problem: the attached problem's title for a stalled team task",
     "placeholders": {
@@ -31539,7 +31539,7 @@
       }
     }
   },
-  "teamTaskDetailsReported": "What the host reported",
+  "teamTaskDetailsReported": "What the server reported",
   "@teamTaskDetailsReported": {
     "description": "Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)"
   },

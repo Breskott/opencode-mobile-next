@@ -71,7 +71,7 @@ const _allowed = <String, Map<String, String>>{
   // docs/qa/no-raw-errors-2026-09-27/README.md). Remove each entry with its
   // fix.
   'screens/chat_screen.dart': {
-    "out.write('> \${_chatL10n(context).chatUiError}: \$error\\n');":
+    "put('> \${l10n.chatUiError}: \$error\\n');":
         'transcript export text, not UI copy (chat lane to review)',
   },
 };

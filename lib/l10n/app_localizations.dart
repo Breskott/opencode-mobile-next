@@ -41556,7 +41556,7 @@ abstract class AppLocalizations {
   /// Team conversation: under a stalled task on a host without agent controls, what happened and the way forward
   ///
   /// In en, this message translates to:
-  /// **'{name} hasn\'t moved this task since {time}. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
+  /// **'{name} hasn\'t moved this task since {time}. This server can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
   String teamChatNoProgressBodyNoControls(String name, String time);
 
   /// Team conversation, a stalled task: opens Report a problem with the stall attached
@@ -41568,13 +41568,13 @@ abstract class AppLocalizations {
   /// Report a problem: the attached problem's title for a stalled team task
   ///
   /// In en, this message translates to:
-  /// **'An AI Team task made no progress for {elapsed}'**
+  /// **'Task made no progress'**
   String teamChatNoProgressReportTitle(String elapsed);
 
   /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
   ///
   /// In en, this message translates to:
-  /// **'What the host reported'**
+  /// **'What the server reported'**
   String get teamTaskDetailsReported;
 
   /// KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)

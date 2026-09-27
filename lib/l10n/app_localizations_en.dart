@@ -26378,7 +26378,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatNoProgressBodyNoControls(String name, String time) {
-    return '$name hasn\'t moved this task since $time. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.';
+    return '$name hasn\'t moved this task since $time. This server can\'t nudge or restart it from here; report the problem or check the team\'s computer.';
   }
 
   @override
@@ -26386,11 +26386,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatNoProgressReportTitle(String elapsed) {
-    return 'An AI Team task made no progress for $elapsed';
+    return 'Task made no progress';
   }
 
   @override
-  String get teamTaskDetailsReported => 'What the host reported';
+  String get teamTaskDetailsReported => 'What the server reported';
 
   @override
   String get kitToolOpenDetails => 'Open its details';
