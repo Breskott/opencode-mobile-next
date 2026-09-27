@@ -67,6 +67,10 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   // profile is reopened only by syncProfiles after the deletion transaction.
   static final _deletingProfiles =
       Map<SharedPreferences, Set<String>>.identity();
+  // Recovery records share an installation budget. Serialize its whole write
+  // (including alias mirrors), so deletion can drain every writer of one ID.
+  static final _preferenceWrites =
+      Map<SharedPreferences, Future<void>>.identity();
   static final _runtimes =
       Map<SharedPreferences, Map<String, TermuxRuntime>>.identity();
   // Registration belongs to the connection scope, even before the person
@@ -120,11 +124,20 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     _knownProfiles[prefs] = ids;
+    final resumed = (_deletingProfiles[prefs] ?? {}).intersection(ids);
     _deletingProfiles[prefs]?.removeAll(ids);
     _retiredProfiles[prefs]?.removeAll(ids);
     _runtimes[prefs] = Map.of(runtimes);
     if (onRestart != null) _recorders[prefs] = onRestart;
     final profiles = _instances[prefs];
+    for (final id in resumed) {
+      final instance = profiles?[id];
+      if (instance != null && !instance._disposed) {
+        instance._admissionClosed = false;
+        instance._notify();
+        instance._schedule();
+      }
+    }
     for (final id in profiles?.keys.toList() ?? <String>[]) {
       if (!ids.contains(id)) profiles!.remove(id)?.dispose();
     }
@@ -178,8 +191,14 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       current._timer?.cancel();
       current._armed = false;
       current._notify();
-      await current._initialization;
-      if (current.ownsInstallation) await current._revokePermit();
+      final revoking = current.ownsInstallation
+          ? current._revokePermit()
+          : Future<void>.value();
+      try {
+        await current._initialization;
+      } finally {
+        await revoking;
+      }
       await current._inFlightCheck;
     } else {
       final raw = prefs.getString(preferenceKey(profileID));
@@ -193,6 +212,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
     }
+    await _preferenceWrites[prefs];
   }
 
   /// An intentional stop/runtime switch suspends this installation without
@@ -212,15 +232,18 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     SharedPreferences prefs,
     String profileID,
   ) async {
+    if (_deletingProfiles[prefs]?.contains(profileID) ?? false) return;
     final requested = forProfile(prefs, profileID);
     final previous = _instances[prefs]?[_owners[prefs]];
     if (previous != null && !identical(previous, requested)) {
       await previous._suspend();
     }
+    if (requested._cannotSave) return;
     requested.attempts = requested._sharedAttempts();
     requested._manuallySuspended = true;
     // Copy the installation budget before this profile gains admission.
     await requested._save();
+    if (requested._cannotSave) return;
     _owners[prefs] = profileID;
     await requested._resumeAfterManualStart();
   }
@@ -234,19 +257,26 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       prefs,
       id,
     ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+    if (_deletingProfiles[prefs]?.contains(id) ?? false) return;
     final data = jsonDecode(raw) as Map<String, dynamic>;
     data['enabled'] = false;
     final token = data['token'];
+    final revoking = token is String && token.isNotEmpty
+        ? TermuxBridge.run(
+            TermuxBridge.recoveryControlScript(token, enable: false),
+          ).then<void>((_) {})
+        : Future<void>.value();
+    // Observe revocation immediately even if the preference lane is blocked.
+    unawaited(revoking.then<void>((_) {}, onError: (Object _) {}));
     try {
-      if (!await prefs.setString(preferenceKey(id), jsonEncode(data))) {
-        throw StateError('Could not save recovery preference');
-      }
+      await _serializePreferenceWrite(prefs, () async {
+        if (_deletingProfiles[prefs]?.contains(id) ?? false) return;
+        if (!await prefs.setString(preferenceKey(id), jsonEncode(data))) {
+          throw StateError('Could not save recovery preference');
+        }
+      });
     } finally {
-      if (token is String && token.isNotEmpty) {
-        await TermuxBridge.run(
-          TermuxBridge.recoveryControlScript(token, enable: false),
-        );
-      }
+      await revoking;
     }
   }
 
@@ -261,6 +291,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       _policy.value.allows(AutomationBehavior.restartPhoneServer) &&
       _policy.value.allows(AutomationBehavior.pollRestartHealth);
   bool get enabled =>
+      !_cannotSave &&
       !_admissionClosed &&
       !(_retiredProfiles[prefs]?.contains(profileID) ?? false) &&
       !_legacyMigrationPending &&
@@ -388,7 +419,30 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     return spent;
   }
 
-  Future<void> _save() async {
+  static Future<void> _serializePreferenceWrite(
+    SharedPreferences prefs,
+    Future<void> Function() action,
+  ) {
+    final result = (_preferenceWrites[prefs] ?? Future<void>.value()).then(
+      (_) => action(),
+    );
+    final settled = result.then<void>((_) {}, onError: (Object _) {});
+    _preferenceWrites[prefs] = settled;
+    unawaited(
+      settled.then((_) {
+        if (identical(_preferenceWrites[prefs], settled)) {
+          _preferenceWrites.remove(prefs);
+        }
+      }),
+    );
+    return result;
+  }
+
+  bool get _cannotSave =>
+      _disposed || (_deletingProfiles[prefs]?.contains(profileID) ?? false);
+
+  Future<void> _save() => _serializePreferenceWrite(prefs, () async {
+    if (_cannotSave) return;
     attempts = _sharedAttempts();
     if (!await prefs.setString(
       preferenceKey(profileID),
@@ -412,6 +466,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     final ids = (_knownProfiles[prefs] ?? _instances[prefs]?.keys.toSet() ?? {})
         .difference(_retiredProfiles[prefs] ?? {});
     for (final id in ids.where((id) => id != profileID)) {
+      if (_deletingProfiles[prefs]?.contains(id) ?? false) continue;
       final raw = prefs.getString(preferenceKey(id));
       final data = raw == null
           ? <String, dynamic>{}
@@ -428,7 +483,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       final alias = _instances[prefs]?[id];
       if (alias != null) alias.attempts = attempts;
     }
-  }
+  });
 
   Future<void> _disableForDeletion() async {
     await setEnabled(false);
@@ -436,25 +491,27 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _suspend() async {
+    if (_cannotSave) return;
     ++_epoch;
     _timer?.cancel();
     _manuallySuspended = true;
     _armed = false;
     _notify();
+    final revoking = ownsInstallation ? _revokePermit() : Future<void>.value();
     try {
       await _save();
     } finally {
-      if (ownsInstallation) await _revokePermit();
+      await revoking;
     }
   }
 
   Future<void> _resumeAfterManualStart() async {
-    if (_disposed || !_foreground) return;
+    if (_cannotSave || !_foreground) return;
     final epoch = ++_epoch;
     _timer?.cancel();
     try {
       final observed = await TermuxBridge.status();
-      if (_disposed || epoch != _epoch || !_foreground) return;
+      if (_cannotSave || epoch != _epoch || !_foreground) return;
       final expectedRuntime = _runtimes[prefs]?[profileID];
       if (!observed.isReady ||
           (expectedRuntime != null && observed.runtime != expectedRuntime) ||
@@ -487,19 +544,24 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   /// The two settings surfaces edit the same persisted automation behavior.
   /// Re-enabling never replenishes the durable retry budget.
   Future<void> setEnabled(bool value) async {
-    if (_disposed) return;
+    if (_cannotSave) return;
     if (!value) {
       _admissionClosed = true;
       ++_epoch;
       _timer?.cancel();
       _armed = false;
       _notify();
+      // Revoke native admission immediately; a slow disk write cannot keep an
+      // already dispatched recovery authorized while this stop waits its turn.
+      final revoking = ownsInstallation
+          ? _revokePermit()
+          : Future<void>.value();
       try {
         await _initialization;
         await _policy.setBehavior(AutomationBehavior.restartPhoneServer, false);
         await _save();
       } finally {
-        if (ownsInstallation) await _revokePermit();
+        await revoking;
       }
       return;
     }

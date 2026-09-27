@@ -839,13 +839,27 @@ void main() {
 
       // Stop changes the enabled state while the reservation write is still
       // in flight. Its newer state must survive the stale write completion.
-      await recovery.setEnabled(false);
+      final stopping = recovery.setEnabled(false);
+      await tester.pump();
+      expect(recovery.enabled, isFalse);
+      expect(
+        scripts.where((script) => script.contains('recovery-disarm')),
+        isNotEmpty,
+      );
       gate.complete();
+      await stopping;
       await checking;
 
       expect(recovery.enabled, isFalse);
       expect(recovery.attempts, 1);
       expect(recovery.nextAttemptAt, isNotNull);
+      final saved =
+          jsonDecode(
+                failing.values[ManagedServerRecovery.preferenceKey('local')]!,
+              )
+              as Map;
+      expect(saved['enabled'], isFalse);
+      expect(saved['attempts'], 1);
       expect(
         scripts.where((script) => script.contains('"\$MANAGER" restart')),
         isEmpty,
