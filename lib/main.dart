@@ -20,6 +20,7 @@ import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
 import 'diagnostics/perf_trace.dart';
+import 'diagnostics/report_problem_startup.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
@@ -83,6 +84,8 @@ Future<void> main() async {
   }
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(diagnostics);
+  // The persisted, redacted problem report (errors, timings, exits, heat).
+  unawaited(ReportProblemStartup.start(diagnostics));
   runApp(AppBootstrapGate(diagnostics: diagnostics));
   WidgetsBinding.instance.addPostFrameCallback(
     (_) => PerfTrace.markOnce('app.first_frame'),
