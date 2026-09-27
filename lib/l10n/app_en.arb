@@ -30943,7 +30943,7 @@
       }
     }
   },
-  "consentBatteryTitle": "Keep OpenCode running on this phone?",
+  "consentBatteryTitle": "Keep the server running?",
   "@consentBatteryTitle": {
     "description": "P6.7: asked once at the phone server's first start (and from its Settings row): the battery exemption."
   },
@@ -30955,7 +30955,7 @@
   "@consentBatteryAllow": {
     "description": "P6.7: battery consent confirm; Android's own prompt follows."
   },
-  "consentMakerTitle": "Let the server start again by itself?",
+  "consentMakerTitle": "Restart the server automatically?",
   "@consentMakerTitle": {
     "description": "P6.7: asked once at the phone server's first start on phones whose maker blocks auto-start."
   },
@@ -30993,7 +30993,7 @@
   "@consentGroupLabel": {
     "description": "P6.7: What runs by itself, group of the questions the app asked once on this server."
   },
-  "consentRowBattery": "Keep running in the background",
+  "consentRowBattery": "Background running",
   "@consentRowBattery": {
     "description": "P6.7: Your answers row: the battery exemption."
   },
@@ -31033,7 +31033,7 @@
   "@consentAllowedNeedsYou": {
     "description": "P6.7: an allowed needs-you preset."
   },
-  "consentWhyAlwaysAllow": "You chose to keep approving these each time they're asked. Tap to be offered Always allow again.",
+  "consentWhyAlwaysAllow": "Still asked each time. Tap to be offered Always allow again.",
   "@consentWhyAlwaysAllow": {
     "description": "P6.7: declined Always allow offers."
   },
@@ -31058,7 +31058,7 @@
       }
     }
   },
-  "consentAlwaysAgainTitle": "Offer Always allow again?",
+  "consentAlwaysAgainTitle": "Ask to always allow?",
   "@consentAlwaysAgainTitle": {
     "description": "P6.7: confirm resetting declined Always allow offers."
   },
@@ -31474,5 +31474,13 @@
   "termuxProcsCpuTime": "Processor time",
   "@termuxProcsCpuTime": {
     "description": "Running on this phone › Details: total CPU time the process used"
+  },
+  "consentAlwaysAllowTitle": "Always allow this request?",
+  "@consentAlwaysAllowTitle": {
+    "description": "P6.7: confirm title before answering a request with Always allow from the third-ask offer."
+  },
+  "consentNeedsYouAllow": "Turn on notifications",
+  "@consentNeedsYouAllow": {
+    "description": "P6.7: confirm label for 'Tell me when the agent needs me' asked from Settings."
   }
 }

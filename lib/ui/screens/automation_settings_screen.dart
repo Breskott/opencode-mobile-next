@@ -195,7 +195,6 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
   Future<void> _allowConsent(InFlowConsentKind kind) async {
     final consent = _consent;
     if (consent == null || !consent.storageAvailable) return;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final bridge = ProviderScope.containerOf(
       context,
       listen: false,
@@ -204,16 +203,11 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
         ? (await bridge.keepAliveInfo()).manufacturer
         : '';
     if (!mounted) return;
-    final words = phoneConsentWords(l10n, kind, maker: maker);
-    final allow = await showKitConfirm(
+    final allow = await askConsent(
       context,
-      title: words.title,
-      body: words.body,
-      confirmLabel: words.allow,
-      cancelLabel: l10n.consentNotNow,
-      icon: words.icon,
-      sheetKey: ValueKey('automation-consent-ask-${kind.name}'),
-      confirmKey: ValueKey('automation-consent-allow-${kind.name}'),
+      kind,
+      maker: maker,
+      keyPrefix: 'automation-consent-ask',
     );
     if (!allow || !mounted) return;
     try {
@@ -497,6 +491,7 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
           InFlowConsentKind.makerAutoStart => l10n.consentRowMaker,
           InFlowConsentKind.needsYouNotifications => l10n.consentRowNeedsYou,
         },
+        titleMaxLines: 2,
         supporting: TextSpan(
           text: switch (answer.explanation) {
             InFlowConsentExplanation.batteryMayStopServer =>

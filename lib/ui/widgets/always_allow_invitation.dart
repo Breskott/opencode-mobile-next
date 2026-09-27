@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/consent_owners.dart';
 import '../../state/connection.dart';
@@ -10,16 +9,6 @@ import '../../state/repeated_permission_consent.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
-
-/// The exact scope a permission request would be remembered by: its own
-/// patterns and the standing grant the server proposes, never display text.
-PermissionConsentScope permissionConsentScope(PermissionRequest permission) =>
-    PermissionConsentScope(
-      sessionID: permission.sessionID,
-      permission: permission.permission,
-      patterns: permission.patterns,
-      alwaysPatterns: permission.always,
-    );
 
 /// "Always allow this" on the third identical ask (P6.7, consent once, in
 /// flow): one line under a permission request's card, shown once per server
@@ -35,17 +24,22 @@ PermissionConsentScope permissionConsentScope(PermissionRequest permission) =>
 /// Allow once and Reject stay as they were. Nothing here answers by itself.
 ///
 /// The conversation owns where it sits: directly under the request's card,
-/// keyed by the request id.
+/// keyed by the request id. It reads the request from the connection's
+/// pending list, so it needs only the ids; the exact scope it is remembered
+/// by is the request's own patterns and the standing grant the server
+/// proposes (`always`), never display text.
 class AlwaysAllowInvitation extends StatefulWidget {
   const AlwaysAllowInvitation({
     super.key,
     required this.controller,
-    required this.permission,
+    required this.sessionID,
+    required this.requestID,
     this.contextLabel,
   });
 
   final ConnectionController controller;
-  final PermissionRequest permission;
+  final String sessionID;
+  final String requestID;
 
   /// Where the grant applies, as the request sheet says it ("in this
   /// conversation" by default).
@@ -60,20 +54,37 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
   bool _working = false;
   bool _failed = false;
 
+  /// The request's exact scope and words, read once from the pending list.
+  PermissionConsentScope? _scope;
+  List<String> _broader = const [];
+  String _what = '';
+
   String? get _profileId => widget.controller.profile?.id;
 
-  String get _requestKey =>
-      '${widget.permission.sessionID}/${widget.permission.id}';
+  String get _requestKey => '${widget.sessionID}/${widget.requestID}';
 
   @override
   void initState() {
     super.initState();
     final profileId = _profileId;
     final controller = widget.controller;
+    final request = controller
+        .permissionsForSession(widget.sessionID)
+        .where((pending) => pending.id == widget.requestID)
+        .firstOrNull;
     if (profileId == null ||
+        request == null ||
         !controller.capabilities.persistentPermissionGrants) {
       return;
     }
+    _scope = PermissionConsentScope(
+      sessionID: request.sessionID,
+      permission: request.permission,
+      patterns: request.patterns,
+      alwaysPatterns: request.always,
+    );
+    _broader = request.always.isNotEmpty ? request.always : request.patterns;
+    _what = _broader.isNotEmpty ? _broader.join(', ') : request.permission;
     // Rebuilt for a request already invited: the history now answers
     // "offered", but the invitation still belongs under this card.
     _invited = ConsentOwners.invitedRequests(
@@ -87,8 +98,8 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
     final prefs = widget.controller.store.prefs;
     final invited = ConsentOwners.invitedRequests(prefs, profileId);
     final status = await ConsentOwners.repeated(prefs, profileId).observe(
-      scope: permissionConsentScope(widget.permission),
-      requestID: widget.permission.id,
+      scope: _scope!,
+      requestID: widget.requestID,
       supportsPersistentGrants: true,
     );
     if (!status.offerAlwaysAllow) return;
@@ -109,19 +120,16 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
 
   Future<void> _accept() async {
     final profileId = _profileId;
-    if (_working || profileId == null) return;
+    final scope = _scope;
+    if (_working || profileId == null || scope == null) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final permission = widget.permission;
-    final broader = permission.always.isNotEmpty
-        ? permission.always
-        : permission.patterns;
     final confirmed = await showKitConfirm(
       context,
-      title: l10n.chatRequestAlwaysTitle,
+      title: l10n.consentAlwaysAllowTitle,
       body: l10n.chatRequestAlwaysScope(
-        broader.isEmpty
+        _broader.isEmpty
             ? l10n.chatUiAllMatchingRequests
-            : KitBidi.ltr(broader.join(', ')),
+            : KitBidi.ltr(_broader.join(', ')),
         widget.contextLabel ?? l10n.chatUiInThisChat,
       ),
       confirmLabel: l10n.chatUiAlwaysAllow,
@@ -131,7 +139,12 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
     );
     if (!confirmed || !mounted) return;
     final controller = widget.controller;
-    final request = controller.permissionIdentity(permission);
+    final pending = controller
+        .permissionsForSession(widget.sessionID)
+        .where((request) => request.id == widget.requestID)
+        .firstOrNull;
+    if (pending == null) return;
+    final request = controller.permissionIdentity(pending);
     if (!controller.isRequestPending(request)) return;
     setState(() {
       _working = true;
@@ -139,7 +152,7 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
     });
     try {
       await controller.answerPermission(
-        permission.id,
+        widget.requestID,
         'always',
         expectedRequest: request,
       );
@@ -158,37 +171,29 @@ class _AlwaysAllowInvitationState extends State<AlwaysAllowInvitation> {
     await ConsentOwners.repeated(
       controller.store.prefs,
       profileId,
-    ).recordDecision(permissionConsentScope(permission), accepted: true);
+    ).recordDecision(scope, accepted: true);
     _done();
   }
 
   Future<void> _decline() async {
     final profileId = _profileId;
-    if (_working || profileId == null) return;
+    final scope = _scope;
+    if (_working || profileId == null || scope == null) return;
     _done();
     await ConsentOwners.repeated(
       widget.controller.store.prefs,
       profileId,
-    ).recordDecision(
-      permissionConsentScope(widget.permission),
-      accepted: false,
-    );
+    ).recordDecision(scope, accepted: false);
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_invited) return const SizedBox.shrink();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final permission = widget.permission;
-    final what = permission.always.isNotEmpty
-        ? permission.always.join(', ')
-        : permission.patterns.isNotEmpty
-        ? permission.patterns.join(', ')
-        : permission.permission;
     final ask = KitAskLine(
       key: const ValueKey('always-allow-invite'),
       icon: AppIconography.privacy,
-      question: l10n.consentAlwaysAllowQuestion(KitBidi.ltr(what)),
+      question: l10n.consentAlwaysAllowQuestion(KitBidi.ltr(_what)),
       decline: KitAction(
         key: const ValueKey('always-allow-invite-decline'),
         label: l10n.consentAlwaysAllowDecline,

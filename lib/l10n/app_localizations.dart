@@ -25232,13 +25232,13 @@ abstract class AppLocalizations {
   /// Conversation, first run: title of the one card shown above the composer after the first reply completes.
   ///
   /// In en, this message translates to:
-  /// **'Notify you when a reply is ready?'**
+  /// **'Notify you when the agent needs you?'**
   String get firstRunNotifyTitle;
 
   /// Conversation, first run: what accepting the notification card turns on, including its visible cost.
   ///
   /// In en, this message translates to:
-  /// **'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.'**
+  /// **'Leave the app while the agent works. You get a notification when it needs your answer. Android shows a small ongoing notification while it stays connected.'**
   String get firstRunNotifyBody;
 
   /// Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background.
@@ -40365,108 +40365,6 @@ abstract class AppLocalizations {
   /// **'Give the team a first task'**
   String get teamPhoneReadyFirstTask;
 
-  /// AI Team screens: under 'The team isn’t answering' when the team runs on this phone.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying while the team starts on this phone.'**
-  String get teamUiStateNotAnsweringPhone;
-
-  /// AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying. Check that your computer is on and online.'**
-  String get teamUiStateNotAnsweringComputer;
-
-  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying. Check that {computer} is on and online.'**
-  String teamUiStateNotAnsweringComputerNamed(String computer);
-
-  /// AI Team page menu: opens the form for the address the team is reached at (the page title names the team).
-  ///
-  /// In en, this message translates to:
-  /// **'Change address'**
-  String get teamHomeChangeAddress;
-
-  /// AI Team page: Turn off could not stop the team inside the app; nothing changed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn’t stop the team on this phone, so it is still on. Try again.'**
-  String get teamHomeTurnOffFailed;
-
-  /// AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again).
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped'**
-  String get teamHomeHostStopped;
-
-  /// AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause.
-  ///
-  /// In en, this message translates to:
-  /// **'Cooling down'**
-  String get teamHomeHostCooling;
-
-  /// AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped to cool down'**
-  String get teamHomeHostStoppedForHeat;
-
-  /// AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.
-  ///
-  /// In en, this message translates to:
-  /// **'The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.'**
-  String teamHomeHeatPausedLine(String time);
-
-  /// AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.
-  ///
-  /// In en, this message translates to:
-  /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
-  String teamHomeHeatStoppedLine(String time);
-
-  /// AI Team page agents row, after the count: the heat guard paused the agents.
-  ///
-  /// In en, this message translates to:
-  /// **'resting while the phone cools'**
-  String get teamHomeAgentsCooling;
-
-  /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
-  ///
-  /// In en, this message translates to:
-  /// **'Keep it running, stop it or remove it'**
-  String get teamHomePhoneControls;
-
-  /// AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.
-  ///
-  /// In en, this message translates to:
-  /// **'Today · {usage}'**
-  String teamHomeSpentToday(String usage);
-
-  /// AI Team page: under today's spend; never a task's cost.
-  ///
-  /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated'**
-  String get teamHomeSpentHint;
-
-  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
-  ///
-  /// In en, this message translates to:
-  /// **'Some of today’s use has no price yet, so it cost more than this'**
-  String get teamHomeSpentPartial;
-
-  /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI Team found on {server}'**
-  String teamIntroNotFound(String server);
-
-  /// Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page.
-  ///
-  /// In en, this message translates to:
-  /// **'See the team’s tasks'**
-  String get pluginsTeamOpenPage;
-
   /// Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details
   ///
   /// In en, this message translates to:
@@ -40977,6 +40875,300 @@ abstract class AppLocalizations {
   /// **'The server had a problem (error {code}). Try again in a moment.'**
   String productErrorServer(int code);
 
+  /// P6.7: asked once at the phone server's first start (and from its Settings row): the battery exemption.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the server running?'**
+  String get consentBatteryTitle;
+
+  /// P6.7: battery consent body.
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop the server on this phone while the app is closed. Allow background running and Android asks you to confirm.'**
+  String get consentBatteryBody;
+
+  /// P6.7: battery consent confirm; Android's own prompt follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background running'**
+  String get consentBatteryAllow;
+
+  /// P6.7: asked once at the phone server's first start on phones whose maker blocks auto-start.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the server automatically?'**
+  String get consentMakerTitle;
+
+  /// P6.7: maker auto-start consent body.
+  ///
+  /// In en, this message translates to:
+  /// **'{maker} phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.'**
+  String consentMakerBody(String maker);
+
+  /// P6.7: maker auto-start consent body when the maker's name is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Some phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.'**
+  String get consentMakerBodyUnnamed;
+
+  /// P6.7: maker consent confirm; opens the maker's auto-start screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open auto-start settings'**
+  String get consentMakerAllow;
+
+  /// P6.7: declines a consent asked in flow; remembered and explained in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get consentNotNow;
+
+  /// P6.7: a consent answer could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer couldn\'t be saved on this phone, so nothing was changed. Try again.'**
+  String get consentSaveFailed;
+
+  /// P6.7: What runs by itself, consent storage unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your earlier answers on this server couldn\'t be read, so the app won\'t ask them again for now. Reopen this page to try again.'**
+  String get consentStorageFailed;
+
+  /// P6.7: What runs by itself, group of the questions the app asked once on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers'**
+  String get consentGroupLabel;
+
+  /// P6.7: Your answers row: the battery exemption.
+  ///
+  /// In en, this message translates to:
+  /// **'Background running'**
+  String get consentRowBattery;
+
+  /// P6.7: Your answers row: the maker's auto-start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again by itself'**
+  String get consentRowMaker;
+
+  /// P6.7: Your answers row: the notification preset.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when the agent needs me'**
+  String get consentRowNeedsYou;
+
+  /// P6.7: Your answers row: 'Always allow' offers turned down after three identical asks.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow offers'**
+  String get consentRowAlwaysAllow;
+
+  /// P6.7: why a declined battery consent matters.
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop the server on this phone while the app is closed.'**
+  String get consentWhyBattery;
+
+  /// P6.7: why a declined auto-start consent matters.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone may not start the server again after it stops.'**
+  String get consentWhyMaker;
+
+  /// P6.7: why a declined needs-you preset matters.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t get a notification when the agent waits for your answer.'**
+  String get consentWhyNeedsYou;
+
+  /// P6.7: a consent asked but left unanswered.
+  ///
+  /// In en, this message translates to:
+  /// **'The question closed before you answered. Tap to answer now.'**
+  String get consentWhyUnfinished;
+
+  /// P6.7: an allowed phone consent; the OS setting is the truth.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone\'s own setting decides. Tap to check it or turn it off.'**
+  String get consentAllowedSystem;
+
+  /// P6.7: an allowed needs-you preset.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to change it in Notifications.'**
+  String get consentAllowedNeedsYou;
+
+  /// P6.7: declined Always allow offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Still asked each time. Tap to be offered Always allow again.'**
+  String get consentWhyAlwaysAllow;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get consentValueAllowed;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get consentValueDeclined;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Not answered'**
+  String get consentValueUnanswered;
+
+  /// P6.7: how many Always allow offers were turned down.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 declined} other{{count} declined}}'**
+  String consentValueDeclinedCount(int count);
+
+  /// P6.7: confirm resetting declined Always allow offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to always allow?'**
+  String get consentAlwaysAgainTitle;
+
+  /// P6.7: offer-again body.
+  ///
+  /// In en, this message translates to:
+  /// **'After 3 more identical asks, the app offers to always allow them again. Nothing is allowed until you say so.'**
+  String get consentAlwaysAgainBody;
+
+  /// P6.7: offer-again confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer again'**
+  String get consentAlwaysAgainConfirm;
+
+  /// P6.7: one line under a permission request on its third identical ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked 3 times. Always allow {what}?'**
+  String consentAlwaysAllowQuestion(String what);
+
+  /// P6.7: declines the Always allow offer; the request is still answered as usual.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep asking'**
+  String get consentAlwaysAllowDecline;
+
+  /// P6.7: the always reply failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t save Always allow. The request is still waiting; try again or answer it once.'**
+  String get consentAlwaysAllowFailed;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying while the team starts on this phone.'**
+  String get teamUiStateNotAnsweringPhone;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that your computer is on and online.'**
+  String get teamUiStateNotAnsweringComputer;
+
+  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that {computer} is on and online.'**
+  String teamUiStateNotAnsweringComputerNamed(String computer);
+
+  /// AI Team page menu: opens the form for the address the team is reached at (the page title names the team).
+  ///
+  /// In en, this message translates to:
+  /// **'Change address'**
+  String get teamHomeChangeAddress;
+
+  /// AI Team page: Turn off could not stop the team inside the app; nothing changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t stop the team on this phone, so it is still on. Try again.'**
+  String get teamHomeTurnOffFailed;
+
+  /// AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again).
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get teamHomeHostStopped;
+
+  /// AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooling down'**
+  String get teamHomeHostCooling;
+
+  /// AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped to cool down'**
+  String get teamHomeHostStoppedForHeat;
+
+  /// AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.'**
+  String teamHomeHeatPausedLine(String time);
+
+  /// AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
+  String teamHomeHeatStoppedLine(String time);
+
+  /// AI Team page agents row, after the count: the heat guard paused the agents.
+  ///
+  /// In en, this message translates to:
+  /// **'resting while the phone cools'**
+  String get teamHomeAgentsCooling;
+
+  /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it running, stop it or remove it'**
+  String get teamHomePhoneControls;
+
+  /// AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {usage}'**
+  String teamHomeSpentToday(String usage);
+
+  /// AI Team page: under today's spend; never a task's cost.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole team since midnight where it runs, estimated'**
+  String get teamHomeSpentHint;
+
+  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  String get teamHomeSpentPartial;
+
+  /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI Team found on {server}'**
+  String teamIntroNotFound(String server);
+
+  /// Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page.
+  ///
+  /// In en, this message translates to:
+  /// **'See the team’s tasks'**
+  String get pluginsTeamOpenPage;
+
   /// USD budget dialog: the amount is empty, zero, negative or not a number.
   ///
   /// In en, this message translates to:
@@ -41276,6 +41468,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Processor time'**
   String get termuxProcsCpuTime;
+
+  /// P6.7: confirm title before answering a request with Always allow from the third-ask offer.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow this request?'**
+  String get consentAlwaysAllowTitle;
+
+  /// P6.7: confirm label for 'Tell me when the agent needs me' asked from Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications'**
+  String get consentNeedsYouAllow;
 }
 
 class _AppLocalizationsDelegate

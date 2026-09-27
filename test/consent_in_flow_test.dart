@@ -20,6 +20,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/in_flow_consent.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/repeated_permission_consent.dart';
 import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
@@ -177,6 +178,14 @@ PermissionRequest _ask(String id, {List<String> always = const ['git *']}) =>
       always: always,
     );
 
+/// The scope every [_ask] shares: bash `git status`, standing grant `git *`.
+final _scope = PermissionConsentScope(
+  sessionID: 'session-1',
+  permission: 'bash',
+  patterns: const ['git status'],
+  alwaysPatterns: const ['git *'],
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -240,7 +249,10 @@ void main() {
 
       // Then the maker's auto-start, naming the maker.
       expect(_key('phone-consent-makerAutoStart'), findsOneWidget);
-      expect(find.text(_en.consentMakerBody(KitBidi.auto('Xiaomi'))), findsOneWidget);
+      expect(
+        find.text(_en.consentMakerBody(KitBidi.auto('Xiaomi'))),
+        findsOneWidget,
+      );
       await tester.tap(find.text(_en.consentNotNow));
       await tester.pumpAndSettle();
       expect(_lifecycle, isNot(contains('openKeepAliveSetting')));
@@ -319,7 +331,7 @@ void main() {
       expect(find.text(_en.consentWhyBattery), findsOneWidget);
       await tester.tap(_key('automation-consent-batteryExemption'));
       await tester.pumpAndSettle();
-      await tester.tap(_key('automation-consent-allow-batteryExemption'));
+      await tester.tap(_key('automation-consent-ask-batteryExemption-allow'));
       await tester.pumpAndSettle();
       expect(_native.calls, contains('requestBatteryOptimizationExemption'));
       expect(find.text(_en.consentWhyBattery), findsNothing);
@@ -380,7 +392,9 @@ void main() {
       // Allowing it later turns on what the preset stands for.
       await tester.tap(_key('automation-consent-needsYouNotifications'));
       await tester.pumpAndSettle();
-      await tester.tap(_key('automation-consent-allow-needsYouNotifications'));
+      await tester.tap(
+        _key('automation-consent-ask-needsYouNotifications-allow'),
+      );
       await tester.pumpAndSettle();
       expect(_native.calls, contains('enable'));
       expect(c.notificationPreferences.requests, isTrue);
@@ -438,7 +452,8 @@ void main() {
                   AlwaysAllowInvitation(
                     key: ValueKey('invite-${ask.id}'),
                     controller: c,
-                    permission: ask,
+                    sessionID: ask.sessionID,
+                    requestID: ask.id,
                   ),
               ],
             ),
@@ -485,7 +500,7 @@ void main() {
       await see(tester, c, _ask('r3'));
       expect(_key('always-allow-invite'), findsOneWidget);
       expect(
-        find.text(_en.consentAlwaysAllowQuestion('⁦git *⁩')),
+        find.text(_en.consentAlwaysAllowQuestion(KitBidi.ltr('git *'))),
         findsOneWidget,
       );
       // Rebuilt for the same request, the invitation stays.
@@ -513,7 +528,7 @@ void main() {
       final status = await ConsentOwners.repeated(
         c.store.prefs,
         'phone',
-      ).status(permissionConsentScope(_ask('r3')));
+      ).status(_scope);
       expect(status.decision.name, 'accepted');
 
       // Never again for this scope.
@@ -558,11 +573,10 @@ void main() {
     final consent = await ConsentOwners.inFlow(c.store.prefs, 'studio');
     await consent.requestNeedsYouPreset();
     await consent.answer(InFlowConsentKind.needsYouNotifications, allow: false);
-    await ConsentOwners.repeated(c.store.prefs, 'studio').observe(
-      scope: permissionConsentScope(_ask('r1')),
-      requestID: 'r1',
-      supportsPersistentGrants: true,
-    );
+    await ConsentOwners.repeated(
+      c.store.prefs,
+      'studio',
+    ).observe(scope: _scope, requestID: 'r1', supportsPersistentGrants: true);
     expect(c.store.prefs.getString('oc.inFlowConsent.studio'), isNotNull);
     expect(c.store.prefs.getString('oc.permissionConsent.studio'), isNotNull);
 

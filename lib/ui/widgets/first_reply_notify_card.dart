@@ -166,7 +166,9 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
       // is required.") stays; exception text is said in words instead.
       final error = controller.backgroundLive.lastError;
       if (!enabled) {
-        _failure = error == null ? copy.e7SettingsUi22 : productErrorText(error);
+        _failure = error == null
+            ? copy.e7SettingsUi22
+            : productErrorText(error);
       }
     });
   }

@@ -9,34 +9,56 @@ import '../../state/in_flow_consent.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 
-/// The question for one phone-server consent, the same words wherever it is
-/// asked: at the server's first start and again from its Settings row.
-({String title, String body, String allow, IconData icon}) phoneConsentWords(
-  AppLocalizations l10n,
+/// Asks one consent, with the same words wherever it is asked: in flow
+/// (the phone server's first start, a conversation) and again from its row
+/// on What runs by itself. True only when the person allowed it; back and
+/// "Not now" are false. [keyPrefix] names the sheet and its allow button
+/// (`<keyPrefix>-<kind>`, `<keyPrefix>-<kind>-allow`).
+Future<bool> askConsent(
+  BuildContext context,
   InFlowConsentKind kind, {
   String maker = '',
-}) => switch (kind) {
-  InFlowConsentKind.batteryExemption => (
-    title: l10n.consentBatteryTitle,
-    body: l10n.consentBatteryBody,
-    allow: l10n.consentBatteryAllow,
-    icon: AppIconography.batteryWarning,
-  ),
-  InFlowConsentKind.makerAutoStart => (
-    title: l10n.consentMakerTitle,
-    body: maker.trim().isEmpty
-        ? l10n.consentMakerBodyUnnamed
-        : l10n.consentMakerBody(KitBidi.auto(maker.trim())),
-    allow: l10n.consentMakerAllow,
-    icon: AppIconography.sync,
-  ),
-  InFlowConsentKind.needsYouNotifications => (
-    title: l10n.firstRunNotifyTitle,
-    body: l10n.firstRunNotifyBody,
-    allow: l10n.firstRunNotifyAccept,
-    icon: AppIconography.inbox,
-  ),
-};
+  String keyPrefix = 'phone-consent',
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final sheetKey = ValueKey('$keyPrefix-${kind.name}');
+  final confirmKey = ValueKey('$keyPrefix-${kind.name}-allow');
+  final name = maker.trim();
+  return switch (kind) {
+    InFlowConsentKind.batteryExemption => showKitConfirm(
+      context,
+      title: l10n.consentBatteryTitle,
+      body: l10n.consentBatteryBody,
+      confirmLabel: l10n.consentBatteryAllow,
+      cancelLabel: l10n.consentNotNow,
+      icon: AppIconography.batteryWarning,
+      sheetKey: sheetKey,
+      confirmKey: confirmKey,
+    ),
+    InFlowConsentKind.makerAutoStart => showKitConfirm(
+      context,
+      title: l10n.consentMakerTitle,
+      body: name.isEmpty
+          ? l10n.consentMakerBodyUnnamed
+          : l10n.consentMakerBody(KitBidi.auto(name)),
+      confirmLabel: l10n.consentMakerAllow,
+      cancelLabel: l10n.consentNotNow,
+      icon: AppIconography.sync,
+      sheetKey: sheetKey,
+      confirmKey: confirmKey,
+    ),
+    InFlowConsentKind.needsYouNotifications => showKitConfirm(
+      context,
+      title: l10n.firstRunNotifyTitle,
+      body: l10n.firstRunNotifyBody,
+      confirmLabel: l10n.consentNeedsYouAllow,
+      cancelLabel: l10n.consentNotNow,
+      icon: AppIconography.inbox,
+      sheetKey: sheetKey,
+      confirmKey: confirmKey,
+    ),
+  };
+}
 
 /// Runs the platform step an accepted phone consent stands for: Android's
 /// battery exemption prompt, or the maker's auto-start screen. Opening a
@@ -92,18 +114,7 @@ Future<void> askPhoneServerConsents(
   }
   for (final kind in kinds) {
     if (!context.mounted) return;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final words = phoneConsentWords(l10n, kind, maker: info.manufacturer);
-    final allow = await showKitConfirm(
-      context,
-      title: words.title,
-      body: words.body,
-      confirmLabel: words.allow,
-      cancelLabel: l10n.consentNotNow,
-      icon: words.icon,
-      sheetKey: ValueKey('phone-consent-${kind.name}'),
-      confirmKey: ValueKey('phone-consent-${kind.name}-allow'),
-    );
+    final allow = await askConsent(context, kind, maker: info.manufacturer);
     try {
       await consent.answer(kind, allow: allow);
     } catch (_) {
