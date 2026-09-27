@@ -1289,19 +1289,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptStashSearch => 'Search saved prompts';
 
   @override
-  String get promptStashNoMatches =>
-      'No saved prompts match your search. Clear or change the search to see more.';
-
-  @override
   String get promptStashDeleteFailed =>
       'Could not delete this saved prompt. Try again.';
-
-  @override
-  String get promptRestoreTitle => 'Restore saved prompt?';
-
-  @override
-  String get promptRestorePreserve =>
-      'Your current prompt will be saved to the stash first, including its attachments and references.';
 
   @override
   String get promptStashDelete => 'Delete';
@@ -1309,13 +1298,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get promptStashFull =>
       'Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.';
-
-  @override
-  String get promptStashListDescription =>
-      'Saved on this device for this server. Restoring a prompt also saves any current prompt for later.';
-
-  @override
-  String get promptStashDeleteTitle => 'Delete saved prompt?';
 
   @override
   String promptStashAttachments(int count) {
@@ -1340,24 +1322,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get promptRestoredCopyKept =>
-      'Available content restored. A saved copy remains in your stash. Review attachments and references before sending.';
-
-  @override
-  String get promptAttachmentsUnavailable =>
-      'Some attachments cannot be restored';
-
-  @override
-  String get promptRestore => 'Restore';
-
-  @override
   String get promptHistorySaveFailed =>
       'Prompt sent, but its history could not be saved on this device.';
-
-  @override
-  String promptAttachmentsUnavailableDetail(String names) {
-    return 'Missing, damaged or temporary attachments: $names. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.';
-  }
 
   @override
   String get promptStashMigrationPending =>
@@ -2042,15 +2008,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.';
 
   @override
-  String get promptStashEmpty =>
-      'Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.';
-
-  @override
   String get promptStashContextOnly => 'Attachments and references';
-
-  @override
-  String get promptRestoredReferences =>
-      'Prompt restored. Saved references are snapshots; their server files may have changed.';
 
   @override
   String get promptDefaultLocation => 'the server default directory';
@@ -2067,21 +2025,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not read saved prompts. Their stored data has been kept.';
 
   @override
-  String get promptStashDeleteDetail =>
-      'This removes the saved text, attachments and references from this device.';
-
-  @override
   String get promptStashDescription =>
       'Save text, attachments and references for later';
 
   @override
-  String get promptRestoreAvailable => 'Restore available content';
-
-  @override
-  String get promptRestored => 'Prompt restored. Review it before sending.';
-
-  @override
-  String get promptStashAction => 'Stash current prompt';
+  String get promptRestored => 'Saved prompt restored';
 
   @override
   String promptStashLocation(String directory) {
@@ -2384,7 +2332,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoPendingOther =>
-      'A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.';
+      'A photo is still waiting for another conversation. Add or discard it there, then try again.';
 
   @override
   String get photoUnavailable =>
@@ -2410,49 +2358,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoDraftFull =>
       'Remove an attachment first. A draft holds up to 5 files and 20 MB in total.';
-
-  @override
-  String get legacyDraftsTitle => 'Older drafts';
-
-  @override
-  String get legacyDraftsDescription =>
-      'Review drafts saved before server tracking';
-
-  @override
-  String get legacyDraftsExplanation =>
-      'These drafts have no recorded server. Review their text before using it in this conversation.';
-
-  @override
-  String get legacyDraftInsertExplanation =>
-      'Insert adds this text after your current draft. The original saved copy stays here until you delete it.';
-
-  @override
-  String get legacyDraftTextOnly =>
-      'Only text can be inserted here. Any saved attachments remain with the older draft.';
-
-  @override
-  String get legacyDraftDelete => 'Delete saved copy';
-
-  @override
-  String get legacyDraftDeleteExplanation =>
-      'Permanently remove this older draft and its saved attachments from this device?';
-
-  @override
-  String get legacyDraftDeleteFailed =>
-      'The draft changed or could not be removed. Reopen it and retry.';
-
-  @override
-  String get legacyDraftInsert => 'Insert into draft';
-
-  @override
-  String get legacyDraftSearch => 'Search older drafts';
-
-  @override
-  String get legacyDraftsEmpty => 'No older drafts found';
-
-  @override
-  String get legacyDraftLocationChanged =>
-      'The project changed. Reopen Older drafts to choose where to insert the text.';
 
   @override
   String get quotaTitle => 'Remaining usage';
@@ -25974,4 +25879,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get discoverCloudEnvironmentsAliases =>
       'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String promptRestoredWithout(String names) {
+    return 'Restored without $names; attach them again before sending';
+  }
+
+  @override
+  String get promptStashOlderDraftsWaiting =>
+      'Some older drafts have not moved here yet. They are kept on this device.';
+
+  @override
+  String get promptStashOlderDraftsFull =>
+      'Older drafts are waiting to move here. Delete saved prompts to make room.';
 }

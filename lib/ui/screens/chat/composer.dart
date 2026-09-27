@@ -21,7 +21,6 @@ enum _PromptTool {
   clearText,
   stash,
   saved,
-  legacyDrafts,
 }
 
 class _ChatComposer extends StatelessWidget {
@@ -44,7 +43,6 @@ class _ChatComposer extends StatelessWidget {
     this.onClearText,
     this.onStashPrompt,
     this.onOpenStash,
-    this.onLegacyDrafts,
     this.onRestoreHistoryDraft,
     this.shelfBusy = false,
     this.shelfLoading = true,
@@ -111,7 +109,6 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback? onClearText;
   final VoidCallback? onStashPrompt;
   final VoidCallback? onOpenStash;
-  final VoidCallback? onLegacyDrafts;
   final VoidCallback? onRestoreHistoryDraft;
   final bool shelfBusy;
   final bool shelfLoading;
@@ -541,7 +538,6 @@ class _ChatComposer extends StatelessWidget {
         canClearText: canClearText,
         canStash: canStash,
         canOpenStash: onOpenStash != null,
-        hasLegacyDrafts: onLegacyDrafts != null,
         onPick: (tool) => KitSheet.close(sheetContext, tool),
       ),
     );
@@ -572,8 +568,6 @@ class _ChatComposer extends StatelessWidget {
         onStashPrompt?.call();
       case _PromptTool.saved:
         onOpenStash?.call();
-      case _PromptTool.legacyDrafts:
-        onLegacyDrafts?.call();
     }
   }
 }
@@ -613,7 +607,6 @@ class _PromptToolsList extends StatelessWidget {
     required this.canClearText,
     required this.canStash,
     required this.canOpenStash,
-    required this.hasLegacyDrafts,
     required this.onPick,
   });
 
@@ -626,7 +619,6 @@ class _PromptToolsList extends StatelessWidget {
   final bool canClearText;
   final bool canStash;
   final bool canOpenStash;
-  final bool hasLegacyDrafts;
   final ValueChanged<_PromptTool> onPick;
 
   @override
@@ -713,7 +705,7 @@ class _PromptToolsList extends StatelessWidget {
             ),
           ],
         ),
-        if (canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText)
+        if (canReusePrompt || canOpenStash || canClearText)
           KitExpandRow(
             headerKey: const Key('composer-tools-prompts'),
             leading: const KitRowIcon(AppIconography.bookmarks),
@@ -744,14 +736,6 @@ class _PromptToolsList extends StatelessWidget {
                   blockedBy: canStash ? null : l10n.composerToolNothingToSave,
                 ),
               ],
-              if (hasLegacyDrafts)
-                tool(
-                  _PromptTool.legacyDrafts,
-                  key: 'legacy-drafts',
-                  icon: AppIconography.history,
-                  title: l10n.legacyDraftsTitle,
-                  supporting: l10n.legacyDraftsDescription,
-                ),
               if (canClearText)
                 tool(
                   _PromptTool.clearText,

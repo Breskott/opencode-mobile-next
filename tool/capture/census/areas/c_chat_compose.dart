@@ -405,13 +405,6 @@ final cChatComposeArea = CensusArea(
       await _chat(kit);
       await _openStash(kit);
     }),
-    CensusShot('prompt-stash-delete-sheet', (kit) async {
-      await _chat(kit, before: (c) => _seedStash(kit, c));
-      await _openStash(kit);
-      await kit.tapKey('delete-stash-stash-coupon');
-      kit.expectText('Delete saved prompt?');
-    }),
-
     // -- embedded-transcript-find-bar ----------------------------------------
     CensusShot('embedded-transcript-find-bar', state: 'open', (kit) async {
       await _chat(kit);

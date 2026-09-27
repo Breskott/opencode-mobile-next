@@ -214,7 +214,7 @@ void main() {
         isNot(contains('settings-category-appearance')),
       );
       expect(
-        _ids(controller, _en.legacyDraftsTitle),
+        _ids(controller, 'Older drafts'),
         isNot(contains('settings-category-privacy')),
       );
       final battery = _ids(controller, 'battery');

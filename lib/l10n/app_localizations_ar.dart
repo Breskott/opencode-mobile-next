@@ -1291,19 +1291,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get promptStashSearch => 'البحث في الطلبات المحفوظة';
 
   @override
-  String get promptStashNoMatches =>
-      'لا توجد طلبات محفوظة تطابق بحثك. امسح البحث أو غيّره لعرض المزيد.';
-
-  @override
   String get promptStashDeleteFailed =>
       'تعذّر حذف هذا الطلب المحفوظ. حاول مجددًا.';
-
-  @override
-  String get promptRestoreTitle => 'هل تريد استعادة الطلب المحفوظ؟';
-
-  @override
-  String get promptRestorePreserve =>
-      'سيُحفظ طلبك الحالي أولًا ضمن الطلبات المحفوظة، بما فيه من مرفقات ومراجع.';
 
   @override
   String get promptStashDelete => 'حذف';
@@ -1311,13 +1300,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get promptStashFull =>
       'لديك 50 طلبًا محفوظًا. احذف طلبًا محفوظًا لتوفير مساحة؛ لم يتغيّر طلبك الحالي.';
-
-  @override
-  String get promptStashListDescription =>
-      'محفوظة على هذا الجهاز لهذا الخادم. عند استعادة طلب، يُحفظ أي طلب حالي أيضًا لاستخدامه لاحقًا.';
-
-  @override
-  String get promptStashDeleteTitle => 'هل تريد حذف الطلب المحفوظ؟';
 
   @override
   String promptStashAttachments(int count) {
@@ -1350,23 +1332,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get promptRestoredCopyKept =>
-      'استُعيد المحتوى المتاح. تبقى نسخة ضمن الطلبات المحفوظة. راجع المرفقات والمراجع قبل الإرسال.';
-
-  @override
-  String get promptAttachmentsUnavailable => 'يتعذّر استعادة بعض المرفقات';
-
-  @override
-  String get promptRestore => 'استعادة';
-
-  @override
   String get promptHistorySaveFailed =>
       'أُرسل الطلب، لكن تعذّر حفظه في السجل على هذا الجهاز.';
-
-  @override
-  String promptAttachmentsUnavailableDetail(String names) {
-    return 'مرفقات مفقودة أو تالفة أو مؤقتة: $names. استعد المحتوى المتاح وأعد إرفاق هذه الملفات قبل الإرسال. ستبقى النسخة ضمن الطلبات المحفوظة.';
-  }
 
   @override
   String get promptStashMigrationPending =>
@@ -2064,15 +2031,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر إتمام استعادة الطلب. لا تزال النسخ المحفوظة متاحة؛ تحقّق من محرّر الرسالة قبل المحاولة مجددًا.';
 
   @override
-  String get promptStashEmpty =>
-      'لا توجد طلبات محفوظة بعد. استخدم «حفظ الطلب الحالي» في أدوات الطلب للاحتفاظ بطلب لاستخدامه لاحقًا.';
-
-  @override
   String get promptStashContextOnly => 'المرفقات والمراجع';
-
-  @override
-  String get promptRestoredReferences =>
-      'استُعيد الطلب. المراجع المحفوظة لقطات سابقة؛ وقد تكون ملفاتها على الخادم قد تغيّرت.';
 
   @override
   String get promptDefaultLocation => 'المجلد الافتراضي للخادم';
@@ -2089,21 +2048,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّرت قراءة الطلبات المحفوظة. احتُفظ ببياناتها المخزّنة.';
 
   @override
-  String get promptStashDeleteDetail =>
-      'سيُحذف النص المحفوظ ومرفقاته ومراجعه من هذا الجهاز.';
-
-  @override
   String get promptStashDescription =>
       'حفظ النص والمرفقات والمراجع لاستخدامها لاحقًا';
 
   @override
-  String get promptRestoreAvailable => 'استعادة المحتوى المتاح';
-
-  @override
-  String get promptRestored => 'استُعيد الطلب. راجعه قبل الإرسال.';
-
-  @override
-  String get promptStashAction => 'حفظ الطلب الحالي';
+  String get promptRestored => 'Saved prompt restored';
 
   @override
   String promptStashLocation(String directory) {
@@ -2409,7 +2358,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get photoPendingOther =>
-      'توجد صورة منتظرة في محادثتها الأصلية. احتفظ بها هناك أو تجاهلها قبل اختيار صورة أخرى.';
+      'A photo is still waiting for another conversation. Add or discard it there, then try again.';
 
   @override
   String get photoUnavailable =>
@@ -2435,49 +2384,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get photoDraftFull =>
       'أزل مرفقًا أولًا. تتسع المسودة لما يصل إلى 5 ملفات بإجمالي 20 MB.';
-
-  @override
-  String get legacyDraftsTitle => 'المسودات القديمة';
-
-  @override
-  String get legacyDraftsDescription =>
-      'مراجعة المسودات المحفوظة قبل تتبّع الخادم';
-
-  @override
-  String get legacyDraftsExplanation =>
-      'لا يوجد خادم مسجّل لهذه المسودات. راجع نصوصها قبل استخدامها في هذه المحادثة.';
-
-  @override
-  String get legacyDraftInsertExplanation =>
-      'يضيف الإدراج هذا النص بعد مسودتك الحالية. تبقى النسخة المحفوظة الأصلية هنا حتى تحذفها.';
-
-  @override
-  String get legacyDraftTextOnly =>
-      'يمكن إدراج النص فقط هنا. تبقى أي مرفقات محفوظة مع المسودة القديمة.';
-
-  @override
-  String get legacyDraftDelete => 'حذف النسخة المحفوظة';
-
-  @override
-  String get legacyDraftDeleteExplanation =>
-      'هل تريد حذف هذه المسودة القديمة ومرفقاتها المحفوظة نهائيًا من هذا الجهاز؟';
-
-  @override
-  String get legacyDraftDeleteFailed =>
-      'تغيّرت المسودة أو تعذّرت إزالتها. افتحها مجددًا وأعد المحاولة.';
-
-  @override
-  String get legacyDraftInsert => 'إدراج في المسودة';
-
-  @override
-  String get legacyDraftSearch => 'البحث في المسودات القديمة';
-
-  @override
-  String get legacyDraftsEmpty => 'لم يُعثر على مسودات قديمة';
-
-  @override
-  String get legacyDraftLocationChanged =>
-      'تغيّر المشروع. افتح المسودات القديمة مجددًا لاختيار وجهة إدراج النص.';
 
   @override
   String get quotaTitle => 'رصيد الاستخدام المتبقي';
@@ -26251,4 +26157,17 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get discoverCloudEnvironmentsAliases =>
       'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String promptRestoredWithout(String names) {
+    return 'Restored without $names; attach them again before sending';
+  }
+
+  @override
+  String get promptStashOlderDraftsWaiting =>
+      'Some older drafts have not moved here yet. They are kept on this device.';
+
+  @override
+  String get promptStashOlderDraftsFull =>
+      'Older drafts are waiting to move here. Delete saved prompts to make room.';
 }
