@@ -230,16 +230,13 @@ class TeamBoardCardView extends StatelessWidget {
       onOpen: onOpen,
       meta: meta,
       flag: _teamBoardKitFlag(l10n, card),
-      // The board knows no send time for a move, so this receipt does not
-      // escalate on its own; a refused move keeps the board's screen-level
-      // notice.
+      // A move in flight is a sending receipt in the move's own words
+      // ("Moving to Review…"). The board knows no send time for a move, so
+      // it does not escalate on its own; a refused move keeps the board's
+      // screen-level notice.
       receipt: moving == null
           ? null
-          : KitReceipt(
-              state: KitReceiptState.sending,
-              label: moving,
-              automatic: true,
-            ),
+          : KitReceipt(state: KitReceiptState.sending, sendingLabel: moving),
       action: onMoves == null
           ? null
           : KitAction(

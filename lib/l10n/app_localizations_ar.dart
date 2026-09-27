@@ -12419,6 +12419,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'يزيل بطاقته وعناصر الانتباه وبيانات الفريق المخزّنة مؤقتًا من هذا الهاتف. لا يتغير شيء على المضيف.';
 
   @override
+  String get teamUiTurnOffConfirm => 'Turn off AI Team';
+
+  @override
   String teamUiTurnOffTitle(String server) {
     return 'هل تريد إيقاف فريق الذكاء الاصطناعي لخادم $server؟';
   }
@@ -15003,20 +15006,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamUiPhoneNotAvailable =>
       'غير متاح على هذا الهاتف. يحتاج تشغيل فريق إلى بيئة لينكس 64 بت؛ ولا يستطيع هذا الجهاز أو هذا الإصدار توفيرها.';
-
-  @override
-  String get teamUiPhoneReofferTitle =>
-      'إعداد فريق ذكاء اصطناعي على هذا الهاتف';
-
-  @override
-  String get teamUiPhoneReofferBody =>
-      'الخطوة الاختيارية التي تخطيتها أثناء الإعداد. يعمل عدة وكلاء برمجة على مشروعك بينما تشرف عليهم من تبويب «العمل»؛ وقد يوقفهم أندرويد أثناء غياب التطبيق.';
-
-  @override
-  String get teamUiPhoneReofferDismiss => 'ليس الآن';
-
-  @override
-  String get teamUiPhoneReofferAction => 'إعداد';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -22441,7 +22430,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamHostFormCancelTest => 'Cancel test';
 
   @override
-  String get teamHostFormSaveAnyway => 'Save without an answer';
+  String get teamHostFormSaveAnyway => 'Save the address anyway';
+
+  @override
+  String get teamHostFormSaveAnywayNote =>
+      'AI Team shows the team as not answering until the computer answers.';
+
+  @override
+  String get teamHostFormConnectionDetails => 'Connection details';
 
   @override
   String teamAgentScreenPause(String agent) {

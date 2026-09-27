@@ -5,7 +5,6 @@ import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_log_panel.dart';
-import '../kit/kit_tokens.dart';
 
 /// A setup step's output (map: embedded-setup-terminal, proposal fix): one
 /// [KitLogPanel], mono and left to right in every locale, that follows the
@@ -19,9 +18,10 @@ import '../kit/kit_tokens.dart';
 /// redacted (SEC-2).
 ///
 /// A host that copies more than the log (a failure report with the phone's
-/// diagnostics) names it with [copyTooltip]: that act is a tertiary button
-/// under the panel, labelled with those words. Without [copyTooltip], the
-/// panel's Copy all is the one copy.
+/// diagnostics) names it with [copyTooltip]: that act is the panel's one
+/// extra header action, after Copy all, labelled with those words (it
+/// reports on this output, so it lives inside the panel, not under it).
+/// Without [copyTooltip], the panel's Copy all is the one copy.
 ///
 /// Where the output sits (folded under Details, or the page's content) is
 /// the host's call: [expand] fills a host that gives it a bounded height;
@@ -144,8 +144,9 @@ class _SetupTerminalState extends State<SetupTerminal> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final tokens = KitTokens.of(context);
     final hasLines = _lines.value.isNotEmpty;
+    final report = widget.copyTooltip;
+    final onCopy = widget.onCopy;
     final panel = KitLogPanel(
       lines: _lines,
       title: l10n.setupTerminalTitle,
@@ -153,25 +154,15 @@ class _SetupTerminalState extends State<SetupTerminal> {
       ended: widget.running || !hasLines ? null : const KitLogEnd(),
       emptyText: widget.running ? l10n.setupOutputWaiting : null,
       size: widget.expand ? KitLogSize.fill : KitLogSize.folded,
+      headerAction: report == null || onCopy == null
+          ? null
+          : KitAction(
+              key: const ValueKey('setup-copy-report'),
+              label: report,
+              icon: AppIconography.copy,
+              onPressed: onCopy,
+            ),
     );
-    final report = widget.copyTooltip;
-    final onCopy = widget.onCopy;
-    final Widget body = report == null || onCopy == null
-        ? panel
-        : Column(
-            mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.expand) Expanded(child: panel) else panel,
-              SizedBox(height: tokens.space2),
-              KitButton.tertiary(
-                key: const ValueKey('setup-copy-report'),
-                label: report,
-                icon: AppIconography.copy,
-                onPressed: onCopy,
-              ),
-            ],
-          );
-    return KeyedSubtree(key: const ValueKey('setup-live-output'), child: body);
+    return KeyedSubtree(key: const ValueKey('setup-live-output'), child: panel);
   }
 }

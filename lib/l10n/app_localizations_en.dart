@@ -12246,6 +12246,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Removes its card, attention items and cached team data from this phone. Nothing changes on the host.';
 
   @override
+  String get teamUiTurnOffConfirm => 'Turn off AI Team';
+
+  @override
   String teamUiTurnOffTitle(String server) {
     return 'Turn off AI Team for $server?';
   }
@@ -14549,7 +14552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneContinue => 'Continue';
 
   @override
-  String get teamUiPhoneSuccessTitle => 'AI team is running on this phone';
+  String get teamUiPhoneSuccessTitle => 'AI Team is running on this phone';
 
   @override
   String get teamUiPhoneRetry => 'Try again';
@@ -14747,7 +14750,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneRemove => 'Delete from this phone';
 
   @override
-  String get teamUiPhoneRemoveTitle => 'Delete the AI team from this phone?';
+  String get teamUiPhoneRemoveTitle => 'Delete AI Team from this phone?';
 
   @override
   String get teamUiPhoneRemoveBody =>
@@ -14757,7 +14760,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneRemoveConfirm => 'Delete';
 
   @override
-  String get teamUiPhoneRemoved => 'The AI team was deleted from this phone.';
+  String get teamUiPhoneRemoved => 'AI Team was deleted from this phone.';
 
   @override
   String teamUiPhoneActionFailed(String reason) {
@@ -14767,20 +14770,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamUiPhoneNotAvailable =>
       'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.';
-
-  @override
-  String get teamUiPhoneReofferTitle =>
-      'Let a team of agents work on this phone too';
-
-  @override
-  String get teamUiPhoneReofferBody =>
-      'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.';
-
-  @override
-  String get teamUiPhoneReofferDismiss => 'Not now';
-
-  @override
-  String get teamUiPhoneReofferAction => 'Set up';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -22182,7 +22171,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamHostFormCancelTest => 'Cancel test';
 
   @override
-  String get teamHostFormSaveAnyway => 'Save without an answer';
+  String get teamHostFormSaveAnyway => 'Save the address anyway';
+
+  @override
+  String get teamHostFormSaveAnywayNote =>
+      'AI Team shows the team as not answering until the computer answers.';
+
+  @override
+  String get teamHostFormConnectionDetails => 'Connection details';
 
   @override
   String teamAgentScreenPause(String agent) {

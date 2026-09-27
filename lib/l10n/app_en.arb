@@ -12712,6 +12712,10 @@
   "@teamUiTurnOffBody": {
     "description": "Body of the turn-off confirmation sheet"
   },
+  "teamUiTurnOffConfirm": "Turn off AI Team",
+  "@teamUiTurnOffConfirm": {
+    "description": "Confirm button of the AI Team turn-off question; the title names the server (R12)."
+  },
   "teamUiTurnOffTitle": "Turn off AI Team for {server}?",
   "@teamUiTurnOffTitle": {
     "description": "Title of the turn-off confirmation sheet",
@@ -15997,7 +16001,7 @@
   "@teamUiPhoneContinue": {
     "description": "On-device setup: continue with the chosen project"
   },
-  "teamUiPhoneSuccessTitle": "AI team is running on this phone",
+  "teamUiPhoneSuccessTitle": "AI Team is running on this phone",
   "@teamUiPhoneSuccessTitle": {
     "description": "On-device setup: success card title"
   },
@@ -16275,7 +16279,7 @@
   "@teamUiPhoneRemove": {
     "description": "On this phone: remove action"
   },
-  "teamUiPhoneRemoveTitle": "Delete the AI team from this phone?",
+  "teamUiPhoneRemoveTitle": "Delete AI Team from this phone?",
   "@teamUiPhoneRemoveTitle": {
     "description": "On this phone: remove confirmation title"
   },
@@ -16287,7 +16291,7 @@
   "@teamUiPhoneRemoveConfirm": {
     "description": "On this phone: remove confirmation action"
   },
-  "teamUiPhoneRemoved": "The AI team was deleted from this phone.",
+  "teamUiPhoneRemoved": "AI Team was deleted from this phone.",
   "@teamUiPhoneRemoved": {
     "description": "On this phone: removed confirmation"
   },
@@ -16303,22 +16307,6 @@
   "teamUiPhoneNotAvailable": "Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can't provide it.",
   "@teamUiPhoneNotAvailable": {
     "description": "On this phone: unavailable copy (03-onboarding §5)"
-  },
-  "teamUiPhoneReofferTitle": "Let a team of agents work on this phone too",
-  "@teamUiPhoneReofferTitle": {
-    "description": "Settings › Plugins: re-offer row title"
-  },
-  "teamUiPhoneReofferBody": "The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.",
-  "@teamUiPhoneReofferBody": {
-    "description": "Settings › Plugins: re-offer row body"
-  },
-  "teamUiPhoneReofferDismiss": "Not now",
-  "@teamUiPhoneReofferDismiss": {
-    "description": "Settings › Plugins: dismiss the re-offer (shown once)"
-  },
-  "teamUiPhoneReofferAction": "Set up",
-  "@teamUiPhoneReofferAction": {
-    "description": "Settings › Plugins: open the setup screen from the re-offer"
   },
   "teamUiPhoneFailedNoSpace": "Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.",
   "@teamUiPhoneFailedNoSpace": {
@@ -25740,9 +25728,17 @@
   "@teamHostFormCancelTest": {
     "description": "Stops waiting for the address test on the Add AI Team host sheet (shared-team-1)."
   },
-  "teamHostFormSaveAnyway": "Save without an answer",
+  "teamHostFormSaveAnyway": "Save the address anyway",
   "@teamHostFormSaveAnyway": {
-    "description": "Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1)."
+    "description": "Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1, R12)."
+  },
+  "teamHostFormSaveAnywayNote": "AI Team shows the team as not answering until the computer answers.",
+  "@teamHostFormSaveAnywayNote": {
+    "description": "Note under the no-answer verdict on the Add AI Team host sheet: what saving the address anyway leads to (R12)."
+  },
+  "teamHostFormConnectionDetails": "Connection details",
+  "@teamHostFormConnectionDetails": {
+    "description": "Toggle of the fold holding the raw network error behind a failed AI Team address test (R12)."
   },
   "teamAgentScreenPause": "Pause {agent}",
   "@teamAgentScreenPause": {
