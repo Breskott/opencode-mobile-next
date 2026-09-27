@@ -32090,7 +32090,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "server.any", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'A server to work on'**
+  /// **'Server to work on'**
   String get kitCapServerAnyTitle;
 
   /// KitCapabilityExplainer: why the capability "server.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32246,7 +32246,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "phone.any", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'A server on this phone'**
+  /// **'Server on this phone'**
   String get kitCapPhoneAnyTitle;
 
   /// KitCapabilityExplainer: why the capability "phone.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32630,7 +32630,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "flag:fileBrowsing+terminal", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'Files and Terminal'**
+  /// **'Files and terminal'**
   String get kitCapFlagFileBrowsingTerminalTitle;
 
   /// KitCapabilityExplainer: why the capability "flag:fileBrowsing+terminal" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32726,7 +32726,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "flag:promptAttachments", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'Photos and files in prompts'**
+  /// **'Attach photos and files'**
   String get kitCapFlagPromptAttachmentsTitle;
 
   /// KitCapabilityExplainer: why the capability "flag:promptAttachments" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -33137,7 +33137,7 @@ abstract class AppLocalizations {
   /// **'Conversations stay in history but can no longer open it.'**
   String get managedWorkspacesRemoveHistoryStays;
 
-  /// Cloud environments: the one verb for removing an environment (menu item and confirm button).
+  /// Cloud environments: the menu item that removes an environment.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
@@ -33284,7 +33284,7 @@ abstract class AppLocalizations {
   /// Open folder: the typed folder does not exist.
   ///
   /// In en, this message translates to:
-  /// **'No folder there'**
+  /// **'Create this folder?'**
   String get projectFolderMissingTitle;
 
   /// Folder flows: title when making a folder failed.
@@ -33302,7 +33302,7 @@ abstract class AppLocalizations {
   /// Projects, on a server that cannot switch projects (Codex, Paseo): the state title
   ///
   /// In en, this message translates to:
-  /// **'This server works in one folder'**
+  /// **'Server uses one folder'**
   String get projectsOneFolderTitle;
 
   /// Development services: the undo bar after Start; its action is Stop
@@ -33332,7 +33332,7 @@ abstract class AppLocalizations {
   /// Development services: the question before clearing an unconfirmed run record
   ///
   /// In en, this message translates to:
-  /// **'Forget the last run of {name}?'**
+  /// **'Forget {name}\'s last run?'**
   String servicesForgetTitle(String name);
 
   /// Development services: the question before removing a service whose command may still be running
@@ -33374,7 +33374,7 @@ abstract class AppLocalizations {
   /// Development services: the label of the workspace id in Details
   ///
   /// In en, this message translates to:
-  /// **'Workspace'**
+  /// **'Environment'**
   String get servicesWorkspace;
 
   /// Development services editor: the name field is empty
@@ -33536,7 +33536,7 @@ abstract class AppLocalizations {
   /// Notifications: row in the saved servers section when there are none.
   ///
   /// In en, this message translates to:
-  /// **'No saved servers to watch'**
+  /// **'No servers to watch'**
   String get notifyNoServersTitle;
 
   /// Notifications: second line of the row shown when there are no saved servers.
@@ -33608,13 +33608,13 @@ abstract class AppLocalizations {
   /// Privacy and local data: confirm button that deletes the queued prompts, with their count.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
+  /// **'{count, plural, =0{Delete queued prompts} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
   String privacyDeleteQueuedCount(int count);
 
   /// Privacy and local data: confirm button that deletes the unsent drafts, with their count.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
+  /// **'{count, plural, =0{Delete drafts} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
 
   /// KitMessage: the start of a sent prompt's screen-reader label, before the prompt's words
@@ -33716,7 +33716,7 @@ abstract class AppLocalizations {
   /// Setup guide row that opens phone setup, for people without a computer
   ///
   /// In en, this message translates to:
-  /// **'No computer? Run it on this phone'**
+  /// **'Use this phone instead'**
   String get guidePhonePathTitle;
 
   /// Setup guide phone-path row: what it does
@@ -33786,7 +33786,7 @@ abstract class AppLocalizations {
   /// Server update question: restart needed after the install
   ///
   /// In en, this message translates to:
-  /// **'The OpenCode process must be restarted on its host to use {target}'**
+  /// **'Restart the OpenCode process on its computer to use {target}'**
   String serverSettingsUpgradeRestartAfter(String target);
 
   /// Server update question: what is kept
@@ -33822,13 +33822,13 @@ abstract class AppLocalizations {
   /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
   ///
   /// In en, this message translates to:
-  /// **'Tailscale app on this phone'**
+  /// **'Tailscale on this phone'**
   String get tailscaleSetupAppTitle;
 
   /// Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it
   ///
   /// In en, this message translates to:
-  /// **'Sign in and turn on the VPN'**
+  /// **'Sign in and connect'**
   String get tailscaleSetupVpnTitle;
 
   /// Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold
@@ -34380,7 +34380,7 @@ abstract class AppLocalizations {
   /// Import conversation: title in the destination chooser when there is nowhere to import.
   ///
   /// In en, this message translates to:
-  /// **'No projects to import into'**
+  /// **'Nowhere to import'**
   String get importNoDestinationsTitle;
 
   /// Import conversation: supporting line of the destination row, naming the server.
@@ -34614,7 +34614,7 @@ abstract class AppLocalizations {
   /// Continue on computer sheet: reload the conversation when the server did not report its folder
   ///
   /// In en, this message translates to:
-  /// **'Reload conversation'**
+  /// **'Try again'**
   String get handoffSheetReloadConversation;
 
   /// Open on another phone sheet: what happens on a phone without this server
@@ -34704,7 +34704,7 @@ abstract class AppLocalizations {
   /// Model picker: no models on the server
   ///
   /// In en, this message translates to:
-  /// **'Sign in to a provider'**
+  /// **'Provider sign-in needed'**
   String get modelPickerSignInTitle;
 
   /// Model picker: no models on the server, next step
@@ -34818,7 +34818,7 @@ abstract class AppLocalizations {
   /// Delete the team sheet: what goes
   ///
   /// In en, this message translates to:
-  /// **'The team\'s programs, its city and its task list are deleted'**
+  /// **'The team\'s programs, its files and its task list are deleted'**
   String get teamPhoneRemoveLost;
 
   /// Delete the team sheet: what stays
@@ -34838,12 +34838,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete the team'**
   String get teamPhoneRemoveConfirm;
-
-  /// Remove OpenCode from this phone sheet: confirm button
-  ///
-  /// In en, this message translates to:
-  /// **'Remove OpenCode'**
-  String get phoneServerCardRemoveOpenCode;
 
   /// Shared product states: title of the alert shown when an action the person started failed
   ///
@@ -36126,7 +36120,7 @@ abstract class AppLocalizations {
   /// Review the undo page: title of the question before the hidden messages are deleted.
   ///
   /// In en, this message translates to:
-  /// **'Delete the hidden messages for good?'**
+  /// **'Delete hidden messages forever?'**
   String get reviewRevertKeepConfirmTitle;
 
   /// Review the undo page: body of the delete-hidden-messages question.
@@ -36564,7 +36558,7 @@ abstract class AppLocalizations {
   /// Desktop status line when a newer release exists on the project's release page.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode {tag} is available'**
+  /// **'Update {tag} is available'**
   String desktopReleaseAvailable(String tag);
 
   /// Supporting line of the desktop release status line: what the release page offers.
@@ -36636,7 +36630,7 @@ abstract class AppLocalizations {
   /// Running now: title shown when the connection moved to another server or project while the sheet was open.
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed'**
+  /// **'Server or project changed'**
   String get runningWorkScopeChangedTitle;
 
   /// Running now: the agents could not be read.
@@ -36750,7 +36744,7 @@ abstract class AppLocalizations {
   /// Title of the sheet that moves a conversation to a cloud machine (warp).
   ///
   /// In en, this message translates to:
-  /// **'Move to a cloud machine'**
+  /// **'Move to the cloud'**
   String get sessionDestinationWarpTitle;
 
   /// Move conversation: the kind of a folder that is a separate copy (worktree) of the project.
@@ -36822,7 +36816,7 @@ abstract class AppLocalizations {
   /// Move conversation: there is no other destination.
   ///
   /// In en, this message translates to:
-  /// **'Nowhere else to move it yet'**
+  /// **'Nowhere to move it'**
   String get sessionDestinationNoneTitle;
 
   /// Move conversation: why there is no other folder.
@@ -37038,13 +37032,13 @@ abstract class AppLocalizations {
   /// Active context: title when the server, project or conversation changed under the page.
   ///
   /// In en, this message translates to:
-  /// **'This view is out of date'**
+  /// **'This view is outdated'**
   String get activeContextChangedTitle;
 
   /// Active context: title of the load failure state.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t read the active context'**
+  /// **'Couldn\'t read the context'**
   String get activeContextFailedTitle;
 
   /// Active context: plain one-paragraph intro above the list.
@@ -37446,7 +37440,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools (no server name known).
   ///
   /// In en, this message translates to:
-  /// **'This server doesn\'t list its tools'**
+  /// **'Tools aren\'t listed'**
   String get capabilitiesToolsMissingTitle;
 
   /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools.
@@ -37656,13 +37650,13 @@ abstract class AppLocalizations {
   /// screen-library-2: Add agent: notice title when the card is not supported.
   ///
   /// In en, this message translates to:
-  /// **'This agent can\'t be used from this app'**
+  /// **'Agent not supported'**
   String get externalAgentsUnsupportedTitle;
 
   /// screen-library-2: Add agent: why the card is not supported.
   ///
   /// In en, this message translates to:
-  /// **'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.'**
+  /// **'It doesn\'t take text tasks the way this app sends them, or it asks for a sign-in this app doesn\'t support.'**
   String get externalAgentsUnsupportedBody;
 
   /// screen-library-2: Add agent and Replace key: the secret field label.
@@ -37722,7 +37716,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Replace key dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Replace the key for {name}'**
+  /// **'Replace key for {name}'**
   String externalAgentsReplaceKeyTitle(String name);
 
   /// screen-library-2: Replace key dialog confirm button.
@@ -37842,7 +37836,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: saved state title when the page stays open after saving.
   ///
   /// In en, this message translates to:
-  /// **'Saved {name} in OpenCode'**
+  /// **'Saved {name} on this server'**
   String mcpSetupSavedNamed(String name);
 
   /// screen-library-2: Add MCP server: saved state body when reconnecting failed.
@@ -37860,7 +37854,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: title on a server that accepts neither configuration writes nor runtime adds.
   ///
   /// In en, this message translates to:
-  /// **'This server can\'t add MCP servers from here'**
+  /// **'Can\'t add MCP servers'**
   String get mcpSetupUnavailableTitle;
 
   /// screen-library-2: Add MCP server: why the page cannot add one here.
@@ -39450,7 +39444,7 @@ abstract class AppLocalizations {
   /// New conversation chooser: starts the conversation in a fresh worktree of the project
   ///
   /// In en, this message translates to:
-  /// **'In a separate copy of {project}'**
+  /// **'Separate copy of {project}'**
   String newConversationCopyTitle(String project);
 
   /// New conversation chooser: starts the conversation on this cloud machine (a managed workspace)
@@ -39840,7 +39834,7 @@ abstract class AppLocalizations {
   /// Accounts sheet: remove confirm title naming the provider and the account
   ///
   /// In en, this message translates to:
-  /// **'Remove the {provider} account “{name}”?'**
+  /// **'Remove {provider} account “{name}”?'**
   String credentialRemoveAccountTitle(String provider, String name);
 
   /// Accounts sheet: remove confirm button naming the account
@@ -40134,7 +40128,7 @@ abstract class AppLocalizations {
   /// What runs by itself: this server has no team, no saved rules and can't be watched.
   ///
   /// In en, this message translates to:
-  /// **'Nothing runs by itself here'**
+  /// **'Nothing runs by itself'**
   String get automationEmptyTitle;
 
   /// What runs by itself: why the page is empty.
@@ -40308,7 +40302,7 @@ abstract class AppLocalizations {
   /// AI Team page: under today's spend; never a task's cost.
   ///
   /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.'**
+  /// **'The whole team since midnight where it runs, estimated. The server doesn’t report what each task cost.'**
   String get teamHomeSpentHint;
 
   /// AI Team page: under today's spend when part of it has no price.
@@ -40644,7 +40638,7 @@ abstract class AppLocalizations {
   /// This phone: the title of the question before one tool is removed
   ///
   /// In en, this message translates to:
-  /// **'Remove {tool} from this phone?'**
+  /// **'Remove {tool}?'**
   String thisPhoneRemoveToolTitle(String tool);
 
   /// This phone: the remove-a-tool question's body with the measured space it frees, e.g. '180.2 MB'. The title names the tool.
@@ -41730,8 +41724,26 @@ abstract class AppLocalizations {
   /// Agents list: reads the team again after a wake it did not confirm.
   ///
   /// In en, this message translates to:
-  /// **'Check again'**
+  /// **'Refresh'**
   String get teamAgentsWakeCheckAgain;
+
+  /// Development services: confirm button of the Stop {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop service'**
+  String get servicesStopConfirm;
+
+  /// Development services: confirm button of the Restart {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart service'**
+  String get servicesRestartConfirm;
+
+  /// Cloud environments: confirm button of the Remove {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove environment'**
+  String get managedWorkspacesRemoveConfirm;
 }
 
 class _AppLocalizationsDelegate
