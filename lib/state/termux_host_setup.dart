@@ -7,6 +7,7 @@ import 'package:flutter/services.dart' show PlatformException;
 
 import '../l10n/app_localizations.dart';
 import '../termux/bridge.dart';
+import '../termux/managed_server_recovery.dart';
 import 'connection.dart';
 import 'profiles.dart';
 
@@ -467,6 +468,14 @@ class TermuxHostSetup extends ChangeNotifier {
     _lastLaunchOutput = null;
   }
 
+  Future<void> _suspendRecovery() async {
+    for (final profile in store.profiles.where(
+      (p) => TermuxBridge.managesServerUrl(p.baseUrl),
+    )) {
+      await ManagedServerRecovery.suspendForProfile(store.prefs, profile.id);
+    }
+  }
+
   Future<void> _installAndServe() async {
     final l10n = copy();
     final runtime = this.runtime;
@@ -486,6 +495,8 @@ class TermuxHostSetup extends ChangeNotifier {
         password: profile.password,
         runtime: runtime,
       );
+      await _suspendRecovery();
+      if (_disposed) return;
       launchRequested = true;
       final launch = await TermuxBridge.run(command);
       if (_disposed) return;
@@ -561,6 +572,8 @@ class TermuxHostSetup extends ChangeNotifier {
       _busy = true;
     });
     try {
+      await _suspendRecovery();
+      if (_disposed) return;
       await TermuxBridge.run(
         TermuxBridge.restartScript(port: port, operationID: operation),
         timeout: const Duration(seconds: 45),
@@ -576,6 +589,12 @@ class TermuxHostSetup extends ChangeNotifier {
       _set(() {
         _phase = TermuxHostPhase.failed;
         _error = copy().e7SetupRestartFailed(error.message);
+      });
+    } catch (_) {
+      if (_disposed) return;
+      _set(() {
+        _phase = TermuxHostPhase.failed;
+        _error = copy().e7SetupRestartFailed('');
       });
     } finally {
       if (!_disposed) {
@@ -682,11 +701,18 @@ class TermuxHostSetup extends ChangeNotifier {
     }
     _set(() => _busy = true);
     try {
+      await _suspendRecovery();
       await TermuxBridge.run(TermuxBridge.stopScript(port: port));
     } on TermuxBridgeException catch (error) {
       _set(() {
         _busy = false;
         _error = error.message;
+      });
+      return;
+    } catch (_) {
+      _set(() {
+        _busy = false;
+        _error = copy().e7SetupRestartFailed('');
       });
       return;
     }
@@ -865,6 +891,14 @@ class TermuxHostSetup extends ChangeNotifier {
     final l10n = copy();
     final status = _status;
     final runtime = status?.runtime ?? this.runtime;
+    final managedProfile = localProfile(runtime);
+    if (status?.isReady == true && managedProfile != null) {
+      await ManagedServerRecovery.resumeAfterManualStartForProfile(
+        store.prefs,
+        managedProfile.id,
+      );
+      if (_disposed) return;
+    }
     if (!connectWhenReady) {
       _set(() => _phase = TermuxHostPhase.ready);
       return;

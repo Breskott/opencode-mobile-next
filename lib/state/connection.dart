@@ -44,6 +44,7 @@ import '../termux/bridge.dart';
 // A plain value type (no widgets): the person's effect choices.
 import 'effects.dart' show KitEffects;
 import '../builtin/builtin_linux.dart';
+import '../builtin/builtin_server_recovery.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
@@ -51,6 +52,7 @@ import 'orchestration.dart';
 import 'orchestration_store.dart';
 import 'elsewhere_attention.dart';
 import 'profiles.dart';
+import 'termux_host_setup.dart' show ManagedRuntimeFlavor;
 import 'pending_auth.dart';
 import 'session_drafts.dart';
 import 'draft_attachments.dart';
@@ -409,9 +411,16 @@ class ConnectionController extends ChangeNotifier {
           .where(
             (p) =>
                 TermuxBridge.supported &&
+                isProfileReadable(p.id) &&
                 TermuxBridge.managesServerUrl(p.baseUrl),
           )
           .map((p) => p.id),
+      runtimes: {
+        for (final p in store.profiles)
+          if (isProfileReadable(p.id) &&
+              TermuxBridge.managesServerUrl(p.baseUrl))
+            p.id: ManagedRuntimeFlavor.runtimeOf(p),
+      },
       onRestart: ({required profileId, required eventId, required at}) =>
           recordServerAct(
             profileId: profileId,
@@ -1145,6 +1154,7 @@ class ConnectionController extends ChangeNotifier {
   /// nobody, so connecting does not rebuild the shell twice.
   void _profilesSaved() {
     if (_disposed) return;
+    _syncProfileServices();
     final next = _profilesSignature();
     if (next == _profilesShown) return;
     _profilesShown = next;
@@ -2854,7 +2864,7 @@ class ConnectionController extends ChangeNotifier {
     checkKnownWork();
     try {
       for (final id in managedIDs()) {
-        await ManagedServerRecovery.disableForProfile(store.prefs, id);
+        await ManagedServerRecovery.suspendForProfile(store.prefs, id);
       }
     } catch (_) {
       throw StateError(
@@ -6099,10 +6109,10 @@ class ConnectionController extends ChangeNotifier {
     _deletingReadProfiles.add(profileId);
     _profileMonitor?.removeProfile(profileId);
     _quotaMonitor?.removeProfile(profileId);
-    final recoveryDisabled = ManagedServerRecovery.disableForProfile(
-      store.prefs,
-      profileId,
-    ).then<Object?>((_) => null, onError: (Object error) => error);
+    final recoveryDisabled = Future.wait<void>([
+      BuiltinServerRecovery.suspendForProfile(store.prefs, profileId),
+      ManagedServerRecovery.disableForProfile(store.prefs, profileId),
+    ]).then<Object?>((_) => null, onError: (Object error) => error);
     _pendingAuth.block(profileId);
     _integrationCommandAttempts.removeWhere(
       (key, _) => _authKeyProfile(key) == profileId,
@@ -6138,6 +6148,7 @@ class ConnectionController extends ChangeNotifier {
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
           _profileDeletions.remove(profileId);
+          _syncProfileServices();
         });
     _profileDeletions[profileId] = operation;
     _profileDeletionChanges = operation.then<void>(
@@ -6202,6 +6213,13 @@ class ConnectionController extends ChangeNotifier {
       if (_orchestration?.profileId == profileId) await _orchestration!.stop();
       await _orchestrationStore.drain(profileId);
     } catch (_) {}
+    // One native runtime is shared by local profiles. Forget its deleted
+    // owner without falling back to another profile's runtime or policy.
+    if (store.prefs.getString('oc.builtinServerOwner') == profileId) {
+      if (!await store.prefs.setString('oc.builtinServerOwner', '')) {
+        throw StateError('The phone server setting could not be cleared.');
+      }
+    }
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
     final failures = <String>[];
 
@@ -6370,6 +6388,7 @@ class ConnectionController extends ChangeNotifier {
       // caller disconnects, and a republish would put their titles straight
       // back onto the home screen.
       _deletingReadProfiles.remove(profileId);
+      _syncProfileServices();
       if (!_disposed) notifyListeners();
       _widgetSnapshotSuspended = false;
     }
