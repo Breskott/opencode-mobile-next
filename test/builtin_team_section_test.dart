@@ -255,10 +255,13 @@ void main() {
     expect(markOf(tester, BuiltinTeamStage.preparing), KitMarkState.done);
     expect(markOf(tester, BuiltinTeamStage.addingProject), KitMarkState.failed);
     expect(markOf(tester, BuiltinTeamStage.starting), KitMarkState.waiting);
+    // The script's output is not the words: it is said plainly, and the
+    // output itself stays under Details.
     expect(
-      find.text(_en.aiteamComponentFailed('dirty tables')),
+      find.text(_en.aiteamComponentFailed(_en.productErrorDevice)),
       findsOneWidget,
     );
+    expect(find.text('dirty tables'), findsNothing);
     expect(find.byKey(const ValueKey('builtin-team-turn-on')), findsOneWidget);
     expect(find.text(_en.aiteamComponentTurnOnExpectation), findsNothing);
     expect(profile.orchestration, isNull);

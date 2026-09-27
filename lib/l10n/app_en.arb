@@ -31169,5 +31169,9 @@
         "type": "String"
       }
     }
+  },
+  "settingsBackgroundOffFailed": "Android did not turn background mode off.",
+  "@settingsBackgroundOffFailed": {
+    "description": "Settings, Notifications: turning the keep-live-in-background switch off failed (Android's own message is under Copy details)."
   }
 }

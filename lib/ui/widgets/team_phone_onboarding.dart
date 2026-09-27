@@ -50,6 +50,7 @@ import '../screens/phone_setup/phone_setup_termux_job_screen.dart'
     show openPhoneSetupTermuxJob;
 import '../screens/project_folder_actions.dart';
 import '../screens/team_conversation/team_conversation.dart';
+import 'product_states.dart' show productErrorDetails, productErrorText;
 import 'builtin_team_section.dart'
     show
         builtinTeamFailureText,
@@ -121,10 +122,17 @@ String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
   if (reason == 'interrupted' || error.contains('stopped unexpectedly')) {
     return l10n.teamUiPhoneFailedInterrupted;
   }
-  return l10n.teamUiPhoneFailedReason(
-    error.isNotEmpty ? error : (reason.isNotEmpty ? reason : status.rawPhase),
-  );
+  // The script's own sentence when it is one; its output said in words
+  // otherwise. A bare reason id or phase is not words: the output folded
+  // under Details says what it was.
+  if (error.isEmpty) return l10n.productErrorTermux;
+  return l10n.teamUiPhoneFailedReason(productErrorText(error, l10n: l10n));
 }
+
+/// The runtime's own words for a failed [status] (the step, the reason id
+/// and the script's last error), for Details and reports only.
+String teamPhoneFailureDetails(TeamRuntimeStatus status) =>
+    _TermuxTeamFailure(status).toString();
 
 /// Why a download failed, naming the server that was asked, so a user can
 /// tell a phone that is offline from a server that refused the file (issue
@@ -331,8 +339,10 @@ String teamPhoneTurnOnFailureText(AppLocalizations l10n, Object error) =>
       final BuiltinTeamException e => builtinTeamFailureText(l10n, e),
       final _TermuxTeamFailure e => teamPhoneFailureText(l10n, e.status),
       final TermuxBridgeException e =>
-        '${l10n.teamUiPhoneDispatchFailed} ${e.message}',
-      final other => l10n.aiteamComponentFailed('$other'),
+        '${l10n.teamUiPhoneDispatchFailed} ${productErrorText(e, l10n: l10n)}',
+      final other => l10n.aiteamComponentFailed(
+        productErrorText(other, l10n: l10n),
+      ),
     };
 
 enum _Ready { choose, turningOn, failed, ready }
@@ -686,6 +696,9 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
   bool _busy = false;
   String? _error;
 
+  /// The raw failure behind [_error], for Copy details only.
+  String? _errorDetails;
+
   @override
   void initState() {
     super.initState();
@@ -709,6 +722,7 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
     setState(() {
       _busy = true;
       _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await _runtime.start();
@@ -717,11 +731,19 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
         setState(() => _killed = false);
         await widget.controller.retry();
       } else {
-        setState(() => _error = teamPhoneFailureText(l10n, status));
+        setState(() {
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
+        });
       }
     } on TermuxBridgeException catch (error) {
       if (mounted) {
-        setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
+        setState(() {
+          _error = l10n.teamUiPhoneActionFailed(
+            productErrorText(error, l10n: l10n),
+          );
+          _errorDetails = productErrorDetails(error);
+        });
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -733,6 +755,13 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
     if (!_killed) return const SizedBox.shrink();
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
+    final start = KitAction(
+      key: const ValueKey('team-phone-killed-start'),
+      label: l10n.teamPhoneStartTeamAgain,
+      icon: AppIconography.play,
+      working: _busy,
+      onPressed: _busy ? null : () => unawaited(_start()),
+    );
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         tokens.gutter,
@@ -740,21 +769,22 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
         tokens.gutter,
         tokens.space2,
       ),
-      child: KitNotice(
-        key: const ValueKey('team-phone-killed'),
-        icon: AppIconography.warning,
-        tone: AppStatusTone.attention,
-        message: _error ?? l10n.teamUiPhoneKilled,
-        actions: [
-          KitAction(
-            key: const ValueKey('team-phone-killed-start'),
-            label: l10n.teamPhoneStartTeamAgain,
-            icon: AppIconography.play,
-            working: _busy,
-            onPressed: _busy ? null : () => unawaited(_start()),
-          ),
-        ],
-      ),
+      child: _error == null
+          ? KitNotice(
+              key: const ValueKey('team-phone-killed'),
+              icon: AppIconography.warning,
+              tone: AppStatusTone.attention,
+              message: l10n.teamUiPhoneKilled,
+              actions: [start],
+            )
+          // A start that failed: the words, Start again, and the raw
+          // output only behind Copy details.
+          : KitNotice.error(
+              key: const ValueKey('team-phone-killed'),
+              message: _error!,
+              details: _errorDetails,
+              retry: start,
+            ),
     );
   }
 }

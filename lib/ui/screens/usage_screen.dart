@@ -129,8 +129,7 @@ class _UsageScreenState extends State<UsageScreen> {
     UsageRefreshInterrupted() => l10n.usageRefreshInterrupted,
     FormatException() => l10n.usageInvalidResponse,
     Api2Error(statusCode: 401 || 403) => l10n.usageAuthorization,
-    Api2Error() => error.message,
-    _ => productErrorText(error),
+    _ => productErrorText(error, l10n: l10n),
   };
 
   @override
@@ -172,6 +171,7 @@ class _UsageScreenState extends State<UsageScreen> {
                 KitNotice.error(
                   message: _error(error, l10n),
                   error: error,
+                  details: productErrorDetails(error),
                   reportSource: 'usage',
                   retry: available
                       ? KitAction(
