@@ -25522,4 +25522,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamChatGoneOpenTeam => 'Open AI Team page';
+
+  @override
+  String get chatRequestWho => 'The agent';
+
+  @override
+  String get chatRequestIfIgnored =>
+      'The agent waits until you answer. Nothing is lost.';
+
+  @override
+  String chatRequestMoreWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more requests are waiting.',
+      one: '1 more request is waiting.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatRequestNoConnection =>
+      'Not connected to the server, so this can’t be answered here.';
+
+  @override
+  String get chatRequestAlwaysTitle => 'Always allow requests like this';
+
+  @override
+  String chatRequestAlwaysScope(String patterns, String context) {
+    return 'From now on, $patterns runs without asking you, $context. You can take this back in Settings under Always allowed actions.';
+  }
+
+  @override
+  String get chatRequestAlwaysOn => 'Always allowed';
+
+  @override
+  String get chatRequestDetailTool => 'Tool';
+
+  @override
+  String get chatRequestDetailPatterns => 'Requested patterns';
+
+  @override
+  String get chatRequestOtherAnswer => 'Something else';
+
+  @override
+  String get chatRequestOtherField => 'Your answer';
+
+  @override
+  String get formFlowAnsweredElsewhereBody =>
+      'This form was answered on another device, so nothing was sent from this phone.';
+
+  @override
+  String get approvalsUiPausedDetail =>
+      'This phone is not connected. Automatic approval resumes when it reconnects.';
+
+  @override
+  String get voiceConversationSpeakRepliesBusy => 'Getting the voice ready…';
+
+  @override
+  String get voiceConversationStopReading => 'Stop reading the reply';
 }

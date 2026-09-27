@@ -141,118 +141,52 @@ String? chatStartFactsLine(ChatStartFacts facts, {AppLocalizations? l10n}) {
   return parts.isEmpty ? null : parts.join(' · ');
 }
 
-/// The top of a new conversation: where you are, what is there, and a
-/// caret that says the session is ready for you.
+/// The top of a new conversation: where you are and what is there.
 ///
 /// It sits at the bottom of the empty transcript, right above the starters
 /// and the composer, so the first message later appears exactly where it
 /// was. With the keyboard up (or in a short window) it shrinks to one line
-/// and drops the tip, and when even that line would not fit it steps aside
-/// rather than be cut.
-class _ChatStartHeader extends StatefulWidget {
+/// and drops the drawing and the tip, and when even that line would not fit
+/// it steps aside rather than be cut. The drawing's own caret says the
+/// conversation is ready; nothing blinks.
+class _ChatStartHeader extends StatelessWidget {
   const _ChatStartHeader({required this.facts, required this.compact});
 
   final ChatStartFacts facts;
   final bool compact;
 
-  @override
-  State<_ChatStartHeader> createState() => _ChatStartHeaderState();
-}
-
-class _ChatStartHeaderState extends State<_ChatStartHeader> {
-  // A terminal caret's rhythm. It rests after a few seconds, as desktop
-  // terminals do, so an idle screen is still.
-  static const _blinkInterval = Duration(milliseconds: 530);
-  static const _blinkTicks = 16;
-
-  Timer? _blink;
-  int _ticks = 0;
-  bool _caretOn = true;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _blink?.cancel();
-      _blink = null;
-      _caretOn = true;
-    } else if (_blink == null && _ticks < _blinkTicks) {
-      // A timer, not an animation controller: nothing asks for frames
-      // between blinks, so waiting for the screen to settle still settles.
-      _blink = Timer.periodic(_blinkInterval, (_) => _tick());
-    }
-  }
-
-  void _tick() {
-    if (!mounted) return;
-    _ticks += 1;
-    final resting = _ticks >= _blinkTicks;
-    if (resting) {
-      _blink?.cancel();
-    }
-    setState(() => _caretOn = resting || !_caretOn);
-  }
-
-  @override
-  void dispose() {
-    _blink?.cancel();
-    super.dispose();
-  }
+  /// The headline role's line, in logical pixels (VL §2: 17/22).
+  static const double _headlineLine = 22;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
-    final scheme = theme.colorScheme;
+    final tokens = KitTokens.of(context);
     final textScaler = MediaQuery.textScalerOf(context);
-    final facts = widget.facts;
     final name = facts.projectName ?? strings.chatStartServerFolder;
     final factsLine = chatStartFactsLine(facts, l10n: strings);
-    final nameStyle = theme.textTheme.titleMedium!.copyWith(
-      fontFamily: AppTheme.monoFamily,
-      fontWeight: FontWeight.w600,
-    );
-    final factsStyle = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
-    final fontSize = nameStyle.fontSize ?? 16;
-    final caret = ExcludeSemantics(
-      child: Opacity(
-        key: const ValueKey('chat-start-caret'),
-        opacity: _caretOn ? 1 : 0,
-        child: Container(
-          width: textScaler.scale(fontSize * .55),
-          height: textScaler.scale(fontSize * 1.15),
-          decoration: BoxDecoration(
-            color: scheme.primary.withValues(alpha: .7),
-            borderRadius: BorderRadius.circular(1.5),
-          ),
-        ),
-      ),
-    );
-    final nameText = Text(
-      name,
+    final nameText = KitText(
+      KitBidi.auto(name),
       key: const ValueKey('chat-start-name'),
-      maxLines: widget.compact ? 1 : 2,
+      role: KitTextRole.headline,
+      maxLines: compact ? 1 : 2,
       overflow: TextOverflow.ellipsis,
-      style: nameStyle,
     );
-    final Widget content = widget.compact
+    final Widget content = compact
         ? Row(
             key: const ValueKey('chat-start-header-compact'),
             children: [
               Flexible(child: nameText),
-              const SizedBox(width: 3),
-              caret,
               if (factsLine != null) ...[
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.space3),
                 Flexible(
-                  child: Text(
+                  child: KitText(
                     factsLine,
                     key: const ValueKey('chat-start-facts'),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: factsStyle,
                   ),
                 ),
               ],
@@ -262,104 +196,76 @@ class _ChatStartHeaderState extends State<_ChatStartHeader> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // A fresh folded sheet, its caret waiting like the one after
-              // the name: the drawing every "no conversations yet" shares
-              // (design standard §10). Only with room; the compact line
-              // keeps the space for the composer.
+              // A fresh folded sheet, its caret waiting: the drawing every
+              // "no conversations yet" shares (design standard §10). Only
+              // with room; the compact line keeps the space for the
+              // composer.
               const KitIllustration(
                 key: ValueKey('chat-start-drawing'),
                 scene: StatesSheetScene(),
-                width: 88,
+                width: KitTokens.illustrationInline,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Flexible(child: nameText),
-                  const SizedBox(width: 3),
-                  caret,
-                ],
-              ),
+              SizedBox(height: tokens.space3),
+              nameText,
               if (factsLine != null) ...[
-                const SizedBox(height: 4),
-                Text(
+                SizedBox(height: tokens.space1),
+                KitText(
                   factsLine,
                   key: const ValueKey('chat-start-facts'),
-                  style: factsStyle,
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
                 ),
               ],
-              const SizedBox(height: 14),
-              Text(
+              SizedBox(height: tokens.space4),
+              KitText(
                 strings.chatStartTip,
                 key: const ValueKey('chat-start-tip'),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant.withValues(alpha: .8),
-                ),
+                role: KitTextRole.caption,
+                tone: KitTextTone.tertiary,
               ),
             ],
           );
-    // The standard's 16 dp side rails (design standard §1), like every
-    // other screen's body.
-    final padding = widget.compact
-        ? const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 6)
-        : const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 12);
     // One line of the name plus its padding: below this the compact header
     // would be clipped, so it is left out instead.
-    final compactHeight = textScaler.scale(fontSize) * 1.5 + 12;
+    final compactHeight = textScaler.scale(_headlineLine) + tokens.space1 * 2;
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (widget.compact &&
+        if (compact &&
             constraints.hasBoundedHeight &&
             constraints.maxHeight < compactHeight) {
           return const SizedBox.shrink();
         }
-        return SingleChildScrollView(
-          // Taller than the space (large text, short window): the lines
-          // nearest the composer stay in view and the rest scroll.
+        // Reversed, so the lines nearest the composer stay in view and the
+        // rest scroll when taller than the space (large text, short window).
+        return ListView(
           reverse: true,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.hasBoundedHeight
-                  ? constraints.maxHeight
-                  : 0,
-            ),
-            child: Align(
-              alignment: Alignment.bottomCenter,
+          padding: EdgeInsets.zero,
+          children: [
+            Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 860),
+                constraints: const BoxConstraints(
+                  maxWidth: KitLayout.readingWidth,
+                ),
                 child: Padding(
-                  padding: padding,
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                    vertical: compact ? tokens.space1 : tokens.space4,
+                  ),
                   child: Align(
                     alignment: AlignmentDirectional.bottomStart,
                     child: Semantics(
                       container: true,
-                      child: _entrance(context, content),
+                      child: KitEntrance(child: content),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         );
       },
     );
   }
-
-  Widget _entrance(BuildContext context, Widget child) =>
-      MediaQuery.disableAnimationsOf(context)
-      ? child
-      : TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          child: child,
-          builder: (context, t, child) => Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, (1 - t) * 8),
-              child: child,
-            ),
-          ),
-        );
 }
 
 /// The tallest the starter row gets at [textScaler]: one line of chip label,
@@ -411,77 +317,36 @@ class _ChatStarters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final tokens = KitTokens.of(context);
+    final set = starters.map((starter) => starter.label).join('|');
     return Semantics(
       container: true,
       label: _chatL10n(context).chatStartSuggestionsLabel,
       explicitChildNodes: true,
-      child: SingleChildScrollView(
-        key: const ValueKey('chat-starters'),
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 16, 0),
-        child: Row(
-          // Keyed by the set, so a new set (the folder's facts arrived)
-          // fades in again instead of silently swapping words.
-          key: ValueKey(starters.map((starter) => starter.label).join('|')),
-          children: [
-            for (final (index, starter) in starters.indexed)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8),
-                child: _stagger(
-                  reduceMotion: reduceMotion,
-                  rtl: rtl,
-                  index: index,
-                  child: ActionChip(
-                    key: ValueKey('chat-starter-${starter.label}'),
-                    label: Text(starter.label),
-                    labelStyle: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurface,
+      child: SizedBox(
+        height: chatStartersHeight(MediaQuery.textScalerOf(context)),
+        // A new set (the folder's facts arrived) arrives again instead of
+        // silently swapping words.
+        child: KitEntrance(
+          trigger: set,
+          child: ListView(
+            key: const ValueKey('chat-starters'),
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+            children: [
+              for (final starter in starters)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(end: tokens.space2),
+                  child: Center(
+                    child: KitChip.action(
+                      key: ValueKey('chat-starter-${starter.label}'),
+                      label: starter.label,
+                      onPressed: () => onPick(starter),
                     ),
-                    // Compact to look at, 48dp to hit.
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
-                    backgroundColor: Colors.transparent,
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
-                    shape: const StadiumBorder(),
-                    onPressed: () => onPick(starter),
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Each chip arrives 40 ms after the one before it and settles toward the
-  // start of the line: the row reads as offered, not printed.
-  static Widget _stagger({
-    required bool reduceMotion,
-    required bool rtl,
-    required int index,
-    required Widget child,
-  }) {
-    if (reduceMotion) return child;
-    const fade = 200;
-    final delay = 40 * index;
-    final total = fade + delay;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: total),
-      curve: Interval(delay / total, 1, curve: Curves.easeOutCubic),
-      child: child,
-      builder: (context, t, child) => Opacity(
-        opacity: t,
-        child: Transform.translate(
-          offset: Offset((1 - t) * (rtl ? -8 : 8), 0),
-          child: child,
+            ],
+          ),
         ),
       ),
     );

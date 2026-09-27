@@ -173,7 +173,15 @@ void main() {
 
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(find.byKey(const Key('form-error-banner')), findsOneWidget);
-    expect(find.textContaining('Invalid option'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('form-sheet')),
+        matching: find.textContaining('Invalid option'),
+      ),
+      findsOneWidget,
+    );
+    // The card under the sheet says the answers were not accepted (chat-5).
+    expect(find.textContaining('Not accepted'), findsOneWidget);
     expect(controller.forms, contains('frm_1'));
   });
 

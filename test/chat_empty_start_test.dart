@@ -198,7 +198,8 @@ void main() {
     await _pumpChat(tester, await _controller(api));
 
     expect(find.byKey(const ValueKey('chat-start-name')), findsOneWidget);
-    expect(find.text('my-app'), findsOneWidget);
+    // The folder name is isolated for bidi (COPY-30), so match inside it.
+    expect(find.textContaining('my-app'), findsOneWidget);
     expect(find.text('Empty folder · Git'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-start-tip')), findsOneWidget);
     for (final label in [
@@ -207,6 +208,15 @@ void main() {
       'Start a Node.js project',
       'Set up a README',
     ]) {
+      // The row builds the starters it shows; the rest scroll into view.
+      await tester.scrollUntilVisible(
+        _starter(label),
+        120,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('chat-starters')),
+          matching: find.byType(Scrollable),
+        ),
+      );
       expect(_starter(label), findsOneWidget, reason: label);
     }
     // Nothing that assumes code already exists.
@@ -240,12 +250,18 @@ void main() {
     await _pumpChat(tester, controller);
 
     expect(find.text('2 items · Git · 3 changes'), findsOneWidget);
+    // The row builds the starters it shows; the rest scroll into view.
+    final row = find.descendant(
+      of: find.byKey(const ValueKey('chat-starters')),
+      matching: find.byType(Scrollable),
+    );
     for (final label in [
       'Explain this project',
       'What changed recently?',
       'Find and fix a bug',
       'Add tests',
     ]) {
+      await tester.scrollUntilVisible(_starter(label), 120, scrollable: row);
       expect(_starter(label), findsOneWidget, reason: label);
     }
     expect(_starter('Build a small web page'), findsNothing);
@@ -480,83 +496,21 @@ void main() {
     expect(api.prompts, isEmpty);
   });
 
-  testWidgets('the caret blinks, then rests', (tester) async {
+  testWidgets('the header holds still: no blinking caret', (tester) async {
     final api = _Api();
     await _pumpChat(tester, await _controller(api));
-    double caret() => tester
-        .widget<Opacity>(find.byKey(const ValueKey('chat-start-caret')))
-        .opacity;
-
-    final seen = <double>{};
-    for (var i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 265));
-      seen.add(caret());
-    }
-    expect(seen, containsAll(<double>[0, 1]));
-    // A terminal caret stops blinking after a while; the screen goes still.
-    await tester.pump(const Duration(seconds: 10));
-    expect(caret(), 1);
+    // The drawing's own caret says the conversation is ready (chat-5); the
+    // header asks for no frames once it has arrived.
+    expect(find.byKey(const ValueKey('chat-start-caret')), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
-  testWidgets('reduced motion keeps the caret solid and the chips still', (
-    tester,
-  ) async {
+  testWidgets('reduced motion shows the starters at once', (tester) async {
     final api = _Api();
     await _pumpChat(tester, await _controller(api), reduceMotion: true);
-
-    for (var i = 0; i < 4; i++) {
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        tester
-            .widget<Opacity>(find.byKey(const ValueKey('chat-start-caret')))
-            .opacity,
-        1,
-      );
-    }
-    expect(
-      find.ancestor(
-        of: _starter('Build a small web page'),
-        matching: find.byType(TweenAnimationBuilder<double>),
-      ),
-      findsNothing,
-    );
-  });
-
-  testWidgets('starters stagger in one after another', (tester) async {
-    final api = _Api();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [connProvider.overrideWithValue(controller)],
-        child: MaterialApp(
-          home: ChatScreen(
-            sessionID: 'session-1',
-            handoffStore: ReviewHandoffStore(),
-          ),
-        ),
-      ),
-    );
-    // Pump until the starters first appear, then look at them mid-entrance.
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-      if (find.byKey(const ValueKey('chat-starters')).evaluate().isNotEmpty) {
-        break;
-      }
-    }
-    await tester.pump(const Duration(milliseconds: 60));
-    double opacityOf(String label) => tester
-        .widget<Opacity>(
-          find
-              .ancestor(of: _starter(label), matching: find.byType(Opacity))
-              .first,
-        )
-        .opacity;
-    expect(
-      opacityOf('Build a small web page'),
-      greaterThan(opacityOf('Set up a README')),
-    );
-    await _settle(tester);
-    expect(opacityOf('Set up a README'), 1);
+    await tester.pump();
+    expect(_starter('Build a small web page'), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse);
   });
 }

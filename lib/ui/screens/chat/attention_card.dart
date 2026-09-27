@@ -1,14 +1,59 @@
 part of '../chat_screen.dart';
 
-/// The attention surface pinned directly above the composer, drawn with the
-/// kit's [KitRequestCard] (design standard §2, §3). It replaces the
-/// auto-opened, non-dismissible permission sheet: a request arriving
-/// mid-sentence no longer steals the keyboard. One card shows at a time
-/// (oldest request first); the full sheet stays one tap away behind Review.
+// What the agent asks for, above the composer: one KitRequestCard per
+// request (K2 §2.1, P4.1b). A permission, an OpenCode 1 question and an
+// OpenCode 2 form share the one card: who asks and why, the common answer
+// in place, one Details that opens the one request sheet, and a receipt
+// once answered (Sending, Not confirmed yet, Not accepted). A request
+// arriving mid-sentence never takes focus from the composer. One card shows
+// at a time, oldest first; the card says how many more wait.
+//
+// Transcript turn model (STATE-16): a card is the turn's one control while
+// the agent waits; the work line above it says so.
 
-/// Permission requests first open their complete scope and available preview.
-/// Arriving requests never steal focus or authorize work from the summary.
-class _PermissionAttentionCard extends StatelessWidget {
+/// Who asks, in the card's caption: "The agent".
+String _requestWho(BuildContext context) => _chatL10n(context).chatRequestWho;
+
+/// The chat screen's controller for a card inside it; null outside a chat
+/// (a gallery), where the card cannot answer and says why.
+ConnectionController? _requestConnection(BuildContext context) =>
+    context.findAncestorStateOfType<_ChatScreenState>()?._conn;
+
+/// "The agent waits until you answer. Nothing is lost." plus how many other
+/// requests of this conversation wait behind this one.
+String _requestIfIgnored(BuildContext context, int others) {
+  final l10n = _chatL10n(context);
+  return others <= 0
+      ? l10n.chatRequestIfIgnored
+      : '${l10n.chatRequestIfIgnored} ${l10n.chatRequestMoreWaiting(others)}';
+}
+
+/// Keeps a request card to [KitTokens.requestMaxHeightShare] of the window,
+/// so the transcript and the composer keep their room in a short window
+/// (landscape, the keyboard up); past that the card scrolls in its slot.
+class _RequestSlot extends StatelessWidget {
+  const _RequestSlot({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: BoxConstraints(
+      maxHeight:
+          MediaQuery.sizeOf(context).height * KitTokens.requestMaxHeightShare,
+    ),
+    child: ListView(
+      shrinkWrap: true,
+      padding: EdgeInsets.zero,
+      children: [child],
+    ),
+  );
+}
+
+/// A permission request: Allow once and Reject in place (one tap for the
+/// common answer), Details for the whole command, the change, a note with
+/// Reject and "Always allow".
+class _PermissionAttentionCard extends StatefulWidget {
   const _PermissionAttentionCard({
     super.key,
     required this.permission,
@@ -17,6 +62,8 @@ class _PermissionAttentionCard extends StatelessWidget {
   });
 
   final PermissionRequest permission;
+
+  /// Details: the request sheet.
   final VoidCallback onReview;
 
   /// The session approves automatically but this request's reply failed,
@@ -24,35 +71,80 @@ class _PermissionAttentionCard extends StatelessWidget {
   final bool autoApprovalFailed;
 
   @override
-  Widget build(BuildContext context) {
-    final title = permissionRequestTitle(permission.permission);
-    return KitRequestCard(
-      icon: permissionActionIcon(permission.permission),
-      title: title,
-      announcement: _chatL10n(context).chatUiPermissionNeeded(title),
-      summary: permission.patterns.isEmpty
-          ? null
-          : permission.patterns.join(' · '),
-      detail: autoApprovalFailed
-          ? _chatL10n(context).approvalsUiFailedDetail
-          : permission.message,
-      primary: KitAction(
-        key: const Key('permission-card-review'),
-        onPressed: onReview,
-        icon: AppIconography.checklist,
-        label: _chatL10n(context).reviewTitle,
-      ),
+  State<_PermissionAttentionCard> createState() =>
+      _PermissionAttentionCardState();
+}
+
+class _PermissionAttentionCardState extends State<_PermissionAttentionCard> {
+  late final DateTime _seen = requestSeenNow();
+
+  @override
+  Widget build(BuildContext context) => _RequestSlot(child: _content(context));
+
+  Widget _content(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final conn = _requestConnection(context);
+    final permission = widget.permission;
+    final detail = widget.autoApprovalFailed
+        ? l10n.approvalsUiFailedDetail
+        : null;
+    if (conn == null) {
+      return permissionRequestCard(
+        context,
+        permission: permission,
+        who: _requestWho(context),
+        since: _seen,
+        detail: detail,
+        onAllow: null,
+        onReject: null,
+        disabledReason: l10n.chatRequestNoConnection,
+        onDetails: widget.onReview,
+        detailsKey: const Key('permission-card-review'),
+      );
+    }
+    final answers = PermissionAnswers.of(conn);
+    return ListenableBuilder(
+      listenable: answers,
+      builder: (context, _) {
+        final answered = answers.answerFor(permission.id);
+        void answer(String reply, {String? message}) => unawaited(
+          answerPermissionRequest(conn, permission, reply, message: message),
+        );
+        return permissionRequestCard(
+          context,
+          permission: permission,
+          who: _requestWho(context),
+          since: _seen,
+          detail: detail,
+          ifIgnored: _requestIfIgnored(
+            context,
+            conn.permissionsForSession(permission.sessionID).length - 1,
+          ),
+          answered: answered,
+          onAllow: () => answer('once'),
+          onReject: () => answer('reject'),
+          onRetry: answered == null
+              ? null
+              : () => answer(answered.reply, message: answered.message),
+          onDetails: widget.onReview,
+          detailsKey: const Key('permission-card-review'),
+        );
+      },
     );
   }
 }
 
-/// The question flavour of the request card: the prompt header and question,
-/// every choice as a tappable option row, the free-text field when the
-/// prompt accepts one, and More (opens the full sheet). A single-select
-/// prompt answers on tap; multi-select and two-prompt questions collect
-/// answers behind Send. Questions the card cannot hold — more than two
-/// prompts or a long description — collapse to the question and an Answer
-/// button that opens the sheet, mirroring `formPrefersFullScreen`.
+/// An OpenCode 1 question, on the same card as an OpenCode 2 form: the
+/// question's header as the title and its words under it.
+///
+/// - One prompt with one answer: the options in place; a tap sends at once
+///   and the chosen option carries the receipt. "Something else" opens a
+///   field whose text is kept as a draft of this request until it lands.
+/// - One prompt with several answers: "Answer" opens the request sheet with
+///   every option and Send.
+/// - Anything longer (two or more prompts, long options, several answers
+///   plus a typed one): "Answer" opens the full question sheet, as a form's
+///   Answer opens the form.
 class _QuestionAttentionCard extends StatefulWidget {
   const _QuestionAttentionCard({
     super.key,
@@ -63,8 +155,15 @@ class _QuestionAttentionCard extends StatefulWidget {
   });
 
   final PendingQuestion question;
+
+  /// The screen's own answer in flight (a sheet answered it); the card's
+  /// own answers carry their receipt instead.
   final bool replying;
+
+  /// Used only outside a chat screen, where the card has no connection.
   final ValueChanged<List<List<String>>> onAnswer;
+
+  /// The full question sheet.
   final VoidCallback onMore;
 
   @override
@@ -72,190 +171,196 @@ class _QuestionAttentionCard extends StatefulWidget {
 }
 
 class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
-  late final List<Set<String>> _selected = List.generate(
-    widget.question.prompts.length,
-    (_) => <String>{},
-  );
-  late final List<TextEditingController> _custom = List.generate(
-    widget.question.prompts.length,
-    (_) => TextEditingController(),
-  );
+  late final DateTime _seen = requestSeenNow();
+  final TextEditingController _other = TextEditingController();
+
+  /// The answer in words and when it left; null while nothing is in flight.
+  String? _answer;
+  DateTime? _since;
+  String? _refused;
 
   List<QuestionPrompt> get _prompts => widget.question.prompts;
 
-  /// Single-select, one prompt: a tap is the whole answer. Anything else
-  /// needs Send so a half-finished selection is never sent early.
-  bool get _answersOnTap => _prompts.length == 1 && !_prompts.single.multiple;
-
-  bool get _complete {
-    for (var i = 0; i < _prompts.length; i++) {
-      if (_selected[i].isEmpty && _custom[i].text.trim().isEmpty) return false;
-    }
-    return true;
-  }
-
-  bool get _hasCustomText =>
-      _custom.any((controller) => controller.text.trim().isNotEmpty);
-
-  List<List<String>> _serialize() {
-    final answers = <List<String>>[];
-    for (var i = 0; i < _prompts.length; i++) {
-      final prompt = _prompts[i];
-      final customAnswer = _custom[i].text.trim();
-      if (prompt.multiple) {
-        answers.add([
-          ..._selected[i],
-          if (customAnswer.isNotEmpty) customAnswer,
-        ]);
-      } else {
-        answers.add([
-          if (customAnswer.isNotEmpty)
-            customAnswer
-          else if (_selected[i].isNotEmpty)
-            _selected[i].first,
-        ]);
-      }
-    }
-    return answers;
-  }
-
-  void _send() {
-    if (!_complete || widget.replying) return;
-    widget.onAnswer(_serialize());
-  }
-
-  void _tap(int index, QuestionPrompt prompt, QuestionChoice choice) {
-    if (widget.replying) return;
-    setState(() {
-      if (prompt.multiple) {
-        if (!_selected[index].remove(choice.label)) {
-          _selected[index].add(choice.label);
-        }
-      } else {
-        _custom[index].clear();
-        _selected[index]
-          ..clear()
-          ..add(choice.label);
-      }
-    });
-    if (_answersOnTap) _send();
-  }
-
   @override
   void dispose() {
-    for (final controller in _custom) {
-      controller.dispose();
-    }
+    _other.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  KitDraft? _draft(ConnectionController? conn) {
+    final profileId = conn?.profile?.id ?? conn?.store.activeId ?? '';
+    if (profileId.isEmpty) return null;
+    return KitDraft(
+      target: 'request.${widget.question.id}',
+      profileId: profileId,
+      controller: _other,
+    );
+  }
+
+  Future<void> _send(
+    ConnectionController? conn,
+    List<List<String>> answers,
+    String words,
+  ) async {
+    if (_answer != null) return;
+    if (conn == null) {
+      widget.onAnswer(answers);
+      return;
+    }
+    setState(() {
+      _answer = words;
+      _since = requestSeenNow();
+      _refused = null;
+    });
+    try {
+      await conn.answerQuestion(widget.question.id, answers);
+      unawaited(_draft(conn)?.clear());
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _answer = null;
+        _since = null;
+        _refused = productErrorText(error);
+      });
+    }
+  }
+
+  KitRequestCard _card(
+    BuildContext context, {
+    required KitRequestAnswers answers,
+    VoidCallback? onDetails,
+  }) {
+    final l10n = _chatL10n(context);
     final first = _prompts.firstOrNull;
     final title = first?.title.trim().isNotEmpty == true
         ? first!.title.trim()
-        : _chatL10n(context).chatUiOpenCodeNeedsInput;
-    // The full sheet: a rare path, so a text button under the answer.
-    final more = KitAction(
-      key: const Key('question-card-more'),
-      onPressed: widget.replying ? null : widget.onMore,
-      label: _chatL10n(context).chatUiMore,
+        : l10n.chatUiOpenCodeNeedsInput;
+    final count = _prompts.length;
+    final sending = _answer != null;
+    return KitRequestCard.ask(
+      kind: KitRequestKind.question,
+      title: title,
+      who: _requestWho(context),
+      reason: KitNeedsYouReason.decision,
+      ifIgnored: _requestIfIgnored(context, 0),
+      announcement: l10n.chatUiQuestionLabel(title),
+      since: _seen,
+      detail: first == null || first.question.trim().isEmpty
+          ? null
+          : count > 1
+          ? l10n.chatUiQuestionsSummary(first.question, count)
+          : first.question,
+      phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
+      answer: _answer,
+      receipt: sending
+          ? KitReceipt(state: KitReceiptState.sending, since: _since)
+          : _refused == null
+          ? null
+          : KitReceipt(state: KitReceiptState.refused, reason: _refused),
+      answers: answers,
+      onDetails: onDetails,
+      detailsKey: const Key('question-card-more'),
     );
-    if (first == null || questionPrefersSheet(widget.question)) {
-      final count = _prompts.length;
-      return KitRequestCard(
-        icon: AppIconography.question,
-        title: title,
-        announcement: _chatL10n(context).chatUiQuestionLabel(title),
-        detail: first == null
-            ? null
-            : count > 1
-            ? _chatL10n(context).chatUiQuestionsSummary(first.question, count)
-            : first.question,
-        primary: KitAction(
-          key: const Key('question-card-answer'),
-          onPressed: widget.replying ? null : widget.onMore,
-          label: _chatL10n(context).returnBriefAnswer,
+  }
+
+  @override
+  Widget build(BuildContext context) => _RequestSlot(child: _content(context));
+
+  Widget _content(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final conn = _requestConnection(context);
+    final first = _prompts.firstOrNull;
+    final single =
+        first != null &&
+        _prompts.length == 1 &&
+        !questionPrefersSheet(widget.question);
+
+    if (single && !first.multiple) {
+      final choices = [
+        for (final (index, choice) in first.choices.indexed)
+          KitChoice<String>(
+            key: ValueKey('question-card-option-$index'),
+            value: choice.label,
+            title: choice.label,
+            supporting: choice.description.trim().isEmpty
+                ? null
+                : choice.description,
+          ),
+      ];
+      late final KitRequestCard card;
+      final answers = KitRequestChoose<String>(
+        choices: choices,
+        chosen: _answer,
+        onChosen: (label) => unawaited(
+          _send(conn, [
+            [label],
+          ], label),
         ),
+        other: first.custom
+            ? KitChoiceOther(
+                label: l10n.chatRequestOtherAnswer,
+                fieldLabel: l10n.chatRequestOtherField,
+                draft: _draft(conn),
+                fieldKey: const Key('question-card-custom-0'),
+                onSubmitted: (text) => unawaited(
+                  _send(conn, [
+                    [text],
+                  ], text),
+                ),
+              )
+            : null,
       );
+      card = _card(
+        context,
+        answers: answers,
+        onDetails: conn == null
+            ? null
+            : () => unawaited(
+                showQuestionDetails(
+                  context,
+                  controller: conn,
+                  question: widget.question,
+                  card: card,
+                ),
+              ),
+      );
+      return card;
     }
 
-    final sending = widget.replying;
-    // Send earns its place only when a tap cannot be the whole answer; while
-    // the answer is on its way the same button says so (its own tap in
-    // flight), and the choices above are held.
-    final showSend = !_answersOnTap || _hasCustomText;
-    final KitAction? primary = sending
-        ? KitAction(
-            key: const Key('question-card-sending'),
-            onPressed: null,
-            working: true,
-            label: _chatL10n(context).queuedSending,
-          )
-        : showSend
-        ? KitAction(
-            key: const Key('question-card-send'),
-            onPressed: _complete ? _send : null,
-            label: _chatL10n(context).chatUiSend,
-          )
-        : null;
-
-    return KitRequestCard(
-      icon: AppIconography.question,
-      title: title,
-      announcement: _chatL10n(context).chatUiQuestionLabel(title),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var index = 0; index < _prompts.length; index++) ...[
-            if (index > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 2),
-                child: Text(
-                  _prompts[index].title,
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
-            if (_prompts[index].question.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  _prompts[index].question,
-                  key: ValueKey('question-card-question-$index'),
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-            for (final choice in _prompts[index].choices)
-              QuestionOptionRow(
-                choice: choice,
-                multiple: _prompts[index].multiple,
-                selected: _selected[index].contains(choice.label),
-                enabled: !sending,
-                onTap: () => _tap(index, _prompts[index], choice),
-              ),
-            if (_prompts[index].custom)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: QuestionCustomAnswerField(
-                  key: ValueKey('question-card-custom-$index'),
-                  controller: _custom[index],
-                  enabled: !sending,
-                  maxLines: 2,
-                  onChanged: (value) => setState(() {
-                    if (!_prompts[index].multiple && value.trim().isNotEmpty) {
-                      _selected[index].clear();
-                    }
-                  }),
-                  onSubmitted: (_) => _send(),
-                ),
+    if (single && !first.custom && conn != null) {
+      late final KitRequestCard card;
+      card = _card(
+        context,
+        answers: KitRequestChooseMany<String>(
+          choices: [
+            for (final choice in first.choices)
+              KitChoice<String>(
+                value: choice.label,
+                title: choice.label,
+                supporting: choice.description.trim().isEmpty
+                    ? null
+                    : choice.description,
               ),
           ],
-        ],
-      ),
-      primary: primary,
-      tertiary: [more],
+          onSend: (chosen) =>
+              unawaited(_send(conn, [chosen.toList()], chosen.join(', '))),
+        ),
+        onDetails: () => unawaited(
+          showQuestionDetails(
+            context,
+            controller: conn,
+            question: widget.question,
+            card: card,
+          ),
+        ),
+      );
+      return card;
+    }
+
+    return _card(
+      context,
+      answers: const KitRequestInSheet(key: Key('question-card-answer')),
+      onDetails: widget.onMore,
     );
   }
 }
@@ -300,9 +405,10 @@ String _countdown(Duration d) {
   return '$minutes:$seconds';
 }
 
-/// The provider-retry flavour of the request card: a slim banner naming the
-/// attempt and counting down to the next one, the server's own words when
-/// it sent any, and Stop wired to the same abort as the app-bar button.
+/// A provider retry: a condition of the running turn, not something that
+/// needs the person (LOOK-4), so a working notice rather than the request
+/// card. It names the attempt, counts down to the next one, and gives the
+/// server's reason in plain words when it sent one.
 class _RetryAttentionCard extends StatelessWidget {
   const _RetryAttentionCard({super.key, required this.retry});
 
@@ -310,6 +416,7 @@ class _RetryAttentionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
     final title = retryBannerHeadline(retry, l10n: _chatL10n(context));
     final raw = retry.message?.trim();
     // The reason in plain words. A rate limit is already the title.
@@ -318,20 +425,32 @@ class _RetryAttentionCard extends StatelessWidget {
         : classifyAgentError(raw) == AgentErrorCause.rateLimited
         ? null
         : agentErrorWords(raw, _chatL10n(context)).headline;
-    return KitRequestCard(
-      icon: AppIcons.retry,
-      tone: AppStatusTone.attention,
-      title: title,
-      announcement: title,
-      detail: message == null || message.isEmpty ? null : message,
+    final hasMessage = message != null && message.isNotEmpty;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
+        child: Padding(
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: tokens.gutter,
+            vertical: tokens.space1,
+          ),
+          child: KitNotice(
+            title: hasMessage ? title : null,
+            message: hasMessage ? message : title,
+            tone: AppStatusTone.progress,
+            icon: AppIcons.retry,
+          ),
+        ),
+      ),
     );
   }
 }
 
-/// The form flavour of the request card, for a pending form of the open
-/// session (design doc §2): the form's title, its question count, and
-/// Answer, which opens the shared form renderer.
-class _FormRequestCard extends StatelessWidget {
+/// An OpenCode 2 form of the open session, on the same card as a question:
+/// the form's title, how many questions it asks, and Answer, which opens
+/// the form. While its answers are on their way the card says so, and a
+/// refused answer shows the server's reason above Answer again.
+class _FormRequestCard extends StatefulWidget {
   const _FormRequestCard({
     super.key,
     required this.form,
@@ -342,27 +461,51 @@ class _FormRequestCard extends StatelessWidget {
   final VoidCallback onAnswer;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final title = form.title ?? l10n.chatUiInputRequested;
-    return KitRequestCard(
-      icon: AppIconography.checklist,
-      title: title,
-      announcement: title,
-      detail: l10n.chatUiQuestionCount(form.fields.length),
-      primary: KitAction(
-        key: ValueKey('form-request-answer-${form.id}'),
-        onPressed: onAnswer,
-        label: l10n.returnBriefAnswer,
-      ),
-    );
-  }
+  State<_FormRequestCard> createState() => _FormRequestCardState();
+}
+
+class _FormRequestCardState extends State<_FormRequestCard> {
+  late final DateTime _seen = requestSeenNow();
+
+  @override
+  Widget build(BuildContext context) => _RequestSlot(child: _content(context));
+
+  Widget _content(BuildContext context) => ListenableBuilder(
+    listenable: FormAnswerReceipts.instance,
+    builder: (context, _) {
+      final l10n = _chatL10n(context);
+      final form = widget.form;
+      final title = form.title ?? l10n.chatUiInputRequested;
+      final sent = FormAnswerReceipts.instance.receiptFor(form.id);
+      final sending = sent != null && !sent.failed;
+      return KitRequestCard.ask(
+        kind: KitRequestKind.form,
+        title: title,
+        who: _requestWho(context),
+        reason: KitNeedsYouReason.decision,
+        ifIgnored: _requestIfIgnored(context, 0),
+        announcement: l10n.chatUiQuestionLabel(title),
+        since: _seen,
+        detail: l10n.chatUiQuestionCount(form.fields.length),
+        phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
+        answer: sending ? l10n.kitRequestSendAnswers : null,
+        receipt: sent == null
+            ? null
+            : sent.failed
+            ? KitReceipt(state: KitReceiptState.refused, reason: sent.error)
+            : KitReceipt(state: KitReceiptState.sending, since: sent.since),
+        answers: KitRequestInSheet(
+          key: ValueKey('form-request-answer-${form.id}'),
+        ),
+        onDetails: widget.onAnswer,
+      );
+    },
+  );
 }
 
 /// A single-line, self-hiding note above the composer for composer-local
 /// outcomes (queued, staged, already present). It replaces snackbars that
-/// used to cover the field the user is typing into; confirmations of remote
-/// actions stay snackbars.
+/// used to cover the field the user is typing into.
 class _ComposerNote extends StatelessWidget {
   const _ComposerNote({super.key, required this.text});
 
@@ -370,21 +513,20 @@ class _ComposerNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
+        constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(24, 2, 24, 0),
+          padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
           child: Semantics(
             liveRegion: true,
-            child: Text(
+            child: KitText(
               text,
+              role: KitTextRole.caption,
+              tone: KitTextTone.secondary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
             ),
           ),
         ),
@@ -393,9 +535,13 @@ class _ComposerNote extends StatelessWidget {
   }
 }
 
-/// One app-bar overflow for the whole session: the view destinations and
-/// transcript toggles that used to sit behind a second icon, then the
-/// mutation and utility actions. Every row pops with its action value.
+// revamp: redesign (slice-P10.2) — the one KitRow menu of Go to and Do,
+// with the display toggles moved to Settings, is that slice's work; this is
+// today's layout rebuilt from kit parts.
+
+/// One app-bar overflow for the whole session: the view destinations as a
+/// row of chips, then the display toggles and the session's actions, each
+/// folded. Every row pops with its action value.
 class SessionMenuSheet extends StatelessWidget {
   const SessionMenuSheet({
     super.key,
@@ -451,217 +597,196 @@ class SessionMenuSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    Widget chip(IconData icon, String label, String value) => KitChip.action(
+      key: ValueKey('session-menu-$value'),
+      icon: icon,
+      label: label,
+      onPressed: () => Navigator.pop(context, value),
+    );
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          key: const Key('session-menu-sheet'),
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (conversationTitle case final title?)
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            SectionLabel(_chatL10n(context).chatUiConversation),
-            // Views are the frequent destinations, so they take a compact
-            // chip row instead of a tile each and leave the actions below
-            // reachable without scrolling on a phone.
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
-              // A Wrap hands its children unbounded width, so the row's own
-              // width is measured here and capped on each chip: a long label
-              // at 2.5x text wraps inside its chip instead of running off
-              // the sheet.
-              child: LayoutBuilder(
-                builder: (context, constraints) => Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (resultsAvailable)
-                      _SessionMenuChip(
-                        maxWidth: constraints.maxWidth,
-                        icon: AppIconography.checkCircle,
-                        label: _chatL10n(context).chatUiResults,
-                        value: 'results',
-                      ),
-                    _SessionMenuChip(
-                      maxWidth: constraints.maxWidth,
-                      icon: AppIconography.search,
-                      label: _chatL10n(context).transcriptFindTitle,
-                      value: 'find',
-                    ),
-                    _SessionMenuChip(
-                      maxWidth: constraints.maxWidth,
-                      icon: AppIconography.timeline,
-                      label: _chatL10n(context).chatUiTimeline,
-                      value: 'timeline',
-                    ),
-                    if (changesAvailable)
-                      _SessionMenuChip(
-                        maxWidth: constraints.maxWidth,
-                        icon: AppIconography.review,
-                        label: _chatL10n(context).chatUiChanges,
-                        value: 'changes',
-                      ),
-                    if (todosAvailable)
-                      _SessionMenuChip(
-                        maxWidth: constraints.maxWidth,
-                        icon: AppIconography.checklist,
-                        label: _chatL10n(context).chatUiTodos,
-                        value: 'todos',
-                      ),
-                    if (subagentsAvailable)
-                      _SessionMenuChip(
-                        maxWidth: constraints.maxWidth,
-                        icon: AppIconography.branch,
-                        label: _chatL10n(context).usageSubagents,
-                        value: 'subagents',
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            ExpansionTile(
-              title: Text(_chatL10n(context).chatUiDisplayAndContext),
-              children: [
-                TranscriptDisplayToggles(
-                  reasoningExpanded: reasoningExpanded,
-                  timestampsVisible: timestampsVisible,
-                  dense: true,
-                ),
-                _SessionSheetRow(
-                  icon: AppIconography.usageRing,
-                  label: _chatL10n(context).chatUiContextUsage,
-                  value: 'context',
-                ),
-              ],
-            ),
-            ExpansionTile(
-              title: Text(_chatL10n(context).chatUiSessionActions),
-              children: [
-                if (skillsAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.extensions,
-                    label: _chatL10n(context).skillMenu,
-                    value: 'skills',
-                  ),
-                if (notesAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.note,
-                    label: _chatL10n(context).sessionNoteTitle,
-                    value: 'note',
-                  ),
-                if (approvalsAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.permissions,
-                    label: _chatL10n(context).approvalsUiMenu,
-                    value: 'approvals',
-                  ),
-                _SessionSheetRow(
-                  icon: AppIconography.retry,
-                  label: _chatL10n(context).chatUiRetryLastPrompt,
-                  value: 'retry',
-                ),
-                if (revertAvailable)
-                  _SessionSheetRow(
-                    icon: reverted
-                        ? AppIconography.restore
-                        : AppIconography.history,
-                    label: reverted
-                        ? (stagedRevert
-                              ? _chatL10n(context).revertReviewTitle
-                              : _chatL10n(context).chatUiRestoreMessages)
-                        : _chatL10n(context).chatUiRevertLastPrompt,
-                    value: reverted ? 'restore' : 'revert',
-                  ),
-                if (forkAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.fork,
-                    label: _chatL10n(context).chatUiForkSession,
-                    value: 'fork',
-                  ),
-                if (compactAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.collapse,
-                    label: _chatL10n(context).chatUiCompactContext,
-                    value: 'compact',
-                  ),
-                if (sharingAvailable)
-                  _SessionSheetRow(
-                    icon: shared
-                        ? AppIconography.networkOff
-                        : AppIconography.globe,
-                    label: shared
-                        ? _chatL10n(context).chatUiStopSharing
-                        : _chatL10n(context).chatUiShareSession,
-                    value: shared ? 'unshare' : 'share',
-                  ),
-                if (terminalAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.terminal,
-                    label: _chatL10n(context).chatUiRunShellCommand,
-                    value: 'shell',
-                  ),
-                _SessionSheetRow(
-                  icon: AppIcons.run,
-                  label: _chatL10n(context).runResultsCommandsTitle,
-                  value: 'slash',
-                ),
-                if (continueOnComputerAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.computer,
-                    label: _chatL10n(context).handoffUiComputerTitle,
-                    value: 'continue-computer',
-                  ),
-                if (continueOnPhoneAvailable)
-                  _SessionSheetRow(
-                    icon: AppIconography.qrCode,
-                    label: _chatL10n(context).handoffUiPhoneTitle,
-                    value: 'continue-phone',
-                  ),
-                _SessionSheetRow(
-                  icon: AppIconography.retry,
-                  label: _chatL10n(context).chatUiReloadMessages,
-                  value: 'reload',
-                ),
-              ],
-            ),
-          ],
+      child: ListView(
+        key: const Key('session-menu-sheet'),
+        shrinkWrap: true,
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space4,
+          bottom: tokens.space4,
         ),
+        children: [
+          if (conversationTitle case final title?)
+            Padding(
+              padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.rail),
+              child: KitText(KitBidi.auto(title), role: KitTextRole.headline),
+            ),
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.rail,
+              tokens.space4,
+              tokens.rail,
+              tokens.labelGap,
+            ),
+            child: Semantics(
+              header: true,
+              child: KitText(
+                l10n.chatUiConversation,
+                role: KitTextRole.label,
+                tone: KitTextTone.secondary,
+              ),
+            ),
+          ),
+          // Views are the frequent destinations, so they take a compact
+          // chip row and leave the actions below reachable without
+          // scrolling on a phone. Chips wrap at large text.
+          Padding(
+            padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.rail),
+            child: KitChipWrap(
+              children: [
+                if (resultsAvailable)
+                  chip(
+                    AppIconography.checkCircle,
+                    l10n.chatUiResults,
+                    'results',
+                  ),
+                chip(AppIconography.search, l10n.transcriptFindTitle, 'find'),
+                chip(AppIconography.timeline, l10n.chatUiTimeline, 'timeline'),
+                if (changesAvailable)
+                  chip(AppIconography.review, l10n.chatUiChanges, 'changes'),
+                if (todosAvailable)
+                  chip(AppIconography.checklist, l10n.chatUiTodos, 'todos'),
+                if (subagentsAvailable)
+                  chip(AppIconography.branch, l10n.usageSubagents, 'subagents'),
+              ],
+            ),
+          ),
+          SizedBox(height: tokens.space4),
+          KitExpandRow(
+            title: l10n.chatUiDisplayAndContext,
+            children: [
+              TranscriptDisplayToggles(
+                reasoningExpanded: reasoningExpanded,
+                timestampsVisible: timestampsVisible,
+                dense: true,
+              ),
+              _SessionMenuRow(
+                icon: AppIconography.usageRing,
+                label: l10n.chatUiContextUsage,
+                value: 'context',
+              ),
+            ],
+          ),
+          KitExpandRow(
+            title: l10n.chatUiSessionActions,
+            children: [
+              if (skillsAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.extensions,
+                  label: l10n.skillMenu,
+                  value: 'skills',
+                ),
+              if (notesAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.note,
+                  label: l10n.sessionNoteTitle,
+                  value: 'note',
+                ),
+              if (approvalsAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.permissions,
+                  label: l10n.approvalsUiMenu,
+                  value: 'approvals',
+                ),
+              _SessionMenuRow(
+                icon: AppIconography.retry,
+                label: l10n.chatUiRetryLastPrompt,
+                value: 'retry',
+              ),
+              if (revertAvailable)
+                _SessionMenuRow(
+                  icon: reverted
+                      ? AppIconography.restore
+                      : AppIconography.history,
+                  label: reverted
+                      ? (stagedRevert
+                            ? l10n.revertReviewTitle
+                            : l10n.chatUiRestoreMessages)
+                      : l10n.chatUiRevertLastPrompt,
+                  value: reverted ? 'restore' : 'revert',
+                ),
+              if (forkAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.fork,
+                  label: l10n.chatUiForkSession,
+                  value: 'fork',
+                ),
+              if (compactAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.collapse,
+                  label: l10n.chatUiCompactContext,
+                  value: 'compact',
+                ),
+              if (sharingAvailable)
+                _SessionMenuRow(
+                  icon: shared
+                      ? AppIconography.networkOff
+                      : AppIconography.globe,
+                  label: shared
+                      ? l10n.chatUiStopSharing
+                      : l10n.chatUiShareSession,
+                  value: shared ? 'unshare' : 'share',
+                ),
+              if (terminalAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.terminal,
+                  label: l10n.chatUiRunShellCommand,
+                  value: 'shell',
+                ),
+              _SessionMenuRow(
+                icon: AppIcons.run,
+                label: l10n.runResultsCommandsTitle,
+                value: 'slash',
+              ),
+              if (continueOnComputerAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.computer,
+                  label: l10n.handoffUiComputerTitle,
+                  value: 'continue-computer',
+                ),
+              if (continueOnPhoneAvailable)
+                _SessionMenuRow(
+                  icon: AppIconography.qrCode,
+                  label: l10n.handoffUiPhoneTitle,
+                  value: 'continue-phone',
+                ),
+              _SessionMenuRow(
+                icon: AppIconography.retry,
+                label: l10n.chatUiReloadMessages,
+                value: 'reload',
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SessionMenuChip extends StatelessWidget {
-  const _SessionMenuChip({
+/// One action of the session menu: a kit row that pops with [value].
+class _SessionMenuRow extends StatelessWidget {
+  const _SessionMenuRow({
     required this.icon,
     required this.label,
     required this.value,
-    required this.maxWidth,
   });
 
   final IconData icon;
   final String label;
   final String value;
 
-  /// The chip row's measured width; a Wrap alone would let a long label at
-  /// large text scales overflow the sheet.
-  final double maxWidth;
-
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: BoxConstraints(maxWidth: math.max(0, maxWidth)),
-    child: ActionChip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      // Chips read as light chrome but keep the 48 dp Android target.
-      materialTapTargetSize: MaterialTapTargetSize.padded,
-      onPressed: () => Navigator.pop(context, value),
-    ),
+  Widget build(BuildContext context) => KitRow(
+    leading: KitRowIcon(icon),
+    title: label,
+    onTap: () => Navigator.pop(context, value),
   );
 }

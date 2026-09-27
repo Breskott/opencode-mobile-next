@@ -29791,5 +29791,78 @@
   "teamChatGoneOpenTeam": "Open AI Team page",
   "@teamChatGoneOpenTeam": {
     "description": "Team conversation: button on the removed-task page that opens the AI Team page."
+  },
+  "chatRequestWho": "The agent",
+  "@chatRequestWho": {
+    "description": "Chat request card: who asks, in the card caption and the request sheet subtitle."
+  },
+  "chatRequestIfIgnored": "The agent waits until you answer. Nothing is lost.",
+  "@chatRequestIfIgnored": {
+    "description": "Chat request card: what happens if the person does not answer yet."
+  },
+  "chatRequestMoreWaiting": "{count, plural, one{1 more request is waiting.} other{{count} more requests are waiting.}}",
+  "@chatRequestMoreWaiting": {
+    "description": "Chat request card: how many other requests of this conversation wait behind the one shown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatRequestNoConnection": "Not connected to the server, so this can’t be answered here.",
+  "@chatRequestNoConnection": {
+    "description": "Chat request card: why Allow once and Reject are unavailable (no connection)."
+  },
+  "chatRequestAlwaysTitle": "Always allow requests like this",
+  "@chatRequestAlwaysTitle": {
+    "description": "Permission request sheet: the risky switch that saves an always-allow rule."
+  },
+  "chatRequestAlwaysScope": "From now on, {patterns} runs without asking you, {context}. You can take this back in Settings under Always allowed actions.",
+  "@chatRequestAlwaysScope": {
+    "description": "Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.",
+    "placeholders": {
+      "patterns": {
+        "type": "String"
+      },
+      "context": {
+        "type": "String"
+      }
+    }
+  },
+  "chatRequestAlwaysOn": "Always allowed",
+  "@chatRequestAlwaysOn": {
+    "description": "Permission request sheet: status words while an always-allow rule is on."
+  },
+  "chatRequestDetailTool": "Tool",
+  "@chatRequestDetailTool": {
+    "description": "Permission request sheet, Details: label of the tool name the server asked with."
+  },
+  "chatRequestDetailPatterns": "Requested patterns",
+  "@chatRequestDetailPatterns": {
+    "description": "Permission request sheet, Details: label of the patterns the request covers besides the command."
+  },
+  "chatRequestOtherAnswer": "Something else",
+  "@chatRequestOtherAnswer": {
+    "description": "Question request card: the row that opens a field for a typed answer."
+  },
+  "chatRequestOtherField": "Your answer",
+  "@chatRequestOtherField": {
+    "description": "Question request card: label of the typed-answer field."
+  },
+  "formFlowAnsweredElsewhereBody": "This form was answered on another device, so nothing was sent from this phone.",
+  "@formFlowAnsweredElsewhereBody": {
+    "description": "Form alert body when the server says the form was already answered elsewhere."
+  },
+  "approvalsUiPausedDetail": "This phone is not connected. Automatic approval resumes when it reconnects.",
+  "@approvalsUiPausedDetail": {
+    "description": "Approvals sheet and chip: why automatic approval is paused and when it resumes."
+  },
+  "voiceConversationSpeakRepliesBusy": "Getting the voice ready…",
+  "@voiceConversationSpeakRepliesBusy": {
+    "description": "Voice conversation: why the Speak replies switch is unavailable for a moment."
+  },
+  "voiceConversationStopReading": "Stop reading the reply",
+  "@voiceConversationStopReading": {
+    "description": "Voice conversation: stops reading the agent reply aloud."
   }
 }
