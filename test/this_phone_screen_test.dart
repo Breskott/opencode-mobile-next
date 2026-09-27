@@ -250,6 +250,48 @@ void main() {
     await unmountPhone(tester);
   });
 
+  testWidgets('the first Start asks once to keep the server running (P6.7)', (
+    tester,
+  ) async {
+    const lifecycle = MethodChannel('oc/lifecycle');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(
+      lifecycle,
+      (call) async => call.method == 'keepAliveInfo'
+          ? {'manufacturer': 'Google', 'batteryOptimizationIgnored': false}
+          : null,
+    );
+    addTearDown(() => messenger.setMockMethodCallHandler(lifecycle, null));
+    final linux = PhoneLinux();
+    await inApp(tester, linux: linux);
+    await tester.tap(find.byKey(const ValueKey('this-phone-start')));
+    await _settle(tester);
+    expect(linux.running, isTrue);
+    expect(
+      find.byKey(const ValueKey('phone-consent-batteryExemption')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Not now'));
+    await _settle(tester);
+
+    // A later start asks nothing.
+    await tester.tap(find.byKey(const ValueKey('this-phone-stop')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('confirm-stop-local-server')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('this-phone-start')));
+    await _settle(tester);
+    expect(linux.running, isTrue);
+    expect(
+      find.byKey(const ValueKey('phone-consent-batteryExemption')),
+      findsNothing,
+    );
+    await unmountPhone(tester);
+    // A status poll that was in flight at unmount ends on its own.
+    await tester.pump(const Duration(seconds: 6));
+  });
+
   testWidgets('Add tools opens Customize in add mode, priced before it '
       'installs, and installs only the new tools', (tester) async {
     var progressOpened = 0;

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../l10n/app_localizations.dart';
@@ -10,6 +12,22 @@ import 'model_manifest.dart';
 AppLocalizations voiceStrings(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??
     lookupAppLocalizations(const Locale('en'));
+
+/// A download or storage size in plain words: "160 MB" or "1.2 GB", in
+/// decimal units like the store listing and the phone setup sheet. The exact
+/// size in MiB ([formatModelBytes]) belongs under Details only.
+String voiceSizeText(AppLocalizations strings, int bytes) {
+  final megabytes = bytes / 1000000;
+  if (megabytes >= 1000) {
+    return strings.phoneSetupStartGigabytes(
+      (megabytes / 1000).toStringAsFixed(1),
+    );
+  }
+  // Only nothing is "0 MB"; a few bytes still round up to one.
+  return strings.phoneSetupStartMegabytes(
+    (bytes <= 0 ? 0 : math.max(1, megabytes.round())).toString(),
+  );
+}
 
 String voiceLanguageLabel(VoiceLanguage language, AppLocalizations strings) =>
     switch (language) {
@@ -50,7 +68,7 @@ String? voiceSupportReason(
   ),
   VoicePackUnsupported.storage => strings.e7VoiceUiStorage(
     voicePackLabel(pack, strings),
-    formatModelBytes(manager.requiredStorageBytes(pack)),
+    voiceSizeText(strings, manager.requiredStorageBytes(pack)),
   ),
   null => support.reason,
 };
@@ -84,7 +102,7 @@ String voiceErrorText(
           when pack != null && error.requiredBytes != null =>
         strings.e7VoiceUiStorage(
           voicePackLabel(pack, strings),
-          formatModelBytes(error.requiredBytes!),
+          voiceSizeText(strings, error.requiredBytes!),
         ),
       _ => strings.e7VoiceUiInputFailed,
     };

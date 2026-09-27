@@ -61,9 +61,6 @@
       "Scaffold": 1,
       "Text": 13
     },
-    "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
-      "MaterialPageRoute": 3
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "AppBar": 1,
       "Divider": 1,

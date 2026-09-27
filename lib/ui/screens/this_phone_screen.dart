@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../builtin/app_exit_recovery.dart' show appLifecycleBridgeProvider;
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
 import '../../builtin/setup/component_removal.dart';
@@ -24,6 +25,7 @@ import '../kit/kit.dart';
 import '../widgets/builtin_team_section.dart' show forgetBuiltinTeam;
 import '../widgets/managed_server_recovery_option.dart';
 import '../widgets/phone_server_card.dart';
+import '../widgets/phone_server_consents.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/team_phone_onboarding.dart' show teamPhoneRuntime;
 import '../widgets/termux_phone_tools.dart';
@@ -313,6 +315,18 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   Future<void> _start() async {
     await _host.start(_l10n);
     if (!mounted || _host.state != PhoneHostState.running) return;
+    // The first start is the moment keeping it alive matters (P6.7): asked
+    // once per server, nothing on later starts.
+    final profile = _host.profile;
+    if (profile != null) {
+      await askPhoneServerConsents(
+        context,
+        connection: _connection,
+        bridge: ref.read(appLifecycleBridgeProvider),
+        profileId: profile.id,
+      );
+      if (!mounted) return;
+    }
     // Started with nothing else in use: connecting is the obvious next step.
     if (_connection.api == null) await _connect(openHome: false);
   }

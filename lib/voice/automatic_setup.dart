@@ -13,6 +13,11 @@ enum VoiceSetupStage {
   consentRequired,
   downloading,
   verifying,
+
+  /// The pack is verified but the app was in the background when it
+  /// finished, so the microphone was not started; [requestMicrophone] starts
+  /// it once the person is back.
+  ready,
   starting,
   listening,
   cancelled,
@@ -65,6 +70,7 @@ class VoiceAutomaticSetupController extends ChangeNotifier {
   bool _disposed = false;
   bool _ownsDownload = false;
   bool _ownsListeningAttempt = false;
+  bool _foreground = true;
   Future<void> _notifications = Future<void>.value();
   String? _lastNotification;
 
@@ -78,6 +84,18 @@ class VoiceAutomaticSetupController extends ChangeNotifier {
   /// Null until attempted, false when permission/channel/bridge is unavailable.
   /// True means Android accepted posting, not proof the user saw it.
   bool? get notificationAvailable => _notificationAvailable;
+
+  /// Whether the app is in front. A download that finishes while it is not
+  /// stops at [VoiceSetupStage.ready] instead of opening the microphone
+  /// behind the person's back. The download itself keeps going (the
+  /// notification shows it); only the automatic start waits.
+  void setForeground(bool foreground) => _foreground = foreground;
+
+  /// Hands a started recording over to the composer's own surface. After
+  /// this, [cancel] and [dispose] leave the composer's recording alone; the
+  /// surface that took it over stops it. Call once [stage] reaches
+  /// [VoiceSetupStage.starting] or [VoiceSetupStage.listening].
+  void handOff() => _ownsListeningAttempt = false;
 
   VoiceModelManager get _models => composer.models;
   bool _current(int generation) => !_disposed && generation == _generation;
@@ -225,7 +243,12 @@ class VoiceAutomaticSetupController extends ChangeNotifier {
       _receivedBytes = downloadBytes;
       _post(VoiceSetupNotificationPhase.complete, generation);
       await _notifications;
-      if (_current(generation)) await _startListening(generation);
+      if (!_current(generation)) return;
+      if (!_foreground) {
+        _set(VoiceSetupStage.ready);
+        return;
+      }
+      await _startListening(generation);
     } catch (_) {
       if (_current(generation)) {
         _post(VoiceSetupNotificationPhase.failed, generation);
