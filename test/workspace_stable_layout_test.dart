@@ -2,11 +2,11 @@
 // to a project and starting or resuming a session stays visually clear at
 // 320dp with 2x and 2.5x text: the header gives the project name the full
 // row with secondary actions in its project sheet; session rows keep
-// status and time by wrapping instead of cutting; the docked New session
-// action never clips, stacking the isolated-task action above it when the
-// label cannot share the row; and the scroll end clears the dock by its real
-// height. The normal 390dp/1x layout keeps its row header and side-by-side
-// dock.
+// status and time by wrapping instead of cutting; the docked New
+// conversation never clips and is the dock's only control (its chooser,
+// slice-P4.5, holds Solo, Team and the separate copy); and the scroll end
+// clears the dock by its real height. The normal 390dp/1x layout keeps its
+// row header.
 //
 // flutter_test paints with a 1em-per-glyph test font, so assertions here are
 // about structure and geometry, not glyph widths, except the last group,
@@ -21,6 +21,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -215,7 +216,7 @@ void main() {
         expect(_name, findsOneWidget);
         expect(tester.getTopLeft(_name).dx, 16);
         expect(tester.getSize(_name).width, 256);
-        expect(tester.widget<Text>(_name).maxLines, 3);
+        expect(tester.widget<KitText>(_name).maxLines, 3);
         expect(find.text(_directory), findsNothing);
         expect(_manage, findsNothing);
         expect(_switch, findsNothing);
@@ -231,8 +232,8 @@ void main() {
         expect(tester.widget<Text>(facts).maxLines, 3);
 
         // The primary action has the whole dock width and is the dock's
-        // only control (R2): the task in a fresh worktree lives on the
-        // project sheet, which names the project.
+        // only control (R2): the task in a separate copy is a choice of
+        // its chooser, which names the project.
         expect(_primary, findsOneWidget);
         expect(tester.getTopLeft(_primary).dx, 16);
         expect(tester.getSize(_primary).width, 288);
@@ -254,8 +255,13 @@ void main() {
           lessThanOrEqualTo(tester.getTopLeft(_pill).dy),
         );
 
-        // And the primary action still starts a session.
+        // And the primary action still starts a session: its chooser
+        // fits the phone at this text size, and Solo starts it.
         await tester.tap(_primary);
+        await _pumpFrames(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const ValueKey('new-conversation-sheet')), findsOne);
+        await tester.tap(find.byKey(const ValueKey('new-conversation-solo')));
         await _pumpFrames(tester);
         expect(controller.createCalls, 1);
         expect(find.text('Created conversation'), findsOneWidget);
@@ -419,17 +425,23 @@ void main() {
       expect(tester.getTopRight(_primary).dx, 390 - 16);
       expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
 
-      // The task in a fresh worktree is a row of the project's own sheet,
-      // naming the project and what it does.
+      // The task in a separate copy is no longer on the project's sheet:
+      // it is a choice of New conversation, naming the project and what it
+      // does (slice-P4.5).
       await tester.tap(_header);
       await _pumpFrames(tester);
-      expect(_isolated, findsOneWidget);
+      expect(_isolated, findsNothing);
+      await tester.tapAt(const Offset(8, 8));
+      await _pumpFrames(tester);
+      await tester.tap(_primary);
+      await _pumpFrames(tester);
       expect(
-        find.textContaining('New task in a fresh worktree of '),
+        find.byKey(const ValueKey('new-conversation-copy')),
         findsOneWidget,
       );
+      expect(find.textContaining('In a separate copy of '), findsOneWidget);
       expect(
-        find.text(
+        find.textContaining(
           'Works on a separate copy so your main folder stays untouched.',
         ),
         findsOneWidget,

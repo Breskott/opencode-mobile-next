@@ -26,7 +26,7 @@ import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
 import '../widgets/session_inventory_footer.dart';
 import '../widgets/team_task_row.dart';
-import '../widgets/team_discover.dart' show TeamNewMode, teamPossibleOn;
+import '../widgets/team_discover.dart' show teamPossibleOn;
 import '../widgets/team_vocabulary.dart' show teamGatedRuns;
 import 'chat_screen.dart' show ChatScreen;
 import 'team_conversation/team_conversation.dart';
@@ -37,6 +37,7 @@ import '../../termux/bridge.dart';
 import 'global_sessions_screen.dart';
 import 'isolated_task_sheet.dart';
 import 'manage_project_screen.dart';
+import 'new_conversation_sheet.dart';
 import 'project_folder_actions.dart';
 import 'projects_screen.dart';
 import 'run_result_screen.dart';
@@ -44,9 +45,12 @@ import '../app_theme.dart';
 import '../../domain/team_directories.dart';
 
 /// The Work tab (docs/ux-system/map/all.json `workspace`, proposal
-/// "redesign"): a kit-only rebuild of today's layout. The new structure
-/// (one New conversation with a kind chooser, one "N need you" row to Inbox,
-/// the AI Team as a notice until first use) waits for its wave-3 slice.
+/// "redesign"): a kit-only rebuild of today's layout with one New
+/// conversation whose chooser ([showNewConversationSheet], slice-P4.5)
+/// offers Solo · Team · In a separate copy · On a cloud machine where the
+/// server supports each. The rest of the new structure (one "N need you"
+/// row to Inbox, the AI Team as a notice until first use) waits for its
+/// wave-3 slice.
 /// From expanded it is a [KitScreen.twoPane]: the list at the start and the
 /// selected conversation beside it.
 class WorkspaceScreen extends StatefulWidget {
@@ -128,7 +132,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   bool _selectingInitial = false;
 
   /// Whether this server can run an AI Team (a Termux phone asks its
-  /// runtime once), for New conversation's Solo · Team choice.
+  /// runtime once), for New conversation's Team choice.
   String? _teamAskedFor;
   bool _teamPossible = false;
 
@@ -679,8 +683,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         archived.isEmpty &&
         _pendingArchive.isEmpty;
     final headerDirectory = _headerDirectory;
-    final teamPossible = _teamPossibleNow();
-    final teamMode = teamPossible && _teamMode;
+    // Asked here so the chooser knows by the time New conversation is
+    // tapped.
+    _teamPossibleNow();
     final wide = KitScreen.showsDetail(context);
     // The conversation in the detail pane; gone once it is archived,
     // deleted or no longer listed.
@@ -970,11 +975,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       creating: _creating,
       onTap: _creating || controller.workspaceChoiceRequired
           ? null
-          : teamMode
-          ? _createTeamTask
-          : _createSession,
-      teamMode: teamPossible ? teamMode : null,
-      onTeamMode: _setTeamMode,
+          : _newConversation,
     );
 
     if (!wide) {
@@ -1211,21 +1212,83 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     return _teamPossible;
   }
 
-  bool get _teamMode {
-    final profile = widget.controller.profile;
-    return profile != null &&
-        TeamNewMode.isTeam(widget.controller.store.prefs, profile.id);
+  /// What New conversation can offer here: Team where a team can run,
+  /// a separate copy where the server makes worktrees of this project, and
+  /// the project's other cloud machines.
+  NewConversationOptions _newConversationOptions() {
+    final project = _isolatedTaskProject;
+    final current = _selectedProject;
+    return NewConversationOptions(
+      project:
+          current?.name ??
+          (_selectedDirectory == null ? null : _basename(_selectedDirectory!)),
+      team: _teamPossibleNow(),
+      teamOn: widget.controller.orchestration != null,
+      separateCopy: project != null,
+      clouds: [
+        for (final workspace in _workspaces)
+          if (workspace.id != _selectedWorkspaceID)
+            NewConversationCloud(
+              id: workspace.id,
+              name: _workspaceName(workspace),
+              status: workspace.status,
+            ),
+      ],
+    );
   }
 
-  Future<void> _setTeamMode(bool team) async {
+  /// The one New conversation: asks how to start where there is more than
+  /// one way, remembers the answer for this server, and starts it. Every
+  /// start ends in a conversation (or, for a team that is off, the team's
+  /// off state, where it is set up).
+  Future<void> _newConversation() async {
+    if (_creating) return;
+    final options = _newConversationOptions();
+    if (options.onlySolo) {
+      await _createSession();
+      return;
+    }
     final profile = widget.controller.profile;
-    if (profile == null) return;
-    await TeamNewMode.set(
-      widget.controller.store.prefs,
-      profile.id,
-      team: team,
+    final prefs = widget.controller.store.prefs;
+    final choice = await showNewConversationSheet(
+      context,
+      options: options,
+      remembered: profile == null
+          ? null
+          : NewConversationMemory.read(prefs, profile.id),
     );
-    if (mounted) setState(() {});
+    if (!mounted || choice == null) return;
+    if (profile != null) {
+      await NewConversationMemory.remember(prefs, profile.id, choice);
+    }
+    if (!mounted) return;
+    switch (choice.kind) {
+      case NewConversationKind.solo:
+        await _createSession();
+      case NewConversationKind.team:
+        await _createTeamTask();
+      case NewConversationKind.separateCopy:
+        await _startIsolatedTask();
+      case NewConversationKind.cloud:
+        await _createOnCloud(choice.workspaceId!);
+    }
+  }
+
+  /// Moves to the cloud machine and starts the conversation there.
+  Future<void> _createOnCloud(String workspaceId) async {
+    WorkspaceInfo? target;
+    for (final workspace in _workspaces) {
+      if (workspace.id == workspaceId) target = workspace;
+    }
+    if (target == null) return;
+    await _selectWorkspace(target);
+    if (!mounted) return;
+    // The move failed (and said so): nothing starts in the wrong place.
+    if (widget.controller.locationError != null ||
+        _selectedWorkspaceID != workspaceId) {
+      return;
+    }
+    await _createSession();
   }
 
   /// New team task: the team's conversation when it is on, else its intro
@@ -1296,12 +1359,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     ].join(' · ');
     final directory = _contextDirectory;
     final canCreate = ProjectFolderActions.canCreate(controller);
-    // A task in a fresh worktree acts on this project, so it lives on the
-    // project's own sheet and names it (R2). Not while a team is chosen:
-    // the team works in its own worktrees.
-    final isolated = _teamPossibleNow() && _teamMode
-        ? null
-        : _isolatedTaskProject;
     final choice = await showKitSheet<_ContextChoice>(
       context,
       title: title,
@@ -1373,22 +1430,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     trailing: const KitChevron(),
                     onTap: () => pick(const _ContextChoice.newProject()),
                   ),
-                if (isolated != null)
-                  KitRow(
-                    key: const ValueKey('workspace-isolated-task'),
-                    leading: KitRow.icon(sheetContext, AppIconography.branch),
-                    title: l10n.workspaceIsolatedTaskRow(
-                      KitBidi.auto(isolated.name),
-                    ),
-                    titleMaxLines: 2,
-                    supporting: TextSpan(
-                      text: l10n.workspaceIsolatedTaskRowDetail,
-                    ),
-                    supportingMaxLines: 2,
-                    trailing: const KitChevron(),
-                    enabled: !_creating,
-                    onTap: () => pick(const _ContextChoice.isolatedTask()),
-                  ),
                 if (ManageProjectScreen.isAvailable(controller.capabilities))
                   KitRow(
                     key: const ValueKey('manage-project-entry'),
@@ -1438,10 +1479,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       },
     );
     if (!mounted || choice == null) return;
-    if (choice.isolatedTask) {
-      await _startIsolatedTask();
-      return;
-    }
     if (choice.manageProject) {
       await _openManageProject();
       return;
@@ -1741,37 +1778,26 @@ class _ContextChoice {
     : workspace = null,
       switchProject = true,
       newProject = false,
-      manageProject = false,
-      isolatedTask = false;
+      manageProject = false;
   const _ContextChoice.newProject()
     : workspace = null,
       switchProject = false,
       newProject = true,
-      manageProject = false,
-      isolatedTask = false;
+      manageProject = false;
   const _ContextChoice.manageProject()
     : workspace = null,
       switchProject = false,
       newProject = false,
-      manageProject = true,
-      isolatedTask = false;
-  const _ContextChoice.isolatedTask()
-    : workspace = null,
-      switchProject = false,
-      newProject = false,
-      manageProject = false,
-      isolatedTask = true;
+      manageProject = true;
   const _ContextChoice.workspace(this.workspace)
     : switchProject = false,
       newProject = false,
-      manageProject = false,
-      isolatedTask = false;
+      manageProject = false;
 
   final WorkspaceInfo? workspace;
   final bool switchProject;
   final bool newProject;
   final bool manageProject;
-  final bool isolatedTask;
 }
 
 /// A section's count, in figures that line up.
@@ -2092,74 +2118,28 @@ class _ProjectHeader extends StatelessWidget {
   }
 }
 
-/// New conversation, docked to the workspace: the one primary, and the
-/// Solo · Team choice above it where a team can run. A task in a fresh
-/// worktree starts from the project sheet, which names the project (R2).
+/// New conversation, docked to the workspace: the one primary. How to
+/// start (Solo · Team · a separate copy · a cloud machine) is asked by its
+/// chooser, never by controls around the button.
 class _QuickAskPill extends StatelessWidget {
-  const _QuickAskPill({
-    required this.creating,
-    required this.onTap,
-    this.teamMode,
-    this.onTeamMode,
-  });
+  const _QuickAskPill({required this.creating, required this.onTap});
 
   final bool creating;
   final VoidCallback? onTap;
 
-  /// New conversation's Solo · Team choice (docs/design/team-conversation-
-  /// 2026-09-26.md): null hides it (this server cannot run a team), else
-  /// whether Team is chosen.
-  final bool? teamMode;
-  final ValueChanged<bool>? onTeamMode;
-
   @override
   Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
     final l10n = _l10n(context);
-    final team = teamMode == true;
-    // Tapping here creates a conversation and leaves the page, so the
-    // control says so. Two lines before an ellipsis: the primary action's
-    // name is never the thing cut.
-    final primary = KitButton.primary(
-      key: const ValueKey('workspace-new'),
-      onPressed: onTap,
-      working: creating,
-      icon: team ? AppIconography.agent : AppIconography.add,
-      label: team ? l10n.teamNewTask : l10n.workspaceNewSession,
-    );
-    final choice = teamMode;
+    // Two lines before an ellipsis: the primary action's name is never the
+    // thing cut.
     return KeyedSubtree(
       key: const ValueKey('workspace-quick-ask'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Solo · Team above the button it changes: remembered per
-          // server, never a second primary.
-          if (choice != null) ...[
-            KitSegmented<bool>(
-              key: const ValueKey('workspace-new-mode'),
-              semanticsLabel: l10n.teamNewModeLabel,
-              selected: choice,
-              onChanged: onTeamMode,
-              segments: [
-                KitSegment(
-                  key: const ValueKey('workspace-new-mode-solo'),
-                  value: false,
-                  label: l10n.teamNewModeSolo,
-                ),
-                KitSegment(
-                  key: const ValueKey('workspace-new-mode-team'),
-                  value: true,
-                  icon: AppIconography.agent,
-                  label: l10n.teamNewModeTeam,
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.space2),
-          ],
-          primary,
-        ],
+      child: KitButton.primary(
+        key: const ValueKey('workspace-new'),
+        onPressed: onTap,
+        working: creating,
+        icon: AppIconography.add,
+        label: l10n.workspaceNewSession,
       ),
     );
   }

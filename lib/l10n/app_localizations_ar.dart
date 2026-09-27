@@ -26341,4 +26341,36 @@ class AppLocalizationsAr extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String get newConversationLastUsed => 'Last used';
+
+  @override
+  String get newConversationSoloDetail => 'You and the assistant';
+
+  @override
+  String newConversationSoloDetailIn(String project) {
+    return 'You and the assistant, in $project';
+  }
+
+  @override
+  String get newConversationTeamDetail =>
+      'The AI Team plans the work and shares it out';
+
+  @override
+  String get newConversationTeamOffDetail =>
+      'Off on this server · opens the AI Team to set it up';
+
+  @override
+  String newConversationCopyTitle(String project) {
+    return 'In a separate copy of $project';
+  }
+
+  @override
+  String newConversationCloudTitle(String machine) {
+    return 'On $machine';
+  }
+
+  @override
+  String get newConversationCloudDetail => 'A cloud machine for this project';
 }

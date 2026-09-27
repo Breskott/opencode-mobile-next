@@ -810,7 +810,8 @@ final eWorkspaceArea = CensusArea(
     // -- Isolated task ----------------------------------------------------------
     CensusShot('isolated-task-sheet', state: 'form', (kit) async {
       await _work(kit);
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
@@ -821,7 +822,8 @@ final eWorkspaceArea = CensusArea(
       final repository = ERepository()
         ..createWorktreeHold = Completer<WorktreeInfo>();
       await _work(kit, controller: await eController(repository: repository));
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.tapKey('isolated-task-start');
       kit.expectText('Creating the worktree…');
     }),
@@ -829,7 +831,8 @@ final eWorkspaceArea = CensusArea(
       final hold = Completer<WorktreeInfo>();
       final repository = ERepository()..createWorktreeHold = hold;
       await _work(kit, controller: await eController(repository: repository));
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
@@ -850,7 +853,8 @@ final eWorkspaceArea = CensusArea(
       final repository = ERepository()..createWorktreeHold = hold;
       final conn = await eController(repository: repository);
       await _work(kit, controller: conn);
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
