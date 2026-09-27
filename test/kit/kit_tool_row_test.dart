@@ -493,6 +493,44 @@ void main() {
     );
   }, variant: TargetPlatformVariant.only(TargetPlatform.linux));
 
+  // P3.5: an AI Team step opens its Work sheet: a step row may open
+  // elsewhere instead of folding, with a forward chevron and the hint.
+  testWidgets('a step with onOpen is one tap that opens it', (tester) async {
+    var opened = 0;
+    await _pump(
+      tester,
+      KitToolRow(
+        rowKey: _rowKey,
+        kind: KitToolKind.todo,
+        title: 'Remember the choice',
+        status: KitToolStatus.pending,
+        onOpen: () => opened++,
+      ),
+    );
+    await tester.tap(find.byKey(_rowKey));
+    await tester.pumpAndSettle();
+    expect(opened, 1);
+    final semantics = tester.getSemantics(find.byKey(_rowKey));
+    expect(semantics.hint, 'Open its details');
+  });
+
+  testWidgets('a running agent reads its time in hours and days', (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(DateTime.utc(2026, 9, 25, 19, 55)), () async {
+      await _pump(
+        tester,
+        KitToolRow.agent(
+          title: 'furiosa · Worker',
+          status: KitToolStatus.running,
+          startedAt: DateTime.utc(2026, 9, 23, 22, 55),
+        ),
+      );
+      expect(find.textContaining('Running for 1 d 21 h'), findsOneWidget);
+      expect(find.textContaining('min'), findsNothing);
+    });
+  });
+
   group('200 % text at 320 dp', () {
     for (final direction in TextDirection.values) {
       for (final status in KitToolStatus.values) {

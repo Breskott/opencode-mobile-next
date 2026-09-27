@@ -18,7 +18,6 @@ import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/scenes/team_scenes.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/start_run_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -106,8 +105,13 @@ void main() {
   TeamHomeScreen home() =>
       TeamHomeScreen(controller: controller, now: () => teamSceneClock);
 
-  RunScreen run(String id) =>
-      RunScreen(controller: controller, runId: id, now: () => teamSceneClock);
+  /// A task opens its conversation (P3.5: the run page is retired); the
+  /// merged celebration shows there.
+  Widget run(String id) => TeamConversationScreen(
+    team: controller,
+    runId: id,
+    now: () => teamSceneClock,
+  );
 
   testWidgets('no tasks: the team gathered at an empty board, still', (
     tester,
@@ -229,7 +233,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(_app(run(teamSceneMergedRunId)));
     await _settle(tester);
-    expect(_key('team-run-objective'), findsOneWidget);
+    expect(_key('team-conversation-prompt'), findsOneWidget);
     expect(_key('team-run-celebration'), findsNothing);
 
     // After a restart (this session's memory gone), still not again.
@@ -253,7 +257,7 @@ void main() {
 
   testWidgets('a task still working does not celebrate', (tester) async {
     await open(tester, TeamScene.loaded, () => run(teamSceneRunId));
-    expect(_key('team-run-objective'), findsOneWidget);
+    expect(_key('team-conversation-prompt'), findsOneWidget);
     expect(_key('team-run-celebration'), findsNothing);
   });
 

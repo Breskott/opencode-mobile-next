@@ -13214,10 +13214,6 @@
       }
     }
   },
-  "teamUiRunDetails": "Details",
-  "@teamUiRunDetails": {
-    "description": "Run detail app bar action opening Technical details"
-  },
   "teamUiRunElapsedDays": "{count} d",
   "@teamUiRunElapsedDays": {
     "description": "Run detail elapsed time in days",
@@ -13285,10 +13281,6 @@
   "@teamUiRunLabelStarted": {
     "description": "Run Technical details label"
   },
-  "teamUiRunLabelState": "State",
-  "@teamUiRunLabelState": {
-    "description": "Run Technical details label"
-  },
   "teamUiRunLabelTrackedWork": "Tracked work",
   "@teamUiRunLabelTrackedWork": {
     "description": "Run Technical details label for the ids of the work items in the run"
@@ -13304,10 +13296,6 @@
   "teamUiRunMissingTitle": "This task is no longer on the host",
   "@teamUiRunMissingTitle": {
     "description": "Run detail state when the run id is not in the host’s list"
-  },
-  "teamUiRunNeedsYou": "Needs you",
-  "@teamUiRunNeedsYou": {
-    "description": "Run detail inline card label when no agent is named"
   },
   "teamUiRunNeedsYouFrom": "{name} needs you",
   "@teamUiRunNeedsYouFrom": {
@@ -13352,18 +13340,6 @@
   "@teamUiRunTabComingSoon": {
     "description": "Run detail placeholder for the Work and Agents tabs"
   },
-  "teamUiRunTabOverview": "Overview",
-  "@teamUiRunTabOverview": {
-    "description": "Run detail tab"
-  },
-  "teamUiRunTabTimeline": "Timeline",
-  "@teamUiRunTabTimeline": {
-    "description": "Run detail tab"
-  },
-  "teamUiRunTabWork": "Steps",
-  "@teamUiRunTabWork": {
-    "description": "Run detail tab"
-  },
   "teamUiRunTermBatch": "Task · convoy",
   "@teamUiRunTermBatch": {
     "description": "Run detail app bar term for a batch run; convoy is the Gas City term"
@@ -13394,38 +13370,6 @@
       }
     }
   },
-  "teamUiRunTimelineEmpty": "Nothing has happened yet",
-  "@teamUiRunTimelineEmpty": {
-    "description": "Run timeline empty state title"
-  },
-  "teamUiRunTimelineEmptyFiltered": "No events of this kind yet",
-  "@teamUiRunTimelineEmptyFiltered": {
-    "description": "Run timeline empty state title when a filter hides every row"
-  },
-  "teamUiRunTimelineEmptyFilteredHint": "Try another filter.",
-  "@teamUiRunTimelineEmptyFilteredHint": {
-    "description": "Run timeline empty state hint when a filter hides every row"
-  },
-  "teamUiRunTimelineEmptyHint": "Events appear here as the team works on this task.",
-  "@teamUiRunTimelineEmptyHint": {
-    "description": "Run timeline empty state hint"
-  },
-  "teamUiRunTimelineFilterAgents": "Agents",
-  "@teamUiRunTimelineFilterAgents": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterAll": "All",
-  "@teamUiRunTimelineFilterAll": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterDecisions": "Decisions",
-  "@teamUiRunTimelineFilterDecisions": {
-    "description": "Run timeline filter chip"
-  },
-  "teamUiRunTimelineFilterWork": "Work",
-  "@teamUiRunTimelineFilterWork": {
-    "description": "Run timeline filter chip"
-  },
   "teamUiRunTimelineGateOpened": "Needs you: {title}",
   "@teamUiRunTimelineGateOpened": {
     "description": "Run timeline row for a gate that opened",
@@ -13441,15 +13385,6 @@
     "placeholders": {
       "title": {
         "type": "String"
-      }
-    }
-  },
-  "teamUiRunTimelineJump": "{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}",
-  "@teamUiRunTimelineJump": {
-    "description": "Run timeline pill shown when events arrived while scrolled away",
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },
@@ -13615,14 +13550,6 @@
   "@teamUiAgentRecyclingSoon": {
     "description": "Agent header line when context use reached the recycle threshold"
   },
-  "teamUiAgentRunEmpty": "No agents on this run",
-  "@teamUiAgentRunEmpty": {
-    "description": "Run Agents tab empty state title"
-  },
-  "teamUiAgentRunEmptyHint": "Agents appear here while they work on this run's items.",
-  "@teamUiAgentRunEmptyHint": {
-    "description": "Run Agents tab empty state hint"
-  },
   "teamUiAgentSectionActivity": "Activity",
   "@teamUiAgentSectionActivity": {
     "description": "Agent detail section heading"
@@ -13756,14 +13683,6 @@
   "@teamUiAgentWorkUnblocked": {
     "description": "Agent Current work dependency line when the item is free to proceed"
   },
-  "teamUiWorkEmpty": "No work items yet",
-  "@teamUiWorkEmpty": {
-    "description": "Work tab empty state title"
-  },
-  "teamUiWorkEmptyHint": "Work appears here once the run has items.",
-  "@teamUiWorkEmptyHint": {
-    "description": "Work tab empty state hint"
-  },
   "teamUiWorkGraphFit": "Fit",
   "@teamUiWorkGraphFit": {
     "description": "Tooltip of the graph button that brings the whole graph into view"
@@ -13777,27 +13696,6 @@
       },
       "state": {
         "type": "String"
-      }
-    }
-  },
-  "teamUiWorkGraphSemantics": "{count, plural, =1{Dependency graph of 1 work item} other{Dependency graph of {count} work items}}",
-  "@teamUiWorkGraphSemantics": {
-    "description": "Screen reader label of the Work graph",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiWorkGroupHeader": "{state} · {count}",
-  "@teamUiWorkGroupHeader": {
-    "description": "Work list group header: the state word and how many items are in it",
-    "placeholders": {
-      "state": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
       }
     }
   },
@@ -13852,15 +13750,6 @@
   "teamUiWorkOwnerNone": "Unassigned",
   "@teamUiWorkOwnerNone": {
     "description": "Work owner when nobody is on the item"
-  },
-  "teamUiWorkOwnerSemantics": "Owner: {name}",
-  "@teamUiWorkOwnerSemantics": {
-    "description": "Screen reader label of the owner glyph on a work row",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
   },
   "teamUiWorkSheetBlocking": "Blocks",
   "@teamUiWorkSheetBlocking": {
@@ -14003,23 +13892,6 @@
     "placeholders": {
       "id": {
         "type": "String"
-      }
-    }
-  },
-  "teamUiWorkViewGraph": "Graph",
-  "@teamUiWorkViewGraph": {
-    "description": "Work tab view toggle"
-  },
-  "teamUiWorkViewList": "List",
-  "@teamUiWorkViewList": {
-    "description": "Work tab view toggle"
-  },
-  "teamUiWorkWaitsOn": "{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}",
-  "@teamUiWorkWaitsOn": {
-    "description": "Work row detail: how many open items this one still needs",
-    "placeholders": {
-      "count": {
-        "type": "int"
       }
     }
   },
@@ -14569,26 +14441,6 @@
   "teamUiControlCancelRun": "Stop run",
   "@teamUiControlCancelRun": {
     "description": "Overflow item and control name: cancel a formula run (two-step)"
-  },
-  "teamUiControlCloseBatch": "Close batch",
-  "@teamUiControlCloseBatch": {
-    "description": "Overflow item and control name: close a batch (Gas City convoy), two-step"
-  },
-  "teamUiControlCancelRunConfirmTitle": "Stop this run?",
-  "@teamUiControlCancelRunConfirmTitle": {
-    "description": "Title of the two-step Cancel run confirmation"
-  },
-  "teamUiControlCancelRunConfirmBody": "Running steps stop; finished work stays. The phone cannot undo this.",
-  "@teamUiControlCancelRunConfirmBody": {
-    "description": "Body of the Cancel run confirmation"
-  },
-  "teamUiControlCloseBatchConfirmTitle": "Close this batch?",
-  "@teamUiControlCloseBatchConfirmTitle": {
-    "description": "Title of the two-step Close batch confirmation"
-  },
-  "teamUiControlCloseBatchConfirmBody": "The batch closes on the host. Its open work items stay open for another batch.",
-  "@teamUiControlCloseBatchConfirmBody": {
-    "description": "Body of the Close batch confirmation"
   },
   "teamUiStartRunFab": "Give the team a task",
   "@teamUiStartRunFab": {
@@ -19306,37 +19158,9 @@
   "@teamUiRunStepsHeading": {
     "description": "Section heading of the steps on an AI Team task Overview"
   },
-  "teamUiRunStepsAll": "{count, plural, other{See all {count} steps}}",
-  "@teamUiRunStepsAll": {
-    "description": "Row under the first steps on the Overview that opens the Steps tab",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiRunDetailsCounts": "{done} done · {working} working · {blocked} held up",
-  "@teamUiRunDetailsCounts": {
-    "description": "The step counts under the Details row of an AI Team task",
-    "placeholders": {
-      "done": {
-        "type": "int"
-      },
-      "working": {
-        "type": "int"
-      },
-      "blocked": {
-        "type": "int"
-      }
-    }
-  },
   "teamUiRunDetailsUsage": "Usage",
   "@teamUiRunDetailsUsage": {
     "description": "Label of the cost and tokens under the Details row of an AI Team task"
-  },
-  "teamUiRunDetailsStepsLabel": "Steps",
-  "@teamUiRunDetailsStepsLabel": {
-    "description": "Label of the step counts under the Details row of an AI Team task"
   },
   "teamUiRunDetailsElapsed": "Time",
   "@teamUiRunDetailsElapsed": {
@@ -20527,10 +20351,6 @@
   "@teamChatComposerCannot": {
     "description": "Team conversation, where the composer is: the team takes no messages from the phone"
   },
-  "teamOpenTaskConversationHint": "The task and its workers, in the chat",
-  "@teamOpenTaskConversationHint": {
-    "description": "AI Team task page, supporting line of Open conversation: opens the task as a conversation"
-  },
   "teamBoardTitle": "Board",
   "@teamBoardTitle": {
     "description": "AI Team board: top bar title"
@@ -20867,22 +20687,6 @@
   "teamBoardPriorityTitle": "Priority",
   "@teamBoardPriorityTitle": {
     "description": "Board: the priority sheet's title"
-  },
-  "teamBoardAddTooltip": "Add to backlog",
-  "@teamBoardAddTooltip": {
-    "description": "Board: top bar action that adds a task to the backlog"
-  },
-  "teamBoardAddHint": "What should the team do?",
-  "@teamBoardAddHint": {
-    "description": "Board: add-to-backlog field hint"
-  },
-  "teamBoardAddButton": "Add to backlog",
-  "@teamBoardAddButton": {
-    "description": "Board: add-to-backlog primary button"
-  },
-  "teamBoardAddNote": "It waits in the Backlog until you start it.",
-  "@teamBoardAddNote": {
-    "description": "Board: add-to-backlog sheet, what happens next"
   },
   "teamBoardAddFailed": "Couldn't add it. The team's host said no.",
   "@teamBoardAddFailed": {
@@ -22992,16 +22796,6 @@
   "kitToolTookMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@kitToolTookMinutes": {
     "description": "KitToolRow: how long a finished step took, in whole minutes",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "decimalPattern"
-      }
-    }
-  },
-  "kitToolForMinutes": "for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}",
-  "@kitToolForMinutes": {
-    "description": "KitToolRow agent form: how long a running sub-agent or worker has run, after its state word (\"Running for 3 min\")",
     "placeholders": {
       "count": {
         "type": "int",
@@ -25385,10 +25179,6 @@
   "teamNowWakeRefusedNoReason": "The host didn't say why.",
   "@teamNowWakeRefusedNoReason": {
     "description": "Shown when the team host refused to wake an agent without a reason (shared-team-1)."
-  },
-  "teamBoardMoveSheetAddEmpty": "Say what the team should do first.",
-  "@teamBoardMoveSheetAddEmpty": {
-    "description": "Error under the Add to backlog field when it is empty (shared-team-1)."
   },
   "teamCycleStripNoAgentYet": "No agent has taken this step yet.",
   "@teamCycleStripNoAgentYet": {
@@ -31601,5 +31391,176 @@
         "example": "bash"
       }
     }
+  },
+  "kitDurationHours": "{hours} h",
+  "@kitDurationHours": {
+    "description": "Kit durations: a whole number of hours (\"3 h\"); used from an hour up, so a long wait never reads \"2,715 min\"",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationHoursMinutes": "{hours} h {minutes} min",
+  "@kitDurationHoursMinutes": {
+    "description": "Kit durations: hours and minutes (\"1 h 20 min\")",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationDays": "{days} d",
+  "@kitDurationDays": {
+    "description": "Kit durations: whole days (\"2 d\")",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDurationDaysHours": "{days} d {hours} h",
+  "@kitDurationDaysHours": {
+    "description": "Kit durations: days and hours (\"1 d 21 h\")",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "kitToolFor": "for {duration}",
+  "@kitToolFor": {
+    "description": "KitToolRow agent form: how long a running sub-agent or worker has run, after its state word (\"Running for 3 min\", \"Running for 1 d 21 h\"); duration is a kit duration",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "kitSinceWaitingForLong": "Waiting {duration}",
+  "@kitSinceWaitingForLong": {
+    "description": "KitSince: a slow wait of an hour or more (\"Waiting 2 h 5 min\"); duration is a kit duration",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadRoutedIt": "Sent it to the workers",
+  "@teamChatLeadRoutedIt": {
+    "description": "Team conversation, the lead's line: the task (said once in the person's prompt above) was sent to the workers; \"it\" refers back to the prompt so the task's text is not repeated"
+  },
+  "teamChatLeadStartingIt": "Started a worker on it",
+  "@teamChatLeadStartingIt": {
+    "description": "Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)"
+  },
+  "teamChatLeadClaimedIt": "{name} took it",
+  "@teamChatLeadClaimedIt": {
+    "description": "Team conversation, the lead's line: the named worker took the task named in the prompt above",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimedWorkerIt": "A worker took it",
+  "@teamChatLeadClaimedWorkerIt": {
+    "description": "Team conversation, the lead's line: an unnamed worker took the task named in the prompt above"
+  },
+  "teamChatLeadPushedIt": "Its changes are on a branch",
+  "@teamChatLeadPushedIt": {
+    "description": "Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch"
+  },
+  "teamChatLeadReviewIt": "Handed it to review",
+  "@teamChatLeadReviewIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above went to review"
+  },
+  "teamChatLeadMergedIt": "Merged it",
+  "@teamChatLeadMergedIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above was merged"
+  },
+  "teamChatLeadStepFailedIt": "It failed",
+  "@teamChatLeadStepFailedIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above failed"
+  },
+  "teamChatLeadStepCancelledIt": "It was cancelled",
+  "@teamChatLeadStepCancelledIt": {
+    "description": "Team conversation, the lead's line: the task named in the prompt above was cancelled"
+  },
+  "teamChatNowWorkingIt": "{name} is working on it · {elapsed}",
+  "@teamChatNowWorkingIt": {
+    "description": "Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNowNoProgress": "No progress for {elapsed}",
+  "@teamChatNowNoProgress": {
+    "description": "Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as \"1 d 21 h\"",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressBody": "{name} hasn't moved this task since {time}. Nudge it to carry on, restart it, or report the problem.",
+  "@teamChatNoProgressBody": {
+    "description": "Team conversation: under a stalled task, what happened and the ways forward; time is a clock time or date",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This host can't nudge or restart it from here; report the problem or check the team's computer.",
+  "@teamChatNoProgressBodyNoControls": {
+    "description": "Team conversation: under a stalled task on a host without agent controls, what happened and the way forward",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatNoProgressReport": "Report the problem",
+  "@teamChatNoProgressReport": {
+    "description": "Team conversation, a stalled task: opens Report a problem with the stall attached"
+  },
+  "teamChatNoProgressReportTitle": "An AI Team task made no progress for {elapsed}",
+  "@teamChatNoProgressReportTitle": {
+    "description": "Report a problem: the attached problem's title for a stalled team task",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamTaskDetailsReported": "What the host reported",
+  "@teamTaskDetailsReported": {
+    "description": "Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)"
+  },
+  "kitToolOpenDetails": "Open its details",
+  "@kitToolOpenDetails": {
+    "description": "KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)"
+  },
+  "teamStartRunKeepInBacklog": "Keep in backlog",
+  "@teamStartRunKeepInBacklog": {
+    "description": "Give the team a task (from the board): makes the task and leaves it in the Backlog, given to no one, instead of starting it now"
   }
 }

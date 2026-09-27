@@ -28,10 +28,9 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamAgentTranscript;
+    show TeamAgentTranscript, TeamConversationScreen;
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart' show ToolCard;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -505,52 +504,40 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run’s Agents tab shows only the agents on that run', (
-      tester,
-    ) async {
+    // P3.5: the run page's Agents tab is retired; the task's conversation
+    // names the agents on it (its strip and worker lines).
+    Widget conversation(OrchestrationController controller) =>
+        TeamConversationScreen(
+          team: controller,
+          runId: 'oc-xru',
+          now: () => clock,
+        );
+
+    testWidgets('the task names only the agents on it', (tester) async {
       final (controller, _) = await boot(configure: runShape);
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-placeholder'), findsNothing);
-      expect(key('team-run-agents-list'), findsOneWidget);
-      expect(key('team-run-agent-fox'), findsOneWidget);
-      expect(key('team-run-agent-wolf'), findsOneWidget);
-      // Bear works w9, which is not on this run; owl has no work.
-      expect(key('team-run-agent-bear'), findsNothing);
-      expect(key('team-run-agent-owl'), findsNothing);
-      // Wolf waits on input and sorts first.
-      expect(
-        top(tester, key('team-run-agent-wolf')),
-        lessThan(top(tester, key('team-run-agent-fox'))),
-      );
-      await tester.tap(key('team-run-agent-fox'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation-family'), findsOneWidget);
+      expect(key('team-conversation-family-fox'), findsOneWidget);
+      expect(key('team-conversation-family-wolf'), findsOneWidget);
+      // Bear works w9, which is not on this task; owl has no work.
+      expect(key('team-conversation-family-bear'), findsNothing);
+      expect(key('team-conversation-family-owl'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run without agents shows the empty state', (tester) async {
+    testWidgets('a task without agents shows no agent strip', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => runShape(g, agents: const []),
       );
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-empty'), findsOneWidget);
-      expect(find.text('No agents on this run'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation'), findsOneWidget);
+      expect(key('team-conversation-family'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

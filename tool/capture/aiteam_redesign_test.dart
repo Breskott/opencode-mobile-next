@@ -3,7 +3,7 @@
 // test/support/team_golden_fixture.dart at 412x915 dp, dark theme, real
 // fonts.
 //
-// Only public screens (TeamHomeScreen, RunScreen) and the scene
+// Only public screens (TeamHomeScreen, the task conversation) and the scene
 // controller are used, and every tap is guarded by whether its key exists,
 // so the same file renders the old code and the new:
 //
@@ -15,7 +15,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import '../../test/support/team_golden_fixture.dart';
@@ -63,8 +64,8 @@ void main() {
       );
       DateTime now() => teamSceneClock;
       final Widget home = switch (shot) {
-        _Shot.runOverview || _Shot.runSteps => RunScreen(
-          controller: controller,
+        _Shot.runOverview || _Shot.runSteps => TeamConversationScreen(
+          team: controller,
           runId: teamSceneRunId,
           now: now,
         ),
@@ -94,7 +95,10 @@ void main() {
               await _tapIfThere(tester, 'team-home-completed-group');
             }
           case _Shot.runSteps:
+            // Old: the Work tab; since P3.5: Task details from the menu.
             await _tapIfThere(tester, 'team-run-tab-work');
+            await _tapIfThere(tester, 'team-conversation-menu');
+            await _tapIfThere(tester, 'team-conversation-details');
           case _Shot.agents:
             // Old: the Agents segment; new: the agents row opens the list.
             await _tapIfThere(tester, 'team-home-segment-agents');

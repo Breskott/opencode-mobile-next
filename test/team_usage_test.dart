@@ -1,8 +1,9 @@
 // TEAM-113: usage surfaces. The shared formatter returns null when the
 // host reported neither cost nor tokens, writes tokens compactly and puts
-// "est." after every cost; the run Overview's Details say a task's cost
-// is not reported (slice-P5.2: no host figure is one task's), never the
-// team's day; the Gas City read capabilities include `usage`.
+// "est." after every cost; Task details (slice-P3.5: the retired run
+// Overview's Details moved onto that sheet) says a task's cost is not
+// reported (slice-P5.2: no host figure is one task's), never the team's
+// day; the Gas City read capabilities include `usage`.
 
 import 'dart:async';
 import 'dart:io';
@@ -17,7 +18,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -391,49 +392,40 @@ void main() {
     String text(WidgetTester tester, Finder finder) =>
         _textOf(tester, finder).data!;
 
-    /// The redesigned Overview keeps the counts, the usage and the
-    /// policy under one collapsed "Details" row; open it.
-    Future<void> openDetails(WidgetTester tester) async {
-      await tester.tap(find.text('Details'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-summary-body'), findsOneWidget);
-    }
+    Widget details(OrchestrationController controller) => Scaffold(
+      body: SingleChildScrollView(
+        child: TeamTaskDetails(
+          controller: controller,
+          runId: 'oc-xru',
+          now: () => clock,
+        ),
+      ),
+    );
+
+    final usageKey = find.byKey(const ValueKey('team-task-details-usage'));
 
     Future<void> pumpRun(
       WidgetTester tester,
       OrchestrationController controller, {
       Locale locale = const Locale('en'),
-    }) async {
-      await pump(
-        tester,
-        RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        locale: locale,
-      );
-      await openDetails(tester);
-    }
+    }) => pump(tester, details(controller), locale: locale);
 
     // slice-P5.2: the host reports the whole team's day and a worker's
     // recent window, never one task's cost (docs/qa/codex-p52-2026-09-27).
     // The task page says so; it never shows the team's day total or a
     // figure from the run's raw payload as this task's cost.
-    group('run Overview Details: a task\'s cost is unreported', () {
-      testWidgets('says so under the step counts, with no figure', (
-        tester,
-      ) async {
+    group('Task details: a task\'s cost is unreported', () {
+      testWidgets('says so under the steps, with no figure', (tester) async {
         final (controller, _) = await boot(fixtureUsage: true);
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
-        // Collapsed on open: the line is one tap away, not on the page.
-        expect(key('team-run-usage'), findsNothing);
-        await openDetails(tester);
-        expect(key('team-run-usage'), findsOneWidget);
-        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
+        await pumpRun(tester, controller);
+        expect(usageKey, findsOneWidget);
+        expect(text(tester, usageKey), en.teamRunCostUnreported);
         expect(find.text('Usage'), findsOneWidget);
         expect(
-          tester.getTopLeft(key('team-run-usage')).dy,
-          greaterThan(tester.getBottomLeft(key('team-run-counts')).dy - 1),
+          tester.getTopLeft(usageKey).dy,
+          greaterThan(
+            tester.getBottomLeft(key('team-task-details-steps')).dy - 1,
+          ),
         );
         expect(find.textContaining(r'$'), findsNothing);
       });
@@ -443,7 +435,7 @@ void main() {
       ) async {
         final (controller, _) = await boot();
         await pumpRun(tester, controller);
-        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
+        expect(text(tester, usageKey), en.teamRunCostUnreported);
         expect(find.textContaining('est.'), findsNothing);
         expect(find.textContaining('12.4k'), findsNothing);
       });
@@ -461,7 +453,7 @@ void main() {
           ),
         );
         await pumpRun(tester, controller);
-        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
+        expect(text(tester, usageKey), en.teamRunCostUnreported);
         expect(find.textContaining(r'$0.07'), findsNothing);
         expect(find.textContaining('950'), findsNothing);
       });
@@ -480,27 +472,19 @@ void main() {
         );
         await pumpRun(tester, controller);
         expect(controller.capabilities.usage, isFalse);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
+        expect(key('team-task-details-body'), findsOneWidget);
+        expect(usageKey, findsNothing);
       });
 
       testWidgets('Arabic: the line reads right to left', (tester) async {
         final (controller, _) = await boot();
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-          locale: const Locale('ar'),
-        );
-        await tester.tap(find.text(ar.teamUiRunDetails));
-        await tester.pumpAndSettle();
-        expect(text(tester, key('team-run-usage')), ar.teamRunCostUnreported);
-        expect(
-          Directionality.of(tester.element(key('team-run-usage'))),
-          TextDirection.rtl,
-        );
-        final usage = tester.getRect(key('team-run-usage'));
-        final counts = tester.getRect(key('team-run-counts'));
-        expect(usage.right, moreOrLessEquals(counts.right, epsilon: 1));
+        await pumpRun(tester, controller, locale: const Locale('ar'));
+        expect(text(tester, usageKey), ar.teamRunCostUnreported);
+        expect(Directionality.of(tester.element(usageKey)), TextDirection.rtl);
+        // Right-aligned with its own label.
+        final usage = tester.getRect(usageKey);
+        final label = tester.getRect(find.text(ar.teamUiRunDetailsUsage));
+        expect(usage.right, moreOrLessEquals(label.right, epsilon: 1));
         expect(tester.takeException(), isNull);
       });
     });

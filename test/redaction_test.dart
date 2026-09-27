@@ -294,6 +294,14 @@ const _verbatimOwnContent = <String, (int, String)>{
     'an answer option in the conversation, message text the person picks '
         'to paste into their own prompt (SEC-13)',
   ),
+  'lib/ui/screens/chat_screen.dart': (
+    3,
+    'chat chain (P3.5): Copy on a message and the composer draft are the '
+        'person\'s own text; Copy transcript keeps only the person\'s '
+        'prompts verbatim and masks everything else (replies, tool output, '
+        'errors, the title) through KitRedact before the copy '
+        '(_transcriptMarkdown). The share link copy is redacted',
+  ),
 };
 
 /// Reviewed `redact: false` call sites whose text is NOT the person's own
@@ -301,18 +309,6 @@ const _verbatimOwnContent = <String, (int, String)>{
 /// copied. Each is for its owner to fix (drop `redact: false`, or split the
 /// person's text from the rest); the count only goes down.
 const _verbatimFindings = <String, (int, String)>{
-  'lib/ui/screens/chat_screen.dart': (
-    4,
-    'owner chat chain (P3.5). Two copies are the person\'s own (message '
-        'text; the composer draft). The share link is a server-issued URL, '
-        'and Copy transcript writes tool output and server error text '
-        'verbatim, so a key a tool printed reaches the clipboard',
-  ),
-  'lib/ui/screens/chat/chat_states.dart': (
-    1,
-    'owner chat chain (P3.5): Copy share link copies a server-issued URL, '
-        'not the person\'s own text',
-  ),
   'lib/ui/screens/workspace_screen.dart': (
     1,
     'owner: coordinator (workspace page): the share link is a '

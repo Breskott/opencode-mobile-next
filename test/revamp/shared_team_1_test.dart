@@ -234,21 +234,6 @@ void main() {
       expect(results, [null]);
     });
 
-    testWidgets('add: an empty submit says what is missing', (tester) async {
-      final results = await _open<String>(tester, showTeamBoardAddSheet);
-      expect(_key('team-board-add-sheet'), findsOneWidget);
-      await tester.tap(_key('team-board-add-submit'));
-      await tester.pumpAndSettle();
-      expect(find.text(_en.teamBoardMoveSheetAddEmpty), findsOneWidget);
-      expect(results, isEmpty);
-      await tester.enterText(_key('team-board-add-field'), '  Add dark mode ');
-      await tester.pump();
-      expect(find.text(_en.teamBoardMoveSheetAddEmpty), findsNothing);
-      await tester.tap(_key('team-board-add-submit'));
-      await tester.pumpAndSettle();
-      expect(results, ['Add dark mode']);
-    });
-
     testWidgets('cancel asks, with Keep it as the way back', (tester) async {
       final results = await _open<bool>(
         tester,

@@ -777,6 +777,10 @@
           "file": "lib/ui/screens/team/team_home_screen.dart",
           "line": 141,
           "via": "TeamConversation.start: the sheet, then the new task's conversation (P0.3)"
+        },
+        {
+          "page": "team-board",
+          "element": "team-board-add"
         }
       ],
       "gates": [],
@@ -855,6 +859,21 @@
           "effect": "showTeamHostGuideSheet(context).",
           "gates": [
             "teamPlannerAgent(agents) == null or teamPlannerIsOff(planner)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "start-run-sheet-backlog",
+          "type": "button",
+          "label": "Keep in backlog",
+          "key": "team-start-run-backlog",
+          "line": 250,
+          "action": "submit",
+          "target": null,
+          "effect": "_keepInBacklog(): controller.createWork(title, details, projectId) — the task is made and given to no one; the sheet closes with StartRunResult(backlog: true) and the board selects its Backlog. Offered when opened from the board and the host creates work.",
+          "gates": [
+            "offerBacklog",
+            "capabilities.controlCreateWork"
           ],
           "destructive": false
         }

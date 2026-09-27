@@ -9,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import 'support/team_golden_fixture.dart';
@@ -20,6 +22,7 @@ Future<OrchestrationController> _pump(
   WidgetTester tester,
   TeamScene scene, {
   bool run = false,
+  bool details = false,
   double width = 412,
 }) async {
   tester.view.physicalSize = Size(width, 915);
@@ -36,9 +39,20 @@ Future<OrchestrationController> _pump(
         data: MediaQuery.of(context).copyWith(disableAnimations: true),
         child: child!,
       ),
-      home: run
-          ? RunScreen(
-              controller: controller,
+      // P3.5: a task is its conversation; its details are a sheet.
+      home: details
+          ? Scaffold(
+              body: SingleChildScrollView(
+                child: TeamTaskDetails(
+                  controller: controller,
+                  runId: teamSceneRunId,
+                  now: () => teamSceneClock,
+                ),
+              ),
+            )
+          : run
+          ? TeamConversationScreen(
+              team: controller,
               runId: teamSceneRunId,
               now: () => teamSceneClock,
             )
@@ -131,20 +145,17 @@ void main() {
     );
   });
 
-  testWidgets('§1: the run keeps one icon action; Technical details and '
-      'Stop run are in the overflow', (tester) async {
+  testWidgets('§1: the task keeps one icon action; Refresh, Task details '
+      'and Stop task are in the overflow', (tester) async {
     await _pump(tester, TeamScene.loaded, run: true);
     await tester.pump(const Duration(milliseconds: 300));
-    final bar = find.byType(AppBar);
-    expect(
-      find.descendant(of: bar, matching: find.byType(IconButton)),
-      findsNWidgets(2), // Refresh, and the overflow's own button
-    );
-    expect(_key('team-run-details'), findsNothing);
-    await tester.tap(_key('team-run-more'));
+    expect(_key('team-conversation-team-page'), findsOneWidget);
+    expect(_key('team-conversation-details'), findsNothing);
+    await tester.tap(_key('team-conversation-menu'));
     await tester.pumpAndSettle();
-    expect(_key('team-run-details'), findsOneWidget);
-    expect(_key('team-run-cancel'), findsOneWidget);
+    expect(_key('team-conversation-refresh'), findsOneWidget);
+    expect(_key('team-conversation-details'), findsOneWidget);
+    expect(_key('team-conversation-stop'), findsOneWidget);
   });
 
   testWidgets('the run\'s four stages are drawn, not zero-sized', (
@@ -152,9 +163,9 @@ void main() {
   ) async {
     // The old progress bar was once laid out 0 dp tall and never seen;
     // its replacement, the stage line, must take real space.
-    await _pump(tester, TeamScene.loaded, run: true);
+    await _pump(tester, TeamScene.loaded, details: true);
     await tester.pump(const Duration(milliseconds: 300));
-    final stages = _key('team-run-stage-line');
+    final stages = _key('team-task-details-stage');
     expect(stages, findsOneWidget);
     final size = tester.getSize(stages);
     expect(size.height, greaterThan(16));

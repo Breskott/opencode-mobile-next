@@ -1098,28 +1098,40 @@ class _KitComposerLayerState extends State<_KitComposerLayer> {
             bottom: 0,
             child: KitBottomInset.add(extraBottom: _height, child: widget.body),
           ),
+          // The composer's band is solid ground from its top edge to the
+          // window's bottom edge, across the full width: the transcript
+          // scrolls out of sight at the composer and never shows beside
+          // or beneath it (owner report, build 2055). The measured height
+          // excludes [inherited], which the body already clears.
           PositionedDirectional(
             start: 0,
             end: 0,
-            bottom: inherited,
-            child: _SizeReporter(
-              onSize: _onSize,
-              // One structure with or without [above], so the composer's
-              // field keeps its state and focus when a part comes or goes.
-              child: _aboveAndComposer(
-                tokens,
-                constraints.hasBoundedHeight
-                    ? (constraints.maxHeight - inherited).clamp(
-                        0.0,
-                        double.infinity,
-                      )
-                    : null,
-                widget.above ?? const SizedBox.shrink(),
-                _KitComposerRoom(
-                  height: constraints.hasBoundedHeight
-                      ? constraints.maxHeight
-                      : null,
-                  child: composer,
+            bottom: 0,
+            child: ColoredBox(
+              key: const ValueKey('kit-composer-band'),
+              color: tokens.roles.ground,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(bottom: inherited),
+                child: _SizeReporter(
+                  onSize: _onSize,
+                  // One structure with or without [above], so the composer's
+                  // field keeps its state and focus when a part comes or goes.
+                  child: _aboveAndComposer(
+                    tokens,
+                    constraints.hasBoundedHeight
+                        ? (constraints.maxHeight - inherited).clamp(
+                            0.0,
+                            double.infinity,
+                          )
+                        : null,
+                    widget.above ?? const SizedBox.shrink(),
+                    _KitComposerRoom(
+                      height: constraints.hasBoundedHeight
+                          ? constraints.maxHeight
+                          : null,
+                      child: composer,
+                    ),
+                  ),
                 ),
               ),
             ),

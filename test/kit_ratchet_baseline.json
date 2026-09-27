@@ -10,9 +10,6 @@
       "SnackBar(": 1,
       "showSnackBar(": 1
     },
-    "lib/ui/screens/team/run_screen.dart": {
-      "showModalBottomSheet(": 1
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "SnackBar(": 2,
       "showSnackBar(": 2
@@ -72,27 +69,6 @@
       "SwitchListTile": 1,
       "Text": 5
     },
-    "lib/ui/screens/team/run_screen.dart": {
-      "AppBar": 1,
-      "ChoiceChip": 1,
-      "Container": 2,
-      "Icon": 10,
-      "IconButton": 1,
-      "InkWell": 1,
-      "Material": 1,
-      "MaterialPageRoute": 1,
-      "Opacity": 1,
-      "PopupMenuButton": 1,
-      "PopupMenuItem": 2,
-      "Positioned": 1,
-      "Scaffold": 1,
-      "SegmentedButton": 1,
-      "SingleChildScrollView": 2,
-      "Tab": 1,
-      "TabBar": 1,
-      "TabBarView": 1,
-      "Text": 22
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Icon": 2,
       "SnackBar": 2,
@@ -150,9 +126,6 @@
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "attention roles": 2
-    },
-    "lib/ui/screens/team/run_screen.dart": {
-      "attention roles": 3
     },
     "lib/ui/screens/team/team_home_screen.dart": {
       "attention roles": 1
@@ -235,10 +208,6 @@
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "Clipboard.setData(": 1,
-      "duration: Duration(": 1
-    },
-    "lib/ui/screens/team/run_screen.dart": {
-      "Curves.": 1,
       "duration: Duration(": 1
     },
     "lib/ui/widgets/completion_digest.dart": {

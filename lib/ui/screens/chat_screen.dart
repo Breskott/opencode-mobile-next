@@ -33,6 +33,7 @@ import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
+import '../../state/interaction_defaults.dart' show DefaultKind, DefaultReason;
 import '../../state/migration_runner.dart' show DraftMigrationBlocker;
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
@@ -54,6 +55,7 @@ import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/safety_confirms.dart';
+import '../widgets/default_notices.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
@@ -89,8 +91,10 @@ import '../widgets/team_vocabulary.dart';
 import 'team/agent_output_screen.dart' show AgentOutputScreen;
 import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
-import 'team/run_screen.dart' show RunScreen;
+import 'team/task_details_sheet.dart' show showTeamTaskDetails;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
+import 'team/work_sheet.dart' show showWorkSheet;
+import '../widgets/team_moments.dart' show TeamMergedCelebration;
 import 'team/team_needs_you.dart'
     show TeamNeedsYouCard, teamGateWho, teamOpenGates;
 import 'team_conversation/team_conversation.dart' show TeamConversation;
@@ -389,6 +393,14 @@ class _ChatScreenState extends State<ChatScreen>
   // only reports facts and renders the slot. See chat/nudge_slot.dart.
   ConversationNudgeWatcher? _nudgeWatcher;
   bool _nudgeObserveQueued = false;
+
+  /// P6.6a: the model the app picked by itself, said once per server
+  /// where it is used (the composer); null once dismissed or not to say.
+  String? _modelDefaultSaid;
+  bool _modelDefaultClaimed = false;
+
+  /// setState for the library's extensions (a protected member).
+  void _setChatState(VoidCallback change) => setState(change);
   void _nudgesChanged() {
     if (mounted) setState(() {});
   }
@@ -3669,10 +3681,11 @@ class _ChatScreenState extends State<ChatScreen>
   /// share banner, where the link stays visible.
   Future<void> _copyShareLink(String url) async {
     try {
+      // The kit's redaction leaves a plain share address as it is and masks
+      // a credential a server might put in it (G12).
       await KitCopy.copy(
         context,
         url,
-        redact: false,
         announcement: _chatL10n(context).chatUiShareLinkCopied,
       );
     } catch (_) {
@@ -5765,47 +5778,63 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// The conversation as Markdown for Copy transcript (SEC-13, G12): the
+  /// person's own prompts stay as they typed them; everything else (the
+  /// title, replies, reasoning, tool output, attachments' names and error
+  /// text) is masked through [KitRedact] first, so a key a tool printed
+  /// never reaches the clipboard.
   String _transcriptMarkdown() {
+    final l10n = _chatL10n(context);
     final title = _conn.sessionsById[widget.sessionID]?.title;
-    final out = StringBuffer(
-      '# ${title?.isNotEmpty == true ? title : _chatL10n(context).chatUiOpenCodeSession}\n',
+    final out = StringBuffer();
+    void put(String text) => out.write(KitRedact.text(text));
+    put(
+      '# ${title?.isNotEmpty == true ? title : l10n.chatUiOpenCodeSession}\n',
     );
     if (_olderCursor != null) {
-      out.write('\n> ${_chatL10n(context).historyLoadedOnly}\n');
+      out.write('\n> ${l10n.historyLoadedOnly}\n');
     }
     for (final message in _visibleHistory) {
       if (message.info.id.startsWith('local-')) continue;
+      final own = message.info.role == 'user';
       out.write(
-        '\n## ${message.info.role == 'assistant' ? _chatL10n(context).chatUiAssistant : _chatL10n(context).chatUiUser}\n\n',
+        '\n## ${message.info.role == 'assistant' ? l10n.chatUiAssistant : l10n.chatUiUser}\n\n',
       );
       for (final part in message.parts) {
         if (part.type == 'text' && part.text.trim().isNotEmpty) {
-          out.write('${part.text.trim()}\n\n');
+          // The person's own words, verbatim; a reply is masked.
+          if (own && !part.synthetic) {
+            out.write('${part.text.trim()}\n\n');
+          } else {
+            put('${part.text.trim()}\n\n');
+          }
         } else if (part.type == 'reasoning' && part.text.trim().isNotEmpty) {
-          out.write(
-            '<details><summary>${_chatL10n(context).transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
+          put(
+            '<details><summary>${l10n.transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
           );
         } else if (part.type == 'file') {
-          out.write(
-            '- ${_chatL10n(context).chatUiAttachment}: ${part.filename ?? part.url ?? _chatL10n(context).chatUiFile}\n',
+          put(
+            '- ${l10n.chatUiAttachment}: ${part.filename ?? part.url ?? l10n.chatUiFile}\n',
           );
         } else if (part.type == 'tool') {
-          out.write(
-            '### ${_chatL10n(context).chatUiTool}: ${part.toolName ?? _chatL10n(context).chatUiTool}\n\n',
+          put(
+            '### ${l10n.chatUiTool}: ${part.toolName ?? l10n.chatUiTool}\n\n',
           );
           final output = part.toolState.output?.trim();
           if (output?.isNotEmpty == true) {
-            out.write('```text\n$output\n```\n\n');
+            put('```text\n$output\n```\n\n');
           }
         }
       }
       if (message.info.errorText case final error?) {
-        out.write('> ${_chatL10n(context).chatUiError}: $error\n');
+        put('> ${l10n.chatUiError}: $error\n');
       }
     }
     return out.toString().trimRight();
   }
 
+  /// Already masked where it is not the person's own ([_transcriptMarkdown]);
+  /// copied as built so their prompts stay verbatim (SEC-13).
   Future<void> _copyTranscript() => KitCopy.copy(
     context,
     _transcriptMarkdown(),
@@ -6134,6 +6163,8 @@ class _ChatScreenState extends State<ChatScreen>
     final prompt = await Navigator.of(context).push<String>(
       KitPageRoute<String>(
         builder: (_) => ReviewWorkspace(
+          // P6.6a: the view picked for the person is said once per server.
+          profileId: _conn.profile?.id,
           handoff: _handoff, // UX-103 review handoff
           cacheKey:
               '${_conn.profile?.id}|${_conn.directory}|${widget.sessionID}',

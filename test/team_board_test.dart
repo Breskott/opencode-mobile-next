@@ -396,19 +396,28 @@ void main() {
       await _unmount(tester);
     });
 
-    testWidgets('Add to backlog creates a task nobody is given', (
-      tester,
-    ) async {
+    testWidgets('Keep in backlog (the one Give the team a task sheet) '
+        'creates a task nobody is given', (tester) async {
       final (_, gateway) = await _pump(tester, BoardScene.loaded);
       await tester.tap(find.byKey(const ValueKey('team-board-add')));
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-start-run-sheet')), findsOne);
+      // The planner's objective, or the direct task's title when the
+      // planner is off: either way the task's words.
+      final field = find.byKey(const ValueKey('team-start-run-objective'));
       await tester.enterText(
-        find.byKey(const ValueKey('team-board-add-field')),
+        field.evaluate().isNotEmpty
+            ? field
+            : find.byKey(const ValueKey('team-start-run-direct-title')),
         'Export a conversation as Markdown',
       );
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('team-board-add-submit')));
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('team-start-run-backlog')),
+      );
+      await tester.tap(find.byKey(const ValueKey('team-start-run-backlog')));
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-start-run-sheet')), findsNothing);
       final call = gateway.controlCalls.single;
       expect(call.verb, 'createWork');
       expect(call.target, 'Export a conversation as Markdown');

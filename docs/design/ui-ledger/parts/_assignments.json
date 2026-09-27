@@ -127,7 +127,7 @@
   ],
   "i1-team-core": [
     "lib/ui/screens/team/team_home_screen.dart",
-    "lib/ui/screens/team/run_screen.dart",
+    "lib/ui/screens/team/task_details_sheet.dart",
     "lib/ui/screens/team/agent_screen.dart",
     "lib/ui/screens/team/agent_output_screen.dart",
     "lib/ui/screens/team/policy_block.dart",

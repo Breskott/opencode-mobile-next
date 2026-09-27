@@ -60,6 +60,12 @@ class TeamChatGateway
   List<OrchestrationGate>? gatesOverride;
   final messages = <(String, String)>[];
 
+  /// Agent controls sent (agent id, action), in order.
+  final controls = <(String, AgentControlAction)>[];
+
+  /// Work items created (title, project id), in order.
+  final created = <(String, String?)>[];
+
   /// The host's answer to a cancel, when a test scripts one (a refusal).
   Future<MutationReceipt> Function(String runId, String requestId)?
   cancelRunAnswer;
@@ -136,7 +142,11 @@ class TeamChatGateway
     String agentId,
     AgentControlAction action, {
     required String requestId,
-  }) => inner.controlAgent(agentId, action, requestId: requestId);
+  }) {
+    controls.add((agentId, action));
+    return inner.controlAgent(agentId, action, requestId: requestId);
+  }
+
   @override
   Future<MutationReceipt> cancelRun(
     String runId, {
@@ -156,12 +166,15 @@ class TeamChatGateway
     String? description,
     String? projectId,
     required String requestId,
-  }) => inner.createWork(
-    title: title,
-    description: description,
-    projectId: projectId,
-    requestId: requestId,
-  );
+  }) {
+    created.add((title, projectId));
+    return inner.createWork(
+      title: title,
+      description: description,
+      projectId: projectId,
+      requestId: requestId,
+    );
+  }
 }
 
 /// furiosa as Gas City reported it on the phone: `/agents` said stopped,

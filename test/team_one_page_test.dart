@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import 'support/team_chat_fixture.dart';
@@ -78,7 +77,7 @@ void main() {
             .runId,
         teamTask.id,
       );
-      expect(find.byType(RunScreen), findsNothing);
+      expect(find.byKey(const ValueKey('team-run')), findsNothing);
     });
 
     testWidgets('team-home opened from a conversation comes back to the '
@@ -91,7 +90,7 @@ void main() {
       await tester.tap(find.text(teamTask.title));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsNothing);
-      expect(find.byType(RunScreen), findsNothing);
+      expect(find.byKey(const ValueKey('team-run')), findsNothing);
       // One conversation in the whole stack, offstage routes included.
       expect(
         find.byType(TeamConversationScreen, skipOffstage: false),

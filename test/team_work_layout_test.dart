@@ -1,8 +1,9 @@
-// TEAM-110: the Work tab and the Work sheet at 320dp × 2.5x text, LTR and
-// RTL, English and Arabic: the List / Graph toggle, the grouped list with
-// its headers and rows, the Graph with its Fit button, and the sheet with
-// its chips, LTR mono branch and worktree, timestamps and Technical
-// details all fit, scroll, and nothing overflows or scrolls sideways.
+// TEAM-110 after slice-P3.5: a task's steps in Task details (the graph in
+// rows; the run page's Work tab with its List / Graph toggle is retired)
+// and the Work sheet at 320dp × 2.5x text, LTR and RTL, English and
+// Arabic: the step rows, and the sheet with its chips, LTR mono branch and
+// worktree, timestamps and Technical details all fit, scroll, and nothing
+// overflows or scrolls sideways.
 
 import 'dart:async';
 import 'dart:io';
@@ -16,7 +17,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -289,20 +290,28 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       app(
-        RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
+        Scaffold(
+          body: SingleChildScrollView(
+            key: const ValueKey('details-scroll'),
+            child: TeamTaskDetails(
+              controller: controller,
+              runId: 'oc-xru',
+              now: () => clock,
+            ),
+          ),
+        ),
         direction,
         locale,
       ),
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(tester.getSize(find.byKey(const ValueKey('team-run'))).width, 320);
-    final target = find.byKey(const ValueKey('team-run-tab-work'));
-    await tester.ensureVisible(target);
-    await tester.pumpAndSettle();
-    await tester.tap(target);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('team-task-details-body')))
+          .width,
+      320,
+    );
   }
 
   Finder key(String name) => find.byKey(ValueKey(name));
@@ -337,80 +346,17 @@ void main() {
     for (final locale in const [Locale('en'), Locale('ar')]) {
       final tag = '${direction.name} ${locale.languageCode}';
 
-      testWidgets('320dp 2.5x $tag: the List, its toggle and rows fit', (
-        tester,
-      ) async {
+      testWidgets('320dp 2.5x $tag: the step rows fit', (tester) async {
         final (controller, _) = await boot(configure: busyShape);
         await pumpWork(tester, controller, direction, locale);
-        expect(key('team-run-work-list'), findsOneWidget);
-        // Both segments are reachable (the toggle scrolls sideways if it
-        // ever outgrows the width rather than overflowing).
-        for (final name in const ['list', 'graph']) {
-          final segment = key('team-run-work-view-$name');
-          await tester.ensureVisible(segment);
-          await tester.pumpAndSettle();
-          expect(segment.hitTestable(), findsOneWidget);
-          final rect = tester.getRect(segment);
-          expect(rect.left, greaterThanOrEqualTo(0));
-          expect(rect.right, lessThanOrEqualTo(320));
+        final details = key('details-scroll');
+        expect(key('team-task-details-graph'), findsOneWidget);
+        for (final id in const ['w1', 'w2', 'w3']) {
+          final row = key('team-task-details-step-$id');
+          await revealIn(tester, details, row);
+          expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
+          expect(tester.getSize(row).width, lessThanOrEqualTo(320));
         }
-
-        final groups = key('team-run-work-groups');
-        for (final name in const ['blocked', 'working', 'completed']) {
-          await revealIn(
-            tester,
-            groups,
-            key('team-run-work-group-$name'),
-            tap: false,
-          );
-          await revealIn(
-            tester,
-            groups,
-            key('team-run-work-group-count-$name'),
-            tap: false,
-          );
-        }
-        final blocked = key('team-run-work-row-w3');
-        await revealIn(tester, groups, blocked, up: true);
-        expect(tester.getSize(blocked).height, greaterThanOrEqualTo(48));
-        expect(tester.getSize(blocked).width, lessThanOrEqualTo(320));
-        await revealIn(
-          tester,
-          groups,
-          key('team-run-work-owner-w3'),
-          tap: false,
-        );
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('320dp 2.5x $tag: the Graph is one tap away and fits', (
-        tester,
-      ) async {
-        final (controller, _) = await boot(configure: busyShape);
-        await pumpWork(tester, controller, direction, locale);
-        final graph = key('team-run-work-view-graph');
-        await tester.ensureVisible(graph);
-        await tester.pumpAndSettle();
-        await tester.tap(graph);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        expect(key('team-run-work-graph'), findsOneWidget);
-        final fit = key('team-work-graph-fit');
-        expect(fit.hitTestable(), findsOneWidget);
-        expect(tester.getSize(fit).height, greaterThanOrEqualTo(40));
-        final rect = tester.getRect(fit);
-        expect(rect.left, greaterThanOrEqualTo(0));
-        expect(rect.right, lessThanOrEqualTo(320));
-        await tester.tap(fit);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        // Back to the List: remembered for this run.
-        await tester.ensureVisible(key('team-run-work-view-list'));
-        await tester.pumpAndSettle();
-        await tester.tap(key('team-run-work-view-list'));
-        await tester.pumpAndSettle();
-        expect(key('team-run-work-list'), findsOneWidget);
-        expect(controller.workView('oc-xru'), 'list');
         expect(tester.takeException(), isNull);
       });
 
@@ -419,32 +365,28 @@ void main() {
       ) async {
         final (controller, _) = await boot(configure: busyShape);
         await pumpWork(tester, controller, direction, locale);
-        final groups = key('team-run-work-groups');
-        final row = key('team-run-work-row-w3');
-        await revealIn(tester, groups, row);
+        final row = key('team-task-details-step-w3');
+        await revealIn(tester, key('details-scroll'), row);
         await tester.tap(row);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         final sheet = key('team-work-sheet');
         expect(sheet, findsOneWidget);
         expect(tester.getSize(sheet).width, lessThanOrEqualTo(320));
-        expect(key('team-work-sheet-title'), findsOneWidget);
+        // The step's title is the sheet's header (no separate title row).
+        expect(key('team-work-sheet-title'), findsNothing);
+        expect(
+          find.descendant(
+            of: sheet,
+            matching: find.textContaining('Conflict policy'),
+          ),
+          findsWidgets,
+        );
         expect(key('team-work-sheet-state'), findsNothing);
         expect(key('team-work-sheet-owner'), findsOneWidget);
 
-        // Dependency chip, branch and worktree in LTR mono, created stamp.
+        // Dependency row and the created stamp.
         await revealIn(tester, sheet, key('team-work-dependency-w2'));
-        for (final (name, value) in const [
-          ('team-work-sheet-branch', 'polecat/w3'),
-          ('team-work-sheet-worktree', '/srv/city/.gc/worktrees/w3'),
-        ]) {
-          await revealIn(tester, sheet, key(name), tap: false);
-          final text = tester.widget<Text>(
-            find.descendant(of: key(name), matching: find.text(value)),
-          );
-          expect(text.textDirection, TextDirection.ltr);
-          expect(text.style?.fontFamily, AppTheme.monoFamily);
-        }
         await revealIn(
           tester,
           sheet,
@@ -452,7 +394,8 @@ void main() {
           tap: false,
         );
 
-        // Technical details expand; the id stays LTR.
+        // Technical details expand: the id, branch and worktree stay LTR
+        // in the mono face.
         final expander = key('team-work-sheet-technical');
         await revealIn(tester, sheet, expander, tap: false);
         await tester.tap(
@@ -460,6 +403,17 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+        for (final (name, value) in const [
+          ('team-work-sheet-branch', 'polecat/w3'),
+          ('team-work-sheet-worktree', '/srv/city/.gc/worktrees/w3'),
+        ]) {
+          await revealIn(tester, sheet, key(name), tap: false);
+          final text = tester.widget<EditableText>(
+            find.descendant(of: key(name), matching: find.text(value)),
+          );
+          expect(text.textDirection, TextDirection.ltr);
+          expect(text.style.fontFamily, AppTheme.monoFamily);
+        }
         final id = find.descendant(of: sheet, matching: find.text('w3')).first;
         await tester.scrollUntilVisible(
           id,
