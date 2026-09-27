@@ -24001,5 +24001,71 @@
         "type": "int"
       }
     }
+  },
+  "kitToolNotRun": "Not run",
+  "@kitToolNotRun": {
+    "description": "KitToolRow: the word for a step the server never ran"
+  },
+  "kitToolWaiting": "Waiting",
+  "@kitToolWaiting": {
+    "description": "KitToolRow: the word for a step accepted but not started"
+  },
+  "kitToolRunning": "Running",
+  "@kitToolRunning": {
+    "description": "KitToolRow: the word for a step running now"
+  },
+  "kitToolWaitingForYou": "Waiting for you",
+  "@kitToolWaitingForYou": {
+    "description": "KitToolRow: the word for a step blocked on a request to the person (permission, question)"
+  },
+  "kitToolDone": "Done",
+  "@kitToolDone": {
+    "description": "KitToolRow: the word for a finished step"
+  },
+  "kitToolFailed": "Failed",
+  "@kitToolFailed": {
+    "description": "KitToolRow: the word for a step that failed"
+  },
+  "kitToolStopped": "Stopped",
+  "@kitToolStopped": {
+    "description": "KitToolRow: the word for a step stopped by the person or the server"
+  },
+  "kitToolBackground": "Started in the background",
+  "@kitToolBackground": {
+    "description": "KitToolRow: the word for a step handed to the background (a background sub-agent); the work continues elsewhere"
+  },
+  "kitToolTookSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@kitToolTookSeconds": {
+    "description": "KitToolRow: how long a finished step took, under a minute",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitToolTookMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@kitToolTookMinutes": {
+    "description": "KitToolRow: how long a finished step took, in whole minutes",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitToolForMinutes": "for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}",
+  "@kitToolForMinutes": {
+    "description": "KitToolRow agent form: how long a running sub-agent or worker has run, after its state word (\"Running for 3 min\")",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitToolOpenConversation": "Open its conversation",
+  "@kitToolOpenConversation": {
+    "description": "KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation"
   }
 }

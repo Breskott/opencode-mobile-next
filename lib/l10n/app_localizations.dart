@@ -33688,6 +33688,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// KitToolRow: the word for a step the server never ran
+  ///
+  /// In en, this message translates to:
+  /// **'Not run'**
+  String get kitToolNotRun;
+
+  /// KitToolRow: the word for a step accepted but not started
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get kitToolWaiting;
+
+  /// KitToolRow: the word for a step running now
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get kitToolRunning;
+
+  /// KitToolRow: the word for a step blocked on a request to the person (permission, question)
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get kitToolWaitingForYou;
+
+  /// KitToolRow: the word for a finished step
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitToolDone;
+
+  /// KitToolRow: the word for a step that failed
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get kitToolFailed;
+
+  /// KitToolRow: the word for a step stopped by the person or the server
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get kitToolStopped;
+
+  /// KitToolRow: the word for a step handed to the background (a background sub-agent); the work continues elsewhere
+  ///
+  /// In en, this message translates to:
+  /// **'Started in the background'**
+  String get kitToolBackground;
+
+  /// KitToolRow: how long a finished step took, under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String kitToolTookSeconds(int count);
+
+  /// KitToolRow: how long a finished step took, in whole minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String kitToolTookMinutes(int count);
+
+  /// KitToolRow agent form: how long a running sub-agent or worker has run, after its state word ("Running for 3 min")
+  ///
+  /// In en, this message translates to:
+  /// **'for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}'**
+  String kitToolForMinutes(int count);
+
+  /// KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Open its conversation'**
+  String get kitToolOpenConversation;
 }
 
 class _AppLocalizationsDelegate
