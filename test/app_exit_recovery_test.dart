@@ -17,7 +17,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
-import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/widgets/app_exit_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -17,6 +17,8 @@ The merge includes upstream product, baseline and image changes. This lane did n
 
 Tests-only repairs follow the intentional September 27 changes. Genuine product failures remain enabled for their owners; this is not an all-green suite or a release approval. `context_capsule_chat_test.dart` was already deleted by P3.3 and was skipped as absent.
 
+**Totals:** before **346 pass / 154 fail / 3 existing skips**; after **710 pass / 24 fail / 3 existing skips**. The original 503 cases now have 17 product failures (137 previously failing cases repaired). Expanded overflow coverage adds 234 cases, including seven more product failures. Counts are per-file focused evidence, not a full repository run.
+
 The host crash lost the original `/tmp` baseline logs, but completed before counts survived. Interrupted work was rerun; no interrupted result is counted as a pass. Raw JSON logs and the serial runner are on the persistent volume at `/home/eslam/Storage/tmp/codex-tests-c-20260928/`. Before counts for the previously in-flight overflow matrix come from its completed `recovered-before` rerun. Counts exclude hidden setup/loading events; skip counts are separate.
 
 | File (`test/`) | Before pass / fail / skip | After pass / fail / skip | Evidence phase | Repair / retained behavior |
@@ -94,4 +96,13 @@ Pinned Flutter/Dart were used throughout. Dependencies: `flutter pub get --offli
 
 The full overflow run completed at **329 pass / 8 fail**. An isolated follow-up replaced runtime-type string matching with generic-safe KIT-24 predicates and extended the existing selftest. Both affected tests were rerun (`kit24-targeted.jsonl`): selftest passes; the segmented scene still fails, now correctly reporting zero stacked choice rows in eight phone combinations. Other matrix code/scenes did not change; the full matrix was not repeated after this isolated helper repair. The table preserves the completed full-run count and this follow-up evidence separately.
 
-Final analyzer and final commit audit are pending until the last serial runs complete.
+Final checks:
+
+- `flutter analyze --no-pub`: **No issues found** (`analyze-final.log`).
+- `kit_ratchet_test.dart`: **34/34**; `redaction_test.dart`: **16/16**; `ui_glossary_test.dart`: **21/21**; `no_raw_error_text_test.dart`: **5/5** (`final-<file>.jsonl`).
+- Pinned Dart format verification: **27 files, zero changes**, language version 3.10. `git diff --check` clean; local documentation links resolve.
+- Tests-c diff relative to merge `8f94659e`: tests and this README only. No production, golden PNG or baseline-file edits; no new skips or ignores. Commits carry `[skip ci]` and the requested attribution/session trailers. No push.
+
+Repair commits: `19fbb4f7` reference/menu/localization; `036cf28c` transcript/capabilities; `d2f8ad75` queue/desktop; `0bfe00e5` voice/nudges; `dfd55589` product UI; `b1f78307` voice pipeline/release; `68f23ddd` model sheet; `3d34b1e9` overflow coverage; `5bb46ad3` live events. The final evidence commit also removes the two redundant imports discovered by analysis.
+
+**Left for product owners:** fix the 24 enabled failures detailed above, then rerun those scenarios/files. This test lane made no product fixes because the chat/team and state libraries are concurrently owned. The reviewed golden refresh remains separate. No unexplained stale failure remains in this batch.
