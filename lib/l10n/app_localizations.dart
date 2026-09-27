@@ -40580,6 +40580,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
   String get quotaMonitorConsentDetails;
+
+  /// Chat request card: who asks, in the card caption and the request sheet subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent'**
+  String get chatRequestWho;
+
+  /// Chat request card: what happens if the person does not answer yet.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent waits until you answer. Nothing is lost.'**
+  String get chatRequestIfIgnored;
+
+  /// Chat request card: how many other requests of this conversation wait behind the one shown.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 more request is waiting.} other{{count} more requests are waiting.}}'**
+  String chatRequestMoreWaiting(int count);
+
+  /// Chat request card: why Allow once and Reject are unavailable (no connection).
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected to the server, so this can’t be answered here.'**
+  String get chatRequestNoConnection;
+
+  /// Permission request sheet: the risky switch that saves an always-allow rule.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow requests like this'**
+  String get chatRequestAlwaysTitle;
+
+  /// Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.
+  ///
+  /// In en, this message translates to:
+  /// **'From now on, {patterns} runs without asking you, {context}. You can take this back in Settings under Always allowed actions.'**
+  String chatRequestAlwaysScope(String patterns, String context);
+
+  /// Permission request sheet: status words while an always-allow rule is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allowed'**
+  String get chatRequestAlwaysOn;
+
+  /// Permission request sheet, Details: label of the tool name the server asked with.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool'**
+  String get chatRequestDetailTool;
+
+  /// Permission request sheet, Details: label of the patterns the request covers besides the command.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested patterns'**
+  String get chatRequestDetailPatterns;
+
+  /// Question request card: the row that opens a field for a typed answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get chatRequestOtherAnswer;
+
+  /// Question request card: label of the typed-answer field.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get chatRequestOtherField;
+
+  /// Form alert body when the server says the form was already answered elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This form was answered on another device, so nothing was sent from this phone.'**
+  String get formFlowAnsweredElsewhereBody;
+
+  /// Approvals sheet and chip: why automatic approval is paused and when it resumes.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is not connected. Automatic approval resumes when it reconnects.'**
+  String get approvalsUiPausedDetail;
+
+  /// Voice conversation: why the Speak replies switch is unavailable for a moment.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting the voice ready…'**
+  String get voiceConversationSpeakRepliesBusy;
+
+  /// Voice conversation: stops reading the agent reply aloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading the reply'**
+  String get voiceConversationStopReading;
 }
 
 class _AppLocalizationsDelegate
