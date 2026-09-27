@@ -16,6 +16,7 @@ import 'builtin/builtin_server.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
 import 'builtin/setup/termux_setup_finish.dart';
+import 'builtin/thermal_guard.dart' show ThermalNoticeKind;
 import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
@@ -29,6 +30,7 @@ import 'platform/session_link.dart';
 import 'platform/platform_capabilities.dart';
 import 'platform/share_intent.dart';
 import 'domain/session_handoff.dart';
+import 'domain/while_away.dart' show AutomaticActKind;
 import 'domain/team_link.dart';
 import 'state/connection.dart';
 import 'state/local_server_controls.dart';
@@ -1472,6 +1474,20 @@ class _RootState extends ConsumerState<_Root> {
       store: _controller.store,
       linux: ref.read(builtinLinuxProvider),
       diagnostics: _controller.diagnostics,
+      // Every confirmed pause, stop and resume is filed in that server's
+      // While you were away (P6.2); the guard still decides alone.
+      onAct: (kind, team, since, at) => unawaited(
+        _controller.recordServerAct(
+          profileId: team.id,
+          kind: switch (kind) {
+            ThermalNoticeKind.paused => AutomaticActKind.heatPause,
+            ThermalNoticeKind.stopped => AutomaticActKind.heatStop,
+            ThermalNoticeKind.resumed => AutomaticActKind.heatResume,
+          },
+          eventId: 'thermal.${kind.name}:${since.microsecondsSinceEpoch}',
+          at: at,
+        ),
+      ),
     );
   }
 

@@ -280,6 +280,58 @@ void main() {
       },
     );
 
+    test('every confirmed pause, stop and resume is reported once per team '
+        '(P6.2 While you were away)', () async {
+      final acts = <(ThermalNoticeKind, String, DateTime)>[];
+      final guard = ThermalGuard(
+        bridge: bridge,
+        port: port,
+        prefs: prefs,
+        clock: () => now,
+        inBackground: () => background,
+        strings: () => lookupAppLocalizations(const Locale('en')),
+        onAct: (kind, team, since, at) => acts.add((kind, team.id, at)),
+      );
+      await guard.observe(_severe);
+      await guard.observe(_severe);
+      await guard.observe(_critical);
+      now = _t0.add(const Duration(minutes: 1));
+      await guard.observe(_moderate);
+      now = _t0.add(const Duration(minutes: 3));
+      await guard.observe(_moderate);
+      expect(acts, [
+        (ThermalNoticeKind.paused, 'phone', _t0),
+        (ThermalNoticeKind.stopped, 'phone', _t0),
+        (
+          ThermalNoticeKind.resumed,
+          'phone',
+          _t0.add(const Duration(minutes: 3)),
+        ),
+      ]);
+      guard.dispose();
+    });
+
+    test('an unreachable team is not reported as resumed', () async {
+      final acts = <ThermalNoticeKind>[];
+      final guard = ThermalGuard(
+        bridge: bridge,
+        port: port,
+        prefs: prefs,
+        clock: () => now,
+        inBackground: () => background,
+        strings: () => lookupAppLocalizations(const Locale('en')),
+        onAct: (kind, team, since, at) => acts.add(kind),
+      );
+      await guard.observe(_severe);
+      port.reachable = false;
+      now = _t0.add(const Duration(minutes: 1));
+      await guard.observe(_moderate);
+      now = _t0.add(const Duration(minutes: 3));
+      await guard.observe(_moderate);
+      expect(acts, [ThermalNoticeKind.paused]);
+      guard.dispose();
+    });
+
     test('no notification while the app is on screen', () async {
       background = false;
       final guard = guard0();
