@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_gateway.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -722,6 +723,38 @@ void main() {
   });
 
   group('Start-a-run sheet', () {
+    // P6.1: the sheet starts at this server's level from Settings › What
+    // runs by itself — High until a person chose another there.
+    for (final (stored, expected) in [
+      (null, 'high'),
+      (AutomationSupervision.autonomous, 'autonomous'),
+    ]) {
+      testWidgets('supervision starts at ${stored?.name ?? 'the default'}', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await size(tester, const Size(800, 2400));
+        AutomationPolicyController.resetShared();
+        final controller = await boot(_Gateway());
+        if (stored != null) {
+          await tester.runAsync(
+            () => controller.automation.setSupervision(stored),
+          );
+        }
+        await pumpSheet(tester, controller);
+        for (final level in AutomationSupervision.values) {
+          expect(
+            tester.getSemantics(
+              key('team-start-run-supervision-${level.name}'),
+            ),
+            isSemantics(isSelected: level.name == expected),
+            reason: level.name,
+          );
+        }
+        semantics.dispose();
+      });
+    }
+
     testWidgets('Boundaries row from controller.policy, read-only', (
       tester,
     ) async {

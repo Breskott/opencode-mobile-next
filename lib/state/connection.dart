@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
+import 'automation_policy.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5881,6 +5882,11 @@ class ConnectionController extends ChangeNotifier {
     } catch (_) {}
     try {
       await sessionAutoApproval.drain(profileId);
+    } catch (_) {}
+    try {
+      // Stop accepting edits and drain a write in flight, so the sweep below
+      // removes `oc.automation.<id>` for good.
+      await AutomationPolicyController.closeProfile(store.prefs, profileId);
     } catch (_) {}
     try {
       await _promptShelf.drain(profileId);

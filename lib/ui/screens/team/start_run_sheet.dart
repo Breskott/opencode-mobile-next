@@ -2,7 +2,9 @@
 /// the sheet behind the AI Team home's primary button, in the kit's one
 /// sheet frame ([showKitSheet]). **Objective** (multi-line, kept as a
 /// draft), **Project** ("Let the planner choose" by default),
-/// **Supervision** (High / Balanced / Autonomous with their descriptions),
+/// **Supervision** (High / Balanced / Autonomous with their descriptions;
+/// it starts at this server's level from Settings › What runs by itself,
+/// High until the person chose another there),
 /// **Planner** (shown, not chosen: the Mayor), **Boundaries** (read-only
 /// host policy from `controller.policy`, TEAM-207; the row is absent when
 /// the host reports none rather than invented), then [Send to planner].
@@ -35,6 +37,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../state/automation_policy.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
@@ -109,7 +112,11 @@ class _StartRunSheetState extends State<StartRunSheet> {
   final _details = TextEditingController();
   String? _projectId;
   String? _directProjectId;
-  TeamSupervision _supervision = TeamSupervision.balanced;
+
+  /// This server's level (Settings › What runs by itself); a pick here is
+  /// for this one task and never changes that setting.
+  late TeamSupervision _supervision =
+      widget.controller.automation.value.supervision.team;
   bool _sending = false;
   bool _waking = false;
   bool _showEmpty = false;

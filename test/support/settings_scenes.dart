@@ -17,6 +17,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
+import 'package:opencode_mobile/ui/screens/automation_settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 
@@ -36,6 +37,7 @@ enum SettingsScene {
   servers,
   addServer,
   addServerFailed,
+  automation,
 }
 
 /// File-name slug of a scene: `settings_hub`, `servers_list`, ...
@@ -51,6 +53,7 @@ String settingsSceneName(SettingsScene scene) => switch (scene) {
   SettingsScene.servers => 'servers_list',
   SettingsScene.addServer => 'servers_add',
   SettingsScene.addServerFailed => 'servers_add_failed',
+  SettingsScene.automation => 'settings_automation',
 };
 
 final _en = lookupAppLocalizations(const Locale('en'));
@@ -256,6 +259,11 @@ Future<Future<void> Function()> mountSettingsScene(
     SettingsScene.diagnostics || SettingsScene.diagnosticsEmpty =>
       AppDiagnosticsScreen(controller: controller),
     SettingsScene.about => const AboutScreen(),
+    // What runs by itself with a team, as a team's server shows it.
+    SettingsScene.automation => AutomationSettingsScreen(
+      controller: controller,
+      teamAvailable: true,
+    ),
     SettingsScene.servers ||
     SettingsScene.addServer ||
     SettingsScene.addServerFailed => const ServersScreen(),

@@ -11,6 +11,7 @@ import '../../builtin/setup/setup_contract.dart' show SetupProgress;
 import '../../diagnostics/report_problem_startup.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
+import '../../state/automation_policy.dart';
 import '../../state/connection.dart';
 import '../../state/offline_queue.dart';
 import '../../state/profile_monitor.dart';
@@ -27,8 +28,10 @@ import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
 import 'app_diagnostics_screen.dart' show reportProblemErrorCount;
+import 'automation_settings_screen.dart' show AutomationSettingsSections;
 import 'host_management_screen.dart';
 import 'this_phone_screen.dart' show openThisPhone;
+import 'team/start_run_sheet.dart' show teamSupervisionCopy;
 import '../widgets/team_discover.dart';
 import '../search/search_index.dart';
 import 'usage_hub_screen.dart';
@@ -305,7 +308,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         row('settings-category-plugins'),
-        row('saved-permissions-entry'),
+        // What runs by itself (P6.1): the team's level when there is a
+        // team; Always allowed actions sits inside it.
+        row(
+          'settings-automation',
+          value:
+              AutomationSettingsSections.of(
+                controller,
+                team: scope.hasTeam,
+              ).team
+              ? teamSupervisionCopy(
+                  l10n,
+                  AutomationPolicyController.forProfile(
+                    controller.store.prefs,
+                    profile!.id,
+                  ).value.supervision.team,
+                ).$1
+              : null,
+        ),
         // Absent where the server cannot change it, like every other row
         // (rule 7); Help › "Available on this server" explains every
         // hidden row at once.
