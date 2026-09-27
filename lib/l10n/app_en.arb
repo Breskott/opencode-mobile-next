@@ -31571,5 +31571,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "productErrorStagedRevert": "Review the staged revert before sending this queued prompt.",
+  "@productErrorStagedRevert": {"description": "Safe app-authored explanation when a queued prompt needs staged revert review."}
 }

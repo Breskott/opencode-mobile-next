@@ -26746,4 +26746,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String voiceAutoSetupDetailMemoryValue(int required, int available) {
     return 'Needs $required MB; this phone has $available MB';
   }
+
+  @override
+  String get productErrorStagedRevert =>
+      'Review the staged revert before sending this queued prompt.';
 }

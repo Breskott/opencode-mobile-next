@@ -15,6 +15,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/opencode_api.dart' show ApiException;
+import 'package:opencode_mobile/api2/transport.dart';
+import 'package:opencode_mobile/domain/product_failure.dart';
 
 /// Names a caught failure usually has in lib/ui.
 const _errorNames = r'(?:e|err|error|failure|caught|exception|cause)';
@@ -116,6 +119,9 @@ List<_Hit> _scanLines(String file, List<String> lines) {
     ];
     void hit(String rule) => hits.add(_Hit(file, i + 1, line.trim(), rule));
     if (!_feedsDetails(line)) {
+      if (RegExp(r'\.technicalDetails\b').hasMatch(line)) {
+        hit('domain technical details as prose');
+      }
       if (_interpolation.hasMatch(line)) hit('interpolated error');
       if (_toStringCall.hasMatch(line)) hit('error.toString()');
       for (final name in rawVars.keys) {
@@ -147,8 +153,6 @@ List<_Hit> _scan() {
   for (final entity in Directory('lib/ui').listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
     final file = entity.path.substring('lib/ui/'.length);
-    // The one mapper: it reads the raw text to classify it.
-    if (file == 'widgets/product_states.dart') continue;
     hits.addAll(_scanLines(file, entity.readAsLinesSync()));
   }
   return hits;
@@ -173,8 +177,38 @@ void main() {
       '}',
       'details: error.toString(),',
       '// KitText(error.toString())',
+      'body: failure.technicalDetails,',
+      'final details = failure.technicalDetails;',
     ]);
-    expect(hits.map((hit) => hit.line), [1, 2, 3, 5, 8]);
+    expect(hits.map((hit) => hit.line), [1, 2, 3, 5, 8, 14]);
+  });
+
+  test('the domain mapper never promotes protocol text to authored copy', () {
+    for (final status in [400, 401, 404, 409, 422, 429, 500, 503]) {
+      final failures = <Object>[
+        ApiException('Untrusted server prose', statusCode: status),
+        ApiException(
+          'Untrusted server prose',
+          statusCode: status,
+          errorTag: 'SessionRevertPending',
+        ),
+        Api2RequestError('Untrusted server prose', statusCode: status),
+      ];
+      for (final error in failures) {
+        final failure = ProductFailure.from(error);
+        expect(failure.authoredMessage, isNull);
+        expect(failure.category, isNot(ProductFailureCategory.words));
+        expect(failure.technicalDetails, contains('Untrusted server prose'));
+      }
+    }
+  });
+
+  test('the product error mapper depends on domain categories only', () {
+    final source = File(
+      'lib/ui/widgets/product_states.dart',
+    ).readAsStringSync();
+    expect(RegExp(r"/api2?/").hasMatch(source), isFalse);
+    expect(source, contains("import '../../domain/product_failure.dart'"));
   });
 
   test('lib/ui never shows raw exception text as the words', () {

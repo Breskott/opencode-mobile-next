@@ -41690,6 +41690,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs {required} MB; this phone has {available} MB'**
   String voiceAutoSetupDetailMemoryValue(int required, int available);
+
+  /// Safe app-authored explanation when a queued prompt needs staged revert review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the staged revert before sending this queued prompt.'**
+  String get productErrorStagedRevert;
 }
 
 class _AppLocalizationsDelegate
