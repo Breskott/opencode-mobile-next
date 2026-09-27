@@ -27568,5 +27568,123 @@
   "localTerminalSetUpLinux": "Set up Linux on this phone",
   "@localTerminalSetUpLinux": {
     "description": "Phone terminal before Linux is installed: opens phone setup."
+  },
+  "voiceSetupSubtitle": "Download a speech model once. After that, voice input runs on this phone without the internet.",
+  "@voiceSetupSubtitle": {
+    "description": "Voice model setup sheet: subtitle under 'Local voice input'; says what the sheet is for without engine jargon."
+  },
+  "voiceSetupDownloadPack": "Download {model} ({size})",
+  "@voiceSetupDownloadPack": {
+    "description": "Voice model setup sheet: pinned primary button that downloads the chosen speech model; {model} is its name (Balanced), {size} its download size.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupUsePack": "Use {model}",
+  "@voiceSetupUsePack": {
+    "description": "Voice model setup sheet: pinned primary button when the chosen speech model is already on the phone; closes the sheet and starts voice input.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupRedownloadPack": "Download {model} again",
+  "@voiceSetupRedownloadPack": {
+    "description": "Voice model setup sheet: replaces the downloaded files of the chosen speech model with a fresh copy.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupDeletePack": "Delete {model}",
+  "@voiceSetupDeletePack": {
+    "description": "Voice model setup sheet: removes the chosen speech model from the phone (button and the confirm button).",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupKeepPack": "Keep {model}",
+  "@voiceSetupKeepPack": {
+    "description": "Voice model delete confirmation: the neutral answer that keeps the speech model.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupDownloadingPack": "Downloading {model}",
+  "@voiceSetupDownloadingPack": {
+    "description": "Voice model setup sheet: title of the download progress row.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSetupModelLabel": "Speech model",
+  "@voiceSetupModelLabel": {
+    "description": "Voice model setup sheet: label above the list of speech models."
+  },
+  "voiceComposerTitle": "Voice input",
+  "@voiceComposerTitle": {
+    "description": "Voice input sheet: the sheet's title."
+  },
+  "voiceComposerModelLine": "{model} model · {language}",
+  "@voiceComposerModelLine": {
+    "description": "Voice input sheet: tertiary button naming the speech model and language in use; opens the voice model setup sheet.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceNoticesTitle": "Voice licenses",
+  "@voiceNoticesTitle": {
+    "description": "Voice licenses page: the page title (Settings > Voice)."
+  },
+  "voiceNoticesIntro": "Voice input is built on these open-source parts. Open one to read its license.",
+  "@voiceNoticesIntro": {
+    "description": "Voice licenses page: the line above the list of components."
+  },
+  "voiceNoticesMadeBy": "{maker} · {license}",
+  "@voiceNoticesMadeBy": {
+    "description": "Voice licenses page: a component row's second line; {maker} is who made it (OpenAI), {license} the license name (MIT License).",
+    "placeholders": {
+      "maker": {
+        "type": "String"
+      },
+      "license": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceNoticesOpenWebsite": "Open the {name} website",
+  "@voiceNoticesOpenWebsite": {
+    "description": "Voice license viewer: opens the component's project page in the browser; {name} is the component (sherpa-onnx).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceNoticesWhisper": "Whisper speech models",
+  "@voiceNoticesWhisper": {
+    "description": "Voice licenses page: the row for the downloaded OpenAI Whisper models."
+  },
+  "voiceSetupBusyReason": "Available after the download",
+  "@voiceSetupBusyReason": {
+    "description": "Voice model setup sheet: why the speech models and language cannot be changed while a model downloads."
   }
 }

@@ -24180,4 +24180,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get voiceSetupSubtitle =>
+      'Download a speech model once. After that, voice input runs on this phone without the internet.';
+
+  @override
+  String voiceSetupDownloadPack(String model, String size) {
+    return 'Download $model ($size)';
+  }
+
+  @override
+  String voiceSetupUsePack(String model) {
+    return 'Use $model';
+  }
+
+  @override
+  String voiceSetupRedownloadPack(String model) {
+    return 'Download $model again';
+  }
+
+  @override
+  String voiceSetupDeletePack(String model) {
+    return 'Delete $model';
+  }
+
+  @override
+  String voiceSetupKeepPack(String model) {
+    return 'Keep $model';
+  }
+
+  @override
+  String voiceSetupDownloadingPack(String model) {
+    return 'Downloading $model';
+  }
+
+  @override
+  String get voiceSetupModelLabel => 'Speech model';
+
+  @override
+  String get voiceComposerTitle => 'Voice input';
+
+  @override
+  String voiceComposerModelLine(String model, String language) {
+    return '$model model · $language';
+  }
+
+  @override
+  String get voiceNoticesTitle => 'Voice licenses';
+
+  @override
+  String get voiceNoticesIntro =>
+      'Voice input is built on these open-source parts. Open one to read its license.';
+
+  @override
+  String voiceNoticesMadeBy(String maker, String license) {
+    return '$maker · $license';
+  }
+
+  @override
+  String voiceNoticesOpenWebsite(String name) {
+    return 'Open the $name website';
+  }
+
+  @override
+  String get voiceNoticesWhisper => 'Whisper speech models';
+
+  @override
+  String get voiceSetupBusyReason => 'Available after the download';
 }

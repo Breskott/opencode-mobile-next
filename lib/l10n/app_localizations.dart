@@ -37820,6 +37820,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up Linux on this phone'**
   String get localTerminalSetUpLinux;
+
+  /// Voice model setup sheet: subtitle under 'Local voice input'; says what the sheet is for without engine jargon.
+  ///
+  /// In en, this message translates to:
+  /// **'Download a speech model once. After that, voice input runs on this phone without the internet.'**
+  String get voiceSetupSubtitle;
+
+  /// Voice model setup sheet: pinned primary button that downloads the chosen speech model; {model} is its name (Balanced), {size} its download size.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {model} ({size})'**
+  String voiceSetupDownloadPack(String model, String size);
+
+  /// Voice model setup sheet: pinned primary button when the chosen speech model is already on the phone; closes the sheet and starts voice input.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {model}'**
+  String voiceSetupUsePack(String model);
+
+  /// Voice model setup sheet: replaces the downloaded files of the chosen speech model with a fresh copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {model} again'**
+  String voiceSetupRedownloadPack(String model);
+
+  /// Voice model setup sheet: removes the chosen speech model from the phone (button and the confirm button).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {model}'**
+  String voiceSetupDeletePack(String model);
+
+  /// Voice model delete confirmation: the neutral answer that keeps the speech model.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {model}'**
+  String voiceSetupKeepPack(String model);
+
+  /// Voice model setup sheet: title of the download progress row.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {model}'**
+  String voiceSetupDownloadingPack(String model);
+
+  /// Voice model setup sheet: label above the list of speech models.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech model'**
+  String get voiceSetupModelLabel;
+
+  /// Voice input sheet: the sheet's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input'**
+  String get voiceComposerTitle;
+
+  /// Voice input sheet: tertiary button naming the speech model and language in use; opens the voice model setup sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} model · {language}'**
+  String voiceComposerModelLine(String model, String language);
+
+  /// Voice licenses page: the page title (Settings > Voice).
+  ///
+  /// In en, this message translates to:
+  /// **'Voice licenses'**
+  String get voiceNoticesTitle;
+
+  /// Voice licenses page: the line above the list of components.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input is built on these open-source parts. Open one to read its license.'**
+  String get voiceNoticesIntro;
+
+  /// Voice licenses page: a component row's second line; {maker} is who made it (OpenAI), {license} the license name (MIT License).
+  ///
+  /// In en, this message translates to:
+  /// **'{maker} · {license}'**
+  String voiceNoticesMadeBy(String maker, String license);
+
+  /// Voice license viewer: opens the component's project page in the browser; {name} is the component (sherpa-onnx).
+  ///
+  /// In en, this message translates to:
+  /// **'Open the {name} website'**
+  String voiceNoticesOpenWebsite(String name);
+
+  /// Voice licenses page: the row for the downloaded OpenAI Whisper models.
+  ///
+  /// In en, this message translates to:
+  /// **'Whisper speech models'**
+  String get voiceNoticesWhisper;
+
+  /// Voice model setup sheet: why the speech models and language cannot be changed while a model downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Available after the download'**
+  String get voiceSetupBusyReason;
 }
 
 class _AppLocalizationsDelegate

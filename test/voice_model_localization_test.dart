@@ -170,7 +170,9 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
           expect(
-            Directionality.of(tester.element(find.byType(BottomSheet))),
+            Directionality.of(
+              tester.element(find.byKey(const ValueKey('kit-sheet-content'))),
+            ),
             locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
           );
           expect(
@@ -186,7 +188,7 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.tap(cancel);
           await tester.pumpAndSettle();
-          expect(find.byType(BottomSheet), findsNothing);
+          expect(find.byKey(const ValueKey('kit-sheet-content')), findsNothing);
           expect(manager.selectedPack.id, 'base');
         },
       );
