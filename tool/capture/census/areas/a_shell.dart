@@ -431,7 +431,7 @@ final aShellArea = CensusArea(
           launcher: (_) async => false,
         ),
       );
-      kit.expectVisible(find.byType(AlertDialog));
+      kit.expectText('Open external link?');
     }),
     CensusShot('external-link-dialog', state: 'insecure-http', (kit) async {
       await _home(kit);
@@ -442,7 +442,7 @@ final aShellArea = CensusArea(
           launcher: (_) async => false,
         ),
       );
-      kit.expectVisible(find.byType(AlertDialog));
+      kit.expectText('Open insecure HTTP link?');
     }),
 
     // -- notices from main.dart ---------------------------------------------
