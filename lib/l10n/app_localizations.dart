@@ -40106,6 +40106,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding the skill…'**
   String get skillSheetSending;
+
+  /// Chat tool step: a sub-agent the reply started, named by the agent the work was handed to (for example 'Delegated to explore'). Matches the AI Team worker line.
+  ///
+  /// In en, this message translates to:
+  /// **'Delegated to {agent}'**
+  String toolCardDelegatedTo(String agent);
+
+  /// Chat shell step, caption over the command output: the command finished successfully (exit code 0), said in words first.
+  ///
+  /// In en, this message translates to:
+  /// **'Passed · exit code 0'**
+  String get toolCardExitPassed;
+
+  /// Chat shell step, caption over the command output: the command reported a failure with this non-zero exit code.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed · exit code {code}'**
+  String toolCardExitFailed(int code);
+
+  /// Chat shell step, opened: button that runs the same command again in this conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Run this command again'**
+  String get toolCardRunCommandAgain;
+
+  /// Chat shell step, opened: copy button on the command block.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get toolCardCopyCommand;
+
+  /// Chat tool step: button on an image the tool produced whose preview failed to load; tries loading that image again.
+  ///
+  /// In en, this message translates to:
+  /// **'Load {name} again'**
+  String toolCardLoadImageAgain(String name);
+
+  /// Title of the read-only diff page opened from a chat edit step: the file name, or a file count such as '3 files'.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes in {file}'**
+  String toolCardChangesIn(String file);
+
+  /// Agent plan inside a chat Work step: unfolds a long plan that shows only a window of tasks around the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count} tasks'**
+  String mobileTasksShowAll(int count);
 }
 
 class _AppLocalizationsDelegate
