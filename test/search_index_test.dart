@@ -292,13 +292,20 @@ void main() {
 
     test('each result names the page that holds it (reachability audit)', () {
       final byId = {for (final entry in entries) entry.id: entry};
-      expect(byId['settings-privacy-data-use']!.parent, _en.aboutTitle);
+      expect(
+        byId['settings-privacy-data-use']!.parent,
+        _en.settingsHubPrivacyRow,
+      );
       expect(byId['ai-team']!.parent, _en.librarySettingsTitle);
       expect(
         byId['inside-servers-monitor']!.title,
         _en.monitorBackgroundChecks,
       );
-      expect(byId['settings-try-demo']!.parent, _en.settingsHubHelpRow);
+      expect(byId['settings-try-demo']!.parent, _en.onboardingSetupGuide);
+      expect(byId['settings-mcp']!.parent, _en.settingsHubToolsRow);
+      expect(byId['settings-external-agents']!.parent, _en.settingsHubToolsRow);
+      expect(byId['settings-voice-notices']!.parent, _en.aboutTitle);
+      expect(byId['settings-show-tips-again']!.parent, _en.aboutTitle);
       expect(byId['settings-try-demo']!.matches('demo'), isTrue);
       expect(byId['archived-conversations']!.matches('archived'), isTrue);
       expect(byId['archived-conversations']!.pages, ['global-sessions']);
@@ -372,7 +379,6 @@ void main() {
         final ids = _ids(index);
         for (final id in [
           'settings-models',
-          'settings-providers',
           'settings-mcp',
           'settings-commands-tools',
           'inside-capabilities-commands',
@@ -395,7 +401,10 @@ void main() {
           ids.contains('all-conversations'),
           capabilities.globalSessionSearch,
         );
-        expect(ids.contains('settings-accounts'), capabilities.agentAccount);
+        // Providers and accounts is the Codex account's door; there is no
+        // second row for it.
+        expect(ids.contains('settings-providers'), capabilities.agentAccount);
+        expect(ids, isNot(contains('settings-accounts')));
         // Typing the name of something absent finds nothing that opens it.
         expect(
           searchEntries(

@@ -439,12 +439,9 @@ void main() {
         app(SettingsScreen(controller: controller), scoped: controller),
       );
       await settle(tester);
-      // The Plugins category is the way in; it exists whether the plugin
-      // is on or off (TEAM-106).
-      expect(
-        find.byKey(const ValueKey('settings-category-plugins')),
-        findsOneWidget,
-      );
+      // Tools (which holds Plugins) is the way in; it exists whether the
+      // plugin is on or off (TEAM-106, slice-P3.10).
+      expect(find.byKey(const ValueKey('settings-tools')), findsOneWidget);
       await expectNoPluginWidgets(tester);
       expect(tester.takeException(), isNull);
       await teardown(tester, controller);

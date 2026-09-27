@@ -6402,9 +6402,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsUi88 => 'تشخيص التطبيق';
 
   @override
-  String get e7SettingsUi91 => 'اتصل بحاسوب أو شغّل OpenCode على هذا الهاتف';
-
-  @override
   String get e7SettingsUi92 => 'الخصوصية واستخدام البيانات';
 
   @override
@@ -15866,6 +15863,65 @@ class AppLocalizationsAr extends AppLocalizations {
       'about version licenses open source notices privacy data حول إصدار تراخيص مفتوح المصدر إشعارات خصوصية بيانات';
 
   @override
+  String get settingsHubGroupAgent => 'Agent';
+
+  @override
+  String get settingsHubGroupConversations => 'Conversations';
+
+  @override
+  String get settingsHubGroupThisApp => 'This app';
+
+  @override
+  String get settingsHubProvidersRow => 'Providers and accounts';
+
+  @override
+  String get settingsHubToolsRow => 'Tools';
+
+  @override
+  String get settingsHubShowReasoning => 'Show reasoning';
+
+  @override
+  String get settingsHubShowTimestamps => 'Show timestamps and usage';
+
+  @override
+  String settingsHubUnavailableCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count settings aren\'t available on this server',
+      one: '1 setting isn\'t available on this server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHubUnavailableWhy => 'Why';
+
+  @override
+  String get toolsHubMcpSubtitle => 'Servers that give the agent more tools';
+
+  @override
+  String get toolsHubCatalogSubtitle =>
+      'Slash commands, skills, the model\'s tools and references';
+
+  @override
+  String get toolsHubPluginsSubtitle => 'Add-ons on the server and in this app';
+
+  @override
+  String get toolsHubExternalAgentsSubtitle =>
+      'Agents on other services you can hand work to';
+
+  @override
+  String get privacyPolicyTitle => 'Privacy policy';
+
+  @override
+  String get aboutHelpSection => 'Tips and shortcuts';
+
+  @override
+  String get settingsHubSearchToolsAliases =>
+      'tools mcp integrations commands skills references slash capabilities plugins external agents a2a';
+
+  @override
   String get pluginsSectionInApp => 'في هذا التطبيق';
 
   @override
@@ -16139,9 +16195,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get capabilityScreenTitle => 'المتاح على هذا الخادم';
-
-  @override
-  String get capabilityScreenSubtitle => 'ما يستطيعه هذا الخادم وما لا يستطيعه';
 
   @override
   String get capabilityScreenAliases =>
@@ -24043,9 +24096,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutReportBugOnGithub => 'Report a bug on GitHub';
 
   @override
-  String get aboutDocuments => 'Documents';
-
-  @override
   String get aboutAllLicences => 'All package licenses';
 
   @override
@@ -25418,16 +25468,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get serverSettingsUpdateHint =>
       'Uses OpenCode\'s official installer; restart the server afterwards.';
-
-  @override
-  String get settingsHubThisPhone => 'This phone';
-
-  @override
-  String get settingsHubHelpRow => 'Help';
-
-  @override
-  String get settingsHubHelpSubtitle =>
-      'Guide, tips, shortcuts and diagnostics';
 
   @override
   String get settingsHubModelRow => 'Model';

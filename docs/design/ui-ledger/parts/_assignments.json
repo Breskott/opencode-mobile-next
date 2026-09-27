@@ -159,6 +159,7 @@
   "j1-settings-more": [
     "lib/ui/screens/library_screen.dart",
     "lib/ui/screens/settings_screen.dart",
+    "lib/ui/screens/tools_hub_screen.dart",
     "lib/ui/screens/settings/notifications_settings_screen.dart",
     "lib/ui/screens/settings/default_shell_row.dart",
     "lib/ui/screens/settings/personal_settings_screens.dart",

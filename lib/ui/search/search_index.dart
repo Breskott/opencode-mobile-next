@@ -11,7 +11,6 @@ import '../../domain/settings_search_catalog.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
-import '../../state/external_agents.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../termux/bridge.dart' show TermuxBridge;
 import '../../voice/model_manager.dart';
@@ -25,7 +24,6 @@ import '../screens/agent_account_screen.dart';
 import '../screens/app_diagnostics_screen.dart';
 import '../screens/capabilities_screen.dart';
 import '../screens/demo_screen.dart';
-import '../screens/external_agents_screen.dart';
 import '../screens/global_sessions_screen.dart';
 import '../screens/guide_screen.dart';
 import '../screens/keep_running_screen.dart';
@@ -40,6 +38,7 @@ import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
+import '../screens/tools_hub_screen.dart';
 import '../screens/team/team_home_screen.dart';
 import '../screens/team/team_intro_screen.dart';
 import '../screens/termux_processes_screen.dart';
@@ -49,12 +48,10 @@ import '../screens/this_phone_screen.dart' show ThisPhoneScreen, openThisPhone;
 import '../screens/usage_hub_screen.dart';
 import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
-import '../widgets/transcript_display_toggles.dart';
 import '../kit/kit_arrival.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_dialog.dart';
 import '../kit/kit_page_route.dart';
-import '../kit/kit_sheet.dart';
 
 /// What a result is, which decides the header it is listed under.
 enum SearchEntryKind {
@@ -137,6 +134,7 @@ class SearchEntry {
     required this.icon,
     required this.open,
     this.gate = _always,
+    this.serverGate,
     this.group,
     this.parent,
     this.pages = const [],
@@ -155,6 +153,16 @@ class SearchEntry {
 
   /// Present or absent, never disabled (rule 7).
   final SearchGate gate;
+
+  /// The part of [gate] that depends on what the connected server offers.
+  /// A hub row this hides is counted on its group's one muted line ("2
+  /// settings aren't available on this server · Why") instead of vanishing
+  /// without a word (target-ia §1.3). Null: the server never hides it.
+  final SearchGate? serverGate;
+
+  /// Whether the connected server, not this device, hides this entry.
+  bool hiddenByServer(SearchScope scope) =>
+      !gate(scope) && serverGate != null && !serverGate!(scope);
   final SearchOpen open;
 
   /// The hub group a [SearchEntryKind.hubRow] is listed in.
@@ -198,6 +206,7 @@ class SearchEntry {
           icon: icon,
           open: open,
           gate: gate,
+          serverGate: serverGate,
           group: group,
           parent: parent,
           pages: pages,
@@ -320,34 +329,26 @@ int _capabilitiesTab(SearchScope scope, int withTools) =>
     ? withTools
     : withTools - 1;
 
-Future<void> _openExternalAgents(
-  BuildContext context,
-  SearchScope scope,
-) async {
-  final profiles = scope.controller.store;
-  final store = ExternalAgentStore(profiles.prefs, profiles.secure);
-  try {
-    await _push(context, ExternalAgentsScreen(store: store));
-  } finally {
-    store.dispose();
-  }
-}
+/// OpenCode is saved on this phone, in the app or in Termux.
+bool _phoneSetUp(SearchScope scope) => scope.controller.store.profiles.any(
+  (p) => looksLikeInAppServer(p) || TermuxBridge.managesServerUrl(p.baseUrl),
+);
 
-// revamp: merge-into:settings (slice-P3.10) — the two switches move onto the
-// Settings hub; until then the sheet is the kit sheet with no new states.
-Future<void> _openTranscriptDisplay(BuildContext context, SearchScope scope) {
-  final l10n = AppLocalizations.of(context);
-  return showKitSheet<void>(
-    context,
-    title: l10n.chatUiTranscriptDisplay,
-    body: (context) => TranscriptDisplayToggles(
-      // The same two stored values the conversation menu flips.
-      connection: scope.controller,
-      reasoningExpanded: scope.controller.transcriptReasoningExpanded,
-      timestampsVisible: scope.controller.transcriptTimestampsVisible,
-    ),
-  );
-}
+bool _account(SearchScope scope) =>
+    scope.controller.isConnected && scope.capabilities.agentAccount;
+
+bool _plugins(SearchScope scope) =>
+    scope.controller.profile != null || scope.capabilities.pluginInventory;
+
+/// Opens the Settings hub arrived at one of its own rows (a switch or the
+/// shell choice, which act in place): the group is chosen on a wide window
+/// and the row is scrolled to and marked (KitArrival).
+SearchOpen _hubAt(SettingsGroup group, String rowId) => _screen(
+  (scope) => KitArrivalScope(
+    rowId: rowId,
+    child: SettingsScreen(controller: scope.controller, initialGroup: group),
+  ),
+);
 
 /// Why Claude Code on this phone is not offered here, instead of a search
 /// that finds nothing (P7.4 "explain instead of vanish"): it runs on the
@@ -430,7 +431,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       scope.platform.supportsBackgroundService;
   final diagnostics = rows['app-diagnostics-entry']!;
   return [
-    // ---- Settings hub rows -------------------------------------------
+    // ---- Settings hub rows (target-ia §1.3), in hub order ------------
+    // Server: the connected server, every saved server, this phone.
     SearchEntry(
       id: 'settings-category-server',
       kind: SearchEntryKind.hubRow,
@@ -460,6 +462,21 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['servers'],
       open: (context, _) => Navigator.of(context).pushNamed('/servers'),
     ),
+    // Once OpenCode is set up on this phone, This phone is a place of its
+    // own: what runs here, storage, updates and removal.
+    SearchEntry(
+      id: 'settings-this-phone',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.server,
+      icon: AppIconography.phone,
+      title: l10n.phoneServerCardTitle,
+      keywords: '${l10n.settingsHubSearchPhoneAliases} $onThisPhone',
+      pages: const ['termux-setup-installed'],
+      gate: (scope) => scope.platform.supportsTermux && _phoneSetUp(scope),
+      open: (context, _) => openThisPhone(context),
+    ),
+    // Before that, setting it up is one of Add server's ways (R3): the hub
+    // holds no second door to it, and search finds it here.
     SearchEntry(
       id: 'settings-on-this-phone',
       kind: SearchEntryKind.insideSettings,
@@ -467,61 +484,17 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.phone,
       title: onThisPhone,
       keywords: l10n.settingsHubSearchPhoneAliases,
-      // This phone once OpenCode is saved on it (in the app or in Termux),
-      // phone setup's screen A before that; Termux is one of its ways in.
-      pages: const ['phone-setup-start', 'termux-setup-installed'],
+      pages: const ['phone-setup-start'],
       // Local Android tools belong to the phone, not the connected server's
       // capability set.
-      gate: (scope) => scope.platform.supportsTermux,
-      open: (context, scope) =>
-          scope.controller.store.profiles.any(
-            (p) =>
-                looksLikeInAppServer(p) ||
-                TermuxBridge.managesServerUrl(p.baseUrl),
-          )
-          ? openThisPhone(context)
-          : openPhoneSetupStart(context),
+      gate: (scope) => scope.platform.supportsTermux && !_phoneSetUp(scope),
+      open: (context, _) => openPhoneSetupStart(context),
     ),
-    SearchEntry(
-      id: 'settings-accounts',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
-      icon: AppIconography.person,
-      title: l10n.settingsHubAccounts,
-      keywords:
-          '${l10n.settingsHubSearchAccountsAliases} ${l10n.agentAccountTitle}',
-      pages: const ['agent-account'],
-      gate: (scope) =>
-          scope.controller.isConnected && scope.capabilities.agentAccount,
-      open: _screen(
-        (scope) => AgentAccountScreen(connection: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-external-agents',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.activitySavedServers,
-      icon: AppIconography.support,
-      title: l10n.a2aTitle,
-      keywords: l10n.settingsHubSearchExternalAgentsAliases,
-      pages: const ['external-agents'],
-      open: _openExternalAgents,
-    ),
-    SearchEntry(
-      id: 'settings-tailscale',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.activitySavedServers,
-      icon: AppIconography.network,
-      title: l10n.tailscaleTitle,
-      keywords: l10n.settingsHubSearchTailscaleAliases,
-      pages: const ['tailscale-setup'],
-      gate: (scope) => scope.platform.supportsTailscaleHandoff,
-      open: _screen((_) => const TailscaleSetupScreen()),
-    ),
+    // Agent: the model, who pays for it, what it can use, the AI Team.
     SearchEntry(
       id: 'settings-model-and-mode',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
+      group: SettingsGroup.agent,
       icon: AppIconography.model,
       title: l10n.settingsHubModelRow,
       keywords:
@@ -529,158 +502,43 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
           '${l10n.settingsHubSearchModelModeAliases}',
       open: (context, _) async => showModelPicker(context),
     ),
-    SearchEntry(
-      id: 'default-shell-settings-entry',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
-      icon: AppIconography.terminal,
-      title: l10n.e7SettingsUi35,
-      keywords: l10n.settingsHubSearchShellAliases,
-      // Rule 7: absent where the server cannot change it. "Available on this
-      // server" lists it under what this server does not offer.
-      gate: (scope) => scope.capabilities.shellSettings,
-      // The hub row is its own control; from anywhere else, open the hub at
-      // the group that holds it.
-      open: _screen(
-        (scope) => SettingsScreen(
-          controller: scope.controller,
-          initialGroup: SettingsGroup.server,
-        ),
-      ),
-    ),
-    SearchEntry(
-      id: 'saved-permissions-entry',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
-      icon: AppIconography.privacy,
-      title: l10n.e7SettingsUi74,
-      keywords: l10n.settingsHubSearchPermissionsAliases,
-      pages: const ['saved-permissions'],
-      gate: (scope) => scope.controller.capabilities.savedPermissionList,
-      open: _screen(
-        (scope) => SavedPermissionsScreen(controller: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-transcript-display',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.clock,
-      title: l10n.chatUiTranscriptDisplay,
-      keywords: l10n.settingsHubSearchTranscriptAliases,
-      open: _openTranscriptDisplay,
-    ),
-    SearchEntry(
-      id: 'settings-voice',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.mic,
-      title: l10n.settingsHubVoice,
-      keywords: l10n.settingsHubSearchVoiceAliases,
-      // The speech models can neither download nor run off Android.
-      gate: (scope) => scope.platform.supportsVoice,
-      open: _openVoice,
-    ),
-    SearchEntry(
-      id: 'settings-category-background',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.notificationImportant,
-      title: notifications,
-      keywords: l10n.settingsHubSearchNotificationsAliases,
-      pages: const ['notifications-settings'],
-      open: _screen(
-        (scope) => NotificationsSettingsScreen(controller: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-keep-running',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.batteryCharging,
-      title: l10n.keepRunningTitle,
-      keywords: l10n.keepRunningRowSubtitle,
-      pages: const ['keep-running'],
-      // What to allow so Android leaves the app (and the OpenCode inside
-      // it) running: Android only.
-      gate: (scope) => scope.platform.supportsBackgroundService,
-      open: (context, _) => openKeepRunningScreen(context),
-    ),
-    SearchEntry(
-      id: 'settings-category-appearance',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.appearance,
-      title: appearance,
-      keywords: l10n.settingsHubSearchAppearanceAliases,
-      pages: const ['appearance-settings'],
-      open: _screen(
-        (scope) => AppearanceSettingsScreen(controller: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-models',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubModelRow,
-      icon: AppIconography.model,
-      title: l10n.libraryModelsAgentsTitle,
-      // The hub says "Models & agents"; the screen spells it out.
-      keywords:
-          '${l10n.settingsHubSearchModelsAliases} '
-          '${l10n.e7LibraryModelsAndAgents}',
-      // The model picker is the catalogue: the same list, where choosing
-      // one is what a person came for.
-      pages: const ['model-picker-sheet'],
-      gate: _catalog,
-      open: (context, _) async => showModelPicker(context),
-    ),
+    // One row for whoever the model is paid through: the providers and
+    // their keys, or the Codex account where the server signs in itself.
     SearchEntry(
       id: 'settings-providers',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
+      group: SettingsGroup.agent,
       icon: AppIconography.cloud,
-      title: l10n.libraryProvidersTitle,
-      keywords: l10n.settingsHubSearchProvidersAliases,
-      pages: const ['integrations'],
-      gate: _catalog,
-      open: _screen(
-        (scope) => IntegrationsScreen(
-          controller: scope.controller,
-          mode: IntegrationsMode.providers,
-        ),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-mcp',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
-      icon: AppIconography.network,
-      title: l10n.libraryMcpTitle,
-      // "Add MCP server" is a button on this screen, so its title leads here.
+      title: l10n.settingsHubProvidersRow,
       keywords:
-          '${l10n.settingsHubSearchMcpAliases} ${l10n.mcpAdd} '
-          '${l10n.e7LibraryMCPAndIntegrations}',
-      pages: const ['integrations', 'mcp-setup'],
-      gate: _catalog,
-      open: _screen(
-        (scope) => IntegrationsScreen(
-          controller: scope.controller,
-          mode: IntegrationsMode.mcp,
-        ),
-      ),
+          '${l10n.libraryProvidersTitle} ${l10n.settingsHubAccounts} '
+          '${l10n.settingsHubSearchProvidersAliases} '
+          '${l10n.settingsHubSearchAccountsAliases}',
+      pages: const ['integrations', 'agent-account'],
+      gate: (scope) => _catalog(scope) || _account(scope),
+      serverGate: (scope) => _catalog(scope) || _account(scope),
+      open: (context, scope) => _catalog(scope)
+          ? _push(
+              context,
+              IntegrationsScreen(
+                controller: scope.controller,
+                mode: IntegrationsMode.providers,
+              ),
+            )
+          : _push(context, AgentAccountScreen(connection: scope.controller)),
     ),
     SearchEntry(
-      id: 'settings-commands-tools',
+      id: 'settings-tools',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
+      group: SettingsGroup.agent,
       icon: AppIconography.tools,
-      title: commandsAndTools,
-      keywords: l10n.settingsHubSearchCommandsAliases,
-      pages: const ['capabilities'],
-      gate: _catalog,
-      open: _screen(
-        (scope) => CapabilitiesScreen(controller: scope.controller),
-      ),
+      title: l10n.settingsHubToolsRow,
+      keywords:
+          '${l10n.settingsHubSearchToolsAliases} ${l10n.libraryMcpTitle} '
+          '$commandsAndTools ${l10n.teamUiPluginsTitle} ${l10n.a2aTitle}',
+      pages: const ['tools-hub'],
+      // External agents live in this app, so Tools always has a row.
+      open: _screen((scope) => ToolsHubScreen(controller: scope.controller)),
     ),
     // The AI Team as a place of its own in Settings, not only a plugin
     // (docs/qa/team-discover-2026-09-25): off, it opens the intro, which
@@ -689,7 +547,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-ai-team',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
+      group: SettingsGroup.agent,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
       keywords: l10n.discoverTeamAliases,
@@ -706,52 +564,119 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
             : _push(context, TeamHomeScreen(controller: team));
       },
     ),
+    // Conversations: what the agent may do alone, how a transcript shows,
+    // the shell it runs commands in, and voice.
+    // revamp: slice-P6.1 turns this row into "What runs by itself".
     SearchEntry(
-      id: 'settings-category-plugins',
+      id: 'saved-permissions-entry',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.server,
-      icon: AppIconography.extensions,
-      title: l10n.teamUiPluginsTitle,
-      keywords: l10n.settingsHubSearchPluginsAliases,
-      pages: const ['plugins-settings'],
-      // One Plugins screen: "In this app" needs a saved server, "On the
-      // server" needs the plugin inventory. Either is enough for the row.
-      gate: (scope) =>
-          scope.controller.profile != null ||
-          scope.capabilities.pluginInventory,
+      group: SettingsGroup.conversations,
+      icon: AppIconography.permissions,
+      title: l10n.e7SettingsUi74,
+      keywords: l10n.settingsHubSearchPermissionsAliases,
+      pages: const ['saved-permissions'],
+      gate: (scope) => scope.controller.capabilities.savedPermissionList,
+      serverGate: (scope) => scope.controller.capabilities.savedPermissionList,
       open: _screen(
-        (scope) => PluginsSettingsScreen(controller: scope.controller),
+        (scope) => SavedPermissionsScreen(controller: scope.controller),
+      ),
+    ),
+    // The two transcript switches are hub rows themselves (the old sheet
+    // is gone); from anywhere else, open the hub arrived at the switch.
+    SearchEntry(
+      id: 'settings-show-reasoning',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.conversations,
+      icon: AppIconography.idea,
+      title: l10n.settingsHubShowReasoning,
+      keywords:
+          '${l10n.settingsHubSearchTranscriptAliases} '
+          '${l10n.chatUiTranscriptDisplay} ${l10n.transcriptFindReasoning}',
+      pages: const ['settings'],
+      open: _hubAt(SettingsGroup.conversations, 'settings-show-reasoning'),
+    ),
+    SearchEntry(
+      id: 'settings-show-timestamps',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.conversations,
+      icon: AppIconography.clock,
+      title: l10n.settingsHubShowTimestamps,
+      keywords:
+          '${l10n.settingsHubSearchTranscriptAliases} '
+          '${l10n.chatUiTranscriptDisplay} ${l10n.chatUiTimestampsUsage} '
+          'cost tokens',
+      pages: const ['settings'],
+      open: _hubAt(SettingsGroup.conversations, 'settings-show-timestamps'),
+    ),
+    SearchEntry(
+      id: 'default-shell-settings-entry',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.conversations,
+      icon: AppIconography.terminal,
+      title: l10n.e7SettingsUi35,
+      keywords: l10n.settingsHubSearchShellAliases,
+      // Rule 7: absent where the server cannot change it; the group's line
+      // counts it and "Available on this server" says why.
+      gate: (scope) => scope.capabilities.shellSettings,
+      serverGate: (scope) => scope.capabilities.shellSettings,
+      // The hub row is its own control; from anywhere else, open the hub
+      // arrived at it.
+      open: _hubAt(SettingsGroup.conversations, 'default-shell-settings-entry'),
+    ),
+    SearchEntry(
+      id: 'settings-voice',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.conversations,
+      icon: AppIconography.mic,
+      title: l10n.settingsHubVoice,
+      keywords: l10n.settingsHubSearchVoiceAliases,
+      // The speech models can neither download nor run off Android.
+      gate: (scope) => scope.platform.supportsVoice,
+      open: _openVoice,
+    ),
+    // This app: what notifies, what keeps it running, how it looks, what
+    // it keeps, what it has cost.
+    SearchEntry(
+      id: 'settings-category-background',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.thisApp,
+      icon: AppIconography.notificationImportant,
+      title: notifications,
+      keywords: l10n.settingsHubSearchNotificationsAliases,
+      pages: const ['notifications-settings'],
+      open: _screen(
+        (scope) => NotificationsSettingsScreen(controller: scope.controller),
       ),
     ),
     SearchEntry(
-      id: 'library-import-session',
-      kind: SearchEntryKind.destination,
-      parent: l10n.globalSessionsTitle,
-      icon: AppIconography.fileUpload,
-      title: l10n.importTitle,
-      keywords: l10n.e7LibrarySearchImportAliases,
-      pages: const ['session-import'],
-      gate: _canImport,
-      open: _screen(
-        (scope) => SessionImportScreen(controller: scope.controller),
-      ),
+      id: 'settings-keep-running',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.thisApp,
+      icon: AppIconography.batteryCharging,
+      title: l10n.keepRunningTitle,
+      keywords: l10n.keepRunningRowSubtitle,
+      pages: const ['keep-running'],
+      // What to allow so Android leaves the app (and the OpenCode inside
+      // it) running: Android only.
+      gate: (scope) => scope.platform.supportsBackgroundService,
+      open: (context, _) => openKeepRunningScreen(context),
     ),
     SearchEntry(
-      id: 'settings-category-usage',
+      id: 'settings-category-appearance',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
-      icon: AppIconography.usage,
-      title: usage,
-      keywords: l10n.settingsHubSearchUsageAliases,
-      pages: const ['usage-hub'],
-      // "Spent" needs usage statistics, "Remaining" needs a saved server.
-      gate: (scope) => UsageHubScreen.sectionsFor(scope.controller).isNotEmpty,
-      open: _screen((scope) => UsageHubScreen(controller: scope.controller)),
+      group: SettingsGroup.thisApp,
+      icon: AppIconography.appearance,
+      title: appearance,
+      keywords: l10n.settingsHubSearchAppearanceAliases,
+      pages: const ['appearance-settings'],
+      open: _screen(
+        (scope) => AppearanceSettingsScreen(controller: scope.controller),
+      ),
     ),
     SearchEntry(
       id: 'settings-category-privacy',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisPhone,
+      group: SettingsGroup.thisApp,
       icon: AppIconography.privacy,
       title: l10n.settingsHubPrivacyRow,
       // Not "Older drafts": they are listed from the conversation that owns
@@ -763,79 +688,27 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       ),
     ),
     SearchEntry(
+      id: 'settings-category-usage',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.thisApp,
+      icon: AppIconography.usage,
+      title: usage,
+      keywords: l10n.settingsHubSearchUsageAliases,
+      pages: const ['usage-hub'],
+      // "Spent" needs usage statistics, "Remaining" needs a saved server.
+      gate: (scope) => UsageHubScreen.sectionsFor(scope.controller).isNotEmpty,
+      open: _screen((scope) => UsageHubScreen(controller: scope.controller)),
+    ),
+    // Help, the last, unlabelled panel.
+    SearchEntry(
       id: 'settings-setup-guide',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.help,
       icon: AppIconography.guide,
       title: l10n.onboardingSetupGuide,
       keywords: l10n.settingsHubSearchGuideAliases,
       pages: const ['guide'],
       open: _screen((_) => GuideScreen(embedded: false)),
-    ),
-    // The demo is the first-run welcome's "Just show me"; once a server is
-    // saved, Help is where it stays reachable.
-    SearchEntry(
-      id: 'settings-try-demo',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.play,
-      title: l10n.settingsTryDemo,
-      keywords: '${l10n.demoScreenTitle} ${l10n.demoScreenSimulated}',
-      pages: const ['demo'],
-      open: _screen((_) => const DemoScreen()),
-    ),
-    SearchEntry(
-      id: 'settings-server-capabilities',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.checklist,
-      title: l10n.capabilityScreenTitle,
-      keywords: l10n.capabilityScreenAliases,
-      pages: const ['server-capabilities'],
-      // It describes the connected server, so there is nothing to show
-      // without one.
-      gate: (scope) => scope.controller.isConnected,
-      open: _screen(
-        (scope) => ServerCapabilitiesScreen(controller: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'library-keyboard-shortcuts',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.keyboard,
-      title: l10n.e7LibraryKeyboardShortcuts,
-      keywords: l10n.e7LibrarySearchShortcutsAliases,
-      // The shortcut layer must be discoverable without already knowing a
-      // shortcut, and means nothing without a keyboard.
-      gate: (scope) => scope.desktop,
-      open: (context, _) => showShortcutsHelp(context),
-    ),
-    SearchEntry(
-      id: 'settings-show-tips-again',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.idea,
-      title: l10n.discoverShowTipsAgain,
-      keywords: l10n.discoverShowTipsAliases,
-      // The Help page's row is the control itself; from anywhere else,
-      // open Help.
-      open: _screen(
-        (scope) => SettingsHelpScreen(controller: scope.controller),
-      ),
-    ),
-    // Help: the guide, what this server offers, shortcuts, tips and
-    // diagnostics behind one row, so the hub ends with three (R4).
-    SearchEntry(
-      id: 'settings-help',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.help,
-      icon: AppIconography.support,
-      title: l10n.settingsHubHelpRow,
-      keywords: '${l10n.settingsHubHelpSubtitle} ${l10n.onboardingSetupGuide}',
-      open: _screen(
-        (scope) => SettingsHelpScreen(controller: scope.controller),
-      ),
     ),
     // Report a problem (P8.2): the one row for the GitHub form and the
     // diagnostics, which used to be two paths.
@@ -853,39 +726,219 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       target: diagnostics.target,
       open: _arrive(diagnostics.target),
     ),
+    // The explanation for every row the connected server hides; each
+    // group's "Why" opens it too.
     SearchEntry(
-      id: 'settings-privacy-data-use',
-      kind: SearchEntryKind.insideSettings,
-      // About's first tab, not Settings › Privacy.
-      parent: l10n.aboutTitle,
-      icon: Icons.privacy_tip_outlined,
-      title: l10n.e7SettingsUi92,
-      keywords:
-          '${l10n.settingsHubSearchAboutAliases} ${l10n.e7SettingsDetailUi17}',
-      pages: const ['about', 'about-privacy-tab'],
-      open: _screen((_) => const AboutScreen()),
-    ),
-    SearchEntry(
-      id: 'settings-voice-notices',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.policy,
-      title: l10n.e7SettingsUi94,
-      keywords: l10n.settingsHubSearchAboutAliases,
-      pages: const ['voice-notices'],
-      gate: (scope) => scope.platform.supportsVoice,
-      open: (context, _) async => showVoiceNotices(context),
+      id: 'settings-server-capabilities',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.help,
+      icon: AppIconography.checklist,
+      title: l10n.capabilityScreenTitle,
+      keywords: l10n.capabilityScreenAliases,
+      pages: const ['server-capabilities'],
+      // It describes the connected server, so there is nothing to show
+      // without one.
+      gate: (scope) => scope.controller.isConnected,
+      open: _screen(
+        (scope) => ServerCapabilitiesScreen(controller: scope.controller),
+      ),
     ),
     SearchEntry(
       id: 'settings-about-notices',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.help,
       icon: AppIconography.info,
-      title: l10n.e7SettingsUi96,
+      title: l10n.aboutTitle,
+      keywords:
+          '${l10n.settingsHubSearchAboutAliases} ${l10n.e7SettingsUi96} '
+          '${l10n.e7SettingsDetailUi18}',
+      pages: const ['about', 'about-open-source-tab'],
+      open: _screen((scope) => AboutScreen(controller: scope.controller)),
+    ),
+
+    // ---- Inside the hub's pages ----------------------------------------
+    SearchEntry(
+      id: 'settings-tailscale',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.activitySavedServers,
+      icon: AppIconography.network,
+      title: l10n.tailscaleTitle,
+      keywords: l10n.settingsHubSearchTailscaleAliases,
+      pages: const ['tailscale-setup'],
+      gate: (scope) => scope.platform.supportsTailscaleHandoff,
+      open: _screen((_) => const TailscaleSetupScreen()),
+    ),
+    SearchEntry(
+      id: 'settings-models',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubModelRow,
+      icon: AppIconography.model,
+      title: l10n.libraryModelsAgentsTitle,
+      // The hub says "Models & agents"; the screen spells it out.
+      keywords:
+          '${l10n.settingsHubSearchModelsAliases} '
+          '${l10n.e7LibraryModelsAndAgents}',
+      // The model picker is the catalogue: the same list, where choosing
+      // one is what a person came for.
+      pages: const ['model-picker-sheet'],
+      gate: _catalog,
+      open: (context, _) async => showModelPicker(context),
+    ),
+    // The Codex account, when the Providers row already leads to the
+    // providers (a server with both): otherwise that row is its door.
+    SearchEntry(
+      id: 'settings-accounts',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubProvidersRow,
+      icon: AppIconography.person,
+      title: l10n.settingsHubAccounts,
+      keywords:
+          '${l10n.settingsHubSearchAccountsAliases} ${l10n.agentAccountTitle}',
+      pages: const ['agent-account'],
+      gate: (scope) => _account(scope) && _catalog(scope),
+      open: _screen(
+        (scope) => AgentAccountScreen(connection: scope.controller),
+      ),
+    ),
+    // Tools' rows (plugins-settings and external-agents moved inside it).
+    SearchEntry(
+      id: 'settings-mcp',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubToolsRow,
+      icon: AppIconography.network,
+      title: l10n.libraryMcpTitle,
+      // "Add MCP server" is a button on this screen, so its title leads here.
+      keywords:
+          '${l10n.settingsHubSearchMcpAliases} ${l10n.mcpAdd} '
+          '${l10n.e7LibraryMCPAndIntegrations}',
+      pages: const ['integrations', 'mcp-setup'],
+      gate: _catalog,
+      serverGate: _catalog,
+      open: _screen(
+        (scope) => IntegrationsScreen(
+          controller: scope.controller,
+          mode: IntegrationsMode.mcp,
+        ),
+      ),
+    ),
+    SearchEntry(
+      id: 'settings-commands-tools',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubToolsRow,
+      icon: AppIconography.play,
+      title: commandsAndTools,
+      keywords: l10n.settingsHubSearchCommandsAliases,
+      pages: const ['capabilities'],
+      gate: _catalog,
+      serverGate: _catalog,
+      open: _screen(
+        (scope) => CapabilitiesScreen(controller: scope.controller),
+      ),
+    ),
+    SearchEntry(
+      id: 'settings-category-plugins',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubToolsRow,
+      icon: AppIconography.extensions,
+      title: l10n.teamUiPluginsTitle,
+      keywords: l10n.settingsHubSearchPluginsAliases,
+      pages: const ['plugins-settings'],
+      // One Plugins screen: "In this app" needs a saved server, "On the
+      // server" needs the plugin inventory. Either is enough for the row.
+      gate: _plugins,
+      open: _screen(
+        (scope) => PluginsSettingsScreen(controller: scope.controller),
+      ),
+    ),
+    SearchEntry(
+      id: 'settings-external-agents',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubToolsRow,
+      icon: AppIconography.support,
+      title: l10n.a2aTitle,
+      keywords: l10n.settingsHubSearchExternalAgentsAliases,
+      pages: const ['external-agents'],
+      open: (context, scope) => openExternalAgents(context, scope.controller),
+    ),
+    SearchEntry(
+      id: 'library-import-session',
+      kind: SearchEntryKind.destination,
+      parent: l10n.globalSessionsTitle,
+      icon: AppIconography.fileUpload,
+      title: l10n.importTitle,
+      keywords: l10n.e7LibrarySearchImportAliases,
+      pages: const ['session-import'],
+      gate: _canImport,
+      open: _screen(
+        (scope) => SessionImportScreen(controller: scope.controller),
+      ),
+    ),
+    SearchEntry(
+      id: 'settings-privacy-data-use',
+      kind: SearchEntryKind.insideSettings,
+      // About's privacy tab merged into Privacy and data (P3.10).
+      parent: l10n.settingsHubPrivacyRow,
+      icon: AppIconography.policy,
+      title: l10n.privacyPolicyTitle,
+      keywords:
+          '${l10n.e7SettingsUi92} ${l10n.settingsHubSearchAboutAliases} '
+          '${l10n.e7SettingsDetailUi17}',
+      pages: const ['privacy-settings'],
+      open: (context, _) => showPrivacyPolicy(context),
+    ),
+    // The demo is the first-run welcome's "Just show me"; once a server is
+    // saved, the setup guide is where it stays reachable.
+    SearchEntry(
+      id: 'settings-try-demo',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.onboardingSetupGuide,
+      icon: AppIconography.play,
+      title: l10n.settingsTryDemo,
+      keywords: '${l10n.demoScreenTitle} ${l10n.demoScreenSimulated}',
+      pages: const ['demo'],
+      open: _screen((_) => const DemoScreen()),
+    ),
+    // About holds the tips, the shortcuts and the open source notices.
+    SearchEntry(
+      id: 'library-keyboard-shortcuts',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.aboutTitle,
+      icon: AppIconography.keyboard,
+      title: l10n.e7LibraryKeyboardShortcuts,
+      keywords: l10n.e7LibrarySearchShortcutsAliases,
+      // The shortcut layer must be discoverable without already knowing a
+      // shortcut, and means nothing without a keyboard.
+      gate: (scope) => scope.desktop,
+      open: (context, _) => showShortcutsHelp(context),
+    ),
+    SearchEntry(
+      id: 'settings-show-tips-again',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.aboutTitle,
+      icon: AppIconography.idea,
+      title: l10n.discoverShowTipsAgain,
+      keywords: l10n.discoverShowTipsAliases,
+      // About's row is the control itself; from anywhere else, open About
+      // arrived at it.
+      open: _screen(
+        (scope) => KitArrivalScope(
+          rowId: 'settings-show-tips-again',
+          child: AboutScreen(controller: scope.controller),
+        ),
+      ),
+    ),
+    SearchEntry(
+      id: 'settings-voice-notices',
+      kind: SearchEntryKind.insideSettings,
+      // About › Open source holds every licence, the voice models' too.
+      parent: l10n.aboutTitle,
+      icon: AppIconography.policy,
+      title: l10n.e7SettingsUi94,
       keywords:
           '${l10n.settingsHubSearchAboutAliases} ${l10n.e7SettingsDetailUi18}',
-      pages: const ['about', 'about-open-source-tab'],
-      open: _screen((_) => const AboutScreen(initialTab: 1)),
+      pages: const ['voice-notices'],
+      gate: (scope) => scope.platform.supportsVoice,
+      open: (context, _) async => showVoiceNotices(context),
     ),
 
     // ---- Inside second-level settings screens ------------------------

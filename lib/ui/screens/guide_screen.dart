@@ -7,6 +7,7 @@ import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_icon.dart';
 import '../kit/kit_notice.dart';
+import '../kit/kit_page_route.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_screen.dart';
@@ -14,6 +15,7 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../setup_commands.dart';
+import 'demo_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'servers_screen.dart' show ServersRouteRequest;
 
@@ -128,6 +130,26 @@ class GuideScreen extends StatelessWidget {
                 supportingMaxLines: 2,
                 trailing: const _Chevron(),
                 onTap: () => openPhoneSetupStart(context),
+              ),
+            ],
+          ),
+        ],
+        // Not ready to connect anything yet: the offline demo (the welcome's
+        // "Just show me"), still one tap away once a server is saved. The
+        // welcome that embeds this guide offers it itself.
+        if (!embedded) ...[
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            children: [
+              KitRow(
+                key: const ValueKey('settings-try-demo'),
+                leading: KitRow.icon(context, AppIconography.play),
+                title: l10n.settingsTryDemo,
+                supporting: TextSpan(text: l10n.demoScreenSimulated),
+                supportingMaxLines: 2,
+                trailing: const _Chevron(),
+                onTap: () =>
+                    pushKitPage<void>(context, (_) => const DemoScreen()),
               ),
             ],
           ),

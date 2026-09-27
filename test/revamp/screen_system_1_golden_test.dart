@@ -166,7 +166,7 @@ void main() {
         tester,
         'system_about_open_source',
         light: light,
-        home: const AboutScreen(initialTab: 1),
+        home: const AboutScreen(),
         then: () async {
           await tester.scrollUntilVisible(
             find.byKey(const ValueKey('about-all-licences')),

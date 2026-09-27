@@ -10636,12 +10636,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Connect a computer or run OpenCode on this phone'**
-  String get e7SettingsUi91;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Privacy and data use'**
   String get e7SettingsUi92;
 
@@ -25046,7 +25040,7 @@ abstract class AppLocalizations {
   /// Settings hub row and screen title: read-state sync and unsent work held on this device.
   ///
   /// In en, this message translates to:
-  /// **'Privacy and local data'**
+  /// **'Privacy and data'**
   String get settingsHubPrivacyRow;
 
   /// Shown when the settings search has no matching rows.
@@ -25204,6 +25198,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'about version licenses open source notices privacy data'**
   String get settingsHubSearchAboutAliases;
+
+  /// Settings hub group label: the agent's model, providers, tools and AI Team.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get settingsHubGroupAgent;
+
+  /// Settings hub group label: how conversations run and show.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get settingsHubGroupConversations;
+
+  /// Settings hub group label: notifications, keep running, appearance, privacy and usage of this app.
+  ///
+  /// In en, this message translates to:
+  /// **'This app'**
+  String get settingsHubGroupThisApp;
+
+  /// Settings hub row: model providers and their keys, or the Codex account on Codex.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers and accounts'**
+  String get settingsHubProvidersRow;
+
+  /// Settings hub row: MCP servers, commands, skills, tools, plugins and external agents.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get settingsHubToolsRow;
+
+  /// Settings hub switch: open the model's reasoning under each answer in every conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reasoning'**
+  String get settingsHubShowReasoning;
+
+  /// Settings hub switch: show each message's time, tokens and cost in every conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show timestamps and usage'**
+  String get settingsHubShowTimestamps;
+
+  /// Muted line under a Settings hub group: how many of its rows the connected server cannot serve.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 setting isn\'t available on this server} other{{count} settings aren\'t available on this server}}'**
+  String settingsHubUnavailableCount(int count);
+
+  /// Action on the Settings hub's unavailable line: opens Available on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get settingsHubUnavailableWhy;
+
+  /// Tools page: the MCP row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers that give the agent more tools'**
+  String get toolsHubMcpSubtitle;
+
+  /// Tools page: the commands and tools row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Slash commands, skills, the model\'s tools and references'**
+  String get toolsHubCatalogSubtitle;
+
+  /// Tools page: the Plugins row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Add-ons on the server and in this app'**
+  String get toolsHubPluginsSubtitle;
+
+  /// Tools page: the External agents row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on other services you can hand work to'**
+  String get toolsHubExternalAgentsSubtitle;
+
+  /// Privacy and data: the row that opens the privacy policy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get privacyPolicyTitle;
+
+  /// About: label of the group with Show tips again and keyboard shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips and shortcuts'**
+  String get aboutHelpSection;
+
+  /// Search aliases for the Tools row; preserve English terms to allow either language.
+  ///
+  /// In en, this message translates to:
+  /// **'tools mcp integrations commands skills references slash capabilities plugins external agents a2a'**
+  String get settingsHubSearchToolsAliases;
 
   /// Plugins screen section header: plugins that ship with this app (AI Team).
   ///
@@ -25654,12 +25744,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available on this server'**
   String get capabilityScreenTitle;
-
-  /// No description provided for @capabilityScreenSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What this server can and cannot do'**
-  String get capabilityScreenSubtitle;
 
   /// No description provided for @capabilityScreenAliases.
   ///
@@ -37599,12 +37683,6 @@ abstract class AppLocalizations {
   /// **'Report a bug on GitHub'**
   String get aboutReportBugOnGithub;
 
-  /// screen-system-1: About: accessible name of the Privacy / Open source tab strip.
-  ///
-  /// In en, this message translates to:
-  /// **'Documents'**
-  String get aboutDocuments;
-
   /// screen-system-1: About › Open source: row that opens every bundled package license.
   ///
   /// In en, this message translates to:
@@ -39734,24 +39812,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uses OpenCode\'s official installer; restart the server afterwards.'**
   String get serverSettingsUpdateHint;
-
-  /// Settings hub: the group of settings that belong to this phone and app.
-  ///
-  /// In en, this message translates to:
-  /// **'This phone'**
-  String get settingsHubThisPhone;
-
-  /// Settings hub: the row that opens help, tips, shortcuts and diagnostics.
-  ///
-  /// In en, this message translates to:
-  /// **'Help'**
-  String get settingsHubHelpRow;
-
-  /// Settings hub: what the Help page holds.
-  ///
-  /// In en, this message translates to:
-  /// **'Guide, tips, shortcuts and diagnostics'**
-  String get settingsHubHelpSubtitle;
 
   /// Settings hub: the default model row.
   ///

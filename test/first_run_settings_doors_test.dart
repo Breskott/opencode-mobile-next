@@ -121,8 +121,9 @@ void main() {
       }
     }
 
-    // What left the welcome is found by search: Tailscale and External
-    // agents as ways of Saved servers › Add server, the guide inside Help.
+    // What left the welcome is found by search: Tailscale as a way of
+    // Saved servers › Add server, External agents inside Tools; the guide
+    // is a hub row.
     Future<void> searchAndOpen(String query, String id) async {
       await tester.enterText(find.byKey(const Key('library-search')), query);
       // The field settles its query after a short pause.
@@ -138,7 +139,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    await searchAndOpen(_en.onboardingSetupGuide, 'settings-setup-guide');
+    // The guide is a hub row of its own now (target-ia §1.3 row 19).
+    await tester.enterText(
+      find.byKey(const Key('library-search')),
+      _en.onboardingSetupGuide,
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    await open('settings-setup-guide');
     expect(find.byType(GuideScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
