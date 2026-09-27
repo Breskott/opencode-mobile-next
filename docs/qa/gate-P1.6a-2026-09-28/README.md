@@ -1,6 +1,6 @@
 # P1.6a — Claude Code under in-app proot
 
-**Final decision: NO-GO for marking `gate-P1.6a:go`.** The approved physical ARM64 attempt installed Ubuntu and essentials under the preview app UID, but two unchanged Node-install attempts failed with DNS resolution errors. The phone was later found in Doze; an awake repeat was not completed. Claude/Paseo ARM64 execution, gateway and PTY proof remain missing. This is an incomplete feasibility gate, not proof of ARM64 incompatibility. See the [ARM64 follow-up](#arm64-owner-phone-follow-up-2026-09-28) and [measurements](arm64-measurements.json). **The x86_64 feasibility experiment passed:** Claude Code installs and runs under the real app UID, and the existing Dart Paseo gateway can create a Claude agent, submit a signed-out prompt, retrieve the authentication error as conversation history, delete the conversation, and reconnect. This is not a finding that proot cannot run Claude.
+**Final decision: NO-GO for marking `gate-P1.6a:go`.** The owner-authorized awake ARM64 retry passed Ubuntu, essentials, Node DNS/HTTP and both normal and IPv4 Node downloads. Claude's install/verification step failed because its ARM64 native optional dependency was absent. The phone subsequently entered Dozing, triggering an immediate stop of the probe; only cleanup followed. Paseo, gateway, PTY and authentication remain unverified on ARM64. This is incomplete feasibility evidence, not proof of ARM64 incompatibility. See the [awake retry](#arm64-awake-retry-2026-09-28) and its [measurements](arm64-awake-measurements.json). **The x86_64 feasibility experiment passed:** Claude Code installs and runs under the real app UID, and the existing Dart Paseo gateway can create a Claude agent, submit a signed-out prompt, retrieve the authentication error as conversation history, delete the conversation, and reconnect. This is not a finding that proot cannot run Claude.
 
 The gate definition in `docs/ux-system/revamp/work-units.json` calls for ARM64 and x86_64 emulator evidence. This job explicitly prescribed `OC_API35`, which is x86_64; the installed API 35 image is x86_64 only. No ARM64 claim is inferred from an upstream download existing. The owner's phone was not accessed during that x86_64 run; the separately approved ARM64 follow-up is recorded below. The user explicitly requested **testing without authentication and marking authentication unverified**: no account credentials were used and no successful Claude turn is claimed. Keep P1.6b unavailable until the coordinator accepts the remaining gate evidence; this report does not change the work-unit gate state.
 
@@ -65,7 +65,7 @@ An idle snapshot with one retained signed-out agent had 7 children plus Flutter.
 3. **The current CLI is not Node-only.** npm installs the same platform native Claude executable. Node is required by npm and Paseo, but does not make native execution problems disappear. Upstream `2.1.112` was the last inspected `cli.js` package; `2.1.113` switched to native packages. No supported downgrade to the older JS line was established for this SDK.
 4. Paseo 0.9.2 pins Agent SDK **0.3.246** and resolves `claude` from PATH into `pathToClaudeCodeExecutable`. The standalone **2.1.283** executable was used; its upstream manifest explicitly lists SDK 0.3.246 as tested. npm still installs the SDK's separate native payload (CLI 2.1.246), which consumes disk even when bypassed. Budget both payloads.
 5. Foreground npm scripts, `UV_USE_IO_URING=0`, the existing proot options and the bundled native PTY prebuild were sufficient here. No SELinux relaxation, seccomp removal, process-limit increase, root Android execution of Claude, alternate kernel, or system compiler was needed.
-6. Bubblewrap/namespaces, sandboxed tool execution, MCP workloads, long-lived background operation, Android service timeouts, simultaneous servers, ARM64 native packages and an authenticated Claude turn were not validated. Do not derive any of these from `--version` or daemon health.
+6. Bubblewrap/namespaces, sandboxed tool execution, MCP workloads, long-lived background operation, Android service timeouts, simultaneous servers, Claude/Paseo ARM64 native packages and an authenticated Claude turn were not validated. Do not derive any of these from `--version` or daemon health.
 
 ### Exact launch used for the successful experiment
 
@@ -101,7 +101,7 @@ ln -sf /opt/oc-agents/bin/paseo /usr/local/bin/paseo
 
 These pin the top-level packages, not all transitive npm ranges. A future GO manifest must freeze and verify that dependency graph, provide trustworthy download-byte accounting, and validate check/install/remove on both ABIs. Preserve projects and sign-in on ordinary removal; forgetting sign-in must be a separate explicit action. Do not reuse a heuristic provider `available` state as proof of sign-in.
 
-Checksums and observed versions are recorded in [candidate-pins.json](candidate-pins.json). ARM64 hashes are upstream/source metadata only; their binaries were not executed.
+Checksums and observed versions are recorded in [candidate-pins.json](candidate-pins.json). The awake ARM64 retry verified and executed Node. Claude ARM64 and Paseo hashes remain upstream/source metadata only; their ARM64 binaries were not executed.
 
 ## Reproduce and verify
 
@@ -151,7 +151,7 @@ The test uses the production `PaseoGateway`/`PaseoTransport`; it emits only fixe
 
 ## ARM64 owner-phone follow-up (2026-09-28)
 
-**Final: NO-GO; ARM64 Claude/Paseo runtime remains unverified.** This job explicitly authorizes the owner's physical ARM64 phone for the isolated preview probe only, replacing the earlier emulator-only scope. Authentication remains unverified. Finish line: repeat the signed-out native/gateway measurements, remove the preview, verify the stable package is unchanged, and issue a bounded feasibility decision. Non-goals: product integration, sign-in, device-setting changes, or release delivery.
+**Initial attempt: NO-GO; superseded only where explicitly measured by the awake retry below.** This job explicitly authorizes the owner's physical ARM64 phone for the isolated preview probe only, replacing the earlier emulator-only scope. Authentication remains unverified. Finish line: repeat the signed-out native/gateway measurements, remove the preview, verify the stable package is unchanged, and issue a bounded feasibility decision. Non-goals: product integration, sign-in, device-setting changes, or release delivery.
 
 ### Isolation and build
 
@@ -163,7 +163,7 @@ The test uses the production `PaseoGateway`/`PaseoTransport`; it emits only fixe
 - The release probe is not debuggable. Its opt-in physical mode uses an authenticated HTTP client over an explicitly reversed loopback port; it exports no app command endpoint. It creates only the preview sandbox, rejects non-ARM64/emulator physical targets, and attempts to stop its owned service when transport ends. [Phone host helper](../../../tool/qa/p16a_phone_host.py) keeps the new test tokens in a mode-0700 scratch directory, never in source. Default emulator file-polling mode remains available.
 - The QA target intentionally renders a blank screen. The first readiness attempt exposed a host-helper chunked-body bug; the helper was fixed and its chunked JSON regression check passed. The same APK then reported ready after a preview-only restart.
 
-### ARM64 results and unverified measurements
+### Initial ARM64 results and unverified measurements
 
 | Step | Observed ARM64 result |
 | --- | --- |
@@ -180,7 +180,7 @@ The phone was subsequently observed in **Dozing**, with `mDeviceIdleMode=true`; 
 
 Process observations are preview-UID-only, not other-app data. They are sampled process counts, not threads or guaranteed peaks; RSS double-counts shared pages. A sampler gap after the failed sequence means the second Node attempt has no claimed process/RSS coverage. Waiting-phase samples are not installation measurements. The phone's RAM and foreground state differ from the emulator; no background or concurrent-server capacity claim follows.
 
-The following requested measurements could not be reached: installed Node version/archive checksum/size; Claude and Paseo ARM64 versions/checksums/install sizes and times; three Claude launches; guest non-root `oc` execution; signed-out auth/prompt behavior; Paseo health/start/restart/owned-stop; the Dart gateway test; node-pty; daemon/prompt process and RSS peaks; idle PSS/SwapPss; and final full rootfs size. No ARM64 result is inferred from the x86_64 evidence or upstream hashes. Authentication was not attempted on the phone and remains unverified. The Dart gateway test was not run against an unavailable daemon.
+In this initial attempt, the following requested measurements could not be reached: installed Node version/archive checksum/size; Claude and Paseo ARM64 versions/checksums/install sizes and times; three Claude launches; guest non-root `oc` execution; signed-out auth/prompt behavior; Paseo health/start/restart/owned-stop; the Dart gateway test; node-pty; daemon/prompt process and RSS peaks; idle PSS/SwapPss; and final full rootfs size. No ARM64 result is inferred from the x86_64 evidence or upstream hashes. Authentication was not attempted on the phone and remains unverified. The Dart gateway test was not run against an unavailable daemon.
 
 ### Cleanup and verification
 
@@ -204,7 +204,55 @@ tool/qa/machine_lock.sh build -- "$FLUTTER" build apk --release \
 
 Inspect the APK package/ABI before installation. Every adb command must select the owner's approved exact serial. Reverse `tcp:18761` to `tcp:18761`; launch only the explicit preview activity. The app posts `/ready`, polls `/request`, and posts `/response` with the new bearer token. Atomically place one request JSON at a time in the private host scratch directory; IDs use letters, digits, `_` or `-`. Existing `status/install/run/start/stop` operations are preserved; `measure` reads only preview-rootfs allocated size and the app's own UID/seccomp/SELinux context. Responses are written to `<id>.json` privately. Native `run` still logs stdout, so redirect all authentication/daemon output and emit only allowlisted summaries. This is not an exported app server.
 
-Keep the preview awake and visible for this foreground-only experiment without changing device settings. If polling ends, a queued command is not execution evidence; check it was not consumed before a controlled preview restart. Do not replay an in-flight or lost-response command blindly. Stop on adb disconnection. At the end remove the preview, the specific reverse/forward, private scratch/build artifacts and throwaway key, then repeat the stable-package metadata comparison. A future successful awake run must still measure every skipped item above; it must not reuse this partial attempt as passing coverage.
+For an owner-approved awake retry, check `dumpsys power` before every phone step and during long-running commands. Require `mWakefulness=Awake` and `mDeviceIdleMode=false`; stop the probe immediately and report if either changes. Keep the preview visible without changing device settings or sending wake commands. If polling ends, a queued command is not execution evidence; check it was not consumed before a controlled preview restart. Do not replay an in-flight or lost-response command blindly. Stop on adb disconnection. At the end remove the preview, the specific reverse/forward, private scratch/build artifacts and throwaway key, then repeat the stable-package metadata comparison. A future successful awake run must still measure every skipped item above; it must not reuse this partial attempt as passing coverage.
+
+## ARM64 awake retry (2026-09-28)
+
+**Final verdict: NO-GO.** The owner woke and unlocked the phone and authorized this repeat at approximately 03:30 Asia/Dubai. Node now passes; Claude's native ARM64 package was not installed, so the full runtime gate remains incomplete. No P1.6b component manifest is issued. The **dark/blank preview screen is expected**: this QA entrypoint deliberately renders no visible UI while its private command loop runs.
+
+### Repeat isolation and build
+
+The previous temporary APK had been removed, so the unchanged QA target at `d723f0c4` was rebuilt under `tool/qa/machine_lock.sh build`, using pinned Flutter 3.47.1, release ARM64, `ocPreview=true`, build number 1 and a fresh private transport token. The whole Flutter command took **323.592 s** (Gradle **312.5 s**). APK: **48,585,885 bytes**, SHA-256 `4d8ea08da49a66da67b71ce60efa9eeb514a58642b6287308d75a712ff663867`. Preview package ID and ARM64-only payload were checked before streamed installation, which took **13.368 s**, including the preinstall awake check. The temporary signing key and `android/key.properties` were removed after building. The OpenJDK vendor deviation documented above still applies.
+
+Every adb call selected the exact approved serial. Preview was absent before reinstall; the new preview UID was **10476**, seccomp **2**, SELinux `untrusted_app`. The stable app was accessed only for the explicitly requested package metadata comparison. No app data outside preview was read.
+
+Before each phone action/request, the host checked connection state and `dumpsys power`. During commands it checked roughly every two seconds, alongside the once-per-second preview-only process observer. Every completed measurement below began and ended with `mWakefulness=Awake`, `mDeviceIdleMode=false`.
+
+### Awake measurements
+
+| Step | Result | Duration / size |
+| --- | --- | --- |
+| Ubuntu native install | Ready; existing native checksum verification | **13.298 s** request/poll bound; **111,331 KiB** fresh rootfs |
+| Essentials | Exit 0; Git **2.43.0** | **57.748 s** |
+| Node URL lookup / HTTP HEAD | Default and explicit IPv4 both exit 0 | **1.326 s** combined |
+| Unchanged Node installer | Exit 0; Node **24.21.0**, npm **11.19.0** | **28.163 s**, **208,349 KiB** `/opt/node` |
+| Explicit IPv4 Node repeat | Exit 0; same versions, archive hash and installed size | **29.883 s** |
+| Claude **2.1.283** install/verification | Step exit **1**; native optional dependency absent | **19.227 s**; installed size/checksum unverified |
+
+Both Node runs downloaded **57,824,078 bytes**, SHA-256 `724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5`. The successful unchanged installer supersedes the earlier DNS failure as the latest observed result. It does not establish the cause of that earlier failure or prove an IPv6-specific fault.
+
+Claude npm output reported one package added and showed that `install.cjs` ran. That script reported `@anthropic-ai/claude-code-linux-arm64` missing; the subsequent CLI verification failed with `claude native binary not installed`. npm also emitted an `allowScripts` warning, but the observed postinstall execution means that warning alone does not explain the missing native dependency. No native Claude version or checksum was obtained, and the reason the optional package was absent was not established. No install workaround or package downgrade was attempted.
+
+| Completed phase | Samples | Maximum sampled children | Maximum summed RSS, including Flutter |
+| --- | ---: | ---: | ---: |
+| Essentials | 46 | 11 | 316,808 KiB |
+| Node, unchanged | 18 | 6 | 287,308 KiB |
+| Node, IPv4 | 24 | 5 | 262,416 KiB |
+| Claude failed install | 15 | 3 | 354,372 KiB |
+
+Counts use only preview UID 10476, exclude Flutter from children, and include it in RSS. Phase samples are bounded by request start and response completion, excluding later idle time. Maximum inter-sample gap was **4.074 s**. These observed counts are below the previously read, unchanged `max_phantom_processes=32`; the limit is shared and does not reserve capacity for this component. Sampling can miss peaks and RSS double-counts shared pages. Paseo/Claude-prompt capacity, idle PSS and final full rootfs size remain unmeasured.
+
+At **03:40:57 Asia/Dubai**, the observer detected `mWakefulness=Dozing` with `mDeviceIdleMode=false`. The stop sentinel cancelled any queued request and prohibited further probe commands. The Claude failure had already completed while awake; it is not attributed to this later Dozing observation. No later install, diagnostic, auth, gateway or PTY step ran. There was no settings change, wake command or wait for another wake cycle; only the authorized removal and metadata verification followed.
+
+Paseo install/version/checksum/health/start/restart/owned-stop, the Dart gateway, node-pty, non-root `oc` execution, three Claude launches and signed-out auth/prompt behavior remain **unverified on ARM64**. No account sign-in was attempted; authentication remains **unverified**. Successful x86_64 evidence is not substituted for these missing measurements.
+
+### Retry cleanup and validation
+
+Preview uninstall returned **Success**. The required `pm list packages | grep -Fx package:io.github.eslamasabry.opencode_mobile.preview` check found nothing, and a UID-10476 process check found **zero processes**. The specific reverse on port 18761 was removed; no Paseo forward or daemon had been created. Cleanup recorded power state before each action even though the probe had stopped for Dozing.
+
+The stable app remains present at **versionCode 2055**. Its version, first-install and last-update timestamps, and APK path exactly match the before snapshot. No stable app data was read or changed. Removed preview guest data through uninstall, host private files/tokens, temporary APK/local build outputs and signing material. The sampler stopped on Dozing; only the exact owned host-server PID was terminated.
+
+The release build passed. QA source files are unchanged from the prior analyzed commit; no new Flutter analyzer/full-suite run is claimed for this documentation-only update. JSON parsing, local evidence links and whitespace checks passed. Sanitized machine-readable evidence is in [arm64-awake-measurements.json](arm64-awake-measurements.json). A future owner-authorized awake retry must diagnose the missing native optional dependency and complete the remaining measurements before GO.
 
 ## Primary sources checked on 2026-09-28
 

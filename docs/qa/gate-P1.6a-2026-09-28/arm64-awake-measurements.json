@@ -1,0 +1,142 @@
+{
+  "decision": "NO-GO",
+  "attempt": "Awake retry requested 2026-09-28 ~03:30 Asia/Dubai",
+  "candidateBase": "d723f0c4",
+  "previewPackage": "io.github.eslamasabry.opencode_mobile.preview",
+  "previewUid": 10476,
+  "build": {
+    "exitCode": 0,
+    "elapsedSeconds": 323.5920556840001
+  },
+  "apk": {
+    "apkBytes": 48585885,
+    "apkSha256": "4d8ea08da49a66da67b71ce60efa9eeb514a58642b6287308d75a712ff663867",
+    "installOutput": "Performing Streamed Install\nSuccess\n",
+    "installSeconds": 13.367539189000126
+  },
+  "ubuntu": {
+    "readySeconds": 13.297591146999366,
+    "freshRootfsKiB": 111331,
+    "seccomp": 2,
+    "selinuxDomain": "untrusted_app"
+  },
+  "essentials": {
+    "exitCode": 0,
+    "elapsedMs": 57748,
+    "gitVersion": "2.43.0"
+  },
+  "network": {
+    "defaultHeadExit": 0,
+    "ipv4HeadExit": 0,
+    "elapsedMs": 1326,
+    "earlierDnsFailureCauseProven": false
+  },
+  "node": {
+    "version": "24.21.0",
+    "npmVersion": "11.19.0",
+    "archiveBytes": 57824078,
+    "archiveSha256": "724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5",
+    "installedKiB": 208349,
+    "attempts": [
+      {
+        "id": "node",
+        "exitCode": 0,
+        "elapsedMs": 28163
+      },
+      {
+        "id": "node_ipv4",
+        "exitCode": 0,
+        "elapsedMs": 29883
+      }
+    ]
+  },
+  "claude": {
+    "requestedVersion": "2.1.283",
+    "stepExitCode": 1,
+    "elapsedMs": 19227,
+    "npmReportedPackagesAdded": 1,
+    "postinstallRan": true,
+    "missingPackage": "@anthropic-ai/claude-code-linux-arm64",
+    "nativeBinaryExecuted": false,
+    "checksumVerified": false,
+    "reasonNativeDependencyMissingProven": false,
+    "failure": "Native optional package absent; claude verification failed"
+  },
+  "processSamples": {
+    "method": "About once per second; numeric preview UID filtered on device; only phase start through response completion counted; Flutter excluded from children and included in RSS",
+    "phaseStats": {
+      "essentials": {
+        "samples": 46,
+        "maxChildren": 11,
+        "maxRssKiB": 316808
+      },
+      "node": {
+        "samples": 18,
+        "maxChildren": 6,
+        "maxRssKiB": 287308
+      },
+      "node_ipv4": {
+        "samples": 24,
+        "maxChildren": 5,
+        "maxRssKiB": 262416
+      },
+      "claude": {
+        "samples": 15,
+        "maxChildren": 3,
+        "maxRssKiB": 354372
+      }
+    },
+    "maxInterSampleGapSeconds": 4.074015140533447,
+    "phantomLimitFromEarlierPhoneObservation": 32,
+    "peakGuarantee": false,
+    "rssIsPss": false
+  },
+  "power": {
+    "allExecutedStepsStartedAndCompletedAwake": true,
+    "stopObservation": {
+      "t": 1790552457.569675,
+      "step": "adb:shell",
+      "mWakefulness": "Dozing",
+      "mDeviceIdleMode": "false"
+    },
+    "stopLocalTime": "2026-09-28T03:40:57.569675+04:00",
+    "cleanupOnlyAfterStop": true,
+    "settingsChanged": false
+  },
+  "unverified": [
+    "Claude native version/checksum/three launches",
+    "Claude install size and npm cache size",
+    "Paseo install/version/checksum",
+    "non-root Linux oc execution",
+    "signed-out auth status/login URL/prompt",
+    "Paseo health/start/restart/owned-stop",
+    "Dart Paseo gateway",
+    "node-pty",
+    "daemon/prompt RSS and process counts",
+    "idle PSS/SwapPss",
+    "final full rootfs size",
+    "authentication"
+  ],
+  "cleanup": {
+    "reverseRemoval": "",
+    "uninstall": "Success",
+    "previewPackageAfter": "",
+    "stableMetadataIdentical": true,
+    "stableVersionCode2055": true,
+    "stablePackagePresent": true,
+    "previewUidProcessesAfter": [],
+    "completedAtUnix": 1790552557.8372986
+  },
+  "validation": {
+    "releaseBuildPassed": true,
+    "gatewayTestRun": false,
+    "productSuiteRun": false,
+    "sourceUnchangedFromPriorAnalyzedCommit": true
+  },
+  "hostCleanup": {
+    "privateScratchRemoved": true,
+    "temporarySigningKeyAndPropertiesRemoved": true,
+    "apkAndLocalBuildCachesRemoved": true,
+    "ownedHostServerAndObserverStopped": true
+  }
+}
