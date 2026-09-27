@@ -22943,12 +22943,6 @@ abstract class AppLocalizations {
   /// **'Stop {count}'**
   String termuxProcsStopConfirm(int count);
 
-  /// Button that stops one process
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get termuxProcsStop;
-
   /// Accessibility label of a row's Stop button
   ///
   /// In en, this message translates to:
@@ -22966,12 +22960,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It gets a polite stop, then a forced one after 5 seconds.'**
   String get termuxProcsStopOneBody;
-
-  /// Two-step confirmation cancel button
-  ///
-  /// In en, this message translates to:
-  /// **'Keep'**
-  String get termuxProcsKeep;
 
   /// Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled
   ///
@@ -27592,12 +27580,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode has been busy in {project} for {duration} with nothing to do'**
   String workRunawayInProject(String project, String duration);
-
-  /// Status line action opening the Running now screen
-  ///
-  /// In en, this message translates to:
-  /// **'See what\'s running'**
-  String get workRunawaySee;
 
   /// Connecting screen title while the phone's own server starts
   ///
@@ -41606,6 +41588,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep in backlog'**
   String get teamStartRunKeepInBacklog;
+
+  /// Announced once after the Work status line's Stop ended the leftover process
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped {helper}'**
+  String workRunawayStopped(String helper);
+
+  /// Work status line when stopping the leftover process did not end it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop {helper}. Try again, or stop it from Termux.'**
+  String workRunawayStopFailed(String helper);
 }
 
 class _AppLocalizationsDelegate
