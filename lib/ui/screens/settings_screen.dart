@@ -23,7 +23,6 @@ import '../kit/kit.dart';
 import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/confirm_sheet.dart';
-import '../widgets/language_picker.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import 'host_management_screen.dart';
@@ -64,6 +63,12 @@ enum SettingsGroup {
 /// fourth tab of the shell ([embedded]) and the screen every other entry
 /// point pushes, so a setting has exactly one home. Rows the connected server
 /// cannot serve are absent, and a group with no rows is absent.
+///
+/// Kit only (screen-settings-1): a [KitScreen] with a pinned
+/// [KitSearchField] and one [KitRowGroup] panel per group. From expanded it
+/// is [KitScreen.twoPane]: the groups are the list pane and the chosen
+/// group's rows fill the detail pane; a row still opens its page. The new
+/// Settings structure waits for slice-P3.10 (map proposal "redesign").
 class SettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -95,9 +100,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _healthError;
   bool _checking = false;
 
+  /// The group in the detail pane (expanded and wider).
+  SettingsGroup? _selected;
+
+  /// Show tips again ran: the row says so in place of a snackbar (KIT-34).
+  bool _tipsReset = false;
+
   @override
   void initState() {
     super.initState();
+    _selected = widget.initialGroup;
     widget.controller.addListener(_connectionChanged);
     _checkHealth();
     final initial = widget.initialGroup;
@@ -175,9 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _open(Widget screen) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    await pushKitPage<void>(context, (_) => screen);
     if (mounted) setState(() {});
   }
 
@@ -188,19 +198,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Puts every one-time tip back. The row itself then says so: there is
+  /// no way to take the reset back, so no Undo bar (KIT-34).
   Future<void> _showTipsAgain() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final done = _settingsCopy(context).discoverShowTipsDone;
     await widget.controller.nudges.reset();
-    if (!mounted) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(done)));
+    if (mounted) setState(() => _tipsReset = true);
   }
 
   Widget _thisServerRow(ConnectionController controller) {
     final copy = _settingsCopy(context);
-    final theme = Theme.of(context);
     final healthy = _health?.healthy == true;
     final status = _checking
         ? copy.e7SettingsUi11
@@ -215,14 +221,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       key: const ValueKey('settings-connection-summary'),
       child: KitRow(
         key: const ValueKey('settings-category-server'),
+        // Healthy is the success colour with its word; a failed check keeps
+        // the neutral glyph and says so in words (LOOK-5).
         leading: KitRow.icon(
           context,
           AppIconography.server,
-          color: healthy
-              ? AppTheme.successOf(theme)
-              : _healthError != null
-              ? theme.colorScheme.error
-              : null,
+          color: healthy ? ThemeRoles.of(context).success : null,
         ),
         title: copy.settingsHubThisServer,
         supporting: TextSpan(
@@ -240,15 +244,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         supportingMaxLines: 2,
         // A failed probe offers the one fix in place; otherwise the row is a
         // plain door like its neighbours. The check itself shows as the
-        // screen's one loading bar (§4), not a spinner in the row.
+        // screen's one loading bar, not a spinner in the row.
         trailing: _healthError != null
-            ? IconButton(
+            ? KitIconButton(
                 key: const ValueKey('settings-server-try-again'),
                 tooltip: copy.commonRetry,
+                icon: AppIconography.retry,
                 onPressed: _checkHealth,
-                icon: const Icon(AppIconography.retry),
               )
-            : const _Chevron(),
+            : const KitChevron(),
         onTap: () => _open(ServerSettingsScreen(controller: controller)),
       ),
     );
@@ -265,13 +269,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final copy = _settingsCopy(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    _HubRow? row(String id, {String? subtitle, WidgetBuilder? builder}) {
+    _HubRow? row(
+      String id, {
+      String? subtitle,
+      WidgetBuilder? builder,
+      bool standalone = false,
+    }) {
       final entry = entries[id];
       if (entry == null) return null;
       return _HubRow(
         entry: entry,
         subtitle: subtitle,
         builder: builder,
+        standalone: standalone,
         onTap: () => _openEntry(entry, scope),
       );
     }
@@ -301,10 +311,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // the doors above (plan 5.7).
         row(
           'settings-disconnect',
+          standalone: true,
           // Error-coloured text, never a primary; the entry confirms first
           // (design standard §2).
           builder: (context) => Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+            padding: EdgeInsetsDirectional.only(
+              top: KitTokens.of(context).space2,
+            ),
             child: KitInset(
               child: KitButton.tertiary(
                 key: const ValueKey('settings-disconnect'),
@@ -434,7 +447,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             rowKey: 'settings-show-tips-again',
             icon: AppIconography.idea,
             title: copy.discoverShowTipsAgain,
-            subtitle: copy.discoverShowTipsSubtitle,
+            subtitle: _tipsReset
+                ? copy.discoverShowTipsDone
+                : copy.discoverShowTipsSubtitle,
             chevron: false,
             onTap: _showTipsAgain,
           ),
@@ -475,12 +490,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
+  static IconData _groupIcon(SettingsGroup group) => switch (group) {
+    SettingsGroup.connection => AppIconography.server,
+    SettingsGroup.conversation => AppIconography.chat,
+    SettingsGroup.agentSetup => AppIconography.agent,
+    SettingsGroup.thisApp => AppIconography.phone,
+    SettingsGroup.help => AppIconography.support,
+  };
+
+  /// One group: its rows on a panel under the group's name, then a
+  /// standalone row (Disconnect) set apart below the panel.
+  Widget _groupView(
+    ({_HubGroup group, List<_HubRow> rows}) entry, {
+    required bool scrollTarget,
+  }) {
+    final tokens = KitTokens.of(context);
+    final panel = [
+      for (final row in entry.rows)
+        if (!row.standalone) row.build(context),
+    ];
+    final apart = [
+      for (final row in entry.rows)
+        if (row.standalone) row.build(context),
+    ];
+    final column = Column(
+      key: ValueKey('settings-group-${entry.group.group.slug}'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (panel.isNotEmpty)
+          KitRowGroup(label: entry.group.title, children: panel)
+        else
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+            child: Semantics(
+              header: true,
+              child: KitText(entry.group.title, role: KitTextRole.label),
+            ),
+          ),
+        for (final row in apart)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+            child: row,
+          ),
+      ],
+    );
+    return scrollTarget
+        ? KeyedSubtree(key: _groupKeys[entry.group.group], child: column)
+        : column;
+  }
+
+  /// A search result section ("Inside settings", "Go to").
+  Widget _resultSection(
+    ({String slug, String title, List<SearchEntry> entries}) section,
+    SearchScope scope,
+  ) {
+    final copy = _settingsCopy(context);
+    return KitRowGroup(
+      key: ValueKey('search-results-${section.slug}'),
+      label: section.title,
+      children: [
+        for (final entry in section.entries)
+          _CategoryRow(
+            rowKey: 'search-result-${entry.id}',
+            icon: entry.icon,
+            title: entry.title,
+            subtitle: entry.parent == null
+                ? null
+                : copy.discoverSearchIn(entry.parent!),
+            onTap: () => _openEntry(entry, scope),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
     final copy = _settingsCopy(context);
+    final tokens = KitTokens.of(context);
     final scope = SearchScope.of(context, controller);
     final entries = {
       for (final entry in searchIndex(copy, scope)) entry.id: entry,
@@ -492,15 +580,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? searchEntries(copy, scope, _query)
         : const <SearchEntry>[];
     final matchedIds = {for (final entry in matches) entry.id};
-    final groups = [
+    final allGroups = [
       for (final group in _groups(controller, entries, scope))
+        (group: group, rows: group.rows),
+    ].where((entry) => entry.rows.isNotEmpty).toList();
+    final groups = [
+      for (final entry in allGroups)
         (
-          group: group,
+          group: entry.group,
           rows: searching
-              ? group.rows
+              ? entry.rows
                     .where((row) => matchedIds.contains(row.entry.id))
                     .toList()
-              : group.rows,
+              : entry.rows,
         ),
     ].where((entry) => entry.rows.isNotEmpty).toList();
     // This hub is the Settings tab, so that result would lead nowhere new.
@@ -530,99 +622,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final matchCount =
         groups.fold<int>(0, (total, entry) => total + entry.rows.length) +
         others.length;
+
+    void clear() {
+      _search.clear();
+      setState(() => _query = '');
+    }
+
+    final search = KitSearchField(
+      fieldKey: const Key('library-search'),
+      controller: _search,
+      label: l10n.librarySearchHint,
+      onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
+    );
+    final wide = KitScreen.showsDetail(context);
+
     // Not a lazy list: every group must exist for an entry point to scroll
-    // to it, and the hub is a few dozen plain rows.
-    final body = KitScreen(
-      // The health check of "This server" is the one thing that loads here.
-      loading: _checking,
-      loadingLabel: copy.e7SettingsUi11,
-      body: DesktopScrollbarArea(
-        builder: (scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
-          child: Column(
+    // to it, and the hub is a few dozen plain rows. One Column child keeps
+    // them all laid out inside the scroll view.
+    Widget hubList({required bool scrollTargets}) => DesktopScrollbarArea(
+      builder: (scrollController) => ListView(
+        key: const ValueKey('settings-hub-list'),
+        controller: scrollController,
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
-                child: TextField(
-                  key: const Key('library-search'),
-                  controller: _search,
-                  onChanged: (value) =>
-                      setState(() => _query = value.trim().toLowerCase()),
-                  decoration: InputDecoration(
-                    hintText: l10n.librarySearchHint,
-                    prefixIcon: const Icon(AppIconography.search),
-                    suffixIcon: _query.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: l10n.commonClearSearch,
-                            icon: const Icon(AppIconography.close),
-                            onPressed: () {
-                              _search.clear();
-                              setState(() => _query = '');
-                            },
-                          ),
-                  ),
-                ),
-              ),
-              for (final entry in groups)
-                KeyedSubtree(
-                  key: _groupKeys[entry.group.group],
-                  child: Column(
-                    key: ValueKey('settings-group-${entry.group.group.slug}'),
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _GroupLabel(entry.group.title),
-                      for (final row in entry.rows) row.build(context),
-                    ],
-                  ),
-                ),
-              for (final section in resultSections)
-                Column(
-                  key: ValueKey('search-results-${section.slug}'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _GroupLabel(section.title),
-                    for (final entry in section.entries)
-                      _CategoryRow(
-                        rowKey: 'search-result-${entry.id}',
-                        icon: entry.icon,
-                        title: entry.title,
-                        subtitle: entry.parent == null
-                            ? null
-                            : copy.discoverSearchIn(entry.parent!),
-                        onTap: () => _openEntry(entry, scope),
-                      ),
-                  ],
-                ),
-              if (_query.isNotEmpty)
+              if (searching && matchCount == 0)
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    matchCount == 0
-                        ? _settingsCopy(
-                            context,
-                          ).settingsHubNoResults(_search.text.trim())
-                        : l10n.librarySearchResults(
-                            matchCount,
-                            _search.text.trim(),
-                          ),
-                    key: const Key('library-search-summary'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.mutedOf(theme),
-                    ),
+                  padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+                  child: KitSearchNoMatch(
+                    key: const Key('library-search-summary-none'),
+                    query: _search.text.trim(),
+                    onClear: clear,
                   ),
                 ),
+              if (searching && matchCount > 0)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: tokens.gutter,
+                    end: tokens.gutter,
+                    bottom: tokens.space4,
+                  ),
+                  child: KitText(
+                    l10n.librarySearchResults(matchCount, _search.text.trim()),
+                    key: const Key('library-search-summary'),
+                    role: KitTextRole.secondary,
+                  ),
+                ),
+              for (final (index, entry) in groups.indexed) ...[
+                if (index > 0) SizedBox(height: tokens.sectionGap),
+                _groupView(entry, scrollTarget: scrollTargets),
+              ],
+              for (final section in resultSections) ...[
+                SizedBox(height: tokens.sectionGap),
+                _resultSection(section, scope),
+              ],
             ],
           ),
-        ),
+        ],
       ),
     );
-    if (widget.embedded) return body;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.librarySettingsTitle)),
-      body: body,
+
+    final topBar = widget.embedded
+        ? null
+        : KitTopBar(title: l10n.librarySettingsTitle);
+
+    if (!wide) {
+      return KitScreen(
+        topBar: topBar,
+        search: search,
+        // The health check of "This server" is the one thing that loads here.
+        loading: _checking,
+        loadingLabel: copy.e7SettingsUi11,
+        width: KitScreenWidth.reading,
+        body: hubList(scrollTargets: true),
+      );
+    }
+
+    // Expanded and wider: the groups are the list, the chosen group fills
+    // the detail pane. A search shows its results in the list pane.
+    final selected =
+        allGroups
+            .where((entry) => entry.group.group == _selected)
+            .firstOrNull ??
+        allGroups.firstOrNull;
+    final index = ListView(
+      key: const ValueKey('settings-group-index'),
+      padding: EdgeInsetsDirectional.only(
+        top: tokens.space2,
+        bottom: KitScreen.endPadding(context),
+      ),
+      children: [
+        KitRowGroup(
+          children: [
+            for (final entry in allGroups)
+              KitRow(
+                key: ValueKey('settings-index-${entry.group.group.slug}'),
+                leading: KitRow.icon(context, _groupIcon(entry.group.group)),
+                title: entry.group.title,
+                supporting: TextSpan(
+                  text: [
+                    for (final row in entry.rows.take(3)) row.entry.title,
+                  ].join(' · '),
+                ),
+                selected: identical(entry, selected),
+                trailing: const KitChevron(),
+                onTap: () => setState(() => _selected = entry.group.group),
+              ),
+          ],
+        ),
+      ],
+    );
+    return KitScreen.twoPane(
+      topBar: topBar,
+      search: search,
+      loading: _checking,
+      loadingLabel: copy.e7SettingsUi11,
+      listPaneKey: const ValueKey('settings-list-pane'),
+      detailPaneKey: const ValueKey('settings-detail-pane'),
+      list: searching ? hubList(scrollTargets: false) : index,
+      detail: selected == null || searching
+          ? null
+          : ListView(
+              key: ValueKey('settings-detail-${selected.group.group.slug}'),
+              padding: EdgeInsetsDirectional.only(
+                top: tokens.space5,
+                bottom: KitScreen.endPadding(context),
+              ),
+              children: [_groupView(selected, scrollTarget: false)],
+            ),
+      emptyDetail: KitStateView(
+        key: const ValueKey('settings-detail-empty'),
+        icon: AppIconography.search,
+        title: searching
+            ? l10n.settingsHubDetailSearching
+            : l10n.settingsHubDetailEmpty,
+      ),
     );
   }
 
@@ -653,11 +792,15 @@ class _HubRow {
   /// separated Disconnect button) but is searched like any other.
   final WidgetBuilder? builder;
 
+  /// Drawn below its group's panel, apart from the doors (Disconnect).
+  final bool standalone;
+
   const _HubRow({
     required this.entry,
     required this.onTap,
     this.subtitle,
     this.builder,
+    this.standalone = false,
   });
 
   Widget build(BuildContext context) =>
@@ -671,30 +814,13 @@ class _HubRow {
       );
 }
 
-/// A group or result-section header: the kit's section label, announced as
-/// a heading.
-class _GroupLabel extends StatelessWidget {
-  final String text;
-  const _GroupLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) =>
-      Semantics(header: true, child: SectionLabel(text));
-}
-
-/// The trailing mark of a row that opens another screen.
+/// The trailing mark of a row that opens another screen (kept for the
+/// sibling part files; the kit's chevron).
 class _Chevron extends StatelessWidget {
   const _Chevron();
 
   @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: 48,
-    child: Icon(
-      AppIconography.chevronRight,
-      size: 20,
-      color: AppTheme.mutedOf(Theme.of(context)),
-    ),
-  );
+  Widget build(BuildContext context) => const KitChevron();
 }
 
 /// One settings row on the kit (design standard §6): an icon, the title, an
@@ -729,7 +855,7 @@ class _CategoryRow extends StatelessWidget {
       title: title,
       supporting: subtitle == null ? null : TextSpan(text: subtitle),
       supportingMaxLines: 2,
-      trailing: chevron ? const _Chevron() : null,
+      trailing: chevron ? const KitChevron() : null,
       enabled: enabled,
       onTap: onTap,
     );

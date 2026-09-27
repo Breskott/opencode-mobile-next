@@ -33688,6 +33688,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// Always allowed actions: one line under the bar saying what the page is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.'**
+  String get savedPermissionsIntro;
+
+  /// Always allowed actions: how many actions are allowed in the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 action} other{{count} actions}}'**
+  String savedPermissionsCount(int count);
+
+  /// Always allowed actions: title of the state when the list could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the always allowed actions'**
+  String get savedPermissionsLoadFailed;
+
+  /// Always allowed actions: body of the destructive confirmation that revokes one action.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent will ask you again the next time it wants to do this. Work that is already running keeps going.'**
+  String get savedPermissionsRevokeBody;
+
+  /// Always allowed actions: the line after a revoke; action is the kind of action, such as "Run a shell command".
+  ///
+  /// In en, this message translates to:
+  /// **'{action} now asks you first again.'**
+  String savedPermissionsRevokedDetail(String action);
+
+  /// Always allowed actions: closes the notice that an action was revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get savedPermissionsDismiss;
+
+  /// Always allowed actions: row menu item that copies the command or file pattern of an allowed action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy pattern'**
+  String get savedPermissionsCopyPattern;
+
+  /// Always allowed actions: why refresh or revoke cannot run while another change is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current change to finish'**
+  String get savedPermissionsBusy;
+
+  /// Always allowed actions: accessible name of the loading bar while the list refreshes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading always allowed actions'**
+  String get savedPermissionsLoading;
+
+  /// Always allowed actions: shown for an allowed action that has no command or file pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything this kind of action touches'**
+  String get savedPermissionsAllResources;
+
+  /// Settings on a wide window: the detail pane before a group is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a group of settings'**
+  String get settingsHubDetailEmpty;
+
+  /// Settings on a wide window: the detail pane while a search is showing results in the list pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Search results are in the list'**
+  String get settingsHubDetailSearching;
+
+  /// Notifications: title of the time picker that sets the start of quiet hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when quiet hours start'**
+  String get notifyQuietStartPicker;
+
+  /// Notifications: title of the time picker that sets the end of quiet hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when quiet hours end'**
+  String get notifyQuietEndPicker;
+
+  /// Notifications: confirm button of the quiet hours time picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get notifyQuietSet;
+
+  /// Notifications: shown under quiet hours end when it equals the start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start and end are the same, so notifications stay quiet all day.'**
+  String get notifyQuietAllDay;
+
+  /// Notifications: why the send test row is resting while a test is on its way.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending a test notification…'**
+  String get notifySendingTest;
+
+  /// Notifications: row in the saved servers section when there are none.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved servers to watch'**
+  String get notifyNoServersTitle;
+
+  /// Notifications: second line of the row shown when there are no saved servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers you save can be watched from here, so a request on one reaches you.'**
+  String get notifyNoServersDetail;
+
+  /// Settings pages: closes a notice about a change that failed or finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get notifyDismiss;
+
+  /// Notifications: accessible name of the loading bar while a choice is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get notifySaving;
+
+  /// Notifications: label of the folded details about saved-server monitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'How watching servers works'**
+  String get notifyMonitorDetails;
+
+  /// Notifications: icon button that turns the background connection back on after Android stopped it.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the live connection'**
+  String get notifyRestartBackground;
+
+  /// Appearance: segment that makes light or dark follow the device.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get appearanceModeSystem;
+
+  /// Appearance › Effects: first tab of the miniature tab bar that shows glass.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get effectsPreviewWork;
+
+  /// Appearance › Effects: second tab of the miniature tab bar that shows glass.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get effectsPreviewSettings;
+
+  /// Privacy and local data: section holding choices that send something to the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with your server'**
+  String get privacySharedSection;
+
+  /// Privacy and local data: why the read state switch rests while it saves.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get privacySaving;
+
+  /// Privacy and local data: accessible name of the loading bar while a delete runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting'**
+  String get privacyDeleting;
+
+  /// Privacy and local data: confirm button that deletes the queued prompts, with their count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
+  String privacyDeleteQueuedCount(int count);
+
+  /// Privacy and local data: confirm button that deletes the unsent drafts, with their count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
+  String privacyDeleteDraftsCount(int count);
 }
 
 class _AppLocalizationsDelegate

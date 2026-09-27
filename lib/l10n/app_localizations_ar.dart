@@ -21505,4 +21505,131 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get savedPermissionsIntro =>
+      'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.';
+
+  @override
+  String savedPermissionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get savedPermissionsLoadFailed =>
+      'Could not load the always allowed actions';
+
+  @override
+  String get savedPermissionsRevokeBody =>
+      'The agent will ask you again the next time it wants to do this. Work that is already running keeps going.';
+
+  @override
+  String savedPermissionsRevokedDetail(String action) {
+    return '$action now asks you first again.';
+  }
+
+  @override
+  String get savedPermissionsDismiss => 'Dismiss';
+
+  @override
+  String get savedPermissionsCopyPattern => 'Copy pattern';
+
+  @override
+  String get savedPermissionsBusy => 'Wait for the current change to finish';
+
+  @override
+  String get savedPermissionsLoading => 'Loading always allowed actions';
+
+  @override
+  String get savedPermissionsAllResources =>
+      'Anything this kind of action touches';
+
+  @override
+  String get settingsHubDetailEmpty => 'Choose a group of settings';
+
+  @override
+  String get settingsHubDetailSearching => 'Search results are in the list';
+
+  @override
+  String get notifyQuietStartPicker => 'Set when quiet hours start';
+
+  @override
+  String get notifyQuietEndPicker => 'Set when quiet hours end';
+
+  @override
+  String get notifyQuietSet => 'Set';
+
+  @override
+  String get notifyQuietAllDay =>
+      'Start and end are the same, so notifications stay quiet all day.';
+
+  @override
+  String get notifySendingTest => 'Sending a test notification…';
+
+  @override
+  String get notifyNoServersTitle => 'No saved servers to watch';
+
+  @override
+  String get notifyNoServersDetail =>
+      'Servers you save can be watched from here, so a request on one reaches you.';
+
+  @override
+  String get notifyDismiss => 'Dismiss';
+
+  @override
+  String get notifySaving => 'Saving';
+
+  @override
+  String get notifyMonitorDetails => 'How watching servers works';
+
+  @override
+  String get notifyRestartBackground => 'Restart the live connection';
+
+  @override
+  String get appearanceModeSystem => 'System';
+
+  @override
+  String get effectsPreviewWork => 'Work';
+
+  @override
+  String get effectsPreviewSettings => 'Settings';
+
+  @override
+  String get privacySharedSection => 'Shared with your server';
+
+  @override
+  String get privacySaving => 'Saving…';
+
+  @override
+  String get privacyDeleting => 'Deleting';
+
+  @override
+  String privacyDeleteQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count queued prompts',
+      one: 'Delete 1 queued prompt',
+      zero: 'Delete',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String privacyDeleteDraftsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count drafts',
+      one: 'Delete 1 draft',
+      zero: 'Delete',
+    );
+    return '$_temp0';
+  }
 }

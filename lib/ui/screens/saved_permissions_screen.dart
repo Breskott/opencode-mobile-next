@@ -7,13 +7,19 @@ import '../../l10n/app_localizations.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../permission_presentation.dart';
-import '../widgets/product_states.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import '../app_theme.dart';
 import '../kit/kit.dart';
 
 typedef SavedPermissionRepositoryResolver =
     Future<ServerOperationsGateway?> Function();
 
+/// Settings › Always allowed actions (`saved-permissions`): the actions the
+/// agent may run in the current project without asking, each revocable
+/// after a destructive confirmation (`saved-permissions-revoke-dialog`).
+/// Built from kit parts only: a KitScreen page, one KitRowGroup of KitRows
+/// (revoke as the row's one icon action and in its long-press menu), and
+/// KitStateView for loading, empty and error.
 class SavedPermissionsScreen extends StatefulWidget {
   const SavedPermissionsScreen({
     super.key,
@@ -33,6 +39,11 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
   final Set<String> _removing = {};
   bool _loading = false;
   String? _error;
+
+  /// The action the last revoke took away, said in place of a snackbar
+  /// (KIT-34: a snackbar is only done-with-undo, and the gateway has no way
+  /// to put a revoked action back).
+  String? _revoked;
   int _generation = 0;
   Object? _scope;
 
@@ -113,6 +124,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _revoked = null;
     });
     try {
       final repository = await _resolveRepository();
@@ -157,9 +169,8 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     final confirmed = await showKitConfirm(
       context,
       title: actionL10n.e7LibraryRevokeAlwaysAllowedAction,
-      body:
-          '${actionL10n.e7LibraryOpenCodeWillAskAgainBeforeAFuture} '
-          '${actionL10n.e7LibraryThisDoesNotStopAnActionThat}',
+      body: actionL10n.savedPermissionsRevokeBody,
+      icon: AppIconography.privacy,
       confirmLabel: actionL10n.e7LibraryRevokeAccess,
       kind: KitConfirmKind.destructive,
       details: [
@@ -170,7 +181,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
         KitTechnicalValue(
           actionL10n.e7LibraryResource,
           resource.isEmpty
-              ? actionL10n.e7LibraryAllMatchingResources
+              ? actionL10n.savedPermissionsAllResources
               : permission.resource,
         ),
       ],
@@ -180,6 +191,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     setState(() {
       _removing.add(permission.id);
       _error = null;
+      _revoked = null;
     });
     try {
       final repository = await _resolveRepository();
@@ -196,14 +208,12 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
         _permissions = (_permissions ?? const [])
             .where((item) => item.id != permission.id)
             .toList();
+        _revoked = permissionRequestTitle(permission.action);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(actionL10n.e7LibraryAlwaysAllowedActionRevoked)),
-      );
     } catch (error) {
       if (!mounted || scope != _currentScope) return;
+      // Said once, on the list, next to the action that is still allowed.
       setState(() => _error = productErrorText(error));
-      showProductError(context, error);
     } finally {
       if (mounted && scope == _currentScope) {
         setState(() => _removing.remove(permission.id));
@@ -213,115 +223,186 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final permissions = _permissions;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryAlwaysAllowedActions,
+    final error = _error;
+    final busy = _loading || _removing.isNotEmpty;
+    final Widget body;
+    if (permissions == null && error == null) {
+      body = ListView(
+        key: const ValueKey('saved-permissions-loading'),
+        padding: KitScreen.padding(context),
+        children: const [KitSkeletonRows()],
+      );
+    } else if (permissions == null || (permissions.isEmpty && error != null)) {
+      body = KitStateView.error(
+        key: const ValueKey('saved-permissions-error'),
+        title: l10n.savedPermissionsLoadFailed,
+        body: error,
+        retry: KitAction(label: l10n.commonRetry, onPressed: _load),
+      );
+    } else if (permissions.isEmpty) {
+      body = KitRefresh(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: KitScreen.padding(context),
+          children: [
+            if (_revoked case final revoked?) _revokedNotice(l10n, revoked),
+            KitStateView(
+              key: const ValueKey('saved-permissions-empty'),
+              icon: AppIconography.privacy,
+              title: l10n.e7LibraryNoAlwaysAllowedActions,
+              body: l10n.emptyTeachAllowedMessage,
+              size: KitStateSize.inline,
+            ),
+          ],
         ),
+      );
+    } else {
+      final tokens = KitTokens.of(context);
+      body = KitRefresh(
+        onRefresh: _load,
+        child: ListView(
+          key: const ValueKey('saved-permissions-list'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsDirectional.only(
+            top: tokens.space2,
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: [
+            // One Column: a short list, and every row laid out for the
+            // keyboard and for a link that means one of them.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // What the page is for, in one line (map infoMissing).
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: tokens.gutter,
+                    end: tokens.gutter,
+                    bottom: tokens.sectionGap,
+                  ),
+                  child: KitText(
+                    l10n.savedPermissionsIntro,
+                    role: KitTextRole.secondary,
+                  ),
+                ),
+                if (error != null)
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: tokens.gutter,
+                      end: tokens.gutter,
+                      bottom: tokens.sectionGap,
+                    ),
+                    child: KitNotice.error(
+                      key: const ValueKey('saved-permissions-action-error'),
+                      title: l10n.e7LibraryTheLastActionFailed,
+                      message: error,
+                      retry: KitAction(
+                        label: l10n.commonRetry,
+                        onPressed: _load,
+                      ),
+                    ),
+                  ),
+                if (_revoked case final revoked?)
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: tokens.gutter,
+                      end: tokens.gutter,
+                      bottom: tokens.sectionGap,
+                    ),
+                    child: _revokedNotice(l10n, revoked),
+                  ),
+                KitRowGroup(
+                  key: const ValueKey('saved-permissions-group'),
+                  label: l10n.usageCurrentProject,
+                  labelTrailing: KitText(
+                    l10n.savedPermissionsCount(permissions.length),
+                    role: KitTextRole.caption,
+                    tabular: true,
+                  ),
+                  children: [
+                    for (final permission in permissions)
+                      _permissionRow(l10n, permission),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.e7LibraryAlwaysAllowedActions,
         actions: [
-          IconButton(
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryRefreshAlwaysAllowedActions,
-            onPressed: _loading || _removing.isNotEmpty ? null : _load,
-            icon: _loading
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(AppIconography.retry),
+          KitAction(
+            key: const ValueKey('saved-permissions-refresh'),
+            label: l10n.e7LibraryRefreshAlwaysAllowedActions,
+            icon: AppIconography.retry,
+            onPressed: busy ? null : _load,
+            disabledReason: busy ? l10n.savedPermissionsBusy : null,
           ),
         ],
       ),
-      body: KitRefresh(
-        onRefresh: _load,
-        child: permissions == null && _error == null
-            ? const LoadingList(rows: 4)
-            : permissions?.isEmpty == true && _error == null
-            ? ProductEmptyState(
-                icon: AppIconography.privacy,
-                title: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryNoAlwaysAllowedActions,
-                message: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).emptyTeachAllowedMessage,
-              )
-            : permissions?.isEmpty != false && _error != null
-            ? ProductErrorState(message: _error!, onRetry: _load)
-            : ListView(
-                key: const ValueKey('saved-permissions-list'),
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 24),
-                children: [
-                  SectionLabel(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).usageCurrentProject,
-                    trailing: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryGrantCount(permissions!.length),
-                    ),
-                  ),
-                  if (_error != null)
-                    ListTile(
-                      leading: Icon(
-                        AppIconography.error,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      title: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7LibraryTheLastActionFailed,
-                      ),
-                      subtitle: Text(_error!),
-                    ),
-                  for (final permission in permissions)
-                    ListTile(
-                      key: ValueKey('saved-permission-${permission.id}'),
-                      leading: const Icon(AppIconography.privacy),
-                      title: Text(permissionRequestTitle(permission.action)),
-                      subtitle: SelectableText(
-                        permission.resource.trim().isEmpty
-                            ? lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7LibraryAllMatchingResources
-                            : permission.resource,
-                        maxLines: 3,
-                        textDirection: permission.resource.trim().isEmpty
-                            ? null
-                            : TextDirection.ltr,
-                        style: const TextStyle(
-                          fontFamily: AppTheme.monoFamily,
-                          fontSize: AppTheme.codeFontSize,
-                        ),
-                      ),
-                      trailing: _removing.contains(permission.id)
-                          ? const SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : IconButton(
-                              key: ValueKey(
-                                'revoke-saved-permission-${permission.id}',
-                              ),
-                              tooltip:
-                                  lookupAppLocalizations(
-                                    Localizations.localeOf(context),
-                                  ).e7LibraryRevokeAccess2(
-                                    (permission.action).toString(),
-                                  ),
-                              onPressed: () => _revoke(permission),
-                              icon: const Icon(AppIconography.delete),
-                            ),
-                    ),
-                ],
-              ),
+      width: KitScreenWidth.reading,
+      loading: _loading && permissions != null,
+      loadingLabel: l10n.savedPermissionsLoading,
+      body: body,
+    );
+  }
+
+  Widget _revokedNotice(AppLocalizations l10n, String revoked) => KitNotice(
+    key: const ValueKey('saved-permissions-revoked'),
+    tone: AppStatusTone.ok,
+    icon: AppIconography.check,
+    title: l10n.e7LibraryAlwaysAllowedActionRevoked,
+    message: l10n.savedPermissionsRevokedDetail(revoked),
+    onDismiss: () => setState(() => _revoked = null),
+    dismissLabel: l10n.savedPermissionsDismiss,
+  );
+
+  Widget _permissionRow(AppLocalizations l10n, SavedPermission permission) {
+    final title = permissionRequestTitle(permission.action);
+    final resource = permission.resource.trim();
+    final removing = _removing.contains(permission.id);
+    return KitRow(
+      key: ValueKey('saved-permission-${permission.id}'),
+      leading: KitRow.icon(context, AppIconography.privacy),
+      title: title,
+      // "All matching resources" is the app's sentence, so it is plain
+      // text; a real pattern is a technical value, left to right and mono.
+      supporting: resource.isEmpty
+          ? TextSpan(text: l10n.savedPermissionsAllResources)
+          : null,
+      below: resource.isEmpty
+          ? null
+          : KitText.mono(permission.resource, maxLines: 3, selectable: true),
+      trailing: KitIconButton(
+        key: ValueKey('revoke-saved-permission-${permission.id}'),
+        icon: AppIconography.delete,
+        tooltip: l10n.e7LibraryRevokeAccess2(title),
+        destructive: true,
+        working: removing,
+        onPressed: removing ? null : () => _revoke(permission),
       ),
+      menu: [
+        if (resource.isNotEmpty)
+          KitMenuItem.copy(
+            label: l10n.savedPermissionsCopyPattern,
+            text: () => permission.resource,
+          ),
+        KitMenuItem(
+          label: l10n.e7LibraryRevokeAccess,
+          icon: AppIconography.delete,
+          destructive: true,
+          enabled: !removing,
+          disabledReason: removing ? l10n.savedPermissionsBusy : null,
+          onSelected: () => _revoke(permission),
+        ),
+      ],
+      menuLabel: title,
     );
   }
 }

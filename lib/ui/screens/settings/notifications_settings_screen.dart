@@ -6,7 +6,9 @@ part of '../settings_screen.dart';
 /// and the quota monitor read them.
 ///
 /// A row is absent when this device cannot do it, and a section with no rows
-/// is absent.
+/// is absent. Kit only (screen-settings-1): each section is a [KitRowGroup]
+/// of [KitSwitchRow]s and [KitRow]s whose one plain line says what the
+/// setting does; how monitoring works is folded into Details at the end.
 class NotificationsSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -30,6 +32,12 @@ class _NotificationsSettingsScreenState
     with WidgetsBindingObserver {
   bool _saving = false;
   bool _sendingTest = false;
+
+  /// A refused write, said on the page until the next one succeeds.
+  bool _saveFailed = false;
+
+  /// Why Android did not turn the background connection on.
+  String? _backgroundError;
   final _sectionKeys = <String, GlobalKey>{};
 
   /// True once Android itself is refusing this app's notifications (denied
@@ -68,12 +76,14 @@ class _NotificationsSettingsScreenState
 
   Future<void> _toggleBackground(bool value) async {
     final controller = widget.controller;
+    if (controller.backgroundLive.busy) return;
+    setState(() => _backgroundError = null);
     final enabled = await controller.setKeepLiveInBackground(value);
     if (!mounted) return;
     final error = controller.backgroundLive.lastError;
     if (error != null || enabled != value) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? _settingsCopy(context).e7SettingsUi22)),
+      setState(
+        () => _backgroundError = error ?? _settingsCopy(context).e7SettingsUi22,
       );
     }
   }
@@ -95,12 +105,9 @@ class _NotificationsSettingsScreenState
     setState(() => _saving = true);
     try {
       await write();
+      if (mounted) setState(() => _saveFailed = false);
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_settingsCopy(context).monitorSaveFailed)),
-        );
-      }
+      if (mounted) setState(() => _saveFailed = true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -110,10 +117,15 @@ class _NotificationsSettingsScreenState
       _save(() => widget.controller.updateSharedNotifyRules(change));
 
   Future<void> _quietTime(bool start, SharedNotifyRules rules) async {
+    final copy = _settingsCopy(context);
     final current = (start ? rules.quietStart : rules.quietEnd)!;
+    // The stock picker, told which end it sets and with a verb on its
+    // button (notifications-settings-quiet-time-dialog).
     final selected = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
+      helpText: start ? copy.notifyQuietStartPicker : copy.notifyQuietEndPicker,
+      confirmText: copy.notifyQuietSet,
     );
     if (selected == null || !mounted) return;
     final minutes = selected.hour * 60 + selected.minute;
@@ -140,98 +152,82 @@ class _NotificationsSettingsScreenState
     final controller = widget.controller;
     final notifications = platformCapabilities.supportsNotifications;
     final blocked = _notificationsBlocked;
+    // Blocked by Android: the switches say why they cannot change instead of
+    // reading "on" while nothing can arrive.
+    final blockedReason = blocked ? copy.notifyBlockedTitle : null;
+    final checkIn = rules.checkInAfterMinutes;
     return [
       if (notifications)
-        SwitchListTile(
+        KitSwitchRow(
           key: const ValueKey('notify-finished-runs'),
-          title: Text(copy.notifyFinishedRuns),
-          subtitle: Text(copy.notifyFinishedRunsDetail),
+          leading: KitRow.icon(context, AppIconography.checkCircle),
+          title: copy.notifyFinishedRuns,
+          supporting: copy.notifyFinishedRunsDetail,
           value: controller.notificationPreferences.finishedRuns,
-          onChanged: _saving || blocked
+          disabledReason: blockedReason,
+          onChanged: blocked
               ? null
               : (value) => _save(() => controller.setNotifyFinishedRuns(value)),
         ),
       if (notifications)
-        SwitchListTile(
+        KitSwitchRow(
           key: const ValueKey('notify-requests'),
-          title: Text(copy.notifyRequests),
-          subtitle: Text(copy.notifyRequestsDetail),
+          leading: KitRow.icon(context, AppIconography.question),
+          title: copy.notifyRequests,
+          supporting: copy.notifyRequestsDetail,
           value: controller.notificationPreferences.requests,
-          onChanged: _saving || blocked
+          disabledReason: blockedReason,
+          onChanged: blocked
               ? null
               : (value) => _save(() => controller.setNotifyRequests(value)),
         ),
       // A check-in is also a row in the attention list, so it is worth
       // setting on a device that cannot notify.
-      SwitchListTile(
+      KitSwitchRow(
         key: const ValueKey('notify-check-ins'),
-        title: Text(copy.monitorCheckIn),
-        value: rules.checkInAfterMinutes != null,
-        onChanged: _saving
-            ? null
-            : (value) => _shared(
-                (rules) => value
-                    ? rules.copyWith(
-                        checkInAfterMinutes:
-                            ProfileNotifyRules.defaultCheckInMinutes,
-                      )
-                    : rules.copyWith(clearCheckIn: true),
-              ),
-      ),
-      _RowDetail(
-        platformCapabilities.supportsBackgroundService
+        leading: KitRow.icon(context, AppIconography.clock),
+        title: copy.monitorCheckIn,
+        supporting: platformCapabilities.supportsBackgroundService
             ? copy.monitorCheckInDetail
             : copy.monitorCheckInDetailForeground,
+        value: checkIn != null,
+        onChanged: (value) => _shared(
+          (rules) => value
+              ? rules.copyWith(
+                  checkInAfterMinutes: ProfileNotifyRules.defaultCheckInMinutes,
+                )
+              : rules.copyWith(clearCheckIn: true),
+        ),
       ),
-      if (rules.checkInAfterMinutes != null)
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(copy.monitorCheckInAfter),
-              DropdownButton<int>(
-                key: const ValueKey('notify-check-in-after'),
-                isExpanded: true,
-                itemHeight: null,
-                value:
-                    ProfileNotifyRules.checkInChoices.contains(
-                      rules.checkInAfterMinutes,
-                    )
-                    ? rules.checkInAfterMinutes
-                    : null,
-                hint: Text(copy.monitorMinutes(rules.checkInAfterMinutes!)),
-                items: [
-                  for (final minutes in ProfileNotifyRules.checkInChoices)
-                    DropdownMenuItem(
-                      value: minutes,
-                      child: Text(copy.monitorMinutes(minutes)),
-                    ),
-                ],
-                onChanged: _saving
-                    ? null
-                    : (minutes) {
-                        if (minutes == null) return;
-                        _shared(
-                          (rules) =>
-                              rules.copyWith(checkInAfterMinutes: minutes),
-                        );
-                      },
-              ),
-            ],
-          ),
+      if (checkIn != null)
+        KitPickerRow<int>(
+          rowKey: const ValueKey('notify-check-in-after'),
+          leading: KitRow.icon(context, AppIconography.timer),
+          title: copy.monitorCheckInAfter,
+          valueLabel: copy.monitorMinutes(checkIn),
+          choices: [
+            for (final minutes in ProfileNotifyRules.checkInChoices)
+              KitChoice(value: minutes, title: copy.monitorMinutes(minutes)),
+          ],
+          selected: ProfileNotifyRules.checkInChoices.contains(checkIn)
+              ? checkIn
+              : null,
+          onSelected: (minutes) =>
+              _shared((rules) => rules.copyWith(checkInAfterMinutes: minutes)),
         ),
       if (notifications)
-        SwitchListTile(
+        KitSwitchRow(
           key: const ValueKey('notify-quota-alerts'),
-          title: Text(copy.notifyQuotaAlerts),
+          leading: KitRow.icon(context, AppIconography.usage),
+          title: copy.notifyQuotaAlerts,
+          supporting: copy.notifyQuotaAlertsDetail,
           value: rules.quotaAlerts,
-          onChanged: _saving || blocked
+          disabledReason: blockedReason,
+          onChanged: blocked
               ? null
               : (value) =>
                     _shared((rules) => rules.copyWith(quotaAlerts: value)),
         ),
-      if (notifications) _RowDetail(copy.notifyQuotaAlertsDetail),
       // Real proof, not just a read of the permission flag (P0.6): posts an
       // actual alert through the same channel a coding request would use.
       if (notifications)
@@ -242,6 +238,7 @@ class _NotificationsSettingsScreenState
           supporting: TextSpan(text: copy.notifySendTestDetail),
           supportingMaxLines: 2,
           enabled: !_sendingTest,
+          disabledReason: _sendingTest ? copy.notifySendingTest : null,
           onTap: _sendTestNotification,
         ),
     ];
@@ -251,35 +248,40 @@ class _NotificationsSettingsScreenState
     // Quiet hours only silence notifications.
     if (!platformCapabilities.supportsNotifications) return const [];
     final copy = _settingsCopy(context);
+    final allDay = rules.quietEnabled && rules.quietStart == rules.quietEnd;
     return [
-      SwitchListTile(
+      KitSwitchRow(
         key: const ValueKey('notify-quiet-hours'),
-        title: Text(copy.monitorQuiet),
+        leading: KitRow.icon(context, AppIconography.darkMode),
+        title: copy.monitorQuiet,
+        supporting: copy.notifyQuietDetail,
         value: rules.quietEnabled,
-        onChanged: _saving
-            ? null
-            : (value) => _shared(
-                (rules) => value
-                    ? rules.copyWith(
-                        quietStart: SharedNotifyRules.defaultQuietStart,
-                        quietEnd: SharedNotifyRules.defaultQuietEnd,
-                      )
-                    : rules.copyWith(clearQuiet: true),
-              ),
+        onChanged: (value) => _shared(
+          (rules) => value
+              ? rules.copyWith(
+                  quietStart: SharedNotifyRules.defaultQuietStart,
+                  quietEnd: SharedNotifyRules.defaultQuietEnd,
+                )
+              : rules.copyWith(clearQuiet: true),
+        ),
       ),
-      _RowDetail(copy.notifyQuietDetail),
       if (rules.quietEnabled) ...[
         KitRow(
           key: const ValueKey('notify-quiet-start'),
+          leading: KitRow.icon(context, AppIconography.clock),
           title: copy.monitorQuietStart,
-          supporting: TextSpan(text: _clock(rules.quietStart!)),
-          onTap: _saving ? null : () => _quietTime(true, rules),
+          trailing: KitRowValue(_clock(rules.quietStart!)),
+          onTap: () => _quietTime(true, rules),
         ),
         KitRow(
           key: const ValueKey('notify-quiet-end'),
+          leading: KitRow.icon(context, AppIconography.clock),
           title: copy.monitorQuietEnd,
-          supporting: TextSpan(text: _clock(rules.quietEnd!)),
-          onTap: _saving ? null : () => _quietTime(false, rules),
+          // The same start and end mean quiet all day: said, not guessed.
+          supporting: allDay ? TextSpan(text: copy.notifyQuietAllDay) : null,
+          supportingMaxLines: 2,
+          trailing: KitRowValue(_clock(rules.quietEnd!)),
+          onTap: () => _quietTime(false, rules),
         ),
       ],
     ];
@@ -290,15 +292,23 @@ class _NotificationsSettingsScreenState
     final copy = _settingsCopy(context);
     final controller = widget.controller;
     final live = controller.backgroundLive;
+    final error = _backgroundError;
     return [
-      SwitchListTile(
+      KitSwitchRow(
         key: const ValueKey('background-live-switch'),
-        secondary: const Icon(Icons.sync_lock_rounded),
-        title: Text(copy.e7SettingsUi25),
+        leading: KitRow.icon(context, AppIconography.sync),
+        title: copy.e7SettingsUi25,
+        supporting: copy.e7SettingsUi26,
         value: controller.keepLiveInBackground,
-        onChanged: live.busy ? null : _toggleBackground,
+        onChanged: _toggleBackground,
+        below: error == null
+            ? null
+            : KitNotice(
+                key: const ValueKey('background-live-error'),
+                tone: AppStatusTone.failure,
+                message: error,
+              ),
       ),
-      _RowDetail(copy.e7SettingsUi26),
       if (controller.keepLiveInBackground)
         KitRow(
           key: const ValueKey('background-battery-row'),
@@ -317,15 +327,7 @@ class _NotificationsSettingsScreenState
                 : copy.e7SettingsUi30,
           ),
           supportingMaxLines: 2,
-          trailing: SizedBox.square(
-            dimension: 48,
-            child: Icon(
-              live.batteryOptimizationIgnored
-                  ? AppIconography.check
-                  : AppIconography.externalLink,
-              size: 20,
-            ),
-          ),
+          trailing: live.batteryOptimizationIgnored ? null : const KitChevron(),
           onTap: live.batteryOptimizationIgnored
               ? null
               : () async {
@@ -349,33 +351,75 @@ class _NotificationsSettingsScreenState
             for (final profile in controller.store.profiles)
               if (controller.isProfileReadable(profile.id)) profile,
           ];
+    final wifi = platformCapabilities.supportsBackgroundService;
+    if (servers.isEmpty && !wifi) return const [];
     return [
       for (final profile in servers)
-        _MonitoredServerRows(
-          controller: controller,
-          profile: profile,
-          saving: _saving,
+        ..._monitoredServerRows(
+          profile,
           onSave: (next) => _save(() => monitor.setRules(profile.id, next)),
+        ),
+      // Nothing to watch yet: said, rather than an empty section.
+      if (servers.isEmpty)
+        KitRow(
+          key: const ValueKey('notify-no-servers'),
+          leading: KitRow.icon(context, AppIconography.server),
+          title: copy.notifyNoServersTitle,
+          supporting: TextSpan(text: copy.notifyNoServersDetail),
+          supportingMaxLines: 2,
         ),
       // One Wi-Fi rule for every background check: saved servers and quota
       // sources alike. Without a background service nothing checks in the
       // background, so there is nothing to restrict.
-      if (platformCapabilities.supportsBackgroundService)
-        SwitchListTile(
+      if (wifi)
+        KitSwitchRow(
           key: const ValueKey('notify-wifi-only'),
-          secondary: const Icon(AppIconography.network),
-          title: Text(copy.notifyWifiOnly),
+          leading: KitRow.icon(context, AppIconography.network),
+          title: copy.notifyWifiOnly,
+          supporting: copy.monitorWifiDetail,
           value: rules.wifiOnly,
-          onChanged: _saving
-              ? null
-              : (value) => _shared((rules) => rules.copyWith(wifiOnly: value)),
+          onChanged: (value) =>
+              _shared((rules) => rules.copyWith(wifiOnly: value)),
         ),
-      if (platformCapabilities.supportsBackgroundService)
-        _RowDetail(copy.monitorWifiDetail),
-      if (servers.isNotEmpty)
-        _RowDetail(
-          '${copy.monitorOptInDetail}\n\n${copy.monitorScope}\n\n'
-          '${copy.monitorDisclosure}',
+    ];
+  }
+
+  /// One saved server: whether it is monitored at all, and whether what the
+  /// monitor finds may notify. Everything else about notifying is shared.
+  List<Widget> _monitoredServerRows(
+    ServerProfile profile, {
+    required ValueChanged<ProfileNotifyRules> onSave,
+  }) {
+    final copy = _settingsCopy(context);
+    final controller = widget.controller;
+    final monitor = controller.profileMonitor;
+    final rules = monitor.rulesFor(profile.id);
+    final supported = monitor.supportsProfile(profile);
+    return [
+      KitSwitchRow(
+        key: ValueKey('monitor-enabled-${profile.id}'),
+        leading: KitRow.icon(context, AppIconography.server),
+        title: serverDisplayName(
+          profile,
+          lookupAppLocalizations(Localizations.localeOf(context)),
+          among: controller.store.profiles,
+        ),
+        supporting: copy.monitorOptIn,
+        value: rules.enabled,
+        disabledReason: supported ? null : copy.e7ProjectMonitorUnsupported,
+        onChanged: !supported
+            ? null
+            : (value) => onSave(rules.copyWith(enabled: value)),
+      ),
+      if (supported &&
+          rules.enabled &&
+          platformCapabilities.supportsNotifications)
+        KitSwitchRow(
+          key: ValueKey('monitor-notify-${profile.id}'),
+          leading: KitRow.icon(context, AppIconography.notificationImportant),
+          title: copy.monitorNotifications,
+          value: rules.notifications,
+          onChanged: (value) => onSave(rules.copyWith(notifications: value)),
         ),
     ];
   }
@@ -384,78 +428,117 @@ class _NotificationsSettingsScreenState
   Widget build(BuildContext context) {
     final copy = _settingsCopy(context);
     final controller = widget.controller;
+    final tokens = KitTokens.of(context);
     final rules = controller.sharedNotifyRules;
     final sections = <(String, String, List<Widget>)>[
       ('what', copy.notifySectionWhat, _whatNotifies(rules)),
       ('quiet', copy.monitorQuiet, _quietHours(rules)),
       ('background', copy.notifySectionBackground, _background()),
       ('servers', copy.notifySectionServers, _savedServers(rules)),
-    ];
-    return Scaffold(
-      appBar: AppBar(title: Text(copy.settingsHubGroupNotifications)),
-      // Not a lazy list: a few dozen plain rows, and a link that means one
-      // section must be able to find it.
-      body: SingleChildScrollView(
-        key: const ValueKey('notifications-settings'),
-        padding: EdgeInsets.only(
-          bottom: 24 + MediaQuery.paddingOf(context).bottom,
+    ].where((section) => section.$3.isNotEmpty).toList();
+    final hasServers =
+        !controller.isIsolated &&
+        controller.store.profiles.any(
+          (profile) => controller.isProfileReadable(profile.id),
+        );
+    final notices = <Widget>[
+      // The honest state (P0.6): Android is refusing this app's
+      // notifications, so every switch below is decoration until this is
+      // fixed. Comes before everything else.
+      if (_notificationsBlocked)
+        KitNotice(
+          key: const ValueKey('notifications-blocked-notice'),
+          icon: AppIconography.notificationImportant,
+          title: copy.notifyBlockedTitle,
+          message: copy.notifyBlockedMessage,
+          actions: [
+            KitAction(
+              key: const ValueKey('notifications-open-settings'),
+              label: copy.notifyOpenAndroidSettings,
+              onPressed: () =>
+                  controller.backgroundLive.openNotificationSettings(),
+            ),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // The honest state (P0.6): Android is refusing this app's
-            // notifications, so every switch below is decoration until this
-            // is fixed. Comes before everything else, including the
-            // Android-timeout notice below it.
-            if (_notificationsBlocked)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: KitNotice(
-                  key: const ValueKey('notifications-blocked-notice'),
-                  tone: AppStatusTone.attention,
-                  icon: AppIconography.notificationImportant,
-                  title: copy.notifyBlockedTitle,
-                  message: copy.notifyBlockedMessage,
-                  actions: [
-                    KitAction(
-                      key: const ValueKey('notifications-open-settings'),
-                      label: copy.notifyOpenAndroidSettings,
-                      onPressed: () =>
-                          controller.backgroundLive.openNotificationSettings(),
-                    ),
-                  ],
+      // Android 15 stops the service on its own once the daily budget is
+      // spent, and the switch flips itself off when it does. It needs the
+      // person, so it comes before every setting (plan 5.7).
+      if (platformCapabilities.supportsBackgroundService &&
+          controller.backgroundLive.stoppedByAndroidTimeout)
+        KitNotice(
+          key: const ValueKey('background-timeout-notice'),
+          icon: AppIconography.timer,
+          title: copy.e7SettingsUi23,
+          message: copy.e7SettingsUi24,
+        ),
+      if (_saveFailed)
+        KitNotice(
+          key: const ValueKey('notifications-save-failed'),
+          tone: AppStatusTone.failure,
+          message: copy.monitorSaveFailed,
+          onDismiss: () => setState(() => _saveFailed = false),
+          dismissLabel: copy.notifyDismiss,
+        ),
+    ];
+    return KitScreen(
+      topBar: KitTopBar(title: copy.settingsHubGroupNotifications),
+      width: KitScreenWidth.reading,
+      loading: _saving,
+      loadingLabel: copy.notifySaving,
+      // Not a lazy list: a few dozen rows in one Column, so a link that
+      // means one section can find it laid out.
+      body: ListView(
+        key: const ValueKey('notifications-settings'),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final notice in notices)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: tokens.gutter,
+                    end: tokens.gutter,
+                    bottom: tokens.sectionGap,
+                  ),
+                  child: notice,
                 ),
-              ),
-            // Android 15 stops the service on its own once the daily budget is
-            // spent, and the switch flips itself off when it does. It needs the
-            // person, so it comes before every setting (plan 5.7).
-            if (platformCapabilities.supportsBackgroundService &&
-                controller.backgroundLive.stoppedByAndroidTimeout)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: KitNotice(
-                  key: const ValueKey('background-timeout-notice'),
-                  tone: AppStatusTone.attention,
-                  icon: Icons.timer_off_outlined,
-                  title: copy.e7SettingsUi23,
-                  message: copy.e7SettingsUi24,
-                ),
-              ),
-            for (final (slug, title, rows) in sections)
-              if (rows.isNotEmpty)
+              for (final (index, (slug, title, rows)) in sections.indexed) ...[
+                if (index > 0) SizedBox(height: tokens.sectionGap),
                 KeyedSubtree(
                   key: _sectionKeys.putIfAbsent(
                     slug,
                     () => GlobalKey(debugLabel: 'notifications-$slug'),
                   ),
-                  child: Column(
+                  child: KitRowGroup(
                     key: ValueKey('notifications-section-$slug'),
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [SectionLabel(title), ...rows],
+                    label: title,
+                    children: rows,
                   ),
                 ),
-          ],
-        ),
+              ],
+              // How monitoring works: read once, never first (KIT-33).
+              if (hasServers) ...[
+                SizedBox(height: tokens.sectionGap),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+                  child: KitDetailsFold(
+                    key: const ValueKey('notifications-monitor-details'),
+                    label: copy.notifyMonitorDetails,
+                    notes: [
+                      copy.monitorOptInDetail,
+                      copy.monitorScope,
+                      copy.monitorDisclosure,
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -466,87 +549,6 @@ class _NotificationsSettingsScreenState
     widget.controller.removeListener(_changed);
     widget.controller.backgroundLive.removeListener(_changed);
     super.dispose();
-  }
-}
-
-/// What a row means, under the row at the full width of the screen. As a
-/// switch's subtitle the same sentence is squeezed beside the icon and the
-/// switch, and at the largest text size it runs to dozens of lines.
-class _RowDetail extends StatelessWidget {
-  const _RowDetail(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: AppTheme.mutedOf(theme),
-        ),
-      ),
-    );
-  }
-}
-
-/// One saved server: whether it is monitored at all, and whether what the
-/// monitor finds may notify. Everything else about notifying is shared.
-class _MonitoredServerRows extends StatelessWidget {
-  const _MonitoredServerRows({
-    required this.controller,
-    required this.profile,
-    required this.saving,
-    required this.onSave,
-  });
-  final ConnectionController controller;
-  final ServerProfile profile;
-  final bool saving;
-  final ValueChanged<ProfileNotifyRules> onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    final copy = _settingsCopy(context);
-    final monitor = controller.profileMonitor;
-    final rules = monitor.rulesFor(profile.id);
-    final supported = monitor.supportsProfile(profile);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SwitchListTile(
-          key: ValueKey('monitor-enabled-${profile.id}'),
-          secondary: const Icon(AppIconography.server),
-          title: Text(
-            serverDisplayName(
-              profile,
-              lookupAppLocalizations(Localizations.localeOf(context)),
-              among: controller.store.profiles,
-            ),
-          ),
-          subtitle: Text(
-            supported ? copy.monitorOptIn : copy.e7ProjectMonitorUnsupported,
-          ),
-          value: rules.enabled,
-          onChanged: !supported || saving
-              ? null
-              : (value) => onSave(rules.copyWith(enabled: value)),
-        ),
-        if (supported &&
-            rules.enabled &&
-            platformCapabilities.supportsNotifications)
-          SwitchListTile(
-            key: ValueKey('monitor-notify-${profile.id}'),
-            // Aligns under the server name rather than under its icon.
-            contentPadding: const EdgeInsetsDirectional.fromSTEB(72, 0, 24, 0),
-            title: Text(copy.monitorNotifications),
-            value: rules.notifications,
-            onChanged: saving
-                ? null
-                : (value) => onSave(rules.copyWith(notifications: value)),
-          ),
-      ],
-    );
   }
 }
 
@@ -562,40 +564,42 @@ class _BackgroundStatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final copy = _settingsCopy(context);
     final stopped = live.stoppedByAndroidTimeout;
     final running = live.enabled && live.active;
     final starting = live.enabled && !live.active;
     final title = stopped
-        ? _settingsCopy(context).e7SettingsUi31
+        ? copy.e7SettingsUi31
         : running
-        ? _settingsCopy(context).e7SettingsUi32
+        ? copy.e7SettingsUi32
         : starting
-        ? _settingsCopy(context).commandRunning
-        : _settingsCopy(context).quotaBudgetOff;
+        ? copy.commandRunning
+        : copy.quotaBudgetOff;
     final icon = stopped
-        ? Icons.timer_off_outlined
+        ? AppIconography.timer
         : running
         ? AppIconography.sync
         : starting
         ? AppIconography.cloud
         : AppIconography.cloudOff;
-    final color = stopped
-        ? theme.colorScheme.error
-        : running
-        ? AppTheme.successOf(theme)
-        : null;
-    // The state is the tinted icon and the words (§6), not a coloured title.
+    // The state is the tinted icon and the words (§6), not a coloured
+    // title; a stop is said in words, never in the danger colour (LOOK-5).
     return KitRow(
       key: const ValueKey('background-status-row'),
-      leading: KitRow.icon(context, icon, color: color),
+      leading: KitRow.icon(
+        context,
+        icon,
+        color: running ? ThemeRoles.of(context).success : null,
+      ),
       title: title,
-      supporting: TextSpan(text: _settingsCopy(context).e7SettingsUi34),
+      supporting: TextSpan(text: copy.e7SettingsUi34),
       supportingMaxLines: 2,
       trailing: stopped
-          ? const SizedBox.square(
-              dimension: 48,
-              child: Icon(AppIconography.retry, size: 20),
+          ? KitIconButton(
+              key: const ValueKey('background-restart'),
+              icon: AppIconography.restart,
+              tooltip: copy.notifyRestartBackground,
+              onPressed: onRestart,
             )
           : null,
       onTap: stopped ? onRestart : null,

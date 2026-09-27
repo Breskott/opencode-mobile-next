@@ -98,6 +98,13 @@ final _en = lookupAppLocalizations(const Locale('en'));
 
 Finder _row(String key) => find.byKey(ValueKey(key));
 
+/// The kit search field reports a query once typing settles
+/// (KitMotion.typingSettle), not on each keystroke.
+Future<void> _settleSearch(WidgetTester tester) async {
+  await tester.pump(KitMotion.typingSettle);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -263,7 +270,7 @@ void main() {
     final search = find.byKey(const Key('library-search'));
     for (final entry in cases.entries) {
       await tester.enterText(search, entry.key);
-      await tester.pump();
+      await _settleSearch(tester);
       for (final key in entry.value) {
         expect(_row(key), findsOneWidget, reason: '"${entry.key}" -> $key');
       }
@@ -277,7 +284,7 @@ void main() {
 
     // A title search is specific: unrelated groups drop out entirely.
     await tester.enterText(search, _en.settingsHubModelAndMode);
-    await tester.pump();
+    await _settleSearch(tester);
     expect(_row('settings-group-conversation-defaults'), findsOneWidget);
     expect(_row('settings-group-connection'), findsNothing);
     expect(_row('settings-group-help'), findsNothing);
@@ -293,12 +300,12 @@ void main() {
     final search = find.byKey(const Key('library-search'));
     for (final word in ['session', 'chat', 'conversation']) {
       await tester.enterText(search, word);
-      await tester.pumpAndSettle();
+      await _settleSearch(tester);
       expect(find.text('Model and mode'), findsOneWidget, reason: word);
     }
     for (final word in ['profile', 'connection']) {
       await tester.enterText(search, word);
-      await tester.pumpAndSettle();
+      await _settleSearch(tester);
       expect(find.text('Saved servers'), findsOneWidget, reason: word);
     }
   });
@@ -321,7 +328,7 @@ void main() {
     final search = find.byKey(const Key('library-search'));
     for (final query in [_en.discoverShowTipsAgain, 'tips', 'hints']) {
       await tester.enterText(search, query);
-      await tester.pump();
+      await _settleSearch(tester);
       expect(_row('settings-show-tips-again'), findsOneWidget, reason: query);
     }
     expect(
@@ -358,10 +365,10 @@ void main() {
     await tester.pumpAndSettle();
     final search = find.byKey(const Key('library-search'));
     await tester.enterText(search, _en.e7LibraryKeyboardShortcuts);
-    await tester.pump();
+    await _settleSearch(tester);
     expect(_row('library-keyboard-shortcuts'), findsOneWidget);
     await tester.enterText(search, 'hotkeys');
-    await tester.pump();
+    await _settleSearch(tester);
     expect(_row('library-keyboard-shortcuts'), findsOneWidget);
   });
 
@@ -372,13 +379,13 @@ void main() {
     await tester.pumpAndSettle();
     final search = find.byKey(const Key('library-search'));
     await tester.enterText(search, 'shell');
-    await tester.pumpAndSettle();
+    await _settleSearch(tester);
     // Terminal moved to the Project tab; "shell" still finds the setting.
     expect(_row('library-terminal'), findsNothing);
     expect(_row('default-shell-settings-entry'), findsOneWidget);
     expect(_row('settings-providers'), findsNothing);
     await tester.enterText(search, 'not-a-real-tool');
-    await tester.pumpAndSettle();
+    await _settleSearch(tester);
     expect(find.textContaining('not-a-real-tool'), findsWidgets);
     expect(find.byType(KitRow), findsNothing);
     for (final group in SettingsGroup.values) {
@@ -438,7 +445,7 @@ void main() {
         );
         // Absent rows are absent from search too, not dead results.
         await tester.enterText(find.byKey(const Key('library-search')), 'mcp');
-        await tester.pump();
+        await _settleSearch(tester);
         expect(_row('settings-mcp'), findsNothing);
         // What is about the app, not the server, survives.
         await tester.tap(find.byTooltip('Clear search'));
@@ -561,7 +568,7 @@ void main() {
     expect(_row('library-terminal'), findsNothing);
     expect(find.text('Terminal'), findsNothing);
     await tester.enterText(find.byKey(const Key('library-search')), 'terminal');
-    await tester.pumpAndSettle();
+    await _settleSearch(tester);
     expect(_row('library-terminal'), findsNothing);
   });
 
@@ -584,6 +591,122 @@ void main() {
       tester.getRect(_row('settings-group-connection')).bottom,
       lessThan(0),
     );
+  });
+
+  group('screen-settings-1: two panes from expanded', () {
+    Future<void> wide(WidgetTester tester, Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('the groups are the list and a group fills the detail', (
+      tester,
+    ) async {
+      await wide(tester, const Size(1280, 800));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      final list = find.byKey(const ValueKey('settings-list-pane'));
+      final detail = find.byKey(const ValueKey('settings-detail-pane'));
+      expect(list, findsOneWidget);
+      expect(detail, findsOneWidget);
+      for (final group in SettingsGroup.values) {
+        expect(
+          find.descendant(
+            of: list,
+            matching: _row('settings-index-${group.slug}'),
+          ),
+          findsOneWidget,
+          reason: group.slug,
+        );
+      }
+      // The first group is open; its rows sit in the detail pane only.
+      expect(
+        find.descendant(of: detail, matching: _row('settings-disconnect')),
+        findsOneWidget,
+      );
+      expect(_row('settings-show-tips-again'), findsNothing);
+
+      await tester.tap(_row('settings-index-help'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: detail, matching: _row('settings-show-tips-again')),
+        findsOneWidget,
+      );
+      expect(_row('settings-disconnect'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an entry point opens its group in the detail pane', (
+      tester,
+    ) async {
+      await wide(tester, const Size(1280, 800));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(controller, initialGroup: SettingsGroup.help),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('settings-detail-pane')),
+          matching: _row('settings-group-help'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a search shows its results in the list pane', (tester) async {
+      await wide(tester, const Size(1280, 800));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('library-search')), 'tips');
+      await _settleSearch(tester);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('settings-list-pane')),
+          matching: _row('settings-show-tips-again'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(_en.settingsHubDetailSearching), findsOneWidget);
+    });
+
+    testWidgets('a phone keeps one pane', (tester) async {
+      await wide(tester, const Size(412, 915));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('settings-list-pane')), findsNothing);
+      expect(_row('settings-group-connection'), findsOneWidget);
+    });
+
+    testWidgets('Show tips again says so on its row, not in a snackbar', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_row('settings-show-tips-again'));
+      await tester.pumpAndSettle();
+      await tester.tap(_row('settings-show-tips-again'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: _row('settings-show-tips-again'),
+          matching: find.text(_en.discoverShowTipsDone),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
+    });
   });
 
   group('layout at 320 dp and 2.5x text', () {
@@ -615,7 +738,12 @@ void main() {
         );
 
         // Walk the whole hub so every row has been laid out and painted.
-        final scrollable = find.byType(Scrollable).first;
+        final scrollable = find
+            .descendant(
+              of: find.byKey(const ValueKey('settings-hub-list')),
+              matching: find.byType(Scrollable),
+            )
+            .first;
         for (final group in SettingsGroup.values) {
           await tester.scrollUntilVisible(
             _row('settings-group-${group.slug}'),
@@ -632,7 +760,7 @@ void main() {
 
         // Searching reflows the same rows; it must not overflow either.
         await tester.enterText(find.byKey(const Key('library-search')), 'a');
-        await tester.pumpAndSettle();
+        await _settleSearch(tester);
         expect(tester.takeException(), isNull);
       });
     }
