@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 
@@ -239,48 +240,65 @@ void main() {
   });
 
   group('review workspace handoff', () {
-    testWidgets('a hunk header selects its lines and stages as a hunk', (
+    FileDiff client({String? status}) => FileDiff(
+      file: 'lib/client.dart',
+      patch: '@@ -8,2 +8,2 @@\n-old request\n+new request\n keep',
+      additions: 1,
+      deletions: 1,
+      status: status,
+    );
+
+    // The Undo bar's window is a timer; close it before the test ends.
+    Future<void> settleUndo(WidgetTester tester) async {
+      KitUndo.commitPending();
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openFileMenu(WidgetTester tester) async {
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('review-file-header-lib/client.dart')),
+          matching: find.byTooltip('More'),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selected lines stage on the prompt, with Undo', (
       tester,
     ) async {
-      final store = await _pumpReview(tester, [
-        FileDiff(
-          file: 'lib/client.dart',
-          patch: '@@ -8,2 +8,2 @@\n-old request\n+new request',
-          additions: 1,
-          deletions: 1,
-        ),
-      ]);
+      final store = await _pumpReview(tester, [client()]);
 
-      await tester.tap(find.byKey(const Key('review-line-0')));
+      await tester.tap(find.byKey(const ValueKey('review-line-0-current-8')));
       await tester.pump();
-      expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
-      expect(find.textContaining('Hunk selected'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('review-selection-bar')),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.byKey(const Key('review-selection-add')));
-      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to prompt'));
+      await tester.pump();
 
       final staged = store.referencesFor('session-1').single;
-      expect(staged.kind, ReviewReferenceKind.hunk);
+      expect(staged.kind, ReviewReferenceKind.selection);
       expect(staged.path, 'lib/client.dart');
-      expect(staged.snippet, contains('+new request'));
+      expect(staged.lineLabel, 'new line 8');
+      expect(staged.snippet, 'new request');
       expect(staged.scope, ReviewReferenceScope.session);
-      expect(find.byKey(const Key('review-staged-count')), findsOneWidget);
-      expect(find.text('1 on prompt'), findsOneWidget);
+      // Said in the bar's subtitle; no snack bar, the kit's Undo bar.
+      expect(find.textContaining('1 on prompt'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byKey(const Key('review-staged-undo')), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(store.referencesFor('session-1'), isEmpty);
     });
 
-    testWidgets('the whole changed file stages from the toolbar', (
-      tester,
-    ) async {
-      final store = await _pumpReview(tester, [
-        FileDiff(
-          file: 'lib/client.dart',
-          patch: '@@ -8,2 +8,2 @@\n-old request\n+new request',
-          additions: 1,
-          deletions: 1,
-          status: 'modified',
-        ),
-      ]);
+    testWidgets('the whole changed file stages from its menu', (tester) async {
+      final store = await _pumpReview(tester, [client(status: 'modified')]);
 
+      await openFileMenu(tester);
       await tester.tap(find.byKey(const Key('review-add-file')));
       await tester.pumpAndSettle();
 
@@ -289,29 +307,23 @@ void main() {
       expect(staged.status, 'modified');
       expect(staged.lineLabel, isNull);
 
-      // Staging the same file twice says so instead of duplicating it. The
-      // first snack bar has to clear before the second can show.
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
+      // Staging the same file twice says so instead of duplicating it.
+      await openFileMenu(tester);
       await tester.tap(find.byKey(const Key('review-add-file')));
       await tester.pumpAndSettle();
       expect(store.referencesFor('session-1'), hasLength(1));
+      expect(find.byKey(const Key('review-staged-notice')), findsOneWidget);
       expect(find.textContaining('already on the prompt'), findsOneWidget);
+      await settleUndo(tester);
     });
 
     testWidgets('a review comment stages and keeps review open', (
       tester,
     ) async {
-      final store = await _pumpReview(tester, [
-        FileDiff(
-          file: 'lib/client.dart',
-          patch: '@@ -8,2 +8,2 @@\n-old request\n+new request',
-          additions: 1,
-          deletions: 1,
-        ),
-      ]);
+      final store = await _pumpReview(tester, [client()]);
 
-      await tester.tap(find.text('Ask about file'));
+      await openFileMenu(tester);
+      await tester.tap(find.byKey(const Key('review-file-comment')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('review-comment-field')),
@@ -322,38 +334,71 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('review-workspace')), findsOneWidget);
+      expect(find.byKey(const Key('review-comment-field')), findsNothing);
       final staged = store.referencesFor('session-1').single;
       expect(staged.kind, ReviewReferenceKind.comment);
       expect(staged.comment, 'Explain the retry change.');
       expect(staged.snippet, isNull);
+      await settleUndo(tester);
+    });
+
+    testWidgets('a comment on selected lines quotes them', (tester) async {
+      final store = await _pumpReview(tester, [client()]);
+
+      await tester.tap(find.byKey(const ValueKey('review-line-0-current-8')));
+      await tester.pump();
+      await tester.tap(find.text('Comment'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('review-comment-quote')), findsOneWidget);
+      expect(find.text('new line 8'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('review-comment-field')),
+        'Why rename it?',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('review-add-to-prompt')));
+      await tester.pumpAndSettle();
+
+      final staged = store.referencesFor('session-1').single;
+      expect(staged.kind, ReviewReferenceKind.comment);
+      expect(staged.lineLabel, 'new line 8');
+      expect(staged.snippet, 'new request');
+      await settleUndo(tester);
+    });
+
+    testWidgets('every file seen with notes waiting offers the way back', (
+      tester,
+    ) async {
+      final store = await _pumpReview(tester, [client()]);
+      expect(find.byKey(const Key('review-all-viewed')), findsNothing);
+
+      await openFileMenu(tester);
+      await tester.tap(find.byKey(const Key('review-add-file')));
+      await tester.pumpAndSettle();
+
+      expect(store.referencesFor('session-1'), hasLength(1));
+      expect(find.byKey(const Key('review-all-viewed')), findsOneWidget);
+      expect(find.text("You've seen every file"), findsOneWidget);
+      expect(find.byKey(const Key('review-back-to-chat')), findsOneWidget);
+      await settleUndo(tester);
     });
 
     testWidgets('the phone selection bar stays inside a 360dp screen', (
       tester,
     ) async {
-      await _pumpReview(tester, [
-        FileDiff(
-          file: 'lib/client.dart',
-          patch: '@@ -8,2 +8,2 @@\n-old request\n+new request',
-          additions: 1,
-          deletions: 1,
-        ),
-      ], size: const Size(360, 800));
+      await _pumpReview(tester, [client()], size: const Size(360, 800));
 
-      final lineRect = tester.getRect(find.byKey(const Key('review-line-1')));
-      await tester.tapAt(Offset(lineRect.left + 120, lineRect.center.dy));
+      await tester.tap(find.byKey(const ValueKey('review-line-0-current-8')));
       await tester.pump();
 
-      expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
-      for (final key in const [
-        Key('review-selection-clear'),
-        Key('review-selection-copy'),
-        Key('review-selection-add'),
-      ]) {
-        final rect = tester.getRect(find.byKey(key));
-        expect(rect.left, greaterThanOrEqualTo(0), reason: '$key left');
-        expect(rect.right, lessThanOrEqualTo(360), reason: '$key right');
-        expect(rect.height, greaterThanOrEqualTo(44), reason: '$key height');
+      expect(
+        find.byKey(const ValueKey('review-selection-bar')),
+        findsOneWidget,
+      );
+      for (final label in const ['Comment', 'Add to prompt', 'Copy lines']) {
+        final rect = tester.getRect(find.text(label));
+        expect(rect.left, greaterThanOrEqualTo(0), reason: '$label left');
+        expect(rect.right, lessThanOrEqualTo(360), reason: '$label right');
       }
       expect(tester.takeException(), isNull);
     });

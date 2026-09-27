@@ -36380,6 +36380,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your task is still here. Edit it and send it again.'**
   String get teamStartRunRefusedKept;
+
+  /// Review changes page (review_workspace.dart): the accessible name of the view picker (This conversation / Uncommitted / Whole branch).
+  ///
+  /// In en, this message translates to:
+  /// **'Changes to show'**
+  String get reviewWorkspaceScopes;
+
+  /// Review changes page (review_workspace.dart): title of the notice when a refresh failed and the earlier changes stay on screen; the reason follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh the changes'**
+  String get reviewWorkspaceRefreshFailed;
+
+  /// Review changes page (review_workspace.dart): title shown when the first read of the changes takes longer than 8 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Still reading the changes'**
+  String get reviewWorkspaceSlowTitle;
+
+  /// Review changes page (review_workspace.dart): body under the slow-read title: why it takes a while.
+  ///
+  /// In en, this message translates to:
+  /// **'The server runs git to compare the files. A big project can take a minute.'**
+  String get reviewWorkspaceSlowBody;
+
+  /// Review changes page (review_workspace.dart): finished moment: every changed file has been on screen and notes are waiting on the prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve seen every file'**
+  String get reviewWorkspaceAllViewedTitle;
+
+  /// Review changes page (review_workspace.dart): under the finished-moment title: how many review notes wait on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note is on the prompt, ready to send from the conversation.} other{{count} notes are on the prompt, ready to send from the conversation.}}'**
+  String reviewWorkspaceAllViewedMessage(int count);
+
+  /// Review changes page (review_workspace.dart): action in the finished moment: returns to the conversation whose prompt holds the review notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the conversation'**
+  String get reviewWorkspaceBackToChat;
+
+  /// Review changes page (review_workspace.dart): file menu item and comment sheet title; {file} is the file name, shown left to right.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment on {file}'**
+  String reviewWorkspaceCommentOnFile(String file);
+
+  /// Review changes page (review_workspace.dart): file menu item: puts a reference to the whole changed file on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {file} to the prompt'**
+  String reviewWorkspaceAddFileToPrompt(String file);
+
+  /// Review changes page (review_workspace.dart): comment sheet's primary: puts the typed comment on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment to prompt'**
+  String get reviewWorkspaceAddComment;
+
+  /// Review changes page (review_workspace.dart): why the comment sheet's primary is disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a comment first.'**
+  String get reviewWorkspaceCommentEmpty;
+
+  /// Review changes page (review_workspace.dart): label above the comment field.
+  ///
+  /// In en, this message translates to:
+  /// **'Your comment'**
+  String get reviewWorkspaceCommentLabel;
+
+  /// Review changes page (review_workspace.dart): example text inside the empty comment field; agent-neutral (works for every server).
+  ///
+  /// In en, this message translates to:
+  /// **'What should the agent check or change?'**
+  String get reviewWorkspaceCommentHint;
+
+  /// Review changes page (review_workspace.dart): helper under the comment field: typed text survives closing the sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept if you close this, until you add it.'**
+  String get reviewWorkspaceCommentHelper;
 }
 
 class _AppLocalizationsDelegate

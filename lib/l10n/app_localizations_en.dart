@@ -22927,4 +22927,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamStartRunRefusedKept =>
       'Your task is still here. Edit it and send it again.';
+
+  @override
+  String get reviewWorkspaceScopes => 'Changes to show';
+
+  @override
+  String get reviewWorkspaceRefreshFailed => 'Couldn\'t refresh the changes';
+
+  @override
+  String get reviewWorkspaceSlowTitle => 'Still reading the changes';
+
+  @override
+  String get reviewWorkspaceSlowBody =>
+      'The server runs git to compare the files. A big project can take a minute.';
+
+  @override
+  String get reviewWorkspaceAllViewedTitle => 'You\'ve seen every file';
+
+  @override
+  String reviewWorkspaceAllViewedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count notes are on the prompt, ready to send from the conversation.',
+      one: '1 note is on the prompt, ready to send from the conversation.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewWorkspaceBackToChat => 'Back to the conversation';
+
+  @override
+  String reviewWorkspaceCommentOnFile(String file) {
+    return 'Comment on $file';
+  }
+
+  @override
+  String reviewWorkspaceAddFileToPrompt(String file) {
+    return 'Add $file to the prompt';
+  }
+
+  @override
+  String get reviewWorkspaceAddComment => 'Add comment to prompt';
+
+  @override
+  String get reviewWorkspaceCommentEmpty => 'Type a comment first.';
+
+  @override
+  String get reviewWorkspaceCommentLabel => 'Your comment';
+
+  @override
+  String get reviewWorkspaceCommentHint =>
+      'What should the agent check or change?';
+
+  @override
+  String get reviewWorkspaceCommentHelper =>
+      'Kept if you close this, until you add it.';
 }
