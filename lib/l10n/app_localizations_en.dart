@@ -22927,4 +22927,98 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamStartRunRefusedKept =>
       'Your task is still here. Edit it and send it again.';
+
+  @override
+  String get usageRangeLabel => 'Time range';
+
+  @override
+  String get usageAboutNumbers => 'About these numbers';
+
+  @override
+  String get usageBudgetHelperUsd =>
+      'In US dollars for this range. You’re told when the report reaches it; nothing is stopped.';
+
+  @override
+  String get usageBudgetHelperTokens =>
+      'Whole tokens for this range. You’re told when the report reaches it; nothing is stopped.';
+
+  @override
+  String get usageBudgetClearConfirm => 'Clear budgets';
+
+  @override
+  String get usageBudgetNotSet => 'Not set';
+
+  @override
+  String get usageBudgetWaitReason => 'Available once usage has loaded.';
+
+  @override
+  String get usageBudgetUsdTitle => 'USD budget';
+
+  @override
+  String get usageBudgetTokensTitle => 'Token budget';
+
+  @override
+  String get agentAccountScopeLostTitle => 'This server changed';
+
+  @override
+  String get agentAccountBackToServers => 'Back to Servers';
+
+  @override
+  String get agentAccountNotConnected =>
+      'Connect to this server to see its Codex account.';
+
+  @override
+  String get agentAccountSignInMethod => 'Signed in with';
+
+  @override
+  String get agentAccountPlanTitle => 'Plan';
+
+  @override
+  String get agentAccountCopyCode => 'Copy sign-in code';
+
+  @override
+  String agentAccountLimitReached(String reset) {
+    return 'You’ve reached a Codex limit. $reset';
+  }
+
+  @override
+  String get agentAccountResetDue => 'Resets any moment';
+
+  @override
+  String agentAccountResetInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Resets in $days days',
+      one: 'Resets in 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetInHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Resets in $hours h',
+      one: 'Resets in 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetInMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Resets in $minutes min',
+      one: 'Resets in 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetWhen(String relative, String time) {
+    return '$relative ($time)';
+  }
 }

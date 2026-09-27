@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -7,11 +8,35 @@ import '../../domain/agent_account.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/agent_account.dart';
 import '../../state/connection.dart';
+import '../app_theme.dart';
+import '../kit/kit_bidi.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_capability_explainer.dart';
+import '../kit/kit_details_fold.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_progress_row.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
 import '../widgets/external_link.dart';
-import '../app_iconography.dart';
+
+AppLocalizations _strings(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// Pins the route to the profile/location the user opened. A reconnect may
 /// refresh that account, but never recreates a pending login.
+///
+/// Before an account session exists the page says why instead of showing a
+/// blank or misleading line: the server changed (scope lost, with the way
+/// back), it is not connected, or it cannot host a Codex account at all
+/// (KitCapabilityExplainer `server.codex`, which offers to connect one once
+/// the app registers that flow).
 class AgentAccountScreen extends StatefulWidget {
   final ConnectionController connection;
   const AgentAccountScreen({super.key, required this.connection});
@@ -40,6 +65,10 @@ class _AgentAccountScreenState extends State<AgentAccountScreen>
     WidgetsBinding.instance.addObserver(this);
     _bind();
   }
+
+  bool get _supported =>
+      widget.connection.capabilities.agentAccount &&
+      widget.connection.api is AgentAccountGateway;
 
   void _bind() {
     final gateway = widget.connection.api;
@@ -97,21 +126,56 @@ class _AgentAccountScreenState extends State<AgentAccountScreen>
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    if (controller == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.agentAccountTitle)),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(l10n.agentAccountScopeLost),
+    if (controller != null) {
+      return AgentAccountPanel(controller: controller, profileName: _name);
+    }
+    final l10n = _strings(context);
+    final Widget state;
+    if (_scopeLost) {
+      state = KitStateView(
+        key: const ValueKey('agent-account-scope-lost'),
+        icon: AppIconography.swap,
+        title: l10n.agentAccountScopeLostTitle,
+        body: l10n.agentAccountScopeLost,
+        primary: KitAction(
+          label: l10n.agentAccountBackToServers,
+          icon: AppIconography.back,
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
       );
+    } else if (!_supported) {
+      state = KitCapabilityExplainer.state(
+        key: const ValueKey('agent-account-unsupported'),
+        capability: 'server.codex',
+        serverName: _name.isEmpty ? null : _name,
+        size: KitStateSize.page,
+        source: 'agent-account',
+      );
+    } else {
+      state = KitStateView(
+        key: const ValueKey('agent-account-not-connected'),
+        icon: AppIconography.cloudOff,
+        title: l10n.agentAccountDisconnected,
+        body: l10n.agentAccountNotConnected,
+      );
     }
-    return AgentAccountPanel(controller: controller, profileName: _name);
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.agentAccountTitle,
+        subtitle: _name.isEmpty ? null : _name,
+      ),
+      width: KitScreenWidth.reading,
+      body: state,
+    );
   }
 }
 
 /// Rendered product surface, also used by synthetic widget capture fixtures.
+///
+/// One page per account state: the state in words first (who is signed in,
+/// or why not), the sign-in steps while a device-code sign-in runs, then
+/// the limits and token usage the host reports. Sign in is the one pinned
+/// primary. The host notes fold under Details at the end.
 class AgentAccountPanel extends StatelessWidget {
   final AgentAccountController controller;
   final String profileName;
@@ -121,230 +185,193 @@ class AgentAccountPanel extends StatelessWidget {
     required this.profileName,
   });
 
+  String _headline(AppLocalizations l) {
+    final account = controller.account;
+    return switch (controller.status) {
+      AccountPanelStatus.loading => l.agentAccountLoading,
+      AccountPanelStatus.unavailable => l.agentAccountUnavailable,
+      AccountPanelStatus.error => l.agentAccountReadFailed,
+      AccountPanelStatus.disconnected => l.agentAccountDisconnected,
+      AccountPanelStatus.ready =>
+        account!.signedIn
+            ? l.agentAccountConnected
+            : account.requiresSignIn
+            ? controller.loginPending
+                  ? l.agentAccountInProgress
+                  : controller.loginStatus == AccountLoginStatus.uncertain
+                  ? l.agentAccountNeedsAttention
+                  : l.agentAccountSignedOut
+            : l.agentAccountNoAuth,
+    };
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: controller,
     builder: (context, _) {
-      final l = lookupAppLocalizations(Localizations.localeOf(context));
-      final theme = Theme.of(context);
-      final colors = theme.colorScheme;
+      final l = _strings(context);
+      final tokens = KitTokens.of(context);
       final account = controller.account;
-      final ready = controller.status == AccountPanelStatus.ready;
-      final headline = switch (controller.status) {
-        AccountPanelStatus.loading => l.agentAccountLoading,
-        AccountPanelStatus.unavailable => l.agentAccountUnavailable,
-        AccountPanelStatus.error => l.agentAccountReadFailed,
-        AccountPanelStatus.disconnected => l.agentAccountDisconnected,
-        AccountPanelStatus.ready =>
-          account!.signedIn
-              ? l.agentAccountConnected
-              : account.requiresSignIn
-              ? controller.loginPending
-                    ? l.agentAccountInProgress
-                    : controller.loginStatus == AccountLoginStatus.uncertain
-                    ? l.agentAccountNeedsAttention
-                    : l.agentAccountSignedOut
-              : l.agentAccountNoAuth,
-      };
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l.agentAccountTitle),
+      final status = controller.status;
+      final ready = status == AccountPanelStatus.ready;
+      final signedIn = ready && account!.signedIn;
+      final canRefresh =
+          status != AccountPanelStatus.loading && controller.session.active;
+      final working =
+          status == AccountPanelStatus.loading ||
+          controller.loginStatus == AccountLoginStatus.starting ||
+          controller.loginStatus == AccountLoginStatus.cancelling;
+      final section = SizedBox(height: tokens.sectionGap);
+      return KitScreen(
+        topBar: KitTopBar(
+          title: l.agentAccountTitle,
+          subtitle: profileName.isEmpty ? null : profileName,
           actions: [
-            IconButton(
-              tooltip: l.agentAccountRefresh,
-              onPressed:
-                  controller.status == AccountPanelStatus.loading ||
-                      !controller.session.active
-                  ? null
-                  : controller.refresh,
-              icon: const Icon(AppIconography.retry),
+            KitAction(
+              label: l.agentAccountRefresh,
+              icon: AppIconography.retry,
+              onPressed: canRefresh ? controller.refresh : null,
+              disabledReason: canRefresh ? null : l.agentAccountLoading,
             ),
           ],
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      profileName,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: colors.primaryContainer.withValues(alpha: .42),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: colors.primary.withValues(alpha: .18),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            ready && account!.signedIn
-                                ? AppIconography.privacy
-                                : AppIconography.account,
-                            color: colors.primary,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 18),
-                          Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              headline,
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          if (account?.email case final email?) ...[
-                            const SizedBox(height: 8),
-                            Text(email, style: theme.textTheme.bodyLarge),
-                          ],
-                          if (ready && account!.signedIn) ...[
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _badge(context, switch (account.type) {
-                                  'chatgpt' => 'ChatGPT',
-                                  'apiKey' => l.agentAccountApiKey,
-                                  'amazonBedrock' => 'Amazon Bedrock',
-                                  _ => l.agentAccountHostAuth,
-                                }),
-                                if (account.plan case final plan?)
-                                  _badge(context, l.agentAccountPlan(plan)),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          Text(
-                            l.agentAccountHostNote,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          if (controller.status ==
-                              AccountPanelStatus.loading) ...[
-                            const SizedBox(height: 20),
-                            const LinearProgressIndicator(),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (controller.status ==
-                        AccountPanelStatus.unavailable) ...[
-                      const SizedBox(height: 16),
-                      Text(l.agentAccountUnsupportedDetail),
-                    ],
-                    if (controller.status ==
-                        AccountPanelStatus.disconnected) ...[
-                      const SizedBox(height: 16),
-                      Text(l.agentAccountReconnectDetail),
-                    ],
-                    if (controller.canSignIn) ...[
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: controller.signIn,
-                        icon: const Icon(AppIconography.login),
-                        label: Text(l.agentAccountSignIn),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        l.agentAccountSignInNote,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                    if (controller.loginStatus != AccountLoginStatus.idle) ...[
-                      const SizedBox(height: 20),
-                      _login(context, l),
-                    ],
-                    if (ready && account!.signedIn) ...[
-                      const SizedBox(height: 28),
-                      Text(
-                        l.agentAccountLimits,
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      if (controller.metricsLoading &&
-                          controller.limits == null)
-                        const LinearProgressIndicator(),
-                      if (!controller.metricsLoading &&
-                          (controller.limits == null ||
-                              controller.limits!.every(
-                                (bucket) =>
-                                    bucket.primary == null &&
-                                    bucket.secondary == null,
-                              )))
-                        _detail(context, l.agentAccountLimitsUnavailable)
-                      else if (controller.limits != null)
-                        for (final bucket in controller.limits!)
-                          _bucket(context, l, bucket),
-                      const SizedBox(height: 24),
-                      Text(
-                        l.agentAccountUsage,
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      if (controller.metricsLoading)
-                        const LinearProgressIndicator(),
-                      if (!controller.metricsLoading &&
-                          controller.usage?.lifetimeTokens == null &&
-                          controller.usage?.peakDailyTokens == null)
-                        _detail(context, l.agentAccountUsageUnavailable)
-                      else
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            if (controller.usage?.lifetimeTokens
-                                case final value?)
-                              _metric(
-                                context,
-                                l.agentAccountLifetimeTokens,
-                                value,
-                              ),
-                            if (controller.usage?.peakDailyTokens
-                                case final value?)
-                              _metric(context, l.agentAccountPeakTokens, value),
-                          ],
-                        ),
-                      const SizedBox(height: 12),
-                      Text(
-                        l.agentAccountUsageNote,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                    if (controller.updatedAt case final at?) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        l.agentAccountUpdated(_time(context, at)),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
+        width: KitScreenWidth.reading,
+        loading: working,
+        loadingLabel: l.agentAccountLoading,
+        bottom: controller.canSignIn
+            ? KitActionBlock(
+                primary: KitAction(
+                  key: const ValueKey('agent-account-sign-in'),
+                  label: l.agentAccountSignIn,
+                  icon: AppIconography.login,
+                  onPressed: controller.signIn,
                 ),
+              )
+            : null,
+        body: ListView(
+          padding: KitScreen.padding(context),
+          children: [
+            SizedBox(height: tokens.space3),
+            _state(context, l),
+            if (controller.loginStatus != AccountLoginStatus.idle) ...[
+              section,
+              _login(context, l),
+            ],
+            if (signedIn) ...[
+              section,
+              ..._limits(context, l),
+              section,
+              ..._usage(context, l),
+            ],
+            if (controller.updatedAt case final at?) ...[
+              section,
+              KitText(
+                l.agentAccountUpdated(_time(context, at)),
+                role: KitTextRole.caption,
               ),
+            ],
+            SizedBox(height: tokens.space4),
+            KitDetailsFold(
+              notes: [
+                l.agentAccountHostNote,
+                if (controller.canSignIn) l.agentAccountSignInNote,
+                if (signedIn) l.agentAccountUsageNote,
+                if (status == AccountPanelStatus.unavailable)
+                  l.agentAccountUnsupportedDetail,
+              ],
             ),
-          ),
+          ],
         ),
       );
     },
   );
 
+  /// Who is signed in, or why the account cannot be read.
+  Widget _state(BuildContext context, AppLocalizations l) {
+    final account = controller.account;
+    final headline = _headline(l);
+    switch (controller.status) {
+      case AccountPanelStatus.error:
+        return KitNotice.error(
+          key: const ValueKey('agent-account-read-failed'),
+          message: headline,
+          reportSource: 'agent-account',
+          retry: controller.session.active
+              ? KitAction(label: l.commonRetry, onPressed: controller.refresh)
+              : null,
+        );
+      case AccountPanelStatus.unavailable:
+        return KitStateView(
+          icon: AppIconography.blocked,
+          title: headline,
+          body: l.agentAccountUnsupportedDetail,
+          size: KitStateSize.inline,
+          padding: EdgeInsetsDirectional.zero,
+        );
+      case AccountPanelStatus.disconnected:
+        return KitStateView(
+          icon: AppIconography.cloudOff,
+          title: headline,
+          body: l.agentAccountReconnectDetail,
+          size: KitStateSize.inline,
+          padding: EdgeInsetsDirectional.zero,
+        );
+      case AccountPanelStatus.loading:
+        return KitStateView(
+          icon: AppIconography.account,
+          title: headline,
+          progress: const KitProgress.waiting(),
+          size: KitStateSize.inline,
+          padding: EdgeInsetsDirectional.zero,
+        );
+      case AccountPanelStatus.ready:
+        break;
+    }
+    if (!account!.signedIn) {
+      return KitStateView(
+        icon: AppIconography.account,
+        title: headline,
+        body: controller.canSignIn ? l.agentAccountSignInNote : null,
+        size: KitStateSize.inline,
+        padding: EdgeInsetsDirectional.zero,
+      );
+    }
+    final method = switch (account.type) {
+      'chatgpt' => 'ChatGPT',
+      'apiKey' => l.agentAccountApiKey,
+      'amazonBedrock' => 'Amazon Bedrock',
+      _ => l.agentAccountHostAuth,
+    };
+    return KitRowGroup(
+      margin: EdgeInsetsDirectional.zero,
+      children: [
+        KitRow(
+          key: const ValueKey('agent-account-state'),
+          leading: KitRow.icon(context, AppIconography.privacy),
+          title: headline,
+          supporting: account.email == null
+              ? null
+              : TextSpan(text: KitBidi.auto(account.email!)),
+        ),
+        KitRow(
+          leading: KitRow.icon(context, AppIconography.login),
+          title: l.agentAccountSignInMethod,
+          trailing: KitRowValue(method, chevron: false),
+        ),
+        if (account.plan case final plan?)
+          KitRow(
+            leading: KitRow.icon(context, AppIconography.star),
+            title: l.agentAccountPlanTitle,
+            trailing: KitRowValue(KitBidi.auto(plan), chevron: false),
+          ),
+      ],
+    );
+  }
+
+  /// The device-code sign-in, step by step: the code (copyable), the
+  /// official page, and Cancel while it runs; what happened once it ends.
   Widget _login(BuildContext context, AppLocalizations l) {
+    final tokens = KitTokens.of(context);
     final status = controller.loginStatus;
     final code = controller.deviceCode;
     final text = switch (status) {
@@ -357,153 +384,228 @@ class AgentAccountPanel extends StatelessWidget {
       AccountLoginStatus.completed => l.agentAccountLoginCompleted,
       AccountLoginStatus.idle => '',
     };
-    return Card.outlined(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              liveRegion: true,
-              child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-            ),
-            if (status == AccountLoginStatus.starting ||
-                status == AccountLoginStatus.cancelling) ...[
-              const SizedBox(height: 16),
-              const LinearProgressIndicator(),
-            ],
-            if (code != null) ...[
-              const SizedBox(height: 16),
-              Text(l.agentAccountCodeHint),
-              const SizedBox(height: 12),
-              SelectableText(
-                code.userCode,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontFamily: 'AppMono',
-                  letterSpacing: 2,
+    final cancel = controller.loginPending || controller.canCancel
+        ? KitButton.tertiary(
+            key: const ValueKey('agent-account-cancel'),
+            label: l.agentAccountCancel,
+            icon: AppIconography.close,
+            onPressed: status == AccountLoginStatus.cancelling
+                ? null
+                : controller.cancel,
+          )
+        : null;
+    if (status == AccountLoginStatus.failed) {
+      // The code expired or the host refused it: say so, and Sign in (the
+      // pinned primary) starts a fresh code.
+      return KitNotice.error(
+        key: const ValueKey('agent-account-login-failed'),
+        message: text,
+        reportSource: 'agent-account',
+      );
+    }
+    if (code == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitNotice(
+            key: const ValueKey('agent-account-login-status'),
+            icon: switch (status) {
+              AccountLoginStatus.completed => AppIconography.checkCircle,
+              AccountLoginStatus.uncertain => AppIconography.warning,
+              _ => AppIconography.login,
+            },
+            tone: status == AccountLoginStatus.completed
+                ? AppStatusTone.ok
+                : AppStatusTone.neutral,
+            message: text,
+          ),
+          if (cancel != null) ...[
+            SizedBox(height: tokens.space2),
+            Align(alignment: AlignmentDirectional.centerStart, child: cancel),
+          ],
+        ],
+      );
+    }
+    final host = Uri.tryParse(code.verificationUrl)?.host ?? '';
+    return KitSurface.panel(
+      key: const ValueKey('agent-account-code'),
+      title: text,
+      icon: AppIconography.login,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText(l.agentAccountCodeHint, role: KitTextRole.secondary),
+          SizedBox(height: tokens.space3),
+          Row(
+            children: [
+              Expanded(
+                child: KitText.selectable(
+                  code.userCode,
+                  role: KitTextRole.title,
+                  tabular: true,
+                  semanticsLabel: code.userCode.split('').join(' '),
                 ),
               ),
-              const SizedBox(height: 16),
-              FilledButton.tonalIcon(
-                onPressed: () =>
-                    openExternalLink(context, code.verificationUrl),
-                icon: const Icon(AppIconography.externalLink),
-                label: Text(l.agentAccountOpenSignIn),
-              ),
-              const SizedBox(height: 8),
-              const Text('auth.openai.com'),
-            ],
-            if (controller.loginPending || controller.canCancel) ...[
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: status == AccountLoginStatus.cancelling
-                    ? null
-                    : controller.cancel,
-                child: Text(l.agentAccountCancel),
+              KitIconButton.copy(
+                key: const ValueKey('agent-account-copy-code'),
+                text: () => code.userCode,
+                tooltip: l.agentAccountCopyCode,
               ),
             ],
+          ),
+          SizedBox(height: tokens.space3),
+          KitButton.secondary(
+            key: const ValueKey('agent-account-open-sign-in'),
+            label: l.agentAccountOpenSignIn,
+            icon: AppIconography.externalLink,
+            onPressed: () => openExternalLink(context, code.verificationUrl),
+          ),
+          if (host.isNotEmpty) ...[
+            SizedBox(height: tokens.space1),
+            KitText(KitBidi.ltr(host), role: KitTextRole.caption),
           ],
-        ),
+          if (cancel != null) ...[
+            SizedBox(height: tokens.space2),
+            Align(alignment: AlignmentDirectional.centerStart, child: cancel),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _bucket(
-    BuildContext context,
-    AppLocalizations l,
-    AccountRateBucket bucket,
-  ) => Card.filled(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  /// One measured row per rate window; a window at its limit says when it
+  /// resets.
+  List<Widget> _limits(BuildContext context, AppLocalizations l) {
+    final tokens = KitTokens.of(context);
+    final limits = controller.limits;
+    final known =
+        limits?.where((b) => b.primary != null || b.secondary != null) ??
+        const <AccountRateBucket>[];
+    final windows = [
+      for (final bucket in known)
+        for (final window in [bucket.primary, bucket.secondary])
+          if (window != null) (bucket, window),
+    ];
+    final reached = [
+      for (final (_, window) in windows)
+        if (window.usedPercent >= 100) window,
+    ];
+    return [
+      KitRowGroup(
+        margin: EdgeInsetsDirectional.zero,
+        label: l.agentAccountLimits,
+        leadingIcons: false,
         children: [
-          Text(
-            bucket.name ?? l.agentAccountAllowance,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (bucket.primary case final window?) _window(context, l, window),
-          if (bucket.secondary case final window?) _window(context, l, window),
+          if (controller.metricsLoading && limits == null)
+            KitProgressRow(title: l.agentAccountAllowance, value: null)
+          else if (windows.isEmpty)
+            KitRow(
+              title: l.agentAccountLimitsUnavailable,
+              titleMaxLines: 3,
+              enabled: false,
+              disabledReason: l.agentAccountUsageNote,
+            )
+          else
+            for (final (bucket, window) in windows)
+              KitProgressRow(
+                title: [
+                  bucket.name ?? l.agentAccountAllowance,
+                  window.durationMinutes == null
+                      ? l.agentAccountWindowUnknown
+                      : _duration(l, window.durationMinutes!),
+                ].join(' · '),
+                value: (window.usedPercent / 100).clamp(0, 1).toDouble(),
+                valueLabel: [
+                  l.agentAccountPercentUsed(window.usedPercent),
+                  _reset(context, l, window.resetsAt, withDate: false),
+                ].join(' · '),
+              ),
         ],
       ),
-    ),
-  );
-
-  Widget _window(
-    BuildContext context,
-    AppLocalizations l,
-    AccountRateWindow window,
-  ) => Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          l.agentAccountPercentUsed(window.usedPercent),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: (window.usedPercent / 100).clamp(0, 1),
-          minHeight: 7,
-          borderRadius: BorderRadius.circular(8),
-          semanticsLabel: l.agentAccountPercentUsed(window.usedPercent),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          window.durationMinutes == null
-              ? l.agentAccountWindowUnknown
-              : _duration(l, window.durationMinutes!),
-        ),
-        Text(
-          window.resetsAt == null
-              ? l.agentAccountResetUnknown
-              : l.agentAccountReset(_time(context, window.resetsAt!)),
+      if (reached.isNotEmpty) ...[
+        SizedBox(height: tokens.space3),
+        KitNotice(
+          key: const ValueKey('agent-account-limit-reached'),
+          icon: AppIconography.blocked,
+          message: l.agentAccountLimitReached(
+            _reset(context, l, reached.first.resetsAt),
+          ),
         ),
       ],
-    ),
-  );
+    ];
+  }
 
-  Widget _metric(BuildContext context, String label, int value) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          NumberFormat.decimalPattern(
-            Localizations.localeOf(context).toLanguageTag(),
-          ).format(value),
-          style: Theme.of(context).textTheme.headlineSmall,
+  List<Widget> _usage(BuildContext context, AppLocalizations l) {
+    final usage = controller.usage;
+    final number = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final rows = [
+      if (usage?.lifetimeTokens case final value?)
+        KitRow(
+          title: l.agentAccountLifetimeTokens,
+          trailing: KitRowValue(number.format(value), chevron: false),
         ),
-        const SizedBox(height: 6),
-        Text(label),
-      ],
-    ),
-  );
-  Widget _detail(BuildContext context, String text) => Card.filled(
-    margin: EdgeInsets.zero,
-    child: Padding(padding: const EdgeInsets.all(20), child: Text(text)),
-  );
-  Widget _badge(BuildContext context, String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(text, style: Theme.of(context).textTheme.labelLarge),
-  );
+      if (usage?.peakDailyTokens case final value?)
+        KitRow(
+          title: l.agentAccountPeakTokens,
+          trailing: KitRowValue(number.format(value), chevron: false),
+        ),
+    ];
+    return [
+      KitRowGroup(
+        margin: EdgeInsetsDirectional.zero,
+        label: l.agentAccountUsage,
+        leadingIcons: false,
+        children: [
+          if (controller.metricsLoading && rows.isEmpty)
+            KitProgressRow(title: l.agentAccountUsage, value: null)
+          else if (rows.isEmpty)
+            KitRow(
+              title: l.agentAccountUsageUnavailable,
+              titleMaxLines: 3,
+              enabled: false,
+              disabledReason: l.agentAccountUsageNote,
+            )
+          else
+            ...rows,
+        ],
+      ),
+    ];
+  }
+
   String _duration(AppLocalizations l, int minutes) =>
       minutes > 0 && minutes % 1440 == 0
       ? l.agentAccountWindowDays(minutes ~/ 1440)
       : minutes > 0 && minutes % 60 == 0
       ? l.agentAccountWindowHours(minutes ~/ 60)
       : l.agentAccountWindowMinutes(minutes);
+
+  /// "Resets in 3 h (Sep 20, 6:00 PM)": the relative time first, the date
+  /// for when the page is read later; a limit row shows the relative part
+  /// only.
+  String _reset(
+    BuildContext context,
+    AppLocalizations l,
+    DateTime? at, {
+    bool withDate = true,
+  }) {
+    if (at == null) return l.agentAccountResetUnknown;
+    final left = at.difference(clock.now());
+    final relative = left.isNegative
+        ? l.agentAccountResetDue
+        : left.inHours >= 48
+        ? l.agentAccountResetInDays(left.inDays)
+        : left.inMinutes >= 60
+        ? l.agentAccountResetInHours(left.inHours)
+        : l.agentAccountResetInMinutes(left.inMinutes < 1 ? 1 : left.inMinutes);
+    return withDate
+        ? l.agentAccountResetWhen(relative, _time(context, at))
+        : relative;
+  }
+
   String _time(BuildContext context, DateTime at) => DateFormat.yMMMd(
     Localizations.localeOf(context).toLanguageTag(),
   ).add_jm().format(at.toLocal());

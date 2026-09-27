@@ -36380,6 +36380,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your task is still here. Edit it and send it again.'**
   String get teamStartRunRefusedKept;
+
+  /// Usage (Spent): label above the Today / 30 days / This year / All time choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range'**
+  String get usageRangeLabel;
+
+  /// Usage (Spent): the Details fold at the end holding what the figures include and exclude.
+  ///
+  /// In en, this message translates to:
+  /// **'About these numbers'**
+  String get usageAboutNumbers;
+
+  /// Usage budget dialog: helper under the amount field for a USD budget, saying the currency and the effect.
+  ///
+  /// In en, this message translates to:
+  /// **'In US dollars for this range. You’re told when the report reaches it; nothing is stopped.'**
+  String get usageBudgetHelperUsd;
+
+  /// Usage budget dialog: helper under the amount field for a token budget, saying the unit and the effect.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole tokens for this range. You’re told when the report reaches it; nothing is stopped.'**
+  String get usageBudgetHelperTokens;
+
+  /// Usage: the destructive confirm button that removes every saved consumption budget for this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear budgets'**
+  String get usageBudgetClearConfirm;
+
+  /// Usage budgets: trailing value on a budget row with no budget saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get usageBudgetNotSet;
+
+  /// Usage budgets: why a budget row cannot be opened right now (usage still loading, failed, or a save is running).
+  ///
+  /// In en, this message translates to:
+  /// **'Available once usage has loaded.'**
+  String get usageBudgetWaitReason;
+
+  /// Usage budgets: title of the row showing spend against a saved USD budget.
+  ///
+  /// In en, this message translates to:
+  /// **'USD budget'**
+  String get usageBudgetUsdTitle;
+
+  /// Usage budgets: title of the row showing tokens against a saved token budget.
+  ///
+  /// In en, this message translates to:
+  /// **'Token budget'**
+  String get usageBudgetTokensTitle;
+
+  /// Codex account: title of the state shown when the connection moved to another server after the page opened.
+  ///
+  /// In en, this message translates to:
+  /// **'This server changed'**
+  String get agentAccountScopeLostTitle;
+
+  /// Codex account: button on the server-changed state that returns to the Servers page.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Servers'**
+  String get agentAccountBackToServers;
+
+  /// Codex account: body of the state shown when the server is not connected yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to this server to see its Codex account.'**
+  String get agentAccountNotConnected;
+
+  /// Codex account: row title whose value is the sign-in method (ChatGPT, API key...).
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with'**
+  String get agentAccountSignInMethod;
+
+  /// Codex account: row title whose value is the account plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get agentAccountPlanTitle;
+
+  /// Codex account: label of the button that copies the one-time device sign-in code.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy sign-in code'**
+  String get agentAccountCopyCode;
+
+  /// Codex account: notice under the rate limits when a window is at 100 %; {reset} is when it resets, e.g. "Resets in 3 h (Sep 20, 6:00 PM)".
+  ///
+  /// In en, this message translates to:
+  /// **'You’ve reached a Codex limit. {reset}'**
+  String agentAccountLimitReached(String reset);
+
+  /// Codex account: a rate window whose reset time has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets any moment'**
+  String get agentAccountResetDue;
+
+  /// Codex account: time until a rate window resets, in days.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{Resets in 1 day} other{Resets in {days} days}}'**
+  String agentAccountResetInDays(int days);
+
+  /// Codex account: time until a rate window resets, in hours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, one{Resets in 1 h} other{Resets in {hours} h}}'**
+  String agentAccountResetInHours(int hours);
+
+  /// Codex account: time until a rate window resets, in minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, one{Resets in 1 min} other{Resets in {minutes} min}}'**
+  String agentAccountResetInMinutes(int minutes);
+
+  /// Codex account: relative reset time followed by the exact date and time.
+  ///
+  /// In en, this message translates to:
+  /// **'{relative} ({time})'**
+  String agentAccountResetWhen(String relative, String time);
 }
 
 class _AppLocalizationsDelegate
