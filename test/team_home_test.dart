@@ -583,10 +583,11 @@ void main() {
         },
       );
       await pumpHome(tester, controller);
-      // One heading over every task; none of the old section labels.
+      // One panel of every task, with no heading; none of the old section
+      // labels.
       final tasks = find.byKey(const ValueKey('team-home-tasks'));
       expect(tasks, findsOneWidget);
-      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Tasks'), findsNothing);
       expect(find.text('Done today'), findsNothing);
       expect(find.text('Needs you'), findsNothing);
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);

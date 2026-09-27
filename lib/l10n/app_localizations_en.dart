@@ -15402,7 +15402,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneSkip => 'Skip for now';
 
   @override
-  String get teamUiPhoneSetUp => 'Set up AI team';
+  String get teamUiPhoneSetUp => 'Set up AI Team on this phone';
 
   @override
   String get teamUiPhoneStepDownload => 'Download & verify';
@@ -15694,7 +15694,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.';
 
   @override
-  String get teamUiPhoneReofferTitle => 'Set up AI team on this phone';
+  String get teamUiPhoneReofferTitle =>
+      'Let a team of agents work on this phone too';
 
   @override
   String get teamUiPhoneReofferBody =>

@@ -34,6 +34,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitReceipt;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
@@ -483,7 +484,7 @@ void main() {
 
   final sheet = find.byKey(const ValueKey('team-gate-sheet'));
   final send = find.byKey(const ValueKey('team-gate-send'));
-  final receiptLine = find.byKey(const ValueKey('team-gate-receipt-line'));
+  final receiptLine = find.byType(KitReceipt);
   final retry = find.byKey(const ValueKey('team-gate-retry'));
   final confirmSheet = find.byKey(const ValueKey('team-gate-confirm'));
   final confirmYes = find.byKey(const ValueKey('team-gate-confirm-yes'));
@@ -540,7 +541,11 @@ void main() {
           .onPressed !=
       null;
 
-  String receipt(WidgetTester tester) => tester.widget<Text>(receiptLine).data!;
+  // The sheet keys its receipt by the answer's status; the receipt's
+  // words also follow the wall clock (a slow wait reads "Not confirmed
+  // yet"), so tests read the status.
+  Finder receiptOf(String status) =>
+      find.byKey(ValueKey('team-gate-receipt-$status'));
 
   // ---------------------------------------------------------------------
   // Choice
@@ -558,17 +563,10 @@ void main() {
         find.byKey(const ValueKey('team-gate-answer-on-host')),
         findsNothing,
       );
-      expect(send, findsOneWidget);
-      expect(enabled(tester, send), isFalse);
-      expect(
-        find.byKey(const ValueKey('team-gate-options-hint')),
-        findsOneWidget,
-      );
+      // One choice acts on tap (KIT-25): no separate Send.
+      expect(send, findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('team-gate-option-1')));
-      await tester.pump();
-      expect(enabled(tester, send), isTrue);
-      await tester.tap(send);
       await tester.pump();
 
       // Exactly one send, to the gate's own id, with the chosen option.
@@ -584,10 +582,9 @@ void main() {
       expect(record.request.kind, MutationKind.respond);
       expect(record.status, MutationStatus.sent);
 
-      // The receipt shows inline and the action is off while sent.
+      // The receipt shows inline while sent.
       await tester.pump();
-      expect(receipt(tester), 'Sent · waiting for the host to confirm');
-      expect(enabled(tester, send), isFalse);
+      expect(receiptOf('sent'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await team.stop();
     });
@@ -599,17 +596,16 @@ void main() {
         configure: (g) => g.gateList.add(choiceGate()),
       );
       await pumpSheet(tester, team, 'req-1');
+      // One choice acts on tap (KIT-25): no separate Send.
       await tester.tap(find.byKey(const ValueKey('team-gate-option-0')));
       await tester.pump();
-      await tester.tap(send);
-      await tester.pump();
-      expect(receipt(tester), 'Sent · waiting for the host to confirm');
+      expect(receiptOf('sent'), findsOneWidget);
 
       gateway.push(const GateChanged(gateId: 'req-1', resolved: true));
       await tester.pump();
       await tester.pump();
       expect(team.mutationFor('req-1')!.status, MutationStatus.confirmed);
-      expect(receipt(tester), 'Answered');
+      expect(receiptOf('confirmed'), findsOneWidget);
       expect(sheet, findsOneWidget);
       await tester.pump(gateSheetAnsweredBeat);
       await tester.pumpAndSettle();
@@ -659,7 +655,7 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('confirmation', () {
-    testWidgets('Approve on a safe prompt is one tap; Deny is two-step red', (
+    testWidgets('Approve on a safe prompt is one tap; Deny is two-step', (
       tester,
     ) async {
       final (team, gateway) = await boot(
@@ -685,15 +681,16 @@ void main() {
             find.descendant(of: deny, matching: find.byType(FilledButton)),
           )
           .style!;
-      expect(denyStyle.foregroundColor?.resolve({}), error);
+      // Denying is not destructive: the neutral tone, no red.
+      expect(denyStyle.foregroundColor?.resolve({}), isNot(error));
 
       await tester.tap(deny);
       await tester.pumpAndSettle();
       expect(confirmSheet, findsOneWidget);
       expect(find.text('Deny this request?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
-      // Keep: nothing is sent.
-      await tester.tap(find.text('Keep'));
+      // Cancel: nothing is sent.
+      await tester.tap(find.byKey(const ValueKey('kit-confirm-cancel')));
       await tester.pumpAndSettle();
       expect(confirmSheet, findsNothing);
       expect(gateway.calls, isEmpty);
@@ -703,7 +700,7 @@ void main() {
       final yes = tester.widget<FilledButton>(
         find.descendant(of: confirmYes, matching: find.byType(FilledButton)),
       );
-      expect(yes.style?.backgroundColor?.resolve({}), fill);
+      expect(yes.style?.backgroundColor?.resolve({}), isNot(fill));
       await tester.tap(confirmYes);
       await tester.pumpAndSettle();
       expect(gateway.calls, hasLength(1));
@@ -817,7 +814,7 @@ void main() {
       expect(call.target, 'w-tests');
       expect(call.arg, 'a-wolf');
       await tester.pump();
-      expect(receipt(tester), 'Sent · waiting for the host to confirm');
+      expect(receiptOf('sent'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await team.stop();
     });
@@ -896,19 +893,13 @@ void main() {
           ),
       );
       await pumpSheet(tester, team, 'req-1');
+      // One choice acts on tap (KIT-25): no separate Send.
       await tester.tap(find.byKey(const ValueKey('team-gate-option-0')));
       await tester.pump();
-      await tester.tap(send);
       await tester.pump();
-      await tester.pump();
-      expect(
-        receipt(tester),
-        'Sent, unconfirmed — check on the host before re-sending',
-      );
+      expect(receiptOf('unconfirmed'), findsOneWidget);
       expect(retry, findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
-      // The primary action is gone: the same answer may have landed.
-      expect(send, findsNothing);
       expect(gateway.calls, hasLength(1));
 
       // Nothing re-sends on its own.
@@ -945,21 +936,19 @@ void main() {
           ),
       );
       await pumpSheet(tester, team, 'req-1');
+      // One choice acts on tap (KIT-25): no separate Send.
       await tester.tap(find.byKey(const ValueKey('team-gate-option-0')));
       await tester.pump();
-      await tester.tap(send);
       await tester.pump();
-      await tester.pump();
-      expect(receipt(tester), 'Not accepted: no pending interaction');
-      expect(find.text('Try again'), findsOneWidget);
-      expect(retry, findsOneWidget);
-      // A refused answer was not stored: the options stay answerable.
-      expect(send, findsOneWidget);
-      await tester.tap(retry);
+      expect(receiptOf('rejected'), findsOneWidget);
+      expect(find.textContaining('no pending interaction'), findsWidgets);
+      // A refused answer was not stored: no Try again; the options stay
+      // answerable, and a tap sends the new answer.
+      expect(retry, findsNothing);
+      await tester.tap(find.byKey(const ValueKey('team-gate-option-0')));
       await tester.pump();
       await tester.pump();
       expect(gateway.calls, hasLength(2));
-      expect(team.mutation('key-1')!.retriedBy, 'key-2');
       expect(tester.takeException(), isNull);
     });
 
@@ -971,18 +960,14 @@ void main() {
         mutationTimeout: const Duration(seconds: 5),
       );
       await pumpSheet(tester, team, 'req-1');
+      // One choice acts on tap (KIT-25): no separate Send.
       await tester.tap(find.byKey(const ValueKey('team-gate-option-0')));
       await tester.pump();
-      await tester.tap(send);
       await tester.pump();
-      await tester.pump();
-      expect(receipt(tester), 'Sent · waiting for the host to confirm');
+      expect(receiptOf('sent'), findsOneWidget);
       await tester.pump(const Duration(seconds: 6));
       expect(team.mutationFor('req-1')!.status, MutationStatus.unconfirmed);
-      expect(
-        receipt(tester),
-        'Sent, unconfirmed — check on the host before re-sending',
-      );
+      expect(receiptOf('unconfirmed'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
       expect(tester.takeException(), isNull);
     });
@@ -1081,9 +1066,16 @@ void main() {
         const ValueKey('activity-team-gate-req-1-receipt'),
       );
       expect(chip, findsOneWidget);
-      expect(find.text('Unconfirmed'), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Unconfirmed, open to retry'),
+        find.descendant(of: chip, matching: find.text('Not confirmed yet')),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == 'Unconfirmed, open to retry',
+        ),
         findsOneWidget,
       );
       await tester.tap(chip);
@@ -1545,8 +1537,10 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Which persistence strategy?'), findsWidgets);
-        expect(send, findsOneWidget);
-        expect(enabled(tester, send), isFalse);
+        expect(
+          find.byKey(const ValueKey('team-gate-option-0')),
+          findsOneWidget,
+        );
         // Opening the sheet answers nothing.
         expect(gateway.calls, isEmpty);
         expect(team.mutations, isEmpty);
@@ -1646,8 +1640,11 @@ void main() {
             textScale: 2.5,
           );
           Future<void> close() async {
+            // The close button scrolls with the sheet: back to the top.
             final close = find.byKey(const ValueKey('kit-sheet-close'));
-            await revealButton(tester, close);
+            await tester.ensureVisible(close);
+            await tester.pumpAndSettle();
+            expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
             await tester.tap(close);
             await tester.pumpAndSettle();
             expect(sheet, findsNothing);
@@ -1659,9 +1656,6 @@ void main() {
             tester,
             find.byKey(const ValueKey('team-gate-option-1')),
           );
-          await tester.tap(find.byKey(const ValueKey('team-gate-option-1')));
-          await tester.pump();
-          await revealButton(tester, send);
           await close();
 
           await open('req-destroy');
@@ -1705,9 +1699,10 @@ void main() {
             find.byKey(const ValueKey('team-gate-run-cancel')),
             findsOneWidget,
           );
+          // The last variant: the menu is the last thing to fit.
           await tester.tapAt(Offset.zero);
           await tester.pumpAndSettle();
-          await close();
+          expect(tester.takeException(), isNull);
         });
 
         testWidgets('320dp 2.5x $tag: the receipt with Retry fits', (

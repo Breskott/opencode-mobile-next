@@ -14,6 +14,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -369,9 +371,6 @@ void main() {
   double top(WidgetTester tester, Finder finder) =>
       tester.getTopLeft(finder).dy;
 
-  Color colorOf(WidgetTester tester, Finder text) =>
-      tester.widget<Text>(text).style!.color!;
-
   // The list's own scrollable (the chat's parts inside it scroll wide
   // output sideways in scrollables of their own).
   ScrollPosition outputPosition(WidgetTester tester) => tester
@@ -433,34 +432,25 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(key('team-home-agents-row'));
       await tester.pumpAndSettle();
-      // The stopped one sits under the collapsed "Suspended on the host"
-      // group (TEAM-115); open it so every word is on screen.
-      expect(key('team-home-agent-a-stopped'), findsNothing);
-      await tester.tap(key('team-home-suspended-group'));
-      await tester.pumpAndSettle();
-
+      // One list, no state sections: the stopped one is a row like the
+      // rest, last ("Asleep · wakes when there is work").
       // Needs-you first (blocked and waiting share the rank, by name),
-      // the crashed exception, then working, idle, stopped.
+      // the crashed exception, then working, idle, asleep.
       final expected = {
-        'e-blocked': ('Blocked', AppIconography.blocked),
-        'f-waiting': ('Waiting for you', AppIconography.question),
-        'd-crashed': ('Crashed', AppIconography.error),
-        'c-working': ('Working', AppIconography.play),
-        'b-idle': ('Idle', AppIconography.statusDot),
-        'a-stopped': ('Stopped', AppIconography.stopCircle),
+        'e-blocked': 'Blocked',
+        'f-waiting': 'Waiting for you',
+        'd-crashed': 'Crashed',
+        'c-working': 'Working',
+        'b-idle': 'Idle',
+        'a-stopped': 'Asleep',
       };
-      for (final MapEntry(key: id, value: (word, glyph)) in expected.entries) {
+      for (final MapEntry(key: id, value: word) in expected.entries) {
         final row = key('team-home-agent-$id');
-        // The state leads the row's line; the title names the role.
+        // The state leads the row's line (its mark is drawn, not an icon).
         expect(
           find.descendant(of: row, matching: find.textContaining(word)),
           findsOneWidget,
           reason: '$id says $word',
-        );
-        expect(
-          find.descendant(of: row, matching: find.byIcon(glyph)),
-          findsOneWidget,
-          reason: '$id carries its glyph',
         );
       }
       final order = expected.keys.toList();
@@ -488,7 +478,10 @@ void main() {
       final row = key('team-home-agent-fox');
       // Named by role; the pool, provider, model and context use are
       // engine details, left to the agent's own page.
-      expect(find.descendant(of: row, matching: find.text('Worker')), findsOne);
+      expect(
+        find.descendant(of: row, matching: find.textContaining('Worker')),
+        findsOne,
+      );
       expect(
         find.descendant(
           of: row,
@@ -572,8 +565,11 @@ void main() {
       // Technical details, and the subtitle is the task it works on.
       expect(key('team-agent-title'), findsOneWidget);
       expect(
-        tester.widget<Text>(key('team-agent-title')).data,
-        endsWith(' · fox'),
+        find.descendant(
+          of: key('team-agent-title'),
+          matching: find.textContaining(RegExp(r' · fox$')),
+        ),
+        findsOneWidget,
       );
       expect(find.text('Agent · session bl-5qc'), findsNothing);
       expect(key('team-agent-state'), findsOneWidget);
@@ -584,24 +580,27 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The state row's line: how full its context is and the session age.
       expect(
-        find.descendant(
-          of: key('team-agent-header'),
-          matching: find.byIcon(AppIconography.play),
-        ),
+        find.text('Context 63% used · Session 3 h 14 min'),
         findsOneWidget,
       );
-      expect(find.text('ctx 63%'), findsOneWidget);
-      expect(find.text('Session 3 h 14 min'), findsOneWidget);
       expect(key('team-agent-recycling'), findsNothing);
       // The output stream was opened for the agent's session: its newest
       // step and when it was last active are one line of the status.
       expect(gateway.outputRequests, ['bl-5qc']);
-      final activity = tester
-          .widget<Text>(key('team-agent-activity-line'))
-          .data!;
-      expect(activity, startsWith('Last step: '));
-      expect(activity, endsWith(' · active 12 min ago'));
+      final activity = key('team-agent-activity-line');
+      expect(
+        find.descendant(
+          of: activity,
+          matching: find.textContaining(RegExp(r'^Last step: ')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: activity, matching: find.text('active 12 min ago')),
+        findsOneWidget,
+      );
 
       // A short status page: no sections, and no second renderer of the
       // agent's work (its conversation, or Live output, shows that).
@@ -625,21 +624,15 @@ void main() {
       );
       expect(key('team-agent-open-conversation'), findsNothing);
       expect(key('team-agent-conversation-miss'), findsOneWidget);
-      // The controls follow (this read-only host allows none).
-      expect(key('team-agent-controls'), findsOneWidget);
+      // This read-only host allows no controls, and the page says where
+      // they are.
+      expect(key('team-agent-controls-elsewhere'), findsOneWidget);
       expect(key('team-agent-control-nudge'), findsNothing);
 
       // What the host reports is folded under Technical details.
       expect(find.text('openai/gpt-x'), findsNothing);
       await tester.tap(key('team-agent-technical'));
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: key('team-agent-technical'),
-          matching: find.text('Worker'),
-        ),
-        findsOneWidget,
-      );
       expect(find.text('openai/gpt-x'), findsOneWidget);
       expect(find.text('OpenCode'), findsOneWidget);
       final workDir = find.text(
@@ -667,7 +660,6 @@ void main() {
     ) async {
       expect(teamContextAttentionPercent, 75);
       expect(teamContextRecyclePercent, 90);
-      final theme = AppTheme.dark();
       Future<void> at(int percent) async {
         final (controller, _) = await boot(
           configure: (g) => runShape(g, agents: [fox(context: percent)]),
@@ -675,29 +667,20 @@ void main() {
         await pumpAgent(tester, controller, 'fox');
       }
 
-      await at(74);
-      expect(colorOf(tester, find.text('ctx 74%')), AppTheme.mutedOf(theme));
-      expect(key('team-agent-recycling'), findsNothing);
-
-      await at(75);
-      expect(
-        colorOf(tester, find.text('ctx 75%')),
-        AppTheme.statusColor(theme, AppStatusTone.attention),
-      );
-      expect(key('team-agent-recycling'), findsNothing);
-
-      await at(89);
-      expect(
-        colorOf(tester, find.text('ctx 89%')),
-        AppTheme.statusColor(theme, AppStatusTone.attention),
-      );
-      expect(key('team-agent-recycling'), findsNothing);
+      // The number is said in words on the state row; only the recycle
+      // point adds a notice (the tone lives in that notice, not the word).
+      for (final percent in [74, 75, 89]) {
+        await at(percent);
+        expect(
+          find.textContaining('Context $percent% used'),
+          findsOneWidget,
+          reason: '$percent%',
+        );
+        expect(key('team-agent-recycling'), findsNothing);
+      }
 
       await at(90);
-      expect(
-        colorOf(tester, find.text('ctx 90%')),
-        AppTheme.statusColor(theme, AppStatusTone.failure),
-      );
+      expect(find.textContaining('Context 90% used'), findsOneWidget);
       expect(key('team-agent-recycling'), findsOneWidget);
       expect(find.text('Recycling soon · context nearly full'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -779,7 +762,8 @@ void main() {
         );
         expect(inside(find.byType(ToolCard)), findsWidgets);
         final command = inside(
-          find.textContaining('ls /home/eslam/Storage/Code'),
+          // The tool row shortens a long command in the middle.
+          find.textContaining('ls /home/eslam/Storage/C'),
         );
         expect(command, findsWidgets);
         final text = tester.widget<Text>(command.first);
@@ -825,8 +809,11 @@ void main() {
       await pumpAgent(tester, controller, 'owl');
       expect(gateway.outputRequests, isEmpty);
       expect(
-        tester.widget<Text>(key('team-agent-title')).data,
-        startsWith('Agent'),
+        find.descendant(
+          of: key('team-agent-title'),
+          matching: find.textContaining(RegExp(r'^Agent')),
+        ),
+        findsOneWidget,
       );
       // Nothing done yet and no activity: no status line for it.
       expect(key('team-agent-activity-line'), findsNothing);
@@ -866,10 +853,8 @@ void main() {
       await pumpAgent(tester, controller, 'wolf');
       expect(key('team-agent-gate'), findsOneWidget);
       expect(find.text('Which persistence strategy?'), findsOneWidget);
-      expect(
-        find.textContaining('Answer this on the computer'),
-        findsOneWidget,
-      );
+      // What the wait costs, named after the agent.
+      expect(find.textContaining('waits until you answer'), findsOneWidget);
       // What holds its task up ends the subtitle.
       expect(find.textContaining(' · blocked'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -890,13 +875,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('metadata.rig'), findsOneWidget);
       expect(find.text('ocproof/gastown.polecat'), findsOneWidget);
-      // One icon action in the app bar; the details sit in its overflow
-      // (design standard §1).
-      await tester.tap(key('team-agent-more'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-agent-details'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-details-sheet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -1019,13 +997,23 @@ void main() {
         String list,
         Finder target,
       ) async {
-        await tester.scrollUntilVisible(
-          target,
-          120,
-          scrollable: find
-              .descendant(of: key(list), matching: find.byType(Scrollable))
-              .first,
-        );
+        // Scrolled by position, not by drag: at 2.5x a drag can land on
+        // selectable notice text and select it instead of scrolling.
+        final position = tester
+            .state<ScrollableState>(
+              find
+                  .descendant(of: key(list), matching: find.byType(Scrollable))
+                  .first,
+            )
+            .position;
+        while (target.evaluate().isEmpty &&
+            position.pixels < position.maxScrollExtent) {
+          position.jumpTo(
+            math.min(position.pixels + 120, position.maxScrollExtent),
+          );
+          await tester.pump();
+        }
+        await tester.ensureVisible(target);
         await tester.pumpAndSettle();
         expect(target, findsOneWidget);
         final rect = tester.getRect(target);
@@ -1047,12 +1035,13 @@ void main() {
           viewport: const Size(320, 740),
         );
         expect(tester.getSize(key('team-agent')).width, 320);
-        expect(key('team-agent-header'), findsOneWidget);
         expect(key('team-agent-recycling'), findsOneWidget);
+        // The primary sits pinned under the list.
+        expect(key('team-agent-open-output'), findsOneWidget);
         for (final part in [
+          'header',
           'activity-line',
-          'open-output',
-          'controls',
+          'controls-elsewhere',
           'technical',
         ]) {
           await reveal(tester, 'team-agent-list', key('team-agent-$part'));

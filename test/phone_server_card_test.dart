@@ -242,6 +242,8 @@ void main() {
     Locale locale = const Locale('en'),
     Size size = const Size(400, 800),
     double textScale = 1,
+    // The working mark turns while a job runs, so such a card never settles.
+    bool settle = true,
   }) async {
     final saved = profile ?? phone();
     store
@@ -273,7 +275,12 @@ void main() {
         textScale: textScale,
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
     return saved;
   }
 
@@ -376,14 +383,15 @@ void main() {
           overall: .4,
         ),
       );
-      await mountCard(tester);
+      await mountCard(tester, settle: false);
       expect(status(tester), 'Setting up');
       await tester.tap(find.byKey(const ValueKey('phone-server-progress')));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(progressOpened, 1);
       // Installing again while one runs would only queue behind it.
       await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byKey(const ValueKey('phone-server-update')), findsNothing);
     });
 
@@ -533,10 +541,9 @@ void main() {
       expect(connection.deleted.toSet(), {'phone', 'phone2'});
       expect(store.saved.map((profile) => profile.id), ['work']);
       expect(removed, 1);
-      expect(
-        find.text('OpenCode was removed from this phone.'),
-        findsOneWidget,
-      );
+      // The card goes with the server; no toast repeats it (shared-phone-1:
+      // failures are one alert, success says nothing more).
+      expect(find.text('OpenCode was removed from this phone.'), findsNothing);
     });
 
     testWidgets('Remove cancelled changes nothing', (tester) async {
@@ -630,11 +637,12 @@ void main() {
             Directionality.of(tester.element(find.text('هذا الهاتف'))),
             TextDirection.rtl,
           );
-          // The status sits at the line's end: on the left in Arabic.
-          expect(
-            tester.getCenter(find.text('يعمل')).dx,
-            lessThan(tester.getCenter(find.text('هذا الهاتف')).dx),
-          );
+          // At 2.5x the status moves under the name and starts where the
+          // name starts: on the right in Arabic.
+          final status = tester.getRect(find.text('يعمل'));
+          final title = tester.getRect(find.text('هذا الهاتف'));
+          expect(status.top, greaterThanOrEqualTo(title.bottom));
+          expect((status.right - title.right).abs(), lessThan(1));
         }
         expectNoForbiddenText();
       });

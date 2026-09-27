@@ -497,7 +497,7 @@ void main() {
   });
 
   group('the re-offer (TeamPhoneReofferCard)', () {
-    testWidgets('one sentence, Set up AI team, and Not now that ends it', (
+    testWidgets('one sentence, Set up AI Team, and Not now that ends it', (
       tester,
     ) async {
       final profile = teamProfile(on: false);

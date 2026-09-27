@@ -16628,7 +16628,7 @@
   "@teamUiPhoneSkip": {
     "description": "On-device AI Team block: primary (skip) action"
   },
-  "teamUiPhoneSetUp": "Set up AI team",
+  "teamUiPhoneSetUp": "Set up AI Team on this phone",
   "@teamUiPhoneSetUp": {
     "description": "On-device AI Team block: set-up action"
   },
@@ -17026,7 +17026,7 @@
   "@teamUiPhoneNotAvailable": {
     "description": "On this phone: unavailable copy (03-onboarding §5)"
   },
-  "teamUiPhoneReofferTitle": "Set up AI team on this phone",
+  "teamUiPhoneReofferTitle": "Let a team of agents work on this phone too",
   "@teamUiPhoneReofferTitle": {
     "description": "Settings › Plugins: re-offer row title"
   },

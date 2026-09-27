@@ -549,7 +549,7 @@ Future<void> showTeamPhoneTipsSheet(BuildContext context) {
 /// runtime supports a team, the plugin is off, and the offer state is
 /// `skipped`; Not now writes `dismissed` and it never returns.
 ///
-/// One [KitNotice.offer]: one sentence, Set up AI team, and Not now.
+/// One [KitNotice.offer]: one sentence, Set up AI Team, and Not now.
 // revamp: remove (slice-P3.4)
 class TeamPhoneReofferCard extends StatefulWidget {
   const TeamPhoneReofferCard({

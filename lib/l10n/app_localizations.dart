@@ -24848,7 +24848,7 @@ abstract class AppLocalizations {
   /// On-device AI Team block: set-up action
   ///
   /// In en, this message translates to:
-  /// **'Set up AI team'**
+  /// **'Set up AI Team on this phone'**
   String get teamUiPhoneSetUp;
 
   /// On-device setup step 1
@@ -25292,7 +25292,7 @@ abstract class AppLocalizations {
   /// Settings › Plugins: re-offer row title
   ///
   /// In en, this message translates to:
-  /// **'Set up AI team on this phone'**
+  /// **'Let a team of agents work on this phone too'**
   String get teamUiPhoneReofferTitle;
 
   /// Settings › Plugins: re-offer row body

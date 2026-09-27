@@ -18,9 +18,6 @@
     "lib/ui/screens/chat/command_launcher.dart": {
       "DraggableScrollableSheet(": 1
     },
-    "lib/ui/screens/chat/composer.dart": {
-      "showModalBottomSheet(": 1
-    },
     "lib/ui/screens/chat/form_flow.dart": {
       "SnackBar(": 1,
       "showSnackBar(": 1
@@ -29,12 +26,6 @@
       "AlertDialog(": 1,
       "showDialog(": 1,
       "showModalBottomSheet(": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "showConfirmSheet(": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1,
@@ -95,11 +86,6 @@
       "AlertDialog(": 1,
       "SnackBar(": 1,
       "showDialog(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
-      "SnackBar(": 1,
-      "showModalBottomSheet(": 1,
       "showSnackBar(": 1
     }
   },
@@ -162,46 +148,19 @@
       "TextButton": 1
     },
     "lib/ui/screens/chat/command_launcher.dart": {
-      "Container": 3,
-      "Divider": 4,
+      "Container": 1,
+      "Divider": 2,
       "DraggableScrollableSheet": 1,
-      "Icon": 11,
+      "Icon": 10,
       "IconButton": 3,
-      "InkWell": 2,
       "LinearProgressIndicator": 2,
       "ListTile": 4,
       "Material": 1,
       "Tab": 4,
       "TabBar": 1,
-      "Text": 23,
-      "TextButton": 3,
+      "Text": 17,
+      "TextButton": 1,
       "TextField": 1
-    },
-    "lib/ui/screens/chat/composer.dart": {
-      "AnimatedContainer": 1,
-      "AnimatedSwitcher": 1,
-      "CircularProgressIndicator": 2,
-      "ClipRRect": 2,
-      "ColoredBox": 2,
-      "CustomPaint": 1,
-      "ExpansionTile": 2,
-      "FractionallySizedBox": 1,
-      "GestureDetector": 1,
-      "Icon": 29,
-      "IconButton": 8,
-      "Image": 1,
-      "InkWell": 1,
-      "LinearProgressIndicator": 1,
-      "ListTile": 13,
-      "Material": 2,
-      "Positioned": 1,
-      "SegmentedButton": 1,
-      "SingleChildScrollView": 1,
-      "Text": 40,
-      "TextButton": 2,
-      "TextField": 1,
-      "Tooltip": 5,
-      "TweenAnimationBuilder": 1
     },
     "lib/ui/screens/chat/empty_chat.dart": {
       "ActionChip": 1,
@@ -229,33 +188,6 @@
       "SingleChildScrollView": 4,
       "Text": 17,
       "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "AppBar": 1,
-      "Icon": 2,
-      "IconButton": 2,
-      "Scaffold": 1,
-      "Text": 2,
-      "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/prompt_history.dart": {
-      "Divider": 1,
-      "Icon": 2,
-      "ListTile": 1,
-      "Text": 4,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "Card": 1,
-      "ExpansionTile": 1,
-      "Icon": 4,
-      "IconButton": 1,
-      "LinearProgressIndicator": 1,
-      "SelectableText": 1,
-      "Text": 14,
-      "TextButton": 3,
       "TextField": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
@@ -455,12 +387,6 @@
       "TextButton": 2,
       "TextField": 1
     },
-    "lib/ui/widgets/model_shortcuts.dart": {
-      "Icon": 1,
-      "PopupMenuButton": 1,
-      "PopupMenuItem": 3,
-      "Text": 3
-    },
     "lib/ui/widgets/session_handoff.dart": {
       "AlertDialog": 1,
       "FilledButton": 1,
@@ -480,19 +406,6 @@
       "Material": 1,
       "Opacity": 1,
       "Text": 3
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
-      "CircularProgressIndicator": 1,
-      "Container": 1,
-      "FilledButton": 7,
-      "Icon": 9,
-      "OutlinedButton": 1,
-      "RadioGroup": 1,
-      "RadioListTile": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 28,
-      "TextField": 1
     }
   },
   "G2": {
@@ -544,9 +457,6 @@
     "lib/ui/screens/chat/chat_states.dart": {
       "Clipboard.setData(": 1
     },
-    "lib/ui/screens/chat/composer.dart": {
-      "Curves.": 2
-    },
     "lib/ui/screens/chat/empty_chat.dart": {
       "Curves.": 2,
       "duration: Duration(": 2
@@ -556,12 +466,6 @@
       "Clipboard.setData(": 2,
       "Curves.": 1,
       "duration: Duration(": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "showConfirmSheet(": 1
     },
     "lib/ui/screens/chat/read_aloud.dart": {
       "showConfirmSheet(": 1
@@ -603,9 +507,6 @@
       "Clipboard.setData(": 1
     },
     "lib/ui/widgets/session_handoff.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
       "Clipboard.setData(": 1
     }
   },

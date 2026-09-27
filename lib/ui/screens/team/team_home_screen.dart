@@ -18,7 +18,7 @@
 ///    you · Keep drafts in SQLite? · 2 min ago") and opens the Gate sheet
 ///    of `gate_sheet.dart`; a question with no task listed is a row of its
 ///    own at the top of the same list.
-/// 3. **Tasks**: ONE panel of rows under one heading, ordered by urgency
+/// 3. **Tasks**: ONE panel of rows with no heading, ordered by urgency
 ///    (owner rule 2026-09-27): what needs the person, then what runs, then
 ///    what waits, then what finished (three shown, the rest behind one
 ///    row), never split into state sections. A row is the task's title,
@@ -577,7 +577,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       if (listed.isNotEmpty || loose.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),
-          label: l10n.teamUiHomeTasksHeading,
+          // No heading: the page is the task list and its title says so.
           children: [
             for (final gate in loose)
               TeamGateRow(
