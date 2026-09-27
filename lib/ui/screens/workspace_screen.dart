@@ -978,7 +978,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                               ' · ${l10n.workspaceArchivedInAll}',
                   ),
                   trailing: const KitChevron(),
-                  onTap: _openAllSessions,
+                  onTap: _openArchivedSessions,
                 ),
               ),
             // 5. Everything else going on: the other projects on this
@@ -1313,6 +1313,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Future<void> _openAllSessions() => pushKitPage<void>(
     context,
     (_) => GlobalSessionsScreen(controller: widget.controller),
+  );
+
+  // The Archived row opens All conversations already on its Archived filter.
+  Future<void> _openArchivedSessions() => pushKitPage<void>(
+    context,
+    (_) => GlobalSessionsScreen(controller: widget.controller, archived: true),
   );
 
   Future<void> _createProjectFolder() async {
