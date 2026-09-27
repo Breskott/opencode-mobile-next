@@ -13561,12 +13561,6 @@ abstract class AppLocalizations {
   /// **'Edit the current prompt in a focused full-screen view'**
   String get chatUiEditTheCurrentPromptInAFocused;
 
-  /// Chat journey: Empty session was kept because OpenCode could not verify or remove it.
-  ///
-  /// In en, this message translates to:
-  /// **'Empty conversation was kept because OpenCode could not verify or remove it.'**
-  String get chatUiEmptySessionWasKeptBecauseOpenCodeCould;
-
   /// Chat journey: Error details
   ///
   /// In en, this message translates to:
@@ -13866,18 +13860,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Message actions'**
   String get chatUiMessageActions;
-
-  /// Chat journey: Message deleted
-  ///
-  /// In en, this message translates to:
-  /// **'Message deleted'**
-  String get chatUiMessageDeleted;
-
-  /// Chat journey: Message text copied
-  ///
-  /// In en, this message translates to:
-  /// **'Message text copied'**
-  String get chatUiMessageTextCopied;
 
   /// Chat journey: Message timeline
   ///
@@ -14335,6 +14317,36 @@ abstract class AppLocalizations {
   /// **'Run shell command'**
   String get chatUiRunShellCommand;
 
+  /// Run shell command dialog (chat-run-shell-dialog): the field's label
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get chatRunShellLabel;
+
+  /// Run shell command dialog: an example command shown in the empty field; a real command, never translated
+  ///
+  /// In en, this message translates to:
+  /// **'npm test'**
+  String get chatRunShellHint;
+
+  /// Run shell command dialog: what happens when the command runs, under the field
+  ///
+  /// In en, this message translates to:
+  /// **'The agent runs it in this project, and its output joins the conversation.'**
+  String get chatRunShellHelper;
+
+  /// Run shell command dialog: why Run is off while the field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Type a command to run.'**
+  String get chatRunShellEmpty;
+
+  /// Rename conversation dialog (chat-rename-session-dialog): why Rename is off while the title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Type a title.'**
+  String get chatRenameEmpty;
+
   /// Chat journey: Running tools
   ///
   /// In en, this message translates to:
@@ -14472,12 +14484,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversation context'**
   String get chatUiSessionContext;
-
-  /// Chat journey: Session is no longer shared
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation is no longer shared'**
-  String get chatUiSessionIsNoLongerShared;
 
   /// Chat journey: Session menu
   ///

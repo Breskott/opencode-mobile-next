@@ -6964,10 +6964,6 @@
   "@chatUiEditTheCurrentPromptInAFocused": {
     "description": "Chat journey: Edit the current prompt in a focused full-screen view"
   },
-  "chatUiEmptySessionWasKeptBecauseOpenCodeCould": "Empty conversation was kept because OpenCode could not verify or remove it.",
-  "@chatUiEmptySessionWasKeptBecauseOpenCodeCould": {
-    "description": "Chat journey: Empty session was kept because OpenCode could not verify or remove it."
-  },
   "chatUiErrorDetails": "Error details",
   "@chatUiErrorDetails": {
     "description": "Chat journey: Error details"
@@ -7167,14 +7163,6 @@
   "chatUiMessageActions": "Message actions",
   "@chatUiMessageActions": {
     "description": "Chat journey: Message actions"
-  },
-  "chatUiMessageDeleted": "Message deleted",
-  "@chatUiMessageDeleted": {
-    "description": "Chat journey: Message deleted"
-  },
-  "chatUiMessageTextCopied": "Message text copied",
-  "@chatUiMessageTextCopied": {
-    "description": "Chat journey: Message text copied"
   },
   "chatUiMessageTimeline": "Message timeline",
   "@chatUiMessageTimeline": {
@@ -7480,6 +7468,26 @@
   "@chatUiRunShellCommand": {
     "description": "Chat journey: Run shell command"
   },
+  "chatRunShellLabel": "Command",
+  "@chatRunShellLabel": {
+    "description": "Run shell command dialog (chat-run-shell-dialog): the field's label"
+  },
+  "chatRunShellHint": "npm test",
+  "@chatRunShellHint": {
+    "description": "Run shell command dialog: an example command shown in the empty field; a real command, never translated"
+  },
+  "chatRunShellHelper": "The agent runs it in this project, and its output joins the conversation.",
+  "@chatRunShellHelper": {
+    "description": "Run shell command dialog: what happens when the command runs, under the field"
+  },
+  "chatRunShellEmpty": "Type a command to run.",
+  "@chatRunShellEmpty": {
+    "description": "Run shell command dialog: why Run is off while the field is empty"
+  },
+  "chatRenameEmpty": "Type a title.",
+  "@chatRenameEmpty": {
+    "description": "Rename conversation dialog (chat-rename-session-dialog): why Rename is off while the title is empty"
+  },
   "chatUiRunningTools": "Running tools",
   "@chatUiRunningTools": {
     "description": "Chat journey: Running tools"
@@ -7571,10 +7579,6 @@
   "chatUiSessionContext": "Conversation context",
   "@chatUiSessionContext": {
     "description": "Chat journey: Session context"
-  },
-  "chatUiSessionIsNoLongerShared": "Conversation is no longer shared",
-  "@chatUiSessionIsNoLongerShared": {
-    "description": "Chat journey: Session is no longer shared"
   },
   "chatUiSessionMenu": "Conversation menu",
   "@chatUiSessionMenu": {

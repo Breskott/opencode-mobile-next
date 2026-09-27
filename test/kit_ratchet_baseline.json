@@ -6,12 +6,7 @@
       "showSnackBar(": 6
     },
     "lib/ui/screens/chat_screen.dart": {
-      "AlertDialog(": 2,
-      "SnackBar(": 15,
-      "showConfirmSheet(": 4,
-      "showDialog(": 2,
-      "showModalBottomSheet(": 5,
-      "showSnackBar(": 15
+      "showModalBottomSheet(": 3
     },
     "lib/ui/screens/connection_help_screen.dart": {
       "SnackBar(": 1,
@@ -89,23 +84,17 @@
       "Text": 10
     },
     "lib/ui/screens/chat_screen.dart": {
-      "AlertDialog": 2,
       "AnimatedSize": 1,
-      "AnimatedSwitcher": 1,
-      "AppBar": 2,
+      "AppBar": 1,
       "Badge": 2,
-      "FilledButton": 2,
       "Icon": 12,
       "IconButton": 9,
-      "MaterialPageRoute": 24,
       "NotificationListener": 1,
       "Positioned": 2,
-      "Scaffold": 2,
+      "Scaffold": 1,
       "SingleChildScrollView": 2,
-      "SnackBar": 15,
-      "Text": 31,
-      "TextButton": 5,
-      "TextField": 2,
+      "Text": 9,
+      "TextButton": 3,
       "Tooltip": 4
     },
     "lib/ui/screens/connection_help_screen.dart": {
@@ -301,11 +290,9 @@
     },
     "lib/ui/screens/chat_screen.dart": {
       "AnimatedSize(": 1,
-      "Clipboard.setData(": 5,
-      "Curves.": 5,
-      "HapticFeedback.": 1,
-      "duration: Duration(": 3,
-      "showConfirmSheet(": 4
+      "Clipboard.setData(": 1,
+      "Curves.": 2,
+      "duration: Duration(": 1
     },
     "lib/ui/screens/connection_help_screen.dart": {
       "Clipboard.setData(": 1
@@ -525,7 +512,7 @@
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 1,
       "TextStyle(": 1,
-      "disableAnimationsOf": 4,
+      "disableAnimationsOf": 1,
       "icon size not 20/22/24": 2,
       "text scale clamp": 1
     },
