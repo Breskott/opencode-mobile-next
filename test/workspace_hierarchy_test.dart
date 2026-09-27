@@ -315,7 +315,8 @@ void main() {
       await _pumpFrames(tester);
       final title = find.text('Fix checkout layout');
       expect(tester.widget<Text>(title).maxLines, 2);
-      expect(tester.getTopLeft(title).dx, 60);
+      // 16 rail + 30 icon tile + 12 gap (VL §4).
+      expect(tester.getTopLeft(title).dx, 58);
       expect(tester.getSize(title).height, greaterThan(40));
       expect(tester.takeException(), isNull);
       await tester.tap(title);
@@ -341,10 +342,13 @@ void main() {
         find.descendant(of: context, matching: find.text('OpenCode Mobile')),
         findsNothing,
       );
-      expect(find.text('/work/selected-b'), findsNothing);
+      expect(find.textContaining('/work/selected-b'), findsNothing);
       await tester.tap(context);
       await _pumpFrames(tester);
-      expect(find.text('/work/selected-b'), findsOneWidget);
+      // The path is under the project sheet's Details, last and collapsed.
+      await tester.tap(find.text('Details'));
+      await _pumpFrames(tester);
+      expect(find.textContaining('/work/selected-b'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
     },
@@ -363,12 +367,16 @@ void main() {
       expect(find.text(path), findsNothing);
       await tester.tap(project);
       await _pumpFrames(tester);
-      expect(find.byType(SelectableText), findsOneWidget);
-      expect(
-        tester.widget<SelectableText>(find.byType(SelectableText)).data,
-        path,
-      );
       expect(find.text('Switch project'), findsOneWidget);
+      // The whole path, once, under Details (KIT-33), copyable.
+      final inSheet = find.descendant(
+        of: find.byKey(const ValueKey('workspace-context-sheet')),
+        matching: find.textContaining(path),
+      );
+      expect(inSheet, findsNothing);
+      await tester.tap(find.text('Details'));
+      await _pumpFrames(tester);
+      expect(inSheet, findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -415,16 +423,18 @@ void main() {
             findsOneWidget,
           );
 
-          // The blocker is named on the row, in the attention tone.
+          // The row leads with the one "Needs you" word (KitNeedsYou, in
+          // the attention tone), then names the blocker (STATE-9).
           final permission = find.textContaining('Permission needed');
           expect(permission, findsOneWidget);
           final theme = Theme.of(tester.element(permission));
           final span = tester.widget<Text>(permission).textSpan! as TextSpan;
-          expect((span.children!.first as TextSpan).text, 'Permission needed');
+          expect((span.children!.first as TextSpan).text, 'Needs you · ');
           expect(
             (span.children!.first as TextSpan).style?.color,
             AppTheme.statusColor(theme, AppStatusTone.attention),
           );
+          expect((span.children![1] as TextSpan).text, 'Permission needed');
           expect(find.textContaining('Answer needed'), findsOneWidget);
 
           // Section order top to bottom.
@@ -576,11 +586,11 @@ void main() {
       _top(tester, _row('busy-blocked')),
       lessThan(_top(tester, runningSection)),
     );
-    // The pin is still a pin: its menu offers Unpin, not Pin.
-    await tester.tap(
+    // The pin is still a pin: its menu (long-press, KIT-28) offers Unpin.
+    await tester.longPress(
       find.descendant(
         of: _row('pinned-blocked'),
-        matching: find.byType(PopupMenuButton<String>),
+        matching: find.text('pinned-blocked'),
       ),
     );
     await _pumpFrames(tester);

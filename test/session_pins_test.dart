@@ -221,7 +221,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(PopupMenuButton<String>).last);
+    // A row's actions are its long-press menu (KIT-28): no per-row ⋮.
+    await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Pin on this device'));
     await tester.pumpAndSettle();
@@ -232,7 +233,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('new')).dy),
     );
     expect(find.text('Pinned'), findsOneWidget);
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
     expect(find.text('Unpin'), findsOneWidget);
     await tester.tap(find.text('Unpin'));

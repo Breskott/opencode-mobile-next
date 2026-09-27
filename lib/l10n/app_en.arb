@@ -24873,5 +24873,79 @@
         "type": "String"
       }
     }
+  },
+  "workspaceArchivedInAll": "In All conversations",
+  "@workspaceArchivedInAll": {
+    "description": "Work: the Archived conversations row opens All conversations, where archived ones are a filter"
+  },
+  "workspaceDetailEmptyTitle": "Choose a conversation",
+  "@workspaceDetailEmptyTitle": {
+    "description": "Work on a wide window: title of the empty detail pane beside the list"
+  },
+  "workspaceDetailEmptyBody": "Open a conversation from the list to read and reply here.",
+  "@workspaceDetailEmptyBody": {
+    "description": "Work on a wide window: body of the empty detail pane"
+  },
+  "workspaceContextOn": "On {server}",
+  "@workspaceContextOn": {
+    "description": "Work project sheet subtitle: the server the project is on",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceContextCurrent": "In use",
+  "@workspaceContextCurrent": {
+    "description": "Work project sheet: the word beside the current place the project runs on"
+  },
+  "workspaceContextNewProject": "New project",
+  "@workspaceContextNewProject": {
+    "description": "Work project sheet: row that creates a new project folder"
+  },
+  "workspaceContextRunsOn": "Runs on",
+  "@workspaceContextRunsOn": {
+    "description": "Work project sheet: section label for where the project's conversations run"
+  },
+  "workspaceContextFolder": "Folder",
+  "@workspaceContextFolder": {
+    "description": "Label of a folder path under Details"
+  },
+  "workspaceSessionSharedLink": "Shared link",
+  "@workspaceSessionSharedLink": {
+    "description": "Conversation details: label of the conversation's public share link"
+  },
+  "workspaceArchiveFailed": "Couldn't archive “{title}”. It is back in the list.",
+  "@workspaceArchiveFailed": {
+    "description": "Work: an archive that failed after its Undo window closed",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceShareCopiesLink": "The link is copied once sharing starts.",
+  "@workspaceShareCopiesLink": {
+    "description": "Share confirmation: where the share link goes"
+  },
+  "workspaceDeleteSharedLink": "Its shared link stops working.",
+  "@workspaceDeleteSharedLink": {
+    "description": "Delete confirmation for a shared conversation: what else is lost"
+  },
+  "workspaceChooserEnterPath": "Enter a folder path",
+  "@workspaceChooserEnterPath": {
+    "description": "Folder chooser: open an existing folder by typing its path"
+  },
+  "workspaceChooserRecentProjects": "Recent projects",
+  "@workspaceChooserRecentProjects": {
+    "description": "Folder chooser: pick one of the projects already opened on this server"
+  },
+  "workspaceChooserLoadFailedTitle": "Couldn't load your projects",
+  "@workspaceChooserLoadFailedTitle": {
+    "description": "Folder chooser: title when the project list failed to load"
+  },
+  "workspaceChooserLoadFailedBody": "You can still open a folder by its path.",
+  "@workspaceChooserLoadFailedBody": {
+    "description": "Folder chooser: body when the project list failed to load"
   }
 }

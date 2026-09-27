@@ -319,10 +319,10 @@
           "label": "Archive",
           "key": null,
           "line": 1551,
-          "action": "open-sheet",
-          "target": "workspace-archive-session-sheet",
-          "targetWidget": "_confirmArchive",
-          "effect": "_sessionAction('archive') -> _confirmArchive() confirm sheet.",
+          "action": "mutate",
+          "target": null,
+          "targetWidget": "_archiveSwipe",
+          "effect": "screen-work-1: archives at once with Undo (showKitUndo), the same path as the swipe; the confirmation sheet is gone (P3.12).",
           "gates": [
             "widget.controller.capabilities.sessionArchive"
           ],
@@ -439,10 +439,10 @@
           "label": "Archive",
           "key": "session-menu-archive",
           "line": 1638,
-          "action": "open-sheet",
-          "target": "workspace-archive-session-sheet",
-          "targetWidget": "_confirmArchive",
-          "effect": "onAction('archive', session).",
+          "action": "mutate",
+          "target": null,
+          "targetWidget": "_archiveSwipe",
+          "effect": "screen-work-1: archives at once with Undo (showKitUndo), the same path as the swipe; the confirmation sheet is gone (P3.12).",
           "gates": [
             "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop",
             "widget.controller.capabilities.sessionArchive"
@@ -542,10 +542,10 @@
           "label": "Archived sessions / {count} archived sessions",
           "key": null,
           "line": 790,
-          "action": "open-sheet",
-          "target": "workspace-archived-sheet",
-          "targetWidget": "_showArchived",
-          "effect": "_showArchived() opens the archived sessions sheet.",
+          "action": "navigate",
+          "target": "global-sessions",
+          "targetWidget": "GlobalSessionsScreen",
+          "effect": "screen-work-1: opens All conversations, where archived conversations are a filter (P3.12); the archived sheet is gone.",
           "gates": [
             "archived.isNotEmpty || partial (controller.hasMoreSessions || sessionsLoading || sessionsError != null)"
           ],
@@ -948,10 +948,6 @@
         {
           "page": "workspace",
           "element": "workspace-session-context-rename"
-        },
-        {
-          "page": "workspace-archived-sheet",
-          "element": "workspace-archived-sheet-menu-rename"
         }
       ],
       "gates": [],
@@ -992,57 +988,6 @@
           "target": null,
           "targetWidget": null,
           "effect": "Pops with the trimmed text; _rename calls controller.renameSession(session.id, title) when non-empty, then refreshSessions().",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "workspace-archive-session-sheet",
-      "title": "Archive session?",
-      "kind": "sheet",
-      "file": "lib/ui/screens/workspace_screen.dart",
-      "widget": "_confirmArchive",
-      "presentedBy": [],
-      "line": 1212,
-      "purpose": "Confirm archiving a session.",
-      "reachedFrom": [
-        {
-          "page": "workspace",
-          "element": "workspace-session-menu-archive"
-        },
-        {
-          "page": "workspace",
-          "element": "workspace-session-context-archive"
-        }
-      ],
-      "gates": [
-        "widget.controller.capabilities.sessionArchive"
-      ],
-      "elements": [
-        {
-          "id": "workspace-archive-session-sheet-confirm",
-          "type": "button",
-          "label": "Archive",
-          "key": null,
-          "line": 1212,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Returns true; _sessionAction calls repository.archiveSession(session.id) then controller.refreshSessions().",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "workspace-archive-session-sheet-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 1212,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
           "gates": [],
           "destructive": false
         }
@@ -1120,14 +1065,6 @@
         {
           "page": "workspace",
           "element": "workspace-session-row-swipe"
-        },
-        {
-          "page": "workspace-archived-sheet",
-          "element": "workspace-archived-sheet-menu-delete"
-        },
-        {
-          "page": "workspace-archived-sheet",
-          "element": "workspace-archived-sheet-context-delete"
         }
       ],
       "gates": [],
@@ -1157,109 +1094,6 @@
           "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
           "gates": [],
           "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "workspace-archived-sheet",
-      "title": "[Archived sessions]",
-      "kind": "sheet",
-      "file": "lib/ui/screens/workspace_screen.dart",
-      "widget": "_showArchived",
-      "presentedBy": [
-        "_showArchived"
-      ],
-      "line": 1260,
-      "purpose": "Lists archived sessions with open, rename and delete; no unarchive exists.",
-      "reachedFrom": [
-        {
-          "page": "workspace",
-          "element": "workspace-archived-sessions"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "workspace-archived-sheet-row",
-          "type": "list-tile",
-          "label": "<session title> / <directory>",
-          "key": "archived-session-<session.id>",
-          "line": 1348,
-          "action": "navigate",
-          "target": "chat",
-          "targetWidget": "/chat/<sessionId>",
-          "effect": "Pops the sheet and _openSession(session) -> pushNamed('/chat/<id>').",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "workspace-archived-sheet-menu",
-          "type": "icon-button",
-          "label": "Archived session actions",
-          "key": "archived-session-actions-<session.id>",
-          "line": 1330,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "opens overflow menu",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "workspace-archived-sheet-menu-rename",
-          "type": "menu-item",
-          "label": "Rename",
-          "key": null,
-          "line": 1335,
-          "action": "open-dialog",
-          "target": "workspace-rename-session-dialog",
-          "targetWidget": "_rename",
-          "effect": "run('rename'): pops the sheet then _sessionAction('rename').",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "workspace-archived-sheet-menu-delete",
-          "type": "menu-item",
-          "label": "Delete",
-          "key": null,
-          "line": 1339,
-          "action": "open-sheet",
-          "target": "workspace-delete-session-sheet",
-          "targetWidget": "_confirmDelete",
-          "effect": "run('delete'): pops the sheet then _sessionAction('delete') -> confirm sheet.",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "workspace-archived-sheet-context-open",
-          "type": "menu-item",
-          "label": "Open",
-          "key": null,
-          "line": 1304,
-          "action": "navigate",
-          "target": "chat",
-          "targetWidget": "/chat/<sessionId>",
-          "effect": "Desktop context menu: pops the sheet and opens the chat.",
-          "gates": [
-            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "workspace-archived-sheet-context-delete",
-          "type": "menu-item",
-          "label": "Delete",
-          "key": null,
-          "line": 1313,
-          "action": "open-sheet",
-          "target": "workspace-delete-session-sheet",
-          "targetWidget": "_confirmDelete",
-          "effect": "run('delete').",
-          "gates": [
-            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
-          ],
-          "destructive": true
         }
       ]
     },
