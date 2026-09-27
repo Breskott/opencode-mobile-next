@@ -18,7 +18,6 @@ import '../widgets/external_link.dart';
 import '../widgets/connect_methods.dart';
 import '../widgets/info_label.dart';
 import '../widgets/provider_logo.dart';
-import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import '../widgets/run_command_dialog.dart';

@@ -13,6 +13,8 @@
 ///
 /// Reads only [ConnectionController.orchestration] and the profile's
 /// [OrchestrationConfig]; never touches the server gateway.
+///
+/// Built from kit parts only (screen-library-3, kit-v2 §9).
 library;
 
 import 'dart:async';
@@ -29,7 +31,6 @@ import '../../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
-import '../../desktop/desktop_interaction.dart';
 import '../../widgets/builtin_team_section.dart';
 import '../../widgets/team_discover.dart' show teamStateLine;
 import '../../widgets/team_discovery_card.dart';
@@ -104,11 +105,14 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _openSheet() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => TeamPluginSheet(
+  // revamp: merge-into:team-home (slice-P3.4). Until the one AI Team page
+  // takes this sheet over, the row opens it here.
+  Future<void> _openSheet() => showKitSheet<void>(
+    context,
+    title: _copy(context).teamUiRowTitle,
+    icon: AppIconography.extensions,
+    height: KitSheetHeight.full,
+    body: (_) => TeamPluginSheet(
       controller: widget.controller,
       discovery: _discovery,
       probe: widget.probe,
@@ -120,11 +124,11 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final controller = widget.controller;
     final profile = controller.profile;
     Widget rails(Widget child) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
       child: child,
     );
     // One AI Team per page, in one state (the owner, build 2054: "why
@@ -137,12 +141,16 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     final config = profile?.orchestration;
     final phoneTeamOn = BuiltinTeam.isBuiltinConfig(config);
     final phoneIsTheTeam = phoneHosts && (config == null || phoneTeamOn);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.teamUiPluginsTitle)),
-      body: DesktopScrollbarArea(
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.teamUiPluginsTitle),
+      width: KitScreenWidth.reading,
+      body: KitScrollArea(
         builder: (scrollController) => ListView(
           controller: scrollController,
-          padding: const EdgeInsets.only(top: 8, bottom: 24),
+          padding: EdgeInsetsDirectional.only(
+            top: tokens.space2,
+            bottom: KitScreen.endPadding(context),
+          ),
           children: [
             rails(
               TeamDiscoveryCard(
@@ -156,20 +164,32 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 BuiltinTeamSection(connection: controller, profile: profile!),
               ),
             if (phoneIsTheTeam)
-              KitRow(
-                key: const ValueKey('plugins-team-other'),
-                leading: KitRow.icon(
-                  context,
-                  phoneTeamOn ? AppIconography.info : AppIconography.computer,
+              KitRowGroup(
+                margin: EdgeInsetsDirectional.only(
+                  start: tokens.gutter,
+                  end: tokens.gutter,
+                  bottom: tokens.sectionGap,
                 ),
-                title: phoneTeamOn
-                    ? l10n.teamUiTechnicalDetails
-                    : l10n.teamDiscoverComputerChoiceTitle,
-                supporting: phoneTeamOn
-                    ? null
-                    : TextSpan(text: l10n.teamDiscoverComputerChoiceBody),
-                trailing: const KitChevron(),
-                onTap: _openSheet,
+                children: [
+                  KitRow(
+                    key: const ValueKey('plugins-team-other'),
+                    leading: KitRow.icon(
+                      context,
+                      phoneTeamOn
+                          ? AppIconography.info
+                          : AppIconography.computer,
+                    ),
+                    title: phoneTeamOn
+                        ? l10n.teamUiTechnicalDetails
+                        : l10n.teamDiscoverComputerChoiceTitle,
+                    supporting: phoneTeamOn
+                        ? null
+                        : TextSpan(text: l10n.teamDiscoverComputerChoiceBody),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
+                    onTap: _openSheet,
+                  ),
+                ],
               ),
             if (teamPhoneProfile(profile))
               rails(
@@ -180,44 +200,46 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 ),
               ),
             if (profile == null)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Text(
-                  l10n.teamUiNoServer,
+              // Plugins belong to a server: say so, with nothing to tap
+              // (map: whenMissing server.any explains).
+              rails(
+                KitNotice(
                   key: const ValueKey('plugins-no-server'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
+                  icon: AppIconography.extensions,
+                  message: l10n.teamUiNoServer,
                 ),
               )
-            else if (!phoneIsTheTeam) ...[
-              SectionLabel(
-                l10n.pluginsSectionInApp,
-                key: const ValueKey('plugins-section-app'),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              ),
+            else if (!phoneIsTheTeam)
               // One row: its name, and whether it is on and where. Gas
               // City, the host and "Add manually" are on its own page.
-              KitRow(
-                key: const ValueKey('plugins-ai-team-row'),
-                leading: KitRow.icon(context, AppIconography.extensions),
-                title: l10n.pluginsTeamRowTitle,
-                supporting: TextSpan(
-                  text: teamStateLine(
-                    l10n,
-                    controller,
-                    discovery: _discovery,
-                    now: widget.now?.call() ?? DateTime.now(),
-                  ),
+              KitRowGroup(
+                key: const ValueKey('plugins-section-app'),
+                label: l10n.pluginsSectionInApp,
+                margin: EdgeInsetsDirectional.only(
+                  start: tokens.gutter,
+                  end: tokens.gutter,
+                  bottom: tokens.sectionGap,
                 ),
-                supportingKey: const ValueKey('plugins-ai-team-subtitle'),
-                trailing: const KitChevron(),
-                onTap: _openSheet,
+                children: [
+                  KitRow(
+                    key: const ValueKey('plugins-ai-team-row'),
+                    leading: KitRow.icon(context, AppIconography.extensions),
+                    title: l10n.pluginsTeamRowTitle,
+                    supporting: TextSpan(
+                      text: teamStateLine(
+                        l10n,
+                        controller,
+                        discovery: _discovery,
+                        now: widget.now?.call() ?? DateTime.now(),
+                      ),
+                    ),
+                    supportingKey: const ValueKey('plugins-ai-team-subtitle'),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
+                    onTap: _openSheet,
+                  ),
+                ],
               ),
-            ],
             if (controller.capabilities.pluginInventory)
               ServerPluginsSection(controller: controller),
           ],
@@ -296,8 +318,10 @@ String teamRowSubtitle(
   }
 }
 
-/// The AI Team sheet of 02-ux §9. Listens to the connection so status and
-/// stream lines follow the controller live.
+/// The AI Team sheet of 02-ux §9: the body of the [showKitSheet] the
+/// Plugins row opens. Listens to the connection so status and stream lines
+/// follow the controller live.
+// revamp: merge-into:team-home (slice-P3.4)
 class TeamPluginSheet extends StatefulWidget {
   const TeamPluginSheet({
     super.key,
@@ -322,6 +346,10 @@ class TeamPluginSheet extends StatefulWidget {
 
 class _TeamPluginSheetState extends State<TeamPluginSheet> {
   bool _busy = false;
+
+  /// The result of the last write, shown in place (K2 §4.8): saved, or
+  /// turned off with cache left behind.
+  (AppStatusTone, String)? _notice;
 
   @override
   void initState() {
@@ -362,7 +390,10 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
 
   Future<void> _save(ServerProfile profile, OrchestrationConfig config) async {
     final l10n = _copy(context);
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
     try {
       final current = widget.controller.orchestration;
       if (current != null && current.profileId == profile.id) {
@@ -374,8 +405,8 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
       await widget.controller.store.upsert(profile);
       widget.controller.syncOrchestration();
       if (!mounted) return;
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(l10n.teamUiSavedOn(profile.name))),
+      setState(
+        () => _notice = (AppStatusTone.ok, l10n.teamUiSavedOn(profile.name)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -388,7 +419,10 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
     final confirmed = await showTeamTurnOffSheet(context, profile.name);
     if (!confirmed || !mounted) return;
     final l10n = _copy(context);
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
     try {
       final controller = widget.controller;
       final current = controller.orchestration;
@@ -406,9 +440,11 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
       controller.syncOrchestration();
       if (!mounted) return;
       if (failed.isNotEmpty) {
-        ScaffoldMessenger.maybeOf(
-          context,
-        )?.showSnackBar(SnackBar(content: Text(l10n.teamUiTurnOffFailed)));
+        // The sheet stays open to say what was left behind.
+        setState(
+          () => _notice = (AppStatusTone.failure, l10n.teamUiTurnOffFailed),
+        );
+        return;
       }
       Navigator.of(context).pop();
     } finally {
@@ -441,7 +477,7 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final controller = widget.controller;
     final profile = controller.profile;
     final config = profile?.orchestration;
@@ -458,280 +494,241 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
         ? null
         : teamHostKindFor(config, host?.hostMode ?? hostMode);
 
-    final (statusTone, statusLine) = _status(l10n, config, live);
+    final (statusMark, statusLine) = _status(l10n, config, live);
+    final onOffLine = on ? l10n.teamUiStatusOn : l10n.teamUiStatusOff;
     final version =
         host?.version ??
         found?.found.version ??
         (on ? l10n.teamUiVersionUnknown : null);
+    final gap = SizedBox(height: tokens.space3);
+    final statusDetail = [
+      if (onOffLine != statusLine) onOffLine,
+      if (on)
+        readOnly ? l10n.teamUiWatchingOnly : l10n.teamUiWatchingAndAnswering,
+    ].join(' · ');
 
-    return SingleChildScrollView(
+    final notice = _notice;
+    return Column(
       key: const ValueKey('team-plugin-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.teamUiRowTitle, style: theme.textTheme.titleLarge),
-          if (profile != null && version != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              '${profile.name} · $version',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          // Status: a dot and a word, never colour-only.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Icon(
-                  AppIconography.statusDot,
-                  size: 14,
-                  color: AppTheme.statusColor(theme, statusTone),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      statusLine,
-                      key: const ValueKey('team-sheet-status'),
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    Text(
-                      on ? l10n.teamUiStatusOn : l10n.teamUiStatusOff,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                    if (on)
-                      Text(
-                        readOnly
-                            ? l10n.teamUiWatchingOnly
-                            : l10n.teamUiWatchingAndAnswering,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          height: 1.35,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (profile != null && version != null)
+          KitText(
+            '${profile.name} · $version',
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
-          if (live != null && live.phase == OrchestrationPhase.ready) ...[
-            const SizedBox(height: 8),
-            Text(
-              _streamLine(l10n, live),
-              key: const ValueKey('team-sheet-stream'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          ],
-          if (on || found != null) ...[
-            const SizedBox(height: 16),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelProvider,
-              value: host?.provider ?? found?.found.host.provider ?? 'gascity',
-            ),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelVersion,
-              value: version ?? l10n.teamUiVersionUnknown,
-            ),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelCity,
-              value: (config?.city.isNotEmpty ?? false)
-                  ? config!.city
-                  : (host?.city ?? found?.found.city ?? '—'),
-            ),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelAddress,
-              value: config?.url ?? found?.url ?? '',
-              mono: true,
-            ),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelHost,
-              value: switch (hostKind ?? OrchestrationHostKind.pc) {
-                OrchestrationHostKind.pc => l10n.teamUiHostModeComputer,
-                OrchestrationHostKind.laptop => l10n.teamUiHostKindLaptop,
-                OrchestrationHostKind.wsl => l10n.teamUiHostKindWsl,
-                OrchestrationHostKind.phone => l10n.teamUiHostModePhone,
-              },
-            ),
-            TeamIdentityRow(
-              label: l10n.teamUiLabelAccess,
-              value: (on ? readOnly : found?.found.readOnly ?? true)
-                  ? l10n.teamUiAccessReadOnly
-                  : l10n.teamUiAccessControls,
-            ),
-            if (on && readOnly) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.teamUiReadOnlyBody,
-                key: const ValueKey('team-sheet-read-only'),
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-              ),
-              Text(
-                l10n.teamUiFrontLine,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                  height: 1.35,
-                ),
-              ),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
+        if (notice != null) ...[
+          gap,
+          KitNotice(tone: notice.$1, message: notice.$2),
+        ],
+        gap,
+        // Status: a mark and a word, never colour-only. "Off" is said once.
+        KitRow(
+          padding: EdgeInsets.zero,
+          leading: KitStatusMark(state: statusMark),
+          title: statusLine,
+          titleKey: const ValueKey('team-sheet-status'),
+          titleMaxLines: 2,
+          supporting: statusDetail.isEmpty
+              ? null
+              : TextSpan(text: statusDetail),
+          supportingMaxLines: 3,
+        ),
+        if (live != null && live.phase == OrchestrationPhase.ready)
+          KitText(
+            _streamLine(l10n, live),
+            key: const ValueKey('team-sheet-stream'),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
+        if (on || found != null) ...[
+          SizedBox(height: tokens.space4),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelProvider,
+            value: host?.provider ?? found?.found.host.provider ?? 'gascity',
+          ),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelVersion,
+            value: version ?? l10n.teamUiVersionUnknown,
+          ),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelCity,
+            value: (config?.city.isNotEmpty ?? false)
+                ? config!.city
+                : (host?.city ?? found?.found.city ?? '—'),
+          ),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelAddress,
+            value: config?.url ?? found?.url ?? '',
+            mono: true,
+          ),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelHost,
+            value: switch (hostKind ?? OrchestrationHostKind.pc) {
+              OrchestrationHostKind.pc => l10n.teamUiHostModeComputer,
+              OrchestrationHostKind.laptop => l10n.teamUiHostKindLaptop,
+              OrchestrationHostKind.wsl => l10n.teamUiHostKindWsl,
+              OrchestrationHostKind.phone => l10n.teamUiHostModePhone,
+            },
+          ),
+          TeamIdentityRow(
+            label: l10n.teamUiLabelAccess,
+            value: (on ? readOnly : found?.found.readOnly ?? true)
+                ? l10n.teamUiAccessReadOnly
+                : l10n.teamUiAccessControls,
+          ),
+          if (on && readOnly) ...[
+            gap,
+            KitNotice(
+              key: const ValueKey('team-sheet-read-only'),
+              message: l10n.teamUiReadOnlyBody,
+              notes: [l10n.teamUiFrontLine],
+              actions: [
+                KitAction(
                   key: const ValueKey('team-sheet-how'),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  label: l10n.teamUiHow,
                   onPressed: () => showTeamHostGuideSheet(context),
-                  child: Text(l10n.teamUiHow),
                 ),
-              ),
-            ],
-            if (hostKind != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    AppIconography.info,
-                    size: 16,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      teamHostDisclaimer(l10n, hostKind),
-                      key: const ValueKey('team-sheet-disclaimer'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Theme(
-              data: theme.copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                key: const ValueKey('team-sheet-technical'),
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 8),
-                title: Text(
-                  l10n.teamUiTechnicalDetails,
-                  style: theme.textTheme.titleSmall,
+              ],
+            ),
+          ],
+          if (hostKind != null) ...[
+            gap,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const KitIcon(
+                  AppIconography.info,
+                  size: KitIconSize.small,
+                  tone: KitTextTone.secondary,
                 ),
-                children: [
-                  TeamTechnicalValue(
-                    label: l10n.teamUiLabelProvider,
-                    value: host?.provider ?? found?.found.host.provider ?? '',
+                SizedBox(width: tokens.space2),
+                Expanded(
+                  child: KitText(
+                    teamHostDisclaimer(l10n, hostKind),
+                    key: const ValueKey('team-sheet-disclaimer'),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
                   ),
-                  TeamTechnicalValue(
-                    label: l10n.teamUiLabelAddress,
-                    value: config?.url ?? found?.url ?? '',
-                  ),
-                  TeamTechnicalValue(
-                    label: l10n.teamUiLabelCity,
-                    value: config?.city ?? found?.found.city ?? '',
-                  ),
-                  if (live?.lastError case final error?)
-                    TeamTechnicalValue(
-                      label: l10n.teamUiTechnicalLastAnswer,
-                      value: error.message,
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-                    child: Text(
-                      l10n.teamUiTermsHeading,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                  ),
-                  for (final term in [
-                    l10n.teamUiTermTeam,
-                    l10n.teamUiTermProject,
-                    l10n.teamUiTermRun,
-                    l10n.teamUiTermWork,
-                    l10n.teamUiTermAgent,
-                  ])
-                    TeamTermRow(term),
-                ],
-              ),
-            ),
-          ],
-          if (teamPhoneProfile(profile)) ...[
-            const SizedBox(height: 16),
-            TeamPhoneSection(
-              connection: controller,
-              profile: profile!,
-              runtime: widget.teamRuntime,
-              onRemoved: () {
-                if (mounted) Navigator.of(context).pop();
-              },
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (!on && found != null)
-            FilledButton(
-              key: const ValueKey('team-sheet-turn-on'),
-              onPressed: _busy ? null : _turnOn,
-              child: Text(l10n.teamUiDiscoveryTurnOn),
-            ),
-          if (on) ...[
-            FilledButton.tonalIcon(
-              key: const ValueKey('team-sheet-refresh'),
-              onPressed: _busy || live == null ? null : _refresh,
-              icon: const Icon(AppIconography.retry),
-              label: Text(l10n.teamUiRefresh),
-            ),
-            const SizedBox(height: 8),
-          ],
-          OutlinedButton(
-            key: const ValueKey('team-sheet-add-manually'),
-            onPressed: _busy || profile == null ? null : _addManually,
-            child: Text(on ? l10n.teamUiChange : l10n.teamUiAddManually),
-          ),
-          if (on) ...[
-            const SizedBox(height: 8),
-            TextButton(
-              key: const ValueKey('team-sheet-turn-off'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-              ),
-              onPressed: _busy ? null : _turnOff,
-              child: Text(l10n.teamUiTurnOff),
+                ),
+              ],
             ),
           ],
         ],
-      ),
+        if (teamPhoneProfile(profile)) ...[
+          SizedBox(height: tokens.space4),
+          TeamPhoneSection(
+            connection: controller,
+            profile: profile!,
+            runtime: widget.teamRuntime,
+            onRemoved: () {
+              if (mounted) Navigator.of(context).pop();
+            },
+          ),
+        ],
+        SizedBox(height: tokens.space5),
+        KitActionBlock(
+          primary: !on && found != null
+              ? KitAction(
+                  key: const ValueKey('team-sheet-turn-on'),
+                  label: l10n.teamUiDiscoveryTurnOn,
+                  working: _busy,
+                  onPressed: _busy ? null : _turnOn,
+                )
+              : null,
+          secondary: KitAction(
+            key: const ValueKey('team-sheet-add-manually'),
+            label: on ? l10n.teamUiChange : l10n.teamUiAddManually,
+            onPressed: _busy || profile == null ? null : _addManually,
+          ),
+          tertiary: [
+            if (on) ...[
+              KitAction(
+                key: const ValueKey('team-sheet-refresh'),
+                label: l10n.teamUiRefresh,
+                icon: AppIconography.retry,
+                onPressed: _busy || live == null ? null : _refresh,
+              ),
+              KitAction(
+                key: const ValueKey('team-sheet-turn-off'),
+                label: l10n.teamUiTurnOff,
+                destructive: true,
+                onPressed: _busy ? null : _turnOff,
+              ),
+            ],
+          ],
+        ),
+        if (on || found != null) ...[
+          SizedBox(height: tokens.space4),
+          // The one technical fold, last and collapsed (K2 §4.3).
+          KitDetailsFold(
+            foldKey: const ValueKey('team-sheet-technical'),
+            label: l10n.teamUiTechnicalDetails,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TeamTechnicalValue(
+                  label: l10n.teamUiLabelProvider,
+                  value: host?.provider ?? found?.found.host.provider ?? '',
+                ),
+                TeamTechnicalValue(
+                  label: l10n.teamUiLabelAddress,
+                  value: config?.url ?? found?.url ?? '',
+                ),
+                TeamTechnicalValue(
+                  label: l10n.teamUiLabelCity,
+                  value: config?.city ?? found?.found.city ?? '',
+                ),
+                if (live?.lastError case final error?)
+                  TeamTechnicalValue(
+                    label: l10n.teamUiTechnicalLastAnswer,
+                    value: error.message,
+                  ),
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    top: tokens.space2,
+                    bottom: tokens.space1,
+                  ),
+                  child: KitText(
+                    l10n.teamUiTermsHeading,
+                    role: KitTextRole.label,
+                    tone: KitTextTone.secondary,
+                  ),
+                ),
+                for (final term in [
+                  l10n.teamUiTermTeam,
+                  l10n.teamUiTermProject,
+                  l10n.teamUiTermRun,
+                  l10n.teamUiTermWork,
+                  l10n.teamUiTermAgent,
+                ])
+                  TeamTermRow(term),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
-  (AppStatusTone, String) _status(
+  (KitMarkState, String) _status(
     AppLocalizations l10n,
     OrchestrationConfig? config,
     OrchestrationController? live,
   ) {
-    if (config == null) return (AppStatusTone.neutral, l10n.teamUiStatusOff);
-    if (live == null) return (AppStatusTone.neutral, l10n.teamUiStatusOn);
+    if (config == null) return (KitMarkState.waiting, l10n.teamUiStatusOff);
+    if (live == null) return (KitMarkState.waiting, l10n.teamUiStatusOn);
     switch (live.phase) {
       case OrchestrationPhase.idle:
       case OrchestrationPhase.probing:
       case OrchestrationPhase.connecting:
-        return (AppStatusTone.progress, l10n.teamUiStatusProbing);
+        return (KitMarkState.working, l10n.teamUiStatusProbing);
       case OrchestrationPhase.failed:
         final error = live.lastError;
         return (
-          AppStatusTone.attention,
+          KitMarkState.failed,
           error == null
               ? l10n.teamUiStatusNotAvailable
               : l10n.teamUiRowNotAvailableReason(
@@ -739,16 +736,16 @@ class _TeamPluginSheetState extends State<TeamPluginSheet> {
                 ),
         );
       case OrchestrationPhase.stopped:
-        return (AppStatusTone.neutral, l10n.teamUiStatusOn);
+        return (KitMarkState.waiting, l10n.teamUiStatusOn);
       case OrchestrationPhase.ready:
         switch (live.streamStatus) {
           case OrchestrationStreamStatus.connecting:
-            return (AppStatusTone.progress, l10n.teamUiStatusReconnecting);
+            return (KitMarkState.working, l10n.teamUiStatusReconnecting);
           case OrchestrationStreamStatus.reconnecting:
-            return (AppStatusTone.attention, l10n.teamUiStatusUnreachable);
+            return (KitMarkState.failed, l10n.teamUiStatusUnreachable);
           case OrchestrationStreamStatus.live:
           case OrchestrationStreamStatus.closed:
-            return (AppStatusTone.ok, l10n.teamUiStatusConnected);
+            return (KitMarkState.done, l10n.teamUiStatusConnected);
         }
     }
   }

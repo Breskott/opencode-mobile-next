@@ -16,6 +16,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
@@ -596,10 +597,10 @@ void main() {
           expect(sheet, findsOneWidget);
           expect(
             tester
-                .widget<Text>(
+                .widget<KitText>(
                   find.byKey(const ValueKey('team-sheet-disclaimer')),
                 )
-                .data,
+                .text,
             teamHostDisclaimer(l10n, kind),
           );
           expect(
@@ -676,7 +677,10 @@ void main() {
         await tester.pumpAndSettle();
         final line = find.byKey(const ValueKey('team-sheet-disclaimer'));
         expect(line, findsOneWidget);
-        expect(tester.widget<Text>(line).data, teamHostDisclaimer(l10n, kind));
+        expect(
+          tester.widget<KitText>(line).text,
+          teamHostDisclaimer(l10n, kind),
+        );
         for (final other in OrchestrationHostKind.values) {
           if (other == kind) continue;
           expect(find.text(teamHostDisclaimer(l10n, other)), findsNothing);
@@ -695,8 +699,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('team-sheet-disclaimer')))
-            .data,
+            .widget<KitText>(
+              find.byKey(const ValueKey('team-sheet-disclaimer')),
+            )
+            .text,
         l10n.teamUiDisclaimerComputer,
       );
     });
@@ -762,7 +768,17 @@ void main() {
   });
 
   group('turn off', () {
+    // A phone window: the AI Team sheet is a bottom sheet whose actions
+    // scroll into reach (screen-library-3 moved the sheet into showKitSheet;
+    // at the 800x600 default it is a side panel, see the QA record).
+    void phone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
     testWidgets('sheet copy and effects', (tester) async {
+      phone(tester);
       final p = profile(config: fixtureConfig());
       final controller = await boot(p);
       await pump(tester, controller);
@@ -808,6 +824,7 @@ void main() {
     });
 
     testWidgets('keep leaves everything in place', (tester) async {
+      phone(tester);
       final p = profile(config: fixtureConfig());
       final controller = await boot(p);
       await pump(tester, controller);

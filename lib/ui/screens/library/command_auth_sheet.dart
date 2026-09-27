@@ -62,13 +62,14 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
     });
     var dispatched = false;
     try {
-      final confirmed = await showConfirmSheet(
+      // revamp: merge-into:command-auth-sheet (no owner). Raised from this
+      // sheet, the question replaces its content in place (K2 §4.7).
+      final confirmed = await showKitConfirm(
         context,
         icon: AppIconography.terminal,
         title: _l10n.commandAuthConfirmTitle,
-        message: _l10n.commandAuthConfirmDetail,
+        body: _l10n.commandAuthConfirmDetail,
         confirmLabel: _l10n.commandAuthStart,
-        cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
       );
       if (!confirmed || !_current || !(route?.isCurrent ?? true)) return;
       dispatched = true;
@@ -153,73 +154,88 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    return SafeArea(
-      top: false,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .85,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          padding: EdgeInsetsDirectional.fromSTEB(
-            16,
-            0,
-            16,
-            24 + MediaQuery.viewInsetsOf(context).bottom,
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space3);
+    final canStart =
+        _attempt == null &&
+        !_uncertainStart &&
+        _status != IntegrationAuthState.complete;
+    final notices = <Widget>[
+      if (!_current)
+        KitNotice(message: l10n.commandAuthScopeChanged)
+      else ...[
+        if (_error case final error?)
+          KitNotice(tone: AppStatusTone.failure, message: error),
+        if (_uncertainStart)
+          KitNotice(
+            tone: AppStatusTone.failure,
+            message: l10n.commandAuthUncertainStart,
+            notes: [l10n.uncertainAuthCloseHint],
           ),
-          children: [
-            Text(
-              widget.integration.name,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            Text(widget.method.label),
-            const SizedBox(height: 12),
-            Text(l10n.commandAuthMethodHint),
-            if (!_current)
-              Text(l10n.commandAuthScopeChanged)
-            else ...[
-              if (_busy) const LinearProgressIndicator(),
-              if (_error != null)
-                Semantics(liveRegion: true, child: Text(_error!)),
-              if (_uncertainStart) ...[
-                Text(l10n.commandAuthUncertainStart),
-                Text(l10n.uncertainAuthCloseHint),
-              ],
-              if (widget.controller.pendingAuthPersistenceUncertain)
-                Text(l10n.pendingAuthSaveUncertain),
-              if (_attempt != null) Text(l10n.commandAuthPending),
-              if (_status == IntegrationAuthState.complete)
-                Text(l10n.commandAuthComplete),
-              if (_status == IntegrationAuthState.failed)
-                Text(l10n.commandAuthFailed),
-              if (_status == IntegrationAuthState.expired)
-                Text(l10n.commandAuthExpired),
-              Wrap(
-                spacing: 8,
-                children: [
-                  if (_attempt == null &&
-                      !_uncertainStart &&
-                      _status != IntegrationAuthState.complete)
-                    FilledButton(
-                      onPressed: _busy ? null : _start,
-                      child: Text(l10n.commandAuthStart),
-                    ),
-                  if (_attempt != null) ...[
-                    FilledButton(
-                      onPressed: _busy ? null : () => _check(),
-                      child: Text(l10n.commandAuthCheck),
-                    ),
-                    TextButton(
-                      onPressed: _busy ? null : () => _check(cancel: true),
-                      child: Text(l10n.commandAuthCancel),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ],
+        if (widget.controller.pendingAuthPersistenceUncertain)
+          KitNotice(
+            tone: AppStatusTone.failure,
+            message: l10n.pendingAuthSaveUncertain,
+          ),
+        if (_attempt != null)
+          KitNotice(
+            tone: AppStatusTone.progress,
+            message: l10n.commandAuthPending,
+          ),
+        if (_status == IntegrationAuthState.complete)
+          KitNotice(tone: AppStatusTone.ok, message: l10n.commandAuthComplete),
+        if (_status == IntegrationAuthState.failed)
+          KitNotice(
+            tone: AppStatusTone.failure,
+            message: l10n.commandAuthFailed,
+          ),
+        if (_status == IntegrationAuthState.expired)
+          KitNotice(message: l10n.commandAuthExpired),
+      ],
+    ];
+    // The body of showKitSheet: the frame owns the rails and the scroll.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitText(
+          widget.method.label,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
         ),
-      ),
+        SizedBox(height: tokens.space1),
+        KitText(l10n.commandAuthMethodHint),
+        if (_current) ...[
+          gap,
+          KitLoadingBar(loading: _busy, label: l10n.commandAuthSheetWorking),
+        ],
+        for (final notice in notices) ...[gap, notice],
+        if (_current && (canStart || _attempt != null)) ...[
+          SizedBox(height: tokens.space5),
+          KitActionBlock(
+            primary: canStart
+                ? KitAction(
+                    key: const ValueKey('command-auth-start'),
+                    label: l10n.commandAuthStart,
+                    working: _busy,
+                    onPressed: _busy ? null : _start,
+                  )
+                : KitAction(
+                    key: const ValueKey('command-auth-check'),
+                    label: l10n.commandAuthCheck,
+                    working: _busy,
+                    onPressed: _busy ? null : () => _check(),
+                  ),
+            secondary: _attempt == null
+                ? null
+                : KitAction(
+                    key: const ValueKey('command-auth-cancel'),
+                    label: l10n.commandAuthCancel,
+                    onPressed: _busy ? null : () => _check(cancel: true),
+                  ),
+          ),
+        ],
+      ],
     );
   }
 }
