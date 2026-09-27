@@ -383,7 +383,11 @@ InlineSpan _stateSpan(
 
   return switch (state) {
     KitQueuedState.sending => receipt(KitReceiptState.sending),
-    KitQueuedState.notConfirmed => receipt(KitReceiptState.notConfirmed),
+    KitQueuedState.notConfirmed => _withReason(
+      context,
+      receipt(KitReceiptState.notConfirmed),
+      reason,
+    ),
     KitQueuedState.failed => receipt(KitReceiptState.refused, why: reason),
     KitQueuedState.reachedServer => TextSpan(text: l10n.kitQueuedReachedServer),
     KitQueuedState.waiting => TextSpan(text: l10n.kitQueuedWaiting),
@@ -391,4 +395,16 @@ InlineSpan _stateSpan(
     KitQueuedState.addToThisTurn => TextSpan(text: l10n.kitQueuedAddToTurn),
     KitQueuedState.contextUpdate => TextSpan(text: l10n.kitQueuedUpdate),
   };
+}
+
+/// [span]'s words followed by the plain [reason] ("Not confirmed yet: socket
+/// closed"), in the same colour; [span] unchanged when there is no reason.
+InlineSpan _withReason(BuildContext context, InlineSpan span, String? reason) {
+  final why = reason?.trim();
+  if (why == null || why.isEmpty || span is! TextSpan) return span;
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return TextSpan(
+    text: l10n.kitReceiptActRefusedReason(span.text ?? '', KitBidi.auto(why)),
+    style: span.style,
+  );
 }
